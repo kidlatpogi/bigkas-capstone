@@ -295,12 +295,13 @@
 }
 
 .skyward-journey-node--active.skyward-journey-node--unlocked:hover {
-  box-shadow: rgb(205, 139, 118) 0px 10px 0px 0px;
+  box-shadow: none;
+  transform: translateX(var(--skyward-node-offset, 0%));
 }
 
 .skyward-journey-node--active.skyward-journey-node--float:hover {
   animation: none;
-  transform: translateX(var(--skyward-node-offset, 0%)) translateY(-6px);
+  transform: translateX(var(--skyward-node-offset, 0%));
 }
 
 .skyward-journey-node--completed.skyward-journey-node--unlocked:hover {

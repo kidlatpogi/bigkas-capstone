@@ -46,8 +46,8 @@ function clampMapState(state, viewportEl, contentEl, scale) {
   if (!Number.isFinite(W) || !Number.isFinite(H) || W <= 0 || H <= 0) return state;
   if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return state;
 
-  const horizontalPadding = Math.max(MAP_EDGE_PAN_PADDING * 0.6, W * 0.12);
-  const verticalPadding = Math.max(MAP_EDGE_PAN_PADDING, H * 0.2);
+  const horizontalPadding = Math.max(MAP_EDGE_PAN_PADDING * 0.4, W * 0.08);
+  const verticalPadding = 20; // Tighten vertical padding to prevent excessive scroll
   const minX = Math.min(0, W - w) - horizontalPadding;
   const maxX = Math.max(0, W - w) + horizontalPadding;
   const minY = Math.min(0, H - h) - verticalPadding;
@@ -87,6 +87,107 @@ function LockedIconTeaser({ index, milestone }) {
  * @param {(step: object, meta: object) => React.ReactNode} props.renderStepContent
  * @param {boolean} [props.entranceFromNav] — play zoom-to-current-quest when navigating from side nav
  */
+import styled from 'styled-components';
+ import { motion, AnimatePresence } from 'framer-motion';
+
+const TooltipWrapper = styled(motion.div)`
+  position: absolute;
+  bottom: calc(100% + 14px);
+  left: 50%;
+  transform-origin: bottom center;
+  z-index: 1000;
+  pointer-events: auto;
+`;
+
+const TooltipBox = styled.div`
+  background: #ffffff;
+  padding: 16px;
+  border-radius: 16px;
+  box-shadow: 
+    0 4px 0 0 rgba(0, 0, 0, 0.1),
+    0 12px 24px rgba(0, 0, 0, 0.15);
+  border-bottom: 4px solid #e5e5e5;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  align-items: center;
+  text-align: center;
+`;
+
+const TooltipBeak = styled.div`
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 10px solid #ffffff;
+`;
+
+const TooltipTitle = styled.h3`
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #3c3c3c;
+`;
+
+const TooltipDescription = styled.p`
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #777777;
+`;
+
+const StartButton = styled.button`
+  background-color: #f18f01;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 24px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+  box-shadow: #cd8b76 0 4px 0 0;
+  transition: all 0.1s ease;
+  width: 100%;
+  text-transform: uppercase;
+
+  &:active {
+    transform: translateY(2px);
+    box-shadow: #cd8b76 0 2px 0 0;
+  }
+`;
+
+export const JourneyTooltip = ({ step, onStart }) => {
+  return (
+    <TooltipWrapper
+      initial={{ scale: 0, x: '-50%', opacity: 0 }}
+      animate={{ scale: 1, x: '-50%', opacity: 1 }}
+      exit={{ scale: 0, x: '-50%', opacity: 0 }}
+      transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+    >
+      <TooltipBox>
+        <TooltipTitle>{step.title || 'Lesson'}</TooltipTitle>
+        <TooltipDescription>
+          {step.nodeState === 'completed' ? '100% Complete' : 'Ready to start!'}
+        </TooltipDescription>
+        <StartButton onClick={(e) => {
+          e.stopPropagation();
+          onStart(step);
+        }}>
+          START
+        </StartButton>
+        <TooltipBeak />
+      </TooltipBox>
+    </TooltipWrapper>
+  );
+};
+
 export default function SkywardJourney({ steps, renderStepContent, entranceFromNav = false }) {
   const gradId = useId().replace(/:/g, '');
   const flowGradId = useId().replace(/:/g, '');
@@ -125,6 +226,7 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
   const [jiggleIndex, setJiggleIndex] = useState(null);
   const [showTapHint, setShowTapHint] = useState(false);
   const [map, setMap] = useState(() => ({ tx: 0, ty: 0 }));
+  const [tooltipNodeId, setTooltipNodeId] = useState(null);
 
   useLayoutEffect(() => {
     mapRef.current = map;
@@ -269,6 +371,7 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
     (e) => {
       if (panelOpenId) return;
       if (pinchRef.current) return;
+      if (tooltipNodeId) setTooltipNodeId(null);
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       const t = e.target;
       if (t instanceof Element && t.closest('.skyward-journey-node-shell')) return;
@@ -284,7 +387,7 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
       };
       e.currentTarget.setPointerCapture(e.pointerId);
     },
-    [panelOpenId],
+    [panelOpenId, tooltipNodeId],
   );
 
   const onPointerMoveViewport = useCallback((e) => {
@@ -424,7 +527,7 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
         setPanelVisible(true);
         return;
       }
-      setPanelOpenId(step.id);
+      setTooltipNodeId(step.id);
     },
     [panelOpenId, panelVisible, requestClosePanel],
   );
@@ -548,6 +651,15 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
                   )
                 ) : null}
               </SkywardJourneyNodeButton>
+              <AnimatePresence>
+                {tooltipNodeId === step.id && (
+                  <JourneyTooltip 
+                    step={step} 
+                    onStart={(s) => setPanelOpenId(s.id)}
+                    onClose={() => setTooltipNodeId(null)}
+                  />
+                )}
+              </AnimatePresence>
               <div
                 className={`level-label level-label--side-${labelSide}`}
                 aria-hidden

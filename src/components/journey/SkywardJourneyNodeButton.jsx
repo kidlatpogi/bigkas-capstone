@@ -12,7 +12,7 @@ const STATE_STYLES = {
   },
   completed: {
     bg: '#228b22',
-    shadow: '#5a7863',
+    shadow: '#1a6b1a',
   },
 };
 
@@ -28,6 +28,7 @@ const StyledWrapper = styled.div`
     box-shadow: ${(props) => props.$shadow} 0px 10px 0px 0px;
     color: hsl(0, 0%, 100%);
     cursor: pointer;
+    transform: translateX(var(--skyward-node-offset, 0%));
   }
 
   button:active {
@@ -35,6 +36,12 @@ const StyledWrapper = styled.div`
     box-shadow: ${(props) => props.$shadow} 0px 0px 0px 0px;
     transform: translateX(var(--skyward-node-offset, 0%)) translateY(10px);
     transition: 200ms;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+    filter: grayscale(0.5);
+    opacity: 0.8;
   }
 `;
 

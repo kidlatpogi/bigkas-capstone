@@ -111,7 +111,6 @@
   height: auto;
   min-height: 0;
   overflow: visible;
-  overflow-x: clip;
 }
 
 .skyward-journey-map {
@@ -200,6 +199,8 @@
   gap: 40px;
   position: relative;
   z-index: 1;
+  padding-top: 240px;
+  padding-bottom: 120px;
 }
 
 .skyward-journey-section {

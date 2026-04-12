@@ -16,7 +16,7 @@
   min-height: 100vh;
   height: auto;
   box-sizing: border-box;
-  overflow-x: hidden;
+  overflow-x: visible;
   overflow-y: visible;
 }
 
@@ -185,7 +185,7 @@ body.skyward-journey-modal-open .activity-sticky-shell {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: visible;
   display: grid;
   grid-template-columns: repeat(1, 1fr);
   grid-template-rows: repeat(5, 1fr);
@@ -203,6 +203,8 @@ body.skyward-journey-modal-open .activity-sticky-shell {
   flex-direction: column;
   grid-template-rows: none;
   gap: 16px;
+  overflow-x: visible;
+  overflow-y: visible;
 }
 
 .activity-task-list::-webkit-scrollbar {

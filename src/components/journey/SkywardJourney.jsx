@@ -13,7 +13,6 @@ import {
   IoVolumeHigh,
 } from 'react-icons/io5';
 import {
-  isMilestoneStep,
   JOURNEY_NODE_THEMES,
   NODE_STATE,
 } from './journeyConstants';
@@ -768,7 +767,7 @@ export default function SkywardJourney({
     const isDone = step.nodeState === NODE_STATE.COMPLETED;
     const isLocked = step.nodeState === NODE_STATE.LOCKED;
     const title = step.title ?? step.task?.title ?? step.id;
-    const milestone = isMilestoneStep(i);
+    const milestone = i === steps.length - 1;
     const jiggle = jiggleIndex === i;
     const horizontalOffset = getHorizontalOffset(i);
     const labelSide = horizontalOffset > 0 ? 'left' : 'right';
@@ -865,10 +864,16 @@ export default function SkywardJourney({
   });
   flushPillarSection();
 
+  const activeStepIndex = steps.findIndex((s) => s.nodeState === 'active');
+  const fallbackStepIndex = steps.slice().reverse().findIndex((s) => s.nodeState === 'unlocked');
+  const indexToUse = activeStepIndex >= 0 ? activeStepIndex : (fallbackStepIndex >= 0 ? steps.length - 1 - fallbackStepIndex : steps.length - 1);
+  const currentStep = steps[indexToUse] || steps[steps.length - 1];
+  const currentPillarText = currentStep ? `PILLAR ${currentStep.task?.target_level || 1}: ${currentStep.pillarName}` : 'PILLAR 1: VOCAL CLARITY';
+
   return (
     <div className="skyward-journey skyward-journey-container skyward-journey-anim-root no-scrollbar" ref={rootRef}>
       <MapHeaderCard className="skyward-journey-anim-header">
-        <HeaderTitle>CHAPTER 1: VOCAL CLARITY</HeaderTitle>
+        <HeaderTitle>{currentPillarText.toUpperCase()}</HeaderTitle>
         <HeaderDescription>Master your speaking fundamentals</HeaderDescription>
         <HeaderStatBadge>{completedCount} / {steps.length} Stages Completed</HeaderStatBadge>
       </MapHeaderCard>

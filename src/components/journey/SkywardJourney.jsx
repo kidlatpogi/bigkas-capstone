@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import styled from 'styled-components';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   IoCheckmarkCircle,
   IoClose,
@@ -22,7 +24,7 @@ const JOURNEY_ICONS = [IoMic, IoVolumeHigh, IoMusicalNote, IoPulse, IoShuffle, I
 
 const MAP_SCALE = 1.5;
 const MAP_EDGE_PAN_PADDING = 96;
-const HORIZONTAL_OFFSET_PATTERN = [0, 25, 50, 25, 0, -25, -50, -25];
+const HORIZONTAL_OFFSET_PATTERN = [0, 35, 65, 35, 0, -35, -65, -35];
 const PILLAR_TITLES = ['Vocal Clarity', 'Verbal Flow', 'Visual Presence', 'Stage Mastery'];
 const PILLAR_SECTION_SIZE = 2;
 
@@ -69,8 +71,6 @@ function JourneyNodeIcon({ index, className = '' }) {
  * @param {(step: object, meta: object) => React.ReactNode} props.renderStepContent
  * @param {boolean} [props.entranceFromNav] — play zoom-to-current-quest when navigating from side nav
  */
-import styled from 'styled-components';
-import { motion, AnimatePresence } from 'framer-motion';
 
 const MapHeaderCard = styled.div`
   max-width: 400px;
@@ -128,7 +128,7 @@ const TooltipBox = styled.div`
   border-radius: 16px;
   border: ${(props) => (props.$nodeState === 'locked' ? '2px solid #e5e5e5' : '2px solid #1a3b16')};
   border-bottom: ${(props) => (props.$nodeState === 'locked' ? '4px solid #e5e5e5' : '4px solid #1a3b16')};
-  width: 220px;
+  width: 260px;
   box-sizing: border-box;
   max-height: min(70vh, 420px);
   overflow-x: hidden;
@@ -254,7 +254,7 @@ const TOOLTIP_GAP = 14;
 /** Conservative height for first layout; keeps bubble inside the viewport. */
 const TOOLTIP_EST_HEIGHT = 280;
 
-function computeTooltipLayout(nodeEl) {
+function computeTooltipLayout(nodeEl, forceBottom = false) {
   if (!nodeEl) return { left: 0, top: 0, transform: 'translate(-50%, -100%)', placement: 'top' };
   const rect = nodeEl.getBoundingClientRect();
   const cx = rect.left + rect.width / 2;
@@ -262,7 +262,7 @@ function computeTooltipLayout(nodeEl) {
   // Use window height for 25% calculation as requested
   const isTopArea = rect.top < window.innerHeight * 0.25;
 
-  const placement = isTopArea ? 'bottom' : 'top';
+  const placement = (isTopArea || forceBottom) ? 'bottom' : 'top';
 
   const top = placement === 'bottom' ? rect.bottom + TOOLTIP_GAP : rect.top - TOOLTIP_GAP;
   const transform = placement === 'bottom' ? 'translateX(-50%)' : 'translate(-50%, -100%)';
@@ -270,7 +270,7 @@ function computeTooltipLayout(nodeEl) {
   return { left: cx, top, transform, placement };
 }
 
-export const JourneyTooltip = ({ step, onStart, onClose, nodeRef }) => {
+export const JourneyTooltip = ({ step, onStart, onClose, nodeRef, forceBottom = false }) => {
   const [layout, setLayout] = useState(null);
 
   useLayoutEffect(() => {
@@ -278,7 +278,7 @@ export const JourneyTooltip = ({ step, onStart, onClose, nodeRef }) => {
     if (!node) return undefined;
 
     const update = () => {
-      setLayout(computeTooltipLayout(node));
+      setLayout(computeTooltipLayout(node, forceBottom));
     };
 
     update();
@@ -738,7 +738,7 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
     currentSectionRows.push(
       <div
         key={step.id}
-        className="skyward-journey-row"
+        className={`skyward-journey-row dashboard-anim-bottom dashboard-anim-delay-${Math.min(i % 10 + 1, 9)}`}
       >
         <div className="skyward-journey-track">
           <div
@@ -793,7 +793,9 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
                     key={step.id}
                     step={step}
                     onStart={(s) => setPanelOpenId(s.id)}
+                    onClose={() => setTooltipNodeId(null)}
                     nodeRef={{ get current() { return nodeRefs.current[i]; } }}
+                    forceBottom={i >= steps.length - 2}
                   />
                 )}
               </AnimatePresence>

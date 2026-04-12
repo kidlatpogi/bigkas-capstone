@@ -1,34 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Confetti from 'react-confetti';
 import { useAuthContext } from '../../context/useAuthContext';
 import { supabase } from '../../lib/supabase';
 import { ROUTES } from '../../utils/constants';
-import { LEVEL_CONFIG } from '../../utils/activityProgress';
-import {
-  appendSpeakerPointsHistory,
-  createSpeakerPointsHistoryEntry,
-} from '../../utils/speakerPointsHistory';
+import { getBigkasLevelFromScore, mapPercentToEntryScore } from '../../utils/activityProgress';
 import './UserAnalyzingPage.css';
 
 function clampScore(value) {
   const num = Number(value ?? 0);
   if (!Number.isFinite(num)) return 0;
   return Math.max(0, Math.min(100, Math.round(num)));
-}
-
-function getLevelFromScore(score) {
-  if (score >= 90) return 6;
-  if (score >= 80) return 5;
-  if (score >= 70) return 4;
-  if (score >= 55) return 3;
-  if (score >= 40) return 2;
-  return 1;
-}
-
-function getLevelName(levelNumber) {
-  const entry = LEVEL_CONFIG[Math.max(0, Number(levelNumber || 1) - 1)];
-  return entry?.name || 'Novice';
 }
 
 function isPreTestSession(session) {
@@ -52,19 +34,6 @@ function calculateMehrabianTotal({ verbalScore = 0, vocalScore = 0, visualScore 
   return clampScore((verbalScore * 0.07) + (vocalScore * 0.38) + (visualScore * 0.55));
 }
 
-function getPretestBonusPoints(scriptedScore, freeScore) {
-  const scripted = clampScore(scriptedScore);
-  const free = clampScore(freeScore);
-  const average = Math.round((scripted + free) / 2);
-
-  if (average >= 85) return 45;
-  if (average >= 70) return 30;
-  if (average >= 55) return 20;
-  if (average >= 40) return 12;
-  if (average > 0) return 8;
-  return 0;
-}
-
 function UserAnalyzingPage() {
   const navigate = useNavigate();
   const { user, updateUserMetadata } = useAuthContext();
@@ -80,8 +49,6 @@ function UserAnalyzingPage() {
     vocalScore: 0,
     visualScore: 0,
     freePretestScore: 0,
-    pretestBonusPoints: 0,
-    nextSpeakerPoints: 0,
     finalScore: 0,
     levelNumber: 1,
     levelName: 'Novice',
@@ -90,9 +57,6 @@ function UserAnalyzingPage() {
   const userSpeakerPoints = Math.max(0, Math.floor(Number(user?.speakerPoints ?? 0) || 0));
   const userPretestFreeScore = clampScore(user?.pretestFreeScore ?? 0);
   const userPretestFreeSessionId = user?.pretestFreeSessionId || null;
-  const existingPretestBonusAwarded = Number(
-    user?.onboardingLevelAnalysis?.pretest_bonus_points_awarded ?? 0,
-  ) || 0;
 
   useEffect(() => {
     const syncWindowSize = () => {
@@ -132,34 +96,56 @@ function UserAnalyzingPage() {
 
       const needsSessionFallback = freePretestScore === 0 || verbalScore === 0 || vocalScore === 0 || visualScore === 0;
       if (needsSessionFallback) {
+        const metricsSelect =
+          'confidence_score,overall_score,verbal_score,vocal_score,visual_score';
+
+        const withTranscript = (s) => ({
+          ...s,
+          transcript:
+            (Array.isArray(s.session_media) ? s.session_media[0]?.transcript : s.session_media?.transcript) || '',
+        });
+
+        let directNormalized = null;
+        if (userPretestFreeSessionId) {
+          const { data: one } = await supabase
+            .from('sessions')
+            .select(`id,session_origin,speaking_mode,created_at,session_media(transcript),session_metrics(${metricsSelect})`)
+            .eq('user_id', user?.id)
+            .eq('id', userPretestFreeSessionId)
+            .maybeSingle();
+          if (one) directNormalized = withTranscript(one);
+        }
+
         const { data: sessions, error: sessionsError } = await supabase
           .from('sessions')
-          .select('id,session_origin,speaking_mode,created_at,session_media(transcript),session_metrics(confidence_score,overall_score,verbal_score,vocal_score,visual_score)')
+          .select(`id,session_origin,speaking_mode,created_at,session_media(transcript),session_metrics(${metricsSelect})`)
           .eq('user_id', user?.id)
           .order('created_at', { ascending: false })
           .limit(200);
 
+        let freeSession = null;
         if (!sessionsError && Array.isArray(sessions)) {
-          const normalizedSessions = sessions.map((s) => ({
-            ...s,
-            transcript: (Array.isArray(s.session_media) ? s.session_media[0]?.transcript : s.session_media?.transcript) || '',
-          }));
+          const normalizedSessions = sessions.map(withTranscript);
           const pretests = normalizedSessions.filter(isPreTestSession);
-
           const freeById = userPretestFreeSessionId
             ? pretests.find((session) => String(session?.id || '') === String(userPretestFreeSessionId))
             : null;
-
-          const freeSession = freeById || pretests.find(isFreePreTest);
-          if (freePretestScore === 0) {
-            freePretestScore = freeSession ? pickScore(freeSession) : 0;
-          }
-
-          const freeMetrics = Array.isArray(freeSession?.session_metrics) ? freeSession.session_metrics[0] : freeSession?.session_metrics;
-          verbalScore = clampScore(freeMetrics?.verbal_score ?? 0);
-          vocalScore = clampScore(freeMetrics?.vocal_score ?? 0);
-          visualScore = clampScore(freeMetrics?.visual_score ?? 0);
+          freeSession = freeById || pretests.find(isFreePreTest);
         }
+        if (!freeSession && directNormalized) {
+          freeSession = directNormalized;
+        }
+
+        if (freePretestScore === 0) {
+          freePretestScore = freeSession ? pickScore(freeSession) : 0;
+        }
+
+        const freeMetrics = Array.isArray(freeSession?.session_metrics)
+          ? freeSession.session_metrics[0]
+          : freeSession?.session_metrics;
+        verbalScore = clampScore(freeMetrics?.verbal_score ?? 0);
+        vocalScore = clampScore(freeMetrics?.vocal_score ?? 0);
+        visualScore = clampScore(freeMetrics?.visual_score ?? 0);
       }
 
       if (verbalScore === 0 && vocalScore === 0 && visualScore === 0) {
@@ -179,20 +165,10 @@ function UserAnalyzingPage() {
         visualScore,
       });
 
-      const pretestBonusPoints = (() => {
-        if (finalScore >= 85) return 45;
-        if (finalScore >= 70) return 30;
-        if (finalScore >= 55) return 20;
-        if (finalScore >= 40) return 12;
-        if (finalScore > 0) return 8;
-        return 0;
-      })();
-
-      const levelNumber = getLevelFromScore(finalScore);
-      const levelName = getLevelName(levelNumber);
-      const shouldAwardBonus = existingPretestBonusAwarded <= 0 && pretestBonusPoints > 0;
-      const awardedBonusPoints = shouldAwardBonus ? pretestBonusPoints : 0;
-      const nextSpeakerPoints = userSpeakerPoints + awardedBonusPoints;
+      const entryScore = mapPercentToEntryScore(finalScore);
+      const levelBand = getBigkasLevelFromScore(entryScore);
+      const levelNumber = levelBand.levelNumber;
+      const levelName = levelBand.levelName;
 
       if (!cancelled) {
         setAnalysis({
@@ -200,8 +176,6 @@ function UserAnalyzingPage() {
           vocalScore,
           visualScore,
           freePretestScore,
-          pretestBonusPoints: awardedBonusPoints,
-          nextSpeakerPoints,
           finalScore,
           levelNumber,
           levelName,
@@ -215,13 +189,7 @@ function UserAnalyzingPage() {
     return () => {
       cancelled = true;
     };
-  }, [
-    existingPretestBonusAwarded,
-    user?.id,
-    userPretestFreeScore,
-    userPretestFreeSessionId,
-    userSpeakerPoints,
-  ]);
+  }, [user?.id, userPretestFreeScore, userPretestFreeSessionId]);
 
   const progress = Math.min(100, 20 + phase * 25);
 
@@ -235,42 +203,33 @@ function UserAnalyzingPage() {
       const result = await updateUserMetadata({
         onboarding_stage: 'completed',
         onboarding_completed: true,
+        speaker_entry_score: mapPercentToEntryScore(analysis.finalScore),
         speaker_level: analysis.levelName,
         speaker_level_number: analysis.levelNumber,
-        speaker_points: analysis.nextSpeakerPoints,
-        ...(analysis.pretestBonusPoints > 0 ? { speaker_points_updated_at: new Date().toISOString() } : {}),
-        ...(analysis.pretestBonusPoints > 0
-          ? {
-            speaker_points_history: appendSpeakerPointsHistory(
-              user?.speakerPointsHistory,
-              createSpeakerPointsHistoryEntry({
-                source: 'onboarding-bonus',
-                label: 'Onboarding pre-test bonus',
-                pointsAwarded: analysis.pretestBonusPoints,
-                totalPointsAfter: analysis.nextSpeakerPoints,
-                metadata: {
-                  free_pretest_score: analysis.freePretestScore,
-                  verbal_score: analysis.verbalScore,
-                  vocal_score: analysis.vocalScore,
-                  visual_score: analysis.visualScore,
-                  final_score: analysis.finalScore,
-                  estimated_level_number: analysis.levelNumber,
-                },
-              }),
-            ),
-          }
-          : {}),
+        speaker_points: userSpeakerPoints,
         onboarding_level_analysis: {
           analyzed_at: new Date().toISOString(),
           verbal_score: analysis.verbalScore,
           vocal_score: analysis.vocalScore,
           visual_score: analysis.visualScore,
           free_pretest_score: analysis.freePretestScore,
-          pretest_bonus_points_awarded: analysis.pretestBonusPoints,
+          pretest_bonus_points_awarded: 0,
           final_score: analysis.finalScore,
           estimated_level_number: analysis.levelNumber,
         },
       });
+
+      // Update the profiles table with the new current_level
+      if (result?.success) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ current_level: analysis.levelNumber })
+          .eq('id', user.id);
+
+        if (profileError) {
+          console.error('Failed to update current_level in profiles:', profileError);
+        }
+      }
 
       setIsPersisting(false);
 
@@ -303,7 +262,7 @@ function UserAnalyzingPage() {
           <div className="analyzing-popup-backdrop">
             <div className="analyzing-popup" role="dialog" aria-modal="true" aria-label="Your Level Result">
               <p className="analyzing-popup-kicker">Level Unlocked</p>
-              <h2>You are now Level {analysis.levelNumber}: {getLevelName(analysis.levelNumber)}!</h2>
+              <h2>You are now Level {analysis.levelNumber}: {analysis.levelName}!</h2>
               <p className="analyzing-popup-text">
                 Great work finishing your profiling and pre-tests. Your training journey is now personalized for your current level.
               </p>
@@ -334,7 +293,7 @@ function UserAnalyzingPage() {
 
         <div className="analyzing-estimate">
           <span>Estimated Starting Level</span>
-          <strong>Level {analysis.levelNumber}: {getLevelName(analysis.levelNumber)}</strong>
+          <strong>Level {analysis.levelNumber}: {analysis.levelName}</strong>
         </div>
 
         <div className="analyzing-breakdown">
@@ -342,9 +301,6 @@ function UserAnalyzingPage() {
           <p>Vocal Score (38%): {analysis.vocalScore}</p>
           <p>Visual Score (55%): {analysis.visualScore}</p>
           <p>Free Speech Pre-Test: {analysis.freePretestScore}</p>
-          {analysis.pretestBonusPoints > 0 && (
-            <p>Speaking Level Points Added: +{analysis.pretestBonusPoints}</p>
-          )}
           <p>Final Score: {analysis.finalScore}</p>
         </div>
 

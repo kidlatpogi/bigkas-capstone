@@ -1,20 +1,12 @@
-﻿import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import BackButton from '../../components/common/BackButton';
 import { ROUTES } from '../../utils/constants';
 import './InnerPages.css';
 import './TrainingSetupPage.css';
+import './PracticePage.css';
 
 function TrainingSetupPage() {
   const navigate = useNavigate();
-
-  const handleSafeBack = useCallback(() => {
-    if (window.history.length > 1) {
-      navigate(-1);
-      return;
-    }
-    navigate(ROUTES.PRACTICE);
-  }, [navigate]);
 
   const [freeTopic, setFreeTopic] = useState('');
   const [showTopicModal, setShowTopicModal] = useState(false);
@@ -44,23 +36,31 @@ function TrainingSetupPage() {
   };
 
   return (
-    <div className="inner-page training-setup-page">
-      <div className="inner-page-header training-setup-header">
-        <BackButton onClick={handleSafeBack} />
-        <h1 className="inner-page-title">Training Setup</h1>
-      </div>
+    <div className="practice-page">
+      <div className="practice-wrap">
+        <div className="practice-header">
+          <h1 className="practice-title">Training Setup</h1>
+        </div>
+        <p className="practice-sub">
+          Set up your training parameters and begin!
+        </p>
 
-      <p className="section-label ts-focus-label">Free Speech Mode</p>
-      <p className="focus-desc" style={{ marginBottom: '1.5rem' }}>
-        Impromptu speaking style. Focus on flow, tone, and pacing. The AI will evaluate your delivery in real time.
-      </p>
-
-      <div className="btn-row ts-action-row">
-        <button className="btn-secondary" onClick={handleSafeBack}>Cancel</button>
-        <button className="btn-primary" onClick={handleStart}>
-          Start Training
-        </button>
-      </div>
+        <div className="practice-rand-wrap">
+          <div className="practice-rand-card">
+            <h3 className="practice-rand-title">Free Speech Mode</h3>
+            <p className="practice-rand-body">
+              Impromptu speaking style. Focus on flow, tone, and pacing. The AI will evaluate your delivery in real time.
+            </p>
+            <div className="practice-rand-actions">
+              <button className="practice-btn-primary" onClick={handleStart}>
+                Start Training
+              </button>
+            </div>
+          </div>
+          <p className="practice-coming-soon">
+            New modes coming soon...
+          </p>
+        </div>
 
       {showTopicModal && (
         <div className="modal-overlay" onClick={() => setShowTopicModal(false)}>
@@ -97,6 +97,7 @@ function TrainingSetupPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

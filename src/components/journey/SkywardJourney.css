@@ -12,26 +12,130 @@
   min-height: 200px;
 }
 
-.skyward-journey-map-viewport {
-  overflow-x: hidden;
-  overflow-y: auto;
-  position: relative;
-  width: 100%;
-  min-height: min(70vh, 720px);
-  max-height: min(85vh, 900px);
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y pinch-zoom;
-  border-radius: 12px;
-  scroll-behavior: smooth;
+@keyframes nodeEntrancePop {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) translateY(40px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.1) translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
-.skyward-journey-map-viewport.is-exploring {
-  overscroll-behavior-y: contain;
+.dashboard-anim-bottom {
+  opacity: 0;
+  animation: nodeEntrancePop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.dashboard-anim-delay-1 { animation-delay: 0.1s; }
+.dashboard-anim-delay-2 { animation-delay: 0.2s; }
+.dashboard-anim-delay-3 { animation-delay: 0.3s; }
+.dashboard-anim-delay-4 { animation-delay: 0.4s; }
+.dashboard-anim-delay-5 { animation-delay: 0.5s; }
+.dashboard-anim-delay-6 { animation-delay: 0.6s; }
+.dashboard-anim-delay-7 { animation-delay: 0.7s; }
+.dashboard-anim-delay-8 { animation-delay: 0.8s; }
+.dashboard-anim-delay-9 { animation-delay: 0.9s; }
+.dashboard-anim-delay-10 { animation-delay: 1.0s; }
+
+/* Whole journey shell — ensures page open is visible (scroll parents can clip children-only animations) */
+.skyward-journey-anim-root {
+  opacity: 0;
+  animation: skywardEntranceSpringUp 0.75s cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
+}
+
+/* ── Entrance animations ── */
+.skyward-journey-anim-header {
+  opacity: 1;
+  transform: none;
+  animation: none;
+}
+
+.skyward-journey-anim-map {
+  opacity: 0;
+  transform: translateY(3rem);
+  animation: skywardEntranceSpringUp 0.8s cubic-bezier(0.2, 0.9, 0.2, 1) 0.15s forwards;
+}
+
+@keyframes skywardEntranceFadeDown {
+  from {
+    opacity: 0;
+    transform: translateY(-2rem);
+  }
+  68% {
+    opacity: 1;
+    transform: translateY(0.3rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes skywardEntranceSpringUp {
+  from {
+    opacity: 0;
+    transform: translateY(3rem);
+  }
+  68% {
+    opacity: 1;
+    transform: translateY(-0.4rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skyward-journey-anim-root,
+  .skyward-journey-anim-header,
+  .skyward-journey-anim-map {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Portaled quest tooltip anchor */
+.skyward-journey-tooltip-anchor {
+  box-sizing: border-box;
+}
+
+.skyward-journey-container {
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+.skyward-journey-map {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.skyward-journey-map-viewport {
+  overflow: visible;
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+  max-height: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 .skyward-journey-map-layer {
+  width: 100%;
+  max-width: 100%;
   will-change: transform;
-  transform-origin: 50% 50%;
+  transform-origin: 50% 0%;
   transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -48,7 +152,7 @@
 .skyward-journey-map-content {
   position: relative;
   width: 100%;
-  min-height: 200px;
+  min-height: max(220px, 100%);
 }
 
 .skyward-journey-svg {
@@ -60,6 +164,14 @@
   z-index: 0;
   overflow: visible;
   shape-rendering: geometricPrecision;
+  opacity: 0;
+  animation: skywardSvgFadeIn 0.5s ease-in forwards;
+  animation-delay: 0.8s; /* wait for nodes to pop in */
+}
+
+@keyframes skywardSvgFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .skyward-journey-polyline--rim {
@@ -84,9 +196,50 @@
 .skyward-journey-column {
   display: flex;
   flex-direction: column-reverse;
-  gap: 32px;
+  gap: 40px;
   position: relative;
   z-index: 1;
+  padding-top: 240px;
+  padding-bottom: 220px;
+}
+
+.skyward-journey-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.skyward-journey-section-rows {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 32px;
+}
+
+.skyward-journey-section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 26rem;
+  margin-inline: auto;
+  padding: 10px 0 4px;
+}
+
+.skyward-journey-section-title {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(11, 57, 84, 0.62);
+  white-space: nowrap;
+}
+
+.skyward-journey-section-line {
+  flex: 1;
+  min-width: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(11, 57, 84, 0.24), transparent);
 }
 
 .skyward-journey-row {
@@ -99,22 +252,6 @@
   display: flex;
   justify-content: center;
   width: 100%;
-}
-
-.skyward-journey-row--lane-0 .skyward-journey-track {
-  transform: translateX(0);
-}
-
-.skyward-journey-row--lane-1 .skyward-journey-track {
-  transform: translateX(var(--skyward-shift));
-}
-
-.skyward-journey-row--lane-2 .skyward-journey-track {
-  transform: translateX(0);
-}
-
-.skyward-journey-row--lane-3 .skyward-journey-track {
-  transform: translateX(calc(-1 * var(--skyward-shift)));
 }
 
 .skyward-journey-node-shell {
@@ -150,10 +287,10 @@
 
 .skyward-journey-node {
   position: relative;
-  width: 56px;
-  height: 56px;
-  min-width: 48px;
-  min-height: 48px;
+  width: 52px;
+  height: 52px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: 999px;
   border: 3px solid rgba(15, 68, 98, 0.35);
   background: linear-gradient(160deg, #ffffff 0%, #f4f7f5 100%);
@@ -163,30 +300,37 @@
   justify-content: center;
   cursor: pointer;
   padding: 0;
+  font-size: 15px;
+  letter-spacing: 1.5px;
+  color: #0b3954;
+  transform: translateX(var(--skyward-node-offset, 0%));
   transition:
-    transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.2s ease,
+    transform 0.3s ease,
+    box-shadow 0.3s ease,
     filter 0.2s ease;
 }
 
 /* Boss / milestone — 1.5× footprint */
 .skyward-journey-node--milestone {
-  width: 84px;
-  height: 84px;
-  min-width: 72px;
-  min-height: 72px;
+  width: 76px;
+  height: 76px;
+  min-width: 64px;
+  min-height: 64px;
   border-width: 4px;
   border-color: #c9a227;
   background: linear-gradient(165deg, #fff9e6 0%, #ffe8a8 45%, #f5d978 100%);
   box-shadow:
+    #b8941f 0px 10px 0px 0px,
     0 0 0 2px rgba(201, 162, 39, 0.35),
     0 12px 28px rgba(120, 90, 20, 0.22);
 }
 
 .skyward-journey-node--milestone.skyward-journey-node--completed {
   border-color: #5a7863;
-  background: linear-gradient(160deg, #e8f2ea 0%, #d5e5d9 100%);
-  box-shadow: 0 10px 24px rgba(20, 60, 40, 0.18);
+  background: #228b22;
+  box-shadow:
+    #5a7863 0px 10px 0px 0px,
+    0 10px 24px rgba(20, 60, 40, 0.18);
 }
 
 .skyward-journey-node--milestone.skyward-journey-node--locked {
@@ -200,25 +344,53 @@
 }
 
 .skyward-journey-node--active {
-  border-color: #f18f01;
-  background: linear-gradient(160deg, #fff7e8 0%, #ffe8c4 100%);
+  border-color: #2d5a27;
+  background: #2d5a27;
+  color: #ffffff;
   box-shadow:
-    0 0 0 4px rgba(241, 143, 1, 0.28),
-    0 12px 28px rgba(241, 143, 1, 0.3);
+    #1a3b16 0px 10px 0px 0px,
+    0 0 0 4px rgba(45, 90, 39, 0.28),
+    0 12px 28px rgba(45, 90, 39, 0.3);
+}
+
+/* 3D lip: hover shortens shadow + moves down slightly; active presses flush */
+.skyward-journey-node--active.skyward-journey-node--unlocked:hover:not(:active) {
+  box-shadow:
+    #1a3b16 0px 7px 0px 0px,
+    0 0 0 4px rgba(45, 90, 39, 0.22),
+    0 12px 28px rgba(45, 90, 39, 0.25);
+  transform: translateX(var(--skyward-node-offset, 0%)) translateY(3px);
+}
+
+.skyward-journey-node--active:active:not(:disabled) {
+  box-shadow:
+    #1a3b16 0px 0px 0px 0px,
+    0 0 0 4px rgba(45, 90, 39, 0.28);
+  transform: translateX(var(--skyward-node-offset, 0%)) translateY(10px);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .skyward-journey-node--active.skyward-journey-node--milestone {
   border-color: #e6a800;
   box-shadow:
+    #1a3b16 0px 10px 0px 0px,
     0 0 0 4px rgba(230, 168, 0, 0.35),
     0 14px 32px rgba(180, 120, 0, 0.35);
+}
+
+.skyward-journey-node--active.skyward-journey-node--milestone:hover:not(:active) {
+  box-shadow:
+    #1a3b16 0px 7px 0px 0px,
+    0 0 0 4px rgba(230, 168, 0, 0.3),
+    0 14px 32px rgba(180, 120, 0, 0.3);
+  transform: translateX(var(--skyward-node-offset, 0%)) translateY(3px);
 }
 
 .skyward-journey-node--pulse .skyward-journey-node-ring {
   position: absolute;
   inset: -8px;
   border-radius: inherit;
-  border: 3px solid rgba(241, 143, 1, 0.55);
+  border: 3px solid rgba(45, 90, 39, 0.55);
   animation: skyward-node-pulse-ring 1.6s ease-in-out infinite;
   pointer-events: none;
 }
@@ -247,36 +419,27 @@
 @keyframes skyward-node-float {
   0%,
   100% {
-    transform: translateY(0);
+    transform: translateX(var(--skyward-node-offset, 0%)) translateY(0);
   }
   50% {
-    transform: translateY(-8px);
+    transform: translateX(var(--skyward-node-offset, 0%)) translateY(-8px);
   }
 }
 
-.skyward-journey-node--unlocked:hover {
-  transform: scale(1.08);
-  box-shadow:
-    0 0 0 5px rgba(241, 143, 1, 0.22),
-    0 16px 36px rgba(11, 57, 84, 0.14);
-}
-
-.skyward-journey-node--active.skyward-journey-node--float:hover {
+.skyward-journey-node--active.skyward-journey-node--float:hover:not(:active) {
   animation: none;
-  transform: scale(1.08) translateY(-6px);
+  box-shadow:
+    #cd8b76 0px 7px 0px 0px,
+    0 0 0 4px rgba(241, 143, 1, 0.22),
+    0 12px 28px rgba(241, 143, 1, 0.25);
+  transform: translateX(var(--skyward-node-offset, 0%)) translateY(3px);
 }
 
-.skyward-journey-node--completed.skyward-journey-node--unlocked:hover {
-  transform: scale(1.08);
-  box-shadow: 0 14px 32px rgba(20, 60, 40, 0.2);
-}
-
-.skyward-journey-node--milestone.skyward-journey-node--unlocked:hover {
-  transform: scale(1.06);
-}
-
-.skyward-journey-node--milestone.skyward-journey-node--active.skyward-journey-node--float:hover {
-  transform: scale(1.06) translateY(-6px);
+.skyward-journey-node--completed.skyward-journey-node--unlocked:hover:not(:active) {
+  box-shadow:
+    #5a7863 0px 7px 0px 0px,
+    0 8px 20px rgba(11, 57, 84, 0.12);
+  transform: translateX(var(--skyward-node-offset, 0%)) translateY(3px);
 }
 
 .skyward-journey-node--jiggle {
@@ -286,39 +449,65 @@
 @keyframes skyward-node-jiggle {
   0%,
   100% {
-    transform: translateX(0) rotate(0deg);
+    transform: translateX(var(--skyward-node-offset, 0%)) rotate(0deg);
   }
   20% {
-    transform: translateX(-6px) rotate(-4deg);
+    transform: translateX(calc(var(--skyward-node-offset, 0%) - 6px)) rotate(-4deg);
   }
   40% {
-    transform: translateX(6px) rotate(4deg);
+    transform: translateX(calc(var(--skyward-node-offset, 0%) + 6px)) rotate(4deg);
   }
   60% {
-    transform: translateX(-4px) rotate(-2deg);
+    transform: translateX(calc(var(--skyward-node-offset, 0%) - 4px)) rotate(-2deg);
   }
   80% {
-    transform: translateX(4px) rotate(2deg);
+    transform: translateX(calc(var(--skyward-node-offset, 0%) + 4px)) rotate(2deg);
   }
 }
 
 .skyward-journey-node--completed {
   border-color: #5a7863;
-  background: linear-gradient(160deg, #e8f2ea 0%, #d5e5d9 100%);
+  background: #228b22;
+  color: #ffffff;
+  box-shadow:
+    #5a7863 0px 10px 0px 0px,
+    0 8px 20px rgba(11, 57, 84, 0.12);
+}
+
+.skyward-journey-node--completed:active:not(:disabled) {
+  box-shadow:
+    #5a7863 0px 0px 0px 0px;
+  transform: translateX(var(--skyward-node-offset, 0%)) translateY(10px);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .skyward-journey-node--locked {
   border-color: rgba(113, 113, 122, 0.55);
-  background: linear-gradient(160deg, #f4f4f5 0%, #e4e4e7 100%);
+  background: #f5f5f5;
+  color: #a1a1aa;
+  box-shadow:
+    #d5d5d5 0px 10px 0px 0px,
+    0 8px 20px rgba(11, 57, 84, 0.12);
 }
 
 .skyward-journey-node--locked.skyward-journey-node--locked-teaser {
-  filter: grayscale(0.42) saturate(0.72);
-  opacity: 0.92;
+  filter: none;
+  opacity: 1;
 }
 
-.skyward-journey-node--locked:hover {
-  transform: none;
+.skyward-journey-node--locked:hover:not(:active) {
+  box-shadow:
+    #d5d5d5 0px 7px 0px 0px,
+    0 8px 20px rgba(11, 57, 84, 0.12);
+  transform: translateX(var(--skyward-node-offset, 0%)) translateY(3px);
+}
+
+.skyward-journey-node--locked:active:not(:disabled) {
+  box-shadow:
+    #d5d5d5 0px 0px 0px 0px,
+    0 8px 20px rgba(11, 57, 84, 0.1);
+  transform: translateX(var(--skyward-node-offset, 0%)) translateY(10px);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .skyward-journey-node-icon {
@@ -333,7 +522,7 @@
 }
 
 .skyward-journey-node--active .skyward-journey-node-icon {
-  color: #c45f00;
+  color: #ffffff;
 }
 
 .skyward-journey-node--completed .skyward-journey-node-icon {
@@ -341,7 +530,7 @@
 }
 
 .skyward-journey-node--locked .skyward-journey-node-icon {
-  color: #71717a;
+  color: #8a8a8a;
 }
 
 .skyward-journey-node-state-icon {
@@ -404,7 +593,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0.42;
+  opacity: 1;
 }
 
 .skyward-journey-node-icon--teaser {
@@ -786,7 +975,7 @@
 }
 
 [data-theme='dark'] .skyward-journey-node {
-  background: linear-gradient(160deg, #2a2a2e 0%, #1f1f23 100%);
+  background: #2a2a2e;
   border-color: rgba(255, 255, 255, 0.12);
 }
 
@@ -795,18 +984,18 @@
 }
 
 [data-theme='dark'] .skyward-journey-node--active {
-  background: linear-gradient(160deg, #3a2a14 0%, #2a1f0a 100%);
+  background: #f18f01;
   border-color: #f59b00;
 }
 
 [data-theme='dark'] .skyward-journey-node--completed {
-  background: linear-gradient(160deg, #1e2e22 0%, #162419 100%);
+  background: #228b22;
   border-color: #5a7863;
 }
 
 [data-theme='dark'] .skyward-journey-node--locked {
-  background: #27272a;
-  border-color: #3f3f46;
+  background: #3f3f46;
+  border-color: #52525b;
 }
 
 [data-theme='dark'] .level-label__title {
@@ -818,7 +1007,7 @@
 }
 
 [data-theme='dark'] .skyward-journey-node--milestone {
-  background: linear-gradient(165deg, #3a3218 0%, #2a2210 100%);
+  background: #c9a227;
   border-color: #a88a20;
 }
 

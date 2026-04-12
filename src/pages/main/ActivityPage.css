@@ -1,17 +1,66 @@
+#root, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
 .activity-page {
   width: 100%;
   max-width: none;
   margin: 0;
-  padding: var(--responsive-page-padding);
-  background: #FFFFFF;
+  padding: 0; /* Removed padding to let map span full width/height */
+  background: #ffffff;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
   min-height: 100vh;
-  height: 100vh;
+  height: auto;
   box-sizing: border-box;
-  overflow: hidden;
-  overflow-x: hidden;
+  overflow-x: visible;
+  overflow-y: visible;
+}
+
+.activity-content-wrap--journey-scroll {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.activity-content-wrap--journey-scroll .activity-task-list--journey {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+.activity-page--skyward-entrance {
+  opacity: 0;
+  animation: activityPageSkywardEnter 0.75s cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
+}
+
+@keyframes activityPageSkywardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .activity-page--skyward-entrance {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .activity-content-wrap {
@@ -21,6 +70,8 @@
 }
 
 .main-content {
+  height: 100vh;
+  overflow-y: auto;
   background: #FFFFFF;
 }
 
@@ -134,7 +185,7 @@ body.skyward-journey-modal-open .activity-sticky-shell {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: visible;
   display: grid;
   grid-template-columns: repeat(1, 1fr);
   grid-template-rows: repeat(5, 1fr);
@@ -152,6 +203,8 @@ body.skyward-journey-modal-open .activity-sticky-shell {
   flex-direction: column;
   grid-template-rows: none;
   gap: 16px;
+  overflow-x: visible;
+  overflow-y: visible;
 }
 
 .activity-task-list::-webkit-scrollbar {

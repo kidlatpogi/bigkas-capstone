@@ -38,11 +38,6 @@ export function getNodeStateForTask(taskId, taskState, taskUnlockState, activeTa
   return taskId === activeTaskId ? NODE_STATE.ACTIVE : NODE_STATE.LOCKED;
 }
 
-/** Every 5th step (1-based: 5, 10, 15…) is a milestone / boss node. */
-export function isMilestoneStep(zeroBasedIndex) {
-  return (zeroBasedIndex + 1) % 5 === 0;
-}
-
 /** Every 4 steps form a unit; titles cycle for deeper journeys. */
 export const JOURNEY_UNIT_TITLES = ['BASICS', 'FLOW', 'EXPRESSION', 'MASTERY'];
 

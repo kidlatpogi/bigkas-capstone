@@ -6,7 +6,7 @@ import { ROUTES } from '../../utils/constants';
 import BackButton from '../../components/common/BackButton';
 import Button from '../../components/common/Button';
 import PasswordToggle from '../../components/common/PasswordToggle';
-import Grainient from './Grainient';
+import PushButton from '../../components/common/PushButton';
 import './ForgotPasswordPage.css';
 
 const OTP_LENGTH = 6;
@@ -315,35 +315,9 @@ function ForgotPasswordPage() {
 
   return (
     <div className="auth-page">
-      <div className="auth-grainient-bg" aria-hidden="true">
-        <Grainient
-          color1="#5a7863"
-          color2="#0b3954"
-          color3="#3c4952"
-          timeSpeed={0.25}
-          colorBalance={0.05}
-          warpStrength={1}
-          warpFrequency={2}
-          warpSpeed={2.5}
-          warpAmplitude={50}
-          blendAngle={-25}
-          blendSoftness={0.05}
-          rotationAmount={500}
-          noiseScale={2}
-          grainAmount={0.1}
-          grainScale={2}
-          grainAnimated
-          contrast={1.5}
-          gamma={1}
-          saturation={1}
-          centerX={0}
-          centerY={0}
-          zoom={0.9}
-        />
-      </div>
       {/* ── Left branding panel ── */}
       <div className="auth-brand-panel">
-        <BackButton className="auth-mobile-back" onClick={() => navigate(ROUTES.HOME, { state: { skipLoader: true } })} />
+        <BackButton className="auth-mobile-back" />
 
         <div className="auth-brand-content">
           <h1 className="auth-brand-name">BIGKAS</h1>
@@ -369,7 +343,7 @@ function ForgotPasswordPage() {
 
       {/* ── Right form panel ── */}
       <div className="auth-form-panel">
-        <div className="auth-form-container">
+        <div className="auth-form-container floating-card">
           <h2 className="auth-form-title forgot-password-title">FORGOT PASSWORD</h2>
 
           {isDoneStep ? (
@@ -387,13 +361,15 @@ function ForgotPasswordPage() {
               </p>
               <p className="forgot-success-note">You can now log in using your new password.</p>
 
-              <Button
+              <PushButton
                 type="button"
-                className="auth-submit-btn"
                 onClick={handleBackToLogin}
+                bgColor="#ffffff"
+                shadowColor="#d5d5d5"
+                textColor="#333333"
               >
                 BACK TO LOG IN
-              </Button>
+              </PushButton>
             </div>
           ) : (
             <>
@@ -522,16 +498,17 @@ function ForgotPasswordPage() {
                   </>
                 )}
 
-                <Button
+                <PushButton
                   type="submit"
-                  className={`auth-submit-btn${isVerifyStep || isResetStep ? ' auth-submit-btn--verify' : ''}`}
                   disabled={isLoading || (isVerifyStep && digits.some((d) => !d))}
-                  isLoading={isLoading}
+                  bgColor="#2d5a27"
+                  shadowColor="#1a3b16"
+                  textColor="#ffffff"
                 >
                   {isRequestStep && 'SEND CODE'}
                   {isVerifyStep && 'VERIFY CODE'}
                   {isResetStep && 'RESET PASSWORD'}
-                </Button>
+                </PushButton>
               </form>
 
               {isVerifyStep && (

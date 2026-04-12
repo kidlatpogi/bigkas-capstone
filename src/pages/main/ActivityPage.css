@@ -3,7 +3,7 @@
   max-width: none;
   margin: 0;
   padding: var(--responsive-page-padding);
-  background: #FFFFFF;
+  background: linear-gradient(to top, #F9F9F9, #E0F2FE);
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -21,14 +21,16 @@
 }
 
 .main-content {
-  background: #FFFFFF;
+  background: transparent;
 }
 
 .activity-sticky-shell {
   position: sticky;
   top: 0;
   z-index: 40;
-  background: #FFFFFF !important;
+  background: rgba(224, 242, 254, 0.85) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   padding-bottom: 0.25rem;
   border-bottom: 1px solid rgba(11, 57, 84, 0.08);
   transition: filter 0.2s ease;
@@ -416,6 +418,14 @@ body.skyward-journey-modal-open .activity-sticky-shell {
   position: relative;
   z-index: 1;
   font-weight: 800;
+}
+
+[data-theme='dark'] .activity-page {
+  background: linear-gradient(to top, #1a1a1d, #0f172a);
+}
+
+[data-theme='dark'] .activity-sticky-shell {
+  background: rgba(15, 23, 42, 0.85) !important;
 }
 
 .activity-task-actions .activity-action-btn {

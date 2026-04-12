@@ -621,6 +621,18 @@ export default function SkywardJourney({ steps, renderStepContent }) {
             transform: `translate(${map.tx}px, ${map.ty}px) scale(${isExploring ? EXPLORE_SCALE : FOCUS_SCALE})`,
           }}
         >
+          <div className="skyward-journey-atmosphere" aria-hidden="true">
+            <div className="skyward-journey-blob skyward-journey-blob--1" />
+            <div className="skyward-journey-blob skyward-journey-blob--2" />
+            <div className="skyward-journey-blob skyward-journey-blob--3" />
+            
+            <IoMic className="skyward-journey-floating-icon" style={{ top: '5%', left: '15%', fontSize: '5rem', transform: 'rotate(-15deg)' }} />
+            <IoPulse className="skyward-journey-floating-icon" style={{ top: '25%', right: '10%', fontSize: '7rem', transform: 'rotate(25deg)' }} />
+            <IoVolumeHigh className="skyward-journey-floating-icon" style={{ top: '45%', left: '8%', fontSize: '6rem', transform: 'rotate(-10deg)' }} />
+            <IoMic className="skyward-journey-floating-icon" style={{ top: '65%', right: '18%', fontSize: '4.5rem', transform: 'rotate(15deg)' }} />
+            <IoPulse className="skyward-journey-floating-icon" style={{ top: '85%', left: '20%', fontSize: '6.5rem', transform: 'rotate(-25deg)' }} />
+          </div>
+
           <div className="skyward-journey-map-content" ref={mapContentRef}>
             {pathPoints.length > 1 ? (
               <svg className="skyward-journey-svg" aria-hidden shapeRendering="geometricPrecision">

@@ -41,3 +41,6 @@ next-env.d.ts
 
 # HG Folder
 /Capstone-Bigkas-Backend
+
+# Supabase Folder
+/supabase

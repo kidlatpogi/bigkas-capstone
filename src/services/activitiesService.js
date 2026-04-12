@@ -7,7 +7,7 @@ import { ROUTES } from '../utils/constants';
 export async function fetchActivities() {
   const { data, error } = await supabase
     .from('activities')
-    .select('id, target_level, activity_order, phase_name, pillar_name, objective, weight_vis, weight_voc, weight_ver, created_at')
+    .select('id, target_level, activity_order, pillar_name, objective, weight_vis, weight_voc, weight_ver, created_at')
     .order('activity_order', { ascending: true });
 
   if (error) {
@@ -22,17 +22,16 @@ export async function fetchActivities() {
 export function buildJourneyTasksFromActivities(rows) {
   const list = Array.isArray(rows) ? rows : [];
   return list.map((row, index) => {
-    const phase = String(row.phase_name || '').trim();
-    const pillarName = String(row.pillar_name || row.phase_name || '').trim();
+    const pillarName = String(row.pillar_name || '').trim();
     const objective = String(row.objective || '').trim() || `Activity ${row.activity_order ?? index + 1}`;
     const detailParts = [
-      phase,
+      pillarName,
       row.target_level != null ? `Target level ${row.target_level}` : null,
     ].filter(Boolean);
     return {
       id: row.id,
       title: objective,
-      pillarName: pillarName || phase || 'Training',
+      pillarName: pillarName || 'Training',
       detail: detailParts.length ? detailParts.join(' · ') : objective,
       actionLabel: 'Start training',
       actionRoute: ROUTES.TRAINING_SETUP,

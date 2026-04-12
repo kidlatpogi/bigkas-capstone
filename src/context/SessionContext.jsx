@@ -626,6 +626,8 @@ export function SessionProvider({ children }) {
           ? profilingAnswers
           : ['No', 'No', 'No', 'No', 'No', 'No', 'No', 'No', 'No']
       ));
+      formData.append('session_origin', String(scriptType || 'training').trim() || 'training');
+      formData.append('speaking_mode', String(speakingMode || '').trim());
 
       const res = await fetch(`${apiUrl}/api/analyze-speech`, {
         method: 'POST',
@@ -693,77 +695,120 @@ export function SessionProvider({ children }) {
         throw new Error('Session persistence is disabled. Enable database persistence to save sessions.');
       }
 
-      const sessionRow = {
-        user_id: uid,
-        status: 'completed',
-        difficulty: null,
-        session_mode: normalizedSpeakingMode || null,
-        session_origin: normalizedSessionOrigin || 'training',
-        speaking_mode: normalizedSpeakingMode || null,
-        source: 'web',
-        duration: toInt(analysisResult.duration_sec, 0),
-      };
+      /** FastAPI already inserted sessions + metrics + feedback; only attach media + origin fields. */
+      const backendSessionId = analysisResult.session_id;
 
-      const { data: saved, error: saveErr } = await supabase
-        .from('sessions')
-        .insert(sessionRow)
-        .select('id')
-        .single();
+      let sessionId;
 
-      if (saveErr || !saved?.id) {
-        if (isSessionsTableMissing(saveErr)) {
-          throw new Error('Supabase table "sessions" is missing. Create it in your Supabase project to persist data.');
+      if (backendSessionId) {
+        sessionId = backendSessionId;
+        const { error: sessionUpdateErr } = await supabase
+          .from('sessions')
+          .update({
+            session_origin: normalizedSessionOrigin || 'training',
+            speaking_mode: normalizedSpeakingMode || null,
+            session_mode: normalizedSpeakingMode || null,
+            duration: toInt(analysisResult.duration_sec, 0),
+          })
+          .eq('id', sessionId)
+          .eq('user_id', uid);
+
+        if (sessionUpdateErr) {
+          throw new Error(sessionUpdateErr.message || 'Failed to update session after analysis.');
         }
-        throw new Error(saveErr.message || 'Failed to save session to Supabase.');
-      }
 
-      const sessionId = saved.id;
-      const transcript = analysisResult.transcript ?? '';
-
-      const mediaRow = {
-        session_id: sessionId,
-        audio_url: audioStorageUrl,
-        transcript,
-      };
-      const metricsRow = {
-        session_id: sessionId,
-        overall_score: toNumeric(analysisResult.confidence_score, 0),
-        verbal_score: analysisResult.context_score == null ? 0 : toNumeric(analysisResult.context_score, 0),
-        fluency_score: toNumeric(analysisResult.fluency_score, 0),
-        vocal_score: toNumeric(analysisResult.acoustic_score, 0),
-        pronunciation_score: analysisResult.pronunciation_score == null ? 0 : toNumeric(analysisResult.pronunciation_score, 0),
-        jitter: analysisResult.jitter_score == null ? null : toNumeric(analysisResult.jitter_score, 0),
-        shimmer: analysisResult.shimmer_score == null ? null : toNumeric(analysisResult.shimmer_score, 0),
-        visual_score: analysisResult.visual_score == null ? 0 : toNumeric(analysisResult.visual_score, 0),
-        facial_expression_score: analysisResult.facial_expression_score == null ? null : toNumeric(analysisResult.facial_expression_score, 0),
-        gesture_score: analysisResult.gesture_score == null ? null : toNumeric(analysisResult.gesture_score, 0),
-        confidence_score: toNumeric(analysisResult.confidence_score, 0),
-      };
-      const feedbackRow = {
-        session_id: sessionId,
-        general_feedback: analysisResult.summary ?? '',
-        detailed_feedback: analysisResult.detailed_feedback ?? analysisResult.summary ?? '',
-      };
-
-      const { error: mediaErr } = await supabase.from('session_media').upsert(mediaRow);
-      if (mediaErr) throw new Error(mediaErr.message || 'Failed to save session media.');
-      const { error: metricsErr } = await supabase.from('session_metrics').upsert(metricsRow);
-      if (metricsErr) throw new Error(metricsErr.message || 'Failed to save session metrics.');
-      const { error: feedbackErr } = await supabase.from('session_feedback').upsert(feedbackRow);
-      if (feedbackErr) throw new Error(feedbackErr.message || 'Failed to save session feedback.');
-
-      const recommendations = Array.isArray(analysisResult.recommendations)
-        ? analysisResult.recommendations.filter((text) => String(text || '').trim())
-        : [];
-      if (recommendations.length > 0) {
-        const recommendationRows = recommendations.map((text) => ({
+        const transcript = analysisResult.transcript ?? '';
+        const mediaRow = {
           session_id: sessionId,
-          recommendation_text: String(text).trim(),
-        }));
-        const { error: recommendationErr } = await supabase
-          .from('session_recommendations')
-          .insert(recommendationRows);
-        if (recommendationErr) throw new Error(recommendationErr.message || 'Failed to save recommendations.');
+          audio_url: audioStorageUrl,
+          transcript,
+        };
+        // Backend already inserted session_media; update avoids upsert INSERT path (stricter RLS).
+        const { data: mediaUpdated, error: mediaUpdateErr } = await supabase
+          .from('session_media')
+          .update({ audio_url: audioStorageUrl, transcript })
+          .eq('session_id', sessionId)
+          .select('session_id');
+        if (mediaUpdateErr) {
+          throw new Error(mediaUpdateErr.message || 'Failed to save session media.');
+        }
+        if (!mediaUpdated?.length) {
+          const { error: mediaInsertErr } = await supabase.from('session_media').insert(mediaRow);
+          if (mediaInsertErr) throw new Error(mediaInsertErr.message || 'Failed to save session media.');
+        }
+      } else {
+        const sessionRow = {
+          user_id: uid,
+          status: 'completed',
+          difficulty: null,
+          session_mode: normalizedSpeakingMode || null,
+          session_origin: normalizedSessionOrigin || 'training',
+          speaking_mode: normalizedSpeakingMode || null,
+          source: 'web',
+          duration: toInt(analysisResult.duration_sec, 0),
+        };
+
+        const { data: saved, error: saveErr } = await supabase
+          .from('sessions')
+          .insert(sessionRow)
+          .select('id')
+          .single();
+
+        if (saveErr || !saved?.id) {
+          if (isSessionsTableMissing(saveErr)) {
+            throw new Error('Supabase table "sessions" is missing. Create it in your Supabase project to persist data.');
+          }
+          throw new Error(saveErr.message || 'Failed to save session to Supabase.');
+        }
+
+        sessionId = saved.id;
+        const transcript = analysisResult.transcript ?? '';
+
+        const mediaRow = {
+          session_id: sessionId,
+          audio_url: audioStorageUrl,
+          transcript,
+        };
+        const metricsRow = {
+          session_id: sessionId,
+          overall_score: toNumeric(analysisResult.confidence_score, 0),
+          verbal_score: analysisResult.context_score == null ? 0 : toNumeric(analysisResult.context_score, 0),
+          fluency_score: toNumeric(analysisResult.fluency_score, 0),
+          vocal_score: toNumeric(analysisResult.acoustic_score, 0),
+          pronunciation_score: analysisResult.pronunciation_score == null ? 0 : toNumeric(analysisResult.pronunciation_score, 0),
+          jitter: analysisResult.jitter_score == null ? null : toNumeric(analysisResult.jitter_score, 0),
+          shimmer: analysisResult.shimmer_score == null ? null : toNumeric(analysisResult.shimmer_score, 0),
+          visual_score: analysisResult.visual_score == null ? 0 : toNumeric(analysisResult.visual_score, 0),
+          facial_expression_score: analysisResult.facial_expression_score == null ? null : toNumeric(analysisResult.facial_expression_score, 0),
+          gesture_score: analysisResult.gesture_score == null ? null : toNumeric(analysisResult.gesture_score, 0),
+          confidence_score: toNumeric(analysisResult.confidence_score, 0),
+        };
+        const feedbackRow = {
+          session_id: sessionId,
+          general_feedback: analysisResult.summary ?? '',
+          detailed_feedback: analysisResult.detailed_feedback ?? analysisResult.summary ?? '',
+        };
+
+        const { error: mediaErr } = await supabase.from('session_media').upsert(mediaRow);
+        if (mediaErr) throw new Error(mediaErr.message || 'Failed to save session media.');
+        const { error: metricsErr } = await supabase.from('session_metrics').upsert(metricsRow);
+        if (metricsErr) throw new Error(metricsErr.message || 'Failed to save session metrics.');
+        const { error: feedbackErr } = await supabase.from('session_feedback').upsert(feedbackRow);
+        if (feedbackErr) throw new Error(feedbackErr.message || 'Failed to save session feedback.');
+
+        const recommendations = Array.isArray(analysisResult.recommendations)
+          ? analysisResult.recommendations.filter((text) => String(text || '').trim())
+          : [];
+        if (recommendations.length > 0) {
+          const recommendationRows = recommendations.map((text) => ({
+            session_id: sessionId,
+            recommendation_text: String(text).trim(),
+          }));
+          const { error: recommendationErr } = await supabase
+            .from('session_recommendations')
+            .insert(recommendationRows);
+          if (recommendationErr) throw new Error(recommendationErr.message || 'Failed to save recommendations.');
+        }
       }
 
       const { data: persistedSession, error: persistedErr } = await supabase

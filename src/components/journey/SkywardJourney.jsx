@@ -25,9 +25,6 @@ const JOURNEY_ICONS = [IoMic, IoVolumeHigh, IoMusicalNote, IoPulse, IoShuffle, I
 const MAP_SCALE = 1.5;
 const MAP_EDGE_PAN_PADDING = 96;
 const HORIZONTAL_OFFSET_PATTERN = [0, 35, 65, 35, 0, -35, -65, -35];
-const PILLAR_TITLES = ['Vocal Clarity', 'Verbal Flow', 'Visual Presence', 'Stage Mastery'];
-const PILLAR_SECTION_SIZE = 2;
-
 function getHorizontalOffset(index) {
   return HORIZONTAL_OFFSET_PATTERN[((index % HORIZONTAL_OFFSET_PATTERN.length) + HORIZONTAL_OFFSET_PATTERN.length) % HORIZONTAL_OFFSET_PATTERN.length];
 }
@@ -48,11 +45,18 @@ function clampMapState(state, viewportEl, contentEl, scale) {
   if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return state;
 
   const horizontalPadding = Math.max(MAP_EDGE_PAN_PADDING * 0.4, W * 0.08);
-  const verticalPadding = 20; // Tighten vertical padding to prevent excessive scroll
+  /** Keep the map from being panned completely off-screen (vertical). */
   const minX = Math.min(0, W - w) - horizontalPadding;
   const maxX = Math.max(0, W - w) + horizontalPadding;
-  const minY = Math.min(0, H - h) - verticalPadding;
-  const maxY = Math.max(0, H - h) + verticalPadding;
+  let minY;
+  let maxY;
+  if (h > H) {
+    minY = H - h;
+    maxY = 0;
+  } else {
+    minY = Math.min(0, H - h);
+    maxY = Math.max(0, H - h);
+  }
 
   return {
     tx: Math.min(maxX, Math.max(minX, tx)),
@@ -333,7 +337,13 @@ export const JourneyTooltip = ({ step, onStart, onClose, nodeRef, forceBottom = 
           <TooltipDescription $nodeState={step.nodeState}>
             {isLocked
               ? 'Finish previous stages to unlock!'
-              : `Stage ${step.id.split('-').pop() || '1'} of 6`}
+              : (() => {
+                  const n = Number(step.stageNumber);
+                  const total = Number(step.totalStages);
+                  const safeTotal = Number.isFinite(total) && total > 0 ? total : 1;
+                  const safeN = Number.isFinite(n) && n > 0 ? n : 1;
+                  return `Stage ${safeN} of ${safeTotal}`;
+                })()}
           </TooltipDescription>
           <TooltipStartButton
             $nodeState={step.nodeState}
@@ -357,7 +367,22 @@ export const JourneyTooltip = ({ step, onStart, onClose, nodeRef, forceBottom = 
   return createPortal(bubble, document.body);
 };
 
-export default function SkywardJourney({ steps, renderStepContent, entranceFromNav = false }) {
+function getStepPillarTitle(step) {
+  const raw =
+    step?.task?.pillarName ??
+    step?.pillarName ??
+    step?.task?.phase_name ??
+    '';
+  const s = String(raw).trim();
+  return s || 'Training';
+}
+
+export default function SkywardJourney({
+  steps,
+  renderStepContent,
+  entranceFromNav = false,
+  scrollToStepIndex = null,
+}) {
   const gradId = useId().replace(/:/g, '');
   const flowGradId = useId().replace(/:/g, '');
   const rootRef = useRef(null);
@@ -495,16 +520,19 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
     return () => cancelAnimationFrame(id);
   }, [map.tx, map.ty, recomputePath]);
 
-  /** Hero focus: keep map centered and scroll current active stage into view. */
+  /** Hero focus: scroll map / page so the target stage (dashboard handoff or active node) is in view. */
   useLayoutEffect(() => {
-    if (activeIndex < 0) return undefined;
-    const el = nodeRefs.current[activeIndex];
+    const targetIndex =
+      scrollToStepIndex != null && scrollToStepIndex >= 0 ? scrollToStepIndex : activeIndex;
+    if (targetIndex < 0) return undefined;
+    const el = nodeRefs.current[targetIndex];
     if (!el) return undefined;
 
     const raf = requestAnimationFrame(() => setMap({ tx: 0, ty: 0 }));
 
     const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const delay = entranceFromNav ? 160 : 80;
+    const fromDashboard = scrollToStepIndex != null && scrollToStepIndex >= 0;
+    const delay = entranceFromNav || fromDashboard ? 200 : 80;
     const t = window.setTimeout(() => {
       el.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth', inline: 'nearest' });
     }, delay);
@@ -513,7 +541,7 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
       cancelAnimationFrame(raf);
       window.clearTimeout(t);
     };
-  }, [activeIndex, entranceFromNav]);
+  }, [activeIndex, entranceFromNav, scrollToStepIndex]);
 
   /** Wheel pans map vertically while preserving current zoom scale. */
   useEffect(() => {
@@ -704,14 +732,15 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
 
   const sections = [];
   let currentSectionRows = [];
-  let currentSectionKey = 0;
+  let sectionPillarTitle = null;
+  let pillarSectionIndex = 0;
 
-  const pushCurrentSection = () => {
+  const flushPillarSection = () => {
     if (!currentSectionRows.length) return;
-    const pillarTitle = PILLAR_TITLES[currentSectionKey % PILLAR_TITLES.length];
-    const sectionTitle = `Pillar ${currentSectionKey + 1}: ${pillarTitle}`;
+    const sectionTitle = `Pillar ${pillarSectionIndex + 1}: ${sectionPillarTitle || 'Training'}`;
+    pillarSectionIndex += 1;
     sections.push(
-      <section key={`pillar-section-${currentSectionKey}`} className="skyward-journey-section">
+      <section key={`pillar-section-${sectionTitle}-${pillarSectionIndex}`} className="skyward-journey-section">
         <div className="skyward-journey-section-rows">{currentSectionRows}</div>
         <div className="skyward-journey-section-header" role="presentation">
           <span className="skyward-journey-section-line" aria-hidden />
@@ -721,10 +750,19 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
       </section>,
     );
     currentSectionRows = [];
-    currentSectionKey += 1;
   };
 
+  const totalStageCount = steps.length;
+
   steps.forEach((step, i) => {
+    const pillarTitle = getStepPillarTitle(step);
+    if (currentSectionRows.length && pillarTitle !== sectionPillarTitle) {
+      flushPillarSection();
+    }
+    if (currentSectionRows.length === 0) {
+      sectionPillarTitle = pillarTitle;
+    }
+
     const theme = JOURNEY_NODE_THEMES[i % JOURNEY_NODE_THEMES.length];
     const isActive = step.nodeState === NODE_STATE.ACTIVE;
     const isDone = step.nodeState === NODE_STATE.COMPLETED;
@@ -734,6 +772,12 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
     const jiggle = jiggleIndex === i;
     const horizontalOffset = getHorizontalOffset(i);
     const labelSide = horizontalOffset > 0 ? 'left' : 'right';
+    const stageNum = Number(step.stageNumber);
+    const stageTotal = Number(step.totalStages);
+    const safeStageTotal =
+      Number.isFinite(stageTotal) && stageTotal > 0 ? stageTotal : totalStageCount;
+    const safeStageNum =
+      Number.isFinite(stageNum) && stageNum > 0 ? stageNum : i + 1;
 
     currentSectionRows.push(
       <div
@@ -804,10 +848,12 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
                 aria-hidden
               >
                 <span className="level-label__title">
-                  {milestone ? 'Summit' : theme.shortLabel}
+                  {milestone ? 'Summit' : pillarTitle}
                 </span>
                 <span className="level-label__stage">
-                  {milestone ? `Boss · Stage ${i + 1}` : `Stage ${i + 1}`}
+                  {milestone
+                    ? `Boss · Stage ${safeStageNum} of ${safeStageTotal}`
+                    : `Stage ${safeStageNum} of ${safeStageTotal}`}
                 </span>
               </div>
             </div>
@@ -816,12 +862,8 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
         </div>
       </div>,
     );
-
-    if ((i + 1) % PILLAR_SECTION_SIZE === 0) {
-      pushCurrentSection();
-    }
   });
-  pushCurrentSection();
+  flushPillarSection();
 
   return (
     <div className="skyward-journey skyward-journey-container skyward-journey-anim-root no-scrollbar" ref={rootRef}>

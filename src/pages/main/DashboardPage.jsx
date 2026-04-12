@@ -449,7 +449,11 @@ export default function DashboardPage() {
                 <Button
                   variant="ghost"
                   className="dashboard-objective-action"
-                  onClick={() => navigate(currentActiveTask.actionRoute)}
+                  onClick={() =>
+                    navigate(ROUTES.ACTIVITY, {
+                      state: { focusCurrentStage: true, skywardEntrance: true },
+                    })
+                  }
                   icon={IoArrowForward}
                 >
                   Continue Journey

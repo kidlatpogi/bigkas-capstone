@@ -165,16 +165,38 @@ function ActivityPage() {
     });
   }, [navigate]);
 
+  const totalStages = tasks.length;
+
+  const scrollToStepIndex = useMemo(() => {
+    if (location.state?.focusCurrentStage !== true || !totalStages) return null;
+    const idx = tasks.findIndex((t) => t.id === activeTaskId);
+    return idx >= 0 ? idx : 0;
+  }, [location.state?.focusCurrentStage, tasks, activeTaskId, totalStages]);
+
+  useEffect(() => {
+    if (location.state?.focusCurrentStage !== true) return undefined;
+    const t = window.setTimeout(() => {
+      navigate(location.pathname, {
+        replace: true,
+        state: { ...(location.state || {}), focusCurrentStage: false },
+      });
+    }, 800);
+    return () => window.clearTimeout(t);
+  }, [location.pathname, location.state?.focusCurrentStage, navigate]);
+
   const journeySteps = useMemo(
     () =>
-      tasks.map((task) => ({
+      tasks.map((task, index) => ({
         id: task.id,
         task,
         title: task.title,
+        pillarName: task.pillarName,
+        stageNumber: index + 1,
+        totalStages,
         nodeState: getNodeStateForTask(task.id, taskState, taskUnlockState, activeTaskId),
         onActivate: () => handleTaskAction(task),
       })),
-    [tasks, taskState, taskUnlockState, activeTaskId, handleTaskAction],
+    [tasks, taskState, taskUnlockState, activeTaskId, handleTaskAction, totalStages],
   );
 
   const renderTaskCard = ({ task, historyEntry = null, animationClass = '' }) => {
@@ -279,11 +301,12 @@ function ActivityPage() {
 
   return (
     <div className="inner-page activity-page activity-page--skyward-entrance">
-      <div className="activity-content-wrap" style={{ height: '100%', display: 'flex', flexDirection: 'column', width: '100%', maxWidth: 'none', margin: 0, padding: 0 }}>
-        <div className={`activity-task-list activity-task-list--journey`} style={{ flex: 1, padding: 0, minHeight: 0, overflow: 'visible' }}>
+      <div className="activity-content-wrap activity-content-wrap--journey-scroll">
+        <div className="activity-task-list activity-task-list--journey">
           <SkywardJourney
             steps={journeySteps}
             entranceFromNav={entranceFromNav}
+            scrollToStepIndex={scrollToStepIndex}
             renderStepContent={(step, meta) =>
               renderTaskCard({
                 task: step.task,

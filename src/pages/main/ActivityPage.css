@@ -14,9 +14,29 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  height: 100vh;
+  height: auto;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+
+.activity-content-wrap--journey-scroll {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.activity-content-wrap--journey-scroll .activity-task-list--journey {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: visible;
 }
 
 .activity-page--skyward-entrance {

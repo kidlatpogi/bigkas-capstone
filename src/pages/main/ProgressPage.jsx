@@ -66,14 +66,6 @@ function getAdaptiveHistoryPages(pageCount, activePage) {
   return [0, 'start-ellipsis', ...trailingWindow];
 }
 
-function getMetricEffectivenessScore(metricKey, rawScore) {
-  const clamped = Math.max(0, Math.min(100, Number(rawScore) || 0));
-  if (metricKey === 'jitter' || metricKey === 'shimmer') {
-    return 100 - clamped;
-  }
-  return clamped;
-}
-
 function ProgressPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -148,7 +140,7 @@ function ProgressPage() {
     };
 
     syncProgressVisitReward();
-  }, [activityScopeKey, location.state, updateUserMetadata, user?.id, user?.speakerPoints]);
+  }, [activityScopeKey, location.state, updateUserMetadata, user?.id, user?.speakerPoints, user?.speakerPointsHistory]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -182,7 +174,7 @@ function ProgressPage() {
     if (hasRequestedForUserRef.current === userId) return;
     hasRequestedForUserRef.current = userId;
     fetchAllSessions();
-  }, [fetchAllSessions, isInitializing, user?.id]);
+  }, [fetchAllSessions, isInitializing, user]);
 
 
   const chartData = useMemo(() => {
@@ -395,28 +387,27 @@ function ProgressPage() {
     return filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }, [historyEndDate, historyFilter, historyStartDate, userSessions]);
 
-  useEffect(() => {
-    setHistoryPage(0);
-  }, [historyFilter, historyStartDate, historyEndDate, userSessions.length]);
-
   const historyPageCount = useMemo(
     () => Math.ceil(historySessions.length / historyPageSize),
     [historySessions.length, historyPageSize],
   );
 
+  const safeHistoryPage = Math.min(historyPage, Math.max(0, historyPageCount - 1));
+
   const paginatedHistorySessions = useMemo(() => {
-    const start = historyPage * historyPageSize;
+    const start = safeHistoryPage * historyPageSize;
     return historySessions.slice(start, start + historyPageSize);
-  }, [historyPage, historySessions, historyPageSize]);
+  }, [safeHistoryPage, historySessions, historyPageSize]);
+
   const adaptiveHistoryPages = useMemo(
-    () => getAdaptiveHistoryPages(historyPageCount, historyPage),
-    [historyPageCount, historyPage],
+    () => getAdaptiveHistoryPages(historyPageCount, safeHistoryPage),
+    [historyPageCount, safeHistoryPage],
   );
 
   const getSessionTitle = (s) => s?.script_title || s?.title || 'Session';
 
   return (
-    <div className="progress-page-bg">
+    <div className="progress-page-bg no-scrollbar" style={{ height: '100dvh', overflowY: 'auto' }}>
       <div className="progress-main-layout">
         <div className="progress-left-content">
           {/* Graph Card */}
@@ -532,7 +523,10 @@ function ProgressPage() {
                   <button 
                     key={f}
                     className={`history-filter-btn ${historyFilter === f ? 'active' : ''}`}
-                    onClick={() => setHistoryFilter(f)}
+                    onClick={() => {
+                      setHistoryFilter(f);
+                      setHistoryPage(0);
+                    }}
                   >
                     {f}
                   </button>
@@ -546,7 +540,10 @@ function ProgressPage() {
                     <input
                       type="date"
                       value={historyStartDate}
-                      onChange={(event) => setHistoryStartDate(event.target.value)}
+                      onChange={(event) => {
+                        setHistoryStartDate(event.target.value);
+                        setHistoryPage(0);
+                      }}
                     />
                   </label>
                   <label className="history-date-field">
@@ -554,7 +551,10 @@ function ProgressPage() {
                     <input
                       type="date"
                       value={historyEndDate}
-                      onChange={(event) => setHistoryEndDate(event.target.value)}
+                      onChange={(event) => {
+                        setHistoryEndDate(event.target.value);
+                        setHistoryPage(0);
+                      }}
                     />
                   </label>
                 </div>
@@ -608,12 +608,12 @@ function ProgressPage() {
             {!isLoading && historyPageCount > 1 && (
               <div className="history-pagination-shell">
                 <ul className="history-pagination" aria-label="History pagination">
-                  <li className={`history-pagination-page history-pagination-nav ${historyPage <= 0 ? 'disabled' : ''}`}>
+                  <li className={`history-pagination-page history-pagination-nav ${safeHistoryPage <= 0 ? 'disabled' : ''}`}>
                     <button
                       type="button"
                       className="history-pagination-link"
                       onClick={() => setHistoryPage((current) => Math.max(0, current - 1))}
-                      disabled={historyPage <= 0}
+                      disabled={safeHistoryPage <= 0}
                       aria-label="Previous history page"
                     >
                       <IoChevronBack aria-hidden="true" />
@@ -629,7 +629,7 @@ function ProgressPage() {
                       );
                     }
 
-                    const isActive = entry === historyPage;
+                    const isActive = entry === safeHistoryPage;
                     return (
                       <li key={`page-${entry}`} className={`history-pagination-page ${isActive ? 'active' : ''}`}>
                         <button
@@ -645,12 +645,12 @@ function ProgressPage() {
                     );
                   })}
 
-                  <li className={`history-pagination-page history-pagination-nav ${historyPage >= historyPageCount - 1 ? 'disabled' : ''}`}>
+                  <li className={`history-pagination-page history-pagination-nav ${safeHistoryPage >= historyPageCount - 1 ? 'disabled' : ''}`}>
                     <button
                       type="button"
                       className="history-pagination-link"
                       onClick={() => setHistoryPage((current) => Math.min(historyPageCount - 1, current + 1))}
-                      disabled={historyPage >= historyPageCount - 1}
+                      disabled={safeHistoryPage >= historyPageCount - 1}
                       aria-label="Next history page"
                     >
                       <IoChevronForward aria-hidden="true" />

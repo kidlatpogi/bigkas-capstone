@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import {
@@ -72,7 +72,9 @@ function getProgressiveTaskTemplate() {
 
 function ActivityPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuthContext();
+  const [entranceFromNav] = useState(() => location.state?.skywardEntrance === true);
   const scopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
   const tasks = useMemo(() => getProgressiveTaskTemplate(), []);
   const stampResetTimeoutRef = useRef(null);
@@ -329,74 +331,77 @@ function ActivityPage() {
 
   return (
     <div className="inner-page activity-page">
-      <div className="activity-sticky-shell">
-        <div className="page-card activity-hero-card dashboard-anim-top">
-          <p className="activity-kicker">SKYWARD JOURNEY</p>
-          <p className="activity-subtitle"><span className="activity-subtitle-highlight">Progressive speaking quest:</span> Climb the path in order—like a skill tree. Finished steps move to History automatically.</p>
+      <div className="activity-content-wrap">
+        <div className="activity-sticky-shell">
+          <div className="page-card activity-hero-card dashboard-anim-top">
+            <p className="activity-kicker">SKYWARD JOURNEY</p>
+            <p className="activity-subtitle"><span className="activity-subtitle-highlight">Progressive speaking quest:</span> Climb the path in order—like a skill tree. Finished steps move to History automatically.</p>
 
-          <div className="activity-track">
-            <div className="activity-track-fill" style={{ width: `${progressPct}%` }} />
+            <div className="activity-track">
+              <div className="activity-track-fill" style={{ width: `${progressPct}%` }} />
+            </div>
+
+            <div className="activity-stats">
+              <span>{completedCount}/{tasks.length} Task Complete</span>
+              <span>{earnedXp}/{totalXp} EXP</span>
+            </div>
           </div>
 
-          <div className="activity-stats">
-            <span>{completedCount}/{tasks.length} Task Complete</span>
-            <span>{earnedXp}/{totalXp} EXP</span>
+          <div className="activity-tabs dashboard-anim-top dashboard-anim-delay-1" role="tablist" aria-label="Activity tabs">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'active'}
+              className={`activity-tab-btn${activeTab === 'active' ? ' active' : ''}`}
+              onClick={() => setActiveTab('active')}
+            >
+              Active
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'history'}
+              className={`activity-tab-btn${activeTab === 'history' ? ' active' : ''}`}
+              onClick={() => setActiveTab('history')}
+            >
+              History
+            </button>
           </div>
         </div>
 
-        <div className="activity-tabs dashboard-anim-top dashboard-anim-delay-1" role="tablist" aria-label="Activity tabs">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'active'}
-            className={`activity-tab-btn${activeTab === 'active' ? ' active' : ''}`}
-            onClick={() => setActiveTab('active')}
-          >
-            Active
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'history'}
-            className={`activity-tab-btn${activeTab === 'history' ? ' active' : ''}`}
-            onClick={() => setActiveTab('history')}
-          >
-            History
-          </button>
+        <div className={`activity-task-list${activeTab === 'active' ? ' activity-task-list--journey' : ''}`}>
+          {activeTab === 'active' && (
+            <SkywardJourney
+              steps={journeySteps}
+              entranceFromNav={entranceFromNav}
+              renderStepContent={(step, meta) =>
+                renderTaskCard({
+                  task: step.task,
+                  animationClass: `dashboard-anim-bottom dashboard-anim-delay-${Math.min(meta.stepIndex + 2, 9)}`,
+                })
+              }
+            />
+          )}
+          {activeTab === 'active' && completedCount === tasks.length ? (
+            <div className="page-card activity-empty-state dashboard-anim-bottom dashboard-anim-delay-2">
+              All activities completed. Check History for finished steps.
+            </div>
+          ) : null}
+          {activeTab === 'history' && historyItems.map(({ task, historyEntry }, index) => {
+            const pattern = ['left', 'right', 'bottom'];
+            const direction = pattern[index % pattern.length];
+            const delay = Math.min(index + 2, 9);
+            return renderTaskCard({
+              task,
+              historyEntry,
+              animationClass: `dashboard-anim-${direction} dashboard-anim-delay-${delay}`,
+            });
+          })}
+
+          {activeTab === 'history' && historyItems.length === 0 ? (
+            <div className="page-card activity-empty-state dashboard-anim-bottom dashboard-anim-delay-2">No completed activities yet. Finish tasks in Active to populate history.</div>
+          ) : null}
         </div>
-      </div>
-
-      <div className={`activity-task-list${activeTab === 'active' ? ' activity-task-list--journey' : ''}`}>
-        {activeTab === 'active' && (
-          <SkywardJourney
-            steps={journeySteps}
-            renderStepContent={(step, meta) =>
-              renderTaskCard({
-                task: step.task,
-                animationClass: `dashboard-anim-bottom dashboard-anim-delay-${Math.min(meta.stepIndex + 2, 9)}`,
-              })
-            }
-          />
-        )}
-        {activeTab === 'active' && completedCount === tasks.length ? (
-          <div className="page-card activity-empty-state dashboard-anim-bottom dashboard-anim-delay-2">
-            All activities completed. Check History for finished steps.
-          </div>
-        ) : null}
-        {activeTab === 'history' && historyItems.map(({ task, historyEntry }, index) => {
-          const pattern = ['left', 'right', 'bottom'];
-          const direction = pattern[index % pattern.length];
-          const delay = Math.min(index + 2, 9);
-          return renderTaskCard({
-            task,
-            historyEntry,
-            animationClass: `dashboard-anim-${direction} dashboard-anim-delay-${delay}`,
-          });
-        })}
-
-        {activeTab === 'history' && historyItems.length === 0 ? (
-          <div className="page-card activity-empty-state dashboard-anim-bottom dashboard-anim-delay-2">No completed activities yet. Finish tasks in Active to populate history.</div>
-        ) : null}
       </div>
     </div>
   );

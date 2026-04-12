@@ -78,8 +78,9 @@ function LockedIconTeaser({ index, milestone }) {
  * @param {object} props
  * @param {Array<{ id: string, nodeState: string, task?: object, title?: string }>} props.steps
  * @param {(step: object, meta: object) => React.ReactNode} props.renderStepContent
+ * @param {boolean} [props.entranceFromNav] — play zoom-to-current-quest when navigating from side nav
  */
-export default function SkywardJourney({ steps, renderStepContent }) {
+export default function SkywardJourney({ steps, renderStepContent, entranceFromNav = false }) {
   const gradId = useId().replace(/:/g, '');
   const flowGradId = useId().replace(/:/g, '');
   const rootRef = useRef(null);
@@ -241,6 +242,11 @@ export default function SkywardJourney({ steps, renderStepContent }) {
     };
   }, [recomputePath]);
 
+  useEffect(() => {
+    const id = requestAnimationFrame(() => recomputePath());
+    return () => cancelAnimationFrame(id);
+  }, [map.tx, map.ty, isExploring, recomputePath]);
+
   /** Hero focus: zoom (1.5) + scroll current active stage into view. Resets explore when the active step changes. */
   useLayoutEffect(() => {
     if (activeIndex < 0) return undefined;
@@ -256,16 +262,17 @@ export default function SkywardJourney({ steps, renderStepContent }) {
       setMap({ tx: 0, ty: 0 });
     });
 
-    const delay = 0;
+    const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const delay = entranceFromNav ? 160 : 80;
     const t = window.setTimeout(() => {
-      el.scrollIntoView({ block: 'center', behavior: 'auto', inline: 'nearest' });
+      el.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth', inline: 'nearest' });
     }, delay);
 
     return () => {
       cancelAnimationFrame(raf);
       window.clearTimeout(t);
     };
-  }, [activeIndex, clearIdleTimer]);
+  }, [activeIndex, entranceFromNav, clearIdleTimer]);
 
   useEffect(() => {
     return () => clearIdleTimer();
@@ -621,18 +628,6 @@ export default function SkywardJourney({ steps, renderStepContent }) {
             transform: `translate(${map.tx}px, ${map.ty}px) scale(${isExploring ? EXPLORE_SCALE : FOCUS_SCALE})`,
           }}
         >
-          <div className="skyward-journey-atmosphere" aria-hidden="true">
-            <div className="skyward-journey-blob skyward-journey-blob--1" />
-            <div className="skyward-journey-blob skyward-journey-blob--2" />
-            <div className="skyward-journey-blob skyward-journey-blob--3" />
-            
-            <IoMic className="skyward-journey-floating-icon" style={{ top: '5%', left: '15%', fontSize: '5rem', transform: 'rotate(-15deg)' }} />
-            <IoPulse className="skyward-journey-floating-icon" style={{ top: '25%', right: '10%', fontSize: '7rem', transform: 'rotate(25deg)' }} />
-            <IoVolumeHigh className="skyward-journey-floating-icon" style={{ top: '45%', left: '8%', fontSize: '6rem', transform: 'rotate(-10deg)' }} />
-            <IoMic className="skyward-journey-floating-icon" style={{ top: '65%', right: '18%', fontSize: '4.5rem', transform: 'rotate(15deg)' }} />
-            <IoPulse className="skyward-journey-floating-icon" style={{ top: '85%', left: '20%', fontSize: '6.5rem', transform: 'rotate(-25deg)' }} />
-          </div>
-
           <div className="skyward-journey-map-content" ref={mapContentRef}>
             {pathPoints.length > 1 ? (
               <svg className="skyward-journey-svg" aria-hidden shapeRendering="geometricPrecision">

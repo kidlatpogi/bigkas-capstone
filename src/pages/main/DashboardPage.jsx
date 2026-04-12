@@ -453,7 +453,7 @@ export default function DashboardPage() {
   }, [activityScopeKey]);
 
   return (
-    <div className="dashboard-page-new">
+    <div className="dashboard-page-new no-scrollbar" style={{ height: '100dvh', overflowY: 'auto' }}>
       <div className="dashboard-layout">
           <section className="dashboard-card dashboard-insight-card dashboard-anim-top">
             <div className="dashboard-insight-header">

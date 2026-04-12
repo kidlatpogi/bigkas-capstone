@@ -1,9 +1,16 @@
+#root, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
 .activity-page {
   width: 100%;
   max-width: none;
   margin: 0;
   padding: var(--responsive-page-padding);
-  background: linear-gradient(to top, #F9F9F9, #E0F2FE);
+  background: #FFFFFF;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -21,16 +28,16 @@
 }
 
 .main-content {
-  background: transparent;
+  height: 100vh;
+  overflow-y: auto;
+  background: #FFFFFF;
 }
 
 .activity-sticky-shell {
   position: sticky;
   top: 0;
   z-index: 40;
-  background: rgba(224, 242, 254, 0.85) !important;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: #FFFFFF !important;
   padding-bottom: 0.25rem;
   border-bottom: 1px solid rgba(11, 57, 84, 0.08);
   transition: filter 0.2s ease;
@@ -154,7 +161,6 @@ body.skyward-journey-modal-open .activity-sticky-shell {
   flex-direction: column;
   grid-template-rows: none;
   gap: 16px;
-  overflow-x: visible;
 }
 
 .activity-task-list::-webkit-scrollbar {
@@ -418,14 +424,6 @@ body.skyward-journey-modal-open .activity-sticky-shell {
   position: relative;
   z-index: 1;
   font-weight: 800;
-}
-
-[data-theme='dark'] .activity-page {
-  background: linear-gradient(to top, #1a1a1d, #0f172a);
-}
-
-[data-theme='dark'] .activity-sticky-shell {
-  background: rgba(15, 23, 42, 0.85) !important;
 }
 
 .activity-task-actions .activity-action-btn {

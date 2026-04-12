@@ -122,14 +122,21 @@ const HeaderStatBadge = styled.div`
 `;
 
 const TooltipBox = styled.div`
-  background: #f18f01;
-  padding: 24px 16px 16px;
+  background: ${(props) => (props.$nodeState === 'locked' ? '#ffffff' : '#f18f01')};
+  color: ${(props) => (props.$nodeState === 'locked' ? '#333333' : '#ffffff')};
+  padding: 20px;
   border-radius: 16px;
-  border-bottom: 4px solid #d17c00;
-  min-width: 220px;
+  border: ${(props) => (props.$nodeState === 'locked' ? '2px solid #e5e5e5' : 'none')};
+  border-bottom: ${(props) => (props.$nodeState === 'locked' ? '4px solid #e5e5e5' : '4px solid #d17c00')};
+  min-width: 240px;
+  max-width: 280px;
   max-height: min(70vh, 420px);
   overflow-x: hidden;
   overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  &::-webkit-scrollbar {
+    display: none;
+  } /* Chrome/Safari */
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
@@ -138,39 +145,50 @@ const TooltipBox = styled.div`
   align-items: center;
   text-align: center;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
-`;
 
-const TooltipBeak = styled.div`
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 12px solid transparent;
-  border-right: 12px solid transparent;
-  z-index: 1;
-  
-  /* Smart Beak Direction */
+  /* The Beak (Pointer) */
+  &::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    z-index: 2;
+
+    ${(props) =>
+      props.$placement === 'bottom'
+        ? `
+      top: -10px;
+      border-bottom: 10px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#f18f01'};
+    `
+        : `
+      bottom: -10px;
+      border-top: 10px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#f18f01'};
+    `}
+  }
+
+  /* Beak border for locked state */
   ${(props) =>
-    props.$placement === 'bottom'
-      ? `
-    top: -12px;
-    border-bottom: 12px solid #f18f01;
-  `
-      : `
-    bottom: -16px; /* Offset for the 4px border-bottom of box */
-    border-top: 12px solid #f18f01;
-    &::after {
+    props.$nodeState === 'locked' &&
+    `
+    &::before {
       content: '';
       position: absolute;
-      left: -12px;
-      top: -16px;
+      left: 50%;
+      transform: translateX(-50%);
       width: 0;
       height: 0;
       border-left: 12px solid transparent;
       border-right: 12px solid transparent;
-      border-top: 12px solid #d17c00;
-      z-index: -1;
+      z-index: 1;
+      ${
+        props.$placement === 'bottom'
+          ? 'top: -12px; border-bottom: 12px solid #e5e5e5;'
+          : 'bottom: -12px; border-top: 12px solid #e5e5e5;'
+      }
     }
   `}
 `;
@@ -181,7 +199,7 @@ const TooltipCloseBtn = styled.button`
   right: 8px;
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.8);
+  color: ${(props) => (props.$nodeState === 'locked' ? '#999999' : 'rgba(255, 255, 255, 0.8)')};
   font-size: 20px;
   cursor: pointer;
   padding: 4px;
@@ -191,7 +209,7 @@ const TooltipCloseBtn = styled.button`
   transition: color 0.2s ease;
 
   &:hover {
-    color: #ffffff;
+    color: ${(props) => (props.$nodeState === 'locked' ? '#333333' : '#ffffff')};
   }
 `;
 
@@ -199,19 +217,19 @@ const TooltipTitle = styled.h3`
   margin: 0;
   font-size: 18px;
   font-weight: 800;
-  color: #ffffff;
+  color: inherit;
 `;
 
 const TooltipDescription = styled.p`
   margin: 0;
   font-size: 14px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.85);
+  color: ${(props) => (props.$nodeState === 'locked' ? '#777777' : 'rgba(255, 255, 255, 0.85)')};
 `;
 
 const TooltipStartButton = styled.button`
-  background-color: #ffffff;
-  color: #f18f01;
+  background-color: ${(props) => (props.$nodeState === 'locked' ? '#e5e5e5' : '#ffffff')};
+  color: ${(props) => (props.$nodeState === 'locked' ? '#ffffff' : '#f18f01')};
   border: none;
   border-radius: 12px;
   padding: 12px 24px;
@@ -219,7 +237,7 @@ const TooltipStartButton = styled.button`
   font-weight: 800;
   letter-spacing: 1px;
   cursor: ${(props) => (props.disabled ? 'not-allowed' : 'pointer')};
-  box-shadow: #e5e5e5 0 4px 0 0;
+  box-shadow: ${(props) => (props.$nodeState === 'locked' ? '#d5d5d5' : '#e5e5e5')} 0 4px 0 0;
   transition: all 0.1s ease;
   width: 100%;
   text-transform: uppercase;
@@ -227,14 +245,7 @@ const TooltipStartButton = styled.button`
 
   &:active:not(:disabled) {
     transform: translateY(2px);
-    box-shadow: #e5e5e5 0 2px 0 0;
-  }
-
-  &:disabled {
-    opacity: 0.7;
-    background-color: #f5f5f5;
-    color: #a1a1aa;
-    box-shadow: #d5d5d5 0 4px 0 0;
+    box-shadow: ${(props) => (props.$nodeState === 'locked' ? '#d5d5d5' : '#e5e5e5')} 0 2px 0 0;
   }
 `;
 
@@ -247,16 +258,14 @@ function computeTooltipLayout(nodeEl) {
   if (!nodeEl) return { left: 0, top: 0, transform: 'translate(-50%, -100%)', placement: 'top' };
   const rect = nodeEl.getBoundingClientRect();
   const cx = rect.left + rect.width / 2;
-  
+
   // Use window height for 25% calculation as requested
-  const isTopArea = rect.top < (window.innerHeight * 0.25);
+  const isTopArea = rect.top < window.innerHeight * 0.25;
 
   const placement = isTopArea ? 'bottom' : 'top';
 
-  const top =
-    placement === 'bottom' ? rect.bottom + TOOLTIP_GAP : rect.top - TOOLTIP_GAP;
-  const transform =
-    placement === 'bottom' ? 'translateX(-50%)' : 'translate(-50%, -100%)';
+  const top = placement === 'bottom' ? rect.bottom + TOOLTIP_GAP : rect.top - TOOLTIP_GAP;
+  const transform = placement === 'bottom' ? 'translateX(-50%)' : 'translate(-50%, -100%)';
 
   return { left: cx, top, transform, placement };
 }
@@ -305,22 +314,29 @@ export const JourneyTooltip = ({ step, onStart, onClose, nodeRef }) => {
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0 }}
         transition={{ type: 'spring', damping: 22, stiffness: 320 }}
-        style={{ maxWidth: 'min(22rem, calc(100vw - 24px))', transformOrigin: layout.placement === 'bottom' ? 'top center' : 'bottom center' }}
+        style={{
+          maxWidth: 'min(22rem, calc(100vw - 24px))',
+          transformOrigin: layout.placement === 'bottom' ? 'top center' : 'bottom center',
+        }}
       >
-        <TooltipBox>
-          <TooltipCloseBtn onClick={(e) => {
-            e.stopPropagation();
-            onClose();
-          }}>
+        <TooltipBox $placement={layout.placement} $nodeState={step.nodeState}>
+          <TooltipCloseBtn
+            $nodeState={step.nodeState}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
+          >
             <IoClose />
           </TooltipCloseBtn>
           <TooltipTitle>{step.title || 'Lesson'}</TooltipTitle>
-          <TooltipDescription>
+          <TooltipDescription $nodeState={step.nodeState}>
             {isLocked
               ? 'Finish previous stages to unlock!'
               : `Stage ${step.id.split('-').pop() || '1'} of 6`}
           </TooltipDescription>
           <TooltipStartButton
+            $nodeState={step.nodeState}
             disabled={isLocked}
             onClick={(e) => {
               e.stopPropagation();
@@ -329,7 +345,6 @@ export const JourneyTooltip = ({ step, onStart, onClose, nodeRef }) => {
           >
             {isLocked ? 'LOCKED' : 'START'}
           </TooltipStartButton>
-          <TooltipBeak $placement={layout.placement} />
         </TooltipBox>
       </motion.div>
     </div>

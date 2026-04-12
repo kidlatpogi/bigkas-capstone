@@ -164,6 +164,14 @@
   z-index: 0;
   overflow: visible;
   shape-rendering: geometricPrecision;
+  opacity: 0;
+  animation: skywardSvgFadeIn 0.5s ease-in forwards;
+  animation-delay: 0.8s; /* wait for nodes to pop in */
+}
+
+@keyframes skywardSvgFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .skyward-journey-polyline--rim {

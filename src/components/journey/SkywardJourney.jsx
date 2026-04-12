@@ -16,11 +16,13 @@ import {
   JOURNEY_NODE_THEMES,
   NODE_STATE,
 } from './journeyConstants';
+import SkywardJourneyNodeButton from './SkywardJourneyNodeButton';
 import './SkywardJourney.css';
 
 const JOURNEY_ICONS = [IoMic, IoVolumeHigh, IoMusicalNote, IoPulse, IoShuffle, IoTrophy];
 
 const MAP_SCALE = 1.5;
+const MAP_EDGE_PAN_PADDING = 120;
 const HORIZONTAL_OFFSET_PATTERN = [0, 25, 50, 25, 0, -25, -50, -25];
 const PILLAR_TITLES = ['Vocal Clarity', 'Verbal Flow', 'Visual Presence', 'Stage Mastery'];
 const PILLAR_SECTION_SIZE = 2;
@@ -44,10 +46,10 @@ function clampMapState(state, viewportEl, contentEl, scale) {
   if (!Number.isFinite(W) || !Number.isFinite(H) || W <= 0 || H <= 0) return state;
   if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return state;
 
-  const minX = Math.min(0, W - w);
-  const maxX = Math.max(0, W - w);
-  const minY = Math.min(0, H - h);
-  const maxY = Math.max(0, H - h);
+  const minX = Math.min(0, W - w) - MAP_EDGE_PAN_PADDING;
+  const maxX = Math.max(0, W - w) + MAP_EDGE_PAN_PADDING;
+  const minY = Math.min(0, H - h) - MAP_EDGE_PAN_PADDING;
+  const maxY = Math.max(0, H - h) + MAP_EDGE_PAN_PADDING;
 
   return {
     tx: Math.min(maxX, Math.max(minX, tx)),
@@ -503,7 +505,7 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
                   </span>
                 </div>
               ) : null}
-              <button
+              <SkywardJourneyNodeButton
                 type="button"
                 ref={(el) => {
                   nodeRefs.current[i] = el;
@@ -511,7 +513,6 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
                 className={[
                   'skyward-journey-node',
                   `skyward-journey-node--${step.nodeState}`,
-                  isActive ? 'skyward-journey-node--pulse skyward-journey-node--float' : '',
                   milestone ? 'skyward-journey-node--milestone' : '',
                   jiggle ? 'skyward-journey-node--jiggle' : '',
                   !isLocked ? 'skyward-journey-node--unlocked' : '',
@@ -530,7 +531,6 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
                 }}
                 onClick={() => handleNodeClick(step, i)}
               >
-                <span className="skyward-journey-node-ring" />
                 {isDone ? (
                   <IoCheckmarkCircle className="skyward-journey-node-state-icon" aria-hidden />
                 ) : null}
@@ -545,7 +545,7 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
                     <JourneyNodeIcon index={i} />
                   )
                 ) : null}
-              </button>
+              </SkywardJourneyNodeButton>
               <div
                 className={`level-label level-label--side-${labelSide}`}
                 aria-hidden

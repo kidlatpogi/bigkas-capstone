@@ -310,6 +310,11 @@ function ProgressPage() {
           if (!pool.length) return null;
           return pool.reduce((sum, value) => sum + value, 0) / pool.length;
         },
+        subMetricsConfig: [
+          { label: 'Eye Contact', resolver: (s) => Number(s.facial_expression_score) },
+          { label: 'Gestures', resolver: (s) => Number(s.gesture_score) },
+          { label: 'Posture', resolver: (s) => Number.isFinite(Number(s.posture_score)) ? Number(s.posture_score) : Number(s.gesture_score) }
+        ]
       },
       {
         key: 'vocal',
@@ -328,6 +333,11 @@ function ProgressPage() {
           if (!pool.length) return null;
           return pool.reduce((sum, value) => sum + value, 0) / pool.length;
         },
+        subMetricsConfig: [
+          { label: 'Filler Words', resolver: (s) => Number.isFinite(Number(s.shimmer_score)) ? 100 - Number(s.shimmer_score) : null },
+          { label: 'Pacing', resolver: (s) => Number(s.pronunciation_score) },
+          { label: 'Volume', resolver: (s) => Number.isFinite(Number(s.jitter_score)) ? 100 - Number(s.jitter_score) : null }
+        ]
       },
       {
         key: 'verbal',
@@ -342,19 +352,35 @@ function ProgressPage() {
           if (!pool.length) return null;
           return pool.reduce((sum, value) => sum + value, 0) / pool.length;
         },
+        subMetricsConfig: [
+          { label: 'Vocabulary', resolver: (s) => Number(s.context_score) },
+          { label: 'Grammar', resolver: (s) => Number(s.fluency_score) }
+        ]
       },
     ];
 
     return metricConfig.map((pillar) => {
       const values = filteredSessions
         .map((session) => pillar.resolver(session))
-        .filter((value) => Number.isFinite(value));
+        .filter((value) => Number.isFinite(value) && value !== null);
 
       const avg = values.length
         ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length)
         : 0;
 
-      return { ...pillar, value: avg };
+      const subMetrics = pillar.subMetricsConfig.map((sub) => {
+        const subValues = filteredSessions
+          .map((session) => sub.resolver(session))
+          .filter((value) => Number.isFinite(value) && value !== null);
+        
+        const subAvg = subValues.length
+          ? Math.round(subValues.reduce((sum, value) => sum + value, 0) / subValues.length)
+          : 0;
+          
+        return { label: sub.label, value: subAvg };
+      });
+
+      return { ...pillar, value: avg, subMetrics };
     });
   }, [pillarRange, userSessions]);
 
@@ -502,25 +528,39 @@ function ProgressPage() {
           <div className="progress-pillars-grid">
             {pillarStats.map((pillar, index) => (
               <div key={pillar.key} className={`pillar-card dashboard-anim-bottom dashboard-anim-delay-${5 + index}`}>
-                <div className="pillar-info">
-                  <span className="pillar-icon" style={{ background: pillar.iconBg, color: pillar.color }}>
-                    <pillar.icon />
-                  </span>
-                  <div className="pillar-label-group">
-                    <span className="pillar-label">{pillar.label}</span>
-                    <span className="pillar-value-subtext">Performance</span>
+                <div className="pillar-left">
+                  <div className="pillar-info">
+                    <span className="pillar-icon" style={{ background: pillar.iconBg, color: pillar.color }}>
+                      <pillar.icon />
+                    </span>
+                    <div className="pillar-label-group">
+                      <span className="pillar-label">{pillar.label}</span>
+                    </div>
+                  </div>
+                  <div className="pillar-progress-container">
+                    <div className="pillar-progress-header" style={{ width: `${pillar.value}%` }}>
+                      <span className="pillar-value">{pillar.value}%</span>
+                    </div>
+                    <div className="pillar-track">
+                      <div 
+                        className={`pillar-fill ${pillar.value > 80 ? 'mastery-pulse' : ''}`} 
+                        style={{ width: `${pillar.value}%` }} 
+                      />
+                    </div>
                   </div>
                 </div>
-                <div className="pillar-progress-container">
-                  <div className="pillar-progress-header" style={{ width: `${pillar.value}%` }}>
-                    <span className="pillar-value">{pillar.value}%</span>
-                  </div>
-                  <div className="pillar-track">
-                    <div 
-                      className={`pillar-fill ${pillar.value > 80 ? 'mastery-pulse' : ''}`} 
-                      style={{ width: `${pillar.value}%` }} 
-                    />
-                  </div>
+                <div className="pillar-right">
+                  {pillar.subMetrics.map((sub, i) => (
+                    <div key={i} className="sub-metric">
+                      <div className="sub-metric-header">
+                        <span>{sub.label}</span>
+                        <span>{sub.value}%</span>
+                      </div>
+                      <div className="sub-metric-track">
+                        <div className="sub-metric-fill" style={{ width: `${sub.value}%` }} />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}

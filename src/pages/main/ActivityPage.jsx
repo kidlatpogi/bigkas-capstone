@@ -186,16 +186,13 @@ function ActivityPage() {
 
   const journeySteps = useMemo(
     () =>
-      tasks.map((task, index) => ({
+      tasks.map((task) => ({
         id: task.id,
         task,
-        // Display the actual title column from DB (which is mapped to task.title in the service)
-        title: task.title || "Training Task", 
-        pillarName: task.phase_name || "General",
-        // Use the actual order from DB if available, otherwise index
-        stageNumber: task.activity_order || index + 1,
+        title: task.title,
+        pillarName: task.phase_name,
+        stageNumber: task.activity_order,
         totalStages,
-        // Check if this is the Post-Test (Order 31) to apply special styling
         isRankUp: task.activity_order === 31,
         nodeState: getNodeStateForTask(task.id, taskState, taskUnlockState, activeTaskId),
         onActivate: () => handleTaskAction(task),
@@ -245,7 +242,7 @@ function ActivityPage() {
           <span className="activity-task-xp">+ {getTaskXp(task.id)} EXP</span>
         </div>
 
-        <p className="activity-task-detail">{task.detail}</p>
+        <p className="activity-task-detail">{task.objective || task.detail}</p>
         {weightsLine ? <p className="activity-task-detail" style={{ opacity: 0.85, fontSize: '0.9em' }}>{weightsLine}</p> : null}
 
         {completedDateText ? <p className="activity-task-history-meta">Completed {completedDateText}</p> : null}

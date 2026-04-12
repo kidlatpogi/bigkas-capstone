@@ -26,19 +26,18 @@ export function buildJourneyTasksFromActivities(rows) {
     const phaseName = String(row.phase_name || '').trim();
     const title = String(row.title || '').trim();
     const objective = String(row.objective || '').trim() || `Activity ${row.activity_order ?? index + 1}`;
-    const detailParts = [
-      phaseName,
-      row.target_level != null ? `Target level ${row.target_level}` : null,
-    ].filter(Boolean);
     return {
       id: row.id,
       title: title || objective,
       pillarName: phaseName || 'Training',
       phase_name: phaseName,
-      detail: detailParts.length ? detailParts.join(' · ') : objective,
+      objective,
+      detail: objective,
       actionLabel: 'Start training',
       actionRoute: ROUTES.TRAINING_SETUP,
       prerequisiteIds: index === 0 ? [] : [list[index - 1].id],
+      target_level: row.target_level,
+      activity_order: row.activity_order,
       activityOrder: row.activity_order,
       weights: {
         vis: Number(row.weight_vis) || 0,

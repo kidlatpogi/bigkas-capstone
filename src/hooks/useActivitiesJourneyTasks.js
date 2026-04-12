@@ -24,17 +24,20 @@ export function useActivitiesJourneyTasks() {
       setError(null);
       try {
         // Fetch current_level from profiles
-        const { data: profileData, error: profileError } = await supabase
+        const { data: profileRows, error: profileError } = await supabase
           .from('profiles')
           .select('current_level')
           .eq('id', user.id)
-          .single();
+          .limit(1);
 
-        if (profileError && profileError.code !== 'PGRST116') {
+        if (profileError) {
           throw new Error(profileError.message);
         }
 
-        const currentLevel = profileData?.current_level || 1;
+        const parsedCurrentLevel = Number(profileRows?.[0]?.current_level);
+        const currentLevel = Number.isFinite(parsedCurrentLevel) && parsedCurrentLevel > 0
+          ? parsedCurrentLevel
+          : 1;
 
         const data = await fetchActivities(currentLevel);
         if (!cancelled) {

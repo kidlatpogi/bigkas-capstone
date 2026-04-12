@@ -78,7 +78,7 @@ function JourneyNodeIcon({ index, className = '' }) {
 const MapHeaderCard = styled.div`
   max-width: 400px;
   width: 90%;
-  margin: 0 auto;
+  margin: 0 auto 12px auto;
   padding: 24px;
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
@@ -92,8 +92,8 @@ const MapHeaderCard = styled.div`
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   border: 2px solid #f18f01;
   position: sticky;
-  top: 12px;
-  z-index: 20;
+  top: 0;
+  z-index: 60;
   flex-shrink: 0;
 `;
 
@@ -767,7 +767,7 @@ export default function SkywardJourney({
     const isDone = step.nodeState === NODE_STATE.COMPLETED;
     const isLocked = step.nodeState === NODE_STATE.LOCKED;
     const title = step.title ?? step.task?.title ?? step.id;
-    const milestone = i === steps.length - 1;
+    const milestone = step.isRankUp === true || Number(step.stageNumber) === 31 || Number(step.task?.activity_order) === 31;
     const jiggle = jiggleIndex === i;
     const horizontalOffset = getHorizontalOffset(i);
     const labelSide = horizontalOffset > 0 ? 'left' : 'right';
@@ -864,16 +864,25 @@ export default function SkywardJourney({
   });
   flushPillarSection();
 
-  const activeStepIndex = steps.findIndex((s) => s.nodeState === 'active');
-  const fallbackStepIndex = steps.slice().reverse().findIndex((s) => s.nodeState === 'unlocked');
-  const indexToUse = activeStepIndex >= 0 ? activeStepIndex : (fallbackStepIndex >= 0 ? steps.length - 1 - fallbackStepIndex : steps.length - 1);
-  const currentStep = steps[indexToUse] || steps[steps.length - 1];
-  const currentPillarText = currentStep ? `PILLAR ${currentStep.task?.target_level || 1}: ${currentStep.pillarName}` : 'PILLAR 1: VOCAL CLARITY';
+  const activeStepIndex = steps.findIndex((s) => s.nodeState === NODE_STATE.ACTIVE);
+  const lastCompletedStepIndex = (() => {
+    for (let i = steps.length - 1; i >= 0; i -= 1) {
+      if (steps[i]?.nodeState === NODE_STATE.COMPLETED) return i;
+    }
+    return -1;
+  })();
+  const indexToUse = activeStepIndex >= 0
+    ? activeStepIndex
+    : (lastCompletedStepIndex >= 0 ? lastCompletedStepIndex : 0);
+  const currentStep = steps[indexToUse] || null;
+  const currentPillarText = currentStep
+    ? `Pillar ${currentStep.task?.target_level || 1}: ${currentStep.pillarName || 'General'}`
+    : 'Pillar 1: General';
 
   return (
     <div className="skyward-journey skyward-journey-container skyward-journey-anim-root no-scrollbar" ref={rootRef}>
       <MapHeaderCard className="skyward-journey-anim-header">
-        <HeaderTitle>{currentPillarText.toUpperCase()}</HeaderTitle>
+        <HeaderTitle>{currentPillarText}</HeaderTitle>
         <HeaderDescription>Master your speaking fundamentals</HeaderDescription>
         <HeaderStatBadge>{completedCount} / {steps.length} Stages Completed</HeaderStatBadge>
       </MapHeaderCard>

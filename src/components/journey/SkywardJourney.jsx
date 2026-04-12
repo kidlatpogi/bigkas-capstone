@@ -11,7 +11,6 @@ import {
   IoVolumeHigh,
 } from 'react-icons/io5';
 import {
-  getLabelSideForLane,
   getUnitLabel,
   isMilestoneStep,
   JOURNEY_NODE_THEMES,
@@ -21,10 +20,14 @@ import './SkywardJourney.css';
 
 const JOURNEY_ICONS = [IoMic, IoVolumeHigh, IoMusicalNote, IoPulse, IoShuffle, IoTrophy];
 
-const FOCUS_SCALE = 1.5;
-const EXPLORE_SCALE = 1;
-const IDLE_MS = 3000;
-const SCROLL_SUPPRESS_MS = 1100;
+const MAP_SCALE = 1.5;
+const HORIZONTAL_OFFSET_PATTERN = [0, 25, 50, 25, 0, -25, -50, -25];
+const PILLAR_TITLES = ['Vocal Clarity', 'Verbal Flow', 'Visual Presence', 'Stage Mastery'];
+const PILLAR_SECTION_SIZE = 2;
+
+function getHorizontalOffset(index) {
+  return HORIZONTAL_OFFSET_PATTERN[((index % HORIZONTAL_OFFSET_PATTERN.length) + HORIZONTAL_OFFSET_PATTERN.length) % HORIZONTAL_OFFSET_PATTERN.length];
+}
 
 /**
  * With transform translate(tx,ty) scale(s), keep the scaled content AABB inside the viewport.
@@ -93,9 +96,6 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
   const mapRef = useRef({ tx: 0, ty: 0 });
   const pointerPanRef = useRef(null);
   const pinchRef = useRef(null);
-  const idleTimerRef = useRef(null);
-  const suppressExploreUntilRef = useRef(0);
-  const isExploringRef = useRef(false);
 
   const activeIndex = useMemo(
     () => steps.findIndex((s) => s.nodeState === NODE_STATE.ACTIVE),
@@ -114,48 +114,17 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
 
   const [pathPoints, setPathPoints] = useState([]);
   const [indexedNodePoints, setIndexedNodePoints] = useState([]);
+  const [svgBounds, setSvgBounds] = useState({ width: 1, height: 1 });
   const [panelOpenId, setPanelOpenId] = useState(null);
   const [panelVisible, setPanelVisible] = useState(false);
   const panelClosePendingRef = useRef(false);
   const [jiggleIndex, setJiggleIndex] = useState(null);
   const [showTapHint, setShowTapHint] = useState(false);
   const [map, setMap] = useState(() => ({ tx: 0, ty: 0 }));
-  const [isExploring, setIsExploring] = useState(false);
 
   useLayoutEffect(() => {
     mapRef.current = map;
   }, [map]);
-
-  const clearIdleTimer = useCallback(() => {
-    if (idleTimerRef.current) {
-      window.clearTimeout(idleTimerRef.current);
-      idleTimerRef.current = null;
-    }
-  }, []);
-
-  const scheduleReturnToFocus = useCallback(() => {
-    clearIdleTimer();
-    idleTimerRef.current = window.setTimeout(() => {
-      isExploringRef.current = false;
-      setIsExploring(false);
-      setMap({ tx: 0, ty: 0 });
-      const el = nodeRefs.current[activeIndex];
-      if (el && activeIndex >= 0) {
-        suppressExploreUntilRef.current = Date.now() + SCROLL_SUPPRESS_MS;
-        el.scrollIntoView({
-          block: 'center',
-          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-        });
-      }
-    }, IDLE_MS);
-  }, [activeIndex, clearIdleTimer]);
-
-  const bumpExplore = useCallback(() => {
-    if (Date.now() < suppressExploreUntilRef.current) return;
-    isExploringRef.current = true;
-    setIsExploring(true);
-    scheduleReturnToFocus();
-  }, [scheduleReturnToFocus]);
 
   const requestClosePanel = useCallback(() => {
     panelClosePendingRef.current = true;
@@ -175,6 +144,7 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
     if (!content || steps.length < 2) {
       setPathPoints([]);
       setIndexedNodePoints([]);
+      setSvgBounds({ width: 1, height: 1 });
       return;
     }
 
@@ -182,11 +152,16 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
     if (!cr.width || !cr.height) {
       setPathPoints([]);
       setIndexedNodePoints([]);
+      setSvgBounds({ width: 1, height: 1 });
       return;
     }
 
     const sx = content.scrollWidth / cr.width;
     const sy = content.scrollHeight / cr.height;
+    setSvgBounds({
+      width: Math.max(1, content.scrollWidth),
+      height: Math.max(1, content.scrollHeight),
+    });
     const indexed = [];
 
     for (let i = 0; i < steps.length; i += 1) {
@@ -218,9 +193,7 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
         const vp = viewportRef.current;
         const content = mapContentRef.current;
         if (vp && content) {
-          setMap((m) =>
-            clampMapState(m, vp, content, isExploringRef.current ? EXPLORE_SCALE : FOCUS_SCALE),
-          );
+          setMap((m) => clampMapState(m, vp, content, MAP_SCALE));
         }
       });
     };
@@ -245,22 +218,15 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
   useEffect(() => {
     const id = requestAnimationFrame(() => recomputePath());
     return () => cancelAnimationFrame(id);
-  }, [map.tx, map.ty, isExploring, recomputePath]);
+  }, [map.tx, map.ty, recomputePath]);
 
-  /** Hero focus: zoom (1.5) + scroll current active stage into view. Resets explore when the active step changes. */
+  /** Hero focus: keep map centered and scroll current active stage into view. */
   useLayoutEffect(() => {
     if (activeIndex < 0) return undefined;
     const el = nodeRefs.current[activeIndex];
     if (!el) return undefined;
 
-    suppressExploreUntilRef.current = Date.now() + SCROLL_SUPPRESS_MS;
-    clearIdleTimer();
-
-    const raf = requestAnimationFrame(() => {
-      isExploringRef.current = false;
-      setIsExploring(false);
-      setMap({ tx: 0, ty: 0 });
-    });
+    const raf = requestAnimationFrame(() => setMap({ tx: 0, ty: 0 }));
 
     const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const delay = entranceFromNav ? 160 : 80;
@@ -272,36 +238,28 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
       cancelAnimationFrame(raf);
       window.clearTimeout(t);
     };
-  }, [activeIndex, entranceFromNav, clearIdleTimer]);
+  }, [activeIndex, entranceFromNav]);
 
+  /** Wheel pans map vertically while preserving current zoom scale. */
   useEffect(() => {
-    return () => clearIdleTimer();
-  }, [clearIdleTimer]);
-
-  /** Wheel deltaY (or deltaX) → bird's-eye explore + idle refocus */
-  useEffect(() => {
-    const el = viewportRef.current;
-    if (!el) return undefined;
+    const vp = viewportRef.current;
+    const content = mapContentRef.current;
+    if (!vp || !content) return undefined;
 
     const onWheel = (e) => {
       if (panelOpenId) return;
-      if (Math.abs(e.deltaY) > 1.5 || Math.abs(e.deltaX) > 1.5) {
-        bumpExplore();
-      }
+      const dominantDelta = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+      if (Math.abs(dominantDelta) < 0.5) return;
+      e.preventDefault();
+      const panStep = dominantDelta * 0.8;
+      setMap((m) => clampMapState({ ...m, ty: m.ty - panStep }, vp, content, MAP_SCALE));
     };
 
-    const onScroll = () => {
-      if (panelOpenId) return;
-      bumpExplore();
-    };
-
-    el.addEventListener('wheel', onWheel, { passive: true });
-    el.addEventListener('scroll', onScroll, { passive: true });
+    vp.addEventListener('wheel', onWheel, { passive: false });
     return () => {
-      el.removeEventListener('wheel', onWheel);
-      el.removeEventListener('scroll', onScroll);
+      vp.removeEventListener('wheel', onWheel);
     };
-  }, [panelOpenId, bumpExplore]);
+  }, [panelOpenId]);
 
   const onPointerDownViewport = useCallback(
     (e) => {
@@ -312,7 +270,6 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
       if (t instanceof Element && t.closest('.skyward-journey-node-shell')) return;
       if (t instanceof Element && t.closest('.skyward-journey-unit-header')) return;
       if (t instanceof Element && t.closest('.skyward-journey-start-callout')) return;
-      bumpExplore();
       const m = mapRef.current;
       pointerPanRef.current = {
         pid: e.pointerId,
@@ -323,7 +280,7 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
       };
       e.currentTarget.setPointerCapture(e.pointerId);
     },
-    [panelOpenId, bumpExplore],
+    [panelOpenId],
   );
 
   const onPointerMoveViewport = useCallback((e) => {
@@ -335,7 +292,7 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
     const content = mapContentRef.current;
     if (!vp || !content) return;
     setMap((m) =>
-      clampMapState({ ...m, tx: p.tx + dx, ty: p.ty + dy }, vp, content, EXPLORE_SCALE),
+      clampMapState({ ...m, tx: p.tx + dx, ty: p.ty + dy }, vp, content, MAP_SCALE),
     );
   }, []);
 
@@ -343,29 +300,26 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
     const p = pointerPanRef.current;
     if (!p || p.pid !== e.pointerId) return;
     pointerPanRef.current = null;
-    scheduleReturnToFocus();
     try {
       e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {
       /* ignore */
     }
-  }, [scheduleReturnToFocus]);
+  }, []);
 
   const onTouchStartPinch = useCallback((e) => {
     if (e.touches.length === 2) {
       pointerPanRef.current = null;
       pinchRef.current = { active: true };
-      bumpExplore();
     }
-  }, [bumpExplore]);
+  }, []);
 
   const onTouchMovePinch = useCallback(
     (e) => {
       if (e.touches.length < 2 || !pinchRef.current) return;
       e.preventDefault();
-      bumpExplore();
     },
-    [bumpExplore],
+    [],
   );
 
   const onTouchEndPinch = useCallback((e) => {
@@ -489,8 +443,28 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
     return null;
   }
 
-  const columnChildren = [];
   const unitOneLabel = getUnitLabel(0);
+  const sections = [];
+  let currentSectionRows = [];
+  let currentSectionKey = 0;
+
+  const pushCurrentSection = () => {
+    if (!currentSectionRows.length) return;
+    const pillarTitle = PILLAR_TITLES[currentSectionKey % PILLAR_TITLES.length];
+    const sectionTitle = `Pillar ${currentSectionKey + 1}: ${pillarTitle}`;
+    sections.push(
+      <section key={`pillar-section-${currentSectionKey}`} className="skyward-journey-section">
+        <div className="skyward-journey-section-rows">{currentSectionRows}</div>
+        <div className="skyward-journey-section-header" role="presentation">
+          <span className="skyward-journey-section-line" aria-hidden />
+          <span className="skyward-journey-section-title">{sectionTitle}</span>
+          <span className="skyward-journey-section-line" aria-hidden />
+        </div>
+      </section>,
+    );
+    currentSectionRows = [];
+    currentSectionKey += 1;
+  };
 
   steps.forEach((step, i) => {
     const theme = JOURNEY_NODE_THEMES[i % JOURNEY_NODE_THEMES.length];
@@ -500,13 +474,13 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
     const title = step.title ?? step.task?.title ?? step.id;
     const milestone = isMilestoneStep(i);
     const jiggle = jiggleIndex === i;
-    const lane = ((i % 4) + 4) % 4;
-    const labelSide = getLabelSideForLane(lane);
+    const horizontalOffset = getHorizontalOffset(i);
+    const labelSide = horizontalOffset > 0 ? 'left' : 'right';
 
-    columnChildren.push(
+    currentSectionRows.push(
       <div
         key={step.id}
-        className={`skyward-journey-row skyward-journey-row--lane-${lane}`}
+        className="skyward-journey-row"
       >
         <div className="skyward-journey-track">
           <div
@@ -550,6 +524,10 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
                 aria-label={`${milestone ? 'Milestone: ' : ''}${theme.shortLabel}: ${title}. ${
                   isDone ? 'Completed' : isLocked ? 'Locked' : 'Current step'
                 }. Open quest details.`}
+                style={{
+                  '--skyward-node-offset': `${horizontalOffset}%`,
+                  transform: `translateX(${horizontalOffset}%)`,
+                }}
                 onClick={() => handleNodeClick(step, i)}
               >
                 <span className="skyward-journey-node-ring" />
@@ -588,28 +566,17 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
       </div>,
     );
 
-    if ((i + 1) % 4 === 0 && i + 1 < steps.length) {
-      const u = getUnitLabel(i + 1);
-      columnChildren.push(
-        <div
-          key={`unit-gap-${u.unitNum}`}
-          className="skyward-journey-unit-header"
-          role="presentation"
-        >
-          <span className="skyward-journey-unit-line" aria-hidden />
-          <span className="skyward-journey-unit-label">
-            UNIT {u.unitNum}: {u.title}
-          </span>
-          <span className="skyward-journey-unit-line" aria-hidden />
-        </div>,
-      );
+    if ((i + 1) % PILLAR_SECTION_SIZE === 0) {
+      pushCurrentSection();
     }
   });
+  pushCurrentSection();
 
   return (
-    <div className="skyward-journey" ref={rootRef}>
+    <div className="skyward-journey skyward-journey-container no-scrollbar" ref={rootRef}>
+      <div className="skyward-journey-map">
       <div
-        className={`skyward-journey-map-viewport${isExploring ? ' is-exploring' : ''}`}
+        className="skyward-journey-map-viewport"
         ref={viewportRef}
         onPointerDown={onPointerDownViewport}
         onPointerMove={onPointerMoveViewport}
@@ -619,18 +586,24 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
         onTouchMove={onTouchMovePinch}
         onTouchEnd={onTouchEndPinch}
         role="application"
-        aria-label="Skyward journey path. Scroll to browse stages, drag to pan, pause to refocus on your current quest."
+        aria-label="Skyward journey path. Scroll wheel to move the map up or down, and drag to pan."
       >
         <div
           className="skyward-journey-map-layer"
           ref={mapLayerRef}
           style={{
-            transform: `translate(${map.tx}px, ${map.ty}px) scale(${isExploring ? EXPLORE_SCALE : FOCUS_SCALE})`,
+            transform: `translate(${map.tx}px, ${map.ty}px) scale(${MAP_SCALE})`,
           }}
         >
           <div className="skyward-journey-map-content" ref={mapContentRef}>
             {pathPoints.length > 1 ? (
-              <svg className="skyward-journey-svg" aria-hidden shapeRendering="geometricPrecision">
+              <svg
+                className="skyward-journey-svg"
+                aria-hidden
+                shapeRendering="geometricPrecision"
+                preserveAspectRatio="none"
+                viewBox={`0 0 ${svgBounds.width} ${svgBounds.height}`}
+              >
                 <defs>
                   <linearGradient id={`skyward-journey-line-grad-${gradId}`} x1="0%" y1="100%" x2="0%" y2="0%">
                     <stop offset="0%" stopColor="var(--skyward-path-completed, #5a7863)" />
@@ -674,9 +647,10 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
               </svg>
             ) : null}
 
-            <div className="skyward-journey-column">{columnChildren}</div>
+            <div className="skyward-journey-column">{sections}</div>
           </div>
         </div>
+      </div>
       </div>
 
       {typeof document !== 'undefined' && selectedStep && selectedMeta

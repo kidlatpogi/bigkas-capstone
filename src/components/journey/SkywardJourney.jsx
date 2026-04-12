@@ -74,12 +74,12 @@ import styled from 'styled-components';
 const MapHeaderCard = styled.div`
   max-width: 400px;
   width: 90%;
-  margin: 20px auto;
-  background: rgba(255, 255, 255, 0.8);
+  margin: 0 auto;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-radius: 24px;
-  padding: 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -87,8 +87,10 @@ const MapHeaderCard = styled.div`
   text-align: center;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   border: 2px solid #f18f01;
-  position: relative;
-  z-index: 10;
+  position: sticky;
+  top: 12px;
+  z-index: 20;
+  flex-shrink: 0;
 `;
 
 const HeaderTitle = styled.h1`
@@ -462,13 +464,12 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
   const onPointerMoveViewport = useCallback((e) => {
     const p = pointerPanRef.current;
     if (!p || p.pid !== e.pointerId) return;
-    const dx = e.clientX - p.sx;
     const dy = e.clientY - p.sy;
     const vp = viewportRef.current;
     const content = mapContentRef.current;
     if (!vp || !content) return;
     setMap((m) =>
-      clampMapState({ ...m, tx: p.tx + dx, ty: p.ty + dy }, vp, content, MAP_SCALE),
+      clampMapState({ ...m, ty: p.ty + dy }, vp, content, MAP_SCALE),
     );
   }, []);
 
@@ -679,17 +680,14 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
               >
                 {isDone ? (
                   <IoCheckmarkCircle className="skyward-journey-node-state-icon" aria-hidden />
-                ) : null}
-                {!isDone && !isLocked ? (
-                  milestone ? (
-                    <IoTrophy
-                      className="skyward-journey-node-icon skyward-journey-node-icon--boss"
-                      aria-hidden
-                    />
-                  ) : (
-                    <JourneyNodeIcon index={i} />
-                  )
-                ) : null}
+                ) : milestone ? (
+                  <IoTrophy
+                    className="skyward-journey-node-icon skyward-journey-node-icon--boss"
+                    aria-hidden
+                  />
+                ) : (
+                  <JourneyNodeIcon index={i} />
+                )}
               </SkywardJourneyNodeButton>
               <AnimatePresence>
                 {tooltipNodeId === step.id && (
@@ -728,12 +726,12 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
 
   return (
     <div className="skyward-journey skyward-journey-container no-scrollbar" ref={rootRef}>
-      <MapHeaderCard>
+      <MapHeaderCard className="skyward-journey-anim-header">
         <HeaderTitle>CHAPTER 1: VOCAL CLARITY</HeaderTitle>
         <HeaderDescription>Master your speaking fundamentals</HeaderDescription>
         <HeaderStatBadge>{completedCount} / {steps.length} Stages Completed</HeaderStatBadge>
       </MapHeaderCard>
-      <div className="skyward-journey-map">
+      <div className="skyward-journey-map skyward-journey-anim-map">
       <div
         className="skyward-journey-map-viewport"
         ref={viewportRef}

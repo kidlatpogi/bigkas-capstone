@@ -22,7 +22,7 @@ import './SkywardJourney.css';
 const JOURNEY_ICONS = [IoMic, IoVolumeHigh, IoMusicalNote, IoPulse, IoShuffle, IoTrophy];
 
 const MAP_SCALE = 1.5;
-const MAP_EDGE_PAN_PADDING = 220;
+const MAP_EDGE_PAN_PADDING = 96;
 const HORIZONTAL_OFFSET_PATTERN = [0, 25, 50, 25, 0, -25, -50, -25];
 const PILLAR_TITLES = ['Vocal Clarity', 'Verbal Flow', 'Visual Presence', 'Stage Mastery'];
 const PILLAR_SECTION_SIZE = 2;
@@ -46,8 +46,8 @@ function clampMapState(state, viewportEl, contentEl, scale) {
   if (!Number.isFinite(W) || !Number.isFinite(H) || W <= 0 || H <= 0) return state;
   if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return state;
 
-  const horizontalPadding = Math.max(MAP_EDGE_PAN_PADDING, W * 0.28);
-  const verticalPadding = Math.max(MAP_EDGE_PAN_PADDING * 2, H * 0.82);
+  const horizontalPadding = Math.max(MAP_EDGE_PAN_PADDING * 0.6, W * 0.12);
+  const verticalPadding = Math.max(MAP_EDGE_PAN_PADDING, H * 0.2);
   const minX = Math.min(0, W - w) - horizontalPadding;
   const maxX = Math.max(0, W - w) + horizontalPadding;
   const minY = Math.min(0, H - h) - verticalPadding;

@@ -295,9 +295,7 @@
 }
 
 .skyward-journey-node--active.skyward-journey-node--unlocked:hover {
-  box-shadow:
-    0 0 0 4px rgba(241, 143, 1, 0.28),
-    0 12px 28px rgba(241, 143, 1, 0.3);
+  box-shadow: rgb(205, 139, 118) 0px 10px 0px 0px;
 }
 
 .skyward-journey-node--active.skyward-journey-node--float:hover {
@@ -375,7 +373,7 @@
 }
 
 .skyward-journey-node--locked .skyward-journey-node-icon {
-  color: #71717a;
+  color: #8a8a8a;
 }
 
 .skyward-journey-node-state-icon {

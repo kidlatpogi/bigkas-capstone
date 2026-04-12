@@ -18,6 +18,7 @@ import {
   IoVideocamOutline,
   IoMicOutline,
   IoChatbubbleEllipsesOutline,
+  IoTrophyOutline,
 } from 'react-icons/io5';
 import { useSessionContext } from '../../context/useSessionContext';
 import { useAuthContext } from '../../context/useAuthContext';
@@ -299,9 +300,9 @@ function ProgressPage() {
       {
         key: 'visual',
         label: 'Visual Presence',
-        color: '#F18F01',
+        color: '#2d5a27',
         icon: IoVideocamOutline,
-        iconBg: 'rgba(241, 143, 1, 0.1)',
+        iconBg: 'rgba(45, 90, 39, 0.1)',
         resolver: (session) => {
           const facial = Number(session.facial_expression_score);
           const gesture = Number(session.gesture_score);
@@ -313,9 +314,9 @@ function ProgressPage() {
       {
         key: 'vocal',
         label: 'Vocal Clarity',
-        color: '#EF4444',
+        color: '#2d5a27',
         icon: IoMicOutline,
-        iconBg: 'rgba(239, 68, 68, 0.1)',
+        iconBg: 'rgba(45, 90, 39, 0.1)',
         resolver: (session) => {
           const pronunciation = Number(session.pronunciation_score);
           const jitter = Number(session.jitter_score);
@@ -331,9 +332,9 @@ function ProgressPage() {
       {
         key: 'verbal',
         label: 'Verbal Flow',
-        color: '#15B8A6',
+        color: '#2d5a27',
         icon: IoChatbubbleEllipsesOutline,
-        iconBg: 'rgba(21, 184, 166, 0.1)',
+        iconBg: 'rgba(45, 90, 39, 0.1)',
         resolver: (session) => {
           const context = Number(session.context_score);
           const fluency = Number(session.fluency_score);
@@ -458,16 +459,25 @@ function ProgressPage() {
           {/* Stats Row */}
           <div className="progress-stats-row">
             <div className="stat-block dashboard-anim-bottom dashboard-anim-delay-1">
+              <div className="stat-icon-wrap">
+                <IoCalendarOutline />
+              </div>
               <p className="stat-title">Sessions This Week</p>
               <p className={`stat-num ${stats.sessionsThisWeek > 0 ? 'glow-text' : ''}`}>{stats.sessionsThisWeek}</p>
               <p className="stat-desc">Attempts</p>
             </div>
             <div className="stat-block dashboard-anim-bottom dashboard-anim-delay-2">
+              <div className="stat-icon-wrap">
+                <IoTrophyOutline />
+              </div>
               <p className="stat-title">Average Score</p>
               <p className={`stat-num ${stats.averageScore > 0 ? 'glow-text' : ''}`}>{stats.averageScore}</p>
               <p className="stat-desc">Points</p>
             </div>
             <div className="stat-block dashboard-anim-bottom dashboard-anim-delay-3">
+              <div className="stat-icon-wrap">
+                <IoTimeOutline />
+              </div>
               <p className="stat-title">Total Speaking Time</p>
               <p className={`stat-num ${stats.totalSpeakingTime > 0 ? 'glow-text' : ''}`}>{stats.totalSpeakingTime}</p>
               <p className="stat-desc">Minutes</p>

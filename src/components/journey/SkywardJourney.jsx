@@ -241,11 +241,6 @@ export default function SkywardJourney({ steps, renderStepContent }) {
     };
   }, [recomputePath]);
 
-  useEffect(() => {
-    const id = requestAnimationFrame(() => recomputePath());
-    return () => cancelAnimationFrame(id);
-  }, [map.tx, map.ty, isExploring, recomputePath]);
-
   /** Hero focus: zoom (1.5) + scroll current active stage into view. Resets explore when the active step changes. */
   useLayoutEffect(() => {
     if (activeIndex < 0) return undefined;
@@ -261,10 +256,9 @@ export default function SkywardJourney({ steps, renderStepContent }) {
       setMap({ tx: 0, ty: 0 });
     });
 
-    const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const delay = 0;
     const t = window.setTimeout(() => {
-      el.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth', inline: 'nearest' });
+      el.scrollIntoView({ block: 'center', behavior: 'auto', inline: 'nearest' });
     }, delay);
 
     return () => {

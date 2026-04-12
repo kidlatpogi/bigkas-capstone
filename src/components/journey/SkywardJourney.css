@@ -13,7 +13,7 @@
 }
 
 .skyward-journey-map-viewport {
-  overflow-x: hidden;
+  overflow-x: visible;
   overflow-y: auto;
   position: relative;
   width: 100%;
@@ -32,7 +32,11 @@
 .skyward-journey-map-layer {
   will-change: transform;
   transform-origin: 50% 50%;
-  transition: transform 0.24s cubic-bezier(0.22, 0.61, 0.36, 1);
+  transition: transform 0.16s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.skyward-journey-map-viewport.is-exploring .skyward-journey-map-layer {
+  transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -48,6 +52,8 @@
 .skyward-journey-map-content {
   position: relative;
   width: 100%;
+  box-sizing: border-box;
+  padding-inline: clamp(24px, 6vw, 96px);
   min-height: 200px;
 }
 
@@ -566,6 +572,10 @@
 
 /* Narrow viewports: stack labels under node (Capacitor / mobile web) */
 @media (max-width: 560px) {
+  .skyward-journey-map-content {
+    padding-inline: 16px;
+  }
+
   .skyward-journey-node-shell--start-onboarding {
     padding-top: 108px;
   }

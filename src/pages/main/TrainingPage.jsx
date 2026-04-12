@@ -697,6 +697,18 @@ function TrainingPage() {
       backgroundLeaveInitiatedRef.current = false;
       setStatus('analysing');
       try {
+        const profilingKeys = [
+          'visual_eye_contact', 'visual_gestures', 'visual_energy',
+          'vocal_projection', 'vocal_expression', 'vocal_pacing',
+          'verbal_fillers', 'verbal_vocabulary', 'verbal_anxiety',
+        ];
+        const profileResponses = user?.speakerProfile?.responses || {};
+        const profilingAnswers = profilingKeys.map((key) => {
+          const raw = String(profileResponses[key] || '').trim();
+          if (['yes', 'no', 'sometimes'].includes(raw.toLowerCase())) return raw;
+          return 'No';
+        });
+
         const result = await analyseAndSave({
           audioBlob: blob,
           videoBlob,
@@ -705,6 +717,8 @@ function TrainingPage() {
           speakingMode: focus,
           scriptTitle: focus === 'scripted' ? (script?.title || '') : freeTopic,
           visualAnalysis: visualScoresRef.current,
+          topic: focus === 'scripted' ? (script?.title || 'Scripted Speech') : (freeTopic || 'General Speaking'),
+          profilingAnswers,
         });
 
         const runInBackground = analysisModeRef.current === 'background';

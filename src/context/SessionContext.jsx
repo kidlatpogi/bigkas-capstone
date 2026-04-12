@@ -600,6 +600,8 @@ export function SessionProvider({ children }) {
     speakingMode = '',
     scriptTitle = '',
     visualAnalysis = null,
+    topic = '',
+    profilingAnswers = [],
   }) => {
     const uid = await getUserId();
     if (!uid) return { success: false, error: 'Not authenticated' };
@@ -618,6 +620,12 @@ export function SessionProvider({ children }) {
       formData.append('audio_file', audioBlob, `recording.${audioExt}`);
       formData.append('visual_metrics', JSON.stringify(baseVisualMetrics));
       formData.append('user_id', uid);
+      formData.append('topic', topic || scriptTitle || 'General Speaking');
+      formData.append('profiling_answers', JSON.stringify(
+        Array.isArray(profilingAnswers) && profilingAnswers.length === 9
+          ? profilingAnswers
+          : ['No', 'No', 'No', 'No', 'No', 'No', 'No', 'No', 'No']
+      ));
 
       const res = await fetch(`${apiUrl}/api/analyze-speech`, {
         method: 'POST',

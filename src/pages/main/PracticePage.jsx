@@ -85,10 +85,9 @@ export default function PracticePage() {
           <p className="practice-rand-hint">
             Get a surprise topic and practice speaking about it!
           </p>
-
-          <div className="practice-coming-soon">
-            <p>New modes coming soon...</p>
-          </div>
+          <p className="practice-coming-soon">
+            New modes coming soon...
+          </p>
         </div>
       </div>
     </div>

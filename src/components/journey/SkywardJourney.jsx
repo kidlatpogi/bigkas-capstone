@@ -122,14 +122,14 @@ const HeaderStatBadge = styled.div`
 `;
 
 const TooltipBox = styled.div`
-  background: ${(props) => (props.$nodeState === 'locked' ? '#ffffff' : '#f18f01')};
+  background: ${(props) => (props.$nodeState === 'locked' ? '#ffffff' : '#2d5a27')};
   color: ${(props) => (props.$nodeState === 'locked' ? '#333333' : '#ffffff')};
   padding: 20px;
   border-radius: 16px;
-  border: ${(props) => (props.$nodeState === 'locked' ? '2px solid #e5e5e5' : 'none')};
-  border-bottom: ${(props) => (props.$nodeState === 'locked' ? '4px solid #e5e5e5' : '4px solid #d17c00')};
-  min-width: 240px;
-  max-width: 280px;
+  border: ${(props) => (props.$nodeState === 'locked' ? '2px solid #e5e5e5' : '2px solid #1a3b16')};
+  border-bottom: ${(props) => (props.$nodeState === 'locked' ? '4px solid #e5e5e5' : '4px solid #1a3b16')};
+  width: 220px;
+  box-sizing: border-box;
   max-height: min(70vh, 420px);
   overflow-x: hidden;
   overflow-y: auto;
@@ -162,44 +162,40 @@ const TooltipBox = styled.div`
       props.$placement === 'bottom'
         ? `
       top: -10px;
-      border-bottom: 10px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#f18f01'};
+      border-bottom: 10px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#2d5a27'};
     `
         : `
       bottom: -10px;
-      border-top: 10px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#f18f01'};
+      border-top: 10px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#2d5a27'};
     `}
   }
 
-  /* Beak border for locked state */
-  ${(props) =>
-    props.$nodeState === 'locked' &&
-    `
-    &::before {
-      content: '';
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 0;
-      height: 0;
-      border-left: 12px solid transparent;
-      border-right: 12px solid transparent;
-      z-index: 1;
-      ${
-        props.$placement === 'bottom'
-          ? 'top: -12px; border-bottom: 12px solid #e5e5e5;'
-          : 'bottom: -12px; border-top: 12px solid #e5e5e5;'
-      }
+  /* Beak border for locked/active state */
+  &::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 12.5px solid transparent;
+    border-right: 12.5px solid transparent;
+    z-index: 1;
+    ${(props) =>
+      props.$placement === 'bottom'
+        ? `top: -13px; border-bottom: 13px solid ${props.$nodeState === 'locked' ? '#e5e5e5' : '#1a3b16'};`
+        : `bottom: -13px; border-top: 13px solid ${props.$nodeState === 'locked' ? '#e5e5e5' : '#1a3b16'};`
     }
-  `}
+  }
 `;
 
 const TooltipCloseBtn = styled.button`
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 12px;
+  right: 12px;
   background: transparent;
   border: none;
-  color: ${(props) => (props.$nodeState === 'locked' ? '#999999' : 'rgba(255, 255, 255, 0.8)')};
+  color: ${(props) => (props.$nodeState === 'locked' ? '#a1a1aa' : '#ffffff')};
   font-size: 20px;
   cursor: pointer;
   padding: 4px;
@@ -207,9 +203,10 @@ const TooltipCloseBtn = styled.button`
   align-items: center;
   justify-content: center;
   transition: color 0.2s ease;
+  z-index: 3;
 
   &:hover {
-    color: ${(props) => (props.$nodeState === 'locked' ? '#333333' : '#ffffff')};
+    color: ${(props) => (props.$nodeState === 'locked' ? '#333333' : '#e5e5e5')};
   }
 `;
 
@@ -218,6 +215,9 @@ const TooltipTitle = styled.h3`
   font-size: 18px;
   font-weight: 800;
   color: inherit;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-top: 8px; /* space for absolute close btn */
 `;
 
 const TooltipDescription = styled.p`
@@ -228,24 +228,24 @@ const TooltipDescription = styled.p`
 `;
 
 const TooltipStartButton = styled.button`
-  background-color: ${(props) => (props.$nodeState === 'locked' ? '#e5e5e5' : '#ffffff')};
-  color: ${(props) => (props.$nodeState === 'locked' ? '#ffffff' : '#f18f01')};
-  border: none;
+  background-color: ${(props) => (props.$nodeState === 'locked' ? '#f5f5f5' : '#ffffff')};
+  color: ${(props) => (props.$nodeState === 'locked' ? '#a1a1aa' : '#2d5a27')};
+  border: ${(props) => (props.$nodeState === 'locked' ? '2px solid #e5e5e5' : '2px solid #e5e5e5')};
   border-radius: 12px;
   padding: 12px 24px;
   font-size: 15px;
   font-weight: 800;
   letter-spacing: 1px;
   cursor: ${(props) => (props.disabled ? 'not-allowed' : 'pointer')};
-  box-shadow: ${(props) => (props.$nodeState === 'locked' ? '#d5d5d5' : '#e5e5e5')} 0 4px 0 0;
+  box-shadow: ${(props) => (props.$nodeState === 'locked' ? '#d5d5d5' : '#d5d5d5')} 0 4px 0 0;
   transition: all 0.1s ease;
   width: 100%;
   text-transform: uppercase;
   margin-top: 4px;
 
   &:active:not(:disabled) {
-    transform: translateY(2px);
-    box-shadow: ${(props) => (props.$nodeState === 'locked' ? '#d5d5d5' : '#e5e5e5')} 0 2px 0 0;
+    transform: translateY(4px);
+    box-shadow: ${(props) => (props.$nodeState === 'locked' ? '#d5d5d5' : '#d5d5d5')} 0 0px 0 0;
   }
 `;
 

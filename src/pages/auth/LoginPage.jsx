@@ -4,10 +4,10 @@ import { useAuthContext } from '../../context/useAuthContext';
 import { isValidEmail } from '../../utils/validators';
 import { ROUTES } from '../../utils/constants';
 import BackButton from '../../components/common/BackButton';
-import Button from '../../components/common/Button';
 import PasswordToggle from '../../components/common/PasswordToggle';
 import googleLogo from '../../assets/Google-Logo.png';
 import Grainient from './Grainient';
+import { motion } from 'framer-motion';
 import './LoginPage.css';
 
 const LOGIN_LOCKOUT_UNTIL_KEY = 'bigkas_login_lockout_until';
@@ -238,6 +238,19 @@ function LoginPage({ managePageClass = true }) {
     ? `Too many attempts. Try again in ${formatCountdown(lockoutSeconds)}`
     : null;
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+  };
+
   return (
     <div className="auth-page">
       <div className="auth-grainient-bg" aria-hidden="true">
@@ -268,34 +281,39 @@ function LoginPage({ managePageClass = true }) {
       </div>
       <BackButton className="auth-login-back" onClick={() => navigate(ROUTES.HOME, { state: { skipLoader: true } })} />
       <div className="auth-form-panel">
-        <div className="auth-form-container">
-          <h2 className="auth-form-title">Login to Bigkas</h2>
+        <motion.div 
+          className="auth-form-container floating-card"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <motion.h2 variants={itemVariants} className="auth-form-title">Login to Bigkas</motion.h2>
 
           <form className="auth-form" onSubmit={handleLogin}>
             {showAccountCreated && !showUnverified && !errors.submit && (
-              <div className="auth-success-banner">
+              <motion.div variants={itemVariants} className="auth-success-banner">
                 Account created successfully! Please check your email to verify your account before logging in.
-              </div>
+              </motion.div>
             )}
 
             {showAccountVerified && !showUnverified && !errors.submit && (
-              <div className="auth-success-banner">
+              <motion.div variants={itemVariants} className="auth-success-banner">
                 ✓ Email verified! You can now log in.
-              </div>
+              </motion.div>
             )}
 
             {resendSuccess && (
-              <div className="auth-success-banner">
+              <motion.div variants={itemVariants} className="auth-success-banner">
                 Verification email resent! Please check your inbox.
-              </div>
+              </motion.div>
             )}
 
             {(lockoutMessage || errors.submit) && !showUnverified && (
-              <div className="auth-error-banner">{lockoutMessage || errors.submit}</div>
+              <motion.div variants={itemVariants} className="auth-error-banner">{lockoutMessage || errors.submit}</motion.div>
             )}
 
             {showUnverified && (
-              <div className="auth-unverified-banner">
+              <motion.div variants={itemVariants} className="auth-unverified-banner">
                 <p className="auth-unverified-text">
                   Verify your Email Address. Check your inbox and spam folder for the verification link.
                 </p>
@@ -311,10 +329,10 @@ function LoginPage({ managePageClass = true }) {
                       ? `Resend available in ${resendCooldown}s`
                       : 'Resend Verification Email'}
                 </button>
-              </div>
+              </motion.div>
             )}
 
-            <div className="form-group">
+            <motion.div variants={itemVariants} className="form-group">
               <label htmlFor="email" className="form-label">Email</label>
               <input
                 type="email"
@@ -327,9 +345,9 @@ function LoginPage({ managePageClass = true }) {
                 disabled={isLoading || lockoutSeconds > 0}
               />
               {errors.email && <span className="form-error">{errors.email}</span>}
-            </div>
+            </motion.div>
 
-            <div className="form-group">
+            <motion.div variants={itemVariants} className="form-group">
               <label htmlFor="password" className="form-label">Password</label>
               <div className="pw-input-wrap">
                 <input
@@ -351,42 +369,44 @@ function LoginPage({ managePageClass = true }) {
                 />
               </div>
               {errors.password && <span className="form-error">{errors.password}</span>}
-            </div>
+            </motion.div>
 
-            <Button
+            <motion.button
+              variants={itemVariants}
               type="submit"
-              className="auth-submit-btn"
+              className="auth-submit-btn push-btn"
               disabled={isLoading || lockoutSeconds > 0}
-              isLoading={isLoading}
-              style={{ color: '#FFFFFF' }}
             >
-              {lockoutSeconds > 0 ? `LOCKED (${formatCountdown(lockoutSeconds)})` : 'Login'}
-            </Button>
+              {isLoading ? <span className="btn-loader"></span> : (lockoutSeconds > 0 ? `LOCKED (${formatCountdown(lockoutSeconds)})` : 'Login')}
+            </motion.button>
           </form>
 
 
-          <Link to={ROUTES.FORGOT_PASSWORD} className="auth-forgot-link">Forgot Password?</Link>
+          <motion.div variants={itemVariants}>
+            <Link to={ROUTES.FORGOT_PASSWORD} className="auth-forgot-link">Forgot Password?</Link>
+          </motion.div>
 
-          <div className="auth-divider">
+          <motion.div variants={itemVariants} className="auth-divider">
             <span className="auth-divider-line" />
             <span className="auth-divider-text">or</span>
             <span className="auth-divider-line" />
-          </div>
+          </motion.div>
 
-          <Button 
+          <motion.button 
+            variants={itemVariants}
             type="button" 
-            variant="google"
-            className="auth-google-btn" 
+            className="auth-google-btn push-btn google-variant" 
             onClick={handleGoogleSignIn} 
             disabled={isLoading}
-            icon={() => <img src={googleLogo} alt="Google" className="auth-google-logo" />}
-            iconPosition="left"
           >
-            Login with Google
-          </Button>
+            <img src={googleLogo} alt="Google" className="auth-google-logo" />
+            <span className="btn-content">Login with Google</span>
+          </motion.button>
 
-          <Link to={ROUTES.REGISTER} className="auth-link">Create Account?</Link>
-        </div>
+          <motion.div variants={itemVariants} style={{ width: '100%', textAlign: 'center' }}>
+            <Link to={ROUTES.REGISTER} className="auth-link">Create Account?</Link>
+          </motion.div>
+        </motion.div>
       </div>
     </div>
   );

@@ -303,28 +303,28 @@
 }
 
 .skyward-journey-node--active {
-  border-color: #f18f01;
-  background: #f18f01;
+  border-color: #2d5a27;
+  background: #2d5a27;
   color: #ffffff;
   box-shadow:
-    #cd8b76 0px 10px 0px 0px,
-    0 0 0 4px rgba(241, 143, 1, 0.28),
-    0 12px 28px rgba(241, 143, 1, 0.3);
+    #1a3b16 0px 10px 0px 0px,
+    0 0 0 4px rgba(45, 90, 39, 0.28),
+    0 12px 28px rgba(45, 90, 39, 0.3);
 }
 
 /* 3D lip: hover shortens shadow + moves down slightly; active presses flush */
 .skyward-journey-node--active.skyward-journey-node--unlocked:hover:not(:active) {
   box-shadow:
-    #cd8b76 0px 7px 0px 0px,
-    0 0 0 4px rgba(241, 143, 1, 0.22),
-    0 12px 28px rgba(241, 143, 1, 0.25);
+    #1a3b16 0px 7px 0px 0px,
+    0 0 0 4px rgba(45, 90, 39, 0.22),
+    0 12px 28px rgba(45, 90, 39, 0.25);
   transform: translateX(var(--skyward-node-offset, 0%)) translateY(3px);
 }
 
 .skyward-journey-node--active:active:not(:disabled) {
   box-shadow:
-    #cd8b76 0px 0px 0px 0px,
-    0 0 0 4px rgba(241, 143, 1, 0.28);
+    #1a3b16 0px 0px 0px 0px,
+    0 0 0 4px rgba(45, 90, 39, 0.28);
   transform: translateX(var(--skyward-node-offset, 0%)) translateY(10px);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -332,14 +332,14 @@
 .skyward-journey-node--active.skyward-journey-node--milestone {
   border-color: #e6a800;
   box-shadow:
-    #cd8b76 0px 10px 0px 0px,
+    #1a3b16 0px 10px 0px 0px,
     0 0 0 4px rgba(230, 168, 0, 0.35),
     0 14px 32px rgba(180, 120, 0, 0.35);
 }
 
 .skyward-journey-node--active.skyward-journey-node--milestone:hover:not(:active) {
   box-shadow:
-    #cd8b76 0px 7px 0px 0px,
+    #1a3b16 0px 7px 0px 0px,
     0 0 0 4px rgba(230, 168, 0, 0.3),
     0 14px 32px rgba(180, 120, 0, 0.3);
   transform: translateX(var(--skyward-node-offset, 0%)) translateY(3px);
@@ -349,7 +349,7 @@
   position: absolute;
   inset: -8px;
   border-radius: inherit;
-  border: 3px solid rgba(241, 143, 1, 0.55);
+  border: 3px solid rgba(45, 90, 39, 0.55);
   animation: skyward-node-pulse-ring 1.6s ease-in-out infinite;
   pointer-events: none;
 }

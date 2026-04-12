@@ -78,9 +78,8 @@ function LockedIconTeaser({ index, milestone }) {
  * @param {object} props
  * @param {Array<{ id: string, nodeState: string, task?: object, title?: string }>} props.steps
  * @param {(step: object, meta: object) => React.ReactNode} props.renderStepContent
- * @param {boolean} [props.entranceFromNav] — play zoom-to-current-quest when navigating from side nav
  */
-export default function SkywardJourney({ steps, renderStepContent, entranceFromNav = false }) {
+export default function SkywardJourney({ steps, renderStepContent }) {
   const gradId = useId().replace(/:/g, '');
   const flowGradId = useId().replace(/:/g, '');
   const rootRef = useRef(null);
@@ -263,7 +262,7 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
     });
 
     const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const delay = entranceFromNav ? 160 : 80;
+    const delay = 0;
     const t = window.setTimeout(() => {
       el.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth', inline: 'nearest' });
     }, delay);
@@ -272,7 +271,7 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
       cancelAnimationFrame(raf);
       window.clearTimeout(t);
     };
-  }, [activeIndex, entranceFromNav, clearIdleTimer]);
+  }, [activeIndex, clearIdleTimer]);
 
   useEffect(() => {
     return () => clearIdleTimer();

@@ -530,7 +530,6 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
                 }. Open quest details.`}
                 style={{
                   '--skyward-node-offset': `${horizontalOffset}%`,
-                  transform: `translateX(${horizontalOffset}%)`,
                 }}
                 onClick={() => handleNodeClick(step, i)}
               >

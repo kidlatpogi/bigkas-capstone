@@ -1,54 +1,38 @@
 import { forwardRef } from 'react';
 import styled from 'styled-components';
 
-const STATE_THEME = {
-  active: {
-    background: '#f18f01',
-    shadow: 'rgba(201, 46, 70, 0.45)',
-    text: '#ffffff',
-  },
-  completed: {
-    background: '#5a7863',
-    shadow: 'rgba(63, 93, 71, 0.42)',
-    text: '#ffffff',
-  },
-  locked: {
-    background: '#a1a1aa',
-    shadow: 'rgba(113, 113, 122, 0.45)',
-    text: '#ffffff',
-  },
-};
-
-const StyledButton = styled.button`
-  background-color: ${(props) => props.$theme.background};
-  color: ${(props) => props.$theme.text};
-  border-radius: 999px;
-  border: 0;
-  transition: all 0.2s ease;
-  box-shadow: ${(props) => props.$theme.shadow} 0px 10px 0px 0px;
-  cursor: pointer;
-
-  &:hover {
-    box-shadow: ${(props) => props.$theme.shadow} 0px 7px 0px 0px;
+const StyledWrapper = styled.div`
+  button {
+    padding: 0;
+    border-radius: 999px;
+    border: 0;
+    background-color: rgb(255, 56, 86);
+    letter-spacing: 1.5px;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    box-shadow: rgb(201, 46, 70) 0px 10px 0px 0px;
+    color: hsl(0, 0%, 100%);
+    cursor: pointer;
   }
 
-  &:active {
-    background-color: ${(props) => props.$theme.background};
-    box-shadow: ${(props) => props.$theme.shadow} 0px 0px 0px 0px;
-    transform: translateY(5px);
-    transition: 180ms;
+  button:active {
+    background-color: rgb(255, 56, 86);
+    box-shadow: rgb(201, 46, 70) 0px 0px 0px 0px;
+    transform: translateX(var(--skyward-node-offset, 0%)) translateY(10px);
+    transition: 200ms;
   }
 `;
 
 const SkywardJourneyNodeButton = forwardRef(function SkywardJourneyNodeButton(
-  { children, nodeState = 'active', ...props },
+  { children, nodeState: _NODE_STATE = 'active', disabled, ...props },
   ref,
 ) {
-  const theme = STATE_THEME[nodeState] || STATE_THEME.active;
   return (
-    <StyledButton ref={ref} $theme={theme} {...props}>
-      {children}
-    </StyledButton>
+    <StyledWrapper>
+      <button ref={ref} disabled={disabled} {...props}>
+        {children}
+      </button>
+    </StyledWrapper>
   );
 });
 

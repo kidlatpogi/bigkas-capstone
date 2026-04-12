@@ -183,10 +183,10 @@
 
 .skyward-journey-node {
   position: relative;
-  width: 56px;
-  height: 56px;
-  min-width: 48px;
-  min-height: 48px;
+  width: 52px;
+  height: 52px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: 999px;
   border: 3px solid rgba(15, 68, 98, 0.35);
   background: linear-gradient(160deg, #ffffff 0%, #f4f7f5 100%);
@@ -205,10 +205,10 @@
 
 /* Boss / milestone — 1.5× footprint */
 .skyward-journey-node--milestone {
-  width: 84px;
-  height: 84px;
-  min-width: 72px;
-  min-height: 72px;
+  width: 76px;
+  height: 76px;
+  min-width: 64px;
+  min-height: 64px;
   border-width: 4px;
   border-color: #c9a227;
   background: linear-gradient(165deg, #fff9e6 0%, #ffe8a8 45%, #f5d978 100%);
@@ -294,6 +294,12 @@
     0 16px 36px rgba(11, 57, 84, 0.14);
 }
 
+.skyward-journey-node--active.skyward-journey-node--unlocked:hover {
+  box-shadow:
+    0 0 0 4px rgba(241, 143, 1, 0.28),
+    0 12px 28px rgba(241, 143, 1, 0.3);
+}
+
 .skyward-journey-node--active.skyward-journey-node--float:hover {
   animation: none;
   transform: translateX(var(--skyward-node-offset, 0%)) translateY(-6px);
@@ -361,7 +367,7 @@
 }
 
 .skyward-journey-node--active .skyward-journey-node-icon {
-  color: #c45f00;
+  color: #ffffff;
 }
 
 .skyward-journey-node--completed .skyward-journey-node-icon {

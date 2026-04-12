@@ -8,6 +8,9 @@ import BackButton from '../../components/common/BackButton';
 import Button from '../../components/common/Button';
 import PasswordToggle from '../../components/common/PasswordToggle';
 import Grainient from './Grainient';
+import LegalModal from '../../components/Legal/LegalModal';
+import { TERMS_AND_CONDITIONS } from '../../constants/legal/terms';
+import { PRIVACY_POLICY } from '../../constants/legal/privacy';
 import './RegisterPage.css';
 
 /**
@@ -17,6 +20,19 @@ import './RegisterPage.css';
 function RegisterPage() {
   const navigate = useNavigate();
   const { register, loginWithGoogle, isLoading } = useAuthContext();
+
+  const [legalModal, setLegalModal] = useState({ isOpen: false, title: '', content: '' });
+  const [consentChecked, setConsentChecked] = useState(false);
+
+  const showTerms = (e) => {
+    e.preventDefault();
+    setLegalModal({ isOpen: true, title: 'Terms & Conditions', content: TERMS_AND_CONDITIONS });
+  };
+  const showPrivacy = (e) => {
+    e.preventDefault();
+    setLegalModal({ isOpen: true, title: 'Privacy Policy', content: PRIVACY_POLICY });
+  };
+  const closeLegal = () => setLegalModal({ ...legalModal, isOpen: false });
 
   useEffect(() => {
     // Add register-page-active class to body
@@ -342,10 +358,24 @@ function RegisterPage() {
               {errors.confirmPassword && <span className="form-error">{errors.confirmPassword}</span>}
             </div>
 
+            <div className="form-group consent-group" style={{ marginTop: '12px', marginBottom: '16px' }}>
+              <label className="consent-label" style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', fontSize: '13px', color: '#4b5563', lineHeight: '1.4' }}>
+                <input
+                  type="checkbox"
+                  checked={consentChecked}
+                  onChange={(e) => setConsentChecked(e.target.checked)}
+                  style={{ marginTop: '3px', cursor: 'pointer' }}
+                />
+                <span>
+                  I have read and agree to the <a href="#" onClick={showTerms} style={{ color: '#f18f01', fontWeight: '700', textDecoration: 'none' }}>Terms and Conditions</a> and <a href="#" onClick={showPrivacy} style={{ color: '#f18f01', fontWeight: '700', textDecoration: 'none' }}>Privacy Policy</a>, including the 14-day biometric data retention policy.
+                </span>
+              </label>
+            </div>
+
             <Button
               type="submit"
               className="auth-submit-btn"
-              disabled={isLoading}
+              disabled={isLoading || !consentChecked}
               isLoading={isLoading}
               style={{ fontSize: '14px' }}
             >
@@ -364,7 +394,7 @@ function RegisterPage() {
             variant="google"
             className="auth-google-btn" 
             onClick={handleGoogleSignIn} 
-            disabled={isLoading}
+            disabled={isLoading || !consentChecked}
             icon={() => <img src={googleLogo} alt="Google" className="auth-google-logo" />}
             iconPosition="left"
           >
@@ -375,6 +405,13 @@ function RegisterPage() {
           <Link to={ROUTES.LOGIN} className="auth-link" onClick={handleGoToLogin}>Login</Link>
         </div>
       </div>
+
+      <LegalModal
+        isOpen={legalModal.isOpen}
+        onClose={closeLegal}
+        title={legalModal.title}
+        content={legalModal.content}
+      />
     </div>
   );
 }

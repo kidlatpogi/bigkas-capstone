@@ -189,10 +189,14 @@ function ActivityPage() {
       tasks.map((task, index) => ({
         id: task.id,
         task,
-        title: task.phase_name || task.title,
-        pillarName: task.phase_name || task.pillarName,
-        stageNumber: index + 1,
+        // Display the actual title column from DB (which is mapped to task.title in the service)
+        title: task.title || "Training Task", 
+        pillarName: task.phase_name || "General",
+        // Use the actual order from DB if available, otherwise index
+        stageNumber: task.activity_order || index + 1,
         totalStages,
+        // Check if this is the Post-Test (Order 31) to apply special styling
+        isRankUp: task.activity_order === 31,
         nodeState: getNodeStateForTask(task.id, taskState, taskUnlockState, activeTaskId),
         onActivate: () => handleTaskAction(task),
       })),

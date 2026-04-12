@@ -219,6 +219,18 @@ function UserAnalyzingPage() {
         },
       });
 
+      // Update the profiles table with the new current_level
+      if (result?.success) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ current_level: analysis.levelNumber })
+          .eq('id', user.id);
+
+        if (profileError) {
+          console.error('Failed to update current_level in profiles:', profileError);
+        }
+      }
+
       setIsPersisting(false);
 
       if (!result?.success) {

@@ -13,6 +13,8 @@ import {
 import SkywardJourney from '../../components/journey/SkywardJourney';
 import { getActiveTaskId, getNodeStateForTask } from '../../components/journey/journeyConstants';
 import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
+import { useJourneyRemoteState } from '../../hooks/useJourneyRemoteState';
+import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../services/journeyProgressService';
 import './InnerPages.css';
 import './ActivityPage.css';
 
@@ -24,6 +26,7 @@ function ActivityPage() {
   const scopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
   /** Activities are filtered by `target_level` = Bigkas rank (same as dashboard `levelProgress.levelName`). */
   const { tasks, loading: activitiesLoading, error: activitiesError } = useActivitiesJourneyTasks();
+  const { metricsSyncKey, refreshJourney } = useJourneyRemoteState(user);
   const stampResetTimeoutRef = useRef(null);
   const audioContextRef = useRef(null);
   const previousTaskStateRef = useRef({});
@@ -66,6 +69,26 @@ function ActivityPage() {
     };
   }, [scopeKey]);
 
+  useEffect(() => {
+    setActivityMetrics(getActivityMetrics(scopeKey));
+  }, [scopeKey, metricsSyncKey]);
+
+  useEffect(() => {
+    if (!user?.id || activitiesLoading) return undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        await ensureJourneyStarted(user.id);
+        if (!cancelled) await refreshJourney();
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, activitiesLoading, refreshJourney]);
+
   const taskState = useMemo(() => {
     return tasks.reduce((state, task) => {
       state[task.id] = isActivityTaskCompleted(task.id, activityMetrics);
@@ -93,6 +116,14 @@ function ActivityPage() {
     () => getActiveTaskId(tasks, taskState, taskUnlockState),
     [tasks, taskState, taskUnlockState],
   );
+
+  useEffect(() => {
+    if (!user?.id) return undefined;
+    const t = window.setTimeout(() => {
+      updateJourneyCurrentActivity(user.id, activeTaskId ?? null).catch(() => {});
+    }, 450);
+    return () => window.clearTimeout(t);
+  }, [user?.id, activeTaskId]);
 
   const playCompletionSound = useCallback(() => {
     if (typeof window === 'undefined') return;

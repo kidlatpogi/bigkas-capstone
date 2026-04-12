@@ -5,6 +5,8 @@ import CalendarHeatmap from 'react-calendar-heatmap';
 import { useAuthContext } from '../../context/useAuthContext';
 import { useSessions } from '../../hooks/useSessions';
 import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
+import { useJourneyRemoteState } from '../../hooks/useJourneyRemoteState';
+import { updateJourneyCurrentActivity } from '../../services/journeyProgressService';
 import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import {
@@ -184,6 +186,7 @@ export default function DashboardPage() {
   const [activityHistory, setActivityHistory] = useState([]);
   const [activityMetrics, setActivityMetrics] = useState(() => getActivityMetrics(activityScopeKey));
   const { tasks: activityTasks, loading: activitiesLoading } = useActivitiesJourneyTasks();
+  const { journeyStartedAt, metricsSyncKey, remoteLoaded } = useJourneyRemoteState(user);
 
   const getPointsFromUser = useCallback((nextUser) => {
     const raw = Number(nextUser?.speakerPoints ?? 0);
@@ -286,6 +289,15 @@ export default function DashboardPage() {
     return getActivityTaskProgress(currentActiveTask.id, activityMetrics);
   }, [activityMetrics, currentActiveTask]);
 
+  const allJourneyDone = activityTasks.length > 0 && completedTaskCount === activityTasks.length;
+  const hasStartedJourney = journeyStartedAt != null || completedTaskCount > 0;
+  const showStartJourneyPrompt =
+    remoteLoaded &&
+    !activitiesLoading &&
+    activityTasks.length > 0 &&
+    !hasStartedJourney &&
+    !allJourneyDone;
+
   useEffect(() => {
     if (isInitializing) return;
     if (!user?.id) return;
@@ -302,7 +314,16 @@ export default function DashboardPage() {
       setActivityMetrics(getActivityMetrics(activityScopeKey));
     };
     syncPoints();
-  }, [activityScopeKey, getPointsFromUser, user]);
+  }, [activityScopeKey, getPointsFromUser, user, metricsSyncKey]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const id = currentActiveTask?.id ?? null;
+    const t = window.setTimeout(() => {
+      updateJourneyCurrentActivity(user.id, id).catch(() => {});
+    }, 450);
+    return () => window.clearTimeout(t);
+  }, [user?.id, currentActiveTask?.id]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -437,7 +458,39 @@ export default function DashboardPage() {
 
           <section className="dashboard-card dashboard-objectives-card dashboard-anim-bottom dashboard-anim-delay-6">
             <h3 className="dashboard-section-title" style={{ marginBottom: '16px' }}>Current Objectives</h3>
-            {currentActiveTask ? (
+            {!remoteLoaded || activitiesLoading ? (
+              <div className="dashboard-objective-row">
+                <div className="dashboard-objective-copy">
+                  <span style={{ opacity: 0.85 }}>Loading journey…</span>
+                </div>
+              </div>
+            ) : !activityTasks.length ? (
+              <div className="dashboard-objective-row">
+                <div className="dashboard-objective-copy">
+                  <span style={{ opacity: 0.85 }}>No activities for your level yet.</span>
+                </div>
+              </div>
+            ) : showStartJourneyPrompt ? (
+              <div className="dashboard-objective-row">
+                <div className="dashboard-objective-status in-progress" aria-hidden="true" />
+                <div className="dashboard-objective-copy">
+                  <strong>Start your journey:</strong>
+                  <span>Open the activity map and begin your first stage.</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  className="dashboard-objective-action"
+                  onClick={() =>
+                    navigate(ROUTES.ACTIVITY, {
+                      state: { focusCurrentStage: true, skywardEntrance: true },
+                    })
+                  }
+                  icon={IoArrowForward}
+                >
+                  Open journey
+                </Button>
+              </div>
+            ) : currentActiveTask ? (
               <div className="dashboard-objective-row">
                 <div className="dashboard-objective-status in-progress" aria-hidden="true" />
                 <div className="dashboard-objective-copy">

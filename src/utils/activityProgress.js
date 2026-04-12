@@ -1,3 +1,5 @@
+import { isUuidUserId, persistActivityCompletion } from '../services/journeyProgressService';
+
 const METRICS_KEY_PREFIX = 'bigkas_activity_metrics_';
 const TOTAL_POINTS_KEY_PREFIX = 'bigkas_activity_total_points_';
 const COMPLETED_HISTORY_KEY_PREFIX = 'bigkas_activity_completed_history_';
@@ -233,6 +235,31 @@ export function getActivityCompletionHistory(scopeKey = GLOBAL_ACTIVITY_SCOPE) {
   return getCompletedHistory(scopeKey);
 }
 
+/**
+ * Merges server-persisted activity UUIDs into local metrics (union). Used after Supabase fetch.
+ */
+export function mergeCompletedActivityIdsFromRemote(scopeKey, remoteIds) {
+  if (!Array.isArray(remoteIds) || remoteIds.length === 0) {
+    return getActivityMetrics(scopeKey);
+  }
+  const metrics = getActivityMetrics(scopeKey);
+  const set = new Set(metrics.completedActivityIds.map(String));
+  let changed = false;
+  for (const id of remoteIds) {
+    const s = String(id || '').trim();
+    if (s && !set.has(s)) {
+      set.add(s);
+      changed = true;
+    }
+  }
+  if (!changed) {
+    return metrics;
+  }
+  metrics.completedActivityIds = [...set];
+  saveActivityMetrics(scopeKey, metrics);
+  return metrics;
+}
+
 export function recordActivityEvent(event, scopeKey = GLOBAL_ACTIVITY_SCOPE) {
   if (!event || typeof event !== 'object') return getActivityMetrics(scopeKey);
 
@@ -328,6 +355,11 @@ export function recordActivityEvent(event, scopeKey = GLOBAL_ACTIVITY_SCOPE) {
   }
 
   saveActivityMetrics(scopeKey, metrics);
+
+  if (newlyCompletedActivityId && isUuidUserId(scopeKey)) {
+    persistActivityCompletion(scopeKey, newlyCompletedActivityId).catch(() => {});
+  }
+
   return metrics;
 }
 

@@ -41,7 +41,7 @@
 
 .skyward-journey-map-layer {
   will-change: transform;
-  transform-origin: 0 0;
+  transform-origin: 50% 0%;
   transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -590,29 +590,6 @@
   letter-spacing: 0.02em;
   color: rgba(11, 57, 84, 0.38);
   animation: skyward-tap-fade 0.5s ease-out;
-}
-
-.skyward-journey-back-to-start {
-  position: fixed;
-  right: 20px;
-  bottom: 24px;
-  z-index: 20;
-  border: 0;
-  border-radius: 999px;
-  padding: 10px 16px;
-  background: #0b3954;
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-  box-shadow: 0 10px 24px rgba(11, 57, 84, 0.28);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.skyward-journey-back-to-start:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 30px rgba(11, 57, 84, 0.34);
 }
 
 /* Narrow viewports: stack labels under node (Capacitor / mobile web) */

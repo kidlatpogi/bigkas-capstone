@@ -22,7 +22,7 @@ import './SkywardJourney.css';
 const JOURNEY_ICONS = [IoMic, IoVolumeHigh, IoMusicalNote, IoPulse, IoShuffle, IoTrophy];
 
 const MAP_SCALE = 1.5;
-const MAP_EDGE_PAN_PADDING = 120;
+const MAP_EDGE_PAN_PADDING = 180;
 const HORIZONTAL_OFFSET_PATTERN = [0, 25, 50, 25, 0, -25, -50, -25];
 const PILLAR_TITLES = ['Vocal Clarity', 'Verbal Flow', 'Visual Presence', 'Stage Mastery'];
 const PILLAR_SECTION_SIZE = 2;
@@ -43,13 +43,16 @@ function clampMapState(state, viewportEl, contentEl, scale) {
   const { tx, ty } = state;
   const w = cw * scale;
   const h = ch * scale;
+  const extraX = (w - cw) / 2;
+  const extraY = (h - ch) / 2;
   if (!Number.isFinite(W) || !Number.isFinite(H) || W <= 0 || H <= 0) return state;
   if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return state;
+  if (!Number.isFinite(extraX) || !Number.isFinite(extraY)) return state;
 
-  const minX = Math.min(0, W - w) - MAP_EDGE_PAN_PADDING;
-  const maxX = Math.max(0, W - w) + MAP_EDGE_PAN_PADDING;
-  const minY = Math.min(0, H - h) - MAP_EDGE_PAN_PADDING;
-  const maxY = Math.max(0, H - h) + MAP_EDGE_PAN_PADDING;
+  const minX = Math.min(W - cw - extraX - MAP_EDGE_PAN_PADDING, extraX + MAP_EDGE_PAN_PADDING);
+  const maxX = Math.max(W - cw - extraX - MAP_EDGE_PAN_PADDING, extraX + MAP_EDGE_PAN_PADDING);
+  const minY = Math.min(H - ch - extraY - MAP_EDGE_PAN_PADDING, extraY + MAP_EDGE_PAN_PADDING);
+  const maxY = Math.max(H - ch - extraY - MAP_EDGE_PAN_PADDING, extraY + MAP_EDGE_PAN_PADDING);
 
   return {
     tx: Math.min(maxX, Math.max(minX, tx)),
@@ -123,24 +126,10 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
   const [jiggleIndex, setJiggleIndex] = useState(null);
   const [showTapHint, setShowTapHint] = useState(false);
   const [map, setMap] = useState(() => ({ tx: 0, ty: 0 }));
-  const [rootScrollTop, setRootScrollTop] = useState(0);
 
   useLayoutEffect(() => {
     mapRef.current = map;
   }, [map]);
-
-  useEffect(() => {
-    const root = rootRef.current;
-    if (!root) return undefined;
-
-    const onRootScroll = () => {
-      setRootScrollTop(root.scrollTop);
-    };
-
-    onRootScroll();
-    root.addEventListener('scroll', onRootScroll, { passive: true });
-    return () => root.removeEventListener('scroll', onRootScroll);
-  }, []);
 
   const requestClosePanel = useCallback(() => {
     panelClosePendingRef.current = true;
@@ -416,20 +405,6 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
   }, [indexedNodePoints, lastCompletedIndex, activeIndex]);
 
   const closePanel = requestClosePanel;
-  const showBackToStart = map.ty < -120 || rootScrollTop > 120;
-
-  const handleBackToStart = useCallback(() => {
-    const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    setMap({ tx: 0, ty: 0 });
-    const root = rootRef.current;
-    if (root) {
-      root.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
-    }
-    const activeNode = activeIndex >= 0 ? nodeRefs.current[activeIndex] : null;
-    if (activeNode) {
-      activeNode.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth', inline: 'nearest' });
-    }
-  }, [activeIndex]);
 
   const handleNodeClick = useCallback(
     (step, index) => {
@@ -555,6 +530,7 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
                 }. Open quest details.`}
                 style={{
                   '--skyward-node-offset': `${horizontalOffset}%`,
+                  transform: `translateX(${horizontalOffset}%)`,
                 }}
                 onClick={() => handleNodeClick(step, i)}
               >
@@ -679,16 +655,6 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
         </div>
       </div>
       </div>
-
-      {showBackToStart ? (
-        <button
-          type="button"
-          className="skyward-journey-back-to-start"
-          onClick={handleBackToStart}
-        >
-          Back to Start
-        </button>
-      ) : null}
 
       {typeof document !== 'undefined' && selectedStep && selectedMeta
         ? createPortal(

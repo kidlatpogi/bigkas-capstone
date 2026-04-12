@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../utils/constants';
 import { RANDOM_TOPICS } from '../../utils/practiceData';
@@ -7,8 +7,8 @@ import './PracticePage.css';
 
 function IconShuffle() {
   return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FCBA04"
-      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <polyline points="16 3 21 3 21 8"/>
       <line x1="4" y1="20" x2="21" y2="3"/>
       <polyline points="21 16 21 21 16 21"/>
@@ -62,7 +62,7 @@ export default function PracticePage() {
     <div className="practice-page">
       <div className="practice-wrap">
         <div className="practice-header">
-          <BackButton onClick={() => navigate(-1)} />
+          <BackButton className="inner-page-back" onClick={() => navigate(-1)} />
           <h1 className="practice-title">Practice Setup</h1>
         </div>
         <p className="practice-sub">
@@ -88,10 +88,6 @@ export default function PracticePage() {
             Get a surprise topic and practice speaking about it!
           </p>
         </div>
-
-        <button className="practice-cancel-link" onClick={() => navigate(-1)}>
-          Cancel
-        </button>
       </div>
     </div>
   );

@@ -6,7 +6,7 @@ const StyledWrapper = styled.div`
 `;
 
 const SkywardJourneyNodeButton = forwardRef(function SkywardJourneyNodeButton(
-  { children, nodeState = 'active', disabled, ...props },
+  { children, nodeState: _nodeState = 'active', disabled, ...props },
   ref,
 ) {
   return (

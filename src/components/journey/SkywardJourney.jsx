@@ -69,7 +69,7 @@ function JourneyNodeIcon({ index, className = '' }) {
  * @param {boolean} [props.entranceFromNav] — play zoom-to-current-quest when navigating from side nav
  */
 import styled from 'styled-components';
- import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const MapHeaderCard = styled.div`
   max-width: 400px;
@@ -125,9 +125,8 @@ const TooltipBox = styled.div`
   padding: 16px;
   border-radius: 16px;
   box-shadow:
-    0 4px 0 0 rgba(0, 0, 0, 0.1),
-    0 12px 24px rgba(0, 0, 0, 0.15);
-  border-bottom: 4px solid #e5e5e5;
+    0 4px 0 0 #e5e5e5,
+    0 12px 24px rgba(0, 0, 0, 0.12);
   min-width: 200px;
   max-height: min(70vh, 420px);
   overflow-x: hidden;
@@ -207,17 +206,11 @@ function computeTooltipLayout(nodeEl) {
   if (!nodeEl) return { left: 0, top: 0, transform: 'translate(-50%, -100%)', placement: 'top' };
   const rect = nodeEl.getBoundingClientRect();
   const cx = rect.left + rect.width / 2;
-  const spaceAbove = rect.top - TOOLTIP_VIEW_MARGIN;
-  const spaceBelow = window.innerHeight - rect.bottom - TOOLTIP_VIEW_MARGIN;
+  
+  // Use window height for 25% calculation as requested
+  const isTopArea = rect.top < (window.innerHeight * 0.25);
 
-  let placement = 'top';
-  if (spaceAbove < TOOLTIP_EST_HEIGHT && spaceBelow > spaceAbove) {
-    placement = 'bottom';
-  } else if (spaceBelow < TOOLTIP_EST_HEIGHT && spaceAbove > spaceBelow) {
-    placement = 'top';
-  } else if (spaceAbove < TOOLTIP_EST_HEIGHT && spaceBelow < TOOLTIP_EST_HEIGHT) {
-    placement = spaceBelow >= spaceAbove ? 'bottom' : 'top';
-  }
+  const placement = isTopArea ? 'bottom' : 'top';
 
   const top =
     placement === 'bottom' ? rect.bottom + TOOLTIP_GAP : rect.top - TOOLTIP_GAP;
@@ -240,6 +233,7 @@ export const JourneyTooltip = ({ step, onStart, nodeRef }) => {
 
     update();
     window.addEventListener('resize', update);
+    // Track scroll events in capture phase to ensure we react to map panning
     window.addEventListener('scroll', update, true);
     return () => {
       window.removeEventListener('resize', update);
@@ -266,11 +260,11 @@ export const JourneyTooltip = ({ step, onStart, nodeRef }) => {
       }}
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.94 }}
+        initial={{ opacity: 0, scale: 0 }}
         animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.94 }}
+        exit={{ opacity: 0, scale: 0 }}
         transition={{ type: 'spring', damping: 22, stiffness: 320 }}
-        style={{ maxWidth: 'min(22rem, calc(100vw - 24px))' }}
+        style={{ maxWidth: 'min(22rem, calc(100vw - 24px))', transformOrigin: layout.placement === 'bottom' ? 'top center' : 'bottom center' }}
       >
         <TooltipBox>
           <TooltipTitle>{step.title || 'Lesson'}</TooltipTitle>
@@ -288,7 +282,7 @@ export const JourneyTooltip = ({ step, onStart, nodeRef }) => {
               if (!isLocked) onStart(step);
             }}
           >
-            {isLocked ? 'Locked' : 'Start'}
+            {isLocked ? 'LOCKED' : 'START'}
           </StartButton>
           <TooltipBeak $placement={layout.placement} />
         </TooltipBox>

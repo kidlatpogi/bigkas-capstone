@@ -554,9 +554,13 @@ export default function SkywardJourney({
       if (panelOpenId) return;
       const dominantDelta = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
       if (Math.abs(dominantDelta) < 0.5) return;
-      e.preventDefault();
       const panStep = dominantDelta * 0.8;
-      setMap((m) => clampMapState({ ...m, ty: m.ty - panStep }, vp, content, MAP_SCALE));
+      const current = mapRef.current;
+      const next = clampMapState({ ...current, ty: current.ty - panStep }, vp, content, MAP_SCALE);
+      const didPan = Math.abs(next.ty - current.ty) > 0.1 || Math.abs(next.tx - current.tx) > 0.1;
+      if (!didPan) return;
+      e.preventDefault();
+      setMap(next);
     };
 
     vp.addEventListener('wheel', onWheel, { passive: false });

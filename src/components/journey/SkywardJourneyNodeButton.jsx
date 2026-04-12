@@ -1,34 +1,52 @@
 import { forwardRef } from 'react';
 import styled from 'styled-components';
 
+const STATE_THEME = {
+  active: {
+    background: '#f18f01',
+    shadow: 'rgba(201, 46, 70, 0.45)',
+    text: '#ffffff',
+  },
+  completed: {
+    background: '#5a7863',
+    shadow: 'rgba(63, 93, 71, 0.42)',
+    text: '#ffffff',
+  },
+  locked: {
+    background: '#a1a1aa',
+    shadow: 'rgba(113, 113, 122, 0.45)',
+    text: '#ffffff',
+  },
+};
+
 const StyledButton = styled.button`
-  border: 0;
+  background-color: ${(props) => props.$theme.background};
+  color: ${(props) => props.$theme.text};
   border-radius: 999px;
-  color: hsl(0, 0%, 100%);
-  background-color: rgb(255, 56, 86);
-  background-image: linear-gradient(to bottom, rgb(255, 56, 86) 0 50%, rgb(201, 46, 70) 50% 100%);
-  transition: all 0.3s ease;
-  box-shadow: rgb(201, 46, 70) 0px 10px 0px 0px;
+  border: 0;
+  transition: all 0.2s ease;
+  box-shadow: ${(props) => props.$theme.shadow} 0px 10px 0px 0px;
   cursor: pointer;
 
   &:hover {
-    box-shadow: rgb(201, 46, 70) 0px 7px 0px 0px;
+    box-shadow: ${(props) => props.$theme.shadow} 0px 7px 0px 0px;
   }
 
   &:active {
-    background-color: rgb(255, 56, 86);
-    box-shadow: rgb(201, 46, 70) 0px 0px 0px 0px;
+    background-color: ${(props) => props.$theme.background};
+    box-shadow: ${(props) => props.$theme.shadow} 0px 0px 0px 0px;
     transform: translateY(5px);
-    transition: 200ms;
+    transition: 180ms;
   }
 `;
 
 const SkywardJourneyNodeButton = forwardRef(function SkywardJourneyNodeButton(
-  { children, ...props },
+  { children, nodeState = 'active', ...props },
   ref,
 ) {
+  const theme = STATE_THEME[nodeState] || STATE_THEME.active;
   return (
-    <StyledButton ref={ref} {...props}>
+    <StyledButton ref={ref} $theme={theme} {...props}>
       {children}
     </StyledButton>
   );

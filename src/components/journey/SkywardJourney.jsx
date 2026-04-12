@@ -76,9 +76,9 @@ function JourneyNodeIcon({ index, className = '' }) {
  */
 
 const MapHeaderCard = styled.div`
-  max-width: 400px;
-  width: 90%;
-  margin: 0;
+  max-width: 480px;
+  width: min(480px, calc(100vw - 48px));
+  margin: 0 auto;
   padding: 24px;
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
@@ -91,10 +91,8 @@ const MapHeaderCard = styled.div`
   text-align: center;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   border: 2px solid #f18f01;
-  position: fixed;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
+  position: sticky;
+  top: 0;
   z-index: 60;
   flex-shrink: 0;
 `;
@@ -133,7 +131,7 @@ const TooltipBox = styled.div`
   border-radius: 16px;
   border: ${(props) => (props.$nodeState === 'locked' ? '2px solid #e5e5e5' : '2px solid #1a3b16')};
   border-bottom: ${(props) => (props.$nodeState === 'locked' ? '4px solid #e5e5e5' : '4px solid #1a3b16')};
-  width: 260px;
+  width: min(380px, calc(100vw - 32px));
   box-sizing: border-box;
   max-height: min(70vh, 420px);
   overflow-x: hidden;
@@ -320,7 +318,8 @@ export const JourneyTooltip = ({ step, onStart, onClose, nodeRef, forceBottom = 
         exit={{ opacity: 0, scale: 0 }}
         transition={{ type: 'spring', damping: 22, stiffness: 320 }}
         style={{
-          maxWidth: 'min(22rem, calc(100vw - 24px))',
+          maxWidth: 'min(30rem, calc(100vw - 24px))',
+          width: '100%',
           transformOrigin: layout.placement === 'bottom' ? 'top center' : 'bottom center',
         }}
       >

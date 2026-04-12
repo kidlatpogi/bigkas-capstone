@@ -22,6 +22,7 @@ function ActivityPage() {
   const { user } = useAuthContext();
   const [entranceFromNav] = useState(() => location.state?.skywardEntrance === true);
   const scopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
+  /** Activities are filtered by `target_level` = Bigkas rank (same as dashboard `levelProgress.levelName`). */
   const { tasks, loading: activitiesLoading, error: activitiesError } = useActivitiesJourneyTasks();
   const stampResetTimeoutRef = useRef(null);
   const audioContextRef = useRef(null);

@@ -2,11 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { IoArrowForward, IoCheckmarkCircle, IoLockClosed } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
 import CalendarHeatmap from 'react-calendar-heatmap';
-import axios from 'axios';
 import { useAuthContext } from '../../context/useAuthContext';
 import { useSessions } from '../../hooks/useSessions';
 import { ROUTES } from '../../utils/constants';
-import { ENV } from '../../config/env';
 import Button from '../../components/common/Button';
 import {
   GLOBAL_ACTIVITY_SCOPE,
@@ -30,40 +28,6 @@ function getLocalDateKey(date = new Date()) {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
-}
-
-const DASHBOARD_STORAGE_KEYS = {
-  DAILY_QUOTE: 'bigkas_dashboard_daily_quote',
-  QUOTE_EXPIRY: 'bigkas_dashboard_quote_expiry',
-};
-
-function getStoredDailyQuote() {
-  try {
-    const stored = localStorage.getItem(DASHBOARD_STORAGE_KEYS.DAILY_QUOTE);
-    const expiry = localStorage.getItem(DASHBOARD_STORAGE_KEYS.QUOTE_EXPIRY);
-    if (!stored || !expiry) return null;
-
-    const now = new Date().getTime();
-    if (now > Number(expiry)) {
-      localStorage.removeItem(DASHBOARD_STORAGE_KEYS.DAILY_QUOTE);
-      localStorage.removeItem(DASHBOARD_STORAGE_KEYS.QUOTE_EXPIRY);
-      return null;
-    }
-    return JSON.parse(stored);
-  } catch {
-    return null;
-  }
-}
-
-function setStoredDailyQuote(quote) {
-  try {
-    const nextMidnight = new Date();
-    nextMidnight.setHours(24, 0, 0, 0);
-    localStorage.setItem(DASHBOARD_STORAGE_KEYS.DAILY_QUOTE, JSON.stringify(quote));
-    localStorage.setItem(DASHBOARD_STORAGE_KEYS.QUOTE_EXPIRY, nextMidnight.getTime().toString());
-  } catch {
-    // Ignore storage errors
-  }
 }
 
 function getLocalDayIndex(dateInput) {
@@ -257,58 +221,10 @@ export default function DashboardPage() {
   const { sessions, fetchAllSessions } = useSessions();
   const activityScopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
 
-  const [insight, setInsight] = useState(() => {
-    return getStoredDailyQuote() || {
-      text: 'Loading your daily inspiration...',
-      author: 'Bigkas AI',
-    };
+  const [insight] = useState({
+    text: 'The only way to do great work is to love what you do.',
+    author: 'Steve Jobs',
   });
-
-  useEffect(() => {
-    const fetchQuote = async () => {
-      // Check if we already have a valid stored quote for today
-      const existing = getStoredDailyQuote();
-      if (existing) {
-        setInsight(existing);
-        return;
-      }
-
-      try {
-        // Try the local Python service first
-        let quoteData;
-        try {
-          const serviceUrl = ENV.PYTHON_SERVICE_URL;
-          const response = await axios.get(`${serviceUrl}/content/daily-quote`);
-          quoteData = {
-            text: response.data.text,
-            author: response.data.author,
-          };
-        } catch {
-          // Fallback to ZenQuotes if local service fails
-          const response = await axios.get('https://api.allorigins.win/raw?url=https://zenquotes.io/api/random');
-          if (response.data && response.data[0]) {
-            quoteData = {
-              text: response.data[0].q,
-              author: response.data[0].a,
-            };
-          }
-        }
-
-        if (quoteData) {
-          setInsight(quoteData);
-          setStoredDailyQuote(quoteData);
-        }
-      } catch (error) {
-        console.error('Error fetching quote:', error);
-        const fallback = {
-          text: 'The only way to do great work is to love what you do.',
-          author: 'Steve Jobs',
-        };
-        setInsight(fallback);
-      }
-    };
-    fetchQuote();
-  }, []);
 
   const [totalActivityPoints, setTotalActivityPoints] = useState(0);
   const [activityHistory, setActivityHistory] = useState([]);

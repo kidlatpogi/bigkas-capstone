@@ -2,9 +2,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useSta
 import { createPortal } from 'react-dom';
 import {
   IoCheckmarkCircle,
-  IoLockClosed,
   IoMic,
-  IoMicOutline,
   IoMusicalNote,
   IoPulse,
   IoShuffle,
@@ -62,23 +60,6 @@ function clampMapState(state, viewportEl, contentEl, scale) {
 function JourneyNodeIcon({ index, className = '' }) {
   const Cmp = JOURNEY_ICONS[index % JOURNEY_ICONS.length];
   return <Cmp aria-hidden className={`skyward-journey-node-icon ${className}`.trim()} />;
-}
-
-function LockedIconTeaser({ index, milestone }) {
-  return (
-    <>
-      <span className="skyward-journey-node-teaser" aria-hidden>
-        {milestone ? (
-          <IoTrophy className="skyward-journey-node-icon skyward-journey-node-icon--boss skyward-journey-node-icon--teaser" />
-        ) : (
-          <JourneyNodeIcon index={index} className="skyward-journey-node-icon--teaser" />
-        )}
-      </span>
-      <span className="skyward-journey-node-lock-corner" aria-hidden>
-        <IoLockClosed />
-      </span>
-    </>
-  );
 }
 
 /**
@@ -699,7 +680,6 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
                 {isDone ? (
                   <IoCheckmarkCircle className="skyward-journey-node-state-icon" aria-hidden />
                 ) : null}
-                {isLocked ? <LockedIconTeaser index={i} milestone={milestone} /> : null}
                 {!isDone && !isLocked ? (
                   milestone ? (
                     <IoTrophy
@@ -748,6 +728,11 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
 
   return (
     <div className="skyward-journey skyward-journey-container no-scrollbar" ref={rootRef}>
+      <MapHeaderCard>
+        <HeaderTitle>CHAPTER 1: VOCAL CLARITY</HeaderTitle>
+        <HeaderDescription>Master your speaking fundamentals</HeaderDescription>
+        <HeaderStatBadge>{completedCount} / {steps.length} Stages Completed</HeaderStatBadge>
+      </MapHeaderCard>
       <div className="skyward-journey-map">
       <div
         className="skyward-journey-map-viewport"
@@ -822,11 +807,6 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
             ) : null}
 
             <div className="skyward-journey-column">
-              <MapHeaderCard>
-                <HeaderTitle>CHAPTER 1: VOCAL CLARITY</HeaderTitle>
-                <HeaderDescription>Master your speaking fundamentals</HeaderDescription>
-                <HeaderStatBadge>{completedCount} / {steps.length} Nodes Completed</HeaderStatBadge>
-              </MapHeaderCard>
               {sections}
             </div>
           </div>

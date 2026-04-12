@@ -15,12 +15,13 @@
 .skyward-journey-container {
   height: 100%;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 .skyward-journey-map {
   position: relative;
   width: 100%;
+  max-width: 100%;
   height: auto;
   overflow: visible;
 }
@@ -29,17 +30,15 @@
   overflow: visible;
   position: relative;
   width: 100%;
+  max-width: 100%;
   min-height: 100%;
   max-height: none;
   -webkit-overflow-scrolling: touch;
-  touch-action: pan-y pinch-zoom;
-}
-
-.skyward-journey-map-viewport.is-exploring {
-  overscroll-behavior-y: contain;
 }
 
 .skyward-journey-map-layer {
+  width: 100%;
+  max-width: 100%;
   will-change: transform;
   transform-origin: 50% 0%;
   transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);

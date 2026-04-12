@@ -197,7 +197,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 /* Pillars Section */
 .progress-pillars-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
   flex: 1;
   min-height: 0;
@@ -225,10 +225,9 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   height: auto;
   min-height: 0;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -239,18 +238,23 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
 }
 
-.pillar-left {
+.pillar-main-section {
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
-.pillar-right {
+.pillar-divider {
+  width: 100%;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.06);
+  margin: 4px 0;
+}
+
+.pillar-sub-section {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  border-left: 1px solid rgba(0, 0, 0, 0.05);
-  padding-left: 24px;
 }
 
 .sub-metric {
@@ -277,7 +281,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 .sub-metric-fill {
   height: 100%;
   border-radius: 6px;
-  background: linear-gradient(90deg, #d17c00 0%, #f18f01 100%);
+  background: #f18f01;
   transition: width 1s cubic-bezier(0.2, 0.9, 0.2, 1);
 }
 

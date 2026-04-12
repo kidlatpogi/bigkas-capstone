@@ -312,8 +312,25 @@ function ProgressPage() {
         },
         subMetricsConfig: [
           { label: 'Eye Contact', resolver: (s) => Number(s.facial_expression_score) },
-          { label: 'Gestures', resolver: (s) => Number(s.gesture_score) },
-          { label: 'Posture', resolver: (s) => Number.isFinite(Number(s.posture_score)) ? Number(s.posture_score) : Number(s.gesture_score) }
+          { label: 'Gestures', resolver: (s) => Number(s.gesture_score) }
+        ]
+      },
+      {
+        key: 'verbal',
+        label: 'Verbal Flow',
+        color: '#2d5a27',
+        icon: IoChatbubbleEllipsesOutline,
+        iconBg: 'rgba(45, 90, 39, 0.1)',
+        resolver: (session) => {
+          const context = Number(session.context_score);
+          const fluency = Number(session.fluency_score);
+          const pool = [context, fluency].filter((value) => Number.isFinite(value));
+          if (!pool.length) return null;
+          return pool.reduce((sum, value) => sum + value, 0) / pool.length;
+        },
+        subMetricsConfig: [
+          { label: 'Pronunciation', resolver: (s) => Number(s.pronunciation_score) },
+          { label: 'Context Awareness', resolver: (s) => Number(s.context_score) }
         ]
       },
       {
@@ -334,29 +351,10 @@ function ProgressPage() {
           return pool.reduce((sum, value) => sum + value, 0) / pool.length;
         },
         subMetricsConfig: [
-          { label: 'Filler Words', resolver: (s) => Number.isFinite(Number(s.shimmer_score)) ? 100 - Number(s.shimmer_score) : null },
-          { label: 'Pacing', resolver: (s) => Number(s.pronunciation_score) },
-          { label: 'Volume', resolver: (s) => Number.isFinite(Number(s.jitter_score)) ? 100 - Number(s.jitter_score) : null }
+          { label: 'Shimmer', resolver: (s) => Number.isFinite(Number(s.shimmer_score)) ? Number(s.shimmer_score) : null },
+          { label: 'Jitter', resolver: (s) => Number.isFinite(Number(s.jitter_score)) ? Number(s.jitter_score) : null }
         ]
-      },
-      {
-        key: 'verbal',
-        label: 'Verbal Flow',
-        color: '#2d5a27',
-        icon: IoChatbubbleEllipsesOutline,
-        iconBg: 'rgba(45, 90, 39, 0.1)',
-        resolver: (session) => {
-          const context = Number(session.context_score);
-          const fluency = Number(session.fluency_score);
-          const pool = [context, fluency].filter((value) => Number.isFinite(value));
-          if (!pool.length) return null;
-          return pool.reduce((sum, value) => sum + value, 0) / pool.length;
-        },
-        subMetricsConfig: [
-          { label: 'Vocabulary', resolver: (s) => Number(s.context_score) },
-          { label: 'Grammar', resolver: (s) => Number(s.fluency_score) }
-        ]
-      },
+      }
     ];
 
     return metricConfig.map((pillar) => {
@@ -528,7 +526,7 @@ function ProgressPage() {
           <div className="progress-pillars-grid">
             {pillarStats.map((pillar, index) => (
               <div key={pillar.key} className={`pillar-card dashboard-anim-bottom dashboard-anim-delay-${5 + index}`}>
-                <div className="pillar-left">
+                <div className="pillar-main-section">
                   <div className="pillar-info">
                     <span className="pillar-icon" style={{ background: pillar.iconBg, color: pillar.color }}>
                       <pillar.icon />
@@ -549,7 +547,10 @@ function ProgressPage() {
                     </div>
                   </div>
                 </div>
-                <div className="pillar-right">
+                
+                <div className="pillar-divider" />
+                
+                <div className="pillar-sub-section">
                   {pillar.subMetrics.map((sub, i) => (
                     <div key={i} className="sub-metric">
                       <div className="sub-metric-header">

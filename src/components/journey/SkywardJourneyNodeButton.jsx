@@ -73,7 +73,7 @@ const SkywardJourneyNodeButton = forwardRef(function SkywardJourneyNodeButton(
     <StyledWrapper $theme={theme}>
       <button 
         ref={ref} 
-        disabled={nodeState === 'locked' || disabled} 
+        disabled={disabled} 
         {...props}
       >
         {children}

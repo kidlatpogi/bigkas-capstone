@@ -334,7 +334,12 @@ export const JourneyTooltip = ({ step, onStart, onClose, nodeRef, forceBottom = 
           >
             <IoClose />
           </TooltipCloseBtn>
-          <TooltipTitle>{step.title || 'Lesson'}</TooltipTitle>
+          <TooltipTitle>
+            {(() => {
+              const obj = String(step.task?.objective ?? step.objective ?? '').trim();
+              return obj || step.title || 'Lesson';
+            })()}
+          </TooltipTitle>
           <TooltipDescription $nodeState={step.nodeState}>
             {isLocked
               ? 'Finish previous stages to unlock!'
@@ -368,14 +373,22 @@ export const JourneyTooltip = ({ step, onStart, onClose, nodeRef, forceBottom = 
   return createPortal(bubble, document.body);
 };
 
-function getStepPillarTitle(step) {
+/** Section grouping + header: `public.activities.phase_name` */
+function getStepPhaseName(step) {
   const raw =
+    step?.task?.phase_name ??
     step?.task?.pillarName ??
     step?.pillarName ??
-    step?.task?.phase_name ??
     '';
   const s = String(raw).trim();
   return s || 'Training';
+}
+
+/** Node row primary label: `public.activities.title` */
+function getStepActivityTitle(step) {
+  const raw = step?.title ?? step?.task?.title ?? '';
+  const s = String(raw).trim();
+  return s || String(step?.id ?? 'Activity');
 }
 
 export default function SkywardJourney({
@@ -742,7 +755,7 @@ export default function SkywardJourney({
 
   const flushPillarSection = () => {
     if (!currentSectionRows.length) return;
-    const sectionTitle = `Pillar ${pillarSectionIndex + 1}: ${sectionPillarTitle || 'Training'}`;
+    const sectionTitle = sectionPillarTitle || 'Training';
     pillarSectionIndex += 1;
     sections.push(
       <section key={`pillar-section-${sectionTitle}-${pillarSectionIndex}`} className="skyward-journey-section">
@@ -760,19 +773,19 @@ export default function SkywardJourney({
   const totalStageCount = steps.length;
 
   steps.forEach((step, i) => {
-    const pillarTitle = getStepPillarTitle(step);
-    if (currentSectionRows.length && pillarTitle !== sectionPillarTitle) {
+    const phaseName = getStepPhaseName(step);
+    if (currentSectionRows.length && phaseName !== sectionPillarTitle) {
       flushPillarSection();
     }
     if (currentSectionRows.length === 0) {
-      sectionPillarTitle = pillarTitle;
+      sectionPillarTitle = phaseName;
     }
 
     const theme = JOURNEY_NODE_THEMES[i % JOURNEY_NODE_THEMES.length];
     const isActive = step.nodeState === NODE_STATE.ACTIVE;
     const isDone = step.nodeState === NODE_STATE.COMPLETED;
     const isLocked = step.nodeState === NODE_STATE.LOCKED;
-    const title = step.title ?? step.task?.title ?? step.id;
+    const title = getStepActivityTitle(step);
     const milestone = step.isRankUp === true || Number(step.stageNumber) === 31 || Number(step.task?.activity_order) === 31;
     const jiggle = jiggleIndex === i;
     const horizontalOffset = getHorizontalOffset(i);
@@ -853,7 +866,7 @@ export default function SkywardJourney({
                 aria-hidden
               >
                 <span className="level-label__title">
-                  {milestone ? 'Summit' : pillarTitle}
+                  {milestone ? 'Summit' : title}
                 </span>
                 <span className="level-label__stage">
                   {milestone

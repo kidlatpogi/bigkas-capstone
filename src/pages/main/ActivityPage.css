@@ -10,13 +10,37 @@
   max-width: none;
   margin: 0;
   padding: 0; /* Removed padding to let map span full width/height */
-  background: #FFFFFF;
+  background: #ffffff;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   height: 100vh;
   box-sizing: border-box;
   overflow: hidden;
+}
+
+.activity-page--skyward-entrance {
+  opacity: 0;
+  animation: activityPageSkywardEnter 0.75s cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
+}
+
+@keyframes activityPageSkywardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .activity-page--skyward-entrance {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .activity-content-wrap {

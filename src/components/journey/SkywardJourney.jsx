@@ -120,26 +120,19 @@ const HeaderStatBadge = styled.div`
   margin-top: 4px;
 `;
 
-const TooltipWrapper = styled(motion.div)`
-  position: absolute;
-  left: 50%;
-  transform-origin: ${(props) => (props.$position === 'bottom' ? 'top center' : 'bottom center')};
-  z-index: 1000;
-  pointer-events: auto;
-  
-  /* Smart Positioning Fallback (25% Screen Check) */
-  ${(props) => (props.$position === 'bottom' ? 'top: calc(100% + 14px);' : 'bottom: calc(100% + 14px);')}
-`;
-
 const TooltipBox = styled.div`
   background: #ffffff;
   padding: 16px;
   border-radius: 16px;
-  box-shadow: 
+  box-shadow:
     0 4px 0 0 rgba(0, 0, 0, 0.1),
     0 12px 24px rgba(0, 0, 0, 0.15);
   border-bottom: 4px solid #e5e5e5;
   min-width: 200px;
+  max-height: min(70vh, 420px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -159,7 +152,7 @@ const TooltipBeak = styled.div`
   
   /* Smart Beak Direction */
   ${(props) =>
-    props.$position === 'bottom'
+    props.$placement === 'bottom'
       ? `
     top: -10px;
     border-bottom: 10px solid #ffffff;
@@ -205,58 +198,109 @@ const StartButton = styled.button`
   }
 `;
 
-export const JourneyTooltip = ({ step, onStart, nodeRef, containerRef }) => {
-  const [position, setPosition] = useState('top');
+const TOOLTIP_VIEW_MARGIN = 12;
+const TOOLTIP_GAP = 14;
+/** Conservative height for first layout; keeps bubble inside the viewport. */
+const TOOLTIP_EST_HEIGHT = 280;
 
-  useEffect(() => {
-    if (!nodeRef.current || !containerRef.current) return;
-    
-    const run = () => {
-      const nodeRect = nodeRef.current.getBoundingClientRect();
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const relativeTop = nodeRect.top - containerRect.top;
+function computeTooltipLayout(nodeEl) {
+  if (!nodeEl) return { left: 0, top: 0, transform: 'translate(-50%, -100%)', placement: 'top' };
+  const rect = nodeEl.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const spaceAbove = rect.top - TOOLTIP_VIEW_MARGIN;
+  const spaceBelow = window.innerHeight - rect.bottom - TOOLTIP_VIEW_MARGIN;
 
-      // IF node is in top 25% of viewport OR too close to top (less than 200px)
-      const isTopArea = relativeTop < (containerRect.height * 0.25) || relativeTop < 200;
+  let placement = 'top';
+  if (spaceAbove < TOOLTIP_EST_HEIGHT && spaceBelow > spaceAbove) {
+    placement = 'bottom';
+  } else if (spaceBelow < TOOLTIP_EST_HEIGHT && spaceAbove > spaceBelow) {
+    placement = 'top';
+  } else if (spaceAbove < TOOLTIP_EST_HEIGHT && spaceBelow < TOOLTIP_EST_HEIGHT) {
+    placement = spaceBelow >= spaceAbove ? 'bottom' : 'top';
+  }
 
-      if (isTopArea) {
-        setPosition('bottom');
-      } else {
-        setPosition('top');
-      }
+  const top =
+    placement === 'bottom' ? rect.bottom + TOOLTIP_GAP : rect.top - TOOLTIP_GAP;
+  const transform =
+    placement === 'bottom' ? 'translateX(-50%)' : 'translate(-50%, -100%)';
+
+  return { left: cx, top, transform, placement };
+}
+
+export const JourneyTooltip = ({ step, onStart, nodeRef }) => {
+  const [layout, setLayout] = useState(null);
+
+  useLayoutEffect(() => {
+    const node = nodeRef?.current;
+    if (!node) return undefined;
+
+    const update = () => {
+      setLayout(computeTooltipLayout(node));
     };
 
-    run();
-  }, [nodeRef, containerRef]);
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+    };
+  }, [nodeRef, step.id]);
 
   const isLocked = step.nodeState === 'locked';
 
-  return (
-    <TooltipWrapper
-      $position={position}
-      initial={{ scale: 0, x: '-50%', opacity: 0 }}
-      animate={{ scale: 1, x: '-50%', opacity: 1 }}
-      exit={{ scale: 0, x: '-50%', opacity: 0 }}
-      transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+  if (!layout) {
+    return null;
+  }
+
+  const bubble = (
+    <div
+      className="skyward-journey-tooltip-anchor"
+      style={{
+        position: 'fixed',
+        left: layout.left,
+        top: layout.top,
+        transform: layout.transform,
+        zIndex: 10060,
+        pointerEvents: 'auto',
+      }}
     >
-      <TooltipBox>
-        <TooltipTitle>{step.title || 'Lesson'}</TooltipTitle>
-        <TooltipDescription>
-          {isLocked ? 'Finish previous stages to unlock!' : step.nodeState === 'completed' ? '100% Complete' : 'Ready to start!'}
-        </TooltipDescription>
-        <StartButton 
-          disabled={isLocked}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (!isLocked) onStart(step);
-          }}
-        >
-          {isLocked ? 'Locked' : 'Start'}
-        </StartButton>
-        <TooltipBeak $position={position} />
-      </TooltipBox>
-    </TooltipWrapper>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.94 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.94 }}
+        transition={{ type: 'spring', damping: 22, stiffness: 320 }}
+        style={{ maxWidth: 'min(22rem, calc(100vw - 24px))' }}
+      >
+        <TooltipBox>
+          <TooltipTitle>{step.title || 'Lesson'}</TooltipTitle>
+          <TooltipDescription>
+            {isLocked
+              ? 'Finish previous stages to unlock!'
+              : step.nodeState === 'completed'
+                ? '100% Complete'
+                : 'Ready to start!'}
+          </TooltipDescription>
+          <StartButton
+            disabled={isLocked}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isLocked) onStart(step);
+            }}
+          >
+            {isLocked ? 'Locked' : 'Start'}
+          </StartButton>
+          <TooltipBeak $placement={layout.placement} />
+        </TooltipBox>
+      </motion.div>
+    </div>
   );
+
+  if (typeof document === 'undefined') {
+    return null;
+  }
+
+  return createPortal(bubble, document.body);
 };
 
 export default function SkywardJourney({ steps, renderStepContent, entranceFromNav = false }) {
@@ -691,12 +735,11 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
               </SkywardJourneyNodeButton>
               <AnimatePresence>
                 {tooltipNodeId === step.id && (
-                  <JourneyTooltip 
-                    step={step} 
+                  <JourneyTooltip
+                    key={step.id}
+                    step={step}
                     onStart={(s) => setPanelOpenId(s.id)}
-                    onClose={() => setTooltipNodeId(null)}
                     nodeRef={{ get current() { return nodeRefs.current[i]; } }}
-                    containerRef={rootRef}
                   />
                 )}
               </AnimatePresence>
@@ -725,7 +768,7 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
   pushCurrentSection();
 
   return (
-    <div className="skyward-journey skyward-journey-container no-scrollbar" ref={rootRef}>
+    <div className="skyward-journey skyward-journey-container skyward-journey-anim-root no-scrollbar" ref={rootRef}>
       <MapHeaderCard className="skyward-journey-anim-header">
         <HeaderTitle>CHAPTER 1: VOCAL CLARITY</HeaderTitle>
         <HeaderDescription>Master your speaking fundamentals</HeaderDescription>

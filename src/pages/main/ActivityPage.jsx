@@ -302,9 +302,9 @@ function ActivityPage() {
   };
 
   return (
-    <div className="inner-page activity-page">
+    <div className="inner-page activity-page activity-page--skyward-entrance">
       <div className="activity-content-wrap" style={{ height: '100%', display: 'flex', flexDirection: 'column', width: '100%', maxWidth: 'none', margin: 0, padding: 0 }}>
-        <div className={`activity-task-list activity-task-list--journey`} style={{ flex: 1, padding: 0, overflow: 'hidden' }}>
+        <div className={`activity-task-list activity-task-list--journey`} style={{ flex: 1, padding: 0, minHeight: 0, overflow: 'visible' }}>
           <SkywardJourney
             steps={journeySteps}
             entranceFromNav={entranceFromNav}

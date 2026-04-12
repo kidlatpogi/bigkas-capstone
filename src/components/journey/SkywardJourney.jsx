@@ -738,7 +738,7 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
     currentSectionRows.push(
       <div
         key={step.id}
-        className={`skyward-journey-row dashboard-anim-bottom dashboard-anim-delay-${Math.min(i % 10 + 1, 9)}`}
+        className="skyward-journey-row dashboard-anim-bottom"
       >
         <div className="skyward-journey-track">
           <div

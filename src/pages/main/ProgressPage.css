@@ -59,28 +59,34 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 .progress-main-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) clamp(340px, 25vw, 380px);
-  gap: 1rem;
+  gap: 1.5rem;
   width: 100%;
+  height: 100%;
   margin: 0;
-  align-items: start;
+  align-items: stretch;
   justify-content: center;
 }
 
 .progress-left-content {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  min-width: 0;
+  gap: clamp(16px, 2vh, 24px);
+  height: calc(100vh - calc(var(--responsive-page-padding) * 2));
+  min-height: 600px; /* Minimum height before it scrolls */
 }
 
 /* Graph Card */
 .progress-trend-card {
   background: #FFFFFF;
   border-radius: 24px;
-  padding: 28px 30px 30px;
+  padding: clamp(16px, 2.5vh, 28px) clamp(20px, 3vh, 30px);
   box-shadow: 0 14px 34px rgba(11, 57, 84, 0.12), 0 4px 10px rgba(0, 0, 0, 0.06);
   position: relative;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  flex: 1.4;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .progress-trend-card:hover {
@@ -91,7 +97,8 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 .progress-chart-header {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 20px;
+  margin-bottom: clamp(12px, 1.5vh, 20px);
+  flex: 0 0 auto;
 }
 
 .progress-range-labels {
@@ -104,7 +111,8 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
 .progress-chart-container {
   width: 100%;
-  height: 300px;
+  flex: 1;
+  min-height: 0;
 }
 
 /* Stats Row */
@@ -112,19 +120,21 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
+  flex: 1;
+  min-height: 0;
 }
 
 .stat-block {
   background: #FFFFFF;
   border-radius: 24px;
-  padding: 1.75rem;
+  padding: clamp(16px, 2vh, 28px);
   text-align: center;
   box-shadow: 0 12px 28px rgba(11, 57, 84, 0.12), 0 4px 10px rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  aspect-ratio: 4 / 3;
+  height: 100%;
   min-height: 0;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -135,29 +145,29 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 }
 
 .stat-icon-wrap {
-  width: 48px;
-  height: 48px;
+  width: clamp(36px, 5vh, 48px);
+  height: clamp(36px, 5vh, 48px);
   border-radius: 14px;
   background: rgba(241, 143, 1, 0.1);
   color: #F18F01;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
-  margin-bottom: 1rem;
+  font-size: clamp(18px, 2.5vh, 24px);
+  margin-bottom: clamp(8px, 1vh, 16px);
 }
 
 .stat-title {
-  font-size: 14px;
+  font-size: clamp(12px, 1.5vh, 14px);
   font-weight: 700;
   color: #0B3954;
-  margin-bottom: 0.5rem;
+  margin-bottom: clamp(4px, 0.5vh, 8px);
   text-transform: none;
   opacity: 0.8;
 }
 
 .stat-num {
-  font-size: 2.25rem;
+  font-size: clamp(24px, 3vh, 36px);
   font-weight: 800;
   color: #F18F01;
   margin: 0;
@@ -165,10 +175,10 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 }
 
 .stat-desc {
-  font-size: 13px;
+  font-size: clamp(11px, 1.2vh, 13px);
   color: #888;
   font-weight: 600;
-  margin-top: 0.25rem;
+  margin-top: 4px;
 }
 
 /* Pillars Section */
@@ -176,6 +186,8 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
+  flex: 1;
+  min-height: 0;
 }
 
 .progress-pillars-header {
@@ -183,11 +195,11 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  margin-top: 1rem;
+  flex: 0 0 auto;
 }
 
 .progress-pillars-title {
-  font-size: 22px;
+  font-size: clamp(18px, 2.5vh, 22px);
   font-weight: 800;
   color: #010101;
   margin: 0;
@@ -196,12 +208,12 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 .pillar-card {
   background: #FFFFFF;
   border-radius: 24px;
-  padding: 1.75rem;
+  padding: clamp(16px, 2vh, 28px);
   box-shadow: 0 12px 28px rgba(11, 57, 84, 0.12), 0 4px 10px rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  aspect-ratio: 4 / 3;
+  height: 100%;
   min-height: 0;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   border: 1px solid rgba(0, 0, 0, 0.03);
@@ -216,19 +228,19 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 1.5rem;
+  margin-bottom: clamp(12px, 1.5vh, 24px);
   width: 100%;
 }
 
 .pillar-icon {
-  width: 52px;
-  height: 52px;
+  width: clamp(40px, 5.5vh, 52px);
+  height: clamp(40px, 5.5vh, 52px);
   border-radius: 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  font-size: 26px;
+  font-size: clamp(20px, 3vh, 26px);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
 }
 
@@ -241,25 +253,25 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 }
 
 .pillar-label {
-  font-size: 16px;
+  font-size: clamp(14px, 1.8vh, 16px);
   font-weight: 800;
   color: #010101;
 }
 
 .pillar-value-subtext {
-  font-size: 12px;
+  font-size: clamp(10px, 1.2vh, 12px);
   font-weight: 600;
   color: #888;
 }
 
 .pillar-value {
-  font-size: 28px;
+  font-size: clamp(20px, 3vh, 28px);
   font-weight: 900;
   line-height: 1;
 }
 
 .pillar-track {
-  height: 12px;
+  height: clamp(8px, 1.2vh, 12px);
   background: #f4f4f4;
   border-radius: 6px;
   overflow: hidden;
@@ -277,13 +289,12 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   display: flex;
   flex-direction: column;
   gap: 0;
-  max-height: none;
-  overflow: visible;
+  height: calc(100vh - calc(var(--responsive-page-padding) * 2));
+  min-height: 600px;
+  overflow-y: auto;
   padding-right: 0;
   align-self: start;
   min-width: 0;
-  position: sticky;
-  top: 0;
   justify-self: end;
   width: 100%;
   scrollbar-width: none;

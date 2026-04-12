@@ -7,43 +7,55 @@
   },
   {
     "key": "age",
-    "label": "What is your age range?",
+    "label": "Age Range",
     "type": "single",
     "options": ["Under 18", "18–24", "25–34", "35–44", "45–54", "55 and above"]
   },
   {
-    "key": "social_anxiety",
-    "label": "Do you feel hesitant or anxious when speaking in groups or professional settings?",
+    "key": "stage_fright",
+    "label": "How would you rate your level of 'Stage Fright' when standing in front of an audience?",
     "type": "single",
-    "options": ["Yes", "Sometimes", "No"]
+    "options": ["High (Physical shaking/Sweating)", "Moderate (Nervous but functional)", "Low (Occasional jitters)", "None"]
   },
   {
-    "key": "vocal_fluency",
-    "label": "Do you feel your speech is hindered by filler words (um/uh) or a lack of vocabulary?",
+    "key": "vocal_clarity",
+    "label": "Do you feel your speech is cluttered with filler words (um, uh, like) or 'stuttering' when under pressure?",
     "type": "single",
-    "options": ["Yes", "Sometimes", "No"]
+    "options": ["Constantly", "Only when nervous", "Rarely", "Never"]
   },
   {
-    "key": "vocal_presence",
-    "label": "Do you find it difficult to maintain eye contact or project your voice effectively?",
+    "key": "non_verbal_delivery",
+    "label": "Do you struggle to maintain consistent eye contact or use purposeful hand gestures while speaking?",
     "type": "single",
-    "options": ["Yes", "Sometimes", "No"]
+    "options": ["Yes, I tend to look at the floor/ceiling", "Sometimes, I feel stiff", "No, I am conscious of my body language"]
   },
   {
-    "key": "external_dynamics",
-    "label": "Do you feel unheard or frequently interrupted during conversations?",
+    "key": "vocal_projection",
+    "label": "Have you been told that your voice is too soft, monotone, or difficult to hear during presentations?",
     "type": "single",
-    "options": ["Yes", "Sometimes", "No"]
+    "options": ["Frequently", "Occasionally", "Rarely", "Never"]
   },
   {
-    "key": "adaptability",
-    "label": "Do you find it natural to adjust your speaking style for different audiences?",
+    "key": "speech_pacing",
+    "label": "When speaking publicly, do you tend to rush through your sentences to finish faster?",
     "type": "single",
-    "options": ["Yes", "Sometimes", "No"]
+    "options": ["Yes, I speak too fast", "No, I speak too slowly", "I maintain a steady pace"]
+  },
+  {
+    "key": "pause_control",
+    "label": "How comfortable are you with using silent pauses for emphasis rather than filling the silence with noise?",
+    "type": "single",
+    "options": ["Very uncomfortable", "I try to, but fail", "Comfortable", "It is a core part of my style"]
+  },
+  {
+    "key": "audience_engagement",
+    "label": "Do you find it difficult to 'read the room' and adjust your energy based on audience reactions?",
+    "type": "single",
+    "options": ["Very difficult", "Somewhat difficult", "Natural for me"]
   },
   {
     "key": "native_speaker",
-    "label": "Is English your native language?",
+    "label": "Is English your primary language for professional or academic presentations?",
     "type": "single",
     "options": ["Yes", "No"]
   }

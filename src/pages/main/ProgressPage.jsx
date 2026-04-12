@@ -459,17 +459,17 @@ function ProgressPage() {
           <div className="progress-stats-row">
             <div className="stat-block dashboard-anim-bottom dashboard-anim-delay-1">
               <p className="stat-title">Sessions This Week</p>
-              <p className="stat-num">{stats.sessionsThisWeek}</p>
+              <p className={`stat-num ${stats.sessionsThisWeek > 0 ? 'glow-text' : ''}`}>{stats.sessionsThisWeek}</p>
               <p className="stat-desc">Attempts</p>
             </div>
             <div className="stat-block dashboard-anim-bottom dashboard-anim-delay-2">
               <p className="stat-title">Average Score</p>
-              <p className="stat-num">{stats.averageScore}</p>
+              <p className={`stat-num ${stats.averageScore > 0 ? 'glow-text' : ''}`}>{stats.averageScore}</p>
               <p className="stat-desc">Points</p>
             </div>
             <div className="stat-block dashboard-anim-bottom dashboard-anim-delay-3">
               <p className="stat-title">Total Speaking Time</p>
-              <p className="stat-num">{stats.totalSpeakingTime}</p>
+              <p className={`stat-num ${stats.totalSpeakingTime > 0 ? 'glow-text' : ''}`}>{stats.totalSpeakingTime}</p>
               <p className="stat-desc">Minutes</p>
             </div>
           </div>
@@ -500,13 +500,17 @@ function ProgressPage() {
                     <span className="pillar-label">{pillar.label}</span>
                     <span className="pillar-value-subtext">Performance</span>
                   </div>
-                  <span className="pillar-value" style={{ color: pillar.color }}>{pillar.value}%</span>
                 </div>
-                <div className="pillar-track">
-                  <div 
-                    className="pillar-fill" 
-                    style={{ width: `${pillar.value}%`, background: pillar.color }} 
-                  />
+                <div className="pillar-progress-container">
+                  <div className="pillar-progress-header" style={{ width: `${pillar.value}%` }}>
+                    <span className="pillar-value">{pillar.value}%</span>
+                  </div>
+                  <div className="pillar-track">
+                    <div 
+                      className={`pillar-fill ${pillar.value > 80 ? 'mastery-pulse' : ''}`} 
+                      style={{ width: `${pillar.value}%` }} 
+                    />
+                  </div>
                 </div>
               </div>
             ))}

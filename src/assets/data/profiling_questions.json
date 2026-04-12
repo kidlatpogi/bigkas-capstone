@@ -1,62 +1,62 @@
 [
   {
-    "key": "gender",
-    "label": "Gender",
+    "key": "vocal_clarity",
+    "label": "Do you find your speech cluttered with filler words (um, uh, like) when speaking under pressure?",
     "type": "single",
-    "options": ["Female", "Male", "Other", "Prefer not to say"]
-  },
-  {
-    "key": "age",
-    "label": "Age Range",
-    "type": "single",
-    "options": ["Under 18", "18–24", "25–34", "35–44", "45–54", "55 and above"]
+    "options": ["Yes", "Sometimes", "No"]
   },
   {
     "key": "stage_fright",
-    "label": "How would you rate your level of 'Stage Fright' when standing in front of an audience?",
+    "label": "Do you experience physical symptoms of anxiety (sweating, shaking) when facing an audience?",
     "type": "single",
-    "options": ["High (Physical shaking/Sweating)", "Moderate (Nervous but functional)", "Low (Occasional jitters)", "None"]
+    "options": ["Yes", "Sometimes", "No"]
   },
   {
-    "key": "vocal_clarity",
-    "label": "Do you feel your speech is cluttered with filler words (um, uh, like) or 'stuttering' when under pressure?",
+    "key": "eye_contact",
+    "label": "Do you find it difficult to maintain consistent eye contact with your audience while presenting?",
     "type": "single",
-    "options": ["Constantly", "Only when nervous", "Rarely", "Never"]
-  },
-  {
-    "key": "non_verbal_delivery",
-    "label": "Do you struggle to maintain consistent eye contact or use purposeful hand gestures while speaking?",
-    "type": "single",
-    "options": ["Yes, I tend to look at the floor/ceiling", "Sometimes, I feel stiff", "No, I am conscious of my body language"]
+    "options": ["Yes", "Sometimes", "No"]
   },
   {
     "key": "vocal_projection",
-    "label": "Have you been told that your voice is too soft, monotone, or difficult to hear during presentations?",
+    "label": "Is it difficult for you to project your voice loudly enough for a large room to hear?",
     "type": "single",
-    "options": ["Frequently", "Occasionally", "Rarely", "Never"]
+    "options": ["Yes", "Sometimes", "No"]
   },
   {
     "key": "speech_pacing",
-    "label": "When speaking publicly, do you tend to rush through your sentences to finish faster?",
+    "label": "Do you tend to rush through your sentences or speak too quickly during a presentation?",
     "type": "single",
-    "options": ["Yes, I speak too fast", "No, I speak too slowly", "I maintain a steady pace"]
+    "options": ["Yes", "Sometimes", "No"]
   },
   {
-    "key": "pause_control",
-    "label": "How comfortable are you with using silent pauses for emphasis rather than filling the silence with noise?",
+    "key": "body_language",
+    "label": "Do you feel stiff or struggle to use purposeful hand gestures while you are speaking?",
     "type": "single",
-    "options": ["Very uncomfortable", "I try to, but fail", "Comfortable", "It is a core part of my style"]
+    "options": ["Yes", "Sometimes", "No"]
   },
   {
-    "key": "audience_engagement",
-    "label": "Do you find it difficult to 'read the room' and adjust your energy based on audience reactions?",
+    "key": "pause_mastery",
+    "label": "Do you feel uncomfortable using silent pauses for emphasis instead of filling the silence with noise?",
     "type": "single",
-    "options": ["Very difficult", "Somewhat difficult", "Natural for me"]
+    "options": ["Yes", "Sometimes", "No"]
   },
   {
-    "key": "native_speaker",
-    "label": "Is English your primary language for professional or academic presentations?",
+    "key": "vocal_monotone",
+    "label": "Have you been told that your voice sounds monotone or lacks emotional expression?",
     "type": "single",
-    "options": ["Yes", "No"]
+    "options": ["Yes", "Sometimes", "No"]
+  },
+  {
+    "key": "audience_reading",
+    "label": "Is it difficult for you to adjust your energy level based on how the audience is reacting?",
+    "type": "single",
+    "options": ["Yes", "Sometimes", "No"]
+  },
+  {
+    "key": "english_fluency",
+    "label": "Do you feel that a lack of English vocabulary hinders your ability to deliver a smooth presentation?",
+    "type": "single",
+    "options": ["Yes", "Sometimes", "No"]
   }
 ]

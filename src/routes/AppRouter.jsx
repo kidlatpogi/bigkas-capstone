@@ -77,6 +77,11 @@ function ProtectedRoute() {
     (pathname.startsWith(ROUTES.TRAINING) && pathname !== ROUTES.TRAINING_SETUP);
 
   if (isInitializing) {
+    // Only show the app-level loading screen if we're not on the landing page,
+    // since the landing page has its own loader.
+    if (window.location.pathname === ROUTES.HOME) {
+      return null;
+    }
     return (
       <div className="loading-screen">
         <div className="loading-logo">
@@ -129,6 +134,9 @@ function AdminRoute() {
   const { isAuthenticated, isInitializing, isAdminAuthenticated } = useAuthContext();
 
   if (isInitializing) {
+    if (window.location.pathname === ROUTES.HOME) {
+      return null;
+    }
     return (
       <div className="loading-screen">
         <div className="loading-logo">
@@ -165,6 +173,9 @@ function PublicRoute() {
   const { isAuthenticated, isInitializing, isAdminAuthenticated, user } = useAuthContext();
 
   if (isInitializing) {
+    if (window.location.pathname === ROUTES.HOME) {
+      return null;
+    }
     return (
       <div className="loading-screen">
         <div className="loading-logo">

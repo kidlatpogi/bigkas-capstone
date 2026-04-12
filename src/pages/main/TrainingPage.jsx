@@ -1004,6 +1004,14 @@ function TrainingPage() {
   const isMinDurationMet = elapsedSec >= MIN_RECORDING_SECONDS;
   const secondsUntilMinValid = Math.max(0, MIN_RECORDING_SECONDS - elapsedSec);
 
+  const handleBackPress = useCallback(() => {
+    if (isActive) {
+      setShowExitConfirm(true);
+      return;
+    }
+    navigate(-1);
+  }, [isActive, navigate]);
+
   useEffect(() => {
     if (!isActive) return undefined;
 
@@ -1020,18 +1028,16 @@ function TrainingPage() {
   if (!script && focus !== 'free') {
     return (
       <div className="tp-page">
-        <div className="tp-content-wrapper">
-          <div className="tp-header">
-            <div className="tp-header-spacer" />
-            <span className="tp-header-title">Training</span>
-            <div className="tp-header-spacer" />
-          </div>
-          <div className="tp-empty">
-            <span className="tp-empty-icon">⚠️</span>
-            <p className="tp-empty-title">No script selected</p>
-            <p className="tp-empty-desc">Go back and select a script to start training.</p>
-            <button className="tp-go-back-btn" onClick={() => navigate(-1)}>Go Back</button>
-          </div>
+        <div className="tp-header">
+          <div className="tp-header-spacer" />
+          <span className="tp-header-title">Training</span>
+          <div className="tp-header-spacer" />
+        </div>
+        <div className="tp-empty">
+          <span className="tp-empty-icon">⚠️</span>
+          <p className="tp-empty-title">No script selected</p>
+          <p className="tp-empty-desc">Go back and select a script to start training.</p>
+          <button className="tp-go-back-btn" onClick={() => navigate(-1)}>Go Back</button>
         </div>
       </div>
     );
@@ -1040,18 +1046,16 @@ function TrainingPage() {
   if (focus === 'free' && !freeTopic) {
     return (
       <div className="tp-page">
-        <div className="tp-content-wrapper">
-          <div className="tp-header">
-            <div className="tp-header-spacer" />
-            <span className="tp-header-title">Free Speech</span>
-            <div className="tp-header-spacer" />
-          </div>
-          <div className="tp-empty">
-            <span className="tp-empty-icon">⚠️</span>
-            <p className="tp-empty-title">Topic is required</p>
-            <p className="tp-empty-desc">Go back and enter a topic before starting Free Speech.</p>
-            <button className="tp-go-back-btn" onClick={() => navigate(ROUTES.TRAINING_SETUP)}>Go Back</button>
-          </div>
+        <div className="tp-header">
+          <div className="tp-header-spacer" />
+          <span className="tp-header-title">Free Speech</span>
+          <div className="tp-header-spacer" />
+        </div>
+        <div className="tp-empty">
+          <span className="tp-empty-icon">⚠️</span>
+          <p className="tp-empty-title">Topic is required</p>
+          <p className="tp-empty-desc">Go back and enter a topic before starting Free Speech.</p>
+          <button className="tp-go-back-btn" onClick={() => navigate(ROUTES.TRAINING_SETUP)}>Go Back</button>
         </div>
       </div>
     );
@@ -1072,24 +1076,23 @@ function TrainingPage() {
 
   return (
     <div className="tp-page">
-      <div className="tp-content-wrapper">
-        {/* ── Dark Header ── */}
-        <div className="tp-header">
+      {/* ── Dark Header ── */}
+      <div className="tp-header">
+        <div className="tp-header-spacer" />
+        <span className="tp-header-title">{title}</span>
+        {focus === 'scripted' ? (
+          <button className="tp-settings-btn" onClick={() => setShowSettings(true)} aria-label="Settings">
+            <SettingsGearIcon />
+          </button>
+        ) : (
           <div className="tp-header-spacer" />
-          <span className="tp-header-title">{title}</span>
-          {focus === 'scripted' ? (
-            <button className="tp-settings-btn" onClick={() => setShowSettings(true)} aria-label="Settings">
-              <SettingsGearIcon />
-            </button>
-          ) : (
-            <div className="tp-header-spacer" />
-          )}
-        </div>
+        )}
+      </div>
 
-        {/* ── Main Content ── */}
-        <div className={`tp-content${focus === 'scripted' ? ' tp-content--split' : ''}`}>
+      {/* ── Main Content ── */}
+      <div className={`tp-content${focus === 'scripted' ? ' tp-content--split' : ''}`}>
 
-          {/* ── Left / Main Column ── */}
+        {/* ── Left / Main Column ── */}
         <div className="tp-left">
           {focus === 'free' && (
             <section className="tp-topic-card" aria-label="Topic">
@@ -1279,11 +1282,6 @@ function TrainingPage() {
 
           </div>
         )}
-        </div>
-      </div>
-
-      <div className="tp-coming-soon">
-        <p>New modes coming soon...</p>
       </div>
 
       {/* ── Countdown Overlay ── */}

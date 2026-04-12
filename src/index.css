@@ -88,7 +88,7 @@ ul, ol { list-style: none; }
   align-items: center;
   justify-content: center;
   height: 100dvh;
-  background: #FFFFFF;
+  background: #F5F5F5;
   gap: 24px;
   padding: 24px;
 }
@@ -99,7 +99,7 @@ ul, ol { list-style: none; }
   gap: 10px;
   font-size: clamp(24px, 5vw, 36px);
   font-weight: 800;
-  color: #000000;
+  color: #010101;
   letter-spacing: -1px;
 }
 
@@ -112,8 +112,8 @@ ul, ol { list-style: none; }
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3.5px solid rgba(0, 0, 0, 0.15);
-  border-top-color: #000000;
+  border: 3.5px solid rgba(252, 186, 4, 0.25);
+  border-top-color: #FCBA04;
   border-radius: 50%;
   animation: spin 0.75s linear infinite;
 }
@@ -121,3 +121,6 @@ ul, ol { list-style: none; }
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+[data-theme="dark"] .loading-screen { background: #0B0B0D; }
+[data-theme="dark"] .loading-logo { color: #F5F5F5; }

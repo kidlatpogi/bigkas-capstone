@@ -3,17 +3,18 @@ import styled from 'styled-components';
 
 const StyledButton = styled.button`
   border-radius: 999px;
-  transition: all 0.2s ease;
-  box-shadow: rgba(11, 57, 84, 0.22) 0px 10px 0px 0px;
+  border: 0;
+  transition: all 0.3s ease;
+  box-shadow: rgb(201, 46, 70) 0px 10px 0px 0px;
   cursor: pointer;
 
   &:hover {
-    box-shadow: rgba(11, 57, 84, 0.22) 0px 7px 0px 0px;
+    box-shadow: rgb(201, 46, 70) 0px 7px 0px 0px;
   }
 
   &:active {
-    box-shadow: rgba(11, 57, 84, 0.18) 0px 0px 0px 0px;
-    transform: translateY(5px);
+    box-shadow: rgb(201, 46, 70) 0px 0px 0px 0px;
+    transform: translateX(var(--skyward-node-offset, 0%)) translateY(5px);
     transition: 180ms;
   }
 `;

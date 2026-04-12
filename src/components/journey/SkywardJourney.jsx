@@ -123,10 +123,24 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
   const [jiggleIndex, setJiggleIndex] = useState(null);
   const [showTapHint, setShowTapHint] = useState(false);
   const [map, setMap] = useState(() => ({ tx: 0, ty: 0 }));
+  const [rootScrollTop, setRootScrollTop] = useState(0);
 
   useLayoutEffect(() => {
     mapRef.current = map;
   }, [map]);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return undefined;
+
+    const onRootScroll = () => {
+      setRootScrollTop(root.scrollTop);
+    };
+
+    onRootScroll();
+    root.addEventListener('scroll', onRootScroll, { passive: true });
+    return () => root.removeEventListener('scroll', onRootScroll);
+  }, []);
 
   const requestClosePanel = useCallback(() => {
     panelClosePendingRef.current = true;
@@ -402,6 +416,20 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
   }, [indexedNodePoints, lastCompletedIndex, activeIndex]);
 
   const closePanel = requestClosePanel;
+  const showBackToStart = map.ty < -120 || rootScrollTop > 120;
+
+  const handleBackToStart = useCallback(() => {
+    const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    setMap({ tx: 0, ty: 0 });
+    const root = rootRef.current;
+    if (root) {
+      root.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+    }
+    const activeNode = activeIndex >= 0 ? nodeRefs.current[activeIndex] : null;
+    if (activeNode) {
+      activeNode.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth', inline: 'nearest' });
+    }
+  }, [activeIndex]);
 
   const handleNodeClick = useCallback(
     (step, index) => {
@@ -527,7 +555,6 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
                 }. Open quest details.`}
                 style={{
                   '--skyward-node-offset': `${horizontalOffset}%`,
-                  transform: `translateX(${horizontalOffset}%)`,
                 }}
                 onClick={() => handleNodeClick(step, i)}
               >
@@ -652,6 +679,16 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
         </div>
       </div>
       </div>
+
+      {showBackToStart ? (
+        <button
+          type="button"
+          className="skyward-journey-back-to-start"
+          onClick={handleBackToStart}
+        >
+          Back to Start
+        </button>
+      ) : null}
 
       {typeof document !== 'undefined' && selectedStep && selectedMeta
         ? createPortal(

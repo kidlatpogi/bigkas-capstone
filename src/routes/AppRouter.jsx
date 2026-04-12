@@ -74,7 +74,7 @@ function ProtectedRoute() {
     pathname === ROUTES.USER_PROFILING ||
     pathname === ROUTES.USER_PRETEST ||
     pathname === ROUTES.USER_ANALYZING ||
-    pathname.startsWith(ROUTES.TRAINING);
+    (pathname.startsWith(ROUTES.TRAINING) && pathname !== ROUTES.TRAINING_SETUP);
 
   if (isInitializing) {
     return (

@@ -4,6 +4,7 @@ import {
   IoCheckmarkCircle,
   IoLockClosed,
   IoMic,
+  IoMicOutline,
   IoMusicalNote,
   IoPulse,
   IoShuffle,
@@ -90,6 +91,62 @@ function LockedIconTeaser({ index, milestone }) {
 import styled from 'styled-components';
  import { motion, AnimatePresence } from 'framer-motion';
 
+const MapHeaderCard = styled.div`
+  max-width: 450px;
+  width: 90%;
+  margin: 0 auto 32px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border-radius: 24px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  position: relative;
+  z-index: 10;
+`;
+
+const HeaderIconGlow = styled.div`
+  width: 64px;
+  height: 64px;
+  background: rgba(241, 143, 1, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f18f01;
+  font-size: 32px;
+  box-shadow: 0 0 20px rgba(241, 143, 1, 0.3);
+  animation: header-glow 2s ease-in-out infinite alternate;
+
+  @keyframes header-glow {
+    from { box-shadow: 0 0 15px rgba(241, 143, 1, 0.2); transform: scale(1); }
+    to { box-shadow: 0 0 30px rgba(241, 143, 1, 0.5); transform: scale(1.05); }
+  }
+`;
+
+const HeaderTitle = styled.h1`
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  color: #0b3954;
+  margin: 0;
+  text-transform: uppercase;
+`;
+
+const HeaderDescription = styled.p`
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(11, 57, 84, 0.7);
+  margin: 0;
+  line-height: 1.5;
+`;
+
 const TooltipWrapper = styled(motion.div)`
   position: absolute;
   left: 50%;
@@ -97,7 +154,7 @@ const TooltipWrapper = styled(motion.div)`
   z-index: 1000;
   pointer-events: auto;
   
-  /* Smart Positioning */
+  /* Smart Positioning Fallback (25% Screen Check) */
   ${(props) => (props.$position === 'bottom' ? 'top: calc(100% + 14px);' : 'bottom: calc(100% + 14px);')}
 `;
 
@@ -186,7 +243,10 @@ export const JourneyTooltip = ({ step, onStart, nodeRef, containerRef }) => {
       const containerRect = containerRef.current.getBoundingClientRect();
       const relativeTop = nodeRect.top - containerRect.top;
 
-      if (relativeTop < 200) {
+      // IF node is in top 25% of viewport OR too close to top (less than 180px)
+      const isTopArea = relativeTop < (containerRect.height * 0.25) || relativeTop < 180;
+
+      if (isTopArea) {
         setPosition('bottom');
       } else {
         setPosition('top');
@@ -801,7 +861,16 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
               </svg>
             ) : null}
 
-            <div className="skyward-journey-column">{sections}</div>
+            <div className="skyward-journey-column">
+              <MapHeaderCard>
+                <HeaderIconGlow>
+                  <IoMicOutline />
+                </HeaderIconGlow>
+                <HeaderTitle>CHAPTER 1: VOCAL CLARITY</HeaderTitle>
+                <HeaderDescription>Master the fundamentals of speaking with clarity and precision.</HeaderDescription>
+              </MapHeaderCard>
+              {sections}
+            </div>
           </div>
         </div>
       </div>

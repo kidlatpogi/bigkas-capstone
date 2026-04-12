@@ -1,19 +1,19 @@
 [
   {
-    "key": "vocal_clarity",
-    "label": "Do you find your speech cluttered with filler words (um, uh, like) when speaking under pressure?",
-    "type": "single",
-    "options": ["Yes", "Sometimes", "No"]
-  },
-  {
-    "key": "stage_fright",
-    "label": "Do you experience physical symptoms of anxiety (sweating, shaking) when facing an audience?",
-    "type": "single",
-    "options": ["Yes", "Sometimes", "No"]
-  },
-  {
-    "key": "eye_contact",
+    "key": "visual_eye_contact",
     "label": "Do you find it difficult to maintain consistent eye contact with your audience while presenting?",
+    "type": "single",
+    "options": ["Yes", "Sometimes", "No"]
+  },
+  {
+    "key": "visual_gestures",
+    "label": "Do you feel stiff or struggle to use purposeful hand gestures while you are speaking?",
+    "type": "single",
+    "options": ["Yes", "Sometimes", "No"]
+  },
+  {
+    "key": "visual_energy",
+    "label": "Is it difficult for you to adjust your energy level based on how the audience is reacting?",
     "type": "single",
     "options": ["Yes", "Sometimes", "No"]
   },
@@ -24,38 +24,32 @@
     "options": ["Yes", "Sometimes", "No"]
   },
   {
-    "key": "speech_pacing",
-    "label": "Do you tend to rush through your sentences or speak too quickly during a presentation?",
-    "type": "single",
-    "options": ["Yes", "Sometimes", "No"]
-  },
-  {
-    "key": "body_language",
-    "label": "Do you feel stiff or struggle to use purposeful hand gestures while you are speaking?",
-    "type": "single",
-    "options": ["Yes", "Sometimes", "No"]
-  },
-  {
-    "key": "pause_mastery",
-    "label": "Do you feel uncomfortable using silent pauses for emphasis instead of filling the silence with noise?",
-    "type": "single",
-    "options": ["Yes", "Sometimes", "No"]
-  },
-  {
-    "key": "vocal_monotone",
+    "key": "vocal_expression",
     "label": "Have you been told that your voice sounds monotone or lacks emotional expression?",
     "type": "single",
     "options": ["Yes", "Sometimes", "No"]
   },
   {
-    "key": "audience_reading",
-    "label": "Is it difficult for you to adjust your energy level based on how the audience is reacting?",
+    "key": "vocal_pacing",
+    "label": "Do you tend to rush through your sentences or speak too quickly during a presentation?",
     "type": "single",
     "options": ["Yes", "Sometimes", "No"]
   },
   {
-    "key": "english_fluency",
+    "key": "verbal_fillers",
+    "label": "Do you find your speech cluttered with filler words (um, uh, like) when speaking under pressure?",
+    "type": "single",
+    "options": ["Yes", "Sometimes", "No"]
+  },
+  {
+    "key": "verbal_vocabulary",
     "label": "Do you feel that a lack of English vocabulary hinders your ability to deliver a smooth presentation?",
+    "type": "single",
+    "options": ["Yes", "Sometimes", "No"]
+  },
+  {
+    "key": "verbal_anxiety",
+    "label": "Do you experience physical symptoms of anxiety (sweating, shaking) when facing an audience?",
     "type": "single",
     "options": ["Yes", "Sometimes", "No"]
   }

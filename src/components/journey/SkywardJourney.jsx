@@ -92,11 +92,13 @@ import styled from 'styled-components';
 
 const TooltipWrapper = styled(motion.div)`
   position: absolute;
-  bottom: calc(100% + 14px);
   left: 50%;
-  transform-origin: bottom center;
+  transform-origin: ${(props) => (props.$position === 'bottom' ? 'top center' : 'bottom center')};
   z-index: 1000;
   pointer-events: auto;
+  
+  /* Smart Positioning */
+  ${(props) => (props.$position === 'bottom' ? 'top: calc(100% + 14px);' : 'bottom: calc(100% + 14px);')}
 `;
 
 const TooltipBox = styled.div`
@@ -118,14 +120,24 @@ const TooltipBox = styled.div`
 
 const TooltipBeak = styled.div`
   position: absolute;
-  bottom: -10px;
   left: 50%;
   transform: translateX(-50%);
   width: 0;
   height: 0;
   border-left: 10px solid transparent;
   border-right: 10px solid transparent;
-  border-top: 10px solid #ffffff;
+  
+  /* Smart Beak Direction */
+  ${(props) =>
+    props.$position === 'bottom'
+      ? `
+    top: -10px;
+    border-bottom: 10px solid #ffffff;
+  `
+      : `
+    bottom: -10px;
+    border-top: 10px solid #ffffff;
+  `}
 `;
 
 const TooltipTitle = styled.h3`
@@ -143,7 +155,7 @@ const TooltipDescription = styled.p`
 `;
 
 const StartButton = styled.button`
-  background-color: #f18f01;
+  background-color: ${(props) => (props.disabled ? '#e5e5e5' : '#f18f01')};
   color: white;
   border: none;
   border-radius: 12px;
@@ -151,21 +163,44 @@ const StartButton = styled.button`
   font-size: 15px;
   font-weight: 800;
   letter-spacing: 0.8px;
-  cursor: pointer;
-  box-shadow: #cd8b76 0 4px 0 0;
+  cursor: ${(props) => (props.disabled ? 'not-allowed' : 'pointer')};
+  box-shadow: ${(props) => (props.disabled ? '#d5d5d5' : '#cd8b76')} 0 4px 0 0;
   transition: all 0.1s ease;
   width: 100%;
   text-transform: uppercase;
 
-  &:active {
+  &:active:not(:disabled) {
     transform: translateY(2px);
     box-shadow: #cd8b76 0 2px 0 0;
   }
 `;
 
-export const JourneyTooltip = ({ step, onStart }) => {
+export const JourneyTooltip = ({ step, onStart, nodeRef, containerRef }) => {
+  const [position, setPosition] = useState('top');
+
+  useEffect(() => {
+    if (!nodeRef.current || !containerRef.current) return;
+    
+    const run = () => {
+      const nodeRect = nodeRef.current.getBoundingClientRect();
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const relativeTop = nodeRect.top - containerRect.top;
+
+      if (relativeTop < 200) {
+        setPosition('bottom');
+      } else {
+        setPosition('top');
+      }
+    };
+
+    run();
+  }, [nodeRef, containerRef]);
+
+  const isLocked = step.nodeState === 'locked';
+
   return (
     <TooltipWrapper
+      $position={position}
       initial={{ scale: 0, x: '-50%', opacity: 0 }}
       animate={{ scale: 1, x: '-50%', opacity: 1 }}
       exit={{ scale: 0, x: '-50%', opacity: 0 }}
@@ -174,15 +209,18 @@ export const JourneyTooltip = ({ step, onStart }) => {
       <TooltipBox>
         <TooltipTitle>{step.title || 'Lesson'}</TooltipTitle>
         <TooltipDescription>
-          {step.nodeState === 'completed' ? '100% Complete' : 'Ready to start!'}
+          {isLocked ? 'Finish previous stages to unlock!' : step.nodeState === 'completed' ? '100% Complete' : 'Ready to start!'}
         </TooltipDescription>
-        <StartButton onClick={(e) => {
-          e.stopPropagation();
-          onStart(step);
-        }}>
-          START
+        <StartButton 
+          disabled={isLocked}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!isLocked) onStart(step);
+          }}
+        >
+          {isLocked ? 'Locked' : 'Start'}
         </StartButton>
-        <TooltipBeak />
+        <TooltipBeak $position={position} />
       </TooltipBox>
     </TooltipWrapper>
   );
@@ -657,6 +695,8 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
                     step={step} 
                     onStart={(s) => setPanelOpenId(s.id)}
                     onClose={() => setTooltipNodeId(null)}
+                    nodeRef={{ get current() { return nodeRefs.current[i]; } }}
+                    containerRef={rootRef}
                   />
                 )}
               </AnimatePresence>

@@ -12,61 +12,9 @@ import {
 } from '../../utils/activityProgress';
 import SkywardJourney from '../../components/journey/SkywardJourney';
 import { getActiveTaskId, getNodeStateForTask } from '../../components/journey/journeyConstants';
+import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 import './InnerPages.css';
 import './ActivityPage.css';
-
-function getProgressiveTaskTemplate() {
-  return [
-    {
-      id: 'three-minute-scripted',
-      title: 'Practice scripted speaking for 3 minutes',
-      detail: 'Choose one speech and sustain clear pacing for at least 3 minutes.',
-      actionLabel: 'Start Training',
-      actionRoute: ROUTES.TRAINING_SETUP,
-      prerequisiteIds: [],
-    },
-    {
-      id: 'free-randomizer-3x',
-      title: 'Complete Free Speech Randomizer 3 times',
-      detail: 'Do three short random-topic runs and focus on flow and confidence.',
-      actionLabel: 'Open Practice',
-      actionRoute: ROUTES.PRACTICE,
-      prerequisiteIds: ['three-minute-scripted'],
-    },
-    {
-      id: 'review-feedback',
-      title: 'Review your latest Detailed Feedback',
-      detail: 'Identify one weak pillar and one improvement action for tomorrow.',
-      actionLabel: 'Check Progress',
-      actionRoute: ROUTES.PROGRESS,
-      prerequisiteIds: ['free-randomizer-3x'],
-    },
-    {
-      id: 'two-script-run',
-      title: 'Run 2 scripted sessions with different speeches',
-      detail: 'Switch topics to challenge articulation and consistency.',
-      actionLabel: 'Start Training',
-      actionRoute: ROUTES.TRAINING_SETUP,
-      prerequisiteIds: ['review-feedback'],
-    },
-    {
-      id: 'randomizer-focus',
-      title: 'Do Randomizer and avoid filler words',
-      detail: 'Complete at least 2 randomizer attempts with intentional pauses.',
-      actionLabel: 'Open Practice',
-      actionRoute: ROUTES.PRACTICE,
-      prerequisiteIds: ['two-script-run'],
-    },
-    {
-      id: 'progress-check',
-      title: 'Check your trend and set one micro-goal',
-      detail: 'Use Progress page to pick one measurable target for next session.',
-      actionLabel: 'View Progress',
-      actionRoute: ROUTES.PROGRESS,
-      prerequisiteIds: ['randomizer-focus'],
-    },
-  ];
-}
 
 function ActivityPage() {
   const navigate = useNavigate();
@@ -74,7 +22,7 @@ function ActivityPage() {
   const { user } = useAuthContext();
   const [entranceFromNav] = useState(() => location.state?.skywardEntrance === true);
   const scopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
-  const tasks = useMemo(() => getProgressiveTaskTemplate(), []);
+  const { tasks, loading: activitiesLoading, error: activitiesError } = useActivitiesJourneyTasks();
   const stampResetTimeoutRef = useRef(null);
   const audioContextRef = useRef(null);
   const previousTaskStateRef = useRef({});
@@ -210,17 +158,6 @@ function ActivityPage() {
   }, [playCompletionSound, taskState, tasks]);
 
   const handleTaskAction = useCallback((task) => {
-    if (task.id === 'free-randomizer-3x' || task.id === 'randomizer-focus') {
-      navigate(ROUTES.PRACTICE, {
-        state: {
-          preferredTab: 'randomizer',
-          autoStartRandomizer: true,
-          activityTaskId: task.id,
-        },
-      });
-      return;
-    }
-
     navigate(task.actionRoute, {
       state: {
         fromActivityTaskId: task.id,
@@ -265,6 +202,11 @@ function ActivityPage() {
       })
       : null;
 
+    const w = task.weights || {};
+    const weightsLine = [w.vis, w.voc, w.ver].some((n) => Number.isFinite(n))
+      ? `VVV weights — Visual ${Math.round(Number(w.vis) * 100)}% · Vocal ${Math.round(Number(w.voc) * 100)}% · Verbal ${Math.round(Number(w.ver) * 100)}%`
+      : null;
+
     return (
       <div key={task.id} className={`page-card activity-task-card${done ? ' done' : ''}${isLocked ? ' locked' : ''} ${animationClass}`.trim()}>
         <div className="activity-task-top">
@@ -278,6 +220,7 @@ function ActivityPage() {
         </div>
 
         <p className="activity-task-detail">{task.detail}</p>
+        {weightsLine ? <p className="activity-task-detail" style={{ opacity: 0.85, fontSize: '0.9em' }}>{weightsLine}</p> : null}
 
         {completedDateText ? <p className="activity-task-history-meta">Completed {completedDateText}</p> : null}
 
@@ -287,6 +230,7 @@ function ActivityPage() {
 
         <div className="activity-task-actions">
           <button
+            type="button"
             className={`activity-action-btn${isLocked ? ' is-locked' : ''}${canShowProgress ? ' with-progress' : ''}`}
             onClick={() => handleTaskAction(task)}
             disabled={isLocked || done}
@@ -300,6 +244,38 @@ function ActivityPage() {
       </div>
     );
   };
+
+  if (activitiesLoading) {
+    return (
+      <div className="inner-page activity-page">
+        <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
+          <p className="section-label">Loading journey…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (activitiesError) {
+    return (
+      <div className="inner-page activity-page">
+        <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
+          <p className="activity-task-lock-note">Could not load activities: {activitiesError}</p>
+          <p className="activity-task-detail">Ensure the `activities` table exists and RLS allows read for authenticated users.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!tasks.length) {
+    return (
+      <div className="inner-page activity-page">
+        <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
+          <p className="section-label">No activities yet</p>
+          <p className="activity-task-detail">Add rows to the `activities` table in Supabase to populate this journey.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="inner-page activity-page activity-page--skyward-entrance">

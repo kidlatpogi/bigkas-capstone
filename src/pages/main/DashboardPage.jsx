@@ -4,11 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import CalendarHeatmap from 'react-calendar-heatmap';
 import { useAuthContext } from '../../context/useAuthContext';
 import { useSessions } from '../../hooks/useSessions';
+import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import {
   GLOBAL_ACTIVITY_SCOPE,
-  deriveLevelProgress,
+  getBigkasLevelFromUser,
   getActivityCompletionHistory,
   getActivityMetrics,
   getActivityTaskProgress,
@@ -168,53 +169,6 @@ function getWeekdayPills(activeDayKeys = new Set()) {
   });
 }
 
-function getProgressiveTaskTemplate() {
-  return [
-    {
-      id: 'three-minute-scripted',
-      title: 'Practice scripted speaking for 3 minutes',
-      detail: 'Choose one speech and sustain clear pacing for at least 3 minutes.',
-      actionRoute: ROUTES.TRAINING_SETUP,
-      prerequisiteIds: [],
-    },
-    {
-      id: 'free-randomizer-3x',
-      title: 'Complete Free Speech Randomizer 3 times',
-      detail: 'Do three short random-topic runs and focus on flow and confidence.',
-      actionRoute: ROUTES.PRACTICE,
-      prerequisiteIds: ['three-minute-scripted'],
-    },
-    {
-      id: 'review-feedback',
-      title: 'Review your latest Detailed Feedback',
-      detail: 'Identify one weak pillar and one improvement action for tomorrow.',
-      actionRoute: ROUTES.PROGRESS,
-      prerequisiteIds: ['free-randomizer-3x'],
-    },
-    {
-      id: 'two-script-run',
-      title: 'Run 2 scripted sessions with different speeches',
-      detail: 'Switch topics to challenge articulation and consistency.',
-      actionRoute: ROUTES.TRAINING_SETUP,
-      prerequisiteIds: ['review-feedback'],
-    },
-    {
-      id: 'randomizer-focus',
-      title: 'Do Randomizer and avoid filler words',
-      detail: 'Complete at least 2 randomizer attempts with intentional pauses.',
-      actionRoute: ROUTES.PRACTICE,
-      prerequisiteIds: ['two-script-run'],
-    },
-    {
-      id: 'progress-check',
-      title: 'Check your trend and set one micro-goal',
-      detail: 'Use Progress page to pick one measurable target for next session.',
-      actionRoute: ROUTES.PROGRESS,
-      prerequisiteIds: ['randomizer-focus'],
-    },
-  ];
-}
-
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { user, isInitializing } = useAuthContext();
@@ -229,7 +183,7 @@ export default function DashboardPage() {
   const [totalActivityPoints, setTotalActivityPoints] = useState(0);
   const [activityHistory, setActivityHistory] = useState([]);
   const [activityMetrics, setActivityMetrics] = useState(() => getActivityMetrics(activityScopeKey));
-  const activityTasks = useMemo(() => getProgressiveTaskTemplate(), []);
+  const { tasks: activityTasks, loading: activitiesLoading } = useActivitiesJourneyTasks();
 
   const getPointsFromUser = useCallback((nextUser) => {
     const raw = Number(nextUser?.speakerPoints ?? 0);
@@ -281,9 +235,7 @@ export default function DashboardPage() {
 
   const effectiveTotalActivityPoints = Math.max(totalActivityPoints, getPointsFromUser(user));
 
-  const levelProgress = useMemo(() => {
-    return deriveLevelProgress(effectiveTotalActivityPoints);
-  }, [effectiveTotalActivityPoints]);
+  const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
 
   const activityTaskState = useMemo(() => {
     return activityTasks.reduce((state, task) => {
@@ -430,7 +382,9 @@ export default function DashboardPage() {
             </div>
             <h2 className="dashboard-section-title--xl">{levelProgress.levelName}</h2>
             <p className="dashboard-activity-summary">
-              Activity Journey: {completedTaskCount}/{activityTasks.length} Task Complete
+              {activitiesLoading
+                ? 'Loading journey…'
+                : `Activity Journey: ${completedTaskCount}/${Math.max(activityTasks.length, 1)} Task Complete`}
             </p>
             <div className="dashboard-level-track">
               <div className="dashboard-level-fill" style={{ width: `${activityProgressPct}%` }} />

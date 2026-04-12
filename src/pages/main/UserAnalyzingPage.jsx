@@ -4,7 +4,7 @@ import Confetti from 'react-confetti';
 import { useAuthContext } from '../../context/useAuthContext';
 import { supabase } from '../../lib/supabase';
 import { ROUTES } from '../../utils/constants';
-import { LEVEL_CONFIG } from '../../utils/activityProgress';
+import { getBigkasLevelFromScore, mapPercentToEntryScore } from '../../utils/activityProgress';
 import {
   appendSpeakerPointsHistory,
   createSpeakerPointsHistoryEntry,
@@ -15,20 +15,6 @@ function clampScore(value) {
   const num = Number(value ?? 0);
   if (!Number.isFinite(num)) return 0;
   return Math.max(0, Math.min(100, Math.round(num)));
-}
-
-function getLevelFromScore(score) {
-  if (score >= 90) return 6;
-  if (score >= 80) return 5;
-  if (score >= 70) return 4;
-  if (score >= 55) return 3;
-  if (score >= 40) return 2;
-  return 1;
-}
-
-function getLevelName(levelNumber) {
-  const entry = LEVEL_CONFIG[Math.max(0, Number(levelNumber || 1) - 1)];
-  return entry?.name || 'Novice';
 }
 
 function isPreTestSession(session) {
@@ -188,8 +174,10 @@ function UserAnalyzingPage() {
         return 0;
       })();
 
-      const levelNumber = getLevelFromScore(finalScore);
-      const levelName = getLevelName(levelNumber);
+      const entryScore = mapPercentToEntryScore(finalScore);
+      const levelBand = getBigkasLevelFromScore(entryScore);
+      const levelNumber = levelBand.levelNumber;
+      const levelName = levelBand.levelName;
       const shouldAwardBonus = existingPretestBonusAwarded <= 0 && pretestBonusPoints > 0;
       const awardedBonusPoints = shouldAwardBonus ? pretestBonusPoints : 0;
       const nextSpeakerPoints = userSpeakerPoints + awardedBonusPoints;
@@ -235,6 +223,7 @@ function UserAnalyzingPage() {
       const result = await updateUserMetadata({
         onboarding_stage: 'completed',
         onboarding_completed: true,
+        speaker_entry_score: mapPercentToEntryScore(analysis.finalScore),
         speaker_level: analysis.levelName,
         speaker_level_number: analysis.levelNumber,
         speaker_points: analysis.nextSpeakerPoints,
@@ -303,7 +292,7 @@ function UserAnalyzingPage() {
           <div className="analyzing-popup-backdrop">
             <div className="analyzing-popup" role="dialog" aria-modal="true" aria-label="Your Level Result">
               <p className="analyzing-popup-kicker">Level Unlocked</p>
-              <h2>You are now Level {analysis.levelNumber}: {getLevelName(analysis.levelNumber)}!</h2>
+              <h2>You are now Level {analysis.levelNumber}: {analysis.levelName}!</h2>
               <p className="analyzing-popup-text">
                 Great work finishing your profiling and pre-tests. Your training journey is now personalized for your current level.
               </p>
@@ -334,7 +323,7 @@ function UserAnalyzingPage() {
 
         <div className="analyzing-estimate">
           <span>Estimated Starting Level</span>
-          <strong>Level {analysis.levelNumber}: {getLevelName(analysis.levelNumber)}</strong>
+          <strong>Level {analysis.levelNumber}: {analysis.levelName}</strong>
         </div>
 
         <div className="analyzing-breakdown">

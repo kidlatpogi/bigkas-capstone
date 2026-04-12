@@ -31,7 +31,7 @@ import {
 import {
   GLOBAL_ACTIVITY_SCOPE,
   addPointsToSpeakerProgress,
-  deriveLevelProgress,
+  getBigkasLevelFromUser,
   getTotalActivityPoints,
   recordActivityEvent,
 } from '../../utils/activityProgress';
@@ -116,7 +116,7 @@ function ProgressPage() {
       const after = getTotalActivityPoints(activityScopeKey);
 
       if (after === before) return;
-      const levelProgress = deriveLevelProgress(after);
+      const levelProgress = getBigkasLevelFromUser(user);
       const pointsAwarded = Math.max(0, Math.floor(after - before));
       await updateUserMetadata({
         speaker_points: after,

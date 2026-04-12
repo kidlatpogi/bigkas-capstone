@@ -8,7 +8,7 @@ import { pushBackgroundAnalysisNotification } from '../../utils/backgroundAnalys
 import {
   GLOBAL_ACTIVITY_SCOPE,
   addPointsToSpeakerProgress,
-  deriveLevelProgress,
+  getBigkasLevelFromUser,
   getActivityCompletionHistory,
   getScoreRewardPoints,
   getTotalActivityPoints,
@@ -751,6 +751,14 @@ function TrainingPage() {
             }, activityScopeKey);
           }
 
+          const fromActivity = String(state?.fromActivityTaskId || '').trim();
+          if (fromActivity) {
+            recordActivityEvent({
+              type: 'activity-complete',
+              activityId: fromActivity,
+            }, activityScopeKey);
+          }
+
           if (sessionType !== 'pre-test') {
             const earnedByScore = getScoreRewardPoints(normalizedSessionScore, elapsedSec);
             if (earnedByScore > 0) {
@@ -780,7 +788,7 @@ function TrainingPage() {
             );
             const totalAwarded = Math.max(0, Math.floor(pointsAfter - pointsBefore));
 
-            const levelProgress = deriveLevelProgress(pointsAfter);
+            const levelProgress = getBigkasLevelFromUser(user);
             metadataUpdates.speaker_points = pointsAfter;
             metadataUpdates.speaker_level = levelProgress.levelName;
             metadataUpdates.speaker_level_number = levelProgress.levelNumber;

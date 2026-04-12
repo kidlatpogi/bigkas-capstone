@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useSta
 import { createPortal } from 'react-dom';
 import {
   IoCheckmarkCircle,
+  IoClose,
   IoMic,
   IoMusicalNote,
   IoPulse,
@@ -121,13 +122,11 @@ const HeaderStatBadge = styled.div`
 `;
 
 const TooltipBox = styled.div`
-  background: #ffffff;
-  padding: 16px;
+  background: #f18f01;
+  padding: 24px 16px 16px;
   border-radius: 16px;
-  box-shadow:
-    0 4px 0 0 #e5e5e5,
-    0 12px 24px rgba(0, 0, 0, 0.12);
-  min-width: 200px;
+  border-bottom: 4px solid #d17c00;
+  min-width: 220px;
   max-height: min(70vh, 420px);
   overflow-x: hidden;
   overflow-y: auto;
@@ -138,6 +137,7 @@ const TooltipBox = styled.div`
   position: relative;
   align-items: center;
   text-align: center;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
 `;
 
 const TooltipBeak = styled.div`
@@ -146,54 +146,95 @@ const TooltipBeak = styled.div`
   transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-left: 10px solid transparent;
-  border-right: 10px solid transparent;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  z-index: 1;
   
   /* Smart Beak Direction */
   ${(props) =>
     props.$placement === 'bottom'
       ? `
-    top: -10px;
-    border-bottom: 10px solid #ffffff;
+    top: -12px;
+    border-bottom: 12px solid #f18f01;
   `
       : `
-    bottom: -10px;
-    border-top: 10px solid #ffffff;
+    bottom: -16px; /* Offset for the 4px border-bottom of box */
+    border-top: 12px solid #f18f01;
+    &::after {
+      content: '';
+      position: absolute;
+      left: -12px;
+      top: -16px;
+      width: 0;
+      height: 0;
+      border-left: 12px solid transparent;
+      border-right: 12px solid transparent;
+      border-top: 12px solid #d17c00;
+      z-index: -1;
+    }
   `}
+`;
+
+const TooltipCloseBtn = styled.button`
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #ffffff;
+  }
 `;
 
 const TooltipTitle = styled.h3`
   margin: 0;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 800;
-  color: #3c3c3c;
+  color: #ffffff;
 `;
 
 const TooltipDescription = styled.p`
   margin: 0;
   font-size: 14px;
   font-weight: 600;
-  color: #777777;
+  color: rgba(255, 255, 255, 0.85);
 `;
 
-const StartButton = styled.button`
-  background-color: ${(props) => (props.disabled ? '#e5e5e5' : '#f18f01')};
-  color: white;
+const TooltipStartButton = styled.button`
+  background-color: #ffffff;
+  color: #f18f01;
   border: none;
   border-radius: 12px;
-  padding: 10px 24px;
+  padding: 12px 24px;
   font-size: 15px;
   font-weight: 800;
-  letter-spacing: 0.8px;
+  letter-spacing: 1px;
   cursor: ${(props) => (props.disabled ? 'not-allowed' : 'pointer')};
-  box-shadow: ${(props) => (props.disabled ? '#d5d5d5' : '#cd8b76')} 0 4px 0 0;
+  box-shadow: #e5e5e5 0 4px 0 0;
   transition: all 0.1s ease;
   width: 100%;
   text-transform: uppercase;
+  margin-top: 4px;
 
   &:active:not(:disabled) {
     transform: translateY(2px);
-    box-shadow: #cd8b76 0 2px 0 0;
+    box-shadow: #e5e5e5 0 2px 0 0;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    background-color: #f5f5f5;
+    color: #a1a1aa;
+    box-shadow: #d5d5d5 0 4px 0 0;
   }
 `;
 
@@ -220,7 +261,7 @@ function computeTooltipLayout(nodeEl) {
   return { left: cx, top, transform, placement };
 }
 
-export const JourneyTooltip = ({ step, onStart, nodeRef }) => {
+export const JourneyTooltip = ({ step, onStart, onClose, nodeRef }) => {
   const [layout, setLayout] = useState(null);
 
   useLayoutEffect(() => {
@@ -267,15 +308,19 @@ export const JourneyTooltip = ({ step, onStart, nodeRef }) => {
         style={{ maxWidth: 'min(22rem, calc(100vw - 24px))', transformOrigin: layout.placement === 'bottom' ? 'top center' : 'bottom center' }}
       >
         <TooltipBox>
+          <TooltipCloseBtn onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}>
+            <IoClose />
+          </TooltipCloseBtn>
           <TooltipTitle>{step.title || 'Lesson'}</TooltipTitle>
           <TooltipDescription>
             {isLocked
               ? 'Finish previous stages to unlock!'
-              : step.nodeState === 'completed'
-                ? '100% Complete'
-                : 'Ready to start!'}
+              : `Stage ${step.id.split('-').pop() || '1'} of 6`}
           </TooltipDescription>
-          <StartButton
+          <TooltipStartButton
             disabled={isLocked}
             onClick={(e) => {
               e.stopPropagation();
@@ -283,7 +328,7 @@ export const JourneyTooltip = ({ step, onStart, nodeRef }) => {
             }}
           >
             {isLocked ? 'LOCKED' : 'START'}
-          </StartButton>
+          </TooltipStartButton>
           <TooltipBeak $placement={layout.placement} />
         </TooltipBox>
       </motion.div>

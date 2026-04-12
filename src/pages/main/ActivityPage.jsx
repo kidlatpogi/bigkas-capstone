@@ -190,7 +190,7 @@ function ActivityPage() {
         id: task.id,
         task,
         title: task.phase_name || task.title,
-        pillarName: task.pillar_name || task.pillarName,
+        pillarName: task.phase_name || task.pillarName,
         stageNumber: index + 1,
         totalStages,
         nodeState: getNodeStateForTask(task.id, taskState, taskUnlockState, activeTaskId),

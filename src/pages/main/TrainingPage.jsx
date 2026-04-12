@@ -49,6 +49,9 @@ function getSupportedVideoMime() {
 
 const MAX_VIDEO_BLOB_BYTES = 18 * 1024 * 1024;
 
+/** Minimum recording length (seconds) before FastAPI / Supabase analysis runs. */
+const MIN_RECORDING_SECONDS = 20;
+
 function formatTime(sec) {
   const h = Math.floor(sec / 3600).toString().padStart(2, '0');
   const m = Math.floor((sec % 3600) / 60).toString().padStart(2, '0');
@@ -164,6 +167,8 @@ function TrainingPage() {
   const visualCanvasRef = useRef(null);
   const scriptRef = useRef(null);
   const timerRef = useRef(null);
+  /** Tracks elapsed recording seconds (excludes pause); same source as timer. Used at stop for min-duration gate. */
+  const recordingDurationSecRef = useRef(0);
   const countRef = useRef(null);
   const mediaRef = useRef(null);
   const chunksRef = useRef([]);
@@ -192,6 +197,14 @@ function TrainingPage() {
   const [hintContent, setHintContent] = useState('');
   const [showMicWarning, setShowMicWarning] = useState(false);
   const { startAnalysis, stopAnalysis, liveScores } = useVisualAnalysis();
+
+  const bumpElapsedSec = useCallback(() => {
+    setElapsedSec((s) => {
+      const next = s + 1;
+      recordingDurationSecRef.current = next;
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     const savedFontSize = readNumericSetting(trainingFontSizeStorageKey, null, 12, 24);
@@ -611,11 +624,12 @@ function TrainingPage() {
       }
 
       setStatus('recording');
+      recordingDurationSecRef.current = 0;
       setElapsedSec(0);
       micLowStartRef.current = null;
       micWarningVisibleRef.current = false;
       setShowMicWarning(false);
-      timerRef.current = setInterval(() => setElapsedSec((s) => s + 1), 1000);
+      timerRef.current = setInterval(bumpElapsedSec, 1000);
 
       /* WPM word highlight (scripted only) */
       startScriptHighlightLoop(0);
@@ -629,7 +643,7 @@ function TrainingPage() {
         setStatus('error');
       }
     }
-  }, [startScriptHighlightLoop, startWaveformLoop]);
+  }, [bumpElapsedSec, startScriptHighlightLoop, startWaveformLoop]);
 
   /* ── Countdown → start ── */
   const startCountdown = useCallback(() => {
@@ -695,6 +709,21 @@ function TrainingPage() {
       analyserRef.current = null;
       analysisModeRef.current = 'foreground';
       backgroundLeaveInitiatedRef.current = false;
+
+      const recordingDurationSec = recordingDurationSecRef.current;
+      if (recordingDurationSec < MIN_RECORDING_SECONDS) {
+        if (isMountedRef.current) {
+          setHintContent(
+            'Your recording is too short! Please introduce yourself for at least 20 seconds so the AI can accurately analyze your gestures and tone.',
+          );
+          setShowHint(true);
+          clearTimeout(hintDismissRef.current);
+          hintDismissRef.current = setTimeout(() => setShowHint(false), 12000);
+        }
+        handleRestart();
+        return;
+      }
+
       setStatus('analysing');
       try {
         const profilingKeys = [
@@ -911,7 +940,7 @@ function TrainingPage() {
       setShowPausedModal(true);
     } else if (mediaRef.current?.state === 'paused') {
       mediaRef.current.resume();
-      timerRef.current = setInterval(() => setElapsedSec((s) => s + 1), 1000);
+      timerRef.current = setInterval(bumpElapsedSec, 1000);
       startWaveformLoop();
       if (focus === 'scripted') {
         startScriptHighlightLoop(Math.max(highlightIdx, 0));
@@ -924,14 +953,14 @@ function TrainingPage() {
     setShowPausedModal(false);
     if (mediaRef.current?.state === 'paused') {
       mediaRef.current.resume();
-      timerRef.current = setInterval(() => setElapsedSec((s) => s + 1), 1000);
+      timerRef.current = setInterval(bumpElapsedSec, 1000);
       startWaveformLoop();
       if (focus === 'scripted') {
         startScriptHighlightLoop(Math.max(highlightIdx, 0));
       }
       setStatus('recording');
     }
-  }, [focus, highlightIdx, startScriptHighlightLoop, startWaveformLoop]);
+  }, [bumpElapsedSec, focus, highlightIdx, startScriptHighlightLoop, startWaveformLoop]);
 
   /* ── Restart ── */
   const handleRestart = () => {
@@ -958,6 +987,7 @@ function TrainingPage() {
     micWarningVisibleRef.current = false;
     setShowMicWarning(false);
     setStatus('idle');
+    recordingDurationSecRef.current = 0;
     setElapsedSec(0);
     setHighlightIdx(-1);
     chunksRef.current = [];
@@ -969,6 +999,10 @@ function TrainingPage() {
   const isRecording = status === 'recording';
   const isPaused = status === 'paused';
   const isActive = isRecording || isPaused;
+
+  const minDurationProgressPct = Math.min(100, (elapsedSec / MIN_RECORDING_SECONDS) * 100);
+  const isMinDurationMet = elapsedSec >= MIN_RECORDING_SECONDS;
+  const secondsUntilMinValid = Math.max(0, MIN_RECORDING_SECONDS - elapsedSec);
 
   const handleBackPress = useCallback(() => {
     if (isActive) {
@@ -1077,6 +1111,29 @@ function TrainingPage() {
               </span>
             )}
           </div>
+
+          {isActive && (
+            <div
+              className="tp-min-duration"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={MIN_RECORDING_SECONDS}
+              aria-valuenow={Math.min(elapsedSec, MIN_RECORDING_SECONDS)}
+              aria-label="Progress toward minimum analysis length"
+            >
+              <div className="tp-min-duration__track">
+                <div
+                  className={`tp-min-duration__fill${isMinDurationMet ? ' tp-min-duration__fill--valid' : ''}`}
+                  style={{ width: `${minDurationProgressPct}%` }}
+                />
+              </div>
+              <p className={`tp-min-duration__label${isMinDurationMet ? ' tp-min-duration__label--valid' : ''}`}>
+                {isMinDurationMet
+                  ? 'Valid for analysis — you can stop when ready'
+                  : `${secondsUntilMinValid}s to minimum for AI analysis`}
+              </p>
+            </div>
+          )}
 
           {/* Camera */}
           <div className="tp-camera-wrap">

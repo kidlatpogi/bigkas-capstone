@@ -13,7 +13,7 @@
 }
 
 .skyward-journey-container {
-  height: 100dvh;
+  height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
 }

@@ -5,8 +5,6 @@ import { ROUTES } from '../../utils/constants';
 import {
   GLOBAL_ACTIVITY_SCOPE,
   buildActivityMetricsKey,
-  buildCompletionHistoryKey,
-  getActivityCompletionHistory,
   getActivityTaskProgress,
   getActivityMetrics,
   getTaskXp,
@@ -83,8 +81,6 @@ function ActivityPage() {
   const hasTaskStateHydratedRef = useRef(false);
 
   const [activityMetrics, setActivityMetrics] = useState(() => getActivityMetrics(scopeKey));
-  const [completionHistory, setCompletionHistory] = useState(() => getActivityCompletionHistory(scopeKey));
-  const [activeTab, setActiveTab] = useState('active');
   const [recentStampedTaskId, setRecentStampedTaskId] = useState(null);
 
   useEffect(() => {
@@ -103,10 +99,9 @@ function ActivityPage() {
 
     const refreshMetrics = () => {
       setActivityMetrics(getActivityMetrics(scopeKey));
-      setCompletionHistory(getActivityCompletionHistory(scopeKey));
     };
     const onStorage = (event) => {
-      if (event.key === buildActivityMetricsKey(scopeKey) || event.key === buildCompletionHistoryKey(scopeKey)) {
+      if (event.key === buildActivityMetricsKey(scopeKey)) {
         refreshMetrics();
       }
     };
@@ -144,29 +139,6 @@ function ActivityPage() {
       return state;
     }, {});
   }, [taskState, tasks]);
-
-  const historyItems = useMemo(() => {
-    const historyByTaskId = new Map(
-      completionHistory.map((entry) => [entry.taskId, entry]),
-    );
-
-    return tasks
-      .filter((task) => taskState[task.id] === true)
-      .map((task) => ({
-        task,
-        historyEntry: historyByTaskId.get(task.id) || null,
-      }))
-      .sort((a, b) => {
-        const aTime = a.historyEntry?.completedAt ? Date.parse(a.historyEntry.completedAt) : 0;
-        const bTime = b.historyEntry?.completedAt ? Date.parse(b.historyEntry.completedAt) : 0;
-        return bTime - aTime;
-      });
-  }, [completionHistory, taskState, tasks]);
-
-  const completedCount = tasks.filter((task) => taskState[task.id] === true).length;
-  const totalXp = tasks.reduce((sum, task) => sum + getTaskXp(task.id), 0);
-  const earnedXp = tasks.reduce((sum, task) => sum + (taskState[task.id] ? getTaskXp(task.id) : 0), 0);
-  const progressPct = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
 
   const activeTaskId = useMemo(
     () => getActiveTaskId(tasks, taskState, taskUnlockState),
@@ -331,76 +303,18 @@ function ActivityPage() {
 
   return (
     <div className="inner-page activity-page">
-      <div className="activity-content-wrap">
-        <div className="activity-sticky-shell">
-          <div className="page-card activity-hero-card dashboard-anim-top">
-            <p className="activity-kicker">SKYWARD JOURNEY</p>
-            <p className="activity-subtitle"><span className="activity-subtitle-highlight">Progressive speaking quest:</span> Climb the path in order—like a skill tree. Finished steps move to History automatically.</p>
-
-            <div className="activity-track">
-              <div className="activity-track-fill" style={{ width: `${progressPct}%` }} />
-            </div>
-
-            <div className="activity-stats">
-              <span>{completedCount}/{tasks.length} Task Complete</span>
-              <span>{earnedXp}/{totalXp} EXP</span>
-            </div>
-          </div>
-
-          <div className="activity-tabs dashboard-anim-top dashboard-anim-delay-1" role="tablist" aria-label="Activity tabs">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'active'}
-              className={`activity-tab-btn${activeTab === 'active' ? ' active' : ''}`}
-              onClick={() => setActiveTab('active')}
-            >
-              Active
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'history'}
-              className={`activity-tab-btn${activeTab === 'history' ? ' active' : ''}`}
-              onClick={() => setActiveTab('history')}
-            >
-              History
-            </button>
-          </div>
-        </div>
-
-        <div className={`activity-task-list${activeTab === 'active' ? ' activity-task-list--journey' : ''}`}>
-          {activeTab === 'active' && (
-            <SkywardJourney
-              steps={journeySteps}
-              entranceFromNav={entranceFromNav}
-              renderStepContent={(step, meta) =>
-                renderTaskCard({
-                  task: step.task,
-                  animationClass: `dashboard-anim-bottom dashboard-anim-delay-${Math.min(meta.stepIndex + 2, 9)}`,
-                })
-              }
-            />
-          )}
-          {activeTab === 'active' && completedCount === tasks.length ? (
-            <div className="page-card activity-empty-state dashboard-anim-bottom dashboard-anim-delay-2">
-              All activities completed. Check History for finished steps.
-            </div>
-          ) : null}
-          {activeTab === 'history' && historyItems.map(({ task, historyEntry }, index) => {
-            const pattern = ['left', 'right', 'bottom'];
-            const direction = pattern[index % pattern.length];
-            const delay = Math.min(index + 2, 9);
-            return renderTaskCard({
-              task,
-              historyEntry,
-              animationClass: `dashboard-anim-${direction} dashboard-anim-delay-${delay}`,
-            });
-          })}
-
-          {activeTab === 'history' && historyItems.length === 0 ? (
-            <div className="page-card activity-empty-state dashboard-anim-bottom dashboard-anim-delay-2">No completed activities yet. Finish tasks in Active to populate history.</div>
-          ) : null}
+      <div className="activity-content-wrap" style={{ height: '100%', display: 'flex', flexDirection: 'column', width: '100%', maxWidth: 'none', margin: 0, padding: 0 }}>
+        <div className={`activity-task-list activity-task-list--journey`} style={{ flex: 1, padding: 0, overflow: 'hidden' }}>
+          <SkywardJourney
+            steps={journeySteps}
+            entranceFromNav={entranceFromNav}
+            renderStepContent={(step, meta) =>
+              renderTaskCard({
+                task: step.task,
+                animationClass: `dashboard-anim-bottom dashboard-anim-delay-${Math.min(meta.stepIndex + 2, 9)}`,
+              })
+            }
+          />
         </div>
       </div>
     </div>

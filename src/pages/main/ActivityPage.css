@@ -9,16 +9,14 @@
   width: 100%;
   max-width: none;
   margin: 0;
-  padding: var(--responsive-page-padding);
+  padding: 0; /* Removed padding to let map span full width/height */
   background: #FFFFFF;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
   min-height: 100vh;
   height: 100vh;
   box-sizing: border-box;
   overflow: hidden;
-  overflow-x: hidden;
 }
 
 .activity-content-wrap {

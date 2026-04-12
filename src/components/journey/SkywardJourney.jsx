@@ -12,7 +12,6 @@ import {
   IoVolumeHigh,
 } from 'react-icons/io5';
 import {
-  getUnitLabel,
   isMilestoneStep,
   JOURNEY_NODE_THEMES,
   NODE_STATE,
@@ -92,59 +91,50 @@ import styled from 'styled-components';
  import { motion, AnimatePresence } from 'framer-motion';
 
 const MapHeaderCard = styled.div`
-  max-width: 450px;
+  max-width: 400px;
   width: 90%;
-  margin: 0 auto 32px;
+  margin: 20px auto;
   background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-radius: 24px;
   padding: 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   text-align: center;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid #f18f01;
   position: relative;
   z-index: 10;
 `;
 
-const HeaderIconGlow = styled.div`
-  width: 64px;
-  height: 64px;
-  background: rgba(241, 143, 1, 0.1);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #f18f01;
-  font-size: 32px;
-  box-shadow: 0 0 20px rgba(241, 143, 1, 0.3);
-  animation: header-glow 2s ease-in-out infinite alternate;
-
-  @keyframes header-glow {
-    from { box-shadow: 0 0 15px rgba(241, 143, 1, 0.2); transform: scale(1); }
-    to { box-shadow: 0 0 30px rgba(241, 143, 1, 0.5); transform: scale(1.05); }
-  }
-`;
-
 const HeaderTitle = styled.h1`
-  font-size: 14px;
-  font-weight: 900;
-  letter-spacing: 0.15em;
-  color: #0b3954;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #f18f01;
   margin: 0;
   text-transform: uppercase;
 `;
 
 const HeaderDescription = styled.p`
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  color: rgba(11, 57, 84, 0.7);
+  color: rgba(11, 57, 84, 0.6);
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.4;
+`;
+
+const HeaderStatBadge = styled.div`
+  background: rgba(11, 57, 84, 0.06);
+  color: #0b3954;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-top: 4px;
 `;
 
 const TooltipWrapper = styled(motion.div)`
@@ -243,8 +233,8 @@ export const JourneyTooltip = ({ step, onStart, nodeRef, containerRef }) => {
       const containerRect = containerRef.current.getBoundingClientRect();
       const relativeTop = nodeRect.top - containerRect.top;
 
-      // IF node is in top 25% of viewport OR too close to top (less than 180px)
-      const isTopArea = relativeTop < (containerRect.height * 0.25) || relativeTop < 180;
+      // IF node is in top 25% of viewport OR too close to top (less than 200px)
+      const isTopArea = relativeTop < (containerRect.height * 0.25) || relativeTop < 200;
 
       if (isTopArea) {
         setPosition('bottom');
@@ -305,8 +295,6 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
     [steps],
   );
 
-  const activeStepId = activeIndex >= 0 ? steps[activeIndex]?.id : null;
-
   const lastCompletedIndex = useMemo(() => {
     let last = -1;
     steps.forEach((s, i) => {
@@ -314,6 +302,8 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
     });
     return last;
   }, [steps]);
+  
+  const completedCount = useMemo(() => steps.filter(s => s.nodeState === NODE_STATE.COMPLETED).length, [steps]);
 
   const [pathPoints, setPathPoints] = useState([]);
   const [indexedNodePoints, setIndexedNodePoints] = useState([]);
@@ -322,7 +312,7 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
   const [panelVisible, setPanelVisible] = useState(false);
   const panelClosePendingRef = useRef(false);
   const [jiggleIndex, setJiggleIndex] = useState(null);
-  const [showTapHint, setShowTapHint] = useState(false);
+  // removed showTapHint
   const [map, setMap] = useState(() => ({ tx: 0, ty: 0 }));
   const [tooltipNodeId, setTooltipNodeId] = useState(null);
 
@@ -575,21 +565,6 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
     return () => window.clearTimeout(t);
   }, [panelVisible, panelOpenId]);
 
-  useEffect(() => {
-    tapDismissedRef.current = false;
-    const clearHint = window.setTimeout(() => setShowTapHint(false), 0);
-    if (!activeStepId) {
-      return () => window.clearTimeout(clearHint);
-    }
-    const t = window.setTimeout(() => {
-      if (!tapDismissedRef.current) setShowTapHint(true);
-    }, 3000);
-    return () => {
-      window.clearTimeout(clearHint);
-      window.clearTimeout(t);
-    };
-  }, [activeStepId]);
-
   const polylinePoints = useMemo(() => {
     if (pathPoints.length < 2) return '';
     return pathPoints.map((p) => `${p.x},${p.y}`).join(' ');
@@ -614,7 +589,6 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
       }
       if (step.nodeState === NODE_STATE.ACTIVE) {
         tapDismissedRef.current = true;
-        setShowTapHint(false);
       }
       if (panelOpenId === step.id && panelVisible) {
         requestClosePanel();
@@ -648,7 +622,6 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
     return null;
   }
 
-  const unitOneLabel = getUnitLabel(0);
   const sections = [];
   let currentSectionRows = [];
   let currentSectionKey = 0;
@@ -696,18 +669,7 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
             <div
               className={`skyward-journey-node-cluster${milestone ? ' skyward-journey-node-cluster--milestone' : ''}`}
             >
-              {i === 0 && isActive ? (
-                <div className="skyward-journey-start-callout" aria-hidden>
-                  <span className="skyward-journey-start-unit">
-                    UNIT {unitOneLabel.unitNum}: {unitOneLabel.title}
-                  </span>
-                  <span className="skyward-journey-start-badge">START</span>
-                  <span className="skyward-journey-start-bubble">
-                    Begin here!
-                    <span className="skyward-journey-start-bubble-tail" />
-                  </span>
-                </div>
-              ) : null}
+              {i === 0 && isActive ? null : null}
               <SkywardJourneyNodeButton
                 type="button"
                 nodeState={step.nodeState}
@@ -772,9 +734,7 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
                 </span>
               </div>
             </div>
-            {isActive && showTapHint ? (
-              <p className="skyward-journey-tap-hint">Tap to open</p>
-            ) : null}
+            {/* removed tap hint */}
           </div>
         </div>
       </div>,
@@ -863,11 +823,9 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
 
             <div className="skyward-journey-column">
               <MapHeaderCard>
-                <HeaderIconGlow>
-                  <IoMicOutline />
-                </HeaderIconGlow>
                 <HeaderTitle>CHAPTER 1: VOCAL CLARITY</HeaderTitle>
-                <HeaderDescription>Master the fundamentals of speaking with clarity and precision.</HeaderDescription>
+                <HeaderDescription>Master your speaking fundamentals</HeaderDescription>
+                <HeaderStatBadge>{completedCount} / {steps.length} Nodes Completed</HeaderStatBadge>
               </MapHeaderCard>
               {sections}
             </div>

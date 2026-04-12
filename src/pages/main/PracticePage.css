@@ -1,14 +1,15 @@
-﻿/* ══════════════════════════════════════════════════════
-   PracticePage — web port of PracticeScreen (mobile)
-   Tokens: primary #FCBA04 · black #010101 · bg #F5F5F5
+/* ══════════════════════════════════════════════════════
+   PracticePage — Bigkas Apple-Inspired Design System
+   Tokens: primary #5A7863 · navy #0B3954 · mint #D3E3BC · charcoal #3C4952
    ══════════════════════════════════════════════════════ */
 
 .practice-page {
   min-height: 100vh;
-  background: var(--bg, #F5F5F5);
-  padding: 48px 24px 340px;
+  background: #ffffff; /* White Background */
+  padding: 64px 24px 340px;
   display: flex;
   justify-content: center;
+  font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .practice-wrap {
@@ -18,224 +19,120 @@
   flex-direction: column;
 }
 
-/* Back button */
-.practice-back {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(1, 1, 1, 0.06);
-  color: #010101;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  margin-bottom: 20px;
-  transition: background 0.2s;
-  flex-shrink: 0;
-}
-
-.practice-back:hover { background: rgba(1, 1, 1, 0.1); }
-
 /* Header — centered title, back button pinned left */
 .practice-header {
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .practice-header .inner-page-back {
   position: absolute;
   left: 0;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  border: 1.5px solid #0B3954;
+  background: #F18F01;
+  color: #0B3954;
+  z-index: 20;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.practice-header .inner-page-back:hover {
+  background: #F6A320;
+  border-color: #0B3954;
 }
 
 /* Title */
 .practice-title {
-  font-size: 22px;
-  font-weight: 700;
-  color: #010101;
-  line-height: 1.15;
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 40px;
+  font-weight: 600;
+  color: #0B3954; /* Deep Navy */
+  line-height: 1.10;
   margin: 0;
   text-align: center;
   flex: 1;
 }
 
 .practice-sub {
-  font-size: 14px;
-  color: rgba(1, 1, 1, 0.6);
-  line-height: 1.5;
-  margin: 0 0 20px;
-}
-
-/* Tabs */
-.practice-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
-}
-
-.practice-tab-btn {
-  flex: 1;
-  padding: 8px 12px;
-  border-radius: 9999px;
-  border: 1.5px solid #D5D5D5;
-  background: #FFFFFF;
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(1, 1, 1, 0.55);
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s, border-color 0.2s;
-  font-family: inherit;
-}
-
-.practice-tab-btn.active {
-  background: #FCBA04;
-  border-color: #FCBA04;
-  color: #010101;
-  font-weight: 700;
-}
-
-/* Script list */
-.practice-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.practice-script-card {
-  background: #FFFFFF;
-  border: none;
-  border-radius: 14px;
-  padding: 16px;
-  text-align: left;
-  cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
-  width: 100%;
-  font-family: inherit;
-  box-shadow: 0 2px 8px rgba(1, 1, 1, 0.06);
-}
-
-.practice-script-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(1, 1, 1, 0.09);
-}
-
-.practice-script-title {
-  display: block;
-  font-size: 15px;
-  font-weight: 700;
-  color: #010101;
-  margin-bottom: 6px;
-}
-
-.practice-script-preview {
-  font-size: 13px;
-  color: rgba(1, 1, 1, 0.55);
-  line-height: 1.4;
-  margin: 0;
-}
-
-/* Empty state */
-.practice-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 40px 16px;
-  gap: 12px;
-}
-
-.practice-empty p {
-  font-size: 13px;
-  color: rgba(1, 1, 1, 0.5);
+  font-size: 17px;
+  color: rgba(11, 57, 84, 0.8);
+  line-height: 1.47;
+  letter-spacing: -0.374px;
+  margin: 0 0 40px;
   text-align: center;
-  line-height: 1.5;
 }
 
-/* Spinner */
-.practice-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid rgba(252, 186, 4, 0.2);
-  border-top-color: #FCBA04;
-  border-radius: 50%;
-  animation: spin 0.75s linear infinite;
-  align-self: center;
-  margin: 24px auto;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* Section label */
-.practice-section-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: rgba(1, 1, 1, 0.45);
-  letter-spacing: 0.5px;
-  margin: 4px 0 8px;
-}
-
-/* Generate button */
-.practice-generate-btn {
-  width: 100%;
-  height: 56px;
-  font-size: 16px;
-  font-weight: 800;
-  border-radius: 999px;
-  letter-spacing: 0.02em;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 14px rgba(252, 186, 4, 0.35);
-}
-
-/* Randomiser */
+/* Randomiser Card */
 .practice-rand-wrap {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 24px;
+  gap: 16px;
+  margin-bottom: 32px;
 }
 
 .practice-rand-card {
-  background: rgba(252, 186, 4, 0.06);
-  border: 2px solid #FCBA04;
-  border-radius: 14px;
-  padding: 24px;
+  background: #ffffff; /* White Card */
+  border: none;
+  border-radius: 24px;
+  padding: 32px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
 }
 
 .practice-rand-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #010101;
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  color: #3C4952; /* Slate Charcoal */
   text-align: center;
   margin: 0;
+  letter-spacing: -0.28px;
 }
 
 .practice-rand-body {
-  font-size: 13px;
-  color: rgba(1, 1, 1, 0.6);
+  font-size: 17px;
+  color: #3C4952;
   text-align: center;
-  line-height: 1.5;
+  line-height: 1.47;
+  letter-spacing: -0.374px;
   margin: 0;
 }
 
 .practice-rand-actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
-  margin-top: 4px;
+  margin-top: 16px;
 }
 
 .practice-rand-hint {
-  font-size: 12px;
-  color: rgba(1, 1, 1, 0.45);
+  font-size: 14px;
+  color: rgba(11, 57, 84, 0.6);
   text-align: center;
   margin: 0;
+  letter-spacing: -0.224px;
+}
+
+.practice-coming-soon {
+  font-size: 14px;
+  font-weight: 500;
+  color: #5A7863;
+  text-align: center;
+  margin-top: 16px;
+  letter-spacing: -0.224px;
+  font-style: italic;
 }
 
 /* Buttons */
@@ -243,367 +140,97 @@
   flex: 1;
   padding: 0 20px;
   height: 48px;
-  background: #FCBA04;
-  color: #010101;
-  font-size: 15px;
-  font-weight: 700;
+  background: #5A7863; /* Forest Green */
+  color: #FFFFFF;
+  font-size: 17px;
+  font-weight: 400;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
-  font-family: inherit;
-  transition: opacity 0.2s, transform 0.15s;
+  transition: background 0.2s, transform 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.practice-btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
-.practice-btn-primary:active { transform: scale(0.97); }
+.practice-btn-primary:hover { 
+  background: #496350; 
+  transform: translateY(-1px); 
+}
+.practice-btn-primary:active { transform: scale(0.98); }
 
 .practice-btn-outline {
   flex: 1;
   padding: 0 20px;
   height: 48px;
   background: transparent;
-  color: #010101;
-  font-size: 15px;
-  font-weight: 600;
-  border: 2px solid #D5D5D5;
-  border-radius: 10px;
+  color: #3C4952;
+  font-size: 17px;
+  font-weight: 400;
+  border: 1px solid #3C4952;
+  border-radius: 8px;
   cursor: pointer;
-  font-family: inherit;
-  transition: border-color 0.2s;
+  transition: background 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
-.practice-btn-outline:hover { border-color: #010101; }
+.practice-btn-outline:hover { 
+  background: rgba(60, 73, 82, 0.08);
+}
 
-/* Cancel — fixed above nav */
+/* Cancel — Pill link style */
 .practice-cancel-link {
   position: fixed;
-  bottom: 142px;
+  bottom: 64px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 100;
-  width: min(592px, calc(100% - 48px));
-  height: 52px;
-  background: #F5F5F5;
-  border: 1.5px solid #D5D5D5;
-  border-radius: 14px;
-  color: #888;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: border-color 0.18s, color 0.18s;
-}
-
-/* Pagination — fixed 20px above cancel */
-.practice-paged-nav {
-  position: fixed;
-  bottom: 214px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  background: #F5F5F5;
-  padding: 7px 16px;
-  border-radius: 9999px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.10);
-  border: 1.5px solid #EBEBEB;
-  white-space: nowrap;
-}
-.practice-paged-btn {
-  padding: 8px 20px;
-  background: #FFFFFF;
-  border: 1.5px solid #E9E9E9;
-  border-radius: 9999px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #010101;
-  cursor: pointer;
-  transition: border-color 0.18s, background 0.18s;
-  font-family: inherit;
-}
-.practice-paged-btn:hover:not(:disabled) {
-  border-color: #FCBA04;
-  background: rgba(252, 186, 4, 0.06);
-}
-.practice-paged-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-.practice-paged-info {
+  width: min(400px, calc(100% - 48px));
+  height: 48px;
+  background: rgba(11, 57, 84, 0.8);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 980px;
+  color: #FFFFFF;
   font-size: 14px;
-  font-weight: 600;
-  color: #010101;
-  min-width: 56px;
-  text-align: center;
-}
-
-.practice-cancel-link:hover {
-  border-color: #aaa;
-  color: #555;
-  background: transparent;
-}
-
-/* ── Teleprompter Preview Modal ── */
-.practice-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  z-index: 1200;
-  padding: 0;
-  animation: fadeOverlay 0.2s ease;
-}
-
-@keyframes fadeOverlay { from { opacity: 0; } to { opacity: 1; } }
-
-.practice-modal {
-  background: #FFFFFF;
-  border-top-left-radius: 20px;
-  border-top-right-radius: 20px;
-  padding: 20px 20px 40px;
-  width: 100%;
-  max-width: 600px;
-  max-height: 85vh;
-  display: flex;
-  flex-direction: column;
-  animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-@keyframes slideUp {
-  from { transform: translateY(100%); }
-  to   { transform: translateY(0); }
-}
-
-.practice-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.practice-modal-script-title {
-  font-size: 17px;
-  font-weight: 700;
-  color: #010101;
-  margin: 0;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding-right: 12px;
-}
-
-.practice-modal-close {
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  min-height: 36px;
-  max-width: 36px;
-  max-height: 36px;
-  aspect-ratio: 1 / 1;
-  padding: 0;
-  box-sizing: border-box;
-  line-height: 1;
-  border: none;
-  background: rgba(1, 1, 1, 0.05);
-  border-radius: 50%;
+  font-weight: 400;
+  letter-spacing: -0.224px;
   cursor: pointer;
+  text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #010101;
-  flex-shrink: 0;
   transition: background 0.2s;
 }
 
-.practice-modal-close:hover { background: rgba(1, 1, 1, 0.1); }
-
-.practice-modal-scroll {
-  flex: 1;
-  overflow-y: auto;
-  background: #F5F5F5;
-  border-radius: 10px;
-  padding: 16px;
-  margin-bottom: 16px;
-  max-height: 50vh;
-  min-height: 120px;
-}
-
-.practice-modal-text {
-  font-size: 15px;
-  line-height: 1.7;
-  color: #010101;
-  white-space: pre-wrap;
-  margin: 0;
-}
-
-.practice-modal-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-/* Copy & Edit button — neutral dark style matching the modal design */
-.practice-btn-copy {
-  flex: 1;
-  min-width: 110px;
-  height: 48px;
-  border-radius: 14px;
-  border: 2px solid rgba(1,1,1,0.5);
-  background: transparent;
-  color: #010101;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: background 0.18s, color 0.18s, border-color 0.18s;
-}
-.practice-btn-copy:hover:not(:disabled) {
-  background: #010101;
-  border-color: #010101;
-  color: #fff;
-}
-.practice-btn-copy:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-/* Spinner inside copy button */
-.practice-copy-spinner {
-  width: 14px;
-  height: 14px;
-  border: 2px solid currentColor;
-  border-top-color: transparent;
-  border-radius: 50%;
-  display: inline-block;
-  animation: practice-spin 0.7s linear infinite;
-}
-@keyframes practice-spin {
-  to { transform: rotate(360deg); }
-}
-
-/* Inline toast inside modal */
-.practice-copy-toast {
-  width: 100%;
-  padding: 10px 14px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  text-align: center;
-  background: rgba(52, 199, 89, 0.12);
-  color: #28a745;
-  border: 1px solid rgba(52, 199, 89, 0.3);
-  margin-bottom: 4px;
-}
-.practice-copy-toast.error {
-  background: rgba(255, 59, 48, 0.10);
-  color: #FF3B30;
-  border-color: rgba(255, 59, 48, 0.25);
-}
-
-/* ── Dark mode ── */
-[data-theme="dark"] .practice-page        { --bg: #0B0B0D; }
-[data-theme="dark"] .practice-back        { background: rgba(255,255,255,0.08); color: #F0F0F0; }
-[data-theme="dark"] .practice-back:hover  { background: rgba(255,255,255,0.13); }
-[data-theme="dark"] .practice-title       { color: #F0F0F0; }
-[data-theme="dark"] .practice-sub         { color: rgba(255,255,255,0.55); }
-[data-theme="dark"] .practice-tab-btn     { background: #1E1E1E; border-color: #3A3A3A; color: rgba(255,255,255,0.5); }
-[data-theme="dark"] .practice-tab-btn.active { background: #FCBA04; border-color: #FCBA04; color: #010101; }
-[data-theme="dark"] .practice-script-card { background: #1E1E1E; }
-[data-theme="dark"] .practice-script-title { color: #F0F0F0; }
-[data-theme="dark"] .practice-script-preview { color: rgba(255,255,255,0.5); }
-[data-theme="dark"] .practice-rand-card   { background: rgba(251,175,0,0.08); }
-[data-theme="dark"] .practice-rand-title  { color: #F0F0F0; }
-[data-theme="dark"] .practice-rand-body   { color: rgba(255,255,255,0.5); }
-[data-theme="dark"] .practice-btn-outline { color: #F0F0F0; border-color: #3A3A3A; }
-[data-theme="dark"] .practice-btn-outline:hover { border-color: #F0F0F0; }
-[data-theme="dark"] .practice-cancel-link { background: #0B0B0D; border-color: #3A3A3A; color: #555; }
-[data-theme="dark"] .practice-cancel-link:hover { border-color: #666; color: #888; }
-[data-theme="dark"] .practice-paged-nav { background: #0B0B0D; border-color: #2A2A2A; }
-[data-theme="dark"] .practice-paged-btn { background: #1E1E1E; color: #F0F0F0; border-color: #2A2A2A; }
-[data-theme="dark"] .practice-paged-btn:hover:not(:disabled) { border-color: #FCBA04; background: rgba(252, 186, 4, 0.06); }
-[data-theme="dark"] .practice-paged-info { color: #F0F0F0; }
-[data-theme="dark"] .practice-modal       { background: #1E1E1E; }
-[data-theme="dark"] .practice-modal-script-title { color: #F0F0F0; }
-[data-theme="dark"] .practice-modal-scroll { background: #121212; }
-[data-theme="dark"] .practice-modal-text  { color: #E0E0E0; }
-[data-theme="dark"] .practice-modal-close { background: rgba(255,255,255,0.08); color: #F0F0F0; }
-[data-theme="dark"] .practice-section-label { color: rgba(255,255,255,0.4); }
-[data-theme="dark"] .practice-cancel-link  { background: #0B0B0D; color: rgba(255,255,255,0.45); border-color: #3A3A3A; }
-[data-theme="dark"] .practice-cancel-link:hover { border-color: #F0F0F0; color: #F0F0F0; background: rgba(255,255,255,0.05); }
-[data-theme="dark"] .practice-btn-copy { border-color: rgba(255,255,255,0.35); color: #F0F0F0; }
-[data-theme="dark"] .practice-btn-copy:hover:not(:disabled) { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.5); color: #F0F0F0; }
-[data-theme="dark"] .practice-copy-toast { background: rgba(48, 209, 88, 0.12); color: #30D158; border-color: rgba(48, 209, 88, 0.3); }
-[data-theme="dark"] .practice-copy-toast.error { background: rgba(255, 69, 58, 0.12); color: #FF453A; border-color: rgba(255, 69, 58, 0.25); }
-
-/* ── Hide floating theme toggle on practice setup page ── */
-body:has(.practice-page) .theme-toggle-wrap {
-  display: none !important;
+.practice-cancel-link:hover {
+  background: rgba(11, 57, 84, 0.95);
 }
 
 /* ── Mobile responsive ── */
 @media (max-width: 600px) {
   .practice-page {
-    padding: 32px 16px 300px;
+    padding: 32px 16px 200px;
+  }
+  
+  .practice-title {
+    font-size: 32px;
   }
 
-  /* Tabs: horizontal scroll instead of wrapping */
-  .practice-tabs {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: 2px;
+  .practice-rand-card {
+    padding: 24px 16px;
   }
 
-  .practice-tabs::-webkit-scrollbar {
-    display: none;
-  }
-
-  .practice-tab-btn {
-    flex-shrink: 0;
-    white-space: nowrap;
-  }
-
-  /* Script cards: full-width comfortable tap target */
-  .practice-script-card {
-    padding: 14px;
-  }
-
-  .practice-script-title {
-    font-size: 15px;
-  }
-
-  /* Modal: stack action buttons vertically */
-  .practice-modal-actions {
+  .practice-rand-actions {
     flex-direction: column;
   }
 
-  .practice-btn-copy {
-    min-height: 48px;
-  }
-
-  .practice-btn-primary,
-  .practice-btn-outline {
-    min-height: 48px;
-  }
-
-  /* Cancel & paged nav: adjust for smaller screens */
   .practice-cancel-link {
-    bottom: 128px;
+    bottom: 32px;
     width: calc(100% - 32px);
-  }
-
-  .practice-paged-nav {
-    bottom: 200px;
   }
 }

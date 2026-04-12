@@ -27,15 +27,20 @@ body.register-page-active #root {
 html.register-page-active,
 body.register-page-active {
   overflow: clip;
-  scrollbar-gutter: auto;
-  background: linear-gradient(180deg, #3C4952 0%, #0B3954 100%);
+  scrollbar-width: none;
+  background: #ffffff;
   animation: fadeInPage 0.5s ease-out;
+}
+
+html.register-page-active::-webkit-scrollbar,
+body.register-page-active::-webkit-scrollbar {
+  display: none;
 }
 
 body.register-page-active #root {
   display: block;
   overflow: clip;
-  background: linear-gradient(180deg, #3C4952 0%, #0B3954 100%);
+  background: #ffffff;
 }
 
 body.register-page-active {
@@ -46,13 +51,13 @@ body.register-page-active {
 @media (min-width: 701px) {
   body.register-page-active {
     padding: 0;
-    background: linear-gradient(180deg, #3C4952 0%, #0B3954 100%);
+    background: #ffffff;
     overflow-x: hidden;
   }
 
   body.register-page-active #root {
     min-height: 100dvh;
-    background: linear-gradient(180deg, #3C4952 0%, #0B3954 100%);
+    background: #ffffff;
   }
 }
 
@@ -61,12 +66,12 @@ body.register-page-active {
   min-height: 100vh;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  background: #2E2E2E;
+  background: #ffffff;
 }
 
 /* ── Register page shell — centered form layout ── */
 body.register-page-active .auth-page {
-  background: linear-gradient(180deg, #3C4952 0%, #0B3954 100%);
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -134,17 +139,17 @@ body.register-page-active .auth-back-btn {
   width: 3rem;
   height: 3rem;
   border-radius: 999px;
-  border: 1.5px solid rgba(255, 255, 255, 0.45);
-  background: transparent;
-  color: #FFFFFF;
+  border: 1.5px solid #0B3954;
+  background: #F18F01;
+  color: #0B3954;
   z-index: 20;
-  box-shadow: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
   transition: all 0.2s;
 }
 
 body.register-page-active .auth-back-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: #FFFFFF;
+  background: #F6A320;
+  border-color: #0B3954;
 }
 
 .auth-brand-content {
@@ -243,7 +248,26 @@ body.register-page-active .auth-form-panel {
 }
 
 body.register-page-active .auth-mobile-back {
+  position: absolute;
+  top: 1.5rem;
+  left: 1.5rem;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  border: 1.5px solid #0B3954;
+  background: #F18F01;
+  color: #0B3954;
+  z-index: 20;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
   display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+body.register-page-active .auth-mobile-back:hover {
+  background: #F6A320;
+  border-color: #0B3954;
 }
 
 .auth-form-container {
@@ -253,8 +277,17 @@ body.register-page-active .auth-mobile-back {
 
 body.register-page-active .auth-form-container {
   width: 100%;
-  max-width: 23.5rem;
+  max-width: 28rem;
   box-sizing: border-box;
+}
+
+body.register-page-active .floating-card {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 2.5rem 2rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
 }
 
 .auth-form-title {
@@ -268,12 +301,13 @@ body.register-page-active .auth-form-container {
 
 body.register-page-active .auth-form-title {
   font-family: 'Nunito', sans-serif;
-  color: #FFFFFF;
+  color: #2d5a27;
   font-size: 2rem;
   line-height: 1;
   font-weight: 900;
   text-align: center;
-  letter-spacing: 0;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
   margin-bottom: 1.5rem;
 }
 
@@ -535,9 +569,9 @@ body.register-page-active .form-group {
 
 body.register-page-active .form-label {
   font-family: 'Nunito', sans-serif;
-  color: #FFFFFF;
-  font-size: 1.25rem;
-  font-weight: 700;
+  color: #333333;
+  font-size: 1.1rem;
+  font-weight: 800;
   letter-spacing: 0;
   text-transform: none;
   margin-top: 0;
@@ -560,18 +594,18 @@ body.register-page-active .form-label {
 }
 
 body.register-page-active .form-input {
-  min-height: 3.25rem;
-  border: 0;
-  border-radius: 0.75rem;
+  min-height: 3.5rem;
+  border: 2px solid #e5e5e5;
+  border-radius: 12px;
   background: #FFFFFF;
   color: #1F2937;
-  padding: 0.625rem 0.875rem;
+  padding: 0.625rem 1rem;
   font-size: 1.125rem;
   letter-spacing: 0;
   outline: none;
   margin-bottom: 1rem;
   box-sizing: border-box;
-  border-bottom: none;
+  transition: border-color 0.2s ease;
 }
 
 .form-input:focus {
@@ -579,7 +613,8 @@ body.register-page-active .form-input {
 }
 
 body.register-page-active .form-input:focus {
-  outline: 3px solid rgba(255, 255, 255, 0.35);
+  border-color: #2d5a27;
+  outline: none;
 }
 
 .form-input::placeholder {
@@ -608,7 +643,7 @@ body.register-page-active input[type="password"]::-webkit-textfield-decoration-c
 }
 
 body.register-page-active .form-input-error {
-  outline: 2px solid rgba(239, 68, 68, 0.6);
+  border-color: #EF4444;
 }
 
 .form-error {
@@ -618,8 +653,9 @@ body.register-page-active .form-input-error {
 }
 
 body.register-page-active .form-error {
-  color: #FEE2E2;
+  color: #EF4444;
   margin-top: 0.125rem;
+  font-weight: 600;
 }
 
 /* ── Password field with visibility toggle ── */
@@ -696,63 +732,12 @@ body.register-page-active .pw-toggle-btn:hover {
   color: #1F2937;
 }
 
-/* ── Submit button ── */
-.auth-submit-btn {
-  width: 100%;
-  padding: 14px 32px;
-  background: transparent;
-  color: #010101;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  border: 2px solid #FCBA04;
-  border-radius: 9999px;
-  cursor: pointer;
-  transition: background-color 0.25s, color 0.25s;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  margin-top: 8px;
-}
 
-body.register-page-active .auth-submit-btn {
-  width: 100%;
-  height: 3.25rem;
-  border-radius: 0.75rem;
-  border: 0;
-  font-family: 'Nunito Sans', sans-serif;
-  font-size: 1.25rem;
-  font-weight: 800;
-  letter-spacing: 0;
-  text-transform: none;
-  box-sizing: border-box;
-  color: #FFFFFF;
-  background: linear-gradient(180deg, #F6A320 0%, #F18F01 100%);
-  margin-top: 0.75rem;
-  padding: 0;
-}
 
-.auth-submit-btn:hover:not(:disabled) {
-  background: #FCBA04;
-  color: #010101;
-}
-
-body.register-page-active .auth-submit-btn:hover:not(:disabled) {
-  color: #FFFFFF !important;
-  background: linear-gradient(180deg, #F6A320 0%, #F18F01 100%) !important;
-}
-
-.auth-submit-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-body.register-page-active .auth-submit-btn:disabled {
-  opacity: 0.8;
-  cursor: not-allowed;
-}
-
-body.register-page-active .auth-submit-btn:active:not(:disabled) {
-  transform: translateY(0);
+body.register-page-active .auth-google-logo {
+  width: 1.5rem;
+  height: 1.5rem;
+  object-fit: contain;
 }
 
 /* ── Forgot password link ── */
@@ -768,27 +753,24 @@ body.register-page-active .auth-submit-btn:active:not(:disabled) {
   text-underline-offset: 3px;
 }
 
-body.register-page-active .auth-forgot-link {
-  display: block;
-  margin-top: 0.5rem;
-  text-align: right;
-  font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: 0;
-  text-transform: none;
-  padding-right: 0.25rem;
+body.register-page-active .auth-link,
+body.register-page-active .auth-divider-text {
   font-family: 'Nunito', sans-serif;
-  color: #FFFFFF;
+  color: #6B7280;
   text-decoration: none;
 }
 
-.auth-forgot-link:hover {
-  color: #FCBA04;
+body.register-page-active .auth-link:hover {
+  color: #2d5a27;
 }
 
-body.register-page-active .auth-forgot-link:hover {
-  color: #FFFFFF;
-  opacity: 0.92;
+body.register-page-active .auth-link {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
+  margin-top: 1rem;
+  display: inline-block;
 }
 
 /* ── Divider — "or" ── */
@@ -802,8 +784,8 @@ body.register-page-active .auth-forgot-link:hover {
 body.register-page-active .auth-divider {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin: 0.375rem 0 1rem;
+  gap: 1rem;
+  margin: 1.5rem 0;
 }
 
 .auth-divider-line {
@@ -814,8 +796,8 @@ body.register-page-active .auth-divider {
 
 body.register-page-active .auth-divider-line {
   flex: 1;
-  height: 0.125rem;
-  background: rgba(255, 255, 255, 0.85);
+  height: 2px;
+  background-color: #e5e5e5;
 }
 
 .auth-divider-text {
@@ -825,12 +807,9 @@ body.register-page-active .auth-divider-line {
 }
 
 body.register-page-active .auth-divider-text {
-  font-size: 1.25rem;
   font-weight: 700;
-  text-transform: none;
-  font-family: 'Nunito', sans-serif;
-  color: #FFFFFF;
-  text-decoration: none;
+  color: #9CA3AF;
+  text-transform: uppercase;
 }
 
 /* ── Google Sign-In button ── */
@@ -852,40 +831,9 @@ body.register-page-active .auth-divider-text {
   transition: background-color 0.2s;
 }
 
-body.register-page-active .auth-google-btn {
-  width: 100%;
-  height: 3.25rem;
-  border-radius: 0.75rem;
-  border: 0;
-  font-family: 'Nunito Sans', sans-serif;
-  font-size: 1.25rem;
-  font-weight: 800;
-  letter-spacing: 0;
-  text-transform: none;
-  box-sizing: border-box;
-  color: #111827;
-  background: #FFFFFF;
-  margin-top: 0.125rem;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 0.75rem;
-  padding-left: 1rem;
-  cursor: pointer;
-}
-
 .auth-google-btn:hover {
   border-color: #B0B0B0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-body.register-page-active .auth-google-btn:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-body.register-page-active .auth-google-btn:disabled {
-  opacity: 0.8;
-  cursor: not-allowed;
 }
 
 .auth-google-logo {
@@ -911,10 +859,10 @@ body.register-page-active .auth-google-logo {
 
 body.register-page-active .auth-link {
   font-family: 'Nunito', sans-serif;
-  color: #FFFFFF;
+  color: #6B7280;
   text-decoration: none;
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: 1.1rem;
+  font-weight: 800;
   letter-spacing: 0;
   text-transform: none;
   margin-top: 1rem;
@@ -922,8 +870,8 @@ body.register-page-active .auth-link {
 }
 
 body.register-page-active .auth-link:hover {
-  color: #FFFFFF;
-  opacity: 0.92;
+  color: #2d5a27;
+  opacity: 1;
 }
 
 /* ═════════════════════════════════════════════

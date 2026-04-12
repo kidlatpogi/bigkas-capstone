@@ -1,135 +1,93 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
 
-/* Bigkas — Base reset (Vite defaults replaced) */
+/* 1. GLOBAL RESET & SHELL LOCK */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 :root {
   --responsive-page-padding: 50px;
   font-family: 'Nunito', sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color: #010101;
-  background-color: #EBF4DD;
+  background-color: #ECF3E9;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-@media (max-width: 1200px) {
-  :root {
-    --responsive-page-padding: 40px;
-  }
-}
-
-@media (max-width: 992px) {
-  :root {
-    --responsive-page-padding: 30px;
-  }
-}
-
-@media (max-width: 768px) {
-  :root {
-    --responsive-page-padding: 20px;
-  }
-}
-
-@media (max-width: 576px) {
-  :root {
-    --responsive-page-padding: 16px;
-  }
-}
-
-@media (max-width: 480px) {
-  :root {
-    --responsive-page-padding: 12px;
-  }
-}
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
+/* Force the browser shell to be non-scrollable and exactly the screen height */
 html {
-  /* Prevent iOS auto-zoom on orientation change */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  margin: 0;
-  padding: 0;
   width: 100%;
-  height: 100vh;
-  max-width: 100%;
-  overflow-x: hidden;
+  height: 100dvh; 
+  overflow: hidden; 
   background-color: #ECF3E9;
 }
 
 body {
-  margin: 0;
-  padding: 0;
   width: 100%;
-  min-height: 100vh;
   height: 100%;
-  max-width: 100%;
-  min-width: 320px;
+  overflow: hidden; 
   background-color: #ECF3E9;
-  /* Prevent horizontal scroll on all devices */
-  overflow-x: hidden;
-  /* Smooth momentum scrolling on iOS */
   -webkit-overflow-scrolling: touch;
-  /* Reserve space for scrollbar to avoid layout shift when overflow toggles */
-  scrollbar-gutter: stable;
 }
 
+#root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #ECF3E9;
+}
+
+/* 2. NO-SCROLLBAR UTILITY */
+/* Apply this class to your .progress-page-bg in ProgressPage.jsx */
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important; /* Chrome, Safari, and Capacitor */
+}
+
+/* 3. MODAL STATE LOCKS */
 body.skyward-journey-modal-open {
   overflow: hidden;
   overscroll-behavior: none;
 }
 
-#root {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  min-height: 100vh;
-  height: 100%;
-  max-width: 100%;
-  overflow-x: hidden;
-  background-color: #ECF3E9;
-}
+/* 4. RESPONSIVE PADDING VARIABLES */
+@media (max-width: 1200px) { :root { --responsive-page-padding: 40px; } }
+@media (max-width: 992px) { :root { --responsive-page-padding: 30px; } }
+@media (max-width: 768px) { :root { --responsive-page-padding: 20px; } }
+@media (max-width: 576px) { :root { --responsive-page-padding: 16px; } }
+@media (max-width: 480px) { :root { --responsive-page-padding: 12px; } }
 
-/* Prevent iOS input zoom — inputs must never be < 16px on mobile */
+/* 5. BASE ELEMENTS */
+a { text-decoration: none; color: inherit; }
+img { max-width: 100%; display: block; }
+ul, ol { list-style: none; }
+
+/* 6. MOBILE INPUT FIXES */
 @media (max-width: 768px) {
-
-  input,
-  textarea,
-  select {
+  input, textarea, select {
     font-size: 16px !important;
   }
 }
 
-a {
-  text-decoration: none;
-  color: inherit;
-}
-
-img {
-  max-width: 100%;
-  display: block;
-}
-
-ul,
-ol {
-  list-style: none;
-}
-
-/* ── Loading Screen ── */
+/* 7. LOADING SCREEN */
 .loading-screen {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  height: 100dvh;
   background: #F5F5F5;
   gap: 24px;
   padding: 24px;
@@ -161,15 +119,8 @@ ol {
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
-[data-theme="dark"] .loading-screen {
-  background: #0B0B0D;
-}
-
-[data-theme="dark"] .loading-logo {
-  color: #F5F5F5;
-}
+[data-theme="dark"] .loading-screen { background: #0B0B0D; }
+[data-theme="dark"] .loading-logo { color: #F5F5F5; }

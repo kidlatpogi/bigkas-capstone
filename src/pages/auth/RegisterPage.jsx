@@ -5,9 +5,12 @@ import { isValidEmail, validatePassword } from '../../utils/validators';
 import { ROUTES } from '../../utils/constants';
 import googleLogo from '../../assets/Google-Logo.png';
 import BackButton from '../../components/common/BackButton';
-import Button from '../../components/common/Button';
 import PasswordToggle from '../../components/common/PasswordToggle';
-import Grainient from './Grainient';
+import PushButton from '../../components/common/PushButton';
+import LegalModal from '../../components/Legal/LegalModal';
+import { TERMS_AND_CONDITIONS } from '../../constants/legal/terms';
+import { PRIVACY_POLICY } from '../../constants/legal/privacy';
+import { motion } from 'framer-motion';
 import './RegisterPage.css';
 
 /**
@@ -17,6 +20,19 @@ import './RegisterPage.css';
 function RegisterPage() {
   const navigate = useNavigate();
   const { register, loginWithGoogle, isLoading } = useAuthContext();
+
+  const [legalModal, setLegalModal] = useState({ isOpen: false, title: '', content: '' });
+  const [consentChecked, setConsentChecked] = useState(false);
+
+  const showTerms = (e) => {
+    e.preventDefault();
+    setLegalModal({ isOpen: true, title: 'Terms & Conditions', content: TERMS_AND_CONDITIONS });
+  };
+  const showPrivacy = (e) => {
+    e.preventDefault();
+    setLegalModal({ isOpen: true, title: 'Privacy Policy', content: PRIVACY_POLICY });
+  };
+  const closeLegal = () => setLegalModal({ ...legalModal, isOpen: false });
 
   useEffect(() => {
     // Add register-page-active class to body
@@ -168,35 +184,22 @@ function RegisterPage() {
     document.body.classList.remove('register-page-active');
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+  };
+
   return (
     <div className="auth-page">
-      <div className="auth-grainient-bg" aria-hidden="true">
-        <Grainient
-          color1="#5a7863"
-          color2="#0b3954"
-          color3="#3c4952"
-          timeSpeed={0.25}
-          colorBalance={0.05}
-          warpStrength={1}
-          warpFrequency={2}
-          warpSpeed={2.5}
-          warpAmplitude={50}
-          blendAngle={-25}
-          blendSoftness={0.05}
-          rotationAmount={500}
-          noiseScale={2}
-          grainAmount={0.1}
-          grainScale={2}
-          grainAnimated
-          contrast={1.5}
-          gamma={1}
-          saturation={1}
-          centerX={0}
-          centerY={0}
-          zoom={0.9}
-        />
-      </div>
-      <BackButton className="auth-mobile-back" onClick={() => navigate(ROUTES.HOME, { state: { skipLoader: true } })} />
+      <BackButton className="auth-mobile-back" />
 
       {/* ── Left branding panel ── */}
       <div className="auth-brand-panel">
@@ -224,15 +227,20 @@ function RegisterPage() {
 
       {/* ── Right form panel ── */}
       <div className="auth-form-panel">
-        <div className="auth-form-container">
-          <h2 className="auth-form-title">CREATE ACCOUNT</h2>
+        <motion.div 
+          className="auth-form-container floating-card"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <motion.h2 variants={itemVariants} className="auth-form-title">CREATE ACCOUNT</motion.h2>
 
           <form className="auth-form" onSubmit={handleSubmit}>
             {errors.submit && (
-              <div className="auth-error-banner">{errors.submit}</div>
+              <motion.div variants={itemVariants} className="auth-error-banner">{errors.submit}</motion.div>
             )}
 
-            <div className="form-row">
+            <motion.div variants={itemVariants} className="form-row">
               <div className="form-group">
                 <label htmlFor="firstName" className="form-label">FIRST NAME</label>
                 <input
@@ -262,9 +270,9 @@ function RegisterPage() {
                 />
                 {errors.lastName && <span className="form-error">{errors.lastName}</span>}
               </div>
-            </div>
+            </motion.div>
 
-            <div className="form-group">
+            <motion.div variants={itemVariants} className="form-group">
               <label htmlFor="email" className="form-label">EMAIL ADDRESS</label>
               <input
                 type="email"
@@ -277,9 +285,9 @@ function RegisterPage() {
                 disabled={isLoading}
               />
               {errors.email && <span className="form-error">{errors.email}</span>}
-            </div>
+            </motion.div>
 
-            <div className="form-group">
+            <motion.div variants={itemVariants} className="form-group">
               <label htmlFor="password" className="form-label">PASSWORD</label>
               <div className="pw-input-wrap">
                 <input
@@ -316,9 +324,9 @@ function RegisterPage() {
               )}
               <span className="pw-hint">Min. 8 characters with letters and numbers</span>
               {errors.password && <span className="form-error">{errors.password}</span>}
-            </div>
+            </motion.div>
 
-            <div className="form-group">
+            <motion.div variants={itemVariants} className="form-group">
               <label htmlFor="confirmPassword" className="form-label">CONFIRM PASSWORD</label>
               <div className="pw-input-wrap">
                 <input
@@ -340,41 +348,67 @@ function RegisterPage() {
                 />
               </div>
               {errors.confirmPassword && <span className="form-error">{errors.confirmPassword}</span>}
-            </div>
+            </motion.div>
 
-            <Button
-              type="submit"
-              className="auth-submit-btn"
-              disabled={isLoading}
-              isLoading={isLoading}
-              style={{ fontSize: '14px' }}
-            >
-              CREATE ACCOUNT
-            </Button>
+            <motion.div variants={itemVariants} className="form-group consent-group" style={{ marginTop: '12px', marginBottom: '16px' }}>
+              <label className="consent-label" style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', fontSize: '13px', color: '#4b5563', lineHeight: '1.4' }}>
+                <input
+                  type="checkbox"
+                  checked={consentChecked}
+                  onChange={(e) => setConsentChecked(e.target.checked)}
+                  style={{ marginTop: '3px', cursor: 'pointer' }}
+                />
+                <span>
+                  I have read and agree to the <a href="#" onClick={showTerms} style={{ color: '#2d5a27', fontWeight: '700', textDecoration: 'none' }}>Terms and Conditions</a> and <a href="#" onClick={showPrivacy} style={{ color: '#2d5a27', fontWeight: '700', textDecoration: 'none' }}>Privacy Policy</a>, including the 14-day biometric data retention policy.
+                </span>
+              </label>
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <PushButton
+                type="submit"
+                disabled={isLoading || !consentChecked}
+                bgColor="#2d5a27"
+                shadowColor="#1a3b16"
+                textColor="#ffffff"
+              >
+                {isLoading ? <span className="btn-loader"></span> : 'CREATE ACCOUNT'}
+              </PushButton>
+            </motion.div>
           </form>
 
-          <div className="auth-divider">
+          <motion.div variants={itemVariants} className="auth-divider">
             <span className="auth-divider-line" />
             <span className="auth-divider-text">or</span>
             <span className="auth-divider-line" />
-          </div>
+          </motion.div>
 
-          <Button 
-            type="button" 
-            variant="google"
-            className="auth-google-btn" 
-            onClick={handleGoogleSignIn} 
-            disabled={isLoading}
-            icon={() => <img src={googleLogo} alt="Google" className="auth-google-logo" />}
-            iconPosition="left"
-          >
-            Continue with Google
-          </Button>
+          <motion.div variants={itemVariants}>
+            <PushButton
+              type="button" 
+              onClick={handleGoogleSignIn} 
+              disabled={isLoading || !consentChecked}
+              bgColor="#ffffff"
+              shadowColor="#d5d5d5"
+              textColor="#333333"
+            >
+              <img src={googleLogo} alt="Google" className="auth-google-logo" style={{ width: '1.5rem', height: '1.5rem', objectFit: 'contain' }} />
+              <span className="btn-content">Continue with Google</span>
+            </PushButton>
+          </motion.div>
 
-
-          <Link to={ROUTES.LOGIN} className="auth-link" onClick={handleGoToLogin}>Login</Link>
-        </div>
+          <motion.div variants={itemVariants} style={{ width: '100%', textAlign: 'center' }}>
+            <Link to={ROUTES.LOGIN} className="auth-link" onClick={handleGoToLogin}>Login</Link>
+          </motion.div>
+        </motion.div>
       </div>
+
+      <LegalModal
+        isOpen={legalModal.isOpen}
+        onClose={closeLegal}
+        title={legalModal.title}
+        content={legalModal.content}
+      />
     </div>
   );
 }

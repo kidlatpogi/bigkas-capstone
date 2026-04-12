@@ -1,11 +1,20 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useAuthContext } from '../../context/useAuthContext';
+import LegalModal from '../../components/Legal/LegalModal';
+import { TERMS_AND_CONDITIONS } from '../../constants/legal/terms';
+import { PRIVACY_POLICY } from '../../constants/legal/privacy';
 import './DashboardPage.css';
 import './SettingsProfilePage.css';
 
 function SettingsProfilePage() {
   const { user } = useAuthContext();
   const fileRef = useRef(null);
+
+  const [legalModal, setLegalModal] = useState({ isOpen: false, title: '', content: '' });
+
+  const showTerms = () => setLegalModal({ isOpen: true, title: 'Terms & Conditions', content: TERMS_AND_CONDITIONS });
+  const showPrivacy = () => setLegalModal({ isOpen: true, title: 'Privacy Policy', content: PRIVACY_POLICY });
+  const closeLegal = () => setLegalModal({ ...legalModal, isOpen: false });
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -404,9 +413,43 @@ function SettingsProfilePage() {
                 Delete Data
               </button>
             </section>
+
+            <section
+              className="dashboard-card settings-profile-card settings-profile-card--legal dashboard-anim-right dashboard-anim-delay-5"
+              aria-labelledby="settings-legal-heading"
+            >
+              <header className="settings-profile-card-header">
+                <h2 id="settings-legal-heading" className="settings-profile-card-title">
+                  Legal
+                </h2>
+              </header>
+              <div className="settings-profile-legal-stack" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <button
+                  type="button"
+                  className="settings-profile-btn settings-profile-btn--navy settings-profile-btn-full"
+                  onClick={showTerms}
+                >
+                  Terms & Conditions
+                </button>
+                <button
+                  type="button"
+                  className="settings-profile-btn settings-profile-btn--navy settings-profile-btn-full"
+                  onClick={showPrivacy}
+                >
+                  Privacy Policy
+                </button>
+              </div>
+            </section>
           </div>
         </div>
       </div>
+
+      <LegalModal
+        isOpen={legalModal.isOpen}
+        onClose={closeLegal}
+        title={legalModal.title}
+        content={legalModal.content}
+      />
     </div>
   );
 }

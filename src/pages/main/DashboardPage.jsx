@@ -2,15 +2,16 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { IoArrowForward, IoCheckmarkCircle, IoLockClosed } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
 import CalendarHeatmap from 'react-calendar-heatmap';
-import axios from 'axios';
 import { useAuthContext } from '../../context/useAuthContext';
 import { useSessions } from '../../hooks/useSessions';
+import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
+import { useJourneyRemoteState } from '../../hooks/useJourneyRemoteState';
+import { updateJourneyCurrentActivity } from '../../services/journeyProgressService';
 import { ROUTES } from '../../utils/constants';
-import { ENV } from '../../config/env';
 import Button from '../../components/common/Button';
 import {
   GLOBAL_ACTIVITY_SCOPE,
-  deriveLevelProgress,
+  getBigkasLevelFromUser,
   getActivityCompletionHistory,
   getActivityMetrics,
   getActivityTaskProgress,
@@ -30,40 +31,6 @@ function getLocalDateKey(date = new Date()) {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
-}
-
-const DASHBOARD_STORAGE_KEYS = {
-  DAILY_QUOTE: 'bigkas_dashboard_daily_quote',
-  QUOTE_EXPIRY: 'bigkas_dashboard_quote_expiry',
-};
-
-function getStoredDailyQuote() {
-  try {
-    const stored = localStorage.getItem(DASHBOARD_STORAGE_KEYS.DAILY_QUOTE);
-    const expiry = localStorage.getItem(DASHBOARD_STORAGE_KEYS.QUOTE_EXPIRY);
-    if (!stored || !expiry) return null;
-
-    const now = new Date().getTime();
-    if (now > Number(expiry)) {
-      localStorage.removeItem(DASHBOARD_STORAGE_KEYS.DAILY_QUOTE);
-      localStorage.removeItem(DASHBOARD_STORAGE_KEYS.QUOTE_EXPIRY);
-      return null;
-    }
-    return JSON.parse(stored);
-  } catch {
-    return null;
-  }
-}
-
-function setStoredDailyQuote(quote) {
-  try {
-    const nextMidnight = new Date();
-    nextMidnight.setHours(24, 0, 0, 0);
-    localStorage.setItem(DASHBOARD_STORAGE_KEYS.DAILY_QUOTE, JSON.stringify(quote));
-    localStorage.setItem(DASHBOARD_STORAGE_KEYS.QUOTE_EXPIRY, nextMidnight.getTime().toString());
-  } catch {
-    // Ignore storage errors
-  }
 }
 
 function getLocalDayIndex(dateInput) {
@@ -204,116 +171,22 @@ function getWeekdayPills(activeDayKeys = new Set()) {
   });
 }
 
-function getProgressiveTaskTemplate() {
-  return [
-    {
-      id: 'three-minute-scripted',
-      title: 'Practice scripted speaking for 3 minutes',
-      detail: 'Choose one speech and sustain clear pacing for at least 3 minutes.',
-      actionRoute: ROUTES.TRAINING_SETUP,
-      prerequisiteIds: [],
-    },
-    {
-      id: 'free-randomizer-3x',
-      title: 'Complete Free Speech Randomizer 3 times',
-      detail: 'Do three short random-topic runs and focus on flow and confidence.',
-      actionRoute: ROUTES.PRACTICE,
-      prerequisiteIds: ['three-minute-scripted'],
-    },
-    {
-      id: 'review-feedback',
-      title: 'Review your latest Detailed Feedback',
-      detail: 'Identify one weak pillar and one improvement action for tomorrow.',
-      actionRoute: ROUTES.PROGRESS,
-      prerequisiteIds: ['free-randomizer-3x'],
-    },
-    {
-      id: 'two-script-run',
-      title: 'Run 2 scripted sessions with different speeches',
-      detail: 'Switch topics to challenge articulation and consistency.',
-      actionRoute: ROUTES.TRAINING_SETUP,
-      prerequisiteIds: ['review-feedback'],
-    },
-    {
-      id: 'randomizer-focus',
-      title: 'Do Randomizer and avoid filler words',
-      detail: 'Complete at least 2 randomizer attempts with intentional pauses.',
-      actionRoute: ROUTES.PRACTICE,
-      prerequisiteIds: ['two-script-run'],
-    },
-    {
-      id: 'progress-check',
-      title: 'Check your trend and set one micro-goal',
-      detail: 'Use Progress page to pick one measurable target for next session.',
-      actionRoute: ROUTES.PROGRESS,
-      prerequisiteIds: ['randomizer-focus'],
-    },
-  ];
-}
-
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { user, isInitializing } = useAuthContext();
   const { sessions, fetchAllSessions } = useSessions();
   const activityScopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
 
-  const [insight, setInsight] = useState(() => {
-    return getStoredDailyQuote() || {
-      text: 'Loading your daily inspiration...',
-      author: 'Bigkas AI',
-    };
+  const [insight] = useState({
+    text: 'The only way to do great work is to love what you do.',
+    author: 'Steve Jobs',
   });
-
-  useEffect(() => {
-    const fetchQuote = async () => {
-      // Check if we already have a valid stored quote for today
-      const existing = getStoredDailyQuote();
-      if (existing) {
-        setInsight(existing);
-        return;
-      }
-
-      try {
-        // Try the local Python service first
-        let quoteData;
-        try {
-          const serviceUrl = ENV.PYTHON_SERVICE_URL;
-          const response = await axios.get(`${serviceUrl}/content/daily-quote`);
-          quoteData = {
-            text: response.data.text,
-            author: response.data.author,
-          };
-        } catch {
-          // Fallback to ZenQuotes if local service fails
-          const response = await axios.get('https://api.allorigins.win/raw?url=https://zenquotes.io/api/random');
-          if (response.data && response.data[0]) {
-            quoteData = {
-              text: response.data[0].q,
-              author: response.data[0].a,
-            };
-          }
-        }
-
-        if (quoteData) {
-          setInsight(quoteData);
-          setStoredDailyQuote(quoteData);
-        }
-      } catch (error) {
-        console.error('Error fetching quote:', error);
-        const fallback = {
-          text: 'The only way to do great work is to love what you do.',
-          author: 'Steve Jobs',
-        };
-        setInsight(fallback);
-      }
-    };
-    fetchQuote();
-  }, []);
 
   const [totalActivityPoints, setTotalActivityPoints] = useState(0);
   const [activityHistory, setActivityHistory] = useState([]);
   const [activityMetrics, setActivityMetrics] = useState(() => getActivityMetrics(activityScopeKey));
-  const activityTasks = useMemo(() => getProgressiveTaskTemplate(), []);
+  const { tasks: activityTasks, loading: activitiesLoading } = useActivitiesJourneyTasks();
+  const { journeyStartedAt, metricsSyncKey, remoteLoaded } = useJourneyRemoteState(user);
 
   const getPointsFromUser = useCallback((nextUser) => {
     const raw = Number(nextUser?.speakerPoints ?? 0);
@@ -365,9 +238,7 @@ export default function DashboardPage() {
 
   const effectiveTotalActivityPoints = Math.max(totalActivityPoints, getPointsFromUser(user));
 
-  const levelProgress = useMemo(() => {
-    return deriveLevelProgress(effectiveTotalActivityPoints);
-  }, [effectiveTotalActivityPoints]);
+  const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
 
   const activityTaskState = useMemo(() => {
     return activityTasks.reduce((state, task) => {
@@ -418,6 +289,15 @@ export default function DashboardPage() {
     return getActivityTaskProgress(currentActiveTask.id, activityMetrics);
   }, [activityMetrics, currentActiveTask]);
 
+  const allJourneyDone = activityTasks.length > 0 && completedTaskCount === activityTasks.length;
+  const hasStartedJourney = journeyStartedAt != null || completedTaskCount > 0;
+  const showStartJourneyPrompt =
+    remoteLoaded &&
+    !activitiesLoading &&
+    activityTasks.length > 0 &&
+    !hasStartedJourney &&
+    !allJourneyDone;
+
   useEffect(() => {
     if (isInitializing) return;
     if (!user?.id) return;
@@ -434,7 +314,16 @@ export default function DashboardPage() {
       setActivityMetrics(getActivityMetrics(activityScopeKey));
     };
     syncPoints();
-  }, [activityScopeKey, getPointsFromUser, user]);
+  }, [activityScopeKey, getPointsFromUser, user, metricsSyncKey]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const id = currentActiveTask?.id ?? null;
+    const t = window.setTimeout(() => {
+      updateJourneyCurrentActivity(user.id, id).catch(() => {});
+    }, 450);
+    return () => window.clearTimeout(t);
+  }, [user?.id, currentActiveTask?.id]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -453,7 +342,7 @@ export default function DashboardPage() {
   }, [activityScopeKey]);
 
   return (
-    <div className="dashboard-page-new">
+    <div className="dashboard-page-new no-scrollbar" style={{ height: '100dvh', overflowY: 'auto' }}>
       <div className="dashboard-layout">
           <section className="dashboard-card dashboard-insight-card dashboard-anim-top">
             <div className="dashboard-insight-header">
@@ -514,7 +403,9 @@ export default function DashboardPage() {
             </div>
             <h2 className="dashboard-section-title--xl">{levelProgress.levelName}</h2>
             <p className="dashboard-activity-summary">
-              Activity Journey: {completedTaskCount}/{activityTasks.length} Task Complete
+              {activitiesLoading
+                ? 'Loading journey…'
+                : `Activity Journey: ${completedTaskCount}/${Math.max(activityTasks.length, 1)} Task Complete`}
             </p>
             <div className="dashboard-level-track">
               <div className="dashboard-level-fill" style={{ width: `${activityProgressPct}%` }} />
@@ -567,7 +458,39 @@ export default function DashboardPage() {
 
           <section className="dashboard-card dashboard-objectives-card dashboard-anim-bottom dashboard-anim-delay-6">
             <h3 className="dashboard-section-title" style={{ marginBottom: '16px' }}>Current Objectives</h3>
-            {currentActiveTask ? (
+            {!remoteLoaded || activitiesLoading ? (
+              <div className="dashboard-objective-row">
+                <div className="dashboard-objective-copy">
+                  <span style={{ opacity: 0.85 }}>Loading journey…</span>
+                </div>
+              </div>
+            ) : !activityTasks.length ? (
+              <div className="dashboard-objective-row">
+                <div className="dashboard-objective-copy">
+                  <span style={{ opacity: 0.85 }}>No activities for your level yet.</span>
+                </div>
+              </div>
+            ) : showStartJourneyPrompt ? (
+              <div className="dashboard-objective-row">
+                <div className="dashboard-objective-status in-progress" aria-hidden="true" />
+                <div className="dashboard-objective-copy">
+                  <strong>Start your journey:</strong>
+                  <span>Open the activity map and begin your first stage.</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  className="dashboard-objective-action"
+                  onClick={() =>
+                    navigate(ROUTES.ACTIVITY, {
+                      state: { focusCurrentStage: true, skywardEntrance: true },
+                    })
+                  }
+                  icon={IoArrowForward}
+                >
+                  Open journey
+                </Button>
+              </div>
+            ) : currentActiveTask ? (
               <div className="dashboard-objective-row">
                 <div className="dashboard-objective-status in-progress" aria-hidden="true" />
                 <div className="dashboard-objective-copy">
@@ -579,7 +502,11 @@ export default function DashboardPage() {
                 <Button
                   variant="ghost"
                   className="dashboard-objective-action"
-                  onClick={() => navigate(currentActiveTask.actionRoute)}
+                  onClick={() =>
+                    navigate(ROUTES.ACTIVITY, {
+                      state: { focusCurrentStage: true, skywardEntrance: true },
+                    })
+                  }
                   icon={IoArrowForward}
                 >
                   Continue Journey

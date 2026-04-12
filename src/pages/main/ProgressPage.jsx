@@ -18,6 +18,7 @@ import {
   IoVideocamOutline,
   IoMicOutline,
   IoChatbubbleEllipsesOutline,
+  IoTrophyOutline,
 } from 'react-icons/io5';
 import { useSessionContext } from '../../context/useSessionContext';
 import { useAuthContext } from '../../context/useAuthContext';
@@ -30,7 +31,7 @@ import {
 import {
   GLOBAL_ACTIVITY_SCOPE,
   addPointsToSpeakerProgress,
-  deriveLevelProgress,
+  getBigkasLevelFromUser,
   getTotalActivityPoints,
   recordActivityEvent,
 } from '../../utils/activityProgress';
@@ -64,14 +65,6 @@ function getAdaptiveHistoryPages(pageCount, activePage) {
   }
 
   return [0, 'start-ellipsis', ...trailingWindow];
-}
-
-function getMetricEffectivenessScore(metricKey, rawScore) {
-  const clamped = Math.max(0, Math.min(100, Number(rawScore) || 0));
-  if (metricKey === 'jitter' || metricKey === 'shimmer') {
-    return 100 - clamped;
-  }
-  return clamped;
 }
 
 function ProgressPage() {
@@ -123,7 +116,7 @@ function ProgressPage() {
       const after = getTotalActivityPoints(activityScopeKey);
 
       if (after === before) return;
-      const levelProgress = deriveLevelProgress(after);
+      const levelProgress = getBigkasLevelFromUser(user);
       const pointsAwarded = Math.max(0, Math.floor(after - before));
       await updateUserMetadata({
         speaker_points: after,
@@ -148,7 +141,7 @@ function ProgressPage() {
     };
 
     syncProgressVisitReward();
-  }, [activityScopeKey, location.state, updateUserMetadata, user?.id, user?.speakerPoints]);
+  }, [activityScopeKey, location.state, updateUserMetadata, user?.id, user?.speakerPoints, user?.speakerPointsHistory]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -182,7 +175,7 @@ function ProgressPage() {
     if (hasRequestedForUserRef.current === userId) return;
     hasRequestedForUserRef.current = userId;
     fetchAllSessions();
-  }, [fetchAllSessions, isInitializing, user?.id]);
+  }, [fetchAllSessions, isInitializing, user]);
 
 
   const chartData = useMemo(() => {
@@ -307,9 +300,9 @@ function ProgressPage() {
       {
         key: 'visual',
         label: 'Visual Presence',
-        color: '#F18F01',
+        color: '#2d5a27',
         icon: IoVideocamOutline,
-        iconBg: 'rgba(241, 143, 1, 0.1)',
+        iconBg: 'rgba(45, 90, 39, 0.1)',
         resolver: (session) => {
           const facial = Number(session.facial_expression_score);
           const gesture = Number(session.gesture_score);
@@ -317,13 +310,35 @@ function ProgressPage() {
           if (!pool.length) return null;
           return pool.reduce((sum, value) => sum + value, 0) / pool.length;
         },
+        subMetricsConfig: [
+          { label: 'Eye Contact', resolver: (s) => Number(s.facial_expression_score) },
+          { label: 'Gestures', resolver: (s) => Number(s.gesture_score) }
+        ]
+      },
+      {
+        key: 'verbal',
+        label: 'Verbal Flow',
+        color: '#2d5a27',
+        icon: IoChatbubbleEllipsesOutline,
+        iconBg: 'rgba(45, 90, 39, 0.1)',
+        resolver: (session) => {
+          const context = Number(session.context_score);
+          const fluency = Number(session.fluency_score);
+          const pool = [context, fluency].filter((value) => Number.isFinite(value));
+          if (!pool.length) return null;
+          return pool.reduce((sum, value) => sum + value, 0) / pool.length;
+        },
+        subMetricsConfig: [
+          { label: 'Pronunciation', resolver: (s) => Number(s.pronunciation_score) },
+          { label: 'Context Awareness', resolver: (s) => Number(s.context_score) }
+        ]
       },
       {
         key: 'vocal',
         label: 'Vocal Clarity',
-        color: '#EF4444',
+        color: '#2d5a27',
         icon: IoMicOutline,
-        iconBg: 'rgba(239, 68, 68, 0.1)',
+        iconBg: 'rgba(45, 90, 39, 0.1)',
         resolver: (session) => {
           const pronunciation = Number(session.pronunciation_score);
           const jitter = Number(session.jitter_score);
@@ -335,33 +350,35 @@ function ProgressPage() {
           if (!pool.length) return null;
           return pool.reduce((sum, value) => sum + value, 0) / pool.length;
         },
-      },
-      {
-        key: 'verbal',
-        label: 'Verbal Flow',
-        color: '#15B8A6',
-        icon: IoChatbubbleEllipsesOutline,
-        iconBg: 'rgba(21, 184, 166, 0.1)',
-        resolver: (session) => {
-          const context = Number(session.context_score);
-          const fluency = Number(session.fluency_score);
-          const pool = [context, fluency].filter((value) => Number.isFinite(value));
-          if (!pool.length) return null;
-          return pool.reduce((sum, value) => sum + value, 0) / pool.length;
-        },
-      },
+        subMetricsConfig: [
+          { label: 'Shimmer', resolver: (s) => Number.isFinite(Number(s.shimmer_score)) ? Number(s.shimmer_score) : null },
+          { label: 'Jitter', resolver: (s) => Number.isFinite(Number(s.jitter_score)) ? Number(s.jitter_score) : null }
+        ]
+      }
     ];
 
     return metricConfig.map((pillar) => {
       const values = filteredSessions
         .map((session) => pillar.resolver(session))
-        .filter((value) => Number.isFinite(value));
+        .filter((value) => Number.isFinite(value) && value !== null);
 
       const avg = values.length
         ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length)
         : 0;
 
-      return { ...pillar, value: avg };
+      const subMetrics = pillar.subMetricsConfig.map((sub) => {
+        const subValues = filteredSessions
+          .map((session) => sub.resolver(session))
+          .filter((value) => Number.isFinite(value) && value !== null);
+        
+        const subAvg = subValues.length
+          ? Math.round(subValues.reduce((sum, value) => sum + value, 0) / subValues.length)
+          : 0;
+          
+        return { label: sub.label, value: subAvg };
+      });
+
+      return { ...pillar, value: avg, subMetrics };
     });
   }, [pillarRange, userSessions]);
 
@@ -395,28 +412,27 @@ function ProgressPage() {
     return filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }, [historyEndDate, historyFilter, historyStartDate, userSessions]);
 
-  useEffect(() => {
-    setHistoryPage(0);
-  }, [historyFilter, historyStartDate, historyEndDate, userSessions.length]);
-
   const historyPageCount = useMemo(
     () => Math.ceil(historySessions.length / historyPageSize),
     [historySessions.length, historyPageSize],
   );
 
+  const safeHistoryPage = Math.min(historyPage, Math.max(0, historyPageCount - 1));
+
   const paginatedHistorySessions = useMemo(() => {
-    const start = historyPage * historyPageSize;
+    const start = safeHistoryPage * historyPageSize;
     return historySessions.slice(start, start + historyPageSize);
-  }, [historyPage, historySessions, historyPageSize]);
+  }, [safeHistoryPage, historySessions, historyPageSize]);
+
   const adaptiveHistoryPages = useMemo(
-    () => getAdaptiveHistoryPages(historyPageCount, historyPage),
-    [historyPageCount, historyPage],
+    () => getAdaptiveHistoryPages(historyPageCount, safeHistoryPage),
+    [historyPageCount, safeHistoryPage],
   );
 
   const getSessionTitle = (s) => s?.script_title || s?.title || 'Session';
 
   return (
-    <div className="progress-page-bg">
+    <div className="progress-page-bg no-scrollbar" style={{ height: '100dvh', overflowY: 'auto' }}>
       <div className="progress-main-layout">
         <div className="progress-left-content">
           {/* Graph Card */}
@@ -467,18 +483,27 @@ function ProgressPage() {
           {/* Stats Row */}
           <div className="progress-stats-row">
             <div className="stat-block dashboard-anim-bottom dashboard-anim-delay-1">
+              <div className="stat-icon-wrap">
+                <IoCalendarOutline />
+              </div>
               <p className="stat-title">Sessions This Week</p>
-              <p className="stat-num">{stats.sessionsThisWeek}</p>
+              <p className={`stat-num ${stats.sessionsThisWeek > 0 ? 'glow-text' : ''}`}>{stats.sessionsThisWeek}</p>
               <p className="stat-desc">Attempts</p>
             </div>
             <div className="stat-block dashboard-anim-bottom dashboard-anim-delay-2">
+              <div className="stat-icon-wrap">
+                <IoTrophyOutline />
+              </div>
               <p className="stat-title">Average Score</p>
-              <p className="stat-num">{stats.averageScore}</p>
+              <p className={`stat-num ${stats.averageScore > 0 ? 'glow-text' : ''}`}>{stats.averageScore}</p>
               <p className="stat-desc">Points</p>
             </div>
             <div className="stat-block dashboard-anim-bottom dashboard-anim-delay-3">
+              <div className="stat-icon-wrap">
+                <IoTimeOutline />
+              </div>
               <p className="stat-title">Total Speaking Time</p>
-              <p className="stat-num">{stats.totalSpeakingTime}</p>
+              <p className={`stat-num ${stats.totalSpeakingTime > 0 ? 'glow-text' : ''}`}>{stats.totalSpeakingTime}</p>
               <p className="stat-desc">Minutes</p>
             </div>
           </div>
@@ -501,21 +526,42 @@ function ProgressPage() {
           <div className="progress-pillars-grid">
             {pillarStats.map((pillar, index) => (
               <div key={pillar.key} className={`pillar-card dashboard-anim-bottom dashboard-anim-delay-${5 + index}`}>
-                <div className="pillar-info">
-                  <span className="pillar-icon" style={{ background: pillar.iconBg, color: pillar.color }}>
-                    <pillar.icon />
-                  </span>
-                  <div className="pillar-label-group">
-                    <span className="pillar-label">{pillar.label}</span>
-                    <span className="pillar-value-subtext">Performance</span>
+                <div className="pillar-main-section">
+                  <div className="pillar-info">
+                    <span className="pillar-icon" style={{ background: pillar.iconBg, color: pillar.color }}>
+                      <pillar.icon />
+                    </span>
+                    <div className="pillar-label-group">
+                      <span className="pillar-label">{pillar.label}</span>
+                    </div>
                   </div>
-                  <span className="pillar-value" style={{ color: pillar.color }}>{pillar.value}%</span>
+                  <div className="pillar-progress-container">
+                    <div className="pillar-progress-header" style={{ width: `${pillar.value}%` }}>
+                      <span className="pillar-value">{pillar.value}%</span>
+                    </div>
+                    <div className="pillar-track">
+                      <div 
+                        className={`pillar-fill ${pillar.value > 80 ? 'mastery-pulse' : ''}`} 
+                        style={{ width: `${pillar.value}%` }} 
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="pillar-track">
-                  <div 
-                    className="pillar-fill" 
-                    style={{ width: `${pillar.value}%`, background: pillar.color }} 
-                  />
+                
+                <div className="pillar-divider" />
+                
+                <div className="pillar-sub-section">
+                  {pillar.subMetrics.map((sub, i) => (
+                    <div key={i} className="sub-metric">
+                      <div className="sub-metric-header">
+                        <span>{sub.label}</span>
+                        <span>{sub.value}%</span>
+                      </div>
+                      <div className="sub-metric-track">
+                        <div className="sub-metric-fill" style={{ width: `${sub.value}%` }} />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
@@ -532,7 +578,10 @@ function ProgressPage() {
                   <button 
                     key={f}
                     className={`history-filter-btn ${historyFilter === f ? 'active' : ''}`}
-                    onClick={() => setHistoryFilter(f)}
+                    onClick={() => {
+                      setHistoryFilter(f);
+                      setHistoryPage(0);
+                    }}
                   >
                     {f}
                   </button>
@@ -546,7 +595,10 @@ function ProgressPage() {
                     <input
                       type="date"
                       value={historyStartDate}
-                      onChange={(event) => setHistoryStartDate(event.target.value)}
+                      onChange={(event) => {
+                        setHistoryStartDate(event.target.value);
+                        setHistoryPage(0);
+                      }}
                     />
                   </label>
                   <label className="history-date-field">
@@ -554,7 +606,10 @@ function ProgressPage() {
                     <input
                       type="date"
                       value={historyEndDate}
-                      onChange={(event) => setHistoryEndDate(event.target.value)}
+                      onChange={(event) => {
+                        setHistoryEndDate(event.target.value);
+                        setHistoryPage(0);
+                      }}
                     />
                   </label>
                 </div>
@@ -608,12 +663,12 @@ function ProgressPage() {
             {!isLoading && historyPageCount > 1 && (
               <div className="history-pagination-shell">
                 <ul className="history-pagination" aria-label="History pagination">
-                  <li className={`history-pagination-page history-pagination-nav ${historyPage <= 0 ? 'disabled' : ''}`}>
+                  <li className={`history-pagination-page history-pagination-nav ${safeHistoryPage <= 0 ? 'disabled' : ''}`}>
                     <button
                       type="button"
                       className="history-pagination-link"
                       onClick={() => setHistoryPage((current) => Math.max(0, current - 1))}
-                      disabled={historyPage <= 0}
+                      disabled={safeHistoryPage <= 0}
                       aria-label="Previous history page"
                     >
                       <IoChevronBack aria-hidden="true" />
@@ -629,7 +684,7 @@ function ProgressPage() {
                       );
                     }
 
-                    const isActive = entry === historyPage;
+                    const isActive = entry === safeHistoryPage;
                     return (
                       <li key={`page-${entry}`} className={`history-pagination-page ${isActive ? 'active' : ''}`}>
                         <button
@@ -645,12 +700,12 @@ function ProgressPage() {
                     );
                   })}
 
-                  <li className={`history-pagination-page history-pagination-nav ${historyPage >= historyPageCount - 1 ? 'disabled' : ''}`}>
+                  <li className={`history-pagination-page history-pagination-nav ${safeHistoryPage >= historyPageCount - 1 ? 'disabled' : ''}`}>
                     <button
                       type="button"
                       className="history-pagination-link"
                       onClick={() => setHistoryPage((current) => Math.min(historyPageCount - 1, current + 1))}
-                      disabled={historyPage >= historyPageCount - 1}
+                      disabled={safeHistoryPage >= historyPageCount - 1}
                       aria-label="Next history page"
                     >
                       <IoChevronForward aria-hidden="true" />

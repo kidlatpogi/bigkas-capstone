@@ -503,6 +503,7 @@ export function AuthProvider({ children }) {
       pretestFreeScore: Number(meta.pretest_free_score ?? 0) || 0,
       speakerProfile: meta.speaker_profile || null,
       speakerPoints: Number(meta.speaker_points ?? 0) || 0,
+      speakerEntryScore: Number(meta.speaker_entry_score) || null,
       speakerLevel: String(meta.speaker_level || 'Novice'),
       speakerLevelNumber: Number(meta.speaker_level_number ?? 1) || 1,
       speakerPointsHistory: normalizeSpeakerPointsHistory(meta.speaker_points_history),

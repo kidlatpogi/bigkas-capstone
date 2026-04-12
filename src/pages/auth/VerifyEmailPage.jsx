@@ -1,9 +1,10 @@
-﻿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { authApi } from '@session/api/authApi';
 import { ROUTES } from '../../utils/constants';
 import bigkasLogo from '../../assets/Temporary Logo.png';
 import Button from '../../components/common/Button';
+import PushButton from '../../components/common/PushButton';
 import './VerifyEmailPage.css';
 
 const OTP_LENGTH = 6;
@@ -298,18 +299,19 @@ function VerifyEmailPage() {
           )}
 
           {/* â”€â”€ Verify button â”€â”€ */}
-          <Button
+          <PushButton
             type="button"
             className="auth-submit-btn"
-            style={{ marginTop: '32px', width: '100%' }}
             onClick={handleVerify}
             disabled={isVerifying || !allFilled}
-            isLoading={isVerifying}
+            bgColor="#2d5a27"
+            shadowColor="#1a3b16"
+            textColor="#ffffff"
           >
-            VERIFY EMAIL
-          </Button>
+            {isVerifying ? <span className="btn-loader"></span> : 'VERIFY EMAIL'}
+          </PushButton>
 
-          {/* â”€â”€ Resend section â”€â”€ */}
+          {/* ── Resend section ── */}
           <div className="otp-resend-row">
             <span className="otp-resend-label">Didn&rsquo;t receive a code?</span>
             <Button
@@ -326,7 +328,7 @@ function VerifyEmailPage() {
             </Button>
           </div>
 
-          {/* â”€â”€ Back to register link â”€â”€ */}
+          {/* ── Back to register link ── */}
           <div className="otp-back-row">
             <Button
               type="button"

@@ -30,7 +30,7 @@
   border-radius: 0 0 96px 96px;
   transform-origin: center top;
   transform: scale(calc(1 + (0.09 * var(--hero-progress))));
-  transition: transform 240ms ease-out, height 240ms ease-out;
+  will-change: transform, height;
 }
 
 .hero-character {
@@ -38,7 +38,7 @@
   height: 100%;
   object-fit: cover;
   object-position: center 30%;
-  transition: width 240ms ease-out;
+  will-change: width;
 }
 
 .hero-copy {
@@ -54,7 +54,7 @@
   text-align: left;
   position: relative;
   z-index: 3;
-  transition: margin-top 240ms ease-out;
+  will-change: margin-top;
 }
 
 .hero-title {

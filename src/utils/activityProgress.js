@@ -1,15 +1,27 @@
+import { isUuidUserId, persistActivityCompletion } from '../services/journeyProgressService';
+
 const METRICS_KEY_PREFIX = 'bigkas_activity_metrics_';
 const TOTAL_POINTS_KEY_PREFIX = 'bigkas_activity_total_points_';
 const COMPLETED_HISTORY_KEY_PREFIX = 'bigkas_activity_completed_history_';
 export const GLOBAL_ACTIVITY_SCOPE = 'global';
-export const LEVEL_CONFIG = [
-  { name: 'Novice', requiredToNext: 100 },
-  { name: 'Beginner', requiredToNext: 200 },
-  { name: 'Intermediate', requiredToNext: 300 },
-  { name: 'Advanced', requiredToNext: 400 },
-  { name: 'Expert', requiredToNext: 500 },
-  { name: 'Master', requiredToNext: null },
+
+/**
+ * Bigkas speaker levels (1.0–5.0 entry-point scale). Replaces the old XP ladder.
+ */
+export const BIGKAS_LEVELS = [
+  { number: 1, name: 'Mastering Fundamentals', min: 1.0, max: 1.9 },
+  { number: 2, name: 'Learning Your Style', min: 2.0, max: 2.9 },
+  { number: 3, name: 'Increasing Knowledge', min: 3.0, max: 3.9 },
+  { number: 4, name: 'Building Skills', min: 4.0, max: 4.9 },
+  { number: 5, name: 'Demonstrating Expertise', min: 5.0, max: 5.0 },
 ];
+
+/** @deprecated Use BIGKAS_LEVELS — kept for a few imports that expect an array */
+export const LEVEL_CONFIG = BIGKAS_LEVELS.map((L) => ({
+  name: L.name,
+  requiredToNext: null,
+}));
+
 const TASK_XP_MAP = {
   'three-minute-scripted': 1,
   'free-randomizer-3x': 1,
@@ -21,7 +33,10 @@ const TASK_XP_MAP = {
 const TASK_IDS = Object.keys(TASK_XP_MAP);
 
 export function getTaskXp(taskId) {
-  return TASK_XP_MAP[taskId] ?? 0;
+  if (taskId && Object.prototype.hasOwnProperty.call(TASK_XP_MAP, taskId)) {
+    return TASK_XP_MAP[taskId] ?? 0;
+  }
+  return 1;
 }
 
 const DEFAULT_METRICS = {
@@ -33,6 +48,7 @@ const DEFAULT_METRICS = {
   scriptedUniqueTitles: [],
   processedScriptedSessionIds: [],
   processedRandomizerSessionIds: [],
+  completedActivityIds: [],
 };
 
 function normalizeTitle(value) {
@@ -53,7 +69,77 @@ function toMetricObject(value) {
     scriptedUniqueTitles: Array.isArray(value.scriptedUniqueTitles) ? value.scriptedUniqueTitles : [],
     processedScriptedSessionIds: Array.isArray(value.processedScriptedSessionIds) ? value.processedScriptedSessionIds : [],
     processedRandomizerSessionIds: Array.isArray(value.processedRandomizerSessionIds) ? value.processedRandomizerSessionIds : [],
+    completedActivityIds: Array.isArray(value.completedActivityIds) ? value.completedActivityIds : [],
   };
+}
+
+/**
+ * Maps onboarding Mehrabian-style 0–100 score to 1.0–5.0 entry scale (for level bands).
+ */
+export function mapPercentToEntryScore(percent0to100) {
+  const p = Math.max(0, Math.min(100, Number(percent0to100) || 0));
+  return Math.round((1 + (p / 100) * 4) * 100) / 100;
+}
+
+/**
+ * Resolves 1.0–5.0 entry score from user metadata / onboarding analysis.
+ */
+export function resolveSpeakerEntryScore(user) {
+  if (!user) return 1.0;
+  const meta = user;
+  const direct = Number(meta.speakerEntryScore ?? meta.speaker_entry_score);
+  if (Number.isFinite(direct) && direct >= 1 && direct <= 5) {
+    return Math.round(direct * 100) / 100;
+  }
+  const fs = Number(meta.onboardingLevelAnalysis?.final_score);
+  if (Number.isFinite(fs) && fs > 0) {
+    return mapPercentToEntryScore(fs);
+  }
+  const ln = Number(meta.speakerLevelNumber);
+  if (Number.isFinite(ln) && ln >= 1 && ln <= 5) {
+    const band = BIGKAS_LEVELS[ln - 1];
+    return band ? band.min : 1.0;
+  }
+  return 1.0;
+}
+
+/**
+ * Level display + progress toward next band from entry score (1.0–5.0).
+ */
+export function getBigkasLevelFromScore(entryScoreRaw) {
+  const s = Math.max(1, Math.min(5, Number(entryScoreRaw) || 1));
+  const level =
+    BIGKAS_LEVELS.find((L) => s >= L.min && s <= L.max) || BIGKAS_LEVELS[0];
+  const next = BIGKAS_LEVELS.find((L) => L.number === level.number + 1);
+  let progressPct = 100;
+  if (next && level.number < 5) {
+    const span = next.min - level.min;
+    if (span > 0) {
+      progressPct = Math.round(((s - level.min) / span) * 100);
+    }
+  }
+  return {
+    levelName: level.name,
+    levelNumber: level.number,
+    nextLevelName: next?.name || null,
+    pointsIntoLevel: 0,
+    requiredToNext: null,
+    pointsToNext: 0,
+    progressPct: Math.min(100, Math.max(0, progressPct)),
+    entryScore: s,
+  };
+}
+
+export function getBigkasLevelFromUser(user) {
+  return getBigkasLevelFromScore(resolveSpeakerEntryScore(user));
+}
+
+/**
+ * @deprecated Use getBigkasLevelFromUser — levels are score-based, not XP-based.
+ */
+export function deriveLevelProgress(totalPointsIgnored) {
+  void totalPointsIgnored;
+  return getBigkasLevelFromScore(1.0);
 }
 
 export function getLocalDateKey(date = new Date()) {
@@ -104,16 +190,11 @@ export function getTotalActivityPoints(scopeKey = GLOBAL_ACTIVITY_SCOPE) {
 export function getScoreRewardPoints(scoreValue, durationSec = 0) {
   const score = Number(scoreValue ?? 0);
   const duration = Number(durationSec ?? 0);
-  
+
   if (!Number.isFinite(score) || !Number.isFinite(duration)) return 0;
-  
-  // Minimum session duration requirement: 5 seconds
+
   if (duration < 5) return 0;
-  
-  // Score-based reward points
-  // 80+ overall score = 3 points
-  // 60-79 overall score = 2 points
-  // Below 60 = 0 points
+
   if (score >= 80) return 3;
   if (score >= 60 && score < 80) return 2;
   return 0;
@@ -130,36 +211,6 @@ function addActivityPoints(amount, scopeKey = GLOBAL_ACTIVITY_SCOPE) {
 
 export function addPointsToSpeakerProgress(amount, scopeKey = GLOBAL_ACTIVITY_SCOPE) {
   return addActivityPoints(amount, scopeKey);
-}
-
-export function deriveLevelProgress(totalPoints) {
-  const points = Math.max(0, Math.floor(Number(totalPoints) || 0));
-  let levelIndex = 0;
-  let pointsIntoLevel = points;
-
-  while (levelIndex < LEVEL_CONFIG.length - 1) {
-    const required = LEVEL_CONFIG[levelIndex].requiredToNext;
-    if (!required || pointsIntoLevel < required) break;
-    pointsIntoLevel -= required;
-    levelIndex += 1;
-  }
-
-  const level = LEVEL_CONFIG[levelIndex];
-  const next = LEVEL_CONFIG[levelIndex + 1] || null;
-  const requiredToNext = level.requiredToNext;
-  const progressPct = requiredToNext
-    ? Math.round((Math.min(pointsIntoLevel, requiredToNext) / requiredToNext) * 100)
-    : 100;
-
-  return {
-    levelName: level.name,
-    levelNumber: levelIndex + 1,
-    nextLevelName: next?.name || null,
-    pointsIntoLevel,
-    requiredToNext,
-    pointsToNext: requiredToNext ? Math.max(0, requiredToNext - pointsIntoLevel) : 0,
-    progressPct,
-  };
 }
 
 function getCompletedHistory(scopeKey = GLOBAL_ACTIVITY_SCOPE) {
@@ -184,6 +235,31 @@ export function getActivityCompletionHistory(scopeKey = GLOBAL_ACTIVITY_SCOPE) {
   return getCompletedHistory(scopeKey);
 }
 
+/**
+ * Merges server-persisted activity UUIDs into local metrics (union). Used after Supabase fetch.
+ */
+export function mergeCompletedActivityIdsFromRemote(scopeKey, remoteIds) {
+  if (!Array.isArray(remoteIds) || remoteIds.length === 0) {
+    return getActivityMetrics(scopeKey);
+  }
+  const metrics = getActivityMetrics(scopeKey);
+  const set = new Set(metrics.completedActivityIds.map(String));
+  let changed = false;
+  for (const id of remoteIds) {
+    const s = String(id || '').trim();
+    if (s && !set.has(s)) {
+      set.add(s);
+      changed = true;
+    }
+  }
+  if (!changed) {
+    return metrics;
+  }
+  metrics.completedActivityIds = [...set];
+  saveActivityMetrics(scopeKey, metrics);
+  return metrics;
+}
+
 export function recordActivityEvent(event, scopeKey = GLOBAL_ACTIVITY_SCOPE) {
   if (!event || typeof event !== 'object') return getActivityMetrics(scopeKey);
 
@@ -192,6 +268,16 @@ export function recordActivityEvent(event, scopeKey = GLOBAL_ACTIVITY_SCOPE) {
     TASK_IDS.map((taskId) => [taskId, isActivityTaskCompleted(taskId, metrics)]),
   );
   const type = String(event.type || '');
+
+  let newlyCompletedActivityId = null;
+
+  if (type === 'activity-complete') {
+    const aid = String(event.activityId || '').trim();
+    if (aid && !metrics.completedActivityIds.includes(aid)) {
+      metrics.completedActivityIds = [...metrics.completedActivityIds, aid];
+      newlyCompletedActivityId = aid;
+    }
+  }
 
   if (type === 'scripted-session-complete') {
     const sessionId = String(event.sessionId || '');
@@ -244,17 +330,19 @@ export function recordActivityEvent(event, scopeKey = GLOBAL_ACTIVITY_SCOPE) {
     (taskId) => !completionBefore[taskId] && completionAfter[taskId],
   );
 
-  if (newlyCompletedTaskIds.length > 0) {
-    const totalXpEarned = newlyCompletedTaskIds.reduce(
-      (sum, taskId) => sum + getTaskXp(taskId),
-      0,
-    );
+  const allNew = [...newlyCompletedTaskIds];
+  if (newlyCompletedActivityId) {
+    allNew.push(newlyCompletedActivityId);
+  }
+
+  if (allNew.length > 0) {
+    const totalXpEarned = allNew.reduce((sum, taskId) => sum + getTaskXp(taskId), 0);
     addActivityPoints(totalXpEarned, scopeKey);
 
     const history = getCompletedHistory(scopeKey);
     const nextHistory = [...history];
 
-    for (const taskId of newlyCompletedTaskIds) {
+    for (const taskId of allNew) {
       if (nextHistory.some((entry) => entry.taskId === taskId)) continue;
       nextHistory.push({
         taskId,
@@ -267,6 +355,11 @@ export function recordActivityEvent(event, scopeKey = GLOBAL_ACTIVITY_SCOPE) {
   }
 
   saveActivityMetrics(scopeKey, metrics);
+
+  if (newlyCompletedActivityId && isUuidUserId(scopeKey)) {
+    persistActivityCompletion(scopeKey, newlyCompletedActivityId).catch(() => {});
+  }
+
   return metrics;
 }
 
@@ -309,10 +402,13 @@ export function getActivityTaskProgress(taskId, metricsInput) {
         current: Math.min(metrics.progressChecks, 1),
         target: 1,
       };
-    default:
+    default: {
+      const ids = Array.isArray(metrics.completedActivityIds) ? metrics.completedActivityIds : [];
+      const done = ids.includes(String(taskId));
       return {
-        current: 0,
+        current: done ? 1 : 0,
         target: 1,
       };
+    }
   }
 }

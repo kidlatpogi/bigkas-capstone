@@ -1,0 +1,193 @@
+.bigkas-btn {
+  --btn-bg: #F18F01;
+  --btn-text: #FFFFFF;
+  --btn-border: transparent;
+  --btn-glow: rgba(241, 143, 1, 0.3);
+  --btn-hover-bg: #F6A320;
+  --btn-active-scale: 0.98;
+  --btn-radius: 14px;
+  --btn-height: 52px;
+  --btn-font-size: 16px;
+  --btn-font-weight: 700;
+  --btn-padding: 0 28px;
+  --btn-letter-spacing: 0.5px;
+  --btn-transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+  position: relative;
+  height: var(--btn-height);
+  padding: var(--btn-padding);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: var(--btn-radius);
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  font-family: 'Nunito Sans', sans-serif;
+  font-size: var(--btn-font-size);
+  font-weight: var(--btn-font-weight);
+  letter-spacing: var(--btn-letter-spacing);
+  cursor: pointer;
+  outline: none;
+  transition: var(--btn-transition);
+  overflow: hidden;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+/* Futuristic Glow Effect */
+.bigkas-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.bigkas-btn:hover:not(:disabled) {
+  background: var(--btn-hover-bg);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px var(--btn-glow);
+}
+
+.bigkas-btn:hover:not(:disabled)::before {
+  opacity: 1;
+}
+
+.bigkas-btn:active:not(:disabled) {
+  transform: translateY(0) scale(var(--btn-active-scale));
+  box-shadow: 0 4px 10px var(--btn-glow);
+}
+
+.bigkas-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+}
+
+/* Variant: Primary (Orange) */
+.bigkas-btn--primary {
+  --btn-bg: linear-gradient(135deg, #F6A320 0%, #F18F01 100%);
+  --btn-hover-bg: linear-gradient(135deg, #FFB02E 0%, #F6A320 100%);
+  --btn-glow: rgba(241, 143, 1, 0.4);
+}
+
+/* Variant: Secondary (Dark Blue) */
+.bigkas-btn--secondary {
+  --btn-bg: #0B3954;
+  --btn-text: #FFFFFF;
+  --btn-hover-bg: #103e5b;
+  --btn-glow: rgba(11, 57, 84, 0.3);
+}
+
+/* Variant: Google (White) */
+.bigkas-btn--google {
+  --btn-bg: #FFFFFF;
+  --btn-text: #111827;
+  --btn-border: #E5E7EB;
+  --btn-hover-bg: #F9FAFB;
+  --btn-glow: rgba(0, 0, 0, 0.08);
+  justify-content: flex-start;
+  padding-left: 20px;
+}
+
+/* Variant: Outline */
+.bigkas-btn--outline {
+  --btn-bg: transparent;
+  --btn-text: #F18F01;
+  --btn-border: #F18F01;
+  --btn-hover-bg: rgba(241, 143, 1, 0.05);
+}
+
+/* Variant: Ghost */
+.bigkas-btn--ghost {
+  --btn-bg: transparent;
+  --btn-text: inherit;
+  --btn-hover-bg: rgba(0, 0, 0, 0.05);
+  --btn-glow: transparent;
+}
+
+/* Variant: Ink (Landing) */
+.bigkas-btn--ink {
+  --btn-bg: #0B3954;
+  --btn-text: #FFFFFF;
+  --btn-hover-bg: #103e5b;
+  --btn-glow: rgba(11, 57, 84, 0.4);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-size: 14px;
+}
+
+/* Variant: Sand (Landing) */
+.bigkas-btn--sand {
+  --btn-bg: #d3dcc5;
+  --btn-text: #010101;
+  --btn-hover-bg: #c5d1b3;
+  --btn-glow: rgba(211, 220, 197, 0.4);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-size: 14px;
+}
+
+/* Variant: Practice (Orange) */
+.bigkas-btn--practice {
+  --btn-bg: #F59B00;
+  --btn-text: #FFFFFF;
+  --btn-hover-bg: #FFB020;
+  --btn-glow: rgba(245, 155, 0, 0.4);
+}
+
+/* Variant: Training (Glassy) */
+.bigkas-btn--training {
+  --btn-bg: rgba(255, 255, 255, 0.1);
+  --btn-text: #FFFFFF;
+  --btn-border: rgba(255, 255, 255, 0.2);
+  --btn-hover-bg: rgba(255, 255, 255, 0.15);
+  --btn-glow: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+/* Icons */
+.btn-icon {
+  font-size: 20px;
+  display: inline-flex;
+}
+
+/* Loading State */
+.is-loading .btn-content {
+  opacity: 0;
+}
+
+.btn-loader {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #FFFFFF;
+  animation: btn-spin 0.8s linear infinite;
+}
+
+.bigkas-btn--google .btn-loader {
+  border-top-color: #111827;
+  border-color: rgba(17, 24, 39, 0.1);
+}
+
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .bigkas-btn {
+    --btn-height: 48px;
+    --btn-font-size: 15px;
+    --btn-padding: 0 20px;
+  }
+}

@@ -1,0 +1,130 @@
+/* ConfirmationModal — reusable confirmation / alert dialog */
+
+.cm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.50);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: cm-fade 0.15s ease;
+}
+
+@keyframes cm-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.cm-box {
+  background: #FFFFFF;
+  border-radius: 16px;
+  padding: 28px 24px 24px;
+  width: 100%;
+  max-width: 360px;
+  position: relative;
+  animation: cm-scale 0.2s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+@keyframes cm-scale {
+  from { opacity: 0; transform: scale(0.88); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.cm-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  max-width: 28px;
+  max-height: 28px;
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  box-sizing: border-box;
+  line-height: 1;
+  border-radius: 50%;
+  border: none;
+  background: #F0F0F0;
+  color: #010101;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.cm-close:hover { background: #E0E0E0; }
+
+.cm-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #010101;
+  margin: 0 0 10px;
+  padding-right: 36px; /* don't overlap close button */
+  line-height: 1.3;
+}
+
+.cm-message {
+  font-size: 14px;
+  color: rgba(1, 1, 1, 0.6);
+  line-height: 1.55;
+  margin: 0 0 24px;
+}
+
+.cm-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* Ghost cancel button */
+.cm-btn-cancel {
+  flex: 1;
+  height: 46px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(1, 1, 1, 0.15);
+  background: transparent;
+  color: rgba(1, 1, 1, 0.65);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.cm-btn-cancel:hover { background: #F5F5F5; }
+
+/* Confirm button */
+.cm-btn-confirm {
+  flex: 1;
+  height: 46px;
+  border-radius: 12px;
+  border: none;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.cm-btn-confirm:hover:not(:disabled) { opacity: 0.85; }
+.cm-btn-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* type variants */
+.cm-btn-confirm.danger  { background: #FF3B30; color: #FFFFFF; }
+.cm-btn-confirm.warning { background: #FCBA04; color: #010101; }
+.cm-btn-confirm.info,
+.cm-btn-confirm.default { background: #010101; color: #FFFFFF; }
+
+/* ── Dark mode ── */
+[data-theme="dark"] .cm-box    { background: #1E1E1E; }
+[data-theme="dark"] .cm-title  { color: #F0F0F0; }
+[data-theme="dark"] .cm-message { color: rgba(255, 255, 255, 0.55); }
+[data-theme="dark"] .cm-close  { background: #2A2A2A; color: #F0F0F0; }
+[data-theme="dark"] .cm-close:hover { background: #363636; }
+[data-theme="dark"] .cm-btn-cancel { border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.6); }
+[data-theme="dark"] .cm-btn-cancel:hover { background: rgba(255,255,255,0.06); }
+[data-theme="dark"] .cm-btn-confirm.info,
+[data-theme="dark"] .cm-btn-confirm.default { background: #F0F0F0; color: #010101; }

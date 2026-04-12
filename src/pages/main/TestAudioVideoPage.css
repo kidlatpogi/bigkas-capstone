@@ -1,0 +1,254 @@
+﻿/* ── TestAudioVideoPage.css ── */
+
+.av-page {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 28px 20px 80px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ── Header ── */
+.av-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
+.av-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #010101;
+  margin: 0;
+}
+
+/* ── Section ── */
+.av-section {
+  margin-bottom: 24px;
+}
+
+.av-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #888;
+  letter-spacing: 0.1em;
+  margin: 0 0 10px;
+}
+
+/* ── Camera ── */
+.av-camera-wrap {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: 210px;
+  background: #1a1a1a;
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.av-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #1a1a1a;
+}
+
+.av-camera-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  text-align: center;
+  padding: 20px;
+}
+
+.av-flip-btn {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: background 0.15s;
+}
+
+.av-flip-btn:hover {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+/* ── Status row ── */
+.av-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.av-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.av-status-text {
+  font-size: 13px;
+  color: #666;
+}
+
+/* ── Mic card ── */
+.av-mic-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1.5px solid #E8E8E8;
+  padding: 20px 16px;
+}
+
+/* ── Level bars (AudioLevelIndicator) ── */
+.av-visualizer {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.av-bars {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 56px;
+}
+
+.av-bar {
+  width: 8px;
+  height: 100%;
+  border-radius: 4px;
+  background: #E0E0E0;
+  transition: background 0.1s, height 0.08s;
+  flex-shrink: 0;
+}
+
+.av-bar-lit {
+  background: #FCBA04;
+}
+
+.av-bar-partial {
+  background: rgba(252, 186, 4, 0.5);
+}
+
+/* ── Mic button ── */
+.av-mic-btn {
+  width: 100%;
+  padding: 14px;
+  background: #010101;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.av-mic-btn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.av-mic-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.av-mic-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.av-mic-btn-stop {
+  background: transparent;
+  color: #010101;
+  border: 1.5px solid #CCCCCC;
+}
+
+.av-mic-btn-stop:hover:not(:disabled) {
+  background: #F5F5F5;
+  opacity: 1;
+}
+
+/* ── Done button ── */
+.av-done-wrap {
+  margin-top: 8px;
+}
+
+.av-done-btn {
+  width: 100%;
+  padding: 14px;
+  background: #F5F5F5;
+  color: #010101;
+  border: 1.5px solid #E0E0E0;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s;
+}
+
+.av-done-btn:hover {
+  background: #E8E8E8;
+}
+
+/* ── Dark mode ── */
+[data-theme="dark"] .av-page { background: #0B0B0D; }
+
+[data-theme="dark"] .av-title {
+  color: #F0F0F0;
+}
+
+[data-theme="dark"] .av-section-label {
+  color: #666;
+}
+
+[data-theme="dark"] .av-mic-card {
+  background: #242424;
+  border-color: #333;
+}
+
+[data-theme="dark"] .av-bar {
+  background: #333;
+}
+
+[data-theme="dark"] .av-mic-btn-stop {
+  color: #F0F0F0;
+  border-color: #444;
+}
+
+[data-theme="dark"] .av-mic-btn-stop:hover:not(:disabled) {
+  background: #2e2e2e;
+}
+
+[data-theme="dark"] .av-done-btn {
+  background: #242424;
+  color: #F0F0F0;
+  border-color: #333;
+}
+
+[data-theme="dark"] .av-done-btn:hover {
+  background: #2e2e2e;
+}
+
+[data-theme="dark"] .av-status-text {
+  color: #888;
+}

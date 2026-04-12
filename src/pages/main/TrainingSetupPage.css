@@ -1,0 +1,334 @@
+/* ── Filter chips ── */
+.ts-filter-chips {
+  display: flex;
+  gap: 8px;
+  margin: 14px 0 12px;
+  flex-wrap: wrap;
+}
+
+.ts-chip {
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1.5px solid #E0E0E0;
+  background: transparent;
+  color: rgba(1, 1, 1, 0.55);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.ts-chip:hover {
+  border-color: #FCBA04;
+  color: #010101;
+}
+.ts-chip.active {
+  border-color: #FCBA04;
+  background: #FCBA04;
+  color: #010101;
+}
+
+/* ── Empty state for "My AI Scripts" ── */
+.ts-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 16px;
+  border: 1.5px dashed #E0E0E0;
+  border-radius: 14px;
+  background: #FAFAFA;
+}
+
+.ts-empty-text {
+  font-size: 14px;
+  color: #888;
+  margin: 0;
+}
+
+/* ── Script preview badge ── */
+.script-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  gap: 8px;
+}
+.script-preview-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.script-preview-badge.prewritten {
+  background: rgba(52, 199, 89, 0.12);
+  color: #28a745;
+}
+/* AI Generated — muted gray, matches Scripts page */
+.script-preview-badge.generated {
+  background: #E5E7EB;
+  color: #6B7280;
+}
+/* Self-Authored — primary yellow */
+.script-preview-badge.myScripts {
+  background: #FCBA04;
+  color: #010101;
+  border: none;
+}
+
+/* Dark mode additions */
+[data-theme="dark"] .ts-chip { border-color: #2E2E2E; color: rgba(255,255,255,0.45); }
+[data-theme="dark"] .ts-chip:hover { border-color: #FCBA04; color: #F0F0F0; }
+[data-theme="dark"] .ts-chip.active { border-color: #FCBA04; background: #FCBA04; color: #010101; }
+[data-theme="dark"] .ts-empty-state { background: #1A1A1A; border-color: #2E2E2E; }
+[data-theme="dark"] .ts-empty-text  { color: rgba(255,255,255,0.4); }
+[data-theme="dark"] .script-preview-badge.prewritten { background: rgba(48, 209, 88, 0.10); color: #30D158; }
+[data-theme="dark"] .script-preview-badge.generated   { background: #374151; color: #9CA3AF; }
+[data-theme="dark"] .script-preview-badge.myScripts   { background: #FCBA04; color: #010101; }
+
+/* Center the Training Setup page — matches standard inner-page width */
+.training-setup-page {
+  max-width: 860px;
+}
+
+.training-setup-header {
+  justify-content: center;
+  position: relative;
+}
+
+.training-setup-header .back-btn {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.training-setup-header .inner-page-title {
+  text-align: center;
+  flex: 1;
+}
+
+/* Generate Speech button for auto-generated tab */
+.training-generate-btn {
+  width: 100%;
+  height: 52px;
+  font-size: 16px;
+  border-radius: 14px;
+}
+
+.ts-select-script-label {
+  margin-top: 20px;
+}
+
+.ts-filter-tabs-wrap {
+  margin-bottom: 16px;
+}
+
+.ts-script-select-group {
+  margin-top: 12px;
+  margin-bottom: 16px;
+}
+
+.ts-loading-text {
+  color: #888;
+  font-size: 14px;
+  margin: 0;
+}
+
+.ts-status-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ts-status-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.form-hint {
+  font-size: 13px;
+  color: #888;
+  margin-top: 4px;
+}
+
+.form-hint-error {
+  color: #b42318;
+  font-weight: 600;
+}
+
+.ts-focus-label {
+  margin-top: 8px;
+}
+
+.ts-action-row {
+  margin-top: 32px;
+}
+
+.script-preview-card {
+  margin-bottom: 16px;
+  border-left: 4px solid #FCBA04;
+  padding-left: 16px;
+}
+
+.script-preview-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #010101;
+  margin: 0;
+}
+
+.script-preview-content {
+  font-size: 13px;
+  color: #555;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Focus options */
+.focus-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.focus-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 18px;
+  border-radius: 14px;
+  border: 2px solid #E8E8E8;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  background: #FFFFFF;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.focus-option.selected {
+  border-color: #FCBA04;
+  background: rgba(252, 186, 4, 0.05);
+}
+
+.focus-option:focus-visible {
+  outline: 2px solid #FCBA04;
+  outline-offset: 2px;
+}
+
+/* Custom radio circle */
+.focus-radio-circle {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid #CCCCCC;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.focus-option.selected .focus-radio-circle {
+  border-color: #FCBA04;
+  background: #FCBA04;
+}
+
+.focus-radio-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #FFFFFF;
+}
+
+.focus-option-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.focus-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: #010101;
+  margin: 0 0 3px;
+}
+
+.focus-desc {
+  font-size: 13px;
+  color: #888;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Dark mode */
+[data-theme="dark"] .training-setup-page { background: #0B0B0D; }
+[data-theme="dark"] .script-preview-title   { color: #F0F0F0; }
+[data-theme="dark"] .script-preview-content { color: rgba(255,255,255,0.5); }
+[data-theme="dark"] .ts-loading-text { color: rgba(255,255,255,0.5); }
+
+[data-theme="dark"] .focus-option {
+  background: #1E1E1E;
+  border-color: #2E2E2E;
+}
+
+[data-theme="dark"] .focus-option.selected {
+  border-color: #FCBA04;
+  background: rgba(251,175,0,0.08);
+}
+
+[data-theme="dark"] .focus-radio-circle {
+  border-color: #444;
+}
+
+[data-theme="dark"] .focus-label {
+  color: #F0F0F0;
+}
+
+[data-theme="dark"] .focus-desc {
+  color: rgba(255,255,255,0.5);
+}
+
+[data-theme="dark"] .form-hint-error {
+  color: #ff8a80;
+}
+
+/* ── Hide floating theme toggle on training setup page ── */
+body:has(.training-setup-page) .theme-toggle-wrap {
+  display: none !important;
+}
+
+/* ── Mobile responsive ── */
+@media (max-width: 600px) {
+  /* Filter chips: bigger tap target */
+  .ts-chip {
+    height: 44px;
+    padding: 0 18px;
+    font-size: 14px;
+  }
+
+  /* ts-filter-chips: allow horizontal scroll on very narrow screens */
+  .ts-filter-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+
+  .ts-filter-chips::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Focus option cards: comfortable padding */
+  .focus-option {
+    padding: 16px 14px;
+  }
+
+  /* Full-width generate button already 100%, ensure min-height */
+  .training-generate-btn {
+    min-height: 52px;
+  }
+}

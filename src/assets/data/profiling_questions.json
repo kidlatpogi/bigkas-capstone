@@ -1,0 +1,50 @@
+[
+  {
+    "key": "gender",
+    "label": "Gender",
+    "type": "single",
+    "options": ["Female", "Male", "Other", "Prefer not to say"]
+  },
+  {
+    "key": "age",
+    "label": "What is your age range?",
+    "type": "single",
+    "options": ["Under 18", "18–24", "25–34", "35–44", "45–54", "55 and above"]
+  },
+  {
+    "key": "social_anxiety",
+    "label": "Do you feel hesitant or anxious when speaking in groups or professional settings?",
+    "type": "single",
+    "options": ["Yes", "Sometimes", "No"]
+  },
+  {
+    "key": "vocal_fluency",
+    "label": "Do you feel your speech is hindered by filler words (um/uh) or a lack of vocabulary?",
+    "type": "single",
+    "options": ["Yes", "Sometimes", "No"]
+  },
+  {
+    "key": "vocal_presence",
+    "label": "Do you find it difficult to maintain eye contact or project your voice effectively?",
+    "type": "single",
+    "options": ["Yes", "Sometimes", "No"]
+  },
+  {
+    "key": "external_dynamics",
+    "label": "Do you feel unheard or frequently interrupted during conversations?",
+    "type": "single",
+    "options": ["Yes", "Sometimes", "No"]
+  },
+  {
+    "key": "adaptability",
+    "label": "Do you find it natural to adjust your speaking style for different audiences?",
+    "type": "single",
+    "options": ["Yes", "Sometimes", "No"]
+  },
+  {
+    "key": "native_speaker",
+    "label": "Is English your native language?",
+    "type": "single",
+    "options": ["Yes", "No"]
+  }
+]

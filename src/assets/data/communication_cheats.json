@@ -1,0 +1,42 @@
+[
+  {
+    "id": "threading",
+    "author": "Charisma on Command",
+    "name": "Conversational Threading",
+    "summary": "Never run out of things to say by identifying multiple threads in any topic and following them naturally.",
+    "steps": [
+      "Listen for 3 threads in what they said",
+      "Pick the most interesting thread",
+      "Ask a deep, open-ended question"
+    ],
+    "youtubeId": "PiNN-HmHu7A",
+    "studyLink": "https://www.youtube.com/@CharismaonCommand"
+  },
+  {
+    "id": "mml",
+    "author": "Vinh Giang",
+    "name": "Match, Mirror, and Lead",
+    "summary": "Build instant rapport by mirroring energy and body language before gently leading the tone of the conversation.",
+    "steps": [
+      "Match the room's energy level",
+      "Mirror their body language subtly",
+      "Gradually lead the pace upward"
+    ],
+    "youtubeId": "ikbcrpowlIs",
+    "studyLink": "https://www.vinhgiang.com/blog/how-to-build-rapport-with-absolutely-anyone/"
+  },
+  {
+    "id": "because-principle",
+    "author": "Robert Cialdini",
+    "name": "The 'Because' Principle",
+    "summary": "Adding a reason (any reason) to a request dramatically increases compliance — people just need to hear the word 'because'.",
+    "steps": [
+      "Make your request",
+      "Say the word 'because'",
+      "Include a simple, honest reason",
+      "Let the listener fill in approval"
+    ],
+    "youtubeId": "cFdCzN7RYbw",
+    "studyLink": "https://www.influenceatwork.com/principles-of-persuasion/"
+  }
+]

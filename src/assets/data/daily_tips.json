@@ -1,0 +1,602 @@
+[
+    {
+        "title": "Know your audience",
+        "body": "Research the demographics and knowledge level of your listeners to tailor your message and vocabulary appropriately."
+    },
+    {
+        "title": "Define your objective",
+        "body": "Write down the single most important action or feeling you want your audience to take away from your presentation."
+    },
+    {
+        "title": "Outline before drafting",
+        "body": "Build a skeletal structure of your main points before writing the actual speech to ensure logical flow."
+    },
+    {
+        "title": "Use the 10-20-30 rule",
+        "body": "When using slides, aim for a maximum of 10 slides, 20 minutes of talking, and a minimum 30-point font size."
+    },
+    {
+        "title": "Use signposting",
+        "body": "Guide your audience with clear transition phrases like 'moving on to,' 'firstly,' or 'in conclusion.'"
+    },
+    {
+        "title": "Master the B-key",
+        "body": "If presenting with a keyboard, press the 'B' key to black out the screen and force the audience to look directly at you."
+    },
+    {
+        "title": "Practice active listening",
+        "body": "Great communicators are great listeners. Give your full attention to others to understand their perspective before responding."
+    },
+    {
+        "title": "Emphasize verbs",
+        "body": "Drive your sentences forward by stressing the action words rather than the adjectives or nouns."
+    },
+    {
+        "title": "Cut the fluff",
+        "body": "Edit your speech ruthlessly. Remove unnecessary filler phrases like 'I just wanted to say' or 'I think that.'"
+    },
+    {
+        "title": "Loosen your jaw",
+        "body": "Massage your jaw muscles and do a few exaggerated yawns before speaking to prevent mumbling."
+    },
+    {
+        "title": "Hum to warm up",
+        "body": "Gently hum a simple scale to safely warm up your vocal cords without straining them before a long presentation."
+    },
+    {
+        "title": "Match volume to the room",
+        "body": "Project your voice to reach the person sitting in the very back row without shouting at the people in the front."
+    },
+    {
+        "title": "Use a clicker",
+        "body": "Invest in a remote slide advancer. It untethers you from the laptop and allows you to own the stage."
+    },
+    {
+        "title": "Have a backup plan",
+        "body": "Always save your presentation as a PDF on a USB drive in case the venue's presentation software fails."
+    },
+    {
+        "title": "Mingle before speaking",
+        "body": "Chat with a few audience members before you start. It turns a room of strangers into a room of acquaintances."
+    },
+    {
+        "title": "Avoid pacing",
+        "body": "Movement should be purposeful. Aimless pacing distracts the audience and signals nervousness."
+    },
+    {
+        "title": "Speak with conviction",
+        "body": "Even if you are unsure, deliver your words definitively. Confidence in delivery often outweighs minor content flaws."
+    },
+    {
+        "title": "Use analogies",
+        "body": "Connect new, complex information to familiar concepts the audience already understands."
+    },
+    {
+        "title": "Keep it conversational",
+        "body": "Write and speak as if you are explaining your topic to a smart friend over a cup of coffee."
+    },
+    {
+        "title": "Welcome questions",
+        "body": "Frame Q&A sessions as an opportunity for dialogue rather than an interrogation of your knowledge."
+    },
+    {
+        "title": "Repeat audience questions",
+        "body": "Always repeat a question into the microphone so the entire room hears it and you get a few seconds to formulate your answer."
+    },
+    {
+        "title": "Say 'I don't know'",
+        "body": "If asked a question you can't answer, admit it confidently and offer to follow up later. Do not guess."
+    },
+    {
+        "title": "End on a high note",
+        "body": "Finish with an inspiring thought or a powerful summary. The last thing you say is the first thing they remember."
+    },
+    {
+        "title": "Include a call to action",
+        "body": "Tell your audience exactly what you want them to do with the information you just provided."
+    },
+    {
+        "title": "Ask for feedback",
+        "body": "After a presentation, ask a trusted colleague for one specific thing you did well and one thing you can improve."
+    },
+    {
+        "title": "Watch great speakers",
+        "body": "Study TED Talks or famous speeches. Note their pacing, body language, and how they handle pauses."
+    },
+    {
+        "title": "Practice impromptu speaking",
+        "body": "Pick a random object in your room and try speaking about it confidently for exactly one minute."
+    },
+    {
+        "title": "Expand your vocabulary",
+        "body": "Learn one new word a day to give yourself more precise tools for articulating your thoughts."
+    },
+    {
+        "title": "Meditate before speaking",
+        "body": "Spend five minutes in quiet meditation to center your focus and lower your resting heart rate."
+    },
+    {
+        "title": "Record your daily conversations",
+        "body": "With permission, record a casual phone call to hear your natural, relaxed speaking voice and try to replicate that energy on stage."
+    },
+    {
+        "title": "Use the 'Rule of Three'",
+        "body": "Group items, arguments, or examples in threes. This pattern is inherently satisfying and memorable to the human brain."
+    },
+    {
+        "title": "Plant your feet",
+        "body": "When making your most critical point, stop moving completely. Stillness commands absolute attention."
+    },
+    {
+        "title": "Avoid reading verbatim",
+        "body": "Never read directly from your slides. The audience can read faster than you can speak, rendering you redundant."
+    },
+    {
+        "title": "Embrace vulnerability",
+        "body": "Sharing a minor personal failure or struggle makes you relatable and builds instant rapport with the room."
+    },
+    {
+        "title": "Check your lighting",
+        "body": "For virtual speaking, ensure the primary light source is in front of your face, not behind you."
+    },
+    {
+        "title": "Look at the lens",
+        "body": "In video calls, look directly into the camera lens, not at the screen, to simulate true eye contact."
+    },
+    {
+        "title": "Use high-quality audio",
+        "body": "If communicating virtually, invest in a dedicated external microphone. Good audio is more important than good video."
+    },
+    {
+        "title": "Nod to encourage",
+        "body": "When someone else is speaking, nod slightly to show active engagement and encourage them to continue."
+    },
+    {
+        "title": "Avoid defensive postures",
+        "body": "Keep your hands out of your pockets and avoid crossing your arms, which can make you look closed off or guarded."
+    },
+    {
+        "title": "Leverage facial expressions",
+        "body": "Ensure your face matches your message. Don't smile when delivering serious news, and don't frown when sharing a success."
+    },
+    {
+        "title": "Use concrete language",
+        "body": "Replace vague terms like 'a lot' or 'soon' with specific numbers and dates to improve clarity."
+    },
+    {
+        "title": "Anticipate objections",
+        "body": "Address the most obvious counter-arguments to your points during your speech to build credibility."
+    },
+    {
+        "title": "Pause after punchlines",
+        "body": "If you use humor, give the audience time to laugh. Rushing forward steps on your own joke."
+    },
+    {
+        "title": "Vocalize your transitions",
+        "body": "Use shifts in your tone or volume to signal that you are moving from one main topic to the next."
+    },
+    {
+        "title": "Over-prepare the opening",
+        "body": "Rehearse the first two minutes of your speech until it is pure muscle memory to quickly overcome initial stage fright."
+    },
+    {
+        "title": "Minimize distractions",
+        "body": "Empty your pockets of keys or coins before stepping on stage so you aren't tempted to jingle them."
+    },
+    {
+        "title": "Ask open-ended questions",
+        "body": "In 1-on-1 communication, ask questions starting with 'How' or 'Why' to encourage detailed responses instead of yes/no answers."
+    },
+    {
+        "title": "Summarize for clarity",
+        "body": "In meetings, periodically repeat back what others have said ('So what I'm hearing is...') to ensure alignment."
+    },
+    {
+        "title": "Pace your breathing",
+        "body": "Inhale deeply at natural punctuation marks (commas and periods) to avoid running out of breath mid-sentence."
+    },
+    {
+        "title": "Celebrate your progress",
+        "body": "Public speaking is a learned skill. Acknowledge the small improvements you make after every single presentation."
+    },
+    {
+        "title": "Avoid upspeak",
+        "body": "Keep your pitch flat or slightly downward at the end of declarative sentences to sound authoritative, rather than asking a question."
+    },
+    {
+        "title": "Drink room-temperature water",
+        "body": "Avoid ice water before speaking, as cold temperatures can constrict your vocal cords and limit your range."
+    },
+    {
+        "title": "Skip the dairy",
+        "body": "Refrain from consuming milk or cheese right before a presentation to prevent excess mucus buildup in your throat."
+    },
+    {
+        "title": "Dress for visibility",
+        "body": "Wear solid, contrasting colors so that people in the back row can easily distinguish your silhouette against the stage background."
+    },
+    {
+        "title": "Frame the problem early",
+        "body": "Clearly articulate the specific problem your audience faces within the first two minutes so they understand why your talk matters."
+    },
+    {
+        "title": "Employ the STAR method",
+        "body": "When answering questions, structure your response by describing the Situation, Task, Action, and Result to remain concise."
+    },
+    {
+        "title": "Breathe from the belly",
+        "body": "Place a hand on your stomach; it should expand when you inhale. If your shoulders rise, your breathing is too shallow."
+    },
+    {
+        "title": "Stretch your facial muscles",
+        "body": "Open your mouth as wide as possible, then scrunch your face tightly. Repeat this to wake up your articulators."
+    },
+    {
+        "title": "Hit your consonants",
+        "body": "Pay special attention to the 'T', 'K', and 'P' sounds at the ends of your words to ensure crisp, intelligible pronunciation."
+    },
+    {
+        "title": "Mirror your conversational partner",
+        "body": "Subtly reflect the body language and posture of the person you are speaking with to build subconscious rapport."
+    },
+    {
+        "title": "Use the BLUF technique",
+        "body": "Put the 'Bottom Line Up Front.' State your main conclusion first, then provide the supporting evidence."
+    },
+    {
+        "title": "Memorize concepts, not words",
+        "body": "Internalize the logical flow of your ideas instead of memorizing a script to prevent sounding robotic."
+    },
+    {
+        "title": "Scout the venue",
+        "body": "Visit the stage or meeting room beforehand to familiarize yourself with the spatial dimensions and seating arrangement."
+    },
+    {
+        "title": "Always do a mic check",
+        "body": "Never assume the audio works. Test the microphone with your actual speaking volume before the audience arrives."
+    },
+    {
+        "title": "Speak inclusively",
+        "body": "Use 'we' and 'us' instead of 'I' and 'you' to create a sense of shared purpose and partnership with your audience."
+    },
+    {
+        "title": "Keep gestures visible",
+        "body": "Keep your hands above your waistline. Gestures made below the waist convey a lack of energy and confidence."
+    },
+    {
+        "title": "Never apologize for nervousness",
+        "body": "The audience cannot see your internal anxiety unless you point it out. Assume you look confident, and they will believe it."
+    },
+    {
+        "title": "Find your center of gravity",
+        "body": "Stand with your feet shoulder-width apart to create a stable physical base that prevents nervous swaying."
+    },
+    {
+        "title": "Build a memory palace",
+        "body": "Associate the main points of your speech with different rooms in your house to easily recall your structure while speaking."
+    },
+    {
+        "title": "Reframe nerves as excitement",
+        "body": "Physiologically, anxiety and excitement are identical. Tell yourself 'I am excited' to channel the adrenaline positively."
+    },
+    {
+        "title": "Rely on imagery, not text",
+        "body": "Replace bullet points with high-quality photographs or simple graphs that require you to explain the context."
+    },
+    {
+        "title": "Translate industry jargon",
+        "body": "Always define acronyms and technical terms immediately after using them to ensure no listener gets left behind."
+    },
+    {
+        "title": "Find your optimal pitch",
+        "body": "Speak from the lower half of your natural vocal register; lower pitches are generally perceived as more authoritative and calming."
+    },
+    {
+        "title": "Warm up your whole body",
+        "body": "Do light stretching or a brisk walk before stepping on stage to burn off excess cortisol and loosen physical tension."
+    },
+    {
+        "title": "Establish a cadence",
+        "body": "Find a steady, deliberate rhythm for your speech. Speaking too fast suggests panic; speaking too slow loses attention."
+    },
+    {
+        "title": "Incorporate physical props",
+        "body": "Use a relevant physical object to demonstrate a point. It breaks visual monotony and gives the audience a new focal point."
+    },
+    {
+        "title": "Call out the obvious",
+        "body": "If there is a massive distraction like a loud siren outside, acknowledge it humorously rather than pretending it didn't happen."
+    },
+    {
+        "title": "Use sudden silence",
+        "body": "If the audience is losing focus, stop speaking completely for three seconds. The sudden silence will immediately draw their eyes back to you."
+    },
+    {
+        "title": "Keep an open chest",
+        "body": "Roll your shoulders back and point your collarbones toward the audience to project openness and authority."
+    },
+    {
+        "title": "Engage your eyes",
+        "body": "A genuine smile reaches the corners of your eyes. Ensure your facial expressions are fully realized, not just a movement of the mouth."
+    },
+    {
+        "title": "Over-articulate in practice",
+        "body": "Rehearse your speech with a wine cork between your teeth to force your lips and tongue to work harder for clarity."
+    },
+    {
+        "title": "Use chronological structuring",
+        "body": "Organize complex narratives into a simple 'Past, Present, Future' timeline so the audience can easily track your logic."
+    },
+    {
+        "title": "Contrast the present and future",
+        "body": "Toggle back and forth between 'what is currently happening' and 'what could be' to build narrative tension."
+    },
+    {
+        "title": "Craft memorable soundbites",
+        "body": "Condense your core message into a short, punchy, 10-word phrase that listeners can easily tweet or repeat."
+    },
+    {
+        "title": "Align your spine",
+        "body": "Imagine a string pulling the crown of your head toward the ceiling. Good posture instantly improves your vocal projection."
+    },
+    {
+        "title": "Set boundaries for Q&A",
+        "body": "State exactly how much time you have for questions and stick to it to maintain control of the room's energy."
+    },
+    {
+        "title": "Learn the art of the pivot",
+        "body": "If asked an irrelevant question, acknowledge it briefly and transition back to your core topic using a bridging phrase."
+    },
+    {
+        "title": "Command the stage",
+        "body": "Use different areas of the stage to represent different points in your speech, walking purposefully between transitions."
+    },
+    {
+        "title": "Acknowledge co-creators",
+        "body": "Give public credit to team members or researchers who helped compile your data. It demonstrates secure, generous leadership."
+    },
+    {
+        "title": "Monitor audience energy",
+        "body": "Watch for shifted posture, phone-checking, or glazed eyes. If you see this, immediately change your volume, ask a question, or move."
+    },
+    {
+        "title": "Start with a soft open",
+        "body": "Chat amiably with the front row before formally starting your presentation to ease your own nerves and warm up the room."
+    },
+    {
+        "title": "Step out from the podium",
+        "body": "Podiums act as physical shields. Stepping away from it removes the barrier between you and your listeners."
+    },
+    {
+        "title": "Poll the audience",
+        "body": "Ask a simple 'show of hands' question early on. It forces physical participation and wakes up passive listeners."
+    },
+    {
+        "title": "Modulate your volume",
+        "body": "Drop your voice to a near-whisper to force the audience to lean in and listen closely during a critical or emotional point."
+    },
+    {
+        "title": "Respect the clock",
+        "body": "Never run over your allotted time. Ending precisely on time respects your audience's schedule and preserves your credibility."
+    },
+    {
+        "title": "One thought, one face",
+        "body": "Deliver an entire sentence to one specific person in the audience before shifting your gaze to another person for the next sentence."
+    },
+    {
+        "title": "Prepare for offline delivery",
+        "body": "Know your material well enough that you could deliver the entire presentation flawlessly even if the power goes out."
+    },
+    {
+        "title": "Center the audience's needs",
+        "body": "Frame every point around how it benefits the listener, not just why it is important to you."
+    },
+    {
+        "title": "Conduct a post-mortem",
+        "body": "Write down three things that went well and one thing to improve within ten minutes of finishing your speech while it is fresh."
+    },
+    {
+        "title": "Employ the echo technique",
+        "body": "In 1-on-1 conversations, occasionally repeat the last two or three words the other person said to show you are deeply listening."
+    },
+    {
+        "title": "Eliminate caffeine before speaking",
+        "body": "Skip the pre-presentation coffee. Caffeine increases your resting heart rate and exacerbates the physical symptoms of anxiety."
+    },
+    {
+        "title": "Apply the 'Grandma Test'",
+        "body": "Explain your core concept as if you were speaking to your grandmother. If it is too complex for her, simplify your language further."
+    },
+    {
+        "title": "Master the team handover",
+        "body": "When co-presenting, physically turn to your partner and introduce them by name to seamlessly pass the audience's attention."
+    },
+    {
+        "title": "Avoid the laser pointer",
+        "body": "Laser pointers highlight nervous hand tremors. Instead, use built-in presentation animations to emphasize specific parts of a slide."
+    },
+    {
+        "title": "Practice with distractions",
+        "body": "Rehearse your speech with a television or radio playing in the background to build unshakeable focus."
+    },
+    {
+        "title": "Use positive phrasing",
+        "body": "Frame instructions around what the audience should do ('Please stay seated') rather than what they shouldn't do ('Don't stand up')."
+    },
+    {
+        "title": "Drink warm tea",
+        "body": "Opt for warm herbal tea with honey an hour before speaking to soothe your vocal cords and clear your throat."
+    },
+    {
+        "title": "Read poetry aloud",
+        "body": "Practice reading poetry to internalize the natural rhythm, meter, and musicality of effective spoken language."
+    },
+    {
+        "title": "Position yourself screen-left",
+        "body": "Stand to the left of your projected slides (from the audience's perspective) because Western audiences naturally read from left to right."
+    },
+    {
+        "title": "Answer the 'So What?'",
+        "body": "After presenting a data point or fact, immediately explain why that specific information matters to the people in the room."
+    },
+    {
+        "title": "Wear comfortable shoes",
+        "body": "Physical discomfort distracts you from your message. Wear shoes that allow you to stand solidly and move without pain."
+    },
+    {
+        "title": "Avoid sarcasm",
+        "body": "Sarcasm translates poorly to large groups and can easily be misinterpreted as genuine hostility or arrogance."
+    },
+    {
+        "title": "Plant a friendly face",
+        "body": "Ask a supportive friend or colleague to sit in the audience. Look at them when you need a quick boost of confidence."
+    },
+    {
+        "title": "Breathe through your nose",
+        "body": "Inhale through your nose rather than your mouth to prevent your throat and vocal cords from drying out quickly."
+    },
+    {
+        "title": "Keep a level chin",
+        "body": "Avoid tilting your chin up to project your voice, which strains your neck. Keep your chin parallel to the floor."
+    },
+    {
+        "title": "Emphasize the final syllable",
+        "body": "Prevent trailing off at the end of a sentence by consciously driving energy into the very last word."
+    },
+    {
+        "title": "Use parallel sentence structure",
+        "body": "Start lists or bullet points with the same part of speech (e.g., all verbs) to make your points rhythmically satisfying and memorable."
+    },
+    {
+        "title": "Front-load the value",
+        "body": "Tell the audience exactly what they will gain from listening to you within the very first minute of your presentation."
+    },
+    {
+        "title": "Speak in headlines",
+        "body": "Condense your main idea into a short, punchy sentence before expanding on the details."
+    },
+    {
+        "title": "Provide clear participation rules",
+        "body": "If you want audience interaction, give precise instructions (e.g., 'Raise your hand if you have ever...') to avoid awkward hesitation."
+    },
+    {
+        "title": "Avoid heavy meals",
+        "body": "Eat a light, protein-rich snack before speaking. Heavy meals divert energy to digestion and make you feel sluggish."
+    },
+    {
+        "title": "Use high-contrast visuals",
+        "body": "Ensure your slides are legible from the back of the room by using dark text on a light background, or vice versa."
+    },
+    {
+        "title": "Project slightly louder",
+        "body": "Aim to speak about 10% louder than your normal conversational volume to ensure clarity without yelling."
+    },
+    {
+        "title": "End with a powerful quote",
+        "body": "Close your presentation with a relevant, memorable quote that encapsulates your entire message."
+    },
+    {
+        "title": "Pre-summarize complex graphs",
+        "body": "Tell the audience exactly what a chart proves before you display it, so they aren't trying to read and listen simultaneously."
+    },
+    {
+        "title": "Use 'You' frequently",
+        "body": "Replace 'I' or 'my' with 'you' to make the presentation feel entirely focused on the listener's experience."
+    },
+    {
+        "title": "Practice tongue trills",
+        "body": "Roll your 'R's or flutter your lips for 60 seconds before speaking to relax your mouth and improve diction."
+    },
+    {
+        "title": "Maintain a neutral resting face",
+        "body": "Be aware of your facial expression when you are not speaking, especially during Q&A or when someone else has the floor."
+    },
+    {
+        "title": "Build a 30-second version",
+        "body": "Distill your hour-long presentation into a 30-second elevator pitch. If you can't, your core message isn't clear enough."
+    },
+    {
+        "title": "Avoid reading from a phone",
+        "body": "Using a phone for notes looks unprofessional and creates a physical barrier. Use physical index cards if you must have notes."
+    },
+    {
+        "title": "Walk, stop, talk",
+        "body": "Separate your movement from your speaking. Walk to a new position in silence, plant your feet, and then deliver your line."
+    },
+    {
+        "title": "Address people by name",
+        "body": "If you know the audience, use their names when referencing their questions or past contributions to build deep engagement."
+    },
+    {
+        "title": "Give context before data",
+        "body": "Never present a raw number without first explaining the historical or industry context that makes that number significant."
+    },
+    {
+        "title": "Record audio-only",
+        "body": "Listen to a recording of your speech without the video. Removing visual cues highlights flaws in your pacing and vocal variety."
+    },
+    {
+        "title": "Acknowledge your biases",
+        "body": "Stating your own perspective or potential biases upfront drastically increases your credibility and trustworthiness."
+    },
+    {
+        "title": "Avoid touching your face",
+        "body": "Keep your hands away from your hair, face, and neck, as these are universally recognized subconscious signs of anxiety."
+    },
+    {
+        "title": "Use the 'Yes, and...' rule",
+        "body": "When answering difficult questions, validate the questioner's point first ('Yes, that is a concern, and here is how we address it...')."
+    },
+    {
+        "title": "Limit visual anchors",
+        "body": "Keep the stage clear of unnecessary props, chairs, or tables. A clean environment keeps the audience's focus entirely on you."
+    },
+    {
+        "title": "Banish the 'um' with a breath",
+        "body": "Every time you feel the urge to use a filler word, train yourself to take a short, sharp inhale through your nose instead."
+    },
+    {
+        "title": "Design for the back row",
+        "body": "If the person in the furthest seat cannot read your slides or see your facial expressions, your delivery is too subtle."
+    },
+    {
+        "title": "Match your gestures to your words",
+        "body": "If you talk about growth, raise your hand. If you talk about two options, hold up two hands. Make your movements literal."
+    },
+    {
+        "title": "Prime the audience",
+        "body": "Send a brief, provocative question or statistic via email a day before your presentation to get the audience thinking early."
+    },
+    {
+        "title": "Embrace the 'power pose'",
+        "body": "Stand privately in a wide, expansive stance for two minutes before taking the stage to temporarily boost confidence and lower cortisol."
+    },
+    {
+        "title": "Structure with a climax",
+        "body": "Build your narrative so that the most compelling data point or emotional story occurs about two-thirds of the way through."
+    },
+    {
+        "title": "Provide a roadmap",
+        "body": "Give your audience a quick, three-point agenda right at the start so they know exactly what journey they are taking with you."
+    },
+    {
+        "title": "Beware of pattern repetition",
+        "body": "Avoid starting every slide or sentence the exact same way. Repetitive linguistic patterns lull the human brain to sleep."
+    },
+    {
+        "title": "Check your zipper",
+        "body": "Always do a final physical check in a mirror for flyaways, spinach in teeth, or unzipped pants before stepping into the room."
+    },
+    {
+        "title": "Use a conversational volume",
+        "body": "When speaking into a microphone, use your normal dinner-table volume. Let the hardware do the heavy lifting of projecting your voice."
+    },
+    {
+        "title": "Avoid defensive phrases",
+        "body": "Remove phrases like 'I'm no expert, but...' or 'This might be a bad idea...' which immediately destroy your authority."
+    },
+    {
+        "title": "Assume positive intent",
+        "body": "Treat every challenge or aggressive question during Q&A as if the person is genuinely curious, not hostile. It disarms tension instantly."
+    }
+]

@@ -1,0 +1,37 @@
+.account-section {
+  margin-bottom: 16px;
+}
+
+.account-section-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #010101;
+  margin: 0 0 6px;
+}
+
+.account-section-title.danger {
+  color: #FF3B30;
+}
+
+.account-section-desc {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+  margin: 0 0 14px;
+}
+
+.danger-zone {
+  border: 1.5px solid rgba(255,59,48,0.2);
+}
+
+[data-theme='dark'] .account-section-title {
+  color: #F0F0F0;
+}
+
+[data-theme='dark'] .account-section-desc {
+  color: rgba(240,240,240,0.62);
+}
+
+[data-theme='dark'] .danger-zone {
+  border-color: rgba(255,59,48,0.42);
+}

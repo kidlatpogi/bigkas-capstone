@@ -1,0 +1,175 @@
+﻿@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
+
+/* Bigkas — Base reset (Vite defaults replaced) */
+:root {
+  --responsive-page-padding: 50px;
+  font-family: 'Nunito', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #010101;
+  background-color: #EBF4DD;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (max-width: 1200px) {
+  :root {
+    --responsive-page-padding: 40px;
+  }
+}
+
+@media (max-width: 992px) {
+  :root {
+    --responsive-page-padding: 30px;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --responsive-page-padding: 20px;
+  }
+}
+
+@media (max-width: 576px) {
+  :root {
+    --responsive-page-padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --responsive-page-padding: 12px;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  /* Prevent iOS auto-zoom on orientation change */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100vh;
+  max-width: 100%;
+  overflow-x: hidden;
+  background-color: #ECF3E9;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+  height: 100%;
+  max-width: 100%;
+  min-width: 320px;
+  background-color: #ECF3E9;
+  /* Prevent horizontal scroll on all devices */
+  overflow-x: hidden;
+  /* Smooth momentum scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
+  /* Reserve space for scrollbar to avoid layout shift when overflow toggles */
+  scrollbar-gutter: stable;
+}
+
+body.skyward-journey-modal-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+  height: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  background-color: #ECF3E9;
+}
+
+/* Prevent iOS input zoom — inputs must never be < 16px on mobile */
+@media (max-width: 768px) {
+
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+/* ── Loading Screen ── */
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #F5F5F5;
+  gap: 24px;
+  padding: 24px;
+}
+
+.loading-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: clamp(24px, 5vw, 36px);
+  font-weight: 800;
+  color: #010101;
+  letter-spacing: -1px;
+}
+
+.loading-logo-image {
+  width: clamp(26px, 5vw, 36px);
+  height: clamp(26px, 5vw, 36px);
+  object-fit: contain;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3.5px solid rgba(252, 186, 4, 0.25);
+  border-top-color: #FCBA04;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+[data-theme="dark"] .loading-screen {
+  background: #0B0B0D;
+}
+
+[data-theme="dark"] .loading-logo {
+  color: #F5F5F5;
+}

@@ -1,0 +1,11 @@
+.rubik-cube-canvas {
+  --stage: min(92vmin, 700px);
+  width: var(--stage);
+  height: var(--stage);
+}
+
+.rubik-cube-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

@@ -1,0 +1,150 @@
+[
+  {
+    "id": "hail",
+    "author": "Julian Treasure",
+    "name": "The H.A.I.L Cornerstones",
+    "summary": "Four foundations for speech that people actually want to listen to.",
+    "steps": ["Honesty", "Authenticity", "Integrity", "Love"],
+    "youtubeId": "eIho2S0ZahI",
+    "studyLink": "https://www.ted.com/talks/julian_treasure_how_to_speak_so_that_people_want_to_listen",
+    "category": "Articulation"
+  },
+  {
+    "id": "5-second-rule",
+    "author": "Mel Robbins",
+    "name": "The 5-Second Rule",
+    "summary": "Count 5-4-3-2-1 to interrupt self-doubt and launch yourself into action before anxiety sets in.",
+    "steps": ["Feel the hesitation", "Count 5-4-3-2-1", "Move immediately"],
+    "youtubeId": "PWE4haP88Gw",
+    "studyLink": "https://melrobbins.com/the-5-second-rule-book/",
+    "category": "Articulation"
+  },
+  {
+    "id": "power-pose-reset",
+    "author": "Amy Cuddy",
+    "name": "The Pre-Talk Power Pose",
+    "summary": "Two minutes of expansive posture before a speech measurably increases confidence and reduces cortisol.",
+    "steps": ["Stand in a private space", "Feet shoulder-width, hands on hips", "Hold for 2 full minutes"],
+    "youtubeId": "Ks-_Mh1QhMc",
+    "studyLink": "https://www.ted.com/talks/amy_cuddy_your_body_language_may_shape_who_you_are",
+    "category": "Gestures"
+  },
+  {
+    "id": "threading",
+    "author": "Vinh Giang",
+    "name": "Conversational Threading",
+    "summary": "Never run out of things to say by identifying multiple threads in any topic and following them naturally.",
+    "steps": ["Listen for 3 threads in what they said", "Pick the most interesting thread", "Ask a deep, open-ended question"],
+    "youtubeId": "PiNN-HmHu7A",
+    "studyLink": "https://www.youtube.com/@CharismaonCommand",
+    "category": "Articulation"
+  },
+  {
+    "id": "mml",
+    "author": "Vinh Giang",
+    "name": "Match, Mirror, and Lead",
+    "summary": "Build instant rapport by mirroring energy and body language before gently leading the tone of the conversation.",
+    "steps": ["Match the room's energy level", "Mirror their body language subtly", "Gradually lead the pace upward"],
+    "youtubeId": "ikbcrpowlIs",
+    "studyLink": "https://www.vinhgiang.com/blog/how-to-build-rapport-with-absolutely-anyone/",
+    "category": "Gestures"
+  },
+  {
+    "id": "because-principle",
+    "author": "Team Cialdini",
+    "name": "Science of Persuasion",
+    "summary": "Adding a reason to a request increases compliance because listeners process intent faster.",
+    "steps": ["Make your request", "Say the word 'because'", "Include a simple, honest reason", "Let the listener fill in approval"],
+    "youtubeId": "cFdCzN7RYbw",
+    "studyLink": "https://www.influenceatwork.com/principles-of-persuasion/",
+    "category": "Articulation"
+  },
+  {
+    "id": "visible-hands",
+    "author": "Vanessa Van Edwards",
+    "name": "The Hand Trust Rule",
+    "summary": "Visible, open hands instantly signal safety and boost listener trust before you speak.",
+    "steps": ["Keep hands above the table at all times", "Use open, upward-facing palms when making points", "Restrict gestures to the 'Power Box' (chin to hips)"],
+    "youtubeId": "XJo6jhtSq78",
+    "studyLink": "https://www.scienceofpeople.com/hand-gestures/",
+    "category": "Gestures"
+  },
+  {
+    "id": "triple-nod",
+    "author": "Vanessa Van Edwards",
+    "name": "The Engagement Triple-Nod",
+    "summary": "Three slow, deliberate nods signal understanding and encourage the speaker to elaborate.",
+    "steps": ["Wait for a natural pause", "Hold eye contact steadily", "Give 3 slow, intentional nods"],
+    "youtubeId": "XJo6jhtSq78",
+    "studyLink": "https://www.scienceofpeople.com/how-to-be-a-better-conversationalist/",
+    "category": "Gestures"
+  },
+  {
+    "id": "eye-triangle",
+    "author": "Vanessa Van Edwards",
+    "name": "The Eye-Contact Triangle",
+    "summary": "Rotate eye contact in a calm triangle pattern to appear warm, composed, and engaged.",
+    "steps": ["Look at the left eye (1-2 sec)", "Shift to the right eye (1-2 sec)", "Drop to the mouth briefly (1 sec)", "Repeat naturally"],
+    "youtubeId": "XJo6jhtSq78",
+    "studyLink": "https://www.scienceofpeople.com/eye-contact/",
+    "category": "Facial Expression"
+  },
+  {
+    "id": "3-2-1",
+    "author": "Vinh Giang",
+    "name": "The 3-2-1 Trick",
+    "summary": "Stop rambling by forcing your brain to speak in a clear, numbered structure.",
+    "steps": ["3 Steps", "2 Types", "1 Thing"],
+    "youtubeId": "5m-C5mwpmxU",
+    "studyLink": "https://www.vinhgiang.com/blog/top-3-tips-to-improve-your-communication-skills/",
+    "category": "Articulation"
+  },
+  {
+    "id": "prep",
+    "author": "Vinh Giang",
+    "name": "The P.R.E.P Framework",
+    "summary": "A gold standard for clear, structured opinions that project authority.",
+    "steps": ["Point", "Reason", "Example", "Point (reiterate)"],
+    "youtubeId": "2zvvQj9ezWg",
+    "studyLink": "https://www.vinhgiang.com/blog/the-prep-framework/",
+    "category": "Articulation"
+  },
+  {
+    "id": "para",
+    "author": "Vinh Giang",
+    "name": "The P.A.R.A Method",
+    "summary": "Create depth without length by turning facts into crisp micro-stories.",
+    "steps": ["Point", "Action", "Result", "Ask"],
+    "youtubeId": "QNsvsnkUOL0",
+    "studyLink": "https://www.vinhgiang.com/blog/stop-rambling-with-this-simple-technique/",
+    "category": "Articulation"
+  },
+  {
+    "id": "throughline",
+    "author": "Chris Anderson",
+    "name": "The Throughline",
+    "summary": "Connect every part of your speech to one central idea people remember.",
+    "steps": ["Identify 1 core idea", "Filter out unrelated details", "Connect every story to that idea"],
+    "youtubeId": "p9r4XFx5F5g",
+    "studyLink": "https://www.ted.com/talks/chris_anderson_teds_secret_to_great_public_speaking",
+    "category": "Articulation"
+  },
+  {
+    "id": "sb7",
+    "author": "Donald Miller",
+    "name": "StoryBrand",
+    "summary": "Position your audience as the hero and yourself as the guide for clear, persuasive messaging.",
+    "steps": [
+      "A Character (Hero)",
+      "Has a Problem",
+      "Meets a Guide (You)",
+      "Who has a Plan",
+      "That Calls Them to Action",
+      "That Ends in Success",
+      "And Avoids Failure"
+    ],
+    "youtubeId": "YFDJYdMd1wU",
+    "studyLink": "https://storybrand.com/",
+    "category": "Articulation"
+  }
+]

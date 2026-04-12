@@ -1,0 +1,960 @@
+/**
+ * Register Page — Centered form with gradient background
+ * Colors: Gradient from #3C4952 to #0B3954
+ * Typography: Nunito/Nunito Sans (separate from Login styling)
+ * Kept completely separate with register-specific classes
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Nunito+Sans:wght@400;500;600;700;800&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Clean reset for register route */
+html.register-page-active,
+body.register-page-active,
+body.register-page-active #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  height: 100%;
+  min-height: 100dvh;
+}
+
+html.register-page-active,
+body.register-page-active {
+  overflow: clip;
+  scrollbar-gutter: auto;
+  background: linear-gradient(180deg, #3C4952 0%, #0B3954 100%);
+  animation: fadeInPage 0.5s ease-out;
+}
+
+body.register-page-active #root {
+  display: block;
+  overflow: clip;
+  background: linear-gradient(180deg, #3C4952 0%, #0B3954 100%);
+}
+
+body.register-page-active {
+  min-width: 0;
+  padding: 0;
+}
+
+@media (min-width: 701px) {
+  body.register-page-active {
+    padding: 0;
+    background: linear-gradient(180deg, #3C4952 0%, #0B3954 100%);
+    overflow-x: hidden;
+  }
+
+  body.register-page-active #root {
+    min-height: 100dvh;
+    background: linear-gradient(180deg, #3C4952 0%, #0B3954 100%);
+  }
+}
+
+/* ── Default page shell (for other auth pages) ── */
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #2E2E2E;
+}
+
+/* ── Register page shell — centered form layout ── */
+body.register-page-active .auth-page {
+  background: linear-gradient(180deg, #3C4952 0%, #0B3954 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 1.5rem;
+  overflow: hidden;
+  animation: fadeInPage 0.5s ease-out;
+  grid-template-columns: none;
+}
+
+body.register-page-active .auth-grainient-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════
+   Branding Panel (Hidden on Register)
+   ═══════════════════════════════════════════ */
+.auth-brand-panel {
+  background: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 40px;
+  position: relative;
+  border-right: 1px solid #E9E9E9;
+}
+
+body.register-page-active .auth-brand-panel {
+  display: none;
+}
+
+.auth-back-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1.5px solid #E2E2E2;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  flex-shrink: 0;
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  z-index: 2;
+}
+
+.auth-back-btn:hover {
+  border-color: #010101;
+}
+
+body.register-page-active .auth-back-btn {
+  position: absolute;
+  top: 1.5rem;
+  left: 1.5rem;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+  background: transparent;
+  color: #FFFFFF;
+  z-index: 20;
+  box-shadow: none;
+  transition: all 0.2s;
+}
+
+body.register-page-active .auth-back-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #FFFFFF;
+}
+
+.auth-brand-content {
+  flex: 0 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 0 24px;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.auth-brand-name {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 72px;
+  font-weight: 900;
+  color: #010101;
+  line-height: 1;
+  letter-spacing: -2px;
+  margin-bottom: 8px;
+}
+
+.auth-brand-tagline {
+  font-size: 14px;
+  font-weight: 500;
+  color: #010101;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+
+.auth-brand-line {
+  width: 60px;
+  height: 3px;
+  background: #FCBA04;
+  border-radius: 2px;
+  margin-bottom: 48px;
+}
+
+.auth-brand-features {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  list-style: none;
+}
+
+.auth-brand-features li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.feature-num {
+  font-size: 16px;
+  font-weight: 700;
+  color: #FCBA04;
+  min-width: 28px;
+}
+
+.feature-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #010101;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════════
+   Form Panel (Register-specific styling)
+   ═══════════════════════════════════════════ */
+.auth-form-panel {
+  background: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+body.register-page-active .auth-form-panel {
+  background: transparent;
+  width: 100%;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.auth-mobile-back {
+  display: none;
+}
+
+body.register-page-active .auth-mobile-back {
+  display: flex;
+}
+
+.auth-form-container {
+  width: 100%;
+  max-width: 400px;
+}
+
+body.register-page-active .auth-form-container {
+  width: 100%;
+  max-width: 23.5rem;
+  box-sizing: border-box;
+}
+
+.auth-form-title {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #010101;
+  letter-spacing: 1px;
+  margin-bottom: 40px;
+}
+
+body.register-page-active .auth-form-title {
+  font-family: 'Nunito', sans-serif;
+  color: #FFFFFF;
+  font-size: 2rem;
+  line-height: 1;
+  font-weight: 900;
+  text-align: center;
+  letter-spacing: 0;
+  margin-bottom: 1.5rem;
+}
+
+.forgot-password-title {
+  text-align: center;
+}
+
+/* ── Form ── */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+body.register-page-active .auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.auth-error-banner {
+  background-color: rgba(255, 0, 0, 0.05);
+  border: 1px solid rgba(255, 0, 0, 0.2);
+  color: #ff0000;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  text-align: center;
+}
+
+body.register-page-active .auth-error-banner {
+  background-color: rgba(255, 0, 0, 0.08);
+  border: 1px solid rgba(255, 0, 0, 0.25);
+  color: #FEE2E2;
+  padding: 0.625rem 1rem;
+  border-radius: 0.5rem;
+  text-align: center;
+}
+
+.auth-info-banner {
+  background-color: rgba(252, 186, 4, 0.08);
+  border: 1px solid rgba(252, 186, 4, 0.4);
+  color: #8A5A00;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  text-align: center;
+}
+
+.auth-success-banner {
+  background-color: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: #166534;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  text-align: center;
+}
+
+body.register-page-active .auth-success-banner {
+  background-color: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.45);
+  color: #DCFCE7;
+  padding: 0.625rem 1rem;
+  border-radius: 0.5rem;
+  text-align: center;
+}
+
+.auth-unverified-banner {
+  background-color: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #991B1B;
+  padding: 14px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+body.register-page-active .auth-unverified-banner {
+  background-color: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #FEE2E2;
+  padding: 0.875rem 1rem;
+  border-radius: 0.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  align-items: center;
+}
+
+.auth-unverified-text {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.auth-resend-btn {
+  background: transparent;
+  border: 1px solid rgba(252, 186, 4, 0.6);
+  color: #FCBA04;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+body.register-page-active .auth-resend-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  color: #FFFFFF;
+  padding: 0.375rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.03rem;
+}
+
+.auth-resend-btn:hover:not(:disabled) {
+  background: rgba(252, 186, 4, 0.1);
+  border-color: #FCBA04;
+}
+
+body.register-page-active .auth-resend-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: #FFFFFF;
+}
+
+.auth-resend-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+body.register-page-active .auth-resend-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.verify-logo {
+  width: 110px;
+  height: auto;
+  margin-bottom: 16px;
+}
+
+.verify-status-card {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.verify-status-text {
+  margin: 0;
+  color: #3A3A3A;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.verify-status-success {
+  color: #166534;
+  margin-bottom: 0;
+}
+
+.verify-status-error {
+  color: #991B1B;
+  margin-bottom: 0;
+}
+
+.auth-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(1, 1, 1, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 999;
+}
+
+.auth-modal {
+  width: 100%;
+  max-width: 460px;
+  background: #FFFFFF;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
+  text-align: center;
+}
+
+.auth-modal-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #010101;
+  margin-bottom: 12px;
+}
+
+.auth-modal-body {
+  font-size: 14px;
+  color: #3A3A3A;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.auth-modal-highlight {
+  font-weight: 700;
+  color: #010101;
+}
+
+.auth-modal-actions {
+  display: grid;
+  gap: 12px;
+}
+
+.auth-submit-btn-primary {
+  background: #FCBA04;
+  color: #010101;
+}
+
+.auth-submit-btn-primary:hover:not(:disabled) {
+  background: #E19B00;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+body.register-page-active .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.form-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #010101;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-top: 20px;
+}
+
+body.register-page-active .form-label {
+  font-family: 'Nunito', sans-serif;
+  color: #FFFFFF;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  margin-top: 0;
+  margin-bottom: 0.25rem;
+}
+
+.form-input {
+  padding: 12px 0;
+  border: none;
+  border-bottom: 1.5px solid #E2E2E2;
+  border-radius: 0;
+  font-size: 14px;
+  font-weight: 400;
+  color: #010101;
+  background: transparent;
+  transition: border-color 0.2s;
+  outline: none;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: 0.5px;
+}
+
+body.register-page-active .form-input {
+  min-height: 3.25rem;
+  border: 0;
+  border-radius: 0.75rem;
+  background: #FFFFFF;
+  color: #1F2937;
+  padding: 0.625rem 0.875rem;
+  font-size: 1.125rem;
+  letter-spacing: 0;
+  outline: none;
+  margin-bottom: 1rem;
+  box-sizing: border-box;
+  border-bottom: none;
+}
+
+.form-input:focus {
+  border-bottom-color: #FCBA04;
+}
+
+body.register-page-active .form-input:focus {
+  outline: 3px solid rgba(255, 255, 255, 0.35);
+}
+
+.form-input::placeholder {
+  color: #B0B0B0;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+
+body.register-page-active .form-input::placeholder {
+  color: #9CA3AF;
+}
+
+/* Hide native browser password reveal/clear controls — using Show/Hide text button instead */
+body.register-page-active input[type="password"]::-ms-reveal,
+body.register-page-active input[type="password"]::-ms-clear {
+  display: none;
+}
+
+body.register-page-active input[type="password"]::-webkit-credentials-auto-fill-button,
+body.register-page-active input[type="password"]::-webkit-textfield-decoration-container {
+  display: none !important;
+}
+
+.form-input-error {
+  border-bottom-color: #ff0000;
+}
+
+body.register-page-active .form-input-error {
+  outline: 2px solid rgba(239, 68, 68, 0.6);
+}
+
+.form-error {
+  font-size: 12px;
+  color: #ff0000;
+  margin-top: 2px;
+}
+
+body.register-page-active .form-error {
+  color: #FEE2E2;
+  margin-top: 0.125rem;
+}
+
+/* ── Password field with visibility toggle ── */
+.pw-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.pw-input-wrap .form-input {
+  flex: 1;
+  padding-right: 40px;
+}
+
+body.register-page-active .pw-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+body.register-page-active .pw-input-wrap .form-input {
+  flex: 1;
+  padding-right: 4.5rem;
+  margin-bottom: 0;
+}
+
+.pw-toggle-btn {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  min-height: unset;
+  color: #9CA3AF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s;
+}
+
+.pw-toggle-btn:hover {
+  color: #010101;
+}
+
+body.register-page-active .pw-toggle-btn {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.125rem 0.25rem;
+  height: auto;
+  min-height: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #4B5563;
+  font-family: 'Nunito Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  transition: color 0.15s;
+}
+
+body.register-page-active .pw-toggle-btn:hover {
+  color: #1F2937;
+}
+
+/* ── Submit button ── */
+.auth-submit-btn {
+  width: 100%;
+  padding: 14px 32px;
+  background: transparent;
+  color: #010101;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border: 2px solid #FCBA04;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: background-color 0.25s, color 0.25s;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  margin-top: 8px;
+}
+
+body.register-page-active .auth-submit-btn {
+  width: 100%;
+  height: 3.25rem;
+  border-radius: 0.75rem;
+  border: 0;
+  font-family: 'Nunito Sans', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
+  box-sizing: border-box;
+  color: #FFFFFF;
+  background: linear-gradient(180deg, #F6A320 0%, #F18F01 100%);
+  margin-top: 0.75rem;
+  padding: 0;
+}
+
+.auth-submit-btn:hover:not(:disabled) {
+  background: #FCBA04;
+  color: #010101;
+}
+
+body.register-page-active .auth-submit-btn:hover:not(:disabled) {
+  color: #FFFFFF !important;
+  background: linear-gradient(180deg, #F6A320 0%, #F18F01 100%) !important;
+}
+
+.auth-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+body.register-page-active .auth-submit-btn:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+body.register-page-active .auth-submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* ── Forgot password link ── */
+.auth-forgot-link {
+  display: block;
+  margin-top: 24px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #010101;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+body.register-page-active .auth-forgot-link {
+  display: block;
+  margin-top: 0.5rem;
+  text-align: right;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  padding-right: 0.25rem;
+  font-family: 'Nunito', sans-serif;
+  color: #FFFFFF;
+  text-decoration: none;
+}
+
+.auth-forgot-link:hover {
+  color: #FCBA04;
+}
+
+body.register-page-active .auth-forgot-link:hover {
+  color: #FFFFFF;
+  opacity: 0.92;
+}
+
+/* ── Divider — "or" ── */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+body.register-page-active .auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.375rem 0 1rem;
+}
+
+.auth-divider-line {
+  flex: 1;
+  height: 1px;
+  background: #E2E2E2;
+}
+
+body.register-page-active .auth-divider-line {
+  flex: 1;
+  height: 0.125rem;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.auth-divider-text {
+  font-size: 12px;
+  color: #8C8C8C;
+  text-transform: lowercase;
+}
+
+body.register-page-active .auth-divider-text {
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-transform: none;
+  font-family: 'Nunito', sans-serif;
+  color: #FFFFFF;
+  text-decoration: none;
+}
+
+/* ── Google Sign-In button ── */
+.auth-google-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: #FFFFFF;
+  border: 1.5px solid #E2E2E2;
+  border-radius: 8px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #010101;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+body.register-page-active .auth-google-btn {
+  width: 100%;
+  height: 3.25rem;
+  border-radius: 0.75rem;
+  border: 0;
+  font-family: 'Nunito Sans', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
+  box-sizing: border-box;
+  color: #111827;
+  background: #FFFFFF;
+  margin-top: 0.125rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  padding-left: 1rem;
+  cursor: pointer;
+}
+
+.auth-google-btn:hover {
+  border-color: #B0B0B0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+body.register-page-active .auth-google-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+body.register-page-active .auth-google-btn:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.auth-google-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+body.register-page-active .auth-google-logo {
+  width: 1.5rem;
+  height: 1.5rem;
+  object-fit: contain;
+}
+
+/* ── Footer — account toggle ── */
+.auth-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 24px;
+  text-align: center;
+}
+
+body.register-page-active .auth-link {
+  font-family: 'Nunito', sans-serif;
+  color: #FFFFFF;
+  text-decoration: none;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  margin-top: 1rem;
+  display: block;
+}
+
+body.register-page-active .auth-link:hover {
+  color: #FFFFFF;
+  opacity: 0.92;
+}
+
+/* ═════════════════════════════════════════════
+   Responsive adjustments
+   ═════════════════════════════════════════════ */
+@keyframes fadeInPage {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  body.register-page-active .auth-form-container {
+    max-width: 100%;
+    padding: 0 1rem;
+  }
+
+  body.register-page-active .auth-form-title {
+    font-size: 1.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  body.register-page-active .form-label {
+    font-size: 1rem;
+  }
+
+  body.register-page-active .form-input {
+    font-size: 1rem;
+    min-height: 3rem;
+  }
+}

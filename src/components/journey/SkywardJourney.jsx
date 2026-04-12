@@ -473,6 +473,11 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
       });
     };
     run();
+    
+    // Recompute path periodically while entrance animations are playing
+    // (max delay 1.0s + 0.6s animation = 1.6s)
+    const timers = [100, 300, 600, 1000, 1600].map((delay) => setTimeout(run, delay));
+
     window.addEventListener('resize', run);
     let ro;
     const content = mapContentRef.current;
@@ -485,6 +490,7 @@ export default function SkywardJourney({ steps, renderStepContent, entranceFromN
       if (vp) ro.observe(vp);
     }
     return () => {
+      timers.forEach(clearTimeout);
       window.removeEventListener('resize', run);
       ro?.disconnect();
     };

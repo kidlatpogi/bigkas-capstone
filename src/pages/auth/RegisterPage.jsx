@@ -6,6 +6,7 @@ import { ROUTES } from '../../utils/constants';
 import googleLogo from '../../assets/Google-Logo.png';
 import BackButton from '../../components/common/BackButton';
 import PasswordToggle from '../../components/common/PasswordToggle';
+import PushButton from '../../components/common/PushButton';
 import LegalModal from '../../components/Legal/LegalModal';
 import { TERMS_AND_CONDITIONS } from '../../constants/legal/terms';
 import { PRIVACY_POLICY } from '../../constants/legal/privacy';
@@ -198,7 +199,7 @@ function RegisterPage() {
 
   return (
     <div className="auth-page">
-      <BackButton className="auth-mobile-back" onClick={() => navigate(ROUTES.HOME, { state: { skipLoader: true } })} />
+      <BackButton className="auth-mobile-back" />
 
       {/* ── Left branding panel ── */}
       <div className="auth-brand-panel">
@@ -363,14 +364,17 @@ function RegisterPage() {
               </label>
             </motion.div>
 
-            <motion.button
-              variants={itemVariants}
-              type="submit"
-              className="auth-submit-btn push-btn"
-              disabled={isLoading || !consentChecked}
-            >
-              {isLoading ? <span className="btn-loader"></span> : 'CREATE ACCOUNT'}
-            </motion.button>
+            <motion.div variants={itemVariants}>
+              <PushButton
+                type="submit"
+                disabled={isLoading || !consentChecked}
+                bgColor="#2d5a27"
+                shadowColor="#1a3b16"
+                textColor="#ffffff"
+              >
+                {isLoading ? <span className="btn-loader"></span> : 'CREATE ACCOUNT'}
+              </PushButton>
+            </motion.div>
           </form>
 
           <motion.div variants={itemVariants} className="auth-divider">
@@ -379,16 +383,19 @@ function RegisterPage() {
             <span className="auth-divider-line" />
           </motion.div>
 
-          <motion.button 
-            variants={itemVariants}
-            type="button" 
-            className="auth-google-btn push-btn google-variant" 
-            onClick={handleGoogleSignIn} 
-            disabled={isLoading || !consentChecked}
-          >
-            <img src={googleLogo} alt="Google" className="auth-google-logo" />
-            <span className="btn-content">Continue with Google</span>
-          </motion.button>
+          <motion.div variants={itemVariants}>
+            <PushButton
+              type="button" 
+              onClick={handleGoogleSignIn} 
+              disabled={isLoading || !consentChecked}
+              bgColor="#ffffff"
+              shadowColor="#d5d5d5"
+              textColor="#333333"
+            >
+              <img src={googleLogo} alt="Google" className="auth-google-logo" style={{ width: '1.5rem', height: '1.5rem', objectFit: 'contain' }} />
+              <span className="btn-content">Continue with Google</span>
+            </PushButton>
+          </motion.div>
 
           <motion.div variants={itemVariants} style={{ width: '100%', textAlign: 'center' }}>
             <Link to={ROUTES.LOGIN} className="auth-link" onClick={handleGoToLogin}>Login</Link>

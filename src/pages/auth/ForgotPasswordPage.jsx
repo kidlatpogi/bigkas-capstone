@@ -6,6 +6,7 @@ import { ROUTES } from '../../utils/constants';
 import BackButton from '../../components/common/BackButton';
 import Button from '../../components/common/Button';
 import PasswordToggle from '../../components/common/PasswordToggle';
+import PushButton from '../../components/common/PushButton';
 import './ForgotPasswordPage.css';
 
 const OTP_LENGTH = 6;
@@ -316,7 +317,7 @@ function ForgotPasswordPage() {
     <div className="auth-page">
       {/* ── Left branding panel ── */}
       <div className="auth-brand-panel">
-        <BackButton className="auth-mobile-back" onClick={() => navigate(ROUTES.HOME, { state: { skipLoader: true } })} />
+        <BackButton className="auth-mobile-back" />
 
         <div className="auth-brand-content">
           <h1 className="auth-brand-name">BIGKAS</h1>
@@ -360,13 +361,15 @@ function ForgotPasswordPage() {
               </p>
               <p className="forgot-success-note">You can now log in using your new password.</p>
 
-              <Button
+              <PushButton
                 type="button"
-                className="auth-submit-btn push-btn"
                 onClick={handleBackToLogin}
+                bgColor="#ffffff"
+                shadowColor="#d5d5d5"
+                textColor="#333333"
               >
                 BACK TO LOG IN
-              </Button>
+              </PushButton>
             </div>
           ) : (
             <>
@@ -495,16 +498,17 @@ function ForgotPasswordPage() {
                   </>
                 )}
 
-                <Button
+                <PushButton
                   type="submit"
-                  className={`auth-submit-btn push-btn${isVerifyStep || isResetStep ? ' auth-submit-btn--verify' : ''}`}
                   disabled={isLoading || (isVerifyStep && digits.some((d) => !d))}
-                  isLoading={isLoading}
+                  bgColor="#2d5a27"
+                  shadowColor="#1a3b16"
+                  textColor="#ffffff"
                 >
                   {isRequestStep && 'SEND CODE'}
                   {isVerifyStep && 'VERIFY CODE'}
                   {isResetStep && 'RESET PASSWORD'}
-                </Button>
+                </PushButton>
               </form>
 
               {isVerifyStep && (

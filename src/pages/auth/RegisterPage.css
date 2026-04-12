@@ -732,56 +732,7 @@ body.register-page-active .pw-toggle-btn:hover {
   color: #1F2937;
 }
 
-/* ── Custom Buttons for Floating Card ── */
-body.register-page-active .push-btn {
-  width: 100%;
-  margin-top: 0.75rem;
-  min-height: 3.5rem;
-  border-radius: 16px;
-  border: none;
-  font-family: 'Nunito', sans-serif;
-  font-size: 1.125rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.2s ease;
-}
 
-body.register-page-active .push-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: translateY(10px) !important;
-  box-shadow: none !important;
-}
-
-body.register-page-active .auth-submit-btn {
-  background-color: #2d5a27;
-  color: #ffffff;
-  box-shadow: #1a3b16 0 10px 0 0;
-}
-
-body.register-page-active .auth-submit-btn:active:not(:disabled) {
-  transform: translateY(10px);
-  box-shadow: #1a3b16 0 0px 0 0;
-}
-
-body.register-page-active .google-variant {
-  background-color: #ffffff;
-  color: #333333;
-  border: 2px solid #e5e5e5;
-  box-shadow: #d5d5d5 0 8px 0 0;
-  margin-top: 0.125rem;
-}
-
-body.register-page-active .google-variant:active:not(:disabled) {
-  transform: translateY(8px);
-  box-shadow: #d5d5d5 0 0px 0 0;
-}
 
 body.register-page-active .auth-google-logo {
   width: 1.5rem;

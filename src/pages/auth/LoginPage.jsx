@@ -5,6 +5,7 @@ import { isValidEmail } from '../../utils/validators';
 import { ROUTES } from '../../utils/constants';
 import BackButton from '../../components/common/BackButton';
 import PasswordToggle from '../../components/common/PasswordToggle';
+import PushButton from '../../components/common/PushButton';
 import googleLogo from '../../assets/Google-Logo.png';
 import { motion } from 'framer-motion';
 import './LoginPage.css';
@@ -252,7 +253,7 @@ function LoginPage({ managePageClass = true }) {
 
   return (
     <div className="auth-page">
-      <BackButton className="auth-login-back" onClick={() => navigate(ROUTES.HOME, { state: { skipLoader: true } })} />
+      <BackButton className="auth-login-back" />
       <div className="auth-form-panel">
         <motion.div 
           className="auth-form-container floating-card"
@@ -344,14 +345,17 @@ function LoginPage({ managePageClass = true }) {
               {errors.password && <span className="form-error">{errors.password}</span>}
             </motion.div>
 
-            <motion.button
-              variants={itemVariants}
-              type="submit"
-              className="auth-submit-btn push-btn"
-              disabled={isLoading || lockoutSeconds > 0}
-            >
-              {isLoading ? <span className="btn-loader"></span> : (lockoutSeconds > 0 ? `LOCKED (${formatCountdown(lockoutSeconds)})` : 'Login')}
-            </motion.button>
+            <motion.div variants={itemVariants}>
+              <PushButton
+                type="submit"
+                disabled={isLoading || lockoutSeconds > 0}
+                bgColor="#2d5a27"
+                shadowColor="#1a3b16"
+                textColor="#ffffff"
+              >
+                {isLoading ? <span className="btn-loader"></span> : (lockoutSeconds > 0 ? `LOCKED (${formatCountdown(lockoutSeconds)})` : 'Login')}
+              </PushButton>
+            </motion.div>
           </form>
 
 
@@ -365,16 +369,19 @@ function LoginPage({ managePageClass = true }) {
             <span className="auth-divider-line" />
           </motion.div>
 
-          <motion.button 
-            variants={itemVariants}
-            type="button" 
-            className="auth-google-btn push-btn google-variant" 
-            onClick={handleGoogleSignIn} 
-            disabled={isLoading}
-          >
-            <img src={googleLogo} alt="Google" className="auth-google-logo" />
-            <span className="btn-content">Login with Google</span>
-          </motion.button>
+          <motion.div variants={itemVariants}>
+            <PushButton
+              type="button" 
+              onClick={handleGoogleSignIn} 
+              disabled={isLoading}
+              bgColor="#ffffff"
+              shadowColor="#d5d5d5"
+              textColor="#333333"
+            >
+              <img src={googleLogo} alt="Google" className="auth-google-logo" style={{ width: '1.5rem', height: '1.5rem', objectFit: 'contain' }} />
+              <span className="btn-content">Login with Google</span>
+            </PushButton>
+          </motion.div>
 
           <motion.div variants={itemVariants} style={{ width: '100%', textAlign: 'center' }}>
             <Link to={ROUTES.REGISTER} className="auth-link">Create Account?</Link>

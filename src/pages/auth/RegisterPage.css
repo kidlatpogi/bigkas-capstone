@@ -28,7 +28,7 @@ html.register-page-active,
 body.register-page-active {
   overflow: clip;
   scrollbar-width: none;
-  background: linear-gradient(180deg, #3C4952 0%, #0B3954 100%);
+  background: #ffffff;
   animation: fadeInPage 0.5s ease-out;
 }
 
@@ -40,7 +40,7 @@ body.register-page-active::-webkit-scrollbar {
 body.register-page-active #root {
   display: block;
   overflow: clip;
-  background: linear-gradient(180deg, #3C4952 0%, #0B3954 100%);
+  background: #ffffff;
 }
 
 body.register-page-active {
@@ -51,13 +51,13 @@ body.register-page-active {
 @media (min-width: 701px) {
   body.register-page-active {
     padding: 0;
-    background: linear-gradient(180deg, #3C4952 0%, #0B3954 100%);
+    background: #ffffff;
     overflow-x: hidden;
   }
 
   body.register-page-active #root {
     min-height: 100dvh;
-    background: linear-gradient(180deg, #3C4952 0%, #0B3954 100%);
+    background: #ffffff;
   }
 }
 
@@ -66,12 +66,12 @@ body.register-page-active {
   min-height: 100vh;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  background: #2E2E2E;
+  background: #ffffff;
 }
 
 /* ── Register page shell — centered form layout ── */
 body.register-page-active .auth-page {
-  background: linear-gradient(180deg, #3C4952 0%, #0B3954 100%);
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -139,17 +139,17 @@ body.register-page-active .auth-back-btn {
   width: 3rem;
   height: 3rem;
   border-radius: 999px;
-  border: 1.5px solid rgba(255, 255, 255, 0.45);
-  background: transparent;
-  color: #FFFFFF;
+  border: 1.5px solid #0B3954;
+  background: #F18F01;
+  color: #0B3954;
   z-index: 20;
-  box-shadow: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
   transition: all 0.2s;
 }
 
 body.register-page-active .auth-back-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: #FFFFFF;
+  background: #F6A320;
+  border-color: #0B3954;
 }
 
 .auth-brand-content {
@@ -248,7 +248,26 @@ body.register-page-active .auth-form-panel {
 }
 
 body.register-page-active .auth-mobile-back {
+  position: absolute;
+  top: 1.5rem;
+  left: 1.5rem;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  border: 1.5px solid #0B3954;
+  background: #F18F01;
+  color: #0B3954;
+  z-index: 20;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
   display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+body.register-page-active .auth-mobile-back:hover {
+  background: #F6A320;
+  border-color: #0B3954;
 }
 
 .auth-form-container {
@@ -263,13 +282,10 @@ body.register-page-active .auth-form-container {
 }
 
 body.register-page-active .floating-card {
-  background: rgba(255, 255, 255, 0.95);
+  background: #ffffff;
   border-radius: 24px;
   padding: 2.5rem 2rem;
-  border-bottom: 4px solid #2d5a27;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
 }
@@ -892,10 +908,10 @@ body.register-page-active .auth-google-logo {
 
 body.register-page-active .auth-link {
   font-family: 'Nunito', sans-serif;
-  color: #FFFFFF;
+  color: #6B7280;
   text-decoration: none;
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: 1.1rem;
+  font-weight: 800;
   letter-spacing: 0;
   text-transform: none;
   margin-top: 1rem;
@@ -903,8 +919,8 @@ body.register-page-active .auth-link {
 }
 
 body.register-page-active .auth-link:hover {
-  color: #FFFFFF;
-  opacity: 0.92;
+  color: #2d5a27;
+  opacity: 1;
 }
 
 /* ═════════════════════════════════════════════

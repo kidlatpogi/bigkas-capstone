@@ -6,7 +6,6 @@ import { ROUTES } from '../../utils/constants';
 import BackButton from '../../components/common/BackButton';
 import PasswordToggle from '../../components/common/PasswordToggle';
 import googleLogo from '../../assets/Google-Logo.png';
-import Grainient from './Grainient';
 import { motion } from 'framer-motion';
 import './LoginPage.css';
 
@@ -253,32 +252,6 @@ function LoginPage({ managePageClass = true }) {
 
   return (
     <div className="auth-page">
-      <div className="auth-grainient-bg" aria-hidden="true">
-        <Grainient
-          color1="#3c4952"
-          color2="#90ab8b"
-          color3="#5a7863"
-          timeSpeed={0.25}
-          colorBalance={0.05}
-          warpStrength={1}
-          warpFrequency={2}
-          warpSpeed={2.5}
-          warpAmplitude={50}
-          blendAngle={-25}
-          blendSoftness={0.05}
-          rotationAmount={500}
-          noiseScale={2}
-          grainAmount={0.1}
-          grainScale={2}
-          grainAnimated
-          contrast={1.5}
-          gamma={1}
-          saturation={1}
-          centerX={0}
-          centerY={0}
-          zoom={0.9}
-        />
-      </div>
       <BackButton className="auth-login-back" onClick={() => navigate(ROUTES.HOME, { state: { skipLoader: true } })} />
       <div className="auth-form-panel">
         <motion.div 

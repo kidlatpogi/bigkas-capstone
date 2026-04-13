@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { IoChevronForward, IoChevronDown } from 'react-icons/io5';
 import { useSessionContext } from '../../context/useSessionContext';
+import { supabase } from '../../lib/supabase';
 import { ROUTES } from '../../utils/constants';
 import { formatDate, formatDuration } from '../../utils/formatters';
 import { getSessionMode, getSessionSpeechType } from '../../utils/sessionFormatting';
@@ -11,6 +12,7 @@ import './DetailedFeedbackPage.css';
 const FOREST_GREEN = '#5A7863';
 const SOFT_SAGE = '#90AB8B';
 const VIBRANT_ORANGE = '#F18F01';
+const SESSION_MEDIA_BUCKET = 'session-recordings';
 
 function score100to15(val) {
   const v = Math.max(0, Math.min(100, Number(val) || 0));
@@ -70,6 +72,15 @@ function clamp(value, min = 0, max = 100) {
   return Math.max(min, Math.min(max, value));
 }
 
+function buildBucketPublicUrl(pathOrUrl) {
+  const value = String(pathOrUrl || '').trim();
+  if (!value) return null;
+  if (value.includes('/storage/v1/object/public/')) return value;
+  const cleaned = value.replace(/^\/+/, '');
+  const { data } = supabase.storage.from(SESSION_MEDIA_BUCKET).getPublicUrl(cleaned);
+  return data?.publicUrl || null;
+}
+
 function buildReplayAction(session, navigate, isFree) {
   const mode = getSessionMode(session);
   const isPractice = mode === 'Practice';
@@ -109,6 +120,7 @@ function DetailedFeedbackPage() {
   const { currentSession, fetchSessionById, isLoading } = useSessionContext();
   const [isRecordingsOpen, setIsRecordingsOpen] = useState(false);
   const [isSessionInfoOpen, setIsSessionInfoOpen] = useState(false);
+  const [recordingMedia, setRecordingMedia] = useState({ audioUrl: null, videoUrl: null });
 
   const hasCompleteLocationState = useMemo(() => {
     if (!locationState || typeof locationState !== 'object') return false;
@@ -127,6 +139,44 @@ function DetailedFeedbackPage() {
     if (session) return;
     fetchSessionById(sessionId);
   }, [fetchSessionById, session, sessionId]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSessionMedia = async () => {
+      if (!sessionId) return;
+
+      let audioUrl = null;
+      let videoUrl = null;
+
+      const { data: richMedia, error: richMediaErr } = await supabase
+        .from('session_media')
+        .select('audio_url, video_url, video_storage_url')
+        .eq('session_id', sessionId)
+        .maybeSingle();
+
+      if (!richMediaErr && richMedia) {
+        audioUrl = richMedia.audio_url ?? null;
+        videoUrl = richMedia.video_url ?? richMedia.video_storage_url ?? null;
+      } else {
+        const { data: basicMedia } = await supabase
+          .from('session_media')
+          .select('audio_url')
+          .eq('session_id', sessionId)
+          .maybeSingle();
+        audioUrl = basicMedia?.audio_url ?? null;
+      }
+
+      if (!isMounted) return;
+      setRecordingMedia({
+        audioUrl: buildBucketPublicUrl(audioUrl),
+        videoUrl: buildBucketPublicUrl(videoUrl),
+      });
+    };
+
+    loadSessionMedia();
+    return () => { isMounted = false; };
+  }, [sessionId]);
 
   if (isLoading && !session) {
     return (
@@ -155,13 +205,17 @@ function DetailedFeedbackPage() {
     ? { level: session.level, label: session.level_label }
     : getLevelFromScore(tripleV.entryPoint);
 
-  const sessionTitle = session?.script_title || session?.title || 'Session';
   const mode = getSessionMode(session);
   const isFreeSession = getSessionSpeechType(session) === 'Free Speech';
   const durationSec = Math.max(1, Math.round(session?.duration_sec ?? session?.duration ?? 1));
   const practicedText = session?.transcript || 'No recorded text available.';
-  const audioUrl = session?.audio_url || null;
-  const videoUrl = session?.video_url || session?.video_storage_url || null;
+  const audioUrl = recordingMedia.audioUrl
+    || buildBucketPublicUrl(session?.audio_url)
+    || null;
+  const videoUrl = recordingMedia.videoUrl
+    || buildBucketPublicUrl(session?.video_url)
+    || buildBucketPublicUrl(session?.video_storage_url)
+    || null;
   const replayAction = buildReplayAction(session, navigate, isFreeSession);
 
   const sourceNav = locationState?.source;
@@ -283,9 +337,21 @@ function DetailedFeedbackPage() {
           {breadcrumbParent}
         </button>
         <IoChevronForward className="df-breadcrumb-sep" />
-        <span className="df-breadcrumb-current">
-          {sessionTitle} Detailed Feedback
-        </span>
+        <button
+          type="button"
+          className="df-breadcrumb-link"
+          onClick={() => navigate(`/session/${sessionId}/result`, {
+            state: {
+              ...session,
+              source: locationState?.source,
+              backTo: locationState?.backTo,
+            },
+          })}
+        >
+          Session Analysis Result
+        </button>
+        <IoChevronForward className="df-breadcrumb-sep" />
+        <span className="df-breadcrumb-current">Detailed Feedback</span>
       </nav>
 
       {/* Overall Score Hero */}

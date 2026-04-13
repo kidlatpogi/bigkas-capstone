@@ -328,7 +328,13 @@ function SessionResultPage() {
       <button
         type="button"
         className="sr-detail-link"
-        onClick={() => navigate(buildRoute.detailedFeedback(sessionId), { state: result })}
+        onClick={() => navigate(buildRoute.detailedFeedback(sessionId), {
+          state: {
+            ...result,
+            source: state?.source,
+            backTo: state?.backTo,
+          },
+        })}
       >
         <span>View Detailed Feedback</span>
         <IoChevronForward />

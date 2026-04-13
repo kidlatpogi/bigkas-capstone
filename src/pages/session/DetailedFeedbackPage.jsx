@@ -1,17 +1,89 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { IoChevronForward, IoChevronDown } from 'react-icons/io5';
 import { useSessionContext } from '../../context/useSessionContext';
-import { ROUTES, getScoreTier } from '../../utils/constants';
+import { supabase } from '../../lib/supabase';
+import { ROUTES } from '../../utils/constants';
 import { formatDate, formatDuration } from '../../utils/formatters';
-import BackButton from '../../components/common/BackButton';
 import { getSessionMode, getSessionSpeechType } from '../../utils/sessionFormatting';
 import '../main/InnerPages.css';
-import './SessionPages.css';
+import './DetailedFeedbackPage.css';
+
+const FOREST_GREEN = '#5A7863';
+const SOFT_SAGE = '#90AB8B';
+const VIBRANT_ORANGE = '#F18F01';
+const SESSION_MEDIA_BUCKET = 'session-recordings';
+
+function score100to15(val) {
+  const v = Math.max(0, Math.min(100, Number(val) || 0));
+  if (v === 0) return 1.0;
+  return Math.round((1.0 + (v / 100) * 4.0) * 100) / 100;
+}
+
+function getTripleVScores(result) {
+  const visualAvg = result.visual_avg ?? score100to15(result.visual_score ?? 0);
+  const vocalAvg = result.vocal_avg ?? score100to15(result.acoustic_score ?? 0);
+  const verbalAvg = result.verbal_avg ?? score100to15(result.context_score ?? 0);
+  const entryPoint = result.entry_point ?? score100to15(result.confidence_score ?? 0);
+
+  const clamp15 = (v) => Math.round(Math.max(1, Math.min(5, Number(v) || 1)) * 100) / 100;
+  return {
+    entryPoint: clamp15(entryPoint),
+    visualAvg: clamp15(visualAvg),
+    vocalAvg: clamp15(vocalAvg),
+    verbalAvg: clamp15(verbalAvg),
+  };
+}
+
+function getScoreTier15(score) {
+  if (score >= 4.0) return { label: 'Excellent', color: FOREST_GREEN };
+  if (score >= 3.0) return { label: 'Good', color: SOFT_SAGE };
+  if (score >= 2.0) return { label: 'Fair', color: VIBRANT_ORANGE };
+  return { label: 'Needs Work', color: '#D94F3B' };
+}
+
+function getLevelFromScore(score) {
+  if (score >= 5.0) return { level: 5, label: 'Demonstrating Expertise' };
+  if (score >= 4.0) return { level: 4, label: 'Building Skills' };
+  if (score >= 3.0) return { level: 3, label: 'Increasing Knowledge' };
+  if (score >= 2.0) return { level: 2, label: 'Learning Your Style' };
+  return { level: 1, label: 'Mastering Fundamentals' };
+}
+
+function scoreBarPercent(score) {
+  return Math.max(0, Math.min(100, ((score - 1) / 4) * 100));
+}
+
+function subMetric100to15(val) {
+  const v = Number(val);
+  if (!Number.isFinite(v) || v === 0) return null;
+  return Math.round(Math.max(1, Math.min(5, 1.0 + (Math.max(0, Math.min(100, v)) / 100) * 4.0)) * 100) / 100;
+}
+
+function invertedSubMetric(val) {
+  const v = Number(val);
+  if (!Number.isFinite(v)) return null;
+  const clamped = Math.max(0, Math.min(100, v));
+  const inverted = 100 - clamped;
+  return Math.round(Math.max(1, Math.min(5, 1.0 + (inverted / 100) * 4.0)) * 100) / 100;
+}
+
+function clamp(value, min = 0, max = 100) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function buildBucketPublicUrl(pathOrUrl) {
+  const value = String(pathOrUrl || '').trim();
+  if (!value) return null;
+  if (value.includes('/storage/v1/object/public/')) return value;
+  const cleaned = value.replace(/^\/+/, '');
+  const { data } = supabase.storage.from(SESSION_MEDIA_BUCKET).getPublicUrl(cleaned);
+  return data?.publicUrl || null;
+}
 
 function buildReplayAction(session, navigate, isFree) {
   const mode = getSessionMode(session);
   const isPractice = mode === 'Practice';
-
   const setupRoute = isPractice ? ROUTES.PRACTICE : ROUTES.TRAINING_SETUP;
   const label = isPractice ? 'Practice Again' : 'Train Again';
   const focus = isFree ? 'free' : 'scripted';
@@ -25,10 +97,7 @@ function buildReplayAction(session, navigate, isFree) {
 
   if (focus === 'scripted') {
     const content = session?.transcript || '';
-    if (!content.trim()) {
-      return { label, onClick: () => navigate(setupRoute) };
-    }
-
+    if (!content.trim()) return { label, onClick: () => navigate(setupRoute) };
     replayState.script = {
       id: session?.script_id || `replay-${session?.id || 'session'}`,
       title: session?.script_title || session?.title || `${mode} Script`,
@@ -44,37 +113,6 @@ function buildReplayAction(session, navigate, isFree) {
   };
 }
 
-function toPct(value, fallback = 50) {
-  const n = Number.isFinite(value) ? value : fallback;
-  return Math.max(0, Math.min(100, Math.round(n)));
-}
-
-function scoreWord(score) {
-  if (score >= 85) return 'Excellent';
-  if (score >= 70) return 'Good';
-  if (score >= 50) return 'Fair';
-  return 'Needs Work';
-}
-
-function getMetricEffectivenessScore(metricKey, rawScore) {
-  const clamped = Math.max(0, Math.min(100, Number(rawScore) || 0));
-  if (metricKey === 'jitter' || metricKey === 'shimmer') {
-    return 100 - clamped;
-  }
-  return clamped;
-}
-
-function clamp(value, min = 0, max = 100) {
-  return Math.max(min, Math.min(max, value));
-}
-
-function formatRecommendationTime(startSec, endSec) {
-  const hasStart = Number.isFinite(startSec);
-  const hasEnd = Number.isFinite(endSec);
-  if (!hasStart || !hasEnd || endSec <= startSec) return 'Session-wide';
-  return `${formatDuration(startSec)} - ${formatDuration(endSec)}`;
-}
-
 function DetailedFeedbackPage() {
   const navigate = useNavigate();
   const { sessionId } = useParams();
@@ -82,6 +120,7 @@ function DetailedFeedbackPage() {
   const { currentSession, fetchSessionById, isLoading } = useSessionContext();
   const [isRecordingsOpen, setIsRecordingsOpen] = useState(false);
   const [isSessionInfoOpen, setIsSessionInfoOpen] = useState(false);
+  const [recordingMedia, setRecordingMedia] = useState({ audioUrl: null, videoUrl: null });
 
   const hasCompleteLocationState = useMemo(() => {
     if (!locationState || typeof locationState !== 'object') return false;
@@ -101,65 +140,135 @@ function DetailedFeedbackPage() {
     fetchSessionById(sessionId);
   }, [fetchSessionById, session, sessionId]);
 
-  const durationSec = Math.max(1, Math.round(session?.duration_sec ?? session?.duration ?? 1));
-  const rawScore = Number(session?.confidence_score ?? 0);
-  const total = toPct(rawScore, 0);
-  const tier = getScoreTier(total);
-  const scoreDisplay = `${total}`;
-  
-  const isFreeSession = getSessionSpeechType(session) === 'Free Speech';
-  
-  const replayAction = buildReplayAction(session, navigate, isFreeSession);
-  const audioUrl = session?.audio_url || null;
-  const videoUrl = session?.video_url || session?.video_storage_url || null;
-  const modeLabel = getSessionMode(session);
-  const practicedText = session?.transcript || 'No recorded text available.';
+  useEffect(() => {
+    let isMounted = true;
 
-  const categories = useMemo(() => {
-    return [
-      {
-        id: 'facial',
-        label: 'Facial Expression',
-        score: toPct(session?.facial_expression_score ?? session?.eye_contact_score, total),
-        color: '#21C26A',
-      },
-      {
-        id: 'gesture',
-        label: 'Gestures',
-        score: toPct(session?.gesture_score ?? session?.visual_score, total),
-        color: '#15B8A6',
-      },
-      {
-        id: 'pronunciation',
-        label: 'Pronunciation',
-        score: toPct(session?.pronunciation_score ?? session?.acoustic_score ?? total, total),
-        color: '#EF4444',
-      },
-      {
-        id: 'jitter',
-        label: 'Jitter',
-        score: toPct(session?.jitter_score ?? session?.acoustic_score, total),
-        color: '#FCBA04',
-      },
-      {
-        id: 'shimmer',
-        label: 'Shimmer',
-        score: toPct(session?.shimmer_score ?? session?.acoustic_score, total),
-        color: '#F59E0B',
-      },
-      ...(isFreeSession
-        ? [{
-          id: 'context',
-          label: 'Context',
-          score: toPct(session?.context_score, total),
-          color: '#3B82F6',
-        }]
-        : []),
-    ].map((cat) => ({
-      ...cat,
-      effectivenessScore: getMetricEffectivenessScore(cat.id, cat.score),
-    }));
-  }, [isFreeSession, session, total]);
+    const loadSessionMedia = async () => {
+      if (!sessionId) return;
+
+      let audioUrl = null;
+      let videoUrl = null;
+
+      const { data: richMedia, error: richMediaErr } = await supabase
+        .from('session_media')
+        .select('audio_url, video_url, video_storage_url')
+        .eq('session_id', sessionId)
+        .maybeSingle();
+
+      if (!richMediaErr && richMedia) {
+        audioUrl = richMedia.audio_url ?? null;
+        videoUrl = richMedia.video_url ?? richMedia.video_storage_url ?? null;
+      } else {
+        const { data: basicMedia } = await supabase
+          .from('session_media')
+          .select('audio_url')
+          .eq('session_id', sessionId)
+          .maybeSingle();
+        audioUrl = basicMedia?.audio_url ?? null;
+      }
+
+      if (!isMounted) return;
+      setRecordingMedia({
+        audioUrl: buildBucketPublicUrl(audioUrl),
+        videoUrl: buildBucketPublicUrl(videoUrl),
+      });
+    };
+
+    loadSessionMedia();
+    return () => { isMounted = false; };
+  }, [sessionId]);
+
+  if (isLoading && !session) {
+    return (
+      <div className="df-page">
+        <div className="df-loading">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="df-page">
+        <div className="df-empty">
+          <p className="df-empty-title">Session not found</p>
+          <button className="df-btn df-btn-primary" onClick={() => navigate(ROUTES.DASHBOARD)}>
+            Go Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const tripleV = getTripleVScores(session);
+  const overallTier = getScoreTier15(tripleV.entryPoint);
+  const levelInfo = session.level_label
+    ? { level: session.level, label: session.level_label }
+    : getLevelFromScore(tripleV.entryPoint);
+
+  const mode = getSessionMode(session);
+  const isFreeSession = getSessionSpeechType(session) === 'Free Speech';
+  const durationSec = Math.max(1, Math.round(session?.duration_sec ?? session?.duration ?? 1));
+  const practicedText = session?.transcript || 'No recorded text available.';
+  const audioUrl = recordingMedia.audioUrl
+    || buildBucketPublicUrl(session?.audio_url)
+    || null;
+  const videoUrl = recordingMedia.videoUrl
+    || buildBucketPublicUrl(session?.video_url)
+    || buildBucketPublicUrl(session?.video_storage_url)
+    || null;
+  const replayAction = buildReplayAction(session, navigate, isFreeSession);
+
+  const sourceNav = locationState?.source;
+  let breadcrumbParent = mode === 'Practice' ? 'Practice' : 'Training';
+  let breadcrumbRoute = mode === 'Practice' ? ROUTES.PRACTICE : ROUTES.TRAINING_SETUP;
+  if (sourceNav === 'progress') {
+    breadcrumbParent = 'Progress';
+    breadcrumbRoute = ROUTES.PROGRESS;
+  } else if (sourceNav === 'notification') {
+    breadcrumbParent = 'Dashboard';
+    breadcrumbRoute = locationState?.backTo || ROUTES.DASHBOARD;
+  }
+
+  const visualSubMetrics = [
+    { label: 'Eye Contact', score: subMetric100to15(session?.facial_expression_score ?? session?.eye_contact_score) },
+    { label: 'Gestures', score: subMetric100to15(session?.gesture_score) },
+  ].filter((m) => m.score !== null);
+
+  const vocalSubMetrics = [
+    { label: 'Jitter Control', score: invertedSubMetric(session?.jitter_score) },
+    { label: 'Shimmer Control', score: invertedSubMetric(session?.shimmer_score) },
+  ].filter((m) => m.score !== null);
+
+  const verbalSubMetrics = [
+    { label: 'Pronunciation', score: subMetric100to15(session?.pronunciation_score) },
+    ...(isFreeSession
+      ? [{ label: 'Context Relevance', score: subMetric100to15(session?.context_score) }]
+      : []),
+  ].filter((m) => m.score !== null);
+
+  const pillars = [
+    {
+      key: 'visual',
+      label: 'Visual',
+      desc: 'Eye contact, facial expressions, and body gestures',
+      score: tripleV.visualAvg,
+      subMetrics: visualSubMetrics,
+    },
+    {
+      key: 'vocal',
+      label: 'Vocal',
+      desc: 'Voice pitch stability, volume consistency, and clarity',
+      score: tripleV.vocalAvg,
+      subMetrics: vocalSubMetrics,
+    },
+    {
+      key: 'verbal',
+      label: 'Verbal',
+      desc: 'Pronunciation accuracy and topical relevance',
+      score: tripleV.verbalAvg,
+      subMetrics: verbalSubMetrics,
+    },
+  ];
 
   const timelinePoints = useMemo(() => {
     const pointCount = clamp(Math.floor(durationSec / 15) + 1, 4, 8);
@@ -167,274 +276,297 @@ function DetailedFeedbackPage() {
       const progress = pointCount === 1 ? 1 : idx / (pointCount - 1);
       const timeSec = idx === pointCount - 1 ? durationSec : Math.round(durationSec * progress);
 
-      const values = categories.reduce((acc, cat, catIndex) => {
-        const variance = 8 + (100 - cat.score) * 0.08;
-        const phase = progress * Math.PI * 1.6 + catIndex * 0.75;
+      const values = {};
+      pillars.forEach((p, pIdx) => {
+        const pct = scoreBarPercent(p.score);
+        const variance = 8 + (100 - pct) * 0.08;
+        const phase = progress * Math.PI * 1.6 + pIdx * 0.75;
         const wave = Math.sin(phase) * variance * 0.5 + Math.cos(phase * 0.7) * variance * 0.25;
-        const momentum = (progress - 0.5) * ((cat.score - 50) / 12);
-        acc[cat.id] = clamp(Math.round(cat.score + wave + momentum));
-        return acc;
-      }, {});
+        const momentum = (progress - 0.5) * ((pct - 50) / 12);
+        values[p.key] = clamp(Math.round(pct + wave + momentum));
+      });
 
-      return {
-        idx,
-        timeSec,
-        label: formatDuration(timeSec),
-        values,
-      };
+      return { idx, timeSec, label: formatDuration(timeSec), values };
     });
-  }, [categories, durationSec]);
+  }, [durationSec, pillars]);
 
-  const timelineFeedback = useMemo(() => {
+  const pillarColors = { visual: FOREST_GREEN, vocal: SOFT_SAGE, verbal: VIBRANT_ORANGE };
+
+  const recommendations = useMemo(() => {
     const apiRecs = Array.isArray(session?.recommendations) ? session.recommendations : [];
-    const timedRecs = Array.isArray(session?.recommendation_timestamps)
-      ? session.recommendation_timestamps
-      : [];
-    const timeByText = new Map();
-    timedRecs.forEach((item) => {
-      const text = String(item?.text || '').trim();
-      if (!text || timeByText.has(text)) return;
-      timeByText.set(text, {
-        start_sec: Number.isFinite(Number(item?.start_sec)) ? Number(item.start_sec) : null,
-        end_sec: Number.isFinite(Number(item?.end_sec)) ? Number(item.end_sec) : null,
+
+    const pillarTips = pillars
+      .filter((p) => p.score < 3.0)
+      .map((p) => {
+        if (p.key === 'visual') return { pillar: 'Visual', text: 'Improve visual presence — maintain natural eye contact and use purposeful gestures.' };
+        if (p.key === 'vocal') return { pillar: 'Vocal', text: 'Steady your voice — practice deep breathing for pitch and volume control.' };
+        return { pillar: 'Verbal', text: 'Articulate more clearly — slow down on complex words and stay on topic.' };
       });
+
+    const apiTipsMapped = apiRecs.map((rec, idx) => {
+      const p = pillars[idx % pillars.length];
+      return { pillar: p.label, text: rec };
     });
 
-    const byPriority = [...categories].sort((a, b) => a.effectivenessScore - b.effectivenessScore);
-    const mistakes = byPriority.filter((cat) => cat.effectivenessScore < 85);
-    
-    const result = [];
-
-    // Always include weak-pillar guidance so recommendation count scales with weaknesses.
-    mistakes.forEach((cat, idx) => {
-      let text = '';
-      if (cat.id === 'facial') text = 'Improve facial expressions — maintain natural, engaging eye contact.';
-      else if (cat.id === 'gesture') text = 'Use more purposeful hand gestures to emphasize key points.';
-      else if (cat.id === 'jitter') text = 'Steady your vocal pitch — practice deep breathing for control.';
-      else if (cat.id === 'shimmer') text = 'Maintain consistent volume — focus on diaphragm breathing.';
-      else if (cat.id === 'pronunciation') text = 'Articulate more clearly — slow down on complex words.';
-      else if (cat.id === 'context') text = 'Stay on-topic by linking each point back to your declared speaking topic.';
-
-      result.push({
-        key: `${cat.id}-${idx}`,
-        title: `${cat.label} Focus`,
-        text,
-        time: 'Session-wide',
-        color: cat.id,
-      });
-    });
-
-    apiRecs.forEach((rec, idx) => {
-      const cat = byPriority[idx % byPriority.length];
-      const recTime = timeByText.get(String(rec || '').trim()) || null;
-      result.push({
-        key: `api-${idx}`,
-        title: `${cat.label} Coaching`,
-        text: rec,
-        time: formatRecommendationTime(recTime?.start_sec, recTime?.end_sec),
-        color: cat.id,
-      });
-    });
-
-    if (result.length === 0) {
-      result.push({
-        key: 'perfect',
-        title: 'Outstanding Performance',
-        text: 'Great job! Keep up the excellent work across all areas.',
-        time: '00:00',
-        color: 'facial'
-      });
+    const all = [...pillarTips, ...apiTipsMapped];
+    const unique = [];
+    const seen = new Set();
+    for (const tip of all) {
+      if (!seen.has(tip.text)) {
+        seen.add(tip.text);
+        unique.push(tip);
+      }
     }
 
-    return result;
-  }, [categories, session]);
+    if (unique.length === 0) {
+      unique.push({ pillar: 'Overall', text: 'Great job! Keep up the excellent work across all areas.' });
+    }
 
-  if (isLoading && !session) {
-    return <div className="inner-page"><div className="page-loading">Loading...</div></div>;
-  }
-
-  if (!session) {
-    return (
-      <div className="inner-page">
-        <div className="empty-state">
-          <span className="empty-icon">&#9888;&#65039;</span>
-          <p className="empty-title">Session not found</p>
-          <button className="btn-primary" onClick={() => navigate(ROUTES.DASHBOARD)}>Go Home</button>
-        </div>
-      </div>
-    );
-  }
+    return unique;
+  }, [pillars, session?.recommendations]);
 
   return (
-    <div className="inner-page feedback-figma-page">
-      <div className="inner-page-header centered-header">
-        <BackButton onClick={() => navigate(-1)} />
-        <h1 className="inner-page-title">Detailed Feedback</h1>
-      </div>
+    <div className="df-page">
+      {/* Breadcrumb */}
+      <nav className="df-breadcrumb">
+        <button
+          type="button"
+          className="df-breadcrumb-link"
+          onClick={() => navigate(breadcrumbRoute, { replace: true })}
+        >
+          {breadcrumbParent}
+        </button>
+        <IoChevronForward className="df-breadcrumb-sep" />
+        <button
+          type="button"
+          className="df-breadcrumb-link"
+          onClick={() => navigate(`/session/${sessionId}/result`, {
+            state: {
+              ...session,
+              source: locationState?.source,
+              backTo: locationState?.backTo,
+            },
+          })}
+        >
+          Session Analysis Result
+        </button>
+        <IoChevronForward className="df-breadcrumb-sep" />
+        <span className="df-breadcrumb-current">Detailed Feedback</span>
+      </nav>
 
-      <div className="page-card result-hero-card">
-        <p className="result-hero-kicker">Speaking Confidence Score</p>
-        <div className="result-hero-score-row">
-          <p className="result-hero-score">
-            {scoreDisplay}
-            <span>/100</span>
-          </p>
-          <span className="result-hero-tier" style={{ background: `${tier.color}1A`, color: tier.color }}>
-            {tier.label}
+      {/* Overall Score Hero */}
+      <section className="df-hero">
+        <div className="df-hero-top">
+          <p className="df-hero-kicker">Overall Speaking Score</p>
+          <span
+            className="df-hero-tier"
+            style={{ background: `${overallTier.color}1A`, color: overallTier.color }}
+          >
+            {overallTier.label}
           </span>
         </div>
-        <div className="result-hero-track">
+        <div className="df-hero-score-wrap">
+          <p className="df-hero-score">{tripleV.entryPoint.toFixed(1)}</p>
+          <span className="df-hero-max">/ 5.0</span>
+        </div>
+        <div className="df-hero-track">
           <div
-            className="result-hero-track-fill"
-            style={{ width: `${Math.max(0, Math.min(100, Number(total) || 0))}%`, background: tier.color }}
+            className="df-hero-track-fill"
+            style={{ width: `${scoreBarPercent(tripleV.entryPoint)}%` }}
           />
         </div>
-      </div>
+        <p className="df-hero-level">
+          Level {levelInfo.level} — {levelInfo.label}
+        </p>
+      </section>
 
-      <div className="page-card feedback-flow-card">
-        <p className="feedback-flow-label">Performance Flow</p>
-        <h2 className="feedback-flow-title">Timeline</h2>
+      {/* Performance Timeline */}
+      <section className="df-timeline-section">
+        <h2 className="df-section-title">Performance Timeline</h2>
+        <div className="df-card">
+          <div className="df-timeline">
+            {timelinePoints.map((point) => (
+              <div key={point.idx} className="df-timeline-col">
+                <div className="df-timeline-col-bg" />
+                <div
+                  className="df-timeline-col-bars"
+                  style={{ '--timeline-bar-count': pillars.length }}
+                >
+                  {pillars.map((p) => (
+                    <div key={`${point.idx}-${p.key}`} className="df-timeline-bar-wrap">
+                      <div
+                        className="df-timeline-bar"
+                        style={{ height: `${point.values[p.key]}%`, background: pillarColors[p.key] }}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <span className="df-timeline-time">{point.label}</span>
+              </div>
+            ))}
+          </div>
+          <div className="df-timeline-legend">
+            {pillars.map((p) => (
+              <span key={p.key} className="df-legend-item">
+                <i className="df-legend-dot" style={{ background: pillarColors[p.key] }} />
+                {p.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
 
-        <div className="feedback-timeline">
-          {timelinePoints.map((point) => (
-            <div key={point.idx} className="feedback-col">
-              <div className="feedback-col-bg" />
-              <div
-                className="feedback-col-bars"
-                style={{ '--timeline-bar-count': categories.length }}
-              >
-                {categories.map((cat) => (
-                  <div key={`${point.idx}-${cat.id}`} className="feedback-mini-bar-wrap">
+      {/* Triple V Pillar Detail Cards */}
+      <section className="df-pillars-section">
+        <h2 className="df-section-title">Triple V Breakdown</h2>
+        <div className="df-pillars-list">
+          {pillars.map((p) => {
+            const tier = getScoreTier15(p.score);
+            return (
+              <div key={p.key} className="df-pillar-card">
+                <div className="df-pillar-main">
+                  <div className="df-pillar-info">
+                    <span className="df-pillar-label">{p.label}</span>
+                    <span className="df-pillar-tier" style={{ color: tier.color }}>{tier.label}</span>
+                  </div>
+                  <div className="df-pillar-score-row">
+                    <p className="df-pillar-score">{p.score.toFixed(1)}<span>/5.0</span></p>
+                  </div>
+                  <p className="df-pillar-desc">{p.desc}</p>
+                  <div className="df-pillar-track">
                     <div
-                      className="feedback-mini-bar"
-                      style={{ height: `${point.values[cat.id]}%`, background: cat.color }}
+                      className="df-pillar-track-fill"
+                      style={{ width: `${scoreBarPercent(p.score)}%`, background: tier.color }}
                     />
                   </div>
-                ))}
+                </div>
+
+                {p.subMetrics.length > 0 && (
+                  <div className="df-pillar-subs">
+                    {p.subMetrics.map((sub) => {
+                      const subTier = getScoreTier15(sub.score);
+                      return (
+                        <div key={sub.label} className="df-sub-metric">
+                          <div className="df-sub-header">
+                            <span className="df-sub-label">{sub.label}</span>
+                            <span className="df-sub-score">{sub.score.toFixed(1)}</span>
+                          </div>
+                          <div className="df-sub-track">
+                            <div
+                              className="df-sub-track-fill"
+                              style={{ width: `${scoreBarPercent(sub.score)}%`, background: subTier.color }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-              <span className="feedback-timeline-time">{point.label}</span>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Recommendations */}
+      <section className="df-recs-section">
+        <h2 className="df-section-title">Coaching Recommendations</h2>
+        <div className="df-recs-list">
+          {recommendations.map((tip, idx) => (
+            <div key={idx} className="df-rec-card">
+              <span className="df-rec-pillar">{tip.pillar}</span>
+              <p className="df-rec-text">{tip.text}</p>
             </div>
           ))}
         </div>
-
-        <div className="feedback-legend-row">
-          {categories.map((cat) => (
-            <span key={cat.id} className="feedback-legend">
-              <i className="dot" style={{ background: cat.color }} /> {cat.label}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <div className="feedback-metrics-grid">
-        {categories.map((cat) => (
-          <div key={cat.id} className={`page-card feedback-score-card ${cat.id}`}>
-            <p className="feedback-score-title">{cat.label}</p>
-            <p className="feedback-score-main">{cat.score}%</p>
-            <p className="feedback-score-sub">{scoreWord(cat.effectivenessScore).toUpperCase()}</p>
-            <div className="feedback-score-track"><div style={{ width: `${cat.score}%`, background: cat.color }} /></div>
-          </div>
-        ))}
-      </div>
-
-      <p className="section-label" style={{ marginBottom: 8 }}>Recommendations</p>
-      <div className="feedback-tips-list" style={{ marginBottom: 12 }}>
-        {timelineFeedback.map((tip) => (
-          <div key={tip.key} className={`feedback-tip-card ${tip.color}`}>
-            <div className="feedback-tip-top">
-              <h3>{tip.title}</h3>
-              <span>{tip.time}</span>
-            </div>
-            <p>{tip.text}</p>
-          </div>
-        ))}
-        {timelineFeedback.some(t => t.key !== 'perfect') && (
+        {recommendations.some((t) => t.pillar !== 'Overall') && (
           <button
-            className="result-recs-hub-link"
+            className="df-hub-link"
             onClick={() => navigate(ROUTES.FRAMEWORKS)}
             type="button"
-            style={{ marginTop: 8 }}
           >
             Visit Training Hub →
           </button>
         )}
-      </div>
+      </section>
 
-      <div className="feedback-section-divider" aria-hidden="true" />
-
+      {/* Session Recordings */}
       {(audioUrl || videoUrl) && (
-        <div className="page-card" style={{ marginBottom: 12 }}>
+        <div className="df-collapsible">
           <button
-            className="result-collapse-toggle"
-            onClick={() => setIsRecordingsOpen((open) => !open)}
+            className="df-collapsible-toggle"
+            onClick={() => setIsRecordingsOpen((o) => !o)}
             type="button"
             aria-expanded={isRecordingsOpen}
-            aria-controls="session-recordings-body"
           >
-            <span className="section-label" style={{ marginBottom: 0 }}>Session Recordings</span>
-            <span className={`result-collapse-chevron${isRecordingsOpen ? ' open' : ''}`}>▼</span>
+            <span className="df-collapsible-label">Session Recordings</span>
+            <IoChevronDown className={`df-collapsible-icon${isRecordingsOpen ? ' open' : ''}`} />
           </button>
-
           {isRecordingsOpen && (
-            <div id="session-recordings-body" className="result-collapse-body">
-              {videoUrl ? (
-                <div className="session-video-wrap" style={{ marginBottom: audioUrl ? 10 : 0 }}>
-                  <video className="session-video" controls preload="metadata" src={videoUrl}>
+            <div className="df-collapsible-body">
+              {videoUrl && (
+                <div className="df-video-wrap">
+                  <video className="df-video" controls preload="metadata" src={videoUrl}>
                     Your browser does not support video playback.
                   </video>
                 </div>
-              ) : null}
-              {audioUrl ? (
-                <audio className="session-audio" controls preload="metadata" src={audioUrl}>
+              )}
+              {audioUrl && (
+                <audio className="df-audio" controls preload="metadata" src={audioUrl}>
                   Your browser does not support audio playback.
                 </audio>
-              ) : null}
+              )}
             </div>
           )}
         </div>
       )}
 
-      <div className="page-card" style={{ marginBottom: 12 }}>
+      {/* Session Information */}
+      <div className="df-collapsible">
         <button
-          className="result-collapse-toggle"
-          onClick={() => setIsSessionInfoOpen((open) => !open)}
+          className="df-collapsible-toggle"
+          onClick={() => setIsSessionInfoOpen((o) => !o)}
           type="button"
           aria-expanded={isSessionInfoOpen}
-          aria-controls="detailed-session-information-body"
         >
-          <span className="section-label" style={{ marginBottom: 0 }}>Session Information</span>
-          <span className={`result-collapse-chevron${isSessionInfoOpen ? ' open' : ''}`}>▼</span>
+          <span className="df-collapsible-label">Session Information</span>
+          <IoChevronDown className={`df-collapsible-icon${isSessionInfoOpen ? ' open' : ''}`} />
         </button>
-
         {isSessionInfoOpen && (
-          <div id="detailed-session-information-body" className="result-collapse-body">
+          <div className="df-collapsible-body">
             {session.created_at && (
-              <div className="info-row">
-                <span className="info-row-key">Date</span>
-                <span className="info-row-val">{formatDate(session.created_at)}</span>
+              <div className="df-info-row">
+                <span className="df-info-key">Date</span>
+                <span className="df-info-val">{formatDate(session.created_at)}</span>
               </div>
             )}
-            <div className="info-row">
-              <span className="info-row-key">Duration</span>
-              <span className="info-row-val">{formatDuration(durationSec || 0)}</span>
+            <div className="df-info-row">
+              <span className="df-info-key">Duration</span>
+              <span className="df-info-val">{formatDuration(durationSec)}</span>
             </div>
-            <div className="info-row">
-              <span className="info-row-key">Mode</span>
-              <span className="info-row-val">{modeLabel}</span>
+            <div className="df-info-row">
+              <span className="df-info-key">Mode</span>
+              <span className="df-info-val">{mode}</span>
             </div>
-
-            <p className="detail-section-title" style={{ marginTop: 14 }}>Practiced Text</p>
-            <p className="practiced-text">{practicedText}</p>
+            <div className="df-info-row">
+              <span className="df-info-key">Type</span>
+              <span className="df-info-val">{isFreeSession ? 'Free Speech' : 'Scripted'}</span>
+            </div>
+            <div className="df-practiced-section">
+              <p className="df-practiced-label">Practiced Text</p>
+              <p className="df-practiced-text">{practicedText}</p>
+            </div>
           </div>
         )}
       </div>
 
-      <div className="btn-row" style={{ marginTop: 8 }}>
-        <button className="btn-primary" onClick={replayAction.onClick}>
-          {replayAction.label}
+      {/* Actions */}
+      <div className="df-actions">
+        <button className="df-btn df-btn-secondary" onClick={() => navigate(-1)}>
+          Back
         </button>
-        <button className="btn-secondary" onClick={() => navigate(-1)}>
-          Cancel
+        <button className="df-btn df-btn-primary" onClick={replayAction.onClick}>
+          {replayAction.label}
         </button>
       </div>
     </div>

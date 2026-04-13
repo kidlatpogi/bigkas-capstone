@@ -278,6 +278,10 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   width: 100%;
 }
 
+.pillar-sub-section .sub-metric:last-child .sub-metric-track {
+  margin-bottom: 8px;
+}
+
 .sub-metric-fill {
   height: 100%;
   border-radius: 6px;

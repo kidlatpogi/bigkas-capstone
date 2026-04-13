@@ -3,15 +3,17 @@ import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+  IoChatbubbleEllipses,
   IoCheckmarkCircle,
   IoClose,
+  IoEye,
   IoMic,
-  IoMusicalNote,
   IoPulse,
-  IoShuffle,
+  IoStar,
   IoTrophy,
-  IoVolumeHigh,
+  IoSync,
 } from 'react-icons/io5';
+import { FaBrain } from 'react-icons/fa';
 import {
   JOURNEY_NODE_THEMES,
   NODE_STATE,
@@ -19,18 +21,12 @@ import {
 import SkywardJourneyNodeButton from './SkywardJourneyNodeButton';
 import './SkywardJourney.css';
 
-const JOURNEY_ICONS = [IoMic, IoVolumeHigh, IoMusicalNote, IoPulse, IoShuffle, IoTrophy];
-
 const MAP_SCALE = 1.5;
 const MAP_EDGE_PAN_PADDING = 96;
-const HORIZONTAL_OFFSET_PATTERN = [0, 35, 65, 35, 0, -35, -65, -35];
 function getHorizontalOffset(index) {
-  return HORIZONTAL_OFFSET_PATTERN[((index % HORIZONTAL_OFFSET_PATTERN.length) + HORIZONTAL_OFFSET_PATTERN.length) % HORIZONTAL_OFFSET_PATTERN.length];
+  return Math.sin(index * 1.0) * 80;
 }
 
-/**
- * With transform translate(tx,ty) scale(s), keep the scaled content AABB inside the viewport.
- */
 function clampMapState(state, viewportEl, contentEl, scale) {
   if (!viewportEl || !contentEl) return state;
   const W = viewportEl.clientWidth;
@@ -63,8 +59,32 @@ function clampMapState(state, viewportEl, contentEl, scale) {
   };
 }
 
-function JourneyNodeIcon({ index, className = '' }) {
-  const Cmp = JOURNEY_ICONS[index % JOURNEY_ICONS.length];
+function isStartNode(step, index) {
+  return Number(step?.stageNumber) === 1 || Number(step?.task?.activity_order) === 1 || index === 0;
+}
+
+function getPhaseIcon(step) {
+  const phase = getStepPhaseName(step).toLowerCase();
+  switch (true) {
+    case phase.includes('gaze'):
+      return IoEye;
+    case phase.includes('vocal'):
+      return IoMic;
+    case phase.includes('verbal'):
+      return IoChatbubbleEllipses;
+    case phase.includes('sync'):
+    case phase.includes('multi'):
+      return IoSync;
+    case phase.includes('context'):
+    case phase.includes('advanced'):
+      return FaBrain;
+    default:
+      return IoCheckmarkCircle;
+  }
+}
+
+function JourneyNodeIcon({ step, index, className = '' }) {
+  const Cmp = isStartNode(step, index) ? IoStar : getPhaseIcon(step);
   return <Cmp aria-hidden className={`skyward-journey-node-icon ${className}`.trim()} />;
 }
 
@@ -76,8 +96,7 @@ function JourneyNodeIcon({ index, className = '' }) {
  */
 
 const MapHeaderCard = styled.div`
-  max-width: 480px;
-  width: min(480px, calc(100vw - 48px));
+  width: min(90vw, 882px);
   margin: 0;
   padding: 24px;
   background: rgba(255, 255, 255, 0.92);
@@ -92,7 +111,7 @@ const MapHeaderCard = styled.div`
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   border: 2px solid #f18f01;
   position: fixed;
-  top: max(12px, env(safe-area-inset-top, 0px));
+  top: max(14px, env(safe-area-inset-top, 0px));
   left: 50%;
   transform: translateX(-50%);
   z-index: 1400;
@@ -394,17 +413,17 @@ function getStepActivityTitle(step) {
 
 export default function SkywardJourney({
   steps,
+  groupedTasks,
   renderStepContent,
   entranceFromNav = false,
   scrollToStepIndex = null,
 }) {
-  const gradId = useId().replace(/:/g, '');
-  const flowGradId = useId().replace(/:/g, '');
   const rootRef = useRef(null);
   const viewportRef = useRef(null);
   const mapContentRef = useRef(null);
   const mapLayerRef = useRef(null);
   const drawerRef = useRef(null);
+  const sectionHeaderRefs = useRef([]);
   const nodeRefs = useRef([]);
   const tapDismissedRef = useRef(false);
   const mapRef = useRef({ tx: 0, ty: 0 });
@@ -415,22 +434,13 @@ export default function SkywardJourney({
     () => steps.findIndex((s) => s.nodeState === NODE_STATE.ACTIVE),
     [steps],
   );
-
-  const lastCompletedIndex = useMemo(() => {
-    let last = -1;
-    steps.forEach((s, i) => {
-      if (s.nodeState === NODE_STATE.COMPLETED) last = i;
-    });
-    return last;
-  }, [steps]);
   
   const completedCount = useMemo(() => steps.filter(s => s.nodeState === NODE_STATE.COMPLETED).length, [steps]);
 
-  const [pathPoints, setPathPoints] = useState([]);
   const [indexedNodePoints, setIndexedNodePoints] = useState([]);
-  const [svgBounds, setSvgBounds] = useState({ width: 1, height: 1 });
   const [panelOpenId, setPanelOpenId] = useState(null);
   const [panelVisible, setPanelVisible] = useState(false);
+  const [visibleSectionIndex, setVisibleSectionIndex] = useState(0);
   const panelClosePendingRef = useRef(false);
   const [jiggleIndex, setJiggleIndex] = useState(null);
   // removed showTapHint
@@ -457,26 +467,18 @@ export default function SkywardJourney({
   const recomputePath = useCallback(() => {
     const content = mapContentRef.current;
     if (!content || steps.length < 2) {
-      setPathPoints([]);
-      setIndexedNodePoints([]);
-      setSvgBounds({ width: 1, height: 1 });
+      if (indexedNodePoints.length !== 0) setIndexedNodePoints([]);
       return;
     }
 
     const cr = content.getBoundingClientRect();
     if (!cr.width || !cr.height) {
-      setPathPoints([]);
-      setIndexedNodePoints([]);
-      setSvgBounds({ width: 1, height: 1 });
+      if (indexedNodePoints.length !== 0) setIndexedNodePoints([]);
       return;
     }
 
     const sx = content.scrollWidth / cr.width;
     const sy = content.scrollHeight / cr.height;
-    setSvgBounds({
-      width: Math.max(1, content.scrollWidth),
-      height: Math.max(1, content.scrollHeight),
-    });
     const indexed = [];
 
     for (let i = 0; i < steps.length; i += 1) {
@@ -490,15 +492,6 @@ export default function SkywardJourney({
     }
 
     setIndexedNodePoints(indexed);
-
-    const pts = indexed.filter((p) => p != null);
-    if (pts.length < 2) {
-      setPathPoints([]);
-      return;
-    }
-
-    pts.sort((a, b) => b.y - a.y);
-    setPathPoints(pts);
   }, [steps.length]);
 
   useLayoutEffect(() => {
@@ -531,9 +524,10 @@ export default function SkywardJourney({
   }, [recomputePath]);
 
   useEffect(() => {
+    // Only recompute path on mount and when steps change to avoid unnecessary re-renders during scroll
     const id = requestAnimationFrame(() => recomputePath());
     return () => cancelAnimationFrame(id);
-  }, [map.tx, map.ty, recomputePath]);
+  }, [recomputePath]);
 
   /** Hero focus: scroll map / page so the target stage (dashboard handoff or active node) is in view. */
   useLayoutEffect(() => {
@@ -692,20 +686,6 @@ export default function SkywardJourney({
     return () => window.clearTimeout(t);
   }, [panelVisible, panelOpenId]);
 
-  const polylinePoints = useMemo(() => {
-    if (pathPoints.length < 2) return '';
-    return pathPoints.map((p) => `${p.x},${p.y}`).join(' ');
-  }, [pathPoints]);
-
-  const flowSegmentPoints = useMemo(() => {
-    if (activeIndex < 0 || lastCompletedIndex < 0) return '';
-    if (activeIndex <= lastCompletedIndex) return '';
-    const a = indexedNodePoints[lastCompletedIndex];
-    const b = indexedNodePoints[activeIndex];
-    if (!a || !b) return '';
-    return `${a.x},${a.y} ${b.x},${b.y}`;
-  }, [indexedNodePoints, lastCompletedIndex, activeIndex]);
-
   const closePanel = requestClosePanel;
 
   const handleNodeClick = useCallback(
@@ -750,6 +730,7 @@ export default function SkywardJourney({
   }
 
   const sections = [];
+  const sectionMeta = [];
   let currentSectionRows = [];
   let sectionPillarTitle = null;
   let pillarSectionIndex = 0;
@@ -772,117 +753,203 @@ export default function SkywardJourney({
   };
 
   const totalStageCount = steps.length;
+  let globalNodeIndex = 0;
 
-  steps.forEach((step, i) => {
-    const phaseName = getStepPhaseName(step);
-    if (currentSectionRows.length && phaseName !== sectionPillarTitle) {
-      flushPillarSection();
-    }
-    if (currentSectionRows.length === 0) {
-      sectionPillarTitle = phaseName;
-    }
+  if (groupedTasks && groupedTasks.length > 0) {
+    groupedTasks.forEach((section) => {
+      const sectionTitle = section.phaseName || 'Training';
+      const sectionIndex = sectionMeta.length;
+      const sectionStartIndex = globalNodeIndex;
+      const currentSectionRows = section.tasks.map((step) => {
+        const i = globalNodeIndex++;
+        const theme = JOURNEY_NODE_THEMES[i % JOURNEY_NODE_THEMES.length];
+        const isActive = step.nodeState === NODE_STATE.ACTIVE;
+        const isDone = step.nodeState === NODE_STATE.COMPLETED;
+        const isLocked = step.nodeState === NODE_STATE.LOCKED;
+        const title = getStepActivityTitle(step);
+        const milestone = step.isRankUp === true || Number(step.stageNumber) === 31 || Number(step.task?.activity_order) === 31;
+        const startStage = isStartNode(step, i);
+        const jiggle = jiggleIndex === i;
+        const horizontalOffset = getHorizontalOffset(i);
+        const labelSide = horizontalOffset > 0 ? 'left' : 'right';
+        const stageNum = Number(step.stageNumber);
+        const stageTotal = Number(step.totalStages);
+        const safeStageTotal =
+          Number.isFinite(stageTotal) && stageTotal > 0 ? stageTotal : totalStageCount;
+        const safeStageNum =
+          Number.isFinite(stageNum) && stageNum > 0 ? stageNum : i + 1;
 
-    const theme = JOURNEY_NODE_THEMES[i % JOURNEY_NODE_THEMES.length];
-    const isActive = step.nodeState === NODE_STATE.ACTIVE;
-    const isDone = step.nodeState === NODE_STATE.COMPLETED;
-    const isLocked = step.nodeState === NODE_STATE.LOCKED;
-    const title = getStepActivityTitle(step);
-    const milestone = step.isRankUp === true || Number(step.stageNumber) === 31 || Number(step.task?.activity_order) === 31;
-    const jiggle = jiggleIndex === i;
-    const horizontalOffset = getHorizontalOffset(i);
-    const labelSide = horizontalOffset > 0 ? 'left' : 'right';
-    const stageNum = Number(step.stageNumber);
-    const stageTotal = Number(step.totalStages);
-    const safeStageTotal =
-      Number.isFinite(stageTotal) && stageTotal > 0 ? stageTotal : totalStageCount;
-    const safeStageNum =
-      Number.isFinite(stageNum) && stageNum > 0 ? stageNum : i + 1;
-
-    currentSectionRows.push(
-      <div
-        key={step.id}
-        className="skyward-journey-row dashboard-anim-bottom"
-      >
-        <div className="skyward-journey-track">
+        return (
           <div
-            className={`skyward-journey-node-shell${
-              i === 0 && isActive ? ' skyward-journey-node-shell--start-onboarding' : ''
-            }`}
+            key={step.id}
+            className="skyward-journey-row dashboard-anim-bottom"
           >
-            <div
-              className={`skyward-journey-node-cluster${milestone ? ' skyward-journey-node-cluster--milestone' : ''}`}
-            >
-              {i === 0 && isActive ? null : null}
-              <SkywardJourneyNodeButton
-                type="button"
-                nodeState={step.nodeState}
-                ref={(el) => {
-                  nodeRefs.current[i] = el;
-                }}
-                className={[
-                  'skyward-journey-node',
-                  `skyward-journey-node--${step.nodeState}`,
-                  milestone ? 'skyward-journey-node--milestone' : '',
-                  jiggle ? 'skyward-journey-node--jiggle' : '',
-                  !isLocked ? 'skyward-journey-node--unlocked' : '',
-                  isLocked ? 'skyward-journey-node--locked-teaser' : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-                aria-current={isActive ? 'step' : undefined}
-                aria-expanded={panelOpenId === step.id}
-                aria-label={`${milestone ? 'Milestone: ' : ''}${theme.shortLabel}: ${title}. ${
-                  isDone ? 'Completed' : isLocked ? 'Locked' : 'Current step'
-                }. Open quest details.`}
-                style={{
-                  '--skyward-node-offset': `${horizontalOffset}%`,
-                }}
-                onClick={() => handleNodeClick(step, i)}
-              >
-                {isDone ? (
-                  <IoCheckmarkCircle className="skyward-journey-node-state-icon" aria-hidden />
-                ) : milestone ? (
-                  <IoTrophy
-                    className="skyward-journey-node-icon skyward-journey-node-icon--boss"
-                    aria-hidden
-                  />
-                ) : (
-                  <JourneyNodeIcon index={i} />
-                )}
-              </SkywardJourneyNodeButton>
-              <AnimatePresence>
-                {tooltipNodeId === step.id && (
-                  <JourneyTooltip
-                    key={step.id}
-                    step={step}
-                    onStart={(s) => setPanelOpenId(s.id)}
-                    onClose={() => setTooltipNodeId(null)}
-                    nodeRef={{ get current() { return nodeRefs.current[i]; } }}
-                    forceBottom={i >= steps.length - 2}
-                  />
-                )}
-              </AnimatePresence>
+            <div className="skyward-journey-track">
               <div
-                className={`level-label level-label--side-${labelSide}`}
-                aria-hidden
+                className={`skyward-journey-node-shell${
+                  i === 0 && isActive ? ' skyward-journey-node-shell--start-onboarding' : ''
+                }`}
               >
-                <span className="level-label__title">
-                  {milestone ? 'Summit' : title}
-                </span>
-                <span className="level-label__stage">
-                  {milestone
-                    ? `Boss · Stage ${safeStageNum} of ${safeStageTotal}`
-                    : `Stage ${safeStageNum} of ${safeStageTotal}`}
-                </span>
+                <div
+                  className={`skyward-journey-node-cluster${milestone ? ' skyward-journey-node-cluster--milestone' : ''}`}
+                  style={{
+                    transform: `translateX(${horizontalOffset}px)`,
+                  }}
+                >
+                  {startStage ? (
+                    <div className="skyward-journey-start-callout" aria-hidden>
+                      <span className="skyward-journey-start-badge">START</span>
+                    </div>
+                  ) : null}
+                  <SkywardJourneyNodeButton
+                    type="button"
+                    nodeState={step.nodeState}
+                    ref={(el) => {
+                      nodeRefs.current[i] = el;
+                    }}
+                    className={[
+                      'skyward-journey-node',
+                      `skyward-journey-node--${step.nodeState}`,
+                      milestone ? 'skyward-journey-node--milestone' : '',
+                      jiggle ? 'skyward-journey-node--jiggle' : '',
+                      !isLocked ? 'skyward-journey-node--unlocked' : '',
+                      isLocked ? 'skyward-journey-node--locked-teaser' : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                    aria-current={isActive ? 'step' : undefined}
+                    aria-expanded={panelOpenId === step.id}
+                    aria-label={`${milestone ? 'Milestone: ' : ''}${theme.shortLabel}: ${title}. ${
+                      isDone ? 'Completed' : isLocked ? 'Locked' : 'Current step'
+                    }. Open quest details.`}
+                    onClick={() => handleNodeClick(step, i)}
+                  >
+                    {milestone ? (
+                      <IoTrophy
+                        className="skyward-journey-node-icon skyward-journey-node-icon--boss"
+                        aria-hidden
+                      />
+                    ) : startStage ? (
+                      <IoStar
+                        className="skyward-journey-node-icon"
+                        aria-hidden
+                      />
+                    ) : isDone ? (
+                      <IoCheckmarkCircle className="skyward-journey-node-state-icon" aria-hidden />
+                    ) : (
+                      <JourneyNodeIcon step={step} index={i} />
+                    )}
+                  </SkywardJourneyNodeButton>
+                  <AnimatePresence>
+                    {tooltipNodeId === step.id && (
+                      <JourneyTooltip
+                        key={step.id}
+                        step={step}
+                        onStart={(s) => setPanelOpenId(s.id)}
+                        onClose={() => setTooltipNodeId(null)}
+                        nodeRef={{ get current() { return nodeRefs.current[i]; } }}
+                        forceBottom={i >= steps.length - 2}
+                      />
+                    )}
+                  </AnimatePresence>
+                  <div
+                    className={`level-label level-label--side-${labelSide}`}
+                    aria-hidden
+                  >
+                    <span className="level-label__title">
+                      {milestone ? 'Summit' : title}
+                    </span>
+                    <span className="level-label__stage">
+                      {milestone
+                        ? `Boss · Stage ${safeStageNum} of ${safeStageTotal}`
+                        : `Stage ${safeStageNum} of ${safeStageTotal}`}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
-            {/* removed tap hint */}
           </div>
-        </div>
-      </div>,
-    );
-  });
-  flushPillarSection();
+        );
+      });
+
+      sectionMeta.push({
+        title: sectionTitle,
+        step: section.tasks?.[0] ?? null,
+        firstStepIndex: sectionStartIndex,
+      });
+
+      sections.push(
+        <section key={`pillar-section-${sectionTitle}`} className="skyward-journey-section">
+          <div
+            className="skyward-journey-section-header"
+            role="presentation"
+            ref={(el) => {
+              sectionHeaderRefs.current[sectionIndex] = el;
+            }}
+          >
+            <span className="skyward-journey-section-line" aria-hidden />
+            <span className="skyward-journey-section-title">{sectionTitle}</span>
+            <span className="skyward-journey-section-line" aria-hidden />
+          </div>
+          <div className="skyward-journey-section-rows">{currentSectionRows}</div>
+        </section>,
+      );
+    });
+  }
+
+  useEffect(() => {
+    const viewportEl = viewportRef.current;
+    if (!viewportEl || !sectionMeta.length) return undefined;
+
+    const detectVisibleSection = () => {
+      const viewportRect = viewportEl.getBoundingClientRect();
+      const viewportTop = viewportRect.top;
+      const viewportBottom = viewportRect.bottom;
+      const visibleCandidates = [];
+      let nearestAbove = null;
+      let nearestBelow = null;
+
+      sectionHeaderRefs.current.forEach((headerEl, idx) => {
+        if (!headerEl || idx >= sectionMeta.length) return;
+        const rect = headerEl.getBoundingClientRect();
+        const isVisible = rect.bottom > viewportTop && rect.top < viewportBottom;
+
+        if (isVisible) {
+          visibleCandidates.push({ idx, score: Math.abs(rect.top - viewportTop) });
+          return;
+        }
+
+        if (rect.top <= viewportTop) {
+          if (!nearestAbove || rect.top > nearestAbove.top) {
+            nearestAbove = { idx, top: rect.top };
+          }
+          return;
+        }
+
+        if (!nearestBelow || rect.top < nearestBelow.top) {
+          nearestBelow = { idx, top: rect.top };
+        }
+      });
+
+      let nextIndex = 0;
+      if (visibleCandidates.length) {
+        visibleCandidates.sort((a, b) => a.score - b.score);
+        nextIndex = visibleCandidates[0].idx;
+      } else if (nearestAbove) {
+        nextIndex = nearestAbove.idx;
+      } else if (nearestBelow) {
+        nextIndex = nearestBelow.idx;
+      }
+
+      setVisibleSectionIndex((prev) => (prev === nextIndex ? prev : nextIndex));
+    };
+
+    detectVisibleSection();
+    window.addEventListener('resize', detectVisibleSection);
+    return () => {
+      window.removeEventListener('resize', detectVisibleSection);
+    };
+  }, [map.ty, sectionMeta.length]);
 
   const activeStepIndex = steps.findIndex((s) => s.nodeState === NODE_STATE.ACTIVE);
   const lastCompletedStepIndex = (() => {
@@ -894,139 +961,111 @@ export default function SkywardJourney({
   const indexToUse = activeStepIndex >= 0
     ? activeStepIndex
     : (lastCompletedStepIndex >= 0 ? lastCompletedStepIndex : 0);
-  const currentStep = steps[indexToUse] || null;
-  const currentPillarText = currentStep
-    ? `Pillar ${currentStep.task?.target_level || 1}: ${currentStep.pillarName || 'General'}`
+  const visibleStepIndex = useMemo(() => {
+    const viewportHeight = viewportRef.current?.clientHeight ?? (typeof window !== 'undefined' ? window.innerHeight : 0);
+    if (!viewportHeight || !indexedNodePoints.length) return indexToUse;
+    // Map moves UP (negative ty) as we scroll DOWN the journey (higher index nodes).
+    // The "focus" area is roughly the top 1/3rd of the screen.
+    const focusY = viewportHeight * 0.32;
+    let bestIndex = indexToUse;
+    let bestDistance = Number.POSITIVE_INFINITY;
+
+    indexedNodePoints.forEach((point, i) => {
+      if (!point || !steps[i]) return;
+      // Calculate where the node currently is relative to the viewport top
+      const screenY = (point.y * MAP_SCALE) + map.ty;
+      
+      // If it's completely off screen, ignore it
+      if (screenY < -100 || screenY > viewportHeight + 100) return;
+      
+      const dist = Math.abs(screenY - focusY);
+      if (dist < bestDistance) {
+        bestDistance = dist;
+        bestIndex = i;
+      }
+    });
+    return bestIndex;
+  }, [indexedNodePoints, indexToUse, map.ty, steps]);
+  const currentStep = steps[visibleStepIndex] || steps[indexToUse] || null;
+  const visibleSectionMeta = sectionMeta[visibleSectionIndex] ?? null;
+  const currentPillarText = (visibleSectionMeta?.step || currentStep)
+    ? `Pillar ${(visibleSectionMeta?.step || currentStep)?.task?.target_level || (visibleSectionMeta?.step || currentStep)?.stageNumber || 1}: ${visibleSectionMeta?.title || getStepPhaseName(visibleSectionMeta?.step || currentStep)}`
     : 'Pillar 1: General';
 
   return (
-    <div className="skyward-journey skyward-journey-container no-scrollbar" ref={rootRef}>
-      {typeof document !== 'undefined'
-        ? createPortal(
-            <MapHeaderCard className="skyward-journey-anim-header">
-              <HeaderTitle>{currentPillarText}</HeaderTitle>
-              <HeaderDescription>Master your speaking fundamentals</HeaderDescription>
-              <HeaderStatBadge>{completedCount} / {steps.length} Stages Completed</HeaderStatBadge>
-            </MapHeaderCard>,
-            document.body,
-          )
-        : null}
-      <div className="skyward-journey-fixed-header-spacer" aria-hidden />
-      <div className="skyward-journey-anim-root skyward-journey-map skyward-journey-anim-map">
-      <div
-        className="skyward-journey-map-viewport"
-        ref={viewportRef}
-        onPointerDown={onPointerDownViewport}
-        onPointerMove={onPointerMoveViewport}
-        onPointerUp={onPointerUpViewport}
-        onPointerCancel={onPointerUpViewport}
-        onTouchStart={onTouchStartPinch}
-        onTouchMove={onTouchMovePinch}
-        onTouchEnd={onTouchEndPinch}
-        role="application"
-        aria-label="Skyward journey path. Scroll wheel to move the map up or down, and drag to pan."
-      >
-        <div
-          className="skyward-journey-map-layer"
-          ref={mapLayerRef}
-          style={{
-            transform: `translate(${map.tx}px, ${map.ty}px) scale(${MAP_SCALE})`,
-          }}
-        >
-          <div className="skyward-journey-map-content" ref={mapContentRef}>
-            {pathPoints.length > 1 ? (
-              <svg
-                className="skyward-journey-svg"
-                aria-hidden
-                shapeRendering="geometricPrecision"
-                preserveAspectRatio="none"
-                viewBox={`0 0 ${svgBounds.width} ${svgBounds.height}`}
-              >
-                <defs>
-                  <linearGradient id={`skyward-journey-line-grad-${gradId}`} x1="0%" y1="100%" x2="0%" y2="0%">
-                    <stop offset="0%" stopColor="var(--skyward-path-completed, #5a7863)" />
-                    <stop offset="100%" stopColor="var(--skyward-path-locked, #a1a1aa)" />
-                  </linearGradient>
-                  <linearGradient id={`skyward-journey-flow-grad-${flowGradId}`} x1="0%" y1="100%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="var(--skyward-flow-from, #5a7863)" />
-                    <stop offset="100%" stopColor="var(--skyward-flow-to, #f18f01)" />
-                  </linearGradient>
-                </defs>
-                <polyline
-                  className="skyward-journey-polyline skyward-journey-polyline--rim"
-                  fill="none"
-                  points={polylinePoints}
-                  stroke="var(--skyward-path-rim, #e4e4e7)"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="var(--skyward-line-rim, 16)"
-                />
-                <polyline
-                  className="skyward-journey-polyline skyward-journey-polyline--main"
-                  fill="none"
-                  points={polylinePoints}
-                  stroke={`url(#skyward-journey-line-grad-${gradId})`}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="var(--skyward-line-width, 10)"
-                />
-                {flowSegmentPoints ? (
-                  <polyline
-                    className="skyward-journey-polyline skyward-journey-polyline--flow"
-                    fill="none"
-                    points={flowSegmentPoints}
-                    stroke={`url(#skyward-journey-flow-grad-${flowGradId})`}
-                    strokeDasharray="10 16"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="7"
-                  />
-                ) : null}
-              </svg>
-            ) : null}
-
-            <div className="skyward-journey-column">
-              {sections}
+    <div className="skyward-journey-wrap">
+      <div className="skyward-journey skyward-journey-container no-scrollbar" ref={rootRef}>
+        <MapHeaderCard className="skyward-journey-anim-header">
+          <HeaderTitle>{currentPillarText}</HeaderTitle>
+          <HeaderDescription>Master your speaking fundamentals</HeaderDescription>
+          <HeaderStatBadge>{completedCount} / {steps.length} Stages Completed</HeaderStatBadge>
+        </MapHeaderCard>
+        <div className="skyward-journey-fixed-header-spacer" aria-hidden />
+        <div className="skyward-journey-anim-root skyward-journey-map skyward-journey-anim-map">
+          <div
+            className="skyward-journey-map-viewport"
+            ref={viewportRef}
+            onPointerDown={onPointerDownViewport}
+            onPointerMove={onPointerMoveViewport}
+            onPointerUp={onPointerUpViewport}
+            onPointerCancel={onPointerUpViewport}
+            onTouchStart={onTouchStartPinch}
+            onTouchMove={onTouchMovePinch}
+            onTouchEnd={onTouchEndPinch}
+            role="application"
+            aria-label="Skyward journey path. Scroll wheel to move the map up or down, and drag to pan."
+          >
+            <div
+              className="skyward-journey-map-layer"
+              ref={mapLayerRef}
+              style={{
+                transform: `translate(${map.tx}px, ${map.ty}px) scale(${MAP_SCALE})`,
+              }}
+            >
+              <div className="skyward-journey-map-content" ref={mapContentRef}>
+                <div className="skyward-journey-column">
+                  {sections}
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      </div>
 
-      {typeof document !== 'undefined' && selectedStep && selectedMeta
-        ? createPortal(
-            <div className="skyward-journey-panel-root" role="presentation">
-              <button
-                type="button"
-                className={`skyward-journey-backdrop${panelVisible ? ' skyward-journey-backdrop--open' : ''}`}
-                aria-label="Close quest details"
-                onClick={closePanel}
-              />
-              <div
-                ref={drawerRef}
-                className={`skyward-journey-drawer${panelVisible ? ' skyward-journey-drawer--open' : ''}`}
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="skyward-journey-drawer-title"
-                onTransitionEnd={handlePanelTransitionEnd}
-              >
-                <div className="skyward-journey-drawer-handle" aria-hidden />
-                <div className="skyward-journey-drawer-header">
-                  <h2 id="skyward-journey-drawer-title" className="skyward-journey-drawer-title">
-                    Quest details
-                  </h2>
-                  <button type="button" className="skyward-journey-drawer-close" onClick={closePanel}>
-                    Close
-                  </button>
+        {typeof document !== 'undefined' && selectedStep && selectedMeta
+          ? createPortal(
+              <div className="skyward-journey-panel-root" role="presentation">
+                <button
+                  type="button"
+                  className={`skyward-journey-backdrop${panelVisible ? ' skyward-journey-backdrop--open' : ''}`}
+                  aria-label="Close quest details"
+                  onClick={closePanel}
+                />
+                <div
+                  ref={drawerRef}
+                  className={`skyward-journey-drawer${panelVisible ? ' skyward-journey-drawer--open' : ''}`}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="skyward-journey-drawer-title"
+                  onTransitionEnd={handlePanelTransitionEnd}
+                >
+                  <div className="skyward-journey-drawer-handle" aria-hidden />
+                  <div className="skyward-journey-drawer-header">
+                    <h2 id="skyward-journey-drawer-title" className="skyward-journey-drawer-title">
+                      Quest details
+                    </h2>
+                    <button type="button" className="skyward-journey-drawer-close" onClick={closePanel}>
+                      Close
+                    </button>
+                  </div>
+                  <div className="skyward-journey-drawer-body">
+                    {renderStepContent(selectedStep, selectedMeta)}
+                  </div>
                 </div>
-                <div className="skyward-journey-drawer-body">
-                  {renderStepContent(selectedStep, selectedMeta)}
-                </div>
-              </div>
-            </div>,
-            document.body,
-          )
-        : null}
+              </div>,
+              document.body,
+            )
+          : null}
+      </div>
     </div>
   );
 }

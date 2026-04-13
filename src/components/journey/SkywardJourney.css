@@ -12,6 +12,17 @@
   min-height: 200px;
 }
 
+.skyward-journey-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.skyward-journey-wrap .skyward-journey {
+  width: min(100%, 980px);
+  margin-inline: auto;
+}
+
 @keyframes nodeEntrancePop {
   0% {
     opacity: 0;

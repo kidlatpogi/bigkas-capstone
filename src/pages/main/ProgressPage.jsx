@@ -44,6 +44,41 @@ import './ProgressPage.css';
 const TIME_RANGES = ['daily', 'Weekly', 'Monthly', 'Yearly'];
 const HISTORY_FILTERS = ['All', 'Today', 'This Week', 'This Month'];
 
+function toFivePointScore(rawScore) {
+  const normalized = Math.max(0, Math.min(100, Number(rawScore) || 0));
+  return Math.round((1 + (normalized / 100) * 4) * 10) / 10;
+}
+
+function formatFivePointScore(rawScore) {
+  return toFivePointScore(rawScore).toFixed(1);
+}
+
+function buildSessionTitleOrTopic(session) {
+  const candidates = [
+    session?.script_title,
+    session?.title,
+    session?.topic,
+    session?.objective_name,
+    session?.objective,
+    session?.prompt,
+    session?.free_topic,
+    session?.target_text,
+  ];
+
+  const firstMatch = candidates.find((value) => typeof value === 'string' && value.trim());
+  if (firstMatch) return firstMatch.trim();
+
+  const transcript = String(session?.transcript || '').trim();
+  if (transcript) {
+    return transcript.length > 64 ? `${transcript.slice(0, 61)}...` : transcript;
+  }
+
+  const mode = getSessionMode(session);
+  if (mode === 'Pre-Test') return 'Pre-Test Session';
+  if (mode === 'Practice') return 'Practice Session';
+  return 'Training Session';
+}
+
 function getResponsiveHistoryPageSize(viewportHeight = 0) {
   if (viewportHeight >= 1300) return 5; // 2K+ displays
   if (viewportHeight >= 900) return 4; // 1080p and similar
@@ -258,13 +293,15 @@ function ProgressPage() {
     weekStart.setDate(now.getDate() - 7);
     
     const weekSessions = userSessions.filter(s => new Date(s.created_at) >= weekStart);
-    const avgScore = userSessions.length ? Math.round(userSessions.reduce((a, b) => a + (b.confidence_score || 0), 0) / userSessions.length) : 0;
+    const avgScoreRaw = userSessions.length
+      ? userSessions.reduce((a, b) => a + (b.confidence_score || 0), 0) / userSessions.length
+      : 0;
     const totalTimeSec = userSessions.reduce((a, b) => a + (b.duration_sec || b.duration || 0), 0);
     const totalTimeMin = Math.round(totalTimeSec / 60);
 
     return {
       sessionsThisWeek: weekSessions.length,
-      averageScore: avgScore,
+      averageScore: toFivePointScore(avgScoreRaw),
       totalSpeakingTime: totalTimeMin
     };
   }, [userSessions]);
@@ -429,8 +466,6 @@ function ProgressPage() {
     [historyPageCount, safeHistoryPage],
   );
 
-  const getSessionTitle = (s) => s?.script_title || s?.title || 'Session';
-
   return (
     <div className="progress-page-bg no-scrollbar" style={{ height: '100dvh', overflowY: 'auto' }}>
       <div className="progress-main-layout">
@@ -496,7 +531,7 @@ function ProgressPage() {
               </div>
               <p className="stat-title">Average Score</p>
               <p className={`stat-num ${stats.averageScore > 0 ? 'glow-text' : ''}`}>{stats.averageScore}</p>
-              <p className="stat-desc">Points</p>
+              <p className="stat-desc">/5.0</p>
             </div>
             <div className="stat-block dashboard-anim-bottom dashboard-anim-delay-3">
               <div className="stat-icon-wrap">
@@ -628,7 +663,7 @@ function ProgressPage() {
                   style={{ cursor: 'pointer' }}
                 >
                   <div className="history-item-top">
-                    <h3 className="history-item-title">{getSessionTitle(s)}</h3>
+                    <h3 className="history-item-title">{buildSessionTitleOrTopic(s)}</h3>
                     <span className={`history-item-tag ${mode.toLowerCase().replace(' ', '-')}`}>
                       {mode}
                     </span>
@@ -648,7 +683,7 @@ function ProgressPage() {
                   </div>
                   <div className="history-item-bottom">
                     <span className="history-item-score-label">Score:</span>
-                    <span className="history-item-score">{s.confidence_score || 0}</span>
+                    <span className="history-item-score">{formatFivePointScore(s.confidence_score)} / 5.0</span>
                   </div>
                 </div>
               );

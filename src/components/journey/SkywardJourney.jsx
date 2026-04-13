@@ -12,8 +12,8 @@ import {
   IoStar,
   IoTrophy,
   IoSync,
-  IoBrain,
 } from 'react-icons/io5';
+import { FaBrain } from 'react-icons/fa';
 import {
   JOURNEY_NODE_THEMES,
   NODE_STATE,
@@ -27,21 +27,6 @@ function getHorizontalOffset(index) {
   return Math.sin(index * 1.0) * 80;
 }
 
-function buildSmoothConnectorPath(points) {
-  if (!Array.isArray(points) || points.length < 2) return '';
-  let path = `M ${points[0].x} ${points[0].y}`;
-  for (let i = 1; i < points.length; i += 1) {
-    const prev = points[i - 1];
-    const curr = points[i];
-    const midY = (prev.y + curr.y) / 2;
-    path += ` C ${prev.x} ${midY}, ${curr.x} ${midY}, ${curr.x} ${curr.y}`;
-  }
-  return path;
-}
-
-/**
- * With transform translate(tx,ty) scale(s), keep the scaled content AABB inside the viewport.
- */
 function clampMapState(state, viewportEl, contentEl, scale) {
   if (!viewportEl || !contentEl) return state;
   const W = viewportEl.clientWidth;
@@ -92,7 +77,7 @@ function getPhaseIcon(step) {
       return IoSync;
     case phase.includes('context'):
     case phase.includes('advanced'):
-      return IoBrain;
+      return FaBrain;
     default:
       return IoCheckmarkCircle;
   }
@@ -433,8 +418,6 @@ export default function SkywardJourney({
   entranceFromNav = false,
   scrollToStepIndex = null,
 }) {
-  const gradId = useId().replace(/:/g, '');
-  const flowGradId = useId().replace(/:/g, '');
   const rootRef = useRef(null);
   const viewportRef = useRef(null);
   const mapContentRef = useRef(null);
@@ -450,20 +433,10 @@ export default function SkywardJourney({
     () => steps.findIndex((s) => s.nodeState === NODE_STATE.ACTIVE),
     [steps],
   );
-
-  const lastCompletedIndex = useMemo(() => {
-    let last = -1;
-    steps.forEach((s, i) => {
-      if (s.nodeState === NODE_STATE.COMPLETED) last = i;
-    });
-    return last;
-  }, [steps]);
   
   const completedCount = useMemo(() => steps.filter(s => s.nodeState === NODE_STATE.COMPLETED).length, [steps]);
 
-  const [pathPoints, setPathPoints] = useState([]);
   const [indexedNodePoints, setIndexedNodePoints] = useState([]);
-  const [svgBounds, setSvgBounds] = useState({ width: 1, height: 1 });
   const [panelOpenId, setPanelOpenId] = useState(null);
   const [panelVisible, setPanelVisible] = useState(false);
   const panelClosePendingRef = useRef(false);
@@ -492,26 +465,18 @@ export default function SkywardJourney({
   const recomputePath = useCallback(() => {
     const content = mapContentRef.current;
     if (!content || steps.length < 2) {
-      setPathPoints([]);
       setIndexedNodePoints([]);
-      setSvgBounds({ width: 1, height: 1 });
       return;
     }
 
     const cr = content.getBoundingClientRect();
     if (!cr.width || !cr.height) {
-      setPathPoints([]);
       setIndexedNodePoints([]);
-      setSvgBounds({ width: 1, height: 1 });
       return;
     }
 
     const sx = content.scrollWidth / cr.width;
     const sy = content.scrollHeight / cr.height;
-    setSvgBounds({
-      width: Math.max(1, content.scrollWidth),
-      height: Math.max(1, content.scrollHeight),
-    });
     const indexed = [];
 
     for (let i = 0; i < steps.length; i += 1) {
@@ -525,15 +490,6 @@ export default function SkywardJourney({
     }
 
     setIndexedNodePoints(indexed);
-
-    const pts = indexed.filter((p) => p != null);
-    if (pts.length < 2) {
-      setPathPoints([]);
-      return;
-    }
-
-    pts.sort((a, b) => b.y - a.y);
-    setPathPoints(pts);
   }, [steps.length]);
 
   useLayoutEffect(() => {
@@ -726,20 +682,6 @@ export default function SkywardJourney({
     }, 360);
     return () => window.clearTimeout(t);
   }, [panelVisible, panelOpenId]);
-
-  const connectorPathD = useMemo(() => {
-    if (pathPoints.length < 2) return '';
-    return buildSmoothConnectorPath(pathPoints);
-  }, [pathPoints]);
-
-  const flowSegmentPathD = useMemo(() => {
-    if (activeIndex < 0 || lastCompletedIndex < 0) return '';
-    if (activeIndex <= lastCompletedIndex) return '';
-    const a = indexedNodePoints[lastCompletedIndex];
-    const b = indexedNodePoints[activeIndex];
-    if (!a || !b) return '';
-    return buildSmoothConnectorPath([a, b]);
-  }, [indexedNodePoints, lastCompletedIndex, activeIndex]);
 
   const closePanel = requestClosePanel;
 
@@ -997,57 +939,6 @@ export default function SkywardJourney({
           }}
         >
           <div className="skyward-journey-map-content" ref={mapContentRef}>
-            {/* PATH RENDER COMMENTED OUT FOR SNAKE LAYOUT */}
-            {/* pathPoints.length > 1 ? (
-              <svg
-                className="skyward-journey-svg"
-                aria-hidden
-                shapeRendering="geometricPrecision"
-                preserveAspectRatio="none"
-                viewBox={`0 0 ${svgBounds.width} ${svgBounds.height}`}
-              >
-                <defs>
-                  <linearGradient id={`skyward-journey-line-grad-${gradId}`} x1="0%" y1="100%" x2="0%" y2="0%">
-                    <stop offset="0%" stopColor="var(--skyward-path-completed, #5a7863)" />
-                    <stop offset="100%" stopColor="var(--skyward-path-locked, #a1a1aa)" />
-                  </linearGradient>
-                  <linearGradient id={`skyward-journey-flow-grad-${flowGradId}`} x1="0%" y1="100%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="var(--skyward-flow-from, #5a7863)" />
-                    <stop offset="100%" stopColor="var(--skyward-flow-to, #f18f01)" />
-                  </linearGradient>
-                </defs>
-                <path
-                  className="skyward-journey-polyline skyward-journey-polyline--rim"
-                  fill="none"
-                  d={connectorPathD}
-                  stroke="var(--skyward-path-rim, #e4e4e7)"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="var(--skyward-line-rim, 16)"
-                />
-                <path
-                  className="skyward-journey-polyline skyward-journey-polyline--main"
-                  fill="none"
-                  d={connectorPathD}
-                  stroke={`url(#skyward-journey-line-grad-${gradId})`}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="var(--skyward-line-width, 10)"
-                />
-                {flowSegmentPathD ? (
-                  <path
-                    className="skyward-journey-polyline skyward-journey-polyline--flow"
-                    fill="none"
-                    d={flowSegmentPathD}
-                    stroke={`url(#skyward-journey-flow-grad-${flowGradId})`}
-                    strokeDasharray="10 16"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="7"
-                  />
-                ) : null}
-              </svg>
-            ) : null */}
             <div className="skyward-journey-column">
               {sections}
             </div>

@@ -207,6 +207,18 @@ body.skyward-journey-modal-open .activity-sticky-shell {
   overflow-y: visible;
 }
 
+@media (max-width: 768px) {
+  .activity-content-wrap--journey-scroll {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .activity-content-wrap--journey-scroll .activity-task-list--journey {
+    padding-bottom: 120px;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 .activity-task-list::-webkit-scrollbar {
   width: 0;
   height: 0;

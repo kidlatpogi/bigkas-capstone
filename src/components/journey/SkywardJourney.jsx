@@ -3,14 +3,14 @@ import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+  IoChatbubbleEllipses,
   IoCheckmarkCircle,
   IoClose,
+  IoEye,
   IoMic,
-  IoMusicalNote,
   IoPulse,
-  IoShuffle,
+  IoStar,
   IoTrophy,
-  IoVolumeHigh,
 } from 'react-icons/io5';
 import {
   JOURNEY_NODE_THEMES,
@@ -19,13 +19,22 @@ import {
 import SkywardJourneyNodeButton from './SkywardJourneyNodeButton';
 import './SkywardJourney.css';
 
-const JOURNEY_ICONS = [IoMic, IoVolumeHigh, IoMusicalNote, IoPulse, IoShuffle, IoTrophy];
-
 const MAP_SCALE = 1.5;
 const MAP_EDGE_PAN_PADDING = 96;
-const HORIZONTAL_OFFSET_PATTERN = [0, 35, 65, 35, 0, -35, -65, -35];
 function getHorizontalOffset(index) {
-  return HORIZONTAL_OFFSET_PATTERN[((index % HORIZONTAL_OFFSET_PATTERN.length) + HORIZONTAL_OFFSET_PATTERN.length) % HORIZONTAL_OFFSET_PATTERN.length];
+  return index % 2 === 0 ? 20 : -20;
+}
+
+function buildSmoothConnectorPath(points) {
+  if (!Array.isArray(points) || points.length < 2) return '';
+  let path = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 1; i < points.length; i += 1) {
+    const prev = points[i - 1];
+    const curr = points[i];
+    const midY = (prev.y + curr.y) / 2;
+    path += ` C ${prev.x} ${midY}, ${curr.x} ${midY}, ${curr.x} ${curr.y}`;
+  }
+  return path;
 }
 
 /**
@@ -63,8 +72,20 @@ function clampMapState(state, viewportEl, contentEl, scale) {
   };
 }
 
-function JourneyNodeIcon({ index, className = '' }) {
-  const Cmp = JOURNEY_ICONS[index % JOURNEY_ICONS.length];
+function isStartNode(step, index) {
+  return Number(step?.stageNumber) === 1 || Number(step?.task?.activity_order) === 1 || index === 0;
+}
+
+function getPhaseIcon(step) {
+  const phase = getStepPhaseName(step).toLowerCase();
+  if (phase.includes('gaze')) return IoEye;
+  if (phase.includes('vocal')) return IoPulse;
+  if (phase.includes('verbal')) return IoChatbubbleEllipses;
+  return IoMic;
+}
+
+function JourneyNodeIcon({ step, index, className = '' }) {
+  const Cmp = isStartNode(step, index) ? IoStar : getPhaseIcon(step);
   return <Cmp aria-hidden className={`skyward-journey-node-icon ${className}`.trim()} />;
 }
 
@@ -692,18 +713,18 @@ export default function SkywardJourney({
     return () => window.clearTimeout(t);
   }, [panelVisible, panelOpenId]);
 
-  const polylinePoints = useMemo(() => {
+  const connectorPathD = useMemo(() => {
     if (pathPoints.length < 2) return '';
-    return pathPoints.map((p) => `${p.x},${p.y}`).join(' ');
+    return buildSmoothConnectorPath(pathPoints);
   }, [pathPoints]);
 
-  const flowSegmentPoints = useMemo(() => {
+  const flowSegmentPathD = useMemo(() => {
     if (activeIndex < 0 || lastCompletedIndex < 0) return '';
     if (activeIndex <= lastCompletedIndex) return '';
     const a = indexedNodePoints[lastCompletedIndex];
     const b = indexedNodePoints[activeIndex];
     if (!a || !b) return '';
-    return `${a.x},${a.y} ${b.x},${b.y}`;
+    return buildSmoothConnectorPath([a, b]);
   }, [indexedNodePoints, lastCompletedIndex, activeIndex]);
 
   const closePanel = requestClosePanel;
@@ -788,6 +809,7 @@ export default function SkywardJourney({
     const isLocked = step.nodeState === NODE_STATE.LOCKED;
     const title = getStepActivityTitle(step);
     const milestone = step.isRankUp === true || Number(step.stageNumber) === 31 || Number(step.task?.activity_order) === 31;
+    const startStage = isStartNode(step, i);
     const jiggle = jiggleIndex === i;
     const horizontalOffset = getHorizontalOffset(i);
     const labelSide = horizontalOffset > 0 ? 'left' : 'right';
@@ -813,6 +835,11 @@ export default function SkywardJourney({
               className={`skyward-journey-node-cluster${milestone ? ' skyward-journey-node-cluster--milestone' : ''}`}
             >
               {i === 0 && isActive ? null : null}
+              {startStage ? (
+                <div className="skyward-journey-start-callout" aria-hidden>
+                  <span className="skyward-journey-start-badge">START</span>
+                </div>
+              ) : null}
               <SkywardJourneyNodeButton
                 type="button"
                 nodeState={step.nodeState}
@@ -835,7 +862,7 @@ export default function SkywardJourney({
                   isDone ? 'Completed' : isLocked ? 'Locked' : 'Current step'
                 }. Open quest details.`}
                 style={{
-                  '--skyward-node-offset': `${horizontalOffset}%`,
+                  '--skyward-node-offset': `${horizontalOffset}px`,
                 }}
                 onClick={() => handleNodeClick(step, i)}
               >
@@ -847,7 +874,7 @@ export default function SkywardJourney({
                     aria-hidden
                   />
                 ) : (
-                  <JourneyNodeIcon index={i} />
+                  <JourneyNodeIcon step={step} index={i} />
                 )}
               </SkywardJourneyNodeButton>
               <AnimatePresence>
@@ -894,9 +921,27 @@ export default function SkywardJourney({
   const indexToUse = activeStepIndex >= 0
     ? activeStepIndex
     : (lastCompletedStepIndex >= 0 ? lastCompletedStepIndex : 0);
-  const currentStep = steps[indexToUse] || null;
+  const visibleStepIndex = useMemo(() => {
+    const viewportHeight = viewportRef.current?.clientHeight ?? 0;
+    if (!viewportHeight || !indexedNodePoints.length) return indexToUse;
+    const focusY = viewportHeight * 0.32;
+    let bestIndex = indexToUse;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    indexedNodePoints.forEach((point, i) => {
+      if (!point || !steps[i]) return;
+      const screenY = point.y * MAP_SCALE + map.ty;
+      if (screenY < -80 || screenY > viewportHeight + 80) return;
+      const dist = Math.abs(screenY - focusY);
+      if (dist < bestDistance) {
+        bestDistance = dist;
+        bestIndex = i;
+      }
+    });
+    return bestIndex;
+  }, [indexedNodePoints, indexToUse, map.ty, steps]);
+  const currentStep = steps[visibleStepIndex] || steps[indexToUse] || null;
   const currentPillarText = currentStep
-    ? `Pillar ${currentStep.task?.target_level || 1}: ${currentStep.pillarName || 'General'}`
+    ? `Pillar ${currentStep.task?.target_level || 1}: ${getStepPhaseName(currentStep)}`
     : 'Pillar 1: General';
 
   return (
@@ -952,29 +997,29 @@ export default function SkywardJourney({
                     <stop offset="100%" stopColor="var(--skyward-flow-to, #f18f01)" />
                   </linearGradient>
                 </defs>
-                <polyline
+                <path
                   className="skyward-journey-polyline skyward-journey-polyline--rim"
                   fill="none"
-                  points={polylinePoints}
+                  d={connectorPathD}
                   stroke="var(--skyward-path-rim, #e4e4e7)"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth="var(--skyward-line-rim, 16)"
                 />
-                <polyline
+                <path
                   className="skyward-journey-polyline skyward-journey-polyline--main"
                   fill="none"
-                  points={polylinePoints}
+                  d={connectorPathD}
                   stroke={`url(#skyward-journey-line-grad-${gradId})`}
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth="var(--skyward-line-width, 10)"
                 />
-                {flowSegmentPoints ? (
-                  <polyline
+                {flowSegmentPathD ? (
+                  <path
                     className="skyward-journey-polyline skyward-journey-polyline--flow"
                     fill="none"
-                    points={flowSegmentPoints}
+                    d={flowSegmentPathD}
                     stroke={`url(#skyward-journey-flow-grad-${flowGradId})`}
                     strokeDasharray="10 16"
                     strokeLinecap="round"

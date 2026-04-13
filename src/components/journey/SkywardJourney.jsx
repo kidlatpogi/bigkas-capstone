@@ -749,19 +749,14 @@ export default function SkywardJourney({
     currentSectionRows = [];
   };
 
-  const totalStageCount = groupedTasks ? groupedTasks.reduce((acc, section) => acc + section.tasks.length, 0) : steps.length;
-  let globalIndex = 0;
+  const totalStageCount = steps.length;
+  let globalNodeIndex = 0;
 
-  if (groupedTasks) {
+  if (groupedTasks && groupedTasks.length > 0) {
     groupedTasks.forEach((section) => {
       const sectionTitle = section.phaseName || 'Training';
-      pillarSectionIndex += 1;
-      const currentSectionRowsLocal = [];
-
-      section.tasks.forEach((step) => {
-        const i = globalIndex;
-        globalIndex += 1;
-
+      const currentSectionRows = section.tasks.map((step) => {
+        const i = globalNodeIndex++;
         const theme = JOURNEY_NODE_THEMES[i % JOURNEY_NODE_THEMES.length];
         const isActive = step.nodeState === NODE_STATE.ACTIVE;
         const isDone = step.nodeState === NODE_STATE.COMPLETED;
@@ -779,7 +774,7 @@ export default function SkywardJourney({
         const safeStageNum =
           Number.isFinite(stageNum) && stageNum > 0 ? stageNum : i + 1;
 
-        currentSectionRowsLocal.push(
+        return (
           <div
             key={step.id}
             className="skyward-journey-row dashboard-anim-bottom"
@@ -848,136 +843,41 @@ export default function SkywardJourney({
                         onStart={(s) => setPanelOpenId(s.id)}
                         onClose={() => setTooltipNodeId(null)}
                         nodeRef={{ get current() { return nodeRefs.current[i]; } }}
-                        forceBottom={i >= totalStageCount - 2}
+                        forceBottom={i >= steps.length - 2}
                       />
                     )}
                   </AnimatePresence>
+                  <div
+                    className={`level-label level-label--side-${labelSide}`}
+                    aria-hidden
+                  >
+                    <span className="level-label__title">
+                      {milestone ? 'Summit' : title}
+                    </span>
+                    <span className="level-label__stage">
+                      {milestone
+                        ? `Boss · Stage ${safeStageNum} of ${safeStageTotal}`
+                        : `Stage ${safeStageNum} of ${safeStageTotal}`}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>,
+          </div>
         );
       });
 
       sections.push(
-        <section key={`pillar-section-${sectionTitle}-${pillarSectionIndex}`} className="skyward-journey-section">
-          <div className="skyward-journey-section-rows">{currentSectionRowsLocal}</div>
+        <section key={`pillar-section-${sectionTitle}`} className="skyward-journey-section">
           <div className="skyward-journey-section-header" role="presentation">
             <span className="skyward-journey-section-line" aria-hidden />
             <span className="skyward-journey-section-title">{sectionTitle}</span>
             <span className="skyward-journey-section-line" aria-hidden />
           </div>
+          <div className="skyward-journey-section-rows">{currentSectionRows}</div>
         </section>,
       );
     });
-  } else {
-    // Fallback if groupedTasks isn't provided yet
-    steps.forEach((step, i) => {
-      const phaseName = getStepPhaseName(step);
-      if (currentSectionRows.length && phaseName !== sectionPillarTitle) {
-        flushPillarSection();
-      }
-      if (currentSectionRows.length === 0) {
-        sectionPillarTitle = phaseName;
-      }
-
-      const theme = JOURNEY_NODE_THEMES[i % JOURNEY_NODE_THEMES.length];
-      const isActive = step.nodeState === NODE_STATE.ACTIVE;
-      const isDone = step.nodeState === NODE_STATE.COMPLETED;
-      const isLocked = step.nodeState === NODE_STATE.LOCKED;
-      const title = getStepActivityTitle(step);
-      const milestone = step.isRankUp === true || Number(step.stageNumber) === 31 || Number(step.task?.activity_order) === 31;
-      const startStage = isStartNode(step, i);
-      const jiggle = jiggleIndex === i;
-      const horizontalOffset = getHorizontalOffset(i);
-      const labelSide = horizontalOffset > 0 ? 'left' : 'right';
-      const stageNum = Number(step.stageNumber);
-      const stageTotal = Number(step.totalStages);
-      const safeStageTotal =
-        Number.isFinite(stageTotal) && stageTotal > 0 ? stageTotal : totalStageCount;
-      const safeStageNum =
-        Number.isFinite(stageNum) && stageNum > 0 ? stageNum : i + 1;
-
-      currentSectionRows.push(
-        <div
-          key={step.id}
-          className="skyward-journey-row dashboard-anim-bottom"
-        >
-          <div className="skyward-journey-track">
-            <div
-              className={`skyward-journey-node-shell${
-                i === 0 && isActive ? ' skyward-journey-node-shell--start-onboarding' : ''
-              }`}
-            >
-              <div
-                className={`skyward-journey-node-cluster${milestone ? ' skyward-journey-node-cluster--milestone' : ''}`}
-                style={{
-                  transform: `translateX(${horizontalOffset}px)`,
-                }}
-              >
-                {startStage ? (
-                  <div className="skyward-journey-start-callout" aria-hidden>
-                    <span className="skyward-journey-start-badge">START</span>
-                  </div>
-                ) : null}
-                <SkywardJourneyNodeButton
-                  type="button"
-                  nodeState={step.nodeState}
-                  ref={(el) => {
-                    nodeRefs.current[i] = el;
-                  }}
-                  className={[
-                    'skyward-journey-node',
-                    `skyward-journey-node--${step.nodeState}`,
-                    milestone ? 'skyward-journey-node--milestone' : '',
-                    jiggle ? 'skyward-journey-node--jiggle' : '',
-                    !isLocked ? 'skyward-journey-node--unlocked' : '',
-                    isLocked ? 'skyward-journey-node--locked-teaser' : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  aria-current={isActive ? 'step' : undefined}
-                  aria-expanded={panelOpenId === step.id}
-                  aria-label={`${milestone ? 'Milestone: ' : ''}${theme.shortLabel}: ${title}. ${
-                    isDone ? 'Completed' : isLocked ? 'Locked' : 'Current step'
-                  }. Open quest details.`}
-                  onClick={() => handleNodeClick(step, i)}
-                >
-                  {milestone ? (
-                    <IoTrophy
-                      className="skyward-journey-node-icon skyward-journey-node-icon--boss"
-                      aria-hidden
-                    />
-                  ) : startStage ? (
-                    <IoStar
-                      className="skyward-journey-node-icon"
-                      aria-hidden
-                    />
-                  ) : isDone ? (
-                    <IoCheckmarkCircle className="skyward-journey-node-state-icon" aria-hidden />
-                  ) : (
-                    <JourneyNodeIcon step={step} index={i} />
-                  )}
-                </SkywardJourneyNodeButton>
-                <AnimatePresence>
-                  {tooltipNodeId === step.id && (
-                    <JourneyTooltip
-                      key={step.id}
-                      step={step}
-                      onStart={(s) => setPanelOpenId(s.id)}
-                      onClose={() => setTooltipNodeId(null)}
-                      nodeRef={{ get current() { return nodeRefs.current[i]; } }}
-                      forceBottom={i >= steps.length - 2}
-                    />
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-          </div>
-        </div>,
-      );
-    });
-    flushPillarSection();
   }
 
   const activeStepIndex = steps.findIndex((s) => s.nodeState === NODE_STATE.ACTIVE);

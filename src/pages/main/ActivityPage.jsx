@@ -233,23 +233,17 @@ function ActivityPage() {
   );
 
   const groupedTasks = useMemo(() => {
-    const sections = [];
-    let currentPhase = null;
-    let currentSection = null;
-
-    journeySteps.forEach((step) => {
-      const phase = step.pillarName || 'General';
-      if (phase !== currentPhase) {
-        currentPhase = phase;
-        currentSection = {
-          phaseName: phase,
-          tasks: [],
-        };
-        sections.push(currentSection);
+    if (!journeySteps.length) return [];
+    return journeySteps.reduce((acc, step) => {
+      const phaseName = step.pillarName || "Training";
+      const existingPhase = acc.find(p => p.phaseName === phaseName);
+      if (existingPhase) {
+        existingPhase.tasks.push(step);
+      } else {
+        acc.push({ phaseName, tasks: [step] });
       }
-      currentSection.tasks.push(step);
-    });
-    return sections;
+      return acc;
+    }, []);
   }, [journeySteps]);
 
   const renderTaskCard = ({ task, historyEntry = null, animationClass = '' }) => {

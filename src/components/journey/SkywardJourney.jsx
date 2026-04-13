@@ -78,7 +78,7 @@ function JourneyNodeIcon({ index, className = '' }) {
 const MapHeaderCard = styled.div`
   max-width: 480px;
   width: min(480px, calc(100vw - 48px));
-  margin: 0 auto;
+  margin: 0;
   padding: 24px;
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
@@ -91,9 +91,11 @@ const MapHeaderCard = styled.div`
   text-align: center;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   border: 2px solid #f18f01;
-  position: sticky;
-  top: 0;
-  z-index: 60;
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1400;
   flex-shrink: 0;
 `;
 
@@ -898,13 +900,19 @@ export default function SkywardJourney({
     : 'Pillar 1: General';
 
   return (
-    <div className="skyward-journey skyward-journey-container skyward-journey-anim-root no-scrollbar" ref={rootRef}>
-      <MapHeaderCard className="skyward-journey-anim-header">
-        <HeaderTitle>{currentPillarText}</HeaderTitle>
-        <HeaderDescription>Master your speaking fundamentals</HeaderDescription>
-        <HeaderStatBadge>{completedCount} / {steps.length} Stages Completed</HeaderStatBadge>
-      </MapHeaderCard>
-      <div className="skyward-journey-map skyward-journey-anim-map">
+    <div className="skyward-journey skyward-journey-container no-scrollbar" ref={rootRef}>
+      {typeof document !== 'undefined'
+        ? createPortal(
+            <MapHeaderCard className="skyward-journey-anim-header">
+              <HeaderTitle>{currentPillarText}</HeaderTitle>
+              <HeaderDescription>Master your speaking fundamentals</HeaderDescription>
+              <HeaderStatBadge>{completedCount} / {steps.length} Stages Completed</HeaderStatBadge>
+            </MapHeaderCard>,
+            document.body,
+          )
+        : null}
+      <div className="skyward-journey-fixed-header-spacer" aria-hidden />
+      <div className="skyward-journey-anim-root skyward-journey-map skyward-journey-anim-map">
       <div
         className="skyward-journey-map-viewport"
         ref={viewportRef}

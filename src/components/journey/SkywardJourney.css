@@ -49,11 +49,24 @@
   animation: skywardEntranceSpringUp 0.75s cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
 }
 
-/* ── Entrance animations ── */
+/* ── Entrance animations ── (header is portaled + fixed; do not set transform here — centering uses translateX) */
 .skyward-journey-anim-header {
   opacity: 1;
-  transform: none;
   animation: none;
+}
+
+/* Reserves layout space for the fixed journey header (see MapHeaderCard in SkywardJourney.jsx) */
+.skyward-journey-fixed-header-spacer {
+  flex-shrink: 0;
+  width: 100%;
+  min-height: 188px;
+  pointer-events: none;
+}
+
+@media (max-width: 520px) {
+  .skyward-journey-fixed-header-spacer {
+    min-height: 200px;
+  }
 }
 
 .skyward-journey-anim-map {
@@ -94,11 +107,15 @@
 
 @media (prefers-reduced-motion: reduce) {
   .skyward-journey-anim-root,
-  .skyward-journey-anim-header,
   .skyward-journey-anim-map {
     animation: none;
     opacity: 1;
     transform: none;
+  }
+
+  .skyward-journey-anim-header {
+    animation: none;
+    opacity: 1;
   }
 }
 
@@ -1053,6 +1070,12 @@
 
 [data-theme='dark'] .skyward-journey-tap-hint {
   color: rgba(255, 255, 255, 0.35);
+}
+
+[data-theme='dark'] .skyward-journey-anim-header {
+  background: rgba(26, 26, 29, 0.94) !important;
+  border-color: #f59b00 !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45) !important;
 }
 
 [data-theme='dark'] .skyward-journey-node-lock-corner {

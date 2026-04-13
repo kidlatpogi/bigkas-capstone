@@ -34,6 +34,11 @@ function calculateMehrabianTotal({ verbalScore = 0, vocalScore = 0, visualScore 
   return clampScore((verbalScore * 0.07) + (vocalScore * 0.38) + (visualScore * 0.55));
 }
 
+/** Display Triple V / aggregate scores on the Bigkas 1.0–5.0 entry scale (from raw 0–100 metrics). */
+function formatEntryScale(percent0to100) {
+  return mapPercentToEntryScore(percent0to100).toFixed(1);
+}
+
 function UserAnalyzingPage() {
   const navigate = useNavigate();
   const { user, updateUserMetadata } = useAuthContext();
@@ -146,6 +151,15 @@ function UserAnalyzingPage() {
         verbalScore = clampScore(freeMetrics?.verbal_score ?? 0);
         vocalScore = clampScore(freeMetrics?.vocal_score ?? 0);
         visualScore = clampScore(freeMetrics?.visual_score ?? 0);
+
+        const overallTriple = clampScore(
+          freeMetrics?.overall_score ?? freeMetrics?.confidence_score ?? 0,
+        );
+        if (verbalScore === 0 && vocalScore === 0 && visualScore === 0 && overallTriple > 0) {
+          verbalScore = overallTriple;
+          vocalScore = overallTriple;
+          visualScore = overallTriple;
+        }
       }
 
       if (verbalScore === 0 && vocalScore === 0 && visualScore === 0) {
@@ -297,11 +311,12 @@ function UserAnalyzingPage() {
         </div>
 
         <div className="analyzing-breakdown">
-          <p>Verbal Score (7%): {analysis.verbalScore}</p>
-          <p>Vocal Score (38%): {analysis.vocalScore}</p>
-          <p>Visual Score (55%): {analysis.visualScore}</p>
-          <p>Free Speech Pre-Test: {analysis.freePretestScore}</p>
-          <p>Final Score: {analysis.finalScore}</p>
+          <p className="analyzing-breakdown-scale">Scores below use the Bigkas 1.0–5.0 entry scale (from your 0–100 metrics).</p>
+          <p>Verbal Score (7%): {formatEntryScale(analysis.verbalScore)}</p>
+          <p>Vocal Score (38%): {formatEntryScale(analysis.vocalScore)}</p>
+          <p>Visual Score (55%): {formatEntryScale(analysis.visualScore)}</p>
+          <p>Free Speech Pre-Test: {formatEntryScale(analysis.freePretestScore)}</p>
+          <p>Final weighted score: {formatEntryScale(analysis.finalScore)}</p>
         </div>
 
         {isReady && !error && (

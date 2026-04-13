@@ -114,6 +114,13 @@
   line-height: 1.5;
 }
 
+.analyzing-breakdown-scale {
+  margin-bottom: 8px !important;
+  font-size: 0.82rem !important;
+  color: rgba(60, 73, 82, 0.72) !important;
+  line-height: 1.45 !important;
+}
+
 .analyzing-error {
   margin-top: 14px;
   color: #ff7f7f;

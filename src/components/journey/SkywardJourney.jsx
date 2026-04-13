@@ -96,8 +96,8 @@ function JourneyNodeIcon({ step, index, className = '' }) {
  */
 
 const MapHeaderCard = styled.div`
-  width: 90%;
-  margin: 0 auto;
+  width: min(90vw, 882px);
+  margin: 0;
   padding: 24px;
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
@@ -110,8 +110,10 @@ const MapHeaderCard = styled.div`
   text-align: center;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   border: 2px solid #f18f01;
-  position: sticky;
-  top: max(12px, env(safe-area-inset-top, 0px));
+  position: fixed;
+  top: max(14px, env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 1400;
   flex-shrink: 0;
 `;
@@ -998,6 +1000,7 @@ export default function SkywardJourney({
           <HeaderDescription>Master your speaking fundamentals</HeaderDescription>
           <HeaderStatBadge>{completedCount} / {steps.length} Stages Completed</HeaderStatBadge>
         </MapHeaderCard>
+        <div className="skyward-journey-fixed-header-spacer" aria-hidden />
         <div className="skyward-journey-anim-root skyward-journey-map skyward-journey-anim-map">
           <div
             className="skyward-journey-map-viewport"

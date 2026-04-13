@@ -624,7 +624,7 @@ function ProgressPage() {
                 <div 
                   key={s.id} 
                   className={`history-item dashboard-anim-bottom dashboard-anim-delay-${delay}`}
-                  onClick={() => navigate(buildRoute.sessionResult(s.id), { state: s })}
+                  onClick={() => navigate(buildRoute.sessionResult(s.id), { state: { ...s, source: 'progress' } })}
                   style={{ cursor: 'pointer' }}
                 >
                   <div className="history-item-top">

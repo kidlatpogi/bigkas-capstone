@@ -214,7 +214,7 @@ body.skyward-journey-modal-open .activity-sticky-shell {
   }
 
   .activity-content-wrap--journey-scroll .activity-task-list--journey {
-    padding-bottom: 120px;
+    padding-bottom: 150px;
     -webkit-overflow-scrolling: touch;
   }
 }

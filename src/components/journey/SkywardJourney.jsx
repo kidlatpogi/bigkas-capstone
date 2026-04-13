@@ -11,6 +11,8 @@ import {
   IoPulse,
   IoStar,
   IoTrophy,
+  IoSync,
+  IoBrain,
 } from 'react-icons/io5';
 import {
   JOURNEY_NODE_THEMES,
@@ -22,7 +24,7 @@ import './SkywardJourney.css';
 const MAP_SCALE = 1.5;
 const MAP_EDGE_PAN_PADDING = 96;
 function getHorizontalOffset(index) {
-  return index % 2 === 0 ? 20 : -20;
+  return Math.sin(index * 1.0) * 80;
 }
 
 function buildSmoothConnectorPath(points) {
@@ -78,10 +80,22 @@ function isStartNode(step, index) {
 
 function getPhaseIcon(step) {
   const phase = getStepPhaseName(step).toLowerCase();
-  if (phase.includes('gaze')) return IoEye;
-  if (phase.includes('vocal')) return IoPulse;
-  if (phase.includes('verbal')) return IoChatbubbleEllipses;
-  return IoMic;
+  switch (true) {
+    case phase.includes('gaze'):
+      return IoEye;
+    case phase.includes('vocal'):
+      return IoMic;
+    case phase.includes('verbal'):
+      return IoChatbubbleEllipses;
+    case phase.includes('sync'):
+    case phase.includes('multi'):
+      return IoSync;
+    case phase.includes('context'):
+    case phase.includes('advanced'):
+      return IoBrain;
+    default:
+      return IoCheckmarkCircle;
+  }
 }
 
 function JourneyNodeIcon({ step, index, className = '' }) {
@@ -833,8 +847,10 @@ export default function SkywardJourney({
           >
             <div
               className={`skyward-journey-node-cluster${milestone ? ' skyward-journey-node-cluster--milestone' : ''}`}
+              style={{
+                transform: `translateX(${horizontalOffset}px)`,
+              }}
             >
-              {i === 0 && isActive ? null : null}
               {startStage ? (
                 <div className="skyward-journey-start-callout" aria-hidden>
                   <span className="skyward-journey-start-badge">START</span>
@@ -861,18 +877,20 @@ export default function SkywardJourney({
                 aria-label={`${milestone ? 'Milestone: ' : ''}${theme.shortLabel}: ${title}. ${
                   isDone ? 'Completed' : isLocked ? 'Locked' : 'Current step'
                 }. Open quest details.`}
-                style={{
-                  '--skyward-node-offset': `${horizontalOffset}px`,
-                }}
                 onClick={() => handleNodeClick(step, i)}
               >
-                {isDone ? (
-                  <IoCheckmarkCircle className="skyward-journey-node-state-icon" aria-hidden />
-                ) : milestone ? (
+                {milestone ? (
                   <IoTrophy
                     className="skyward-journey-node-icon skyward-journey-node-icon--boss"
                     aria-hidden
                   />
+                ) : startStage ? (
+                  <IoStar
+                    className="skyward-journey-node-icon"
+                    aria-hidden
+                  />
+                ) : isDone ? (
+                  <IoCheckmarkCircle className="skyward-journey-node-state-icon" aria-hidden />
                 ) : (
                   <JourneyNodeIcon step={step} index={i} />
                 )}
@@ -979,7 +997,8 @@ export default function SkywardJourney({
           }}
         >
           <div className="skyward-journey-map-content" ref={mapContentRef}>
-            {pathPoints.length > 1 ? (
+            {/* PATH RENDER COMMENTED OUT FOR SNAKE LAYOUT */}
+            {/* pathPoints.length > 1 ? (
               <svg
                 className="skyward-journey-svg"
                 aria-hidden
@@ -1028,8 +1047,7 @@ export default function SkywardJourney({
                   />
                 ) : null}
               </svg>
-            ) : null}
-
+            ) : null */}
             <div className="skyward-journey-column">
               {sections}
             </div>

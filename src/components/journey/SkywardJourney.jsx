@@ -466,13 +466,13 @@ export default function SkywardJourney({
   const recomputePath = useCallback(() => {
     const content = mapContentRef.current;
     if (!content || steps.length < 2) {
-      setIndexedNodePoints([]);
+      if (indexedNodePoints.length !== 0) setIndexedNodePoints([]);
       return;
     }
 
     const cr = content.getBoundingClientRect();
     if (!cr.width || !cr.height) {
-      setIndexedNodePoints([]);
+      if (indexedNodePoints.length !== 0) setIndexedNodePoints([]);
       return;
     }
 
@@ -523,9 +523,10 @@ export default function SkywardJourney({
   }, [recomputePath]);
 
   useEffect(() => {
+    // Only recompute path on mount and when steps change to avoid unnecessary re-renders during scroll
     const id = requestAnimationFrame(() => recomputePath());
     return () => cancelAnimationFrame(id);
-  }, [map.tx, map.ty, recomputePath]);
+  }, [recomputePath]);
 
   /** Hero focus: scroll map / page so the target stage (dashboard handoff or active node) is in view. */
   useLayoutEffect(() => {
@@ -891,15 +892,22 @@ export default function SkywardJourney({
     ? activeStepIndex
     : (lastCompletedStepIndex >= 0 ? lastCompletedStepIndex : 0);
   const visibleStepIndex = useMemo(() => {
-    const viewportHeight = viewportRef.current?.clientHeight ?? 0;
+    const viewportHeight = viewportRef.current?.clientHeight ?? (typeof window !== 'undefined' ? window.innerHeight : 0);
     if (!viewportHeight || !indexedNodePoints.length) return indexToUse;
+    // Map moves UP (negative ty) as we scroll DOWN the journey (higher index nodes).
+    // The "focus" area is roughly the top 1/3rd of the screen.
     const focusY = viewportHeight * 0.32;
     let bestIndex = indexToUse;
     let bestDistance = Number.POSITIVE_INFINITY;
+
     indexedNodePoints.forEach((point, i) => {
       if (!point || !steps[i]) return;
-      const screenY = point.y * MAP_SCALE + map.ty;
-      if (screenY < -80 || screenY > viewportHeight + 80) return;
+      // Calculate where the node currently is relative to the viewport top
+      const screenY = (point.y * MAP_SCALE) + map.ty;
+      
+      // If it's completely off screen, ignore it
+      if (screenY < -100 || screenY > viewportHeight + 100) return;
+      
       const dist = Math.abs(screenY - focusY);
       if (dist < bestDistance) {
         bestDistance = dist;
@@ -910,7 +918,7 @@ export default function SkywardJourney({
   }, [indexedNodePoints, indexToUse, map.ty, steps]);
   const currentStep = steps[visibleStepIndex] || steps[indexToUse] || null;
   const currentPillarText = currentStep
-    ? `Pillar ${currentStep.task?.target_level || 1}: ${getStepPhaseName(currentStep)}`
+    ? `Pillar ${currentStep.task?.target_level || currentStep.stageNumber || 1}: ${getStepPhaseName(currentStep)}`
     : 'Pillar 1: General';
 
   return (

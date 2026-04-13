@@ -232,6 +232,20 @@ function ActivityPage() {
     [tasks, taskState, taskUnlockState, activeTaskId, handleTaskAction, totalStages],
   );
 
+  const groupedTasks = useMemo(() => {
+    if (!journeySteps.length) return [];
+    return journeySteps.reduce((acc, step) => {
+      const phaseName = step.pillarName || "Training";
+      const existingPhase = acc.find(p => p.phaseName === phaseName);
+      if (existingPhase) {
+        existingPhase.tasks.push(step);
+      } else {
+        acc.push({ phaseName, tasks: [step] });
+      }
+      return acc;
+    }, []);
+  }, [journeySteps]);
+
   const renderTaskCard = ({ task, historyEntry = null, animationClass = '' }) => {
     const done = taskState[task.id] === true;
     const isUnlocked = taskUnlockState[task.id] === true;
@@ -338,6 +352,7 @@ function ActivityPage() {
         <div className="activity-task-list activity-task-list--journey">
           <SkywardJourney
             steps={journeySteps}
+            groupedTasks={groupedTasks}
             entranceFromNav={entranceFromNav}
             scrollToStepIndex={scrollToStepIndex}
             renderStepContent={(step, meta) =>

@@ -1,36 +1,81 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import Confetti from 'react-confetti';
+import { IoChevronForward } from 'react-icons/io5';
 import { useSessionContext } from '../../context/useSessionContext';
 import { useAuthContext } from '../../context/useAuthContext';
-import { getScoreTier, buildRoute, ROUTES } from '../../utils/constants';
-import { getSessionMode, getSessionSpeechType } from '../../utils/sessionFormatting';
-import BackButton from '../../components/common/BackButton';
+import { buildRoute, ROUTES } from '../../utils/constants';
+import { getSessionMode } from '../../utils/sessionFormatting';
 import '../main/InnerPages.css';
-import './SessionPages.css';
+import './SessionResultPage.css';
 
-function scoreWord(score) {
-  if (score >= 85) return 'Excellent';
-  if (score >= 70) return 'Good';
-  if (score >= 50) return 'Fair';
-  return 'Needs Work';
+const FOREST_GREEN = '#5A7863';
+const SOFT_SAGE = '#90AB8B';
+const SLATE_CHARCOAL = '#3C4952';
+const VIBRANT_ORANGE = '#F18F01';
+
+function score100to15(val) {
+  const v = Math.max(0, Math.min(100, Number(val) || 0));
+  if (v === 0) return 1.0;
+  return Math.round((1.0 + (v / 100) * 4.0) * 100) / 100;
 }
 
-function getMetricEffectivenessScore(metricKey, rawScore) {
-  const clamped = Math.max(0, Math.min(100, Number(rawScore) || 0));
-  if (metricKey === 'jitter' || metricKey === 'shimmer') {
-    return 100 - clamped;
-  }
-  return clamped;
+function getTripleVScores(result) {
+  const visualAvg = result.visual_avg ?? score100to15(result.visual_score ?? 0);
+  const vocalAvg = result.vocal_avg ?? score100to15(result.acoustic_score ?? 0);
+  const verbalAvg = result.verbal_avg ?? score100to15(result.context_score ?? 0);
+
+  const entryPoint = result.entry_point
+    ?? score100to15(result.confidence_score ?? 0);
+
+  return {
+    entryPoint: Math.round(Math.max(1, Math.min(5, Number(entryPoint) || 1)) * 100) / 100,
+    visualAvg: Math.round(Math.max(1, Math.min(5, Number(visualAvg) || 1)) * 100) / 100,
+    vocalAvg: Math.round(Math.max(1, Math.min(5, Number(vocalAvg) || 1)) * 100) / 100,
+    verbalAvg: Math.round(Math.max(1, Math.min(5, Number(verbalAvg) || 1)) * 100) / 100,
+  };
+}
+
+function getScoreTier15(score) {
+  if (score >= 4.0) return { label: 'Excellent', color: FOREST_GREEN };
+  if (score >= 3.0) return { label: 'Good', color: SOFT_SAGE };
+  if (score >= 2.0) return { label: 'Fair', color: VIBRANT_ORANGE };
+  return { label: 'Needs Work', color: '#D94F3B' };
+}
+
+function getLevelFromScore(score) {
+  if (score >= 5.0) return { level: 5, label: 'Demonstrating Expertise' };
+  if (score >= 4.0) return { level: 4, label: 'Building Skills' };
+  if (score >= 3.0) return { level: 3, label: 'Increasing Knowledge' };
+  if (score >= 2.0) return { level: 2, label: 'Learning Your Style' };
+  return { level: 1, label: 'Mastering Fundamentals' };
+}
+
+function scoreBarPercent(score) {
+  return Math.max(0, Math.min(100, ((score - 1) / 4) * 100));
+}
+
+function shouldCelebrateScore(session) {
+  const score = Number(session?.confidence_score ?? 0);
+  if (!Number.isFinite(score) || score < 60) return false;
+  const raw = [
+    session?.session_mode, session?.mode, session?.session_type,
+    session?.session_origin, session?.speaking_mode,
+  ].filter((v) => typeof v === 'string' && v.trim()).join(' ').toLowerCase();
+  const isPreTest = raw.includes('pre-test') || raw.includes('pretest');
+  const isPracticeOrTraining = raw.includes('practice') || raw.includes('train');
+  return !isPreTest && isPracticeOrTraining;
 }
 
 function buildReplayAction(session, navigate) {
   const mode = getSessionMode(session);
   const isPractice = mode === 'Practice';
-  const isFree = getSessionSpeechType(session) === 'Free Speech';
-
   const setupRoute = isPractice ? ROUTES.PRACTICE : ROUTES.TRAINING_SETUP;
   const label = isPractice ? 'Practice Again' : 'Train Again';
+  const rawSpeech = [
+    session?.session_mode, session?.mode, session?.speaking_mode,
+  ].filter((v) => typeof v === 'string' && v.trim()).join(' ').toLowerCase();
+  const isFree = rawSpeech.includes('free');
   const focus = isFree ? 'free' : 'scripted';
 
   const replayState = {
@@ -42,10 +87,7 @@ function buildReplayAction(session, navigate) {
 
   if (focus === 'scripted') {
     const content = session?.transcript || '';
-    if (!content.trim()) {
-      return { label, onClick: () => navigate(setupRoute) };
-    }
-
+    if (!content.trim()) return { label, onClick: () => navigate(setupRoute) };
     replayState.script = {
       id: session?.script_id || `replay-${session?.id || 'session'}`,
       title: session?.script_title || session?.title || `${mode} Script`,
@@ -59,26 +101,6 @@ function buildReplayAction(session, navigate) {
     label,
     onClick: () => navigate(`${ROUTES.TRAINING}?autostart=1`, { state: replayState }),
   };
-}
-
-function shouldCelebrateScore(session) {
-  const score = Number(session?.confidence_score ?? 0);
-  if (!Number.isFinite(score) || score < 60) return false;
-
-  const raw = [
-    session?.session_mode,
-    session?.mode,
-    session?.session_type,
-    session?.session_origin,
-    session?.speaking_mode,
-  ]
-    .filter((value) => typeof value === 'string' && value.trim())
-    .join(' ')
-    .toLowerCase();
-
-  const isPreTest = raw.includes('pre-test') || raw.includes('pretest');
-  const isPracticeOrTraining = raw.includes('practice') || raw.includes('train') || raw.includes('training');
-  return !isPreTest && isPracticeOrTraining;
 }
 
 function SessionResultPage() {
@@ -106,13 +128,7 @@ function SessionResultPage() {
   }, [currentSession, fetchSessionById, hasCompleteState, sessionId]);
 
   useEffect(() => {
-    const updateSize = () => {
-      setWindowSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-    };
-
+    const updateSize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
     updateSize();
     window.addEventListener('resize', updateSize);
     return () => window.removeEventListener('resize', updateSize);
@@ -120,105 +136,77 @@ function SessionResultPage() {
 
   const result = useMemo(() => {
     if (hasCompleteState) return state;
-    if (String(currentSession?.id || '') === String(sessionId || '')) {
-      return currentSession;
-    }
+    if (String(currentSession?.id || '') === String(sessionId || '')) return currentSession;
     return null;
   }, [currentSession, hasCompleteState, sessionId, state]);
 
   if (!result && isLoading) {
-    return <div className="inner-page"><div className="page-loading">Loading...</div></div>;
+    return (
+      <div className="sr-page">
+        <div className="sr-loading">Loading...</div>
+      </div>
+    );
   }
 
   if (!result) {
     return (
-      <div className="inner-page">
-        <div className="empty-state">
-          <span className="empty-icon">&#9888;&#65039;</span>
-          <p className="empty-title">Session not found</p>
-          <button className="btn-primary" onClick={() => navigate(ROUTES.DASHBOARD)}>Go Home</button>
+      <div className="sr-page">
+        <div className="sr-empty">
+          <p className="sr-empty-title">Session not found</p>
+          <button className="sr-btn sr-btn-primary" onClick={() => navigate(ROUTES.DASHBOARD)}>
+            Go Home
+          </button>
         </div>
       </div>
     );
   }
 
-  const score = Number(result.confidence_score ?? 0);
-  const roundedScore = Math.max(0, Math.min(100, Math.round(score)));
-  const tier = getScoreTier(roundedScore);
-  const scoreDisplay = `${roundedScore}`;
+  const tripleV = getTripleVScores(result);
+  const overallTier = getScoreTier15(tripleV.entryPoint);
+  const levelInfo = result.level_label
+    ? { level: result.level, label: result.level_label }
+    : getLevelFromScore(tripleV.entryPoint);
+
+  const sessionTitle = result?.script_title || result?.title || 'Session';
+  const mode = getSessionMode(result);
+  const sourceNav = state?.source;
+
+  let breadcrumbParent = mode === 'Practice' ? 'Practice' : 'Training';
+  let breadcrumbRoute = mode === 'Practice' ? ROUTES.PRACTICE : ROUTES.TRAINING_SETUP;
+  if (sourceNav === 'progress') {
+    breadcrumbParent = 'Progress';
+    breadcrumbRoute = ROUTES.PROGRESS;
+  } else if (sourceNav === 'notification') {
+    breadcrumbParent = 'Dashboard';
+    breadcrumbRoute = state?.backTo || ROUTES.DASHBOARD;
+  }
 
   const recommendations = Array.isArray(result.recommendations) ? result.recommendations : [];
-  const rawMode = [
-    result?.session_mode,
-    result?.mode,
-    result?.session_type,
-    result?.session_origin,
-    result?.speaking_mode,
-  ]
-    .filter((value) => typeof value === 'string' && value.trim())
-    .join(' ')
-    .toLowerCase();
-  const isFreeSession = rawMode.includes('free');
-
   const pillars = [
-    { key: 'facial', label: 'Facial Expression', value: result.facial_expression_score },
-    { key: 'gesture', label: 'Gestures', value: result.gesture_score },
-    { key: 'pronunciation', label: 'Pronunciation', value: result.pronunciation_score },
-    { key: 'jitter', label: 'Jitter', value: result.jitter_score },
-    { key: 'shimmer', label: 'Shimmer', value: result.shimmer_score },
-    ...(isFreeSession ? [{ key: 'context', label: 'Context', value: result.context_score }] : []),
-  ].map((p) => {
-    const scoreVal = Number.isFinite(p.value) ? p.value : 0;
-    const score = Math.max(0, Math.min(100, Math.round(scoreVal)));
-    return {
-      ...p,
-      score,
-      effectivenessScore: getMetricEffectivenessScore(p.key, score),
-    };
-  });
-  
-  const pillarBasedRecommendations = pillars
-    .filter((p) => p.effectivenessScore < 85)
-    .map((cat) => {
-      if (cat.key === 'facial') return 'Improve facial expressions — maintain natural, engaging eye contact.';
-      if (cat.key === 'gesture') return 'Use more purposeful hand gestures to emphasize key points.';
-      if (cat.key === 'jitter') return 'Steady your vocal pitch — practice deep breathing for control.';
-      if (cat.key === 'shimmer') return 'Maintain consistent volume — focus on diaphragm breathing.';
-      if (cat.key === 'pronunciation') return 'Articulate more clearly — slow down on complex words.';
-      if (cat.key === 'context') return 'Stay aligned with your chosen topic and connect examples back to your main message.';
-      return '';
-    })
-    .filter(Boolean);
+    { key: 'visual', label: 'Visual', desc: 'Eye contact & gestures', score: tripleV.visualAvg },
+    { key: 'vocal', label: 'Vocal', desc: 'Voice quality & stability', score: tripleV.vocalAvg },
+    { key: 'verbal', label: 'Verbal', desc: 'Pronunciation & clarity', score: tripleV.verbalAvg },
+  ];
 
-  const allRecommendations = Array.from(new Set([...pillarBasedRecommendations, ...recommendations]));
-
+  const pillarRecommendations = pillars
+    .filter((p) => p.score < 3.0)
+    .map((p) => {
+      if (p.key === 'visual') return 'Improve visual presence — maintain natural eye contact and use purposeful gestures.';
+      if (p.key === 'vocal') return 'Steady your voice — practice deep breathing for pitch and volume control.';
+      return 'Articulate more clearly — slow down on complex words and stay on topic.';
+    });
+  const allRecommendations = Array.from(new Set([...pillarRecommendations, ...recommendations]));
   if (allRecommendations.length === 0) {
     allRecommendations.push('Great job! Keep up the excellent work across all areas.');
   }
+
   const replayAction = buildReplayAction(result, navigate);
-  const isOnboardingInProgress = user?.onboardingStage === 'pretest' || user?.onboardingStage === 'analyzing';
-  const onboardingActionLabel = user?.onboardingStage === 'analyzing'
-    ? 'Analyze Level'
-    : 'Continue Onboarding';
-  const onboardingActionRoute = user?.onboardingStage === 'analyzing'
-    ? ROUTES.USER_ANALYZING
-    : ROUTES.USER_PRETEST;
-
-  const backTarget = (state?.source === 'notification')
-    ? (state?.backTo || ROUTES.DASHBOARD)
-    : ROUTES.TRAINING_SETUP;
-
-  const pillarColors = {
-    facial: '#21C26A',
-    gesture: '#15B8A6',
-    jitter: '#FCBA04',
-    shimmer: '#F59E0B',
-    pronunciation: '#EF4444',
-    context: '#3B82F6',
-  };
+  const isOnboarding = user?.onboardingStage === 'pretest' || user?.onboardingStage === 'analyzing';
+  const onboardingRoute = user?.onboardingStage === 'analyzing' ? ROUTES.USER_ANALYZING : ROUTES.USER_PRETEST;
+  const onboardingLabel = user?.onboardingStage === 'analyzing' ? 'Analyze Level' : 'Continue Onboarding';
 
   return (
-    <div className="inner-page feedback-figma-page">
+    <div className="sr-page">
       {shouldCelebrateScore(result) && (
         <Confetti
           width={windowSize.width}
@@ -230,88 +218,137 @@ function SessionResultPage() {
         />
       )}
 
-      {/* Header */}
-      <div className="inner-page-header centered-header">
-        <BackButton onClick={() => navigate(backTarget, { replace: true })} />
-        <h1 className="inner-page-title">Analysis Result</h1>
-      </div>
+      {/* Breadcrumb */}
+      <nav className="sr-breadcrumb">
+        <button
+          type="button"
+          className="sr-breadcrumb-link"
+          onClick={() => navigate(breadcrumbRoute, { replace: true })}
+        >
+          {breadcrumbParent}
+        </button>
+        <IoChevronForward className="sr-breadcrumb-sep" />
+        <span className="sr-breadcrumb-current">
+          {sessionTitle} Analysis Result
+        </span>
+      </nav>
 
-      {/* Overall score */}
-      <div className="page-card result-hero-card">
-        <p className="result-hero-kicker">Speaking Confidence Score</p>
-        <div className="result-hero-score-row">
-          <p className="result-hero-score">
-            {scoreDisplay}
-            <span>/100</span>
-          </p>
-          <span className="result-hero-tier" style={{ background: `${tier.color}1A`, color: tier.color }}>
-            {tier.label}
+      {/* Overall Score Hero */}
+      <section className="sr-hero">
+        <div className="sr-hero-top">
+          <p className="sr-hero-kicker">Overall Speaking Score</p>
+          <span
+            className="sr-hero-tier"
+            style={{ background: `${overallTier.color}1A`, color: overallTier.color }}
+          >
+            {overallTier.label}
           </span>
         </div>
-        <div className="result-hero-track">
+
+        <div className="sr-hero-score-wrap">
+          <p className="sr-hero-score">{tripleV.entryPoint.toFixed(1)}</p>
+          <span className="sr-hero-max">/ 5.0</span>
+        </div>
+
+        <div className="sr-hero-track">
           <div
-            className="result-hero-track-fill"
-            style={{ width: `${roundedScore}%`, background: tier.color }}
+            className="sr-hero-track-fill"
+            style={{ width: `${scoreBarPercent(tripleV.entryPoint)}%` }}
           />
         </div>
-        <p className="result-summary">
-          {score >= 85 ? 'Outstanding! Your speech was clear and fluent.'
-            : score >= 65 ? 'Good job! A few areas to polish for even better results.'
-              : score >= 45 ? 'Keep going! Regular practice will push your score higher.'
-                : 'Don\'t give up. Every session makes you stronger.'}
+
+        <p className="sr-hero-level">
+          Level {levelInfo.level} — {levelInfo.label}
         </p>
-      </div>
 
-      {/* Five scoring pillars */}
-      <div className="feedback-metrics-grid" style={{ marginTop: 0, marginBottom: 16 }}>
-        {pillars.map((p) => {
-          const color = pillarColors[p.key] || '#FCBA04';
-          return (
-            <div key={p.key} className={`page-card feedback-score-card ${p.key}`}>
-              <p className="feedback-score-title">{p.label}</p>
-              <p className="feedback-score-main">{p.score}%</p>
-              <p className="feedback-score-sub">{scoreWord(p.effectivenessScore).toUpperCase()}</p>
-              <div className="feedback-score-track"><div style={{ width: `${p.score}%`, background: color }} /></div>
-            </div>
-          );
-        })}
-      </div>
+        <p className="sr-hero-message">
+          {tripleV.entryPoint >= 4.0
+            ? 'Outstanding! Your speech was clear and confident.'
+            : tripleV.entryPoint >= 3.0
+              ? 'Good job! A few areas to polish for even better results.'
+              : tripleV.entryPoint >= 2.0
+                ? 'Keep going! Regular practice will push your score higher.'
+                : "Don't give up. Every session makes you stronger."}
+        </p>
+      </section>
 
+      {/* Triple V Pillars */}
+      <section className="sr-pillars">
+        <h2 className="sr-section-title">Triple V Breakdown</h2>
+        <div className="sr-pillars-grid">
+          {pillars.map((p) => {
+            const tier = getScoreTier15(p.score);
+            return (
+              <div key={p.key} className="sr-pillar-card">
+                <div className="sr-pillar-header">
+                  <span className="sr-pillar-label">{p.label}</span>
+                  <span
+                    className="sr-pillar-tier"
+                    style={{ color: tier.color }}
+                  >
+                    {tier.label}
+                  </span>
+                </div>
+                <p className="sr-pillar-score">{p.score.toFixed(1)}<span>/5.0</span></p>
+                <p className="sr-pillar-desc">{p.desc}</p>
+                <div className="sr-pillar-track">
+                  <div
+                    className="sr-pillar-track-fill"
+                    style={{ width: `${scoreBarPercent(p.score)}%`, background: tier.color }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Recommendations */}
       {allRecommendations.length > 0 && (
-        <div className="page-card result-recs-card" style={{ marginBottom: 16 }}>
-          <p className="section-label" style={{ marginBottom: 8 }}>Recommendations</p>
-          <ul className="result-recs-list">
+        <section className="sr-recs">
+          <h2 className="sr-section-title">Recommendations</h2>
+          <ul className="sr-recs-list">
             {allRecommendations.map((text, idx) => (
-              <li key={idx} className="result-rec-item">{text}</li>
+              <li key={idx} className="sr-rec-item">{text}</li>
             ))}
           </ul>
-          {pillarBasedRecommendations.length > 0 && (
+          {pillarRecommendations.length > 0 && (
             <button
-              className="result-recs-hub-link"
+              className="sr-recs-hub-link"
               onClick={() => navigate(ROUTES.FRAMEWORKS)}
               type="button"
             >
               Visit Training Hub →
             </button>
           )}
-        </div>
+        </section>
       )}
 
-      {/* View detailed feedback row */}
-      <div
-        className="view-feedback-row"
-        onClick={() => navigate(buildRoute.detailedFeedback(sessionId), { state: result })}
+      {/* View Detailed Feedback */}
+      <button
+        type="button"
+        className="sr-detail-link"
+        onClick={() => navigate(buildRoute.detailedFeedback(sessionId), {
+          state: {
+            ...result,
+            source: state?.source,
+            backTo: state?.backTo,
+          },
+        })}
       >
-        <span className="view-feedback-label">View Detailed Feedback</span>
-        <span className="view-feedback-arrow">›</span>
-      </div>
+        <span>View Detailed Feedback</span>
+        <IoChevronForward />
+      </button>
 
-      {/* Actions */}
-      <div className="btn-row" style={{ marginTop: 24 }}>
-        <button className="btn-secondary" onClick={() => navigate(isOnboardingInProgress ? onboardingActionRoute : ROUTES.DASHBOARD)}>
-          {isOnboardingInProgress ? onboardingActionLabel : 'Back to Dashboard'}
+      {/* Action Buttons */}
+      <div className="sr-actions">
+        <button
+          className="sr-btn sr-btn-secondary"
+          onClick={() => navigate(isOnboarding ? onboardingRoute : ROUTES.DASHBOARD)}
+        >
+          {isOnboarding ? onboardingLabel : 'Back to Dashboard'}
         </button>
-        <button className="btn-primary" onClick={replayAction.onClick}>
+        <button className="sr-btn sr-btn-primary" onClick={replayAction.onClick}>
           {replayAction.label}
         </button>
       </div>
@@ -320,4 +357,3 @@ function SessionResultPage() {
 }
 
 export default SessionResultPage;
-

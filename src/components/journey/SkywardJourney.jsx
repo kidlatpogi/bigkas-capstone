@@ -1127,8 +1127,8 @@ export default function SkywardJourney({
   }, [indexedNodePoints, indexToUse, map.ty, steps]);
   const currentStep = steps[visibleStepIndex] || steps[indexToUse] || null;
   const visibleSectionMeta = sectionMeta[visibleSectionIndex] ?? null;
-  const currentPillarText = (visibleSectionMeta?.step || currentStep)
-    ? `Pillar ${(visibleSectionMeta?.step || currentStep)?.task?.target_level || (visibleSectionMeta?.step || currentStep)?.stageNumber || 1}: ${visibleSectionMeta?.title || getStepPhaseName(visibleSectionMeta?.step || currentStep)}`
+  const currentPillarText = currentStep
+    ? `Pillar ${getStepLevel(currentStep)}: ${getStepPhaseName(currentStep)}`
     : 'Pillar 1: General';
   const activeOrHighestIndex = Math.max(activeStepIndex, lastCompletedStepIndex, 0);
   let pathFillPercentage = 0;

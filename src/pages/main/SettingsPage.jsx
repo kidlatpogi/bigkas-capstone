@@ -5,26 +5,21 @@ import {
   IoShieldCheckmarkOutline,
   IoMicOutline,
   IoCameraOutline,
-  IoContrastOutline,
   IoHardwareChipOutline,
-  IoLogOutOutline,
   IoChevronForward,
   IoTrashOutline,
   IoWarningOutline,
 } from 'react-icons/io5';
-import { useAuthContext } from '../../context/useAuthContext';
 import { useSessionContext } from '../../context/useSessionContext';
 import { ROUTES } from '../../utils/constants';
 import './DashboardPage.css';
 import './SettingsPage.css';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
 
-const THEME_TOGGLE_HIDDEN_KEY = 'bigkas-hide-theme-toggle';
 const MIC_SENSITIVITY_KEY = 'pref_mic_sensitivity';
 
 function SettingsPage() {
   const navigate = useNavigate();
-  const { logout, user } = useAuthContext();
   const { clearSessionMedia } = useSessionContext();
 
   const [microphones, setMicrophones] = useState([]);
@@ -34,10 +29,6 @@ function SettingsPage() {
   const [micSensitivity, setMicSensitivity] = useState(
     () => localStorage.getItem(MIC_SENSITIVITY_KEY) || 'high'
   );
-  const [hideThemeToggle, setHideThemeToggle] = useState(
-    () => localStorage.getItem(THEME_TOGGLE_HIDDEN_KEY) === '1'
-  );
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showClearMediaModal, setShowClearMediaModal] = useState(false);
   const [isClearingMedia, setIsClearingMedia] = useState(false);
   const [clearMediaMessage, setClearMediaMessage] = useState('');
@@ -69,12 +60,6 @@ function SettingsPage() {
     setMicSensitivity(e.target.value);
     localStorage.setItem(MIC_SENSITIVITY_KEY, e.target.value);
   };
-  const handleThemeToggleVisibilityChange = (e) => {
-    const shouldHide = e.target.checked;
-    setHideThemeToggle(shouldHide);
-    localStorage.setItem(THEME_TOGGLE_HIDDEN_KEY, shouldHide ? '1' : '0');
-    window.dispatchEvent(new Event('theme-toggle-visibility-changed'));
-  };
 
   const handleClearMedia = async () => {
     setIsClearingMedia(true);
@@ -97,42 +82,28 @@ function SettingsPage() {
     setClearMediaStatus('error');
   };
 
-  const displayName = user?.nickname || user?.name || 'Speaker';
-
   return (
     <div className="dashboard-page-new stg-page">
       <div className="stg-shell">
         <header className="stg-hero dashboard-anim-top">
           <h1 className="stg-hero-title">Settings</h1>
-          <p className="stg-hero-sub">Configure your devices, appearance, and account preferences.</p>
+          <p className="stg-hero-sub">Manage security, hardware, legal, and destructive actions in one place.</p>
         </header>
 
         <div className="stg-grid">
           {/* ── Left column ── */}
           <div className="stg-col-main">
-            {/* Account */}
+            {/* Security */}
             <section className="dashboard-card stg-card-section dashboard-anim-left dashboard-anim-delay-1">
-              <h2 className="stg-section-title">Account</h2>
+              <h2 className="stg-section-title">Security</h2>
               <div className="stg-rows">
-                <button className="stg-row" onClick={() => navigate(ROUTES.PROFILE)}>
-                  <span className="stg-row-icon stg-row-icon--green">
-                    <IoShieldCheckmarkOutline size={20} />
-                  </span>
-                  <div className="stg-row-body">
-                    <span className="stg-row-title">{displayName}</span>
-                    <span className="stg-row-sub">Manage your profile and account details</span>
-                  </div>
-                  <IoChevronForward size={16} className="stg-chevron" />
-                </button>
-
-                <div className="stg-row-divider" />
-
                 <button className="stg-row" onClick={() => navigate(ROUTES.CHANGE_PASSWORD)}>
                   <span className="stg-row-icon">
                     <IoKeyOutline size={20} />
                   </span>
                   <div className="stg-row-body">
                     <span className="stg-row-title">Change Password</span>
+                    <span className="stg-row-sub">Update your credentials to keep your account secure</span>
                   </div>
                   <IoChevronForward size={16} className="stg-chevron" />
                 </button>
@@ -152,28 +123,33 @@ function SettingsPage() {
               </div>
             </section>
 
-            {/* Appearance */}
+            {/* Legal */}
             <section className="dashboard-card stg-card-section dashboard-anim-left dashboard-anim-delay-2">
-              <h2 className="stg-section-title">Appearance</h2>
+              <h2 className="stg-section-title">Legal</h2>
               <div className="stg-rows">
-                <div className="stg-row stg-row--toggle">
+                <a className="stg-row" href="https://policies.google.com/terms" target="_blank" rel="noreferrer">
                   <span className="stg-row-icon">
-                    <IoContrastOutline size={20} />
+                    <IoShieldCheckmarkOutline size={20} />
                   </span>
                   <div className="stg-row-body">
-                    <span className="stg-row-title">Hide Theme Button</span>
-                    <span className="stg-row-sub">Show or hide the floating light/dark toggle</span>
+                    <span className="stg-row-title">Terms &amp; Conditions</span>
+                    <span className="stg-row-sub">Review platform usage terms and responsibilities</span>
                   </div>
-                  <label className="stg-switch" aria-label="Hide theme button">
-                    <input
-                      type="checkbox"
-                      className="stg-switch-input"
-                      checked={hideThemeToggle}
-                      onChange={handleThemeToggleVisibilityChange}
-                    />
-                    <span className="stg-switch-slider" />
-                  </label>
-                </div>
+                  <IoChevronForward size={16} className="stg-chevron" />
+                </a>
+
+                <div className="stg-row-divider" />
+
+                <a className="stg-row" href="https://policies.google.com/privacy" target="_blank" rel="noreferrer">
+                  <span className="stg-row-icon">
+                    <IoShieldCheckmarkOutline size={20} />
+                  </span>
+                  <div className="stg-row-body">
+                    <span className="stg-row-title">Privacy Policy</span>
+                    <span className="stg-row-sub">Learn how your account and recording data are handled</span>
+                  </div>
+                  <IoChevronForward size={16} className="stg-chevron" />
+                </a>
               </div>
             </section>
           </div>
@@ -295,37 +271,9 @@ function SettingsPage() {
                 {clearMediaMessage}
               </p>
             )}
-
-            <div className="stg-danger-action-row">
-              <div className="stg-danger-action-info">
-                <IoLogOutOutline size={18} className="stg-danger-action-icon" />
-                <div>
-                  <span className="stg-danger-action-label">Log Out</span>
-                  <span className="stg-danger-action-sub">Sign out of your Bigkas account</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                className="stg-danger-btn stg-danger-btn--logout"
-                onClick={() => setShowLogoutModal(true)}
-              >
-                Log Out
-              </button>
-            </div>
           </div>
         </section>
       </div>
-
-      <ConfirmationModal
-        isOpen={showLogoutModal}
-        title="Log out?"
-        message="Are you sure you want to log out of Bigkas?"
-        confirmLabel="Log Out"
-        cancelLabel="Stay"
-        type="danger"
-        onCancel={() => setShowLogoutModal(false)}
-        onConfirm={async () => { setShowLogoutModal(false); await logout(); }}
-      />
 
       <ConfirmationModal
         isOpen={showClearMediaModal}

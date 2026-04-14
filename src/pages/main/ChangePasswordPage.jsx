@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../context/useAuthContext';
-import BackButton from '../../components/common/BackButton';
 import './InnerPages.css';
+import './ChangePasswordPage.css';
 
 /* SVG eye / eye-off icons */
 function EyeOffIcon() {
@@ -106,9 +106,8 @@ function ChangePasswordPage() {
   };
 
   return (
-    <div className="inner-page">
-      <div className="inner-page-header" style={{ position: 'relative', justifyContent: 'center' }}>
-        <BackButton style={{ position: 'absolute', left: 0 }} onClick={() => navigate(-1)} />
+    <div className="inner-page change-password-page">
+      <div className="inner-page-header change-password-header">
         <h1 className="inner-page-title">Change Password</h1>
       </div>
 
@@ -139,7 +138,7 @@ function ChangePasswordPage() {
 
       <div className="btn-row">
         <button className="btn-secondary" onClick={() => navigate(-1)} disabled={isSaving}>Cancel</button>
-        <button className="btn-primary" onClick={handleSave} disabled={isSaving}>
+        <button className="btn-primary cp-btn-primary" onClick={handleSave} disabled={isSaving}>
           {isSaving ? 'Saving…' : 'Save New Password'}
         </button>
       </div>

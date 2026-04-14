@@ -1,12 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../context/useAuthContext';
-import BackButton from '../../components/common/BackButton';
 import './InnerPages.css';
 import './AccountSettingsPage.css';
 
 function AccountSettingsPage() {
-  const navigate = useNavigate();
   const { deactivateAccount, deleteAccount } = useAuthContext();
 
   /* ── Delete modal state ── */
@@ -67,9 +64,8 @@ function AccountSettingsPage() {
   };
 
   return (
-    <div className="inner-page">
-      <div className="inner-page-header" style={{ position: 'relative', justifyContent: 'center' }}>
-        <BackButton style={{ position: 'absolute', left: 0 }} onClick={() => navigate(-1)} />
+    <div className="inner-page account-settings-page">
+      <div className="inner-page-header account-settings-header">
         <h1 className="inner-page-title">Account Settings</h1>
       </div>
 
@@ -90,7 +86,7 @@ function AccountSettingsPage() {
         <p className="account-section-desc">
           Permanently delete your account and all associated data. This action cannot be undone.
         </p>
-        <button className="btn-danger" onClick={() => { setPassword(''); setConfirmText(''); setDeleteError(''); setShowDeleteModal(true); }}>
+        <button className="btn-danger account-btn-primary" onClick={() => { setPassword(''); setConfirmText(''); setDeleteError(''); setShowDeleteModal(true); }}>
           Delete Account
         </button>
       </div>
@@ -122,7 +118,7 @@ function AccountSettingsPage() {
               <button className="btn-secondary" onClick={() => { setShowDeactivateModal(false); setDeactivateError(''); }}>
                 Cancel
               </button>
-              <button className="btn-outline" onClick={handleDeactivate} disabled={isDeactivating}>
+              <button className="btn-outline account-btn-primary" onClick={handleDeactivate} disabled={isDeactivating}>
                 {isDeactivating ? 'Deactivating…' : 'Deactivate'}
               </button>
             </div>
@@ -167,7 +163,7 @@ function AccountSettingsPage() {
               <button className="btn-secondary" onClick={() => { setShowDeleteModal(false); setDeleteError(''); }}>
                 Cancel
               </button>
-              <button className="btn-danger" onClick={handleDelete} disabled={isDeleting}>
+              <button className="btn-danger account-btn-primary" onClick={handleDelete} disabled={isDeleting}>
                 {isDeleting ? 'Deleting…' : 'Delete'}
               </button>
             </div>

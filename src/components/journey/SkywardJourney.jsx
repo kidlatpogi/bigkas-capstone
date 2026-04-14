@@ -23,9 +23,9 @@ import {
 import SkywardJourneyNodeButton from './SkywardJourneyNodeButton';
 import './SkywardJourney.css';
 
-const MAP_SCALE = 1.5;
+const MAP_SCALE = 1.25;
 const MAP_EDGE_PAN_PADDING = 96;
-const ORTHOGONAL_OFFSETS = [0, 90, 90, 0, -90, -90];
+const ORTHOGONAL_OFFSETS = [0, 72, 72, 0, -72, -72];
 
 function getHorizontalOffset(index) {
   return ORTHOGONAL_OFFSETS[index % ORTHOGONAL_OFFSETS.length];
@@ -1011,7 +1011,7 @@ export default function SkywardJourney({
           key={`pillar-section-${sectionTitle}`}
           className="skyward-journey-section"
           ref={(el) => { sectionWrapperRefs.current[sectionIndex] = el; }}
-          data-pillar-text={`Pillar ${getStepLevel(section.tasks[0])}: ${sectionTitle}`}
+          data-pillar-text={sectionTitle}
         >
           <div className="skyward-journey-section-rows">{currentSectionRows}</div>
           <div
@@ -1039,8 +1039,8 @@ export default function SkywardJourney({
     : (lastCompletedStepIndex >= 0 ? lastCompletedStepIndex : 0);
   const initialStep = steps[indexToUse];
   const initialText = initialStep
-    ? `Pillar ${getStepLevel(initialStep)}: ${getStepPhaseName(initialStep)}`
-    : 'Pillar 1: General';
+    ? getStepPhaseName(initialStep)
+    : 'General';
   const [currentPillarText, setCurrentPillarText] = useState(initialText);
 
   // Hybrid Section-Based Tracking (Ignores CSS Animation Delays)

@@ -246,6 +246,9 @@
   display: flex;
   flex-direction: column-reverse;
   gap: 32px;
+  width: 100%;
+  max-width: 880px;
+  margin-inline: auto;
 }
 
 .skyward-journey-section-header {

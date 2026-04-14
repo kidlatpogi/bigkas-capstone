@@ -11,6 +11,10 @@ if (!supabaseUrl || !supabaseKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {
+  global: {
+    // Keep apikey explicitly attached on every request to avoid missing-header 401s.
+    headers: { apikey: supabaseKey },
+  },
   auth: {
     persistSession: true,
     autoRefreshToken: true,

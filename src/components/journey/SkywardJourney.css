@@ -247,7 +247,10 @@
 }
 
 .skyward-journey-section-header {
+  position: relative;
+  z-index: 5;
   display: flex;
+  justify-content: center;
   align-items: center;
   gap: 12px;
   width: 100%;
@@ -257,6 +260,11 @@
 }
 
 .skyward-journey-section-title {
+  background-color: #ffffff;
+  padding: 4px 16px;
+  border-radius: 20px;
+  position: relative;
+  z-index: 6;
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.14em;
@@ -348,7 +356,7 @@
   min-width: 64px;
   min-height: 64px;
   border-width: 4px;
-  border-radius: 50%;
+  border-radius: 50% !important;
   border-color: #c9a227;
   background: linear-gradient(165deg, #fff9e6 0%, #ffe8a8 45%, #f5d978 100%);
   box-shadow:

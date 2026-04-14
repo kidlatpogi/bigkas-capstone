@@ -10,10 +10,9 @@ import {
   IoMic,
   IoPulse,
   IoStar,
-  IoTrophy,
   IoSync,
 } from 'react-icons/io5';
-import { FaBrain } from 'react-icons/fa';
+import { FaBrain, FaGhost } from 'react-icons/fa';
 import {
   JOURNEY_NODE_THEMES,
   NODE_STATE,
@@ -859,7 +858,13 @@ export default function SkywardJourney({
                     transform: `translateX(${horizontalOffset}px)`,
                   }}
                 >
-                  {startStage ? (
+                  {milestone ? (
+                    <div className="skyward-journey-start-callout" aria-hidden>
+                      <span className="skyward-journey-start-badge" style={{ backgroundColor: '#d32f2f', color: '#fff' }}>
+                        BOSS
+                      </span>
+                    </div>
+                  ) : startStage ? (
                     <div className="skyward-journey-start-callout" aria-hidden>
                       <span className="skyward-journey-start-badge">START</span>
                     </div>
@@ -888,7 +893,7 @@ export default function SkywardJourney({
                     onClick={() => handleNodeClick(step, i)}
                   >
                     {milestone ? (
-                      <IoTrophy
+                      <FaGhost
                         className="skyward-journey-node-icon skyward-journey-node-icon--boss"
                         aria-hidden
                       />

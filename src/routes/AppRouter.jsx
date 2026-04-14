@@ -163,7 +163,7 @@ function AdminRoute() {
   }
 
   if (!isAdminAuthenticated) {
-    return <Navigate to={ROUTES.DASHBOARD} replace />;
+    return <Navigate to={ENV.ADMIN_LOGIN_PATH || ROUTES.ADMIN_LOGIN_BASE} replace />;
   }
 
   return (

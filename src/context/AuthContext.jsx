@@ -856,25 +856,29 @@ export function AuthProvider({ children }) {
         };
       }
 
-      // Check if user is admin (in metadata or allowed emails list)
-      const meta = data.user?.user_metadata || {};
-      const isAdminMeta = parseMetadataBoolean(meta.is_admin);
-      const allowedEmails = ['dzeref4000@gmail.com', 'test@gmail.com', 'test1@gmail.com'];
-      const emailIsAllowed = allowedEmails.includes(data.user?.email);
-
-      // Also check the public.profiles table for the 'admin' or 'superadmin' role
-      const { data: profileData } = await supabase
+      // Authorize admin access strictly from public.profiles.role
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', data.user.id)
         .single();
-      
-      const roleIsAdmin = profileData?.role === 'admin' || profileData?.role === 'superadmin';
 
-      if (!isAdminMeta && !emailIsAllowed && !roleIsAdmin) {
+      if (profileError || !profile || !profile.role) {
         clearAdminSession();
         await supabase.auth.signOut();
-        const message = 'You do not have admin access.';
+        const message = 'Admin profile not found.';
+        setError(message);
+        return {
+          success: false,
+          code: 'admin_profile_not_found',
+          error: message,
+        };
+      }
+
+      if (profile.role !== 'admin' && profile.role !== 'superadmin') {
+        clearAdminSession();
+        await supabase.auth.signOut();
+        const message = 'Access Denied: Admin privileges required.';
         setError(message);
         return {
           success: false,
@@ -885,8 +889,9 @@ export function AuthProvider({ children }) {
 
       setPendingEmailVerification(false);
       setPendingEmail(null);
-  await registerLoginSuccess('admin', normalizedEmail);
+      setUser(buildUser(data.session));
       persistAdminSession();
+      await registerLoginSuccess('admin', normalizedEmail);
       return { success: true, user: buildUser(data.session) };
     } catch (err) {
       setIsLoading(false);

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+  IoTrophy,
   IoChatbubbleEllipses,
   IoCheckmarkCircle,
   IoClose,
@@ -816,12 +817,9 @@ export default function SkywardJourney({
         const title = getStepActivityTitle(step);
         const isSectionEnd = sectionTaskIndex === section.tasks.length - 1;
         const isGlobalEnd = i === steps.length - 1;
-        const milestone =
-          isSectionEnd ||
-          isGlobalEnd ||
-          step.isRankUp === true ||
-          Number(step.stageNumber) === 31 ||
-          Number(step.task?.activity_order) === 31;
+        const isUltimateBoss =
+          isGlobalEnd || Number(step.stageNumber) === 31 || Number(step.task?.activity_order) === 31;
+        const isSectionTrophy = isSectionEnd && !isUltimateBoss;
         const startStage = sectionTaskIndex === 0;
         const jiggle = jiggleIndex === i;
         const horizontalOffset = getHorizontalOffset(i);
@@ -853,12 +851,12 @@ export default function SkywardJourney({
                 style={{ zIndex: 10, position: 'relative' }}
               >
                 <div
-                  className={`skyward-journey-node-cluster${milestone ? ' skyward-journey-node-cluster--milestone' : ''}`}
+                  className={`skyward-journey-node-cluster${isUltimateBoss ? ' skyward-journey-node-cluster--boss' : ''}`}
                   style={{
                     transform: `translateX(${horizontalOffset}px)`,
                   }}
                 >
-                  {milestone ? (
+                  {isUltimateBoss ? (
                     <div className="skyward-journey-start-callout" aria-hidden>
                       <span className="skyward-journey-start-badge" style={{ backgroundColor: '#d32f2f', color: '#fff' }}>
                         BOSS
@@ -878,7 +876,7 @@ export default function SkywardJourney({
                     className={[
                       'skyward-journey-node',
                       `skyward-journey-node--${step.nodeState}`,
-                      milestone ? 'skyward-journey-node--milestone' : '',
+                      isUltimateBoss ? 'skyward-journey-node--boss' : '',
                       jiggle ? 'skyward-journey-node--jiggle' : '',
                       !isLocked ? 'skyward-journey-node--unlocked' : '',
                       isLocked ? 'skyward-journey-node--locked-teaser' : '',
@@ -887,14 +885,19 @@ export default function SkywardJourney({
                       .join(' ')}
                     aria-current={isActive ? 'step' : undefined}
                     aria-expanded={panelOpenId === step.id}
-                    aria-label={`${milestone ? 'Milestone: ' : ''}${theme.shortLabel}: ${title}. ${
+                    aria-label={`${isUltimateBoss ? 'Milestone: ' : ''}${theme.shortLabel}: ${title}. ${
                       isDone ? 'Completed' : isLocked ? 'Locked' : 'Current step'
                     }. Open quest details.`}
                     onClick={() => handleNodeClick(step, i)}
                   >
-                    {milestone ? (
+                    {isUltimateBoss ? (
                       <FaGhost
                         className="skyward-journey-node-icon skyward-journey-node-icon--boss"
+                        aria-hidden
+                      />
+                    ) : isSectionTrophy ? (
+                      <IoTrophy
+                        className="skyward-journey-node-icon skyward-journey-node-icon--trophy"
                         aria-hidden
                       />
                     ) : startStage ? (
@@ -925,10 +928,10 @@ export default function SkywardJourney({
                     aria-hidden
                   >
                     <span className="level-label__title">
-                      {milestone ? 'Summit' : title}
+                      {isUltimateBoss ? 'Summit' : title}
                     </span>
                     <span className="level-label__stage">
-                      {milestone
+                      {isUltimateBoss
                         ? `Boss · Stage ${safeStageNum} of ${safeStageTotal}`
                         : `Stage ${safeStageNum} of ${safeStageTotal}`}
                     </span>

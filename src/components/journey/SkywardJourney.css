@@ -19,7 +19,8 @@
 }
 
 .skyward-journey-wrap .skyward-journey {
-  width: min(100%, 980px);
+  width: 100%;
+  max-width: 980px;
   margin-inline: auto;
 }
 
@@ -139,6 +140,7 @@
   height: auto;
   min-height: 0;
   overflow: visible;
+  margin-inline: auto;
 }
 
 .skyward-journey-map {

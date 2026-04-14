@@ -123,9 +123,10 @@ function getBossMonsterIcon(level) {
  */
 
 const MapHeaderCard = styled.div`
-  width: min(90vw, 882px);
+  width: min(100%, 882px);
   margin: 0 auto;
-  padding: 24px;
+  box-sizing: border-box;
+  padding: clamp(14px, 2.2vw, 24px);
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
@@ -60,7 +60,7 @@ function isQuestionAnswered(question, value) {
 
 function UserProfilingPage() {
   const navigate = useNavigate();
-  const { updateUserMetadata } = useAuthContext();
+  const { updateUserMetadata, isAdminAuthenticated } = useAuthContext();
   const [screen, setScreen] = useState('intro');
   const [form, setForm] = useState(INITIAL_FORM);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -76,6 +76,12 @@ function UserProfilingPage() {
 
   const baselineScore = useMemo(() => computeBaselineScore(form), [form]);
   const baselineLevelNumber = useMemo(() => getSpeakerLevelNumber(baselineScore), [baselineScore]);
+
+  useEffect(() => {
+    if (isAdminAuthenticated) {
+      navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
+    }
+  }, [isAdminAuthenticated, navigate]);
 
   const updateField = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -149,6 +155,8 @@ function UserProfilingPage() {
   const continueToPretest = () => {
     navigate(ROUTES.USER_PRETEST, { replace: true });
   };
+
+  if (isAdminAuthenticated) return null;
 
   return (
     <div className={`user-profiling-page ${screen !== 'questions' ? 'is-gate-screen' : ''}`}>

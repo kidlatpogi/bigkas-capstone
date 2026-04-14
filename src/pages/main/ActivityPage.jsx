@@ -7,7 +7,6 @@ import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import {
   GLOBAL_ACTIVITY_SCOPE,
-  buildActivityMetricsKey,
   getActivityTaskProgress,
   getActivityMetrics,
   getActivityCompletionHistory,
@@ -108,10 +107,16 @@ function ActivityPage() {
   const previousTaskStateRef = useRef({});
   const hasTaskStateHydratedRef = useRef(false);
 
-  const [activityMetrics, setActivityMetrics] = useState(() => getActivityMetrics(scopeKey));
   const [recentStampedTaskId, setRecentStampedTaskId] = useState(null);
   const { sessions, fetchAllSessions } = useSessions();
-  const [activityHistory, setActivityHistory] = useState([]);
+  const activityMetrics = useMemo(
+    () => getActivityMetrics(scopeKey),
+    [scopeKey, metricsSyncKey],
+  );
+  const activityHistory = useMemo(
+    () => (user?.id ? getActivityCompletionHistory(scopeKey) : []),
+    [scopeKey, user?.id, metricsSyncKey],
+  );
 
   useEffect(() => {
     return () => {
@@ -125,41 +130,9 @@ function ActivityPage() {
   }, []);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-
-    const refreshMetrics = () => {
-      setActivityMetrics(getActivityMetrics(scopeKey));
-    };
-    const onStorage = (event) => {
-      if (event.key === buildActivityMetricsKey(scopeKey)) {
-        refreshMetrics();
-      }
-    };
-
-    window.addEventListener('focus', refreshMetrics);
-    window.addEventListener('storage', onStorage);
-    document.addEventListener('visibilitychange', refreshMetrics);
-
-    return () => {
-      window.removeEventListener('focus', refreshMetrics);
-      window.removeEventListener('storage', onStorage);
-      document.removeEventListener('visibilitychange', refreshMetrics);
-    };
-  }, [scopeKey]);
-
-  useEffect(() => {
-    setActivityMetrics(getActivityMetrics(scopeKey));
-  }, [scopeKey, metricsSyncKey]);
-
-  useEffect(() => {
     if (!user?.id) return;
     fetchAllSessions?.();
   }, [fetchAllSessions, user?.id]);
-
-  useEffect(() => {
-    if (!user?.id) return;
-    setActivityHistory(getActivityCompletionHistory(scopeKey));
-  }, [scopeKey, user?.id, metricsSyncKey]);
 
   const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import styled from 'styled-components';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import {
   IoTrophy,
   IoChatbubbleEllipses,
@@ -71,25 +71,40 @@ function getPhaseIcon(step) {
   const phase = getStepPhaseName(step).toLowerCase();
   switch (true) {
     case phase.includes('gaze'):
-      return IoEye;
+      return 'gaze';
     case phase.includes('vocal'):
-      return IoMic;
+      return 'vocal';
     case phase.includes('verbal'):
-      return IoChatbubbleEllipses;
+      return 'verbal';
     case phase.includes('sync'):
     case phase.includes('multi'):
-      return IoSync;
+      return 'sync';
     case phase.includes('context'):
     case phase.includes('advanced'):
-      return FaBrain;
+      return 'context';
     default:
-      return IoCheckmarkCircle;
+      return 'default';
   }
 }
 
 function JourneyNodeIcon({ step, index, className = '' }) {
-  const Cmp = isStartNode(step, index) ? IoStar : getPhaseIcon(step);
-  return <Cmp aria-hidden className={`skyward-journey-node-icon ${className}`.trim()} />;
+  const iconClassName = `skyward-journey-node-icon ${className}`.trim();
+  if (isStartNode(step, index)) return <IoStar aria-hidden className={iconClassName} />;
+
+  switch (getPhaseIcon(step)) {
+    case 'gaze':
+      return <IoEye aria-hidden className={iconClassName} />;
+    case 'vocal':
+      return <IoMic aria-hidden className={iconClassName} />;
+    case 'verbal':
+      return <IoChatbubbleEllipses aria-hidden className={iconClassName} />;
+    case 'sync':
+      return <IoSync aria-hidden className={iconClassName} />;
+    case 'context':
+      return <FaBrain aria-hidden className={iconClassName} />;
+    default:
+      return <IoCheckmarkCircle aria-hidden className={iconClassName} />;
+  }
 }
 
 function getStepLevel(step) {
@@ -345,7 +360,7 @@ export const JourneyTooltip = ({ step, onStart, onClose, nodeRef, forceBottom = 
       window.removeEventListener('resize', update);
       window.removeEventListener('scroll', update, true);
     };
-  }, [nodeRef, step.id]);
+  }, [nodeRef, step.id, forceBottom]);
 
   const isLocked = step.nodeState === 'locked';
 
@@ -474,7 +489,6 @@ export default function SkywardJourney({
 
   const [pathPoints, setPathPoints] = useState([]);
   const [indexedNodePoints, setIndexedNodePoints] = useState([]);
-  const [svgBounds, setSvgBounds] = useState({ width: 1, height: 1 });
   const [panelOpenId, setPanelOpenId] = useState(null);
   const [panelVisible, setPanelVisible] = useState(false);
   const panelClosePendingRef = useRef(false);
@@ -505,7 +519,6 @@ export default function SkywardJourney({
     if (!content || steps.length < 2) {
       if (indexedNodePoints.length !== 0) setIndexedNodePoints([]);
       setPathPoints([]);
-      setSvgBounds({ width: 1, height: 1 });
       return;
     }
 
@@ -513,7 +526,6 @@ export default function SkywardJourney({
     if (!cr.width || !cr.height) {
       if (indexedNodePoints.length !== 0) setIndexedNodePoints([]);
       setPathPoints([]);
-      setSvgBounds({ width: 1, height: 1 });
       return;
     }
 
@@ -543,10 +555,6 @@ export default function SkywardJourney({
       return;
     }
 
-    setSvgBounds({
-      width: Math.max(1, content.clientWidth),
-      height: Math.max(1, content.clientHeight),
-    });
     setPathPoints(pts);
   }, [steps.length, indexedNodePoints.length]);
 
@@ -615,7 +623,7 @@ export default function SkywardJourney({
       const targetTy = focusScreenY - (nodeCenterY * MAP_SCALE);
       const targetTx = (vp.clientWidth / 2) - (nodeCenterX * MAP_SCALE);
 
-      setMap((m) => clampMapState({ tx: targetTx, ty: targetTy }, vp, content, MAP_SCALE));
+      setMap(clampMapState({ tx: targetTx, ty: targetTy }, vp, content, MAP_SCALE));
     }, delay);
 
     return () => {
@@ -821,26 +829,6 @@ export default function SkywardJourney({
 
   const sections = [];
   const sectionMeta = [];
-  let currentSectionRows = [];
-  let sectionPillarTitle = null;
-  let pillarSectionIndex = 0;
-
-  const flushPillarSection = () => {
-    if (!currentSectionRows.length) return;
-    const sectionTitle = sectionPillarTitle || 'Training';
-    pillarSectionIndex += 1;
-    sections.push(
-      <section key={`pillar-section-${sectionTitle}-${pillarSectionIndex}`} className="skyward-journey-section">
-        <div className="skyward-journey-section-rows">{currentSectionRows}</div>
-        <div className="skyward-journey-section-header" role="presentation">
-          <span className="skyward-journey-section-line" aria-hidden />
-          <span className="skyward-journey-section-title">{sectionTitle}</span>
-          <span className="skyward-journey-section-line" aria-hidden />
-        </div>
-      </section>,
-    );
-    currentSectionRows = [];
-  };
 
   const totalStageCount = steps.length;
   let globalNodeIndex = 0;

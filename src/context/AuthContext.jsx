@@ -858,11 +858,20 @@ export function AuthProvider({ children }) {
 
       // Check if user is admin (in metadata or allowed emails list)
       const meta = data.user?.user_metadata || {};
-      const isAdmin = parseMetadataBoolean(meta.is_admin);
+      const isAdminMeta = parseMetadataBoolean(meta.is_admin);
       const allowedEmails = ['dzeref4000@gmail.com', 'test@gmail.com', 'test1@gmail.com'];
       const emailIsAllowed = allowedEmails.includes(data.user?.email);
 
-      if (!isAdmin && !emailIsAllowed) {
+      // Also check the public.profiles table for the 'admin' or 'superadmin' role
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+      
+      const roleIsAdmin = profileData?.role === 'admin' || profileData?.role === 'superadmin';
+
+      if (!isAdminMeta && !emailIsAllowed && !roleIsAdmin) {
         clearAdminSession();
         await supabase.auth.signOut();
         const message = 'You do not have admin access.';

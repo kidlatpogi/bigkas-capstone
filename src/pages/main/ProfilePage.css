@@ -2,29 +2,43 @@
 
 .profile-page {
   --profile-input-bg: #ffffff;
-  --profile-input-border: #b7c8b4;
-  --profile-input-text: #1f2b22;
-  --profile-input-placeholder: rgba(31, 43, 34, 0.42);
-  --profile-input-disabled-bg: #edf3eb;
-  --profile-input-disabled-text: #7d8a82;
+  --profile-input-border: #d3e3bc;
+  --profile-input-text: #3c4952;
+  --profile-input-placeholder: rgba(60, 73, 82, 0.42);
+  --profile-input-disabled-bg: #f9fafb;
+  --profile-input-disabled-text: rgba(11, 57, 84, 0.48);
   --profile-input-focus: #5a7863;
-  max-width: 560px;
-  margin: 0 auto;
-  padding: 28px 20px calc(80px + env(safe-area-inset-bottom, 0px));
-  border-radius: 20px;
-  background: #d3e3bc;
+  max-width: 640px;
+  margin: 40px auto;
+  padding: 40px;
+  border-radius: 12px;
+  background: #ffffff;
   box-shadow: rgba(11, 57, 84, 0.22) 3px 5px 30px 0px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #3c4952;
+  letter-spacing: -0.374px;
 }
 
 .profile-header {
-  margin-bottom: 22px;
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.inner-page-title {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.10;
+  color: #0b3954;
+  margin: 0;
+  letter-spacing: normal;
 }
 
 .profile-subtitle {
-  margin: 8px 0 0;
+  margin: 12px 0 0;
   color: rgba(11, 57, 84, 0.8);
-  font-size: 0.95rem;
-  line-height: 1.45;
+  font-size: 17px;
+  line-height: 1.47;
 }
 
 .profile-avatar-section {
@@ -50,6 +64,11 @@
   padding: 0;
   cursor: pointer;
   position: relative;
+  transition: transform 0.2s ease;
+}
+
+.profile-avatar-btn:hover {
+  transform: scale(1.02);
 }
 
 .profile-avatar-ring {
@@ -57,7 +76,7 @@
   height: 100%;
   border-radius: 999px;
   padding: 4px;
-  background: #eff5ea;
+  background: #ffffff;
   border: 2px solid #5a7863;
 }
 
@@ -69,7 +88,9 @@
   display: grid;
   place-items: center;
   font-size: 42px;
-  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.28px;
 }
 
 .profile-avatar-img {
@@ -78,7 +99,7 @@
 
 .profile-avatar-placeholder {
   background: #0b3954;
-  color: #f8fafc;
+  color: #ffffff;
 }
 
 .profile-avatar-camera-badge {
@@ -92,13 +113,19 @@
   display: grid;
   place-items: center;
   color: #ffffff;
-  border: 2px solid #d3e3bc;
+  border: 2px solid #ffffff;
+  transition: background-color 0.2s ease;
+}
+
+.profile-avatar-btn:hover .profile-avatar-camera-badge {
+  background: #90ab8b;
 }
 
 .profile-avatar-status {
-  margin-top: 4px;
-  color: #6b7280;
-  font-size: 12px;
+  margin-top: 12px;
+  color: rgba(11, 57, 84, 0.8);
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .profile-form {
@@ -120,30 +147,33 @@
 }
 
 .profile-label {
-  font-size: 11px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  font-size: 13px;
   line-height: 1;
   color: rgba(11, 57, 84, 0.8);
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
 }
 
 .profile-input {
   width: 100%;
   height: 52px;
-  border: 2px solid var(--profile-input-border);
+  border: 1px solid var(--profile-input-border);
   border-radius: 12px;
-  padding: 0 14px;
-  font-size: 15px;
+  padding: 0 16px;
+  font-family: inherit;
+  font-size: 17px;
   background: var(--profile-input-bg);
   color: var(--profile-input-text);
   outline: none;
-  transition: border-color .15s ease, background-color .15s ease, color .15s ease;
+  transition: border-color .2s ease, background-color .2s ease, box-shadow .2s ease;
   box-sizing: border-box;
 }
 
 .profile-input:focus {
   border-color: var(--profile-input-focus);
+  box-shadow: 0 0 0 3px rgba(90, 120, 99, 0.15);
 }
 
 .profile-input::placeholder {
@@ -201,40 +231,43 @@
 
 .profile-btn-save,
 .profile-btn-cancel {
-  height: 58px;
-  border-radius: 14px;
-  font-size: 16px;
+  height: 52px;
+  border-radius: 8px;
+  font-size: 17px;
+  font-family: inherit;
   font-weight: 600;
+  line-height: 2.41;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
 }
 
 .profile-btn-save {
   border: 0;
   background: #5a7863;
   color: #ffffff;
-  margin-top: 10px;
+  margin-top: 16px;
 }
 
 .profile-btn-save:hover:not(:disabled) {
-  filter: brightness(1.05) saturate(1.04);
+  background: #4a6352;
 }
 
 .profile-btn-save:disabled {
-  opacity: 1;
-  color: #7c7c7c;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
 .profile-btn-cancel {
-  border: 1.5px solid #9fb69a;
-  background: transparent;
-  color: #4a5f52;
-  box-shadow: none;
+  border: 0;
+  background: #f9fafb;
+  color: #3c4952;
 }
 
 .profile-btn-cancel:hover {
-  border-color: #5a7863;
-  color: #2e3f35;
+  background: #e5e7eb;
 }
 
 .profile-avatar-modal-overlay {
@@ -248,36 +281,41 @@
 }
 
 .profile-avatar-modal {
-  width: min(520px, 100%);
+  width: min(440px, 100%);
   background: #ffffff;
-  border-radius: 18px;
-  box-shadow: 0 24px 52px rgba(0, 0, 0, 0.25);
-  padding: 14px;
-  display: grid;
-  gap: 8px;
+  border-radius: 16px;
+  box-shadow: rgba(11, 57, 84, 0.22) 0px 20px 40px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .profile-avatar-modal-title {
-  margin: 4px 0 8px;
+  margin: 0 0 12px;
   text-align: center;
-  font-size: 16px;
-  color: #111827;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: #0b3954;
 }
 
 .profile-avatar-modal-action,
 .profile-avatar-modal-cancel {
   width: 100%;
   border: 0;
-  border-radius: 12px;
-  padding: 12px 14px;
-  font-size: 15px;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 17px;
   font-weight: 600;
   cursor: pointer;
+  font-family: inherit;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .profile-avatar-modal-action {
-  background: #f3f4f6;
-  color: #111827;
+  background: #f9fafb;
+  color: #3c4952;
 }
 
 .profile-avatar-modal-action:hover {
@@ -288,17 +326,18 @@
   color: #dc2626;
 }
 
+.profile-avatar-modal-action.danger:hover {
+  background: #fef2f2;
+}
+
 .profile-avatar-modal-cancel {
-  background: transparent;
-  border: 1.5px solid #D5D5D5;
-  color: #888;
-  margin-top: 2px;
-  transition: border-color 0.15s, color 0.15s;
+  background: #0b3954;
+  color: #ffffff;
+  margin-top: 8px;
 }
 
 .profile-avatar-modal-cancel:hover {
-  border-color: #aaa;
-  color: #555;
+  background: #082a3d;
 }
 
 [data-theme="dark"] .profile-page { background: #0B0B0D; }

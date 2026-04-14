@@ -150,8 +150,14 @@ export default function DashboardPage() {
   const { sessions, fetchAllSessions } = useSessions();
   const activityScopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
 
-  const [activityHistory, setActivityHistory] = useState([]);
-  const [activityMetrics, setActivityMetrics] = useState(() => getActivityMetrics(activityScopeKey));
+  const activityHistory = useMemo(
+    () => (user?.id ? getActivityCompletionHistory(activityScopeKey) : []),
+    [activityScopeKey, user?.id],
+  );
+  const activityMetrics = useMemo(
+    () => getActivityMetrics(activityScopeKey),
+    [activityScopeKey],
+  );
   const [isMobileView, setIsMobileView] = useState(
     typeof window === 'undefined' ? true : window.matchMedia('(max-width: 1024px)').matches,
   );
@@ -222,28 +228,6 @@ export default function DashboardPage() {
     if (!user?.id) return;
     fetchAllSessions?.();
   }, [fetchAllSessions, isInitializing, user?.id]);
-
-  useEffect(() => {
-    if (!user?.id) return;
-    setActivityHistory(getActivityCompletionHistory(activityScopeKey));
-    setActivityMetrics(getActivityMetrics(activityScopeKey));
-  }, [activityScopeKey, user?.id]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    const refreshActivity = () => {
-      setActivityHistory(getActivityCompletionHistory(activityScopeKey));
-      setActivityMetrics(getActivityMetrics(activityScopeKey));
-    };
-    window.addEventListener('focus', refreshActivity);
-    window.addEventListener('storage', refreshActivity);
-    document.addEventListener('visibilitychange', refreshActivity);
-    return () => {
-      window.removeEventListener('focus', refreshActivity);
-      window.removeEventListener('storage', refreshActivity);
-      document.removeEventListener('visibilitychange', refreshActivity);
-    };
-  }, [activityScopeKey]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;

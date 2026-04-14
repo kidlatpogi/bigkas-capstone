@@ -97,6 +97,9 @@ function ActivityPage() {
   const location = useLocation();
   const { user } = useAuthContext();
   const [selectedLevel, setSelectedLevel] = useState(1);
+  const [showDesktopSidebar, setShowDesktopSidebar] = useState(
+    typeof window === 'undefined' ? true : window.matchMedia('(min-width: 1025px)').matches,
+  );
   const [entranceFromNav] = useState(() => location.state?.skywardEntrance === true);
   const scopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
   /** Activities are filtered by `target_level` = Bigkas rank (same as dashboard `levelProgress.levelName`). */
@@ -133,6 +136,16 @@ function ActivityPage() {
     if (!user?.id) return;
     fetchAllSessions?.();
   }, [fetchAllSessions, user?.id]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const onResize = () => {
+      setShowDesktopSidebar(window.matchMedia('(min-width: 1025px)').matches);
+    };
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
 
@@ -459,6 +472,7 @@ function ActivityPage() {
           </div>
         </div>
 
+        {showDesktopSidebar ? (
         <aside className="activity-col-sidebar no-scrollbar">
           <section className="dashboard-card dashboard-consistency-card dashboard-anim-right dashboard-anim-delay-3">
             <p className="dashboard-consistency-kicker">Daily Consistency</p>
@@ -520,6 +534,7 @@ function ActivityPage() {
             </div>
           </section>
         </aside>
+        ) : null}
       </div>
     </div>
   );

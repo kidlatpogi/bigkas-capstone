@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  IoKeyOutline,
   IoShieldCheckmarkOutline,
   IoMicOutline,
   IoCameraOutline,
@@ -93,38 +92,8 @@ function SettingsPage() {
         <div className="stg-grid">
           {/* ── Left column ── */}
           <div className="stg-col-main">
-            {/* Security */}
-            <section className="dashboard-card stg-card-section dashboard-anim-left dashboard-anim-delay-1">
-              <h2 className="stg-section-title">Security</h2>
-              <div className="stg-rows">
-                <button className="stg-row" onClick={() => navigate(ROUTES.CHANGE_PASSWORD, { state: { from: 'settings' } })}>
-                  <span className="stg-row-icon">
-                    <IoKeyOutline size={20} />
-                  </span>
-                  <div className="stg-row-body">
-                    <span className="stg-row-title">Change Password</span>
-                    <span className="stg-row-sub">Update your credentials to keep your account secure</span>
-                  </div>
-                  <IoChevronForward size={16} className="stg-chevron" />
-                </button>
-
-                <div className="stg-row-divider" />
-
-                <button className="stg-row" onClick={() => navigate(ROUTES.ACCOUNT_SETTINGS, { state: { from: 'settings' } })}>
-                  <span className="stg-row-icon">
-                    <IoShieldCheckmarkOutline size={20} />
-                  </span>
-                  <div className="stg-row-body">
-                    <span className="stg-row-title">Account Settings</span>
-                    <span className="stg-row-sub">Manage connected accounts &amp; data</span>
-                  </div>
-                  <IoChevronForward size={16} className="stg-chevron" />
-                </button>
-              </div>
-            </section>
-
             {/* Legal */}
-            <section className="dashboard-card stg-card-section dashboard-anim-left dashboard-anim-delay-2">
+            <section className="dashboard-card stg-card-section dashboard-anim-left dashboard-anim-delay-1">
               <h2 className="stg-section-title">Legal</h2>
               <div className="stg-rows">
                 <a className="stg-row" href="https://policies.google.com/terms" target="_blank" rel="noreferrer">

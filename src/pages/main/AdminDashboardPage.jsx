@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HiOutlineUsers, HiOutlineChartBarSquare, HiOutlineHomeModern, HiOutlineCog6Tooth, HiCheckCircle } from 'react-icons/hi2';
+import { HiOutlineUsers, HiOutlineChartBarSquare, HiOutlineHomeModern, HiOutlineCog6Tooth, HiCheckCircle, HiMagnifyingGlass, HiOutlineTrash, HiOutlinePencilSquare } from 'react-icons/hi2';
 import {
   BarChart,
   Bar,
@@ -88,14 +88,11 @@ function AdminDashboardPage() {
   const [auditLogs, setAuditLogs] = useState([]);
 
   const [editingUser, setEditingUser] = useState(null);
-  const [editForm, setEditForm] = useState({
-    first_name: '',
-    last_name: '',
-    username: '',
-    current_level: 1,
-    password: '',
-  });
-  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userLevelFilter, setUserLevelFilter] = useState('all');
+  const [userPage, setUserPage] = useState(1);
+  const USERS_PER_PAGE = 10;
+  const [archivingUserId, setArchivingUserId] = useState(null);
 
   const [creatingAdmin, setCreatingAdmin] = useState(false);
   const [createAdminMessage, setCreateAdminMessage] = useState('');
@@ -379,6 +376,44 @@ function AdminDashboardPage() {
       });
   }, [filteredSessions, metricBySession]);
 
+  const filteredUsers = useMemo(() => {
+    let result = profiles; // Including archived for now, but we'll show status
+
+    if (userSearchQuery.trim()) {
+      const q = userSearchQuery.toLowerCase();
+      result = result.filter((p) => {
+        const nameMatch = (p.first_name || '').toLowerCase().includes(q);
+        const userMatch = (p.username || '').toLowerCase().includes(q);
+        return nameMatch || userMatch;
+      });
+    }
+
+    if (userLevelFilter !== 'all') {
+      result = result.filter((p) => Number(p.current_level) === Number(userLevelFilter));
+    }
+
+    return result;
+  }, [profiles, userSearchQuery, userLevelFilter]);
+
+  const paginatedUsers = useMemo(() => {
+    const startIndex = (userPage - 1) * USERS_PER_PAGE;
+    return filteredUsers.slice(startIndex, startIndex + USERS_PER_PAGE);
+  }, [filteredUsers, userPage]);
+
+  const totalUserPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE);
+
+  const handleNextUserPage = () => {
+    if (userPage < totalUserPages) setUserPage((prev) => prev + 1);
+  };
+
+  const handlePrevUserPage = () => {
+    if (userPage > 1) setUserPage((prev) => prev - 1);
+  };
+
+  useEffect(() => {
+    setUserPage(1); // Reset page when filters change
+  }, [userSearchQuery, userLevelFilter]);
+
   const onLogout = async () => {
     await logout();
     navigate(ROUTES.HOME, { replace: true });
@@ -386,60 +421,22 @@ function AdminDashboardPage() {
 
   const openEditUser = (user) => {
     setEditingUser(user);
-    setEditForm({
-      first_name: user.first_name || '',
-      last_name: user.last_name || '',
-      username: user.username || '',
-      current_level: Number(user.current_level || 1),
-      password: '',
-    });
   };
 
-  const saveUserEdit = async () => {
-    if (!editingUser) return;
-    setIsSavingEdit(true);
-    setError('');
-    const payload = {
-      first_name: String(editForm.first_name || '').trim(),
-      last_name: String(editForm.last_name || '').trim(),
-      username: String(editForm.username || '').trim() || null,
-      current_level: Math.max(1, Math.min(5, Number(editForm.current_level || 1))),
-    };
-    const { data, error: updateError } = await supabase
-      .from('profiles')
-      .update(payload)
-      .eq('id', editingUser.id)
-      .select('*')
-      .single();
-    if (!updateError && String(editForm.password || '').trim().length >= 6) {
-      // Requires service-role-backed client; fails gracefully if not configured.
-      const { error: passwordError } = await supabase.auth.admin.updateUserById(editingUser.id, {
-        password: String(editForm.password).trim(),
-      });
-      if (passwordError) {
-        setError(`Profile updated, but password update failed: ${passwordError.message}`);
-      }
-    }
-
-    setIsSavingEdit(false);
-    if (updateError) {
-      setError(updateError.message || 'Failed to update user profile.');
-      return;
-    }
-    setProfiles((prev) => prev.map((p) => (p.id === editingUser.id ? { ...p, ...(data || payload) } : p)));
-    setEditingUser(null);
-  };
-
-  const archiveUser = async (userId) => {
+  const archiveUser = async () => {
+    if (!archivingUserId) return;
+    const userId = archivingUserId;
     const { error: archiveError } = await supabase
       .from('profiles')
       .update({ archived_at: new Date().toISOString() })
       .eq('id', userId);
     if (archiveError) {
       setError(archiveError.message || 'Failed to archive user.');
+      setArchivingUserId(null);
       return;
     }
     setProfiles((prev) => prev.map((p) => (p.id === userId ? { ...p, archived_at: new Date().toISOString() } : p)));
+    setArchivingUserId(null);
   };
 
   const submitCreateAdmin = async (e) => {
@@ -707,39 +704,90 @@ function AdminDashboardPage() {
 
         {activePage === 'users' && (
           <section className="admin-card">
-            <h3>User Management</h3>
-            {!visibleUsers.length ? (
-              <p className="admin-empty">No active users found.</p>
-            ) : (
-              <div className="admin-table-wrap">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Username</th>
-                      <th>Level</th>
-                      <th>Points</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {visibleUsers.map((u) => (
-                      <tr key={u.id}>
-                        <td>{getDisplayName(u, u.id)}</td>
-                        <td>{u.username || '-'}</td>
-                        <td>{u.current_level || 1}</td>
-                        <td>{u.speaker_points || 0}</td>
-                        <td>{u.archived_at ? 'Archived' : 'Active'}</td>
-                        <td className="admin-actions">
-                          <button type="button" className="admin-btn admin-btn--ghost" onClick={() => openEditUser(u)}>Edit Profile</button>
-                          <button type="button" className="admin-btn admin-btn--danger" onClick={() => archiveUser(u.id)}>Archive</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <div className="admin-table-controls">
+              <h3>User Management</h3>
+              <div className="admin-table-actions">
+                <div className="admin-search-box">
+                  <HiMagnifyingGlass className="admin-search-icon" />
+                  <input 
+                    type="text" 
+                    placeholder="Search users..." 
+                    value={userSearchQuery}
+                    onChange={(e) => setUserSearchQuery(e.target.value)}
+                  />
+                </div>
+                <select 
+                  className="admin-filter-select"
+                  value={userLevelFilter}
+                  onChange={(e) => setUserLevelFilter(e.target.value)}
+                >
+                  <option value="all">All Levels</option>
+                  <option value="1">Level 1</option>
+                  <option value="2">Level 2</option>
+                  <option value="3">Level 3</option>
+                  <option value="4">Level 4</option>
+                  <option value="5">Level 5</option>
+                </select>
               </div>
+            </div>
+
+            {!filteredUsers.length ? (
+              <div className="admin-empty-chart">No users found matching your criteria.</div>
+            ) : (
+              <>
+                <div className="admin-table-wrap">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Username</th>
+                        <th>Role</th>
+                        <th>Level</th>
+                        <th>Points</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedUsers.map((u) => (
+                        <tr key={u.id}>
+                          <td>{getDisplayName(u, u.id)}</td>
+                          <td>{u.username || '-'}</td>
+                          <td>
+                            <span className={`admin-role-badge ${u.role === 'admin' || u.role === 'superadmin' ? 'is-admin' : ''}`}>
+                              {u.role || 'user'}
+                            </span>
+                          </td>
+                          <td>{u.current_level || 1}</td>
+                          <td>{u.speaker_points || 0}</td>
+                          <td>
+                            <span className={`admin-status-badge ${u.archived_at ? 'is-archived' : 'is-active'}`}>
+                              {u.archived_at ? 'Archived' : 'Active'}
+                            </span>
+                          </td>
+                          <td className="admin-actions">
+                            <button type="button" className="admin-icon-btn admin-icon-btn--edit" onClick={() => openEditUser(u)} title="Edit User">
+                              <HiOutlinePencilSquare size={18} />
+                            </button>
+                            <button type="button" className="admin-icon-btn admin-icon-btn--danger" onClick={() => setArchivingUserId(u.id)} title="Archive User" disabled={!!u.archived_at}>
+                              <HiOutlineTrash size={18} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="admin-pagination">
+                  <span className="admin-pagination-info">
+                    Showing {(userPage - 1) * USERS_PER_PAGE + 1} to {Math.min(userPage * USERS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length} entries
+                  </span>
+                  <div className="admin-pagination-controls">
+                    <button type="button" disabled={userPage === 1} onClick={handlePrevUserPage}>Previous</button>
+                    <button type="button" disabled={userPage === totalUserPages || totalUserPages === 0} onClick={handleNextUserPage}>Next</button>
+                  </div>
+                </div>
+              </>
             )}
           </section>
         )}
@@ -813,53 +861,46 @@ function AdminDashboardPage() {
         )}
       </section>
 
-      {editingUser && (
-        <div className="admin-modal-backdrop" role="presentation" onClick={() => setEditingUser(null)}>
-          <div className="admin-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-            <h3>Edit Profile</h3>
+        {editingUser && (
+          <div className="admin-modal-backdrop" role="presentation" onClick={() => setEditingUser(null)}>
+            <div className="admin-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+              <h3>View User</h3>
             <label htmlFor="admin-edit-first-name">First Name</label>
             <input
               id="admin-edit-first-name"
               type="text"
-              value={editForm.first_name}
-              onChange={(e) => setEditForm((prev) => ({ ...prev, first_name: e.target.value }))}
+              value={editingUser.first_name || ''}
+              readOnly
             />
             <label htmlFor="admin-edit-username">Username</label>
             <input
               id="admin-edit-username"
               type="text"
-              value={editForm.username}
-              onChange={(e) => setEditForm((prev) => ({ ...prev, username: e.target.value }))}
+              value={editingUser.username || ''}
+              readOnly
             />
             <label htmlFor="admin-edit-last-name">Last Name</label>
             <input
               id="admin-edit-last-name"
               type="text"
-              value={editForm.last_name}
-              onChange={(e) => setEditForm((prev) => ({ ...prev, last_name: e.target.value }))}
-            />
-            <label htmlFor="admin-edit-level">Level</label>
-            <select
-              id="admin-edit-level"
-              value={editForm.current_level}
-              onChange={(e) => setEditForm((prev) => ({ ...prev, current_level: Number(e.target.value) }))}
-            >
-              {[1, 2, 3, 4, 5].map((lv) => <option key={lv} value={lv}>Level {lv}</option>)}
-            </select>
-            <label htmlFor="admin-edit-password">Password</label>
-            <input
-              id="admin-edit-password"
-              type="password"
-              minLength={6}
-              placeholder="Leave blank to keep current"
-              value={editForm.password}
-              onChange={(e) => setEditForm((prev) => ({ ...prev, password: e.target.value }))}
+              value={editingUser.last_name || ''}
+              readOnly
             />
             <div className="admin-modal-actions">
-              <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setEditingUser(null)}>Cancel</button>
-              <button type="button" className="admin-btn admin-btn--primary" disabled={isSavingEdit} onClick={saveUserEdit}>
-                {isSavingEdit ? 'Saving...' : 'Save'}
-              </button>
+              <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setEditingUser(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {archivingUserId && (
+        <div className="admin-modal-backdrop" role="presentation" onClick={() => setArchivingUserId(null)}>
+          <div className="admin-modal admin-confirm-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <h3>Archive User</h3>
+            <p>Are you sure you want to archive <strong>{getDisplayName(profiles.find(p => p.id === archivingUserId))}</strong>? They will lose access to the platform.</p>
+            <div className="admin-modal-actions">
+              <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setArchivingUserId(null)}>Cancel</button>
+              <button type="button" className="admin-btn admin-btn--danger" onClick={archiveUser}>Confirm Archive</button>
             </div>
           </div>
         </div>

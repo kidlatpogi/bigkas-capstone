@@ -25,10 +25,12 @@ import SkywardJourneyNodeButton from './SkywardJourneyNodeButton';
 import './SkywardJourney.css';
 
 const MAP_SCALE = 1;
-const ORTHOGONAL_OFFSETS = [0, 120, 220, 220, 120, 0, -120, -220, -220, -120];
+const DESKTOP_OFFSETS = [0, 120, 220, 220, 120, 0, -120, -220, -220, -120];
+const MOBILE_OFFSETS  = [0, 45, 85, 85, 45, 0, -45, -85, -85, -45];
 
-function getHorizontalOffset(index) {
-  return ORTHOGONAL_OFFSETS[index % ORTHOGONAL_OFFSETS.length];
+function getHorizontalOffset(index, isMobile) {
+  const arr = isMobile ? MOBILE_OFFSETS : DESKTOP_OFFSETS;
+  return arr[index % arr.length];
 }
 
 function clampMapState(state, viewportEl, contentEl, scale) {
@@ -480,6 +482,15 @@ export default function SkywardJourney({
   const pointerPanRef = useRef(null);
   const pinchRef = useRef(null);
 
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const activeIndex = useMemo(
     () => steps.findIndex((s) => s.nodeState === NODE_STATE.ACTIVE),
     [steps],
@@ -543,7 +554,7 @@ export default function SkywardJourney({
         el = el.offsetParent;
       }
       const y = top + (node.offsetHeight / 2);
-      const x = centerX + getHorizontalOffset(i);
+      const x = centerX + getHorizontalOffset(i, isMobile);
       indexed[i] = { x, y };
     }
 
@@ -556,7 +567,7 @@ export default function SkywardJourney({
     }
 
     setPathPoints(pts);
-  }, [steps.length, indexedNodePoints.length]);
+  }, [steps.length, indexedNodePoints.length, isMobile]);
 
   useLayoutEffect(() => {
     const run = () => {
@@ -616,7 +627,7 @@ export default function SkywardJourney({
         currentEl = currentEl.offsetParent;
       }
       const nodeCenterY = top + (el.offsetHeight / 2);
-      const nodeCenterX = (content.clientWidth / 2) + getHorizontalOffset(targetIndex);
+      const nodeCenterX = (content.clientWidth / 2) + getHorizontalOffset(targetIndex, isMobile);
 
       // We want the node exactly at the focus point (32% from the top of the screen)
       const focusScreenY = vp.clientHeight * 0.32;
@@ -629,7 +640,7 @@ export default function SkywardJourney({
     return () => {
       window.clearTimeout(t);
     };
-  }, [activeIndex, entranceFromNav, scrollToStepIndex]);
+  }, [activeIndex, entranceFromNav, scrollToStepIndex, isMobile]);
 
   /** Wheel pans map vertically while preserving current zoom scale. */
   useEffect(() => {
@@ -865,7 +876,7 @@ export default function SkywardJourney({
         const BossMonsterIcon = getBossMonsterIcon(currentLevel);
         const startStage = sectionTaskIndex === 0;
         const jiggle = jiggleIndex === i;
-        const horizontalOffset = getHorizontalOffset(i);
+        const horizontalOffset = getHorizontalOffset(i, isMobile);
         let labelSide = 'right';
         if (horizontalOffset > 0) {
           labelSide = 'left';
@@ -1092,9 +1103,9 @@ export default function SkywardJourney({
             <button
               onClick={() => onLevelChange && onLevelChange(Math.max(1, currentLevel - 1))}
               disabled={currentLevel <= 1}
-              style={{ padding: '8px 16px', borderRadius: '12px', border: 'none', background: currentLevel <= 1 ? '#e5e5e5' : '#f59b00', color: currentLevel <= 1 ? '#a1a1aa' : '#fff', cursor: currentLevel <= 1 ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+              style={{ padding: isMobile ? '8px 12px' : '8px 16px', borderRadius: '12px', border: 'none', background: currentLevel <= 1 ? '#e5e5e5' : '#f59b00', color: currentLevel <= 1 ? '#a1a1aa' : '#fff', cursor: currentLevel <= 1 ? 'not-allowed' : 'pointer', fontWeight: 'bold', flexShrink: 0 }}
             >
-              &#8592; Prev
+              &#8592; {isMobile ? '' : 'Prev'}
             </button>
             <div style={{ flex: 1 }}>
               <HeaderTitle>{steps.length > 0 ? currentPillarText : `Level ${currentLevel}`}</HeaderTitle>
@@ -1103,9 +1114,9 @@ export default function SkywardJourney({
             <button
               onClick={() => onLevelChange && onLevelChange(Math.min(5, currentLevel + 1))}
               disabled={currentLevel >= 5}
-              style={{ padding: '8px 16px', borderRadius: '12px', border: 'none', background: currentLevel >= 5 ? '#e5e5e5' : '#f59b00', color: currentLevel >= 5 ? '#a1a1aa' : '#fff', cursor: currentLevel >= 5 ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+              style={{ padding: isMobile ? '8px 12px' : '8px 16px', borderRadius: '12px', border: 'none', background: currentLevel >= 5 ? '#e5e5e5' : '#f59b00', color: currentLevel >= 5 ? '#a1a1aa' : '#fff', cursor: currentLevel >= 5 ? 'not-allowed' : 'pointer', fontWeight: 'bold', flexShrink: 0 }}
             >
-              Next &#8594;
+              {isMobile ? '' : 'Next'} &#8594;
             </button>
           </div>
           {steps.length > 0 && <HeaderStatBadge>{completedCount} / {steps.length} Stages Completed</HeaderStatBadge>}

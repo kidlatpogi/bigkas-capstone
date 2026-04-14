@@ -148,8 +148,18 @@ function AdminRoute() {
     );
   }
 
+  if (isAdminAuthenticated) {
+    return (
+      <>
+        <main className="main-content">
+          <Outlet />
+        </main>
+      </>
+    );
+  }
+
   if (!isAuthenticated) {
-    return <Navigate to={ENV.ADMIN_LOGIN_PATH || ROUTES.LOGIN} replace />;
+    return <Navigate to={ENV.ADMIN_LOGIN_PATH || ROUTES.ADMIN_LOGIN_BASE} replace />;
   }
 
   if (!isAdminAuthenticated) {
@@ -273,4 +283,3 @@ function AppRouter() {
 }
 
 export default AppRouter;
-

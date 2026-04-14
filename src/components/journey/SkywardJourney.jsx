@@ -137,7 +137,7 @@ const MapHeaderCard = styled.div`
   text-align: center;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   border: 2px solid #f18f01;
-  position: fixed;
+  position: absolute;
   top: max(14px, env(safe-area-inset-top, 0px));
   left: 50%;
   transform: translateX(-50%);
@@ -1044,28 +1044,32 @@ export default function SkywardJourney({
     : 'Pillar 1: General';
   const [currentPillarText, setCurrentPillarText] = useState(initialText);
 
-  // True Section-Based Tracking
+  // Hybrid Section-Based Tracking (Ignores CSS Animation Delays)
   useEffect(() => {
     const vp = viewportRef.current;
     if (!vp || !sectionWrapperRefs.current.length) return;
 
-    const rect = vp.getBoundingClientRect();
-    const focusY = rect.top + (rect.height * 0.32);
+    // What is the focus Y in the UNSCALED map coordinates?
+    const vHeight = vp.clientHeight || window.innerHeight;
+    const focusScreenY = vHeight * 0.32;
+    // Reverse the transform to find exactly where the camera is mathematically
+    const targetMapY = (focusScreenY - map.ty) / MAP_SCALE;
 
     let closestText = null;
     let minDistance = Infinity;
 
     sectionWrapperRefs.current.forEach((el) => {
       if (!el) return;
-      const sRect = el.getBoundingClientRect();
+      // Use offsetTop to get the static layout position, completely bypassing CSS transform animations
+      const sTop = el.offsetTop;
+      const sBottom = sTop + el.offsetHeight;
 
-      // Check if the focus line overlaps the section container directly
-      if (focusY >= sRect.top && focusY <= sRect.bottom) {
+      // Check if the mathematical camera intersects the static section box
+      if (targetMapY >= sTop && targetMapY <= sBottom) {
         closestText = el.getAttribute('data-pillar-text');
         minDistance = 0;
       } else if (minDistance > 0) {
-        // If in a margin/gap, find the nearest section edge
-        const dist = Math.min(Math.abs(focusY - sRect.top), Math.abs(focusY - sRect.bottom));
+        const dist = Math.min(Math.abs(targetMapY - sTop), Math.abs(targetMapY - sBottom));
         if (dist < minDistance) {
           minDistance = dist;
           closestText = el.getAttribute('data-pillar-text');
@@ -1076,7 +1080,7 @@ export default function SkywardJourney({
     if (closestText) {
       setCurrentPillarText(closestText);
     }
-  }, [map.ty, map.tx]);
+  }, [map.ty]);
   const activeOrHighestIndex = Math.max(activeStepIndex, lastCompletedStepIndex, 0);
   let pathFillPercentage = 0;
   if (pathPoints.length > 1 && pathPoints[activeOrHighestIndex]) {
@@ -1090,7 +1094,7 @@ export default function SkywardJourney({
   }
 
   return (
-    <div className="skyward-journey-wrap">
+    <div className="skyward-journey-wrap" style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
       <div className="skyward-journey skyward-journey-container no-scrollbar" ref={rootRef}>
         <MapHeaderCard className="skyward-journey-anim-header">
           <HeaderTitle>{currentPillarText}</HeaderTitle>

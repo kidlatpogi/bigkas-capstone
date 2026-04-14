@@ -121,6 +121,46 @@ function SettingsPage() {
                 </a>
               </div>
             </section>
+
+            {/* ── Danger Zone ── */}
+            <section className="dashboard-card stg-danger-zone dashboard-anim-bottom dashboard-anim-delay-3">
+              <div className="stg-danger-header">
+                <IoWarningOutline size={22} className="stg-danger-icon" />
+                <h2 className="stg-danger-title">Danger Zone</h2>
+              </div>
+              <p className="stg-danger-desc">
+                Actions in this section are destructive and cannot be undone. Proceed with caution.
+              </p>
+
+              <div className="stg-danger-actions">
+                <div className="stg-danger-action-row">
+                  <div className="stg-danger-action-info">
+                    <IoTrashOutline size={18} className="stg-danger-action-icon" />
+                    <div>
+                      <span className="stg-danger-action-label">Clear Recordings</span>
+                      <span className="stg-danger-action-sub">Remove all saved audio/video files from cloud storage</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="stg-danger-btn"
+                    onClick={() => setShowClearMediaModal(true)}
+                  >
+                    Clear Data
+                  </button>
+                </div>
+
+                {clearMediaMessage && (
+                  <p
+                    className={`stg-danger-message ${clearMediaStatus === 'success' ? 'stg-danger-message--success' : ''} ${clearMediaStatus === 'error' ? 'stg-danger-message--error' : ''}`.trim()}
+                    role="status"
+                    aria-live="polite"
+                  >
+                    {clearMediaMessage}
+                  </p>
+                )}
+              </div>
+            </section>
           </div>
 
           {/* ── Right column ── */}
@@ -202,46 +242,6 @@ function SettingsPage() {
             </section>
           </div>
         </div>
-
-        {/* ── Danger Zone — full width at bottom ── */}
-        <section className="dashboard-card stg-danger-zone dashboard-anim-bottom dashboard-anim-delay-4">
-          <div className="stg-danger-header">
-            <IoWarningOutline size={22} className="stg-danger-icon" />
-            <h2 className="stg-danger-title">Danger Zone</h2>
-          </div>
-          <p className="stg-danger-desc">
-            Actions in this section are destructive and cannot be undone. Proceed with caution.
-          </p>
-
-          <div className="stg-danger-actions">
-            <div className="stg-danger-action-row">
-              <div className="stg-danger-action-info">
-                <IoTrashOutline size={18} className="stg-danger-action-icon" />
-                <div>
-                  <span className="stg-danger-action-label">Clear Recordings</span>
-                  <span className="stg-danger-action-sub">Remove all saved audio/video files from cloud storage</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                className="stg-danger-btn"
-                onClick={() => setShowClearMediaModal(true)}
-              >
-                Clear Data
-              </button>
-            </div>
-
-            {clearMediaMessage && (
-              <p
-                className={`stg-danger-message ${clearMediaStatus === 'success' ? 'stg-danger-message--success' : ''} ${clearMediaStatus === 'error' ? 'stg-danger-message--error' : ''}`.trim()}
-                role="status"
-                aria-live="polite"
-              >
-                {clearMediaMessage}
-              </p>
-            )}
-          </div>
-        </section>
       </div>
 
       <ConfirmationModal

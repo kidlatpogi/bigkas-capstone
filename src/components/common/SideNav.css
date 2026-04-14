@@ -44,10 +44,9 @@
   .side-nav-links .side-nav-link:nth-child(3) { animation-delay: 0.44s; }
   .side-nav-links .side-nav-link:nth-child(4) { animation-delay: 0.49s; }
   .side-nav-links .side-nav-link:nth-child(5) { animation-delay: 0.54s; }
-  .side-nav-links .side-nav-link:nth-child(6) { animation-delay: 0.59s; }
-  .side-nav-utilities .side-nav-link { animation-delay: 0.64s; }
-  .side-nav-utilities .notification-center-bell--rail { animation-delay: 0.69s; }
-  .side-nav-logout { animation-delay: 0.74s; }
+  .side-nav-utilities .side-nav-link { animation-delay: 0.59s; }
+  .side-nav-utilities .notification-center-bell--rail { animation-delay: 0.64s; }
+  .side-nav-logout { animation-delay: 0.69s; }
 }
 
 @keyframes sideNavRailPopIn {

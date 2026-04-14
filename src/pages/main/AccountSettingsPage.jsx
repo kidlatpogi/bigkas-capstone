@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import './InnerPages.css';
@@ -7,6 +7,7 @@ import './AccountSettingsPage.css';
 
 function AccountSettingsPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { deactivateAccount, deleteAccount } = useAuthContext();
   const fromParam = new URLSearchParams(location.search).get('from');
   const fromSource = String(location.state?.from || fromParam || '').toLowerCase();
@@ -107,6 +108,10 @@ function AccountSettingsPage() {
             <button className="btn-danger account-btn-primary" onClick={() => { setPassword(''); setConfirmText(''); setDeleteError(''); setShowDeleteModal(true); }}>
               Delete Account
             </button>
+          </div>
+
+          <div className="btn-row">
+            <button className="btn-secondary" onClick={() => navigate(-1)}>Cancel</button>
           </div>
         </div>
       </div>

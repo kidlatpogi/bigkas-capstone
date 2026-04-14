@@ -5,6 +5,7 @@ import { ROUTES } from '../../utils/constants';
 import { supabase } from '../../lib/supabase';
 import './ProfilePage.css';
 
+/* ── Inline SVG icons ── */
 const CameraIcon = ({ size = 28 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
     stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -39,6 +40,7 @@ function ProfilePage() {
     avatarUri: null,
   });
 
+  /* Build form snapshot directly from the AuthContext user (already cached). */
   const profileLoaded = useRef(false);
 
   useEffect(() => {
@@ -71,6 +73,7 @@ function ProfilePage() {
     );
   }, [formData, initialData]);
 
+  /* ── Avatar ── */
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -111,6 +114,7 @@ function ProfilePage() {
     setAvatarModalOpen(false);
   };
 
+  /* ── Save / Cancel ── */
   const handleSaveChanges = async () => {
     if (!hasChanges) return;
     if (!formData.firstName.trim()) {
@@ -150,135 +154,131 @@ function ProfilePage() {
 
   return (
     <div className="profile-page">
-      <header className="profile-hero dashboard-anim-top">
-        <h1 className="profile-hero-title">Edit Profile</h1>
-        <p className="profile-hero-sub">Refine your profile to keep your speaking journey personalized.</p>
-      </header>
+      {/* Header */}
+      <div className="profile-header">
+        <h1 className="inner-page-title">Edit Profile</h1>
+        <p className="profile-subtitle">Refine your profile to keep your speaking journey personalized.</p>
+      </div>
 
-      <div className="profile-layout">
-        <div className="profile-col-avatar dashboard-anim-left dashboard-anim-delay-2">
-          <div className="profile-avatar-wrap">
-            <button
-              className="profile-avatar-btn"
-              onClick={() => setAvatarModalOpen(true)}
-              type="button"
-            >
-              <div className="profile-avatar-ring">
-                {formData.avatarUri ? (
-                  <img
-                    src={formData.avatarUri}
-                    alt="Avatar"
-                    className="profile-avatar-img"
-                    onError={() => setFormData(prev => ({ ...prev, avatarUri: null }))}
-                  />
-                ) : (
-                  <div className="profile-avatar-placeholder">{initials}</div>
-                )}
-              </div>
-              <div className="profile-avatar-camera-badge">
-                <CameraIcon size={20} />
-              </div>
-            </button>
-
-            {avatarUploading && (
-              <p className="profile-avatar-status">Uploading…</p>
-            )}
-          </div>
-
-          <input
-            type="file"
-            ref={fileRef}
-            accept="image/*"
-            style={{ display: 'none' }}
-            onChange={handleFileChange}
-          />
-          {errors.avatar && <span className="profile-field-error">{errors.avatar}</span>}
-
-          <p className="profile-avatar-hint">Tap the avatar to change your picture</p>
-        </div>
-
-        <div className="profile-col-form">
-          <div className="profile-form-grid dashboard-anim-right dashboard-anim-delay-3">
-            <div className="profile-field">
-              <label className="profile-label" htmlFor="pf-first">First Name</label>
-              <input
-                id="pf-first"
-                className={`profile-input${errors.firstName ? ' input-error' : ''}`}
-                value={formData.firstName}
-                onChange={e => updateField('firstName', e.target.value)}
-                placeholder="First name"
-              />
-              {errors.firstName && (
-                <span className="profile-field-error">{errors.firstName}</span>
+      {/* AvatarPicker */}
+      <div className="profile-avatar-section">
+        <div className="profile-avatar-wrap">
+          <button
+            className="profile-avatar-btn"
+            onClick={() => setAvatarModalOpen(true)}
+            type="button"
+          >
+            <div className="profile-avatar-ring">
+              {formData.avatarUri ? (
+                <img
+                  src={formData.avatarUri}
+                  alt="Avatar"
+                  className="profile-avatar-img"
+                  onError={() => setFormData(prev => ({ ...prev, avatarUri: null }))}
+                />
+              ) : (
+                <div className="profile-avatar-placeholder">{initials}</div>
               )}
             </div>
-            <div className="profile-field">
-              <label className="profile-label" htmlFor="pf-last">Last Name</label>
-              <input
-                id="pf-last"
-                className="profile-input"
-                value={formData.lastName}
-                onChange={e => updateField('lastName', e.target.value)}
-                placeholder="Last name"
-              />
+            <div className="profile-avatar-camera-badge">
+              <CameraIcon size={22} />
             </div>
-          </div>
+          </button>
 
-          <div className="profile-field dashboard-anim-right dashboard-anim-delay-4">
-            <label className="profile-label" htmlFor="pf-email">Email Address</label>
+          {avatarUploading && (
+            <p className="profile-avatar-status">Uploading…</p>
+          )}
+        </div>
+
+        <input
+          type="file"
+          ref={fileRef}
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
+        {errors.avatar && <span className="profile-error-msg">{errors.avatar}</span>}
+      </div>
+
+      {/* Form */}
+      <div className="profile-form">
+        {/* First + Last name row */}
+        <div className="profile-name-row">
+          <div className="profile-field">
+            <label className="profile-label">FIRST NAME</label>
             <input
-              id="pf-email"
-              className="profile-input profile-input--readonly"
-              value={formData.email}
-              readOnly
-              disabled
-              tabIndex={-1}
+              className={`profile-input${errors.firstName ? ' input-error' : ''}`}
+              value={formData.firstName}
+              onChange={e => updateField('firstName', e.target.value)}
+              placeholder="First name"
             />
+            {errors.firstName && (
+              <span className="profile-error-msg">{errors.firstName}</span>
+            )}
           </div>
-
-          <div className="profile-field dashboard-anim-right dashboard-anim-delay-5">
-            <label className="profile-label" htmlFor="pf-nick">Nickname</label>
+          <div className="profile-field">
+            <label className="profile-label">LAST NAME</label>
             <input
-              id="pf-nick"
               className="profile-input"
-              value={formData.nickname}
-              onChange={e => updateField('nickname', e.target.value)}
-              placeholder="@nickname"
+              value={formData.lastName}
+              onChange={e => updateField('lastName', e.target.value)}
+              placeholder="Last name"
             />
-          </div>
-
-          {saveError && <p className="profile-field-error profile-field-error--center">{saveError}</p>}
-
-          <div className="profile-actions dashboard-anim-bottom dashboard-anim-delay-6">
-            <button
-              className="profile-btn profile-btn--save"
-              type="button"
-              onClick={handleSaveChanges}
-              disabled={isSaving || avatarUploading || !hasChanges}
-            >
-              {isSaving ? 'Saving…' : 'Save Changes'}
-            </button>
-            <button
-              className="profile-btn profile-btn--cancel"
-              type="button"
-              onClick={handleCancel}
-            >
-              Cancel
-            </button>
           </div>
         </div>
+
+        {/* Email */}
+        <div className="profile-field">
+          <label className="profile-label">EMAIL ADDRESS</label>
+          <input
+            className="profile-input profile-input-readonly"
+            value={formData.email}
+            readOnly
+            disabled
+            tabIndex={-1}
+          />
+        </div>
+
+        {/* Nickname */}
+        <div className="profile-field">
+          <label className="profile-label">NICKNAME</label>
+          <input
+            className="profile-input"
+            value={formData.nickname}
+            onChange={e => updateField('nickname', e.target.value)}
+            placeholder="@nickname"
+          />
+        </div>
+
+        {/* Action buttons */}
+        {saveError && <p className="profile-error-msg" style={{ marginBottom: 12, textAlign: 'center' }}>{saveError}</p>}
+        <button
+          className="profile-btn-save"
+          type="button"
+          onClick={handleSaveChanges}
+          disabled={isSaving || avatarUploading || !hasChanges}
+        >
+          {isSaving ? 'Saving…' : 'Save Changes'}
+        </button>
+        <button
+          className="profile-btn-cancel"
+          type="button"
+          onClick={handleCancel}
+        >
+          Cancel
+        </button>
       </div>
 
       {avatarModalOpen && (
-        <div className="profile-modal-overlay" onClick={() => setAvatarModalOpen(false)}>
-          <div className="profile-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
-            <h3 className="profile-modal-title">Profile Picture</h3>
+        <div className="profile-avatar-modal-overlay" onClick={() => setAvatarModalOpen(false)}>
+          <div className="profile-avatar-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <h3 className="profile-avatar-modal-title">Profile Picture</h3>
 
             {formData.avatarUri ? (
               <>
                 <button
                   type="button"
-                  className="profile-modal-action"
+                  className="profile-avatar-modal-action"
                   onClick={() => {
                     fileRef.current?.click();
                     setAvatarModalOpen(false);
@@ -288,7 +288,7 @@ function ProfilePage() {
                 </button>
                 <button
                   type="button"
-                  className="profile-modal-action profile-modal-action--danger"
+                  className="profile-avatar-modal-action danger"
                   onClick={handleRemoveAvatar}
                 >
                   Remove Profile Picture
@@ -297,7 +297,7 @@ function ProfilePage() {
             ) : (
               <button
                 type="button"
-                className="profile-modal-action"
+                className="profile-avatar-modal-action"
                 onClick={() => {
                   fileRef.current?.click();
                   setAvatarModalOpen(false);
@@ -309,7 +309,7 @@ function ProfilePage() {
 
             <button
               type="button"
-              className="profile-modal-close"
+              className="profile-avatar-modal-cancel"
               onClick={() => setAvatarModalOpen(false)}
             >
               Cancel
@@ -322,3 +322,5 @@ function ProfilePage() {
 }
 
 export default ProfilePage;
+
+

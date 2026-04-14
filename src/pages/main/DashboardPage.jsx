@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { IoArrowForward } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../context/useAuthContext';
@@ -13,10 +13,8 @@ import {
   getActivityMetrics,
   isActivityTaskCompleted,
   getTaskXp,
-  getTotalActivityPoints,
 } from '../../utils/activityProgress';
 import './DashboardPage.css';
-import './ActivityPage.css';
 
 import iconFire from '../../assets/icons/Icon-Fire.svg';
 
@@ -152,20 +150,14 @@ export default function DashboardPage() {
   const { sessions, fetchAllSessions } = useSessions();
   const activityScopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
 
-  const [totalActivityPoints, setTotalActivityPoints] = useState(0);
   const [activityHistory, setActivityHistory] = useState([]);
   const [activityMetrics, setActivityMetrics] = useState(() => getActivityMetrics(activityScopeKey));
-  const { tasks: activityTasks, loading: activitiesLoading } = useActivitiesJourneyTasks();
   const [isMobileView, setIsMobileView] = useState(
-    () => (typeof window === 'undefined' ? true : window.innerWidth <= 1024),
+    typeof window === 'undefined' ? true : window.matchMedia('(max-width: 1024px)').matches,
   );
-  const [metricsSyncKey, setMetricsSyncKey] = useState(0);
-
-  const getPointsFromUser = useCallback((nextUser) => {
-    const raw = Number(nextUser?.speakerPoints ?? 0);
-    if (!Number.isFinite(raw)) return 0;
-    return Math.max(0, Math.floor(raw));
-  }, []);
+  const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
+  const selectedLevel = Number(levelProgress.levelNumber) || 1;
+  const { tasks: activityTasks, loading: activitiesLoading } = useActivitiesJourneyTasks(selectedLevel);
 
   const activeDayKeys = useMemo(() => {
     const keys = new Set();
@@ -191,16 +183,20 @@ export default function DashboardPage() {
 
   const weekPills = useMemo(() => getWeekdayPills(activeDayKeys), [activeDayKeys]);
 
-  const effectiveTotalActivityPoints = Math.max(totalActivityPoints, getPointsFromUser(user));
-
-  const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
-
   const activityTaskState = useMemo(() => {
     return activityTasks.reduce((state, task) => {
       state[task.id] = isActivityTaskCompleted(task.id, activityMetrics);
       return state;
     }, {});
   }, [activityMetrics, activityTasks]);
+
+  const activityUnlockState = useMemo(() => {
+    return activityTasks.reduce((state, task) => {
+      const prerequisites = Array.isArray(task.prerequisiteIds) ? task.prerequisiteIds : [];
+      state[task.id] = prerequisites.every((taskId) => activityTaskState[taskId] === true);
+      return state;
+    }, {});
+  }, [activityTaskState, activityTasks]);
 
   const completedTaskCount = useMemo(
     () => activityTasks.filter((task) => activityTaskState[task.id] === true).length,
@@ -229,46 +225,46 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!user?.id) return;
-    const syncPoints = () => {
-      const localPoints = getTotalActivityPoints(activityScopeKey);
-      const remotePoints = getPointsFromUser(user);
-      setTotalActivityPoints(Math.max(localPoints, remotePoints));
-      setActivityHistory(getActivityCompletionHistory(activityScopeKey));
-      setActivityMetrics(getActivityMetrics(activityScopeKey));
-    };
-    syncPoints();
-  }, [activityScopeKey, getPointsFromUser, user, metricsSyncKey]);
+    setActivityHistory(getActivityCompletionHistory(activityScopeKey));
+    setActivityMetrics(getActivityMetrics(activityScopeKey));
+  }, [activityScopeKey, user?.id]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
-    const onResize = () => setIsMobileView(window.innerWidth <= 1024);
-    const onStorage = () => setMetricsSyncKey((k) => k + 1);
     const refreshActivity = () => {
       setActivityHistory(getActivityCompletionHistory(activityScopeKey));
       setActivityMetrics(getActivityMetrics(activityScopeKey));
     };
     window.addEventListener('focus', refreshActivity);
-    window.addEventListener('storage', onStorage);
-    window.addEventListener('resize', onResize);
+    window.addEventListener('storage', refreshActivity);
     document.addEventListener('visibilitychange', refreshActivity);
     return () => {
       window.removeEventListener('focus', refreshActivity);
-      window.removeEventListener('storage', onStorage);
-      window.removeEventListener('resize', onResize);
+      window.removeEventListener('storage', refreshActivity);
       document.removeEventListener('visibilitychange', refreshActivity);
     };
   }, [activityScopeKey]);
 
   useEffect(() => {
-    if (isMobileView) return;
-    navigate(ROUTES.ACTIVITY, { replace: true, state: { skywardEntrance: true } });
-  }, [isMobileView, navigate]);
+    if (typeof window === 'undefined') return undefined;
+    const onResize = () => setIsMobileView(window.matchMedia('(max-width: 1024px)').matches);
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  useEffect(() => {
+    if (isInitializing) return;
+    if (!isMobileView) {
+      navigate(ROUTES.ACTIVITY, { replace: true });
+    }
+  }, [isInitializing, isMobileView, navigate]);
 
   if (!isMobileView) return null;
 
   return (
-    <div className="dashboard-page-new no-scrollbar">
-      <aside className="activity-col-sidebar no-scrollbar">
+    <div className="dashboard-page-new no-scrollbar" style={{ height: '100dvh', overflowY: 'auto' }}>
+      <aside className="dashboard-sidebar-mobile no-scrollbar">
         <section className="dashboard-card dashboard-consistency-card dashboard-anim-right dashboard-anim-delay-3">
           <p className="dashboard-consistency-kicker">Daily Consistency</p>
           <div className="dashboard-consistency-value">

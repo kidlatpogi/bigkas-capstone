@@ -27,7 +27,7 @@ import './AdminDashboardPage.css';
 
 const RETENTION_DAYS = 14;
 const SIDEBAR_WIDTH = 280;
-const PIE_COLORS = ['#5a755e', '#7b997f', '#a3c2a8', '#d1e6d4'];
+const PIE_COLORS = ['#33d2a4', '#51dfb5', '#7bedcc', '#a8f5e1'];
 
 function shiftRange(start, unit, amount) {
   const d = new Date(start);
@@ -86,7 +86,12 @@ function AdminDashboardPage() {
   const [sessions, setSessions] = useState([]);
   const [metrics, setMetrics] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
-
+  const [auditSearchQuery, setAuditSearchQuery] = useState('');
+  const [auditActionFilter, setAuditActionFilter] = useState('all');
+  const [auditEntityFilter, setAuditEntityFilter] = useState('all');
+  const [auditPage, setAuditPage] = useState(1);
+  const AUDIT_PER_PAGE = 15;
+  const [inspectingLog, setInspectingLog] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [userLevelFilter, setUserLevelFilter] = useState('all');
@@ -95,13 +100,24 @@ function AdminDashboardPage() {
   const [archivingUserId, setArchivingUserId] = useState(null);
 
   const [creatingAdmin, setCreatingAdmin] = useState(false);
-  const [createAdminMessage, setCreateAdminMessage] = useState('');
   const [createAdminForm, setCreateAdminForm] = useState({
     email: '',
     password: '',
     first_name: '',
     username: '',
+    role: 'admin',
   });
+  const [systemSettings, setSystemSettings] = useState({
+    maintenance_mode: false,
+    failover_logging: true,
+    defense_data_mode: false,
+  });
+  const [toastMessage, setToastMessage] = useState(null);
+
+  const showToast = (msg, type = 'success') => {
+    setToastMessage({ text: msg, type });
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   const isSuperadmin = role === 'superadmin';
 
@@ -127,7 +143,7 @@ function AdminDashboardPage() {
           throw new Error('Access denied: admin privileges required.');
         }
 
-        const [profilesRes, sessionsRes, metricsRes] = await Promise.all([
+        const [profilesRes, sessionsRes, metricsRes, settingsRes] = await Promise.all([
           supabase
             .from('profiles')
             .select('*')
@@ -139,6 +155,7 @@ function AdminDashboardPage() {
           supabase
             .from('session_metrics')
             .select('session_id, overall_score, fluency_score, confidence_score, pronunciation_score'),
+          roleProfile.role === 'superadmin' ? supabase.from('system_settings').select('*') : Promise.resolve({ data: [] })
         ]);
 
         if (profilesRes.error) throw profilesRes.error;
@@ -150,6 +167,12 @@ function AdminDashboardPage() {
         setProfiles(profilesRes.data || []);
         setSessions(sessionsRes.data || []);
         setMetrics(metricsRes.data || []);
+        
+        if (settingsRes.data && settingsRes.data.length > 0) {
+          const sMap = {};
+          settingsRes.data.forEach(s => sMap[s.key] = s.value === 'true');
+          setSystemSettings(prev => ({ ...prev, ...sMap }));
+        }
       } catch (e) {
         if (active) setError(e.message || 'Failed to load admin dashboard.');
       } finally {
@@ -167,9 +190,9 @@ function AdminDashboardPage() {
       try {
         const { data, error: auditErr } = await supabase
           .from('audit_logs')
-          .select('id, action, entity_type, entity_id, actor_id, created_at')
+          .select('id, action, entity_type, entity_id, actor_id, created_at, old_values, new_values, ip_address')
           .order('created_at', { ascending: false })
-          .limit(200);
+          .limit(1000);
         if (auditErr) throw auditErr;
         if (!active) return;
         const logs = data || [];
@@ -410,6 +433,43 @@ function AdminDashboardPage() {
     if (userPage > 1) setUserPage((prev) => prev - 1);
   };
 
+  const filteredAuditLogs = useMemo(() => {
+    let result = auditLogs;
+    if (auditSearchQuery.trim()) {
+      const q = auditSearchQuery.toLowerCase();
+      result = result.filter(log => {
+        const actorName = getDisplayName(profiles.find(p => p.id === log.actor_id), log.actor_id).toLowerCase();
+        return actorName.includes(q) || String(log.actor_id).toLowerCase().includes(q);
+      });
+    }
+    if (auditActionFilter !== 'all') {
+      result = result.filter(log => log.action.toLowerCase() === auditActionFilter.toLowerCase());
+    }
+    if (auditEntityFilter !== 'all') {
+      result = result.filter(log => log.entity_type.toLowerCase() === auditEntityFilter.toLowerCase());
+    }
+    return result;
+  }, [auditLogs, auditSearchQuery, auditActionFilter, auditEntityFilter, profiles]);
+
+  const paginatedAuditLogs = useMemo(() => {
+    const start = (auditPage - 1) * AUDIT_PER_PAGE;
+    return filteredAuditLogs.slice(start, start + AUDIT_PER_PAGE);
+  }, [filteredAuditLogs, auditPage]);
+
+  const totalAuditPages = Math.ceil(filteredAuditLogs.length / AUDIT_PER_PAGE);
+
+  useEffect(() => {
+    setAuditPage(1);
+  }, [auditSearchQuery, auditActionFilter, auditEntityFilter]);
+
+  const getActionBadgeClass = (action) => {
+    const a = action.toLowerCase();
+    if (a.includes('create') || a.includes('insert')) return 'is-active';
+    if (a.includes('update')) return 'is-update';
+    if (a.includes('delete') || a.includes('archive')) return 'is-archived';
+    return '';
+  };
+
   useEffect(() => {
     setUserPage(1); // Reset page when filters change
   }, [userSearchQuery, userLevelFilter]);
@@ -443,37 +503,57 @@ function AdminDashboardPage() {
     e.preventDefault();
     if (!isSuperadmin) return;
     setCreatingAdmin(true);
-    setCreateAdminMessage('');
     const email = String(createAdminForm.email || '').trim();
     const password = String(createAdminForm.password || '');
     const firstName = String(createAdminForm.first_name || '').trim();
     const username = String(createAdminForm.username || '').trim();
+    const newRole = createAdminForm.role || 'admin';
 
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { first_name: firstName, username, role: 'admin' } },
+      options: { data: { first_name: firstName, username, role: newRole } },
     });
 
     if (signUpError || !data?.user?.id) {
       setCreatingAdmin(false);
-      setCreateAdminMessage(signUpError?.message || 'Failed to create admin auth account.');
+      showToast(signUpError?.message || 'Failed to create admin auth account.', 'error');
       return;
     }
 
     const { error: profileError } = await supabase
       .from('profiles')
-      .update({ role: 'admin', first_name: firstName || null, username: username || null })
+      .update({ role: newRole, first_name: firstName || null, username: username || null })
       .eq('id', data.user.id);
 
     setCreatingAdmin(false);
     if (profileError) {
-      setCreateAdminMessage(`Auth created, but role update failed: ${profileError.message}`);
+      showToast(`Auth created, but role update failed: ${profileError.message}`, 'error');
       return;
     }
 
-    setCreateAdminMessage('Admin account created successfully.');
-    setCreateAdminForm({ email: '', password: '', first_name: '', username: '' });
+    showToast('Admin account created successfully.', 'success');
+    setCreateAdminForm({ email: '', password: '', first_name: '', username: '', role: 'admin' });
+    
+    // Refresh profiles to show new admin
+    const { data: newProfiles } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+    if (newProfiles) setProfiles(newProfiles);
+  };
+
+  const toggleSetting = async (key, currentValue) => {
+    const newValue = !currentValue;
+    setSystemSettings(prev => ({ ...prev, [key]: newValue }));
+    
+    const { error } = await supabase
+      .from('system_settings')
+      .upsert({ key, value: String(newValue) }, { onConflict: 'key' });
+      
+    if (error) {
+      setSystemSettings(prev => ({ ...prev, [key]: currentValue }));
+      showToast('Failed to update setting', 'error');
+    } else {
+      showToast('Setting updated successfully', 'success');
+    }
   };
 
   const navItems = [
@@ -567,17 +647,17 @@ function AdminDashboardPage() {
                       <AreaChart data={joinTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <defs>
                           <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#5A755E" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="#5A755E" stopOpacity={0}/>
+                            <stop offset="5%" stopColor="#33D2A4" stopOpacity={0.15}/>
+                            <stop offset="95%" stopColor="#33D2A4" stopOpacity={0}/>
                           </linearGradient>
                         </defs>
-                        <XAxis dataKey="date" tick={{ fill: '#5f6f5f', fontSize: 12 }} tickLine={false} axisLine={false} />
-                        <YAxis allowDecimals={false} tick={{ fill: '#5f6f5f', fontSize: 12 }} tickLine={false} axisLine={false} />
+                        <XAxis dataKey="date" tick={{ fill: '#bdc3c7', fontSize: 12 }} tickLine={false} axisLine={false} />
+                        <YAxis allowDecimals={false} tick={{ fill: '#bdc3c7', fontSize: 12 }} tickLine={false} axisLine={false} />
                         <Tooltip 
-                          contentStyle={{ borderRadius: '12px', border: '1px solid #E5E7EB', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
+                          contentStyle={{ borderRadius: '12px', border: '1px solid #BDC3C7', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
                           formatter={(value) => [`${value} New Users`, 'Joined']} 
                         />
-                        <Area type="monotone" dataKey="users" stroke="#5A755E" strokeWidth={3} fillOpacity={1} fill="url(#colorUsers)" />
+                        <Area type="monotone" dataKey="users" stroke="#33D2A4" strokeWidth={3} fillOpacity={1} fill="url(#colorUsers)" />
                       </AreaChart>
                     </ResponsiveContainer>
                   )}
@@ -594,14 +674,14 @@ function AdminDashboardPage() {
                   ) : (
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={levelBarData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                        <XAxis dataKey="level" tick={{ fill: '#5f6f5f', fontSize: 12 }} tickLine={false} axisLine={false} />
-                        <YAxis allowDecimals={false} tick={{ fill: '#5f6f5f', fontSize: 12 }} tickLine={false} axisLine={false} />
+                        <XAxis dataKey="level" tick={{ fill: '#bdc3c7', fontSize: 12 }} tickLine={false} axisLine={false} />
+                        <YAxis allowDecimals={false} tick={{ fill: '#bdc3c7', fontSize: 12 }} tickLine={false} axisLine={false} />
                         <Tooltip 
-                          cursor={{ fill: '#f4f7f4' }}
-                          contentStyle={{ borderRadius: '12px', border: '1px solid #E5E7EB', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
+                          cursor={{ fill: '#f9fafb' }}
+                          contentStyle={{ borderRadius: '12px', border: '1px solid #BDC3C7', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
                           formatter={(value) => [`${value}`, 'Users']} 
                         />
-                        <Bar dataKey="users" fill="#5A755E" radius={[8, 8, 0, 0]} barSize={40} />
+                        <Bar dataKey="users" fill="#33D2A4" radius={[8, 8, 0, 0]} barSize={40} />
                       </BarChart>
                     </ResponsiveContainer>
                   )}
@@ -638,16 +718,16 @@ function AdminDashboardPage() {
                   ) : (
                     <ResponsiveContainer width="100%" height={300}>
                       <LineChart data={multiDimProgress} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                        <XAxis dataKey="label" tick={{ fill: '#5f6f5f', fontSize: 12 }} tickLine={false} axisLine={false} />
-                        <YAxis allowDecimals={false} tick={{ fill: '#5f6f5f', fontSize: 12 }} tickLine={false} axisLine={false} />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#BDC3C7" />
+                        <XAxis dataKey="label" tick={{ fill: '#bdc3c7', fontSize: 12 }} tickLine={false} axisLine={false} />
+                        <YAxis allowDecimals={false} tick={{ fill: '#bdc3c7', fontSize: 12 }} tickLine={false} axisLine={false} />
                         <Tooltip 
-                          contentStyle={{ borderRadius: '12px', border: '1px solid #E5E7EB', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
+                          contentStyle={{ borderRadius: '12px', border: '1px solid #BDC3C7', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
                         />
                         <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                        <Line type="monotone" dataKey="fluency_score" name="Fluency" stroke="#5A755E" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                        <Line type="monotone" dataKey="confidence_score" name="Confidence" stroke="#F18F01" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                        <Line type="monotone" dataKey="pronunciation_score" name="Pronunciation" stroke="#4D6E57" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                        <Line type="monotone" dataKey="fluency_score" name="Fluency" stroke="#33D2A4" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                        <Line type="monotone" dataKey="confidence_score" name="Confidence" stroke="#2C3E50" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                        <Line type="monotone" dataKey="pronunciation_score" name="Pronunciation" stroke="#BDC3C7" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                       </LineChart>
                     </ResponsiveContainer>
                   )}
@@ -793,69 +873,215 @@ function AdminDashboardPage() {
         )}
 
         {activePage === 'settings' && isSuperadmin && (
-          <>
-            <section className="admin-card">
-              <h3>Create Admin Account</h3>
-              <form className="admin-create-form" onSubmit={submitCreateAdmin}>
-                <input
-                  type="email"
-                  required
-                  placeholder="admin@email.com"
-                  value={createAdminForm.email}
-                  onChange={(e) => setCreateAdminForm((prev) => ({ ...prev, email: e.target.value }))}
-                />
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  placeholder="Temporary Password"
-                  value={createAdminForm.password}
-                  onChange={(e) => setCreateAdminForm((prev) => ({ ...prev, password: e.target.value }))}
-                />
-                <input
-                  type="text"
-                  placeholder="First Name"
-                  value={createAdminForm.first_name}
-                  onChange={(e) => setCreateAdminForm((prev) => ({ ...prev, first_name: e.target.value }))}
-                />
-                <input
-                  type="text"
-                  placeholder="Username"
-                  value={createAdminForm.username}
-                  onChange={(e) => setCreateAdminForm((prev) => ({ ...prev, username: e.target.value }))}
-                />
-                <button type="submit" className="admin-btn admin-btn--primary" disabled={creatingAdmin}>
-                  {creatingAdmin ? 'Creating...' : 'Create Admin'}
-                </button>
-              </form>
-              {createAdminMessage && <p className="admin-note">{createAdminMessage}</p>}
-            </section>
+          <section className="admin-grid admin-grid-2">
+            <div className="admin-settings-col">
+              <article className="admin-card">
+                <h3>Create Administrator</h3>
+                <form className="admin-create-form" onSubmit={submitCreateAdmin}>
+                  <input
+                    type="email"
+                    required
+                    placeholder="admin@email.com"
+                    value={createAdminForm.email}
+                    onChange={(e) => setCreateAdminForm((prev) => ({ ...prev, email: e.target.value }))}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Username"
+                    value={createAdminForm.username}
+                    onChange={(e) => setCreateAdminForm((prev) => ({ ...prev, username: e.target.value }))}
+                  />
+                  <input
+                    type="text"
+                    placeholder="First Name"
+                    value={createAdminForm.first_name}
+                    onChange={(e) => setCreateAdminForm((prev) => ({ ...prev, first_name: e.target.value }))}
+                  />
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    placeholder="Temporary Password"
+                    value={createAdminForm.password}
+                    onChange={(e) => setCreateAdminForm((prev) => ({ ...prev, password: e.target.value }))}
+                  />
+                  <select
+                    value={createAdminForm.role}
+                    onChange={(e) => setCreateAdminForm((prev) => ({ ...prev, role: e.target.value }))}
+                    style={{ gridColumn: '1 / -1' }}
+                  >
+                    <option value="admin">Admin</option>
+                    <option value="superadmin">Superadmin</option>
+                  </select>
+                  <button type="submit" className="admin-btn admin-btn--primary" disabled={creatingAdmin} style={{ gridColumn: '1 / -1' }}>
+                    {creatingAdmin ? 'Creating...' : 'Create Admin'}
+                  </button>
+                </form>
+              </article>
 
-          </>
+              <article className="admin-card">
+                <h3>Active Administrators</h3>
+                <div className="admin-roster-list">
+                  {profiles.filter(p => p.role === 'admin' || p.role === 'superadmin').map(admin => (
+                    <div key={admin.id} className="admin-roster-item">
+                      <div className="admin-lb-avatar">{(admin.username || admin.first_name || 'A')[0].toUpperCase()}</div>
+                      <div className="admin-roster-info">
+                        <strong>{getDisplayName(admin, admin.id)}</strong>
+                      </div>
+                      <span className={`admin-role-badge ${admin.role === 'superadmin' ? 'is-admin' : ''}`}>
+                        {admin.role}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            </div>
+
+            <div className="admin-settings-col">
+              <article className="admin-card">
+                <h3>Platform Configurations</h3>
+                
+                <div className="admin-setting-item">
+                  <div className="admin-setting-info">
+                    <strong>Platform Maintenance Mode</strong>
+                    <p>Disables login for non-admin users and displays a maintenance screen.</p>
+                  </div>
+                  <label className="admin-toggle">
+                    <input 
+                      type="checkbox" 
+                      checked={systemSettings.maintenance_mode} 
+                      onChange={() => toggleSetting('maintenance_mode', systemSettings.maintenance_mode)} 
+                    />
+                    <span className="admin-toggle-slider"></span>
+                  </label>
+                </div>
+
+                <div className="admin-setting-item">
+                  <div className="admin-setting-info">
+                    <strong>Enable AI Failover Logging</strong>
+                    <p>Records all failed AI prompt generations to the database for debugging.</p>
+                  </div>
+                  <label className="admin-toggle">
+                    <input 
+                      type="checkbox" 
+                      checked={systemSettings.failover_logging} 
+                      onChange={() => toggleSetting('failover_logging', systemSettings.failover_logging)} 
+                    />
+                    <span className="admin-toggle-slider"></span>
+                  </label>
+                </div>
+
+                <div className="admin-setting-item">
+                  <div className="admin-setting-info">
+                    <strong>Capstone Defense Data Mode</strong>
+                    <p>Injects mock chart data across the dashboard for presentation purposes.</p>
+                  </div>
+                  <label className="admin-toggle">
+                    <input 
+                      type="checkbox" 
+                      checked={systemSettings.defense_data_mode} 
+                      onChange={() => toggleSetting('defense_data_mode', systemSettings.defense_data_mode)} 
+                    />
+                    <span className="admin-toggle-slider"></span>
+                  </label>
+                </div>
+              </article>
+            </div>
+          </section>
         )}
 
         {activePage === 'audit' && isSuperadmin && (
           <section className="admin-card">
-            <h3>Audit Logs</h3>
-            {!auditLogs.length ? (
-              <p className="admin-empty">No audit logs found.</p>
-            ) : (
-              <div className="admin-table-wrap">
-                <table className="admin-table">
-                  <thead><tr><th>Created</th><th>Actor</th><th>Action</th><th>Entity</th><th>Entity ID</th></tr></thead>
-                  <tbody>
-                    {auditLogs.slice(0, 80).map((log) => (
-                      <tr key={log.id}>
-                        <td>{new Date(log.created_at).toLocaleString()}</td>
-                        <td>{String(log.actor_id || '').slice(0, 8)}</td>
-                        <td>{log.action}</td>
-                        <td>{log.entity_type}</td>
-                        <td>{String(log.entity_id || '').slice(0, 8)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <div className="admin-table-controls">
+              <h3>Audit Logs</h3>
+              <div className="admin-table-actions">
+                <div className="admin-search-box">
+                  <HiMagnifyingGlass className="admin-search-icon" />
+                  <input 
+                    type="text" 
+                    placeholder="Search by Actor Name/ID..." 
+                    value={auditSearchQuery}
+                    onChange={(e) => setAuditSearchQuery(e.target.value)}
+                  />
+                </div>
+                <select 
+                  className="admin-filter-select"
+                  value={auditActionFilter}
+                  onChange={(e) => setAuditActionFilter(e.target.value)}
+                >
+                  <option value="all">All Actions</option>
+                  <option value="create">Create</option>
+                  <option value="update">Update</option>
+                  <option value="delete">Delete / Archive</option>
+                </select>
+                <select 
+                  className="admin-filter-select"
+                  value={auditEntityFilter}
+                  onChange={(e) => setAuditEntityFilter(e.target.value)}
+                >
+                  <option value="all">All Entities</option>
+                  <option value="profiles">Profiles</option>
+                  <option value="sessions">Sessions</option>
+                  <option value="system_settings">System Settings</option>
+                </select>
               </div>
+            </div>
+
+            {loading ? (
+              <Skeleton count={10} height={40} style={{ marginBottom: 8 }} />
+            ) : !filteredAuditLogs.length ? (
+              <p className="admin-empty-chart">No audit logs found matching your criteria.</p>
+            ) : (
+              <>
+                <div className="admin-table-wrap">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Timestamp</th>
+                        <th>Actor</th>
+                        <th>Action</th>
+                        <th>Entity</th>
+                        <th>IP Address</th>
+                        <th>Details</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedAuditLogs.map((log) => (
+                        <tr key={log.id}>
+                          <td>{new Date(log.created_at).toLocaleString()}</td>
+                          <td>
+                            <strong>{getDisplayName(profiles.find(p => p.id === log.actor_id), log.actor_id)}</strong>
+                            <div style={{ fontSize: '0.75rem', color: '#BDC3C7' }}>{String(log.actor_id || '').slice(0, 8)}</div>
+                          </td>
+                          <td>
+                            <span className={`admin-status-badge ${getActionBadgeClass(log.action)}`}>
+                              {log.action}
+                            </span>
+                          </td>
+                          <td style={{ textTransform: 'capitalize' }}>{String(log.entity_type).replace('_', ' ')}</td>
+                          <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#BDC3C7' }}>
+                            {log.ip_address || 'N/A'}
+                          </td>
+                          <td>
+                            <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setInspectingLog(log)}>
+                              Inspect Payload
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="admin-pagination">
+                  <span className="admin-pagination-info">
+                    Showing {(auditPage - 1) * AUDIT_PER_PAGE + 1} to {Math.min(auditPage * AUDIT_PER_PAGE, filteredAuditLogs.length)} of {filteredAuditLogs.length} entries
+                  </span>
+                  <div className="admin-pagination-controls">
+                    <button type="button" disabled={auditPage === 1} onClick={() => setAuditPage(prev => prev - 1)}>Previous</button>
+                    <button type="button" disabled={auditPage === totalAuditPages || totalAuditPages === 0} onClick={() => setAuditPage(prev => prev + 1)}>Next</button>
+                  </div>
+                </div>
+              </>
             )}
           </section>
         )}
@@ -903,6 +1129,33 @@ function AdminDashboardPage() {
               <button type="button" className="admin-btn admin-btn--danger" onClick={archiveUser}>Confirm Archive</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {inspectingLog && (
+        <div className="admin-modal-backdrop" role="presentation" onClick={() => setInspectingLog(null)}>
+          <div className="admin-modal admin-payload-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-card-head">
+              <h3>Payload Inspector</h3>
+              <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setInspectingLog(null)}>Close</button>
+            </div>
+            <div className="admin-payload-content">
+              <div className="admin-payload-section">
+                <strong>Old Values</strong>
+                <pre><code>{inspectingLog.old_values ? JSON.stringify(inspectingLog.old_values, null, 2) : 'None'}</code></pre>
+              </div>
+              <div className="admin-payload-section">
+                <strong>New Values</strong>
+                <pre><code>{inspectingLog.new_values ? JSON.stringify(inspectingLog.new_values, null, 2) : 'None'}</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toastMessage && (
+        <div className={`admin-toast ${toastMessage.type}`}>
+          {toastMessage.text}
         </div>
       )}
     </div>

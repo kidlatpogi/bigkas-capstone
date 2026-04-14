@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { IoArrowForward, IoCheckmarkCircle, IoLockClosed } from 'react-icons/io5';
+import { IoArrowForward } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../context/useAuthContext';
 import { useSessions } from '../../hooks/useSessions';
 import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
-import { useJourneyRemoteState } from '../../hooks/useJourneyRemoteState';
-import { updateJourneyCurrentActivity } from '../../services/journeyProgressService';
 import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import {
@@ -13,12 +11,12 @@ import {
   getBigkasLevelFromUser,
   getActivityCompletionHistory,
   getActivityMetrics,
-  getActivityTaskProgress,
   isActivityTaskCompleted,
   getTaskXp,
   getTotalActivityPoints,
 } from '../../utils/activityProgress';
 import './DashboardPage.css';
+import './ActivityPage.css';
 
 import iconFire from '../../assets/icons/Icon-Fire.svg';
 
@@ -158,7 +156,10 @@ export default function DashboardPage() {
   const [activityHistory, setActivityHistory] = useState([]);
   const [activityMetrics, setActivityMetrics] = useState(() => getActivityMetrics(activityScopeKey));
   const { tasks: activityTasks, loading: activitiesLoading } = useActivitiesJourneyTasks();
-  const { journeyStartedAt, metricsSyncKey, remoteLoaded } = useJourneyRemoteState(user);
+  const [isMobileView, setIsMobileView] = useState(
+    () => (typeof window === 'undefined' ? true : window.innerWidth <= 1024),
+  );
+  const [metricsSyncKey, setMetricsSyncKey] = useState(0);
 
   const getPointsFromUser = useCallback((nextUser) => {
     const raw = Number(nextUser?.speakerPoints ?? 0);
@@ -201,14 +202,6 @@ export default function DashboardPage() {
     }, {});
   }, [activityMetrics, activityTasks]);
 
-  const activityUnlockState = useMemo(() => {
-    return activityTasks.reduce((state, task) => {
-      const prerequisites = Array.isArray(task.prerequisiteIds) ? task.prerequisiteIds : [];
-      state[task.id] = prerequisites.every((taskId) => activityTaskState[taskId] === true);
-      return state;
-    }, {});
-  }, [activityTaskState, activityTasks]);
-
   const completedTaskCount = useMemo(
     () => activityTasks.filter((task) => activityTaskState[task.id] === true).length,
     [activityTaskState, activityTasks],
@@ -227,30 +220,6 @@ export default function DashboardPage() {
   const activityProgressPct = activityTasks.length
     ? Math.round((completedTaskCount / activityTasks.length) * 100)
     : 0;
-
-  const currentActiveTask = useMemo(
-    () => activityTasks.find((task) => !activityTaskState[task.id] && activityUnlockState[task.id]),
-    [activityTaskState, activityTasks, activityUnlockState],
-  );
-
-  const nextLockedTask = useMemo(
-    () => activityTasks.find((task) => !activityTaskState[task.id] && !activityUnlockState[task.id]),
-    [activityTaskState, activityTasks, activityUnlockState],
-  );
-
-  const currentActiveTaskProgress = useMemo(() => {
-    if (!currentActiveTask) return { current: 0, target: 1 };
-    return getActivityTaskProgress(currentActiveTask.id, activityMetrics);
-  }, [activityMetrics, currentActiveTask]);
-
-  const allJourneyDone = activityTasks.length > 0 && completedTaskCount === activityTasks.length;
-  const hasStartedJourney = journeyStartedAt != null || completedTaskCount > 0;
-  const showStartJourneyPrompt =
-    remoteLoaded &&
-    !activitiesLoading &&
-    activityTasks.length > 0 &&
-    !hasStartedJourney &&
-    !allJourneyDone;
 
   useEffect(() => {
     if (isInitializing) return;
@@ -271,173 +240,95 @@ export default function DashboardPage() {
   }, [activityScopeKey, getPointsFromUser, user, metricsSyncKey]);
 
   useEffect(() => {
-    if (!user?.id) return;
-    const id = currentActiveTask?.id ?? null;
-    const t = window.setTimeout(() => {
-      updateJourneyCurrentActivity(user.id, id).catch(() => {});
-    }, 450);
-    return () => window.clearTimeout(t);
-  }, [user?.id, currentActiveTask?.id]);
-
-  useEffect(() => {
     if (typeof window === 'undefined') return undefined;
+    const onResize = () => setIsMobileView(window.innerWidth <= 1024);
+    const onStorage = () => setMetricsSyncKey((k) => k + 1);
     const refreshActivity = () => {
       setActivityHistory(getActivityCompletionHistory(activityScopeKey));
       setActivityMetrics(getActivityMetrics(activityScopeKey));
     };
     window.addEventListener('focus', refreshActivity);
-    window.addEventListener('storage', refreshActivity);
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('resize', onResize);
     document.addEventListener('visibilitychange', refreshActivity);
     return () => {
       window.removeEventListener('focus', refreshActivity);
-      window.removeEventListener('storage', refreshActivity);
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('resize', onResize);
       document.removeEventListener('visibilitychange', refreshActivity);
     };
   }, [activityScopeKey]);
 
+  useEffect(() => {
+    if (isMobileView) return;
+    navigate(ROUTES.ACTIVITY, { replace: true, state: { skywardEntrance: true } });
+  }, [isMobileView, navigate]);
+
+  if (!isMobileView) return null;
+
   return (
-    <div className="dashboard-page-new no-scrollbar" style={{ height: '100dvh', overflowY: 'auto' }}>
-      <div className="dashboard-layout">
-          <section className="dashboard-card dashboard-level-card dashboard-anim-left dashboard-anim-delay-2">
-            <div className="dashboard-level-decoration" />
-            <div className="dashboard-section-kicker">
-              Rank Progression
-            </div>
-            <h2 className="dashboard-section-title--xl">{levelProgress.levelName}</h2>
-            <p className="dashboard-activity-summary">
-              {activitiesLoading
-                ? 'Loading journey…'
-                : `Activity Journey: ${completedTaskCount}/${Math.max(activityTasks.length, 1)} Task Complete`}
-            </p>
-            <div className="dashboard-level-track">
-              <div className="dashboard-level-fill" style={{ width: `${activityProgressPct}%` }} />
-            </div>
-            <p className="dashboard-activity-xp">{earnedTaskXp}/{totalTaskXp} TASK</p>
-          </section>
+    <div className="dashboard-page-new no-scrollbar">
+      <aside className="activity-col-sidebar no-scrollbar">
+        <section className="dashboard-card dashboard-consistency-card dashboard-anim-right dashboard-anim-delay-3">
+          <p className="dashboard-consistency-kicker">Daily Consistency</p>
+          <div className="dashboard-consistency-value">
+            {streakStats.currentStreak} <img src={iconFire} alt="Streak" className="dashboard-consistency-fire" />
+          </div>
+          <p className="dashboard-consistency-copy">Day Streak Active</p>
+          <div className="dashboard-week-pills" style={{ display: 'flex', gap: '8px' }}>
+            {weekPills.map((pill, idx) => (
+              <div key={idx} className={`dashboard-week-pill ${pill.active ? 'is-active' : ''}`}>
+                {pill.label}
+              </div>
+            ))}
+          </div>
+        </section>
 
-          <section className="dashboard-card dashboard-consistency-card dashboard-anim-right dashboard-anim-delay-3">
-            <p className="dashboard-consistency-kicker">Daily Consistency</p>
-            <div className="dashboard-consistency-value">
-              {streakStats.currentStreak} <img src={iconFire} alt="Streak" className="dashboard-consistency-fire" />
-            </div>
-            <p className="dashboard-consistency-copy">Day Streak Active</p>
-            <div className="dashboard-week-pills" style={{ display: 'flex', gap: '8px' }}>
-              {weekPills.map((pill, idx) => (
-                <div key={idx} className={`dashboard-week-pill ${pill.active ? 'is-active' : ''}`}>
-                  {pill.label}
-                </div>
-              ))}
-            </div>
-          </section>
+        <section className="dashboard-card dashboard-level-card dashboard-anim-left dashboard-anim-delay-2">
+          <div className="dashboard-level-decoration" />
+          <div className="dashboard-section-kicker">Rank Progression</div>
+          <h2 className="dashboard-section-title--xl">{levelProgress.levelName}</h2>
+          <p className="dashboard-activity-summary">
+            {activitiesLoading
+              ? 'Loading journey…'
+              : `Activity Journey: ${completedTaskCount}/${Math.max(activityTasks.length, 1)} Task Complete`}
+          </p>
+          <div className="dashboard-level-track">
+            <div className="dashboard-level-fill" style={{ width: `${activityProgressPct}%` }} />
+          </div>
+          <p className="dashboard-activity-xp">{earnedTaskXp}/{totalTaskXp} TASK</p>
+        </section>
 
-          <section className="dashboard-card dashboard-mode-card dashboard-mode-card--practice dashboard-anim-bottom dashboard-anim-delay-4">
-            <div className="dashboard-mode-badge">Focus Session</div>
-            <h3 className="dashboard-mode-title">Practice Mode</h3>
-            <p className="dashboard-mode-copy">Master specific architectural components in a controlled environment.</p>
-            <Button 
-              variant="practice" 
-              className="dashboard-mode-button" 
-              onClick={() => navigate(ROUTES.PRACTICE)}
-              icon={IoArrowForward}
-            >
-              Start Practice
-            </Button>
-          </section>
-
-          <section className="dashboard-card dashboard-mode-card dashboard-mode-card--training dashboard-anim-bottom dashboard-anim-delay-5">
-            <div className="dashboard-mode-badge dashboard-mode-badge--alt">Endurance</div>
-            <h3 className="dashboard-mode-title">Training Mode</h3>
-            <p className="dashboard-mode-copy dashboard-mode-copy--inverse">Push your cognitive limits with real-time structural challenges.</p>
-            <Button 
-              variant="training" 
-              className="dashboard-mode-button" 
-              onClick={() => navigate(ROUTES.TRAINING_SETUP)}
-              icon={IoArrowForward}
-            >
-              Begin Training
-            </Button>
-          </section>
-
-          <section className="dashboard-card dashboard-objectives-card dashboard-anim-bottom dashboard-anim-delay-6">
-            <h3 className="dashboard-section-title" style={{ marginBottom: '16px' }}>Current Objectives</h3>
-            {!remoteLoaded || activitiesLoading ? (
-              <div className="dashboard-objective-row">
-                <div className="dashboard-objective-copy">
-                  <span style={{ opacity: 0.85 }}>Loading journey…</span>
-                </div>
-              </div>
-            ) : !activityTasks.length ? (
-              <div className="dashboard-objective-row">
-                <div className="dashboard-objective-copy">
-                  <span style={{ opacity: 0.85 }}>No activities for your level yet.</span>
-                </div>
-              </div>
-            ) : showStartJourneyPrompt ? (
-              <div className="dashboard-objective-row">
-                <div className="dashboard-objective-status in-progress" aria-hidden="true" />
-                <div className="dashboard-objective-copy">
-                  <strong>Start your journey:</strong>
-                  <span>Open the activity map and begin your first stage.</span>
-                </div>
-                <Button
-                  variant="ghost"
-                  className="dashboard-objective-action"
-                  onClick={() =>
-                    navigate(ROUTES.ACTIVITY, {
-                      state: { focusCurrentStage: true, skywardEntrance: true },
-                    })
-                  }
-                  icon={IoArrowForward}
-                >
-                  Open journey
-                </Button>
-              </div>
-            ) : currentActiveTask ? (
-              <div className="dashboard-objective-row">
-                <div className="dashboard-objective-status in-progress" aria-hidden="true" />
-                <div className="dashboard-objective-copy">
-                  <strong>{currentActiveTask.title}</strong>
-                  <span>
-                    {Math.min(currentActiveTaskProgress.current, currentActiveTaskProgress.target)} of {currentActiveTaskProgress.target} complete
-                  </span>
-                </div>
-                <Button
-                  variant="ghost"
-                  className="dashboard-objective-action"
-                  onClick={() =>
-                    navigate(ROUTES.ACTIVITY, {
-                      state: { focusCurrentStage: true, skywardEntrance: true },
-                    })
-                  }
-                  icon={IoArrowForward}
-                >
-                  Continue Journey
-                </Button>
-              </div>
-            ) : (
-              <div className="dashboard-objective-row">
-                <div className="dashboard-objective-status is-complete">
-                  <IoCheckmarkCircle />
-                </div>
-                <div className="dashboard-objective-copy">
-                  <strong>Journey complete</strong>
-                  <span>All activity tasks are completed. Keep practicing to maintain momentum.</span>
-                </div>
-              </div>
-            )}
-            {nextLockedTask ? (
-              <div className="dashboard-objective-row is-locked" style={{ opacity: 0.6 }}>
-                <div className="dashboard-objective-status">
-                  <IoLockClosed />
-                </div>
-                <div className="dashboard-objective-copy">
-                  <strong>{nextLockedTask.title}</strong>
-                  <span>Locked: Finish Current Objective to unlock</span>
-                </div>
-              </div>
-            ) : null}
-          </section>
-      </div>
+        <section className="dashboard-card dashboard-mode-card dashboard-mode-card--training activity-practice-hub dashboard-anim-bottom dashboard-anim-delay-4">
+          <h3 className="dashboard-mode-title">Practice Hub</h3>
+          <div className="activity-practice-options">
+            <article className="activity-practice-option-card">
+              <p className="activity-practice-option-kicker">Randomizer</p>
+              <p className="activity-practice-option-copy">Get a random topic and practice speaking about it.</p>
+              <Button
+                variant="practice"
+                className="dashboard-mode-button"
+                onClick={() => navigate(ROUTES.PRACTICE)}
+                icon={IoArrowForward}
+              >
+                Open Randomizer
+              </Button>
+            </article>
+            <article className="activity-practice-option-card">
+              <p className="activity-practice-option-kicker">Free Speech</p>
+              <p className="activity-practice-option-copy">Impromptu speaking mode focused on flow, tone, and pacing with AI evaluation.</p>
+              <Button
+                variant="training"
+                className="dashboard-mode-button"
+                onClick={() => navigate(ROUTES.TRAINING_SETUP)}
+                icon={IoArrowForward}
+              >
+                Open Free Speech
+              </Button>
+            </article>
+          </div>
+        </section>
+      </aside>
     </div>
   );
 }

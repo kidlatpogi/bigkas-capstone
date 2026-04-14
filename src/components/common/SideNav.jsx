@@ -8,7 +8,6 @@ import {
   IoPersonOutline,
   IoStatsChartOutline,
 } from 'react-icons/io5';
-import { MdOutlineBackpack } from 'react-icons/md';
 import NotificationCenter from './NotificationCenter';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
@@ -17,7 +16,6 @@ import './SideNav.css';
 const PRIMARY_NAV_ITEMS = [
   { to: ROUTES.ACTIVITY, label: 'Home', icon: IoHomeOutline },
   { to: ROUTES.PROGRESS, label: 'Progress', icon: IoStatsChartOutline },
-  { to: ROUTES.DASHBOARD, label: 'Dashboard', icon: MdOutlineBackpack },
   { to: ROUTES.FRAMEWORKS, label: 'Learn', icon: IoBookOutline },
 ];
 

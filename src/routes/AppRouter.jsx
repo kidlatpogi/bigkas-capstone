@@ -180,7 +180,9 @@ function AdminRoute() {
  * Redirects to dashboard if user is already authenticated
  */
 function PublicRoute() {
-  const { isAuthenticated, isInitializing, isAdminAuthenticated, user } = useAuthContext();
+  const { isAuthenticated, isInitializing, isAdminAuthenticated, isLoading, user } = useAuthContext();
+  const { pathname } = useLocation();
+  const isOnAdminLoginRoute = pathname === ROUTES.ADMIN_LOGIN_BASE || (ENV.ADMIN_LOGIN_PATH && pathname === ENV.ADMIN_LOGIN_PATH);
 
   if (isInitializing) {
     if (window.location.pathname === ROUTES.HOME) {
@@ -198,6 +200,12 @@ function PublicRoute() {
   }
 
   if (isAuthenticated) {
+    // Prevent auth-state race during admin sign-in:
+    // Supabase session can appear before admin role check completes.
+    // Keep user on admin-login while auth is still processing.
+    if (isOnAdminLoginRoute && isLoading && !isAdminAuthenticated) {
+      return null;
+    }
     return <Navigate to={getAuthenticatedRedirect(user, isAdminAuthenticated)} replace />;
   }
 

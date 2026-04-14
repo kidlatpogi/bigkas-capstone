@@ -1069,21 +1069,27 @@ export default function SkywardJourney({
       // Native DOM tracking for the current step (immune to CSS/Scroll mismatch)
       const vHeight = viewportEl.clientHeight || window.innerHeight;
       const focusY = vHeight * 0.32;
-      let bestIdx = indexToUse;
+      let bestIdx = null; // Do NOT fallback to indexToUse
       let bestDist = Number.POSITIVE_INFINITY;
 
       nodeRefs.current.forEach((el, i) => {
         if (!el) return;
         const rect = el.getBoundingClientRect();
-        // Ignore nodes way off screen
-        if (rect.top < -200 || rect.bottom > vHeight + 200) return;
-        const dist = Math.abs(rect.top - focusY);
+
+        // Calculate the exact center of the node
+        const nodeCenterY = rect.top + (rect.height / 2);
+        const dist = Math.abs(nodeCenterY - focusY);
+
+        // Find the absolute closest node to the focus point, regardless of screen boundaries
         if (dist < bestDist) {
           bestDist = dist;
           bestIdx = i;
         }
       });
-      setVisibleStepIndex((prev) => (prev === bestIdx ? prev : bestIdx));
+
+      if (bestIdx !== null) {
+        setVisibleStepIndex((prev) => (prev === bestIdx ? prev : bestIdx));
+      }
     };
 
     let rafId = 0;

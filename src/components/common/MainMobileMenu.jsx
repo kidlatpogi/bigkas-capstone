@@ -13,9 +13,9 @@ function MainMobileMenu() {
 
   const navItems = useMemo(
     () => [
-      { label: 'Home', link: ROUTES.DASHBOARD, active: pathname === ROUTES.DASHBOARD },
+      { label: 'Home', link: ROUTES.ACTIVITY, active: pathname === ROUTES.ACTIVITY },
       { label: 'Progress', link: ROUTES.PROGRESS, active: pathname === ROUTES.PROGRESS },
-      { label: 'Activity', link: ROUTES.ACTIVITY, active: pathname === ROUTES.ACTIVITY },
+      { label: 'Dashboard', link: ROUTES.DASHBOARD, active: pathname === ROUTES.DASHBOARD },
       { label: 'Learn', link: ROUTES.FRAMEWORKS, active: pathname === ROUTES.FRAMEWORKS },
       { label: 'Profile', link: ROUTES.PROFILE, active: pathname === ROUTES.PROFILE },
       { label: 'Log Out', link: '#', onClick: logout },

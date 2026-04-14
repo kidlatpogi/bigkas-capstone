@@ -27,7 +27,7 @@ const StyledWrapper = styled.div`
     position: relative;
     padding: 0;
     border: 0;
-    border-radius: 999px;
+    border-radius: 16px;
     background-color: ${(props) => props.$theme.bg};
     color: ${(props) => props.$theme.text};
     cursor: pointer;
@@ -37,8 +37,8 @@ const StyledWrapper = styled.div`
     font-size: 15px;
     transition: all 0.3s ease;
     
-    /* 3. The 3D Shadow (10px) */
-    box-shadow: ${(props) => props.$theme.shadow} 0px 10px 0px 0px;
+    /* 3. The 3D Shadow (6px) */
+    box-shadow: ${(props) => props.$theme.shadow} 0px 6px 0px 0px;
     
     /* 4. Layout */
     display: flex;
@@ -52,7 +52,7 @@ const StyledWrapper = styled.div`
   /* 1:1 Push-down Animation */
   button:active:not(:disabled) {
     box-shadow: ${(props) => props.$theme.shadow} 0px 0px 0px 0px;
-    transform: translateX(var(--skyward-node-offset, 0%)) translateY(10px);
+    transform: translateX(var(--skyward-node-offset, 0%)) translateY(6px);
     transition: 200ms;
   }
 

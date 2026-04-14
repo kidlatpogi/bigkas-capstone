@@ -51,7 +51,7 @@ function getAuthenticatedRedirect(user, isAdminAuthenticated) {
   if (user?.onboardingStage === 'profiling') return ROUTES.USER_PROFILING;
   if (user?.onboardingStage === 'pretest') return ROUTES.USER_PRETEST;
   if (user?.onboardingStage === 'analyzing') return ROUTES.USER_ANALYZING;
-  return ROUTES.DASHBOARD;
+  return ROUTES.ACTIVITY;
 }
 
 /**
@@ -64,9 +64,9 @@ function ProtectedRoute() {
   const { pathname } = useLocation();
 
   const showMobileMainMenu =
+    pathname === ROUTES.ACTIVITY ||
     pathname === ROUTES.DASHBOARD ||
     pathname === ROUTES.PROGRESS ||
-    pathname === ROUTES.ACTIVITY ||
     pathname === ROUTES.FRAMEWORKS ||
     pathname === ROUTES.PROFILE;
 

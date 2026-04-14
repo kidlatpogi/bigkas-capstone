@@ -1,12 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { IoArrowForward } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
+import { useSessions } from '../../hooks/useSessions';
 import { ROUTES } from '../../utils/constants';
+import Button from '../../components/common/Button';
 import {
   GLOBAL_ACTIVITY_SCOPE,
   buildActivityMetricsKey,
   getActivityTaskProgress,
   getActivityMetrics,
+  getActivityCompletionHistory,
+  getBigkasLevelFromUser,
   getTaskXp,
   isActivityTaskCompleted,
 } from '../../utils/activityProgress';
@@ -15,8 +20,79 @@ import { getActiveTaskId, getNodeStateForTask } from '../../components/journey/j
 import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 import { useJourneyRemoteState } from '../../hooks/useJourneyRemoteState';
 import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../services/journeyProgressService';
+import iconFire from '../../assets/icons/Icon-Fire.svg';
+import forestBg from '../../assets/backgrounds/Forest.svg';
 import './InnerPages.css';
 import './ActivityPage.css';
+import './DashboardPage.css';
+
+const DAY_MS = 86_400_000;
+
+function getLocalDateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getLocalDayIndex(dateInput) {
+  const date = new Date(dateInput);
+  return Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / DAY_MS);
+}
+
+function getSessionDate(session) {
+  const rawDate = session?.created_at ?? session?.createdAt;
+  const parsed = new Date(rawDate);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getDayKeyFromDate(dateInput) {
+  const date = new Date(dateInput);
+  if (Number.isNaN(date.getTime())) return null;
+  return getLocalDateKey(date);
+}
+
+function isPreTestSession(session) {
+  const raw = [
+    session?.session_mode, session?.mode, session?.session_type,
+    session?.session_origin, session?.speaking_mode, session?.entry_point,
+  ].filter((v) => typeof v === 'string' && v.trim()).join(' ').toLowerCase();
+  return raw.includes('pre-test') || raw.includes('pretest');
+}
+
+function buildStreakStats(sessions = [], historyEntries = []) {
+  const dayIndexes = new Set();
+  const addDate = (dateInput) => {
+    const parsed = new Date(dateInput);
+    if (!Number.isNaN(parsed.getTime())) dayIndexes.add(getLocalDayIndex(parsed));
+  };
+  sessions.forEach((s) => { if (!isPreTestSession(s)) { const d = getSessionDate(s); if (d) addDate(d); } });
+  historyEntries.forEach((e) => { if (e?.completedAt) addDate(e.completedAt); });
+  const activeDays = [...dayIndexes].sort((a, b) => a - b);
+  if (!activeDays.length) return { currentStreak: 0 };
+  const todayIndex = getLocalDayIndex(new Date());
+  const last = activeDays[activeDays.length - 1];
+  let currentStreak = 0;
+  if (todayIndex - last <= 1) {
+    const set = new Set(activeDays);
+    let cursor = last;
+    while (set.has(cursor)) { currentStreak += 1; cursor -= 1; }
+  }
+  return { currentStreak };
+}
+
+function getWeekdayPills(activeDayKeys = new Set()) {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const day = start.getDay();
+  const diff = start.getDate() - day + (day === 0 ? -6 : 1);
+  start.setDate(diff);
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    return { label: ['M', 'T', 'W', 'Th', 'F', 'S', 'S'][i], active: activeDayKeys.has(getLocalDateKey(d)) };
+  });
+}
 
 function ActivityPage() {
   const navigate = useNavigate();
@@ -34,6 +110,8 @@ function ActivityPage() {
 
   const [activityMetrics, setActivityMetrics] = useState(() => getActivityMetrics(scopeKey));
   const [recentStampedTaskId, setRecentStampedTaskId] = useState(null);
+  const { sessions, fetchAllSessions } = useSessions();
+  const [activityHistory, setActivityHistory] = useState([]);
 
   useEffect(() => {
     return () => {
@@ -72,6 +150,55 @@ function ActivityPage() {
   useEffect(() => {
     setActivityMetrics(getActivityMetrics(scopeKey));
   }, [scopeKey, metricsSyncKey]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    fetchAllSessions?.();
+  }, [fetchAllSessions, user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    setActivityHistory(getActivityCompletionHistory(scopeKey));
+  }, [scopeKey, user?.id, metricsSyncKey]);
+
+  const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
+
+  const completedTaskCount = useMemo(
+    () => tasks.filter((t) => isActivityTaskCompleted(t.id, activityMetrics)).length,
+    [tasks, activityMetrics],
+  );
+
+  const totalTaskXp = useMemo(
+    () => tasks.reduce((sum, t) => sum + getTaskXp(t.id), 0),
+    [tasks],
+  );
+
+  const earnedTaskXp = useMemo(
+    () => tasks.reduce((sum, t) => sum + (isActivityTaskCompleted(t.id, activityMetrics) ? getTaskXp(t.id) : 0), 0),
+    [tasks, activityMetrics],
+  );
+
+  const sidebarProgressPct = tasks.length
+    ? Math.round((completedTaskCount / tasks.length) * 100)
+    : 0;
+
+  const activeDayKeys = useMemo(() => {
+    const keys = new Set();
+    sessions.forEach((s) => {
+      if (isPreTestSession(s)) return;
+      const d = getSessionDate(s);
+      if (d) keys.add(getLocalDateKey(d));
+    });
+    activityHistory.forEach((e) => {
+      if (!e?.completedAt) return;
+      const k = getDayKeyFromDate(e.completedAt);
+      if (k) keys.add(k);
+    });
+    return keys;
+  }, [sessions, activityHistory]);
+
+  const streakStats = useMemo(() => buildStreakStats(sessions, activityHistory), [sessions, activityHistory]);
+  const weekPills = useMemo(() => getWeekdayPills(activeDayKeys), [activeDayKeys]);
 
   useEffect(() => {
     if (!user?.id || activitiesLoading) return undefined;
@@ -205,6 +332,16 @@ function ActivityPage() {
     return idx >= 0 ? idx : 0;
   }, [location.state?.focusCurrentStage, tasks, activeTaskId, totalStages]);
 
+  const pageBackgroundStyle = useMemo(
+    () => ({
+      backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.05)), url(${forestBg})`,
+      backgroundRepeat: 'no-repeat',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+    }),
+    [],
+  );
+
   useEffect(() => {
     if (location.state?.focusCurrentStage !== true) return undefined;
     const t = window.setTimeout(() => {
@@ -316,7 +453,7 @@ function ActivityPage() {
 
   if (activitiesLoading) {
     return (
-      <div className="inner-page activity-page">
+      <div className="inner-page activity-page" style={pageBackgroundStyle}>
         <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
           <p className="section-label">Loading journey…</p>
         </div>
@@ -326,7 +463,7 @@ function ActivityPage() {
 
   if (activitiesError) {
     return (
-      <div className="inner-page activity-page">
+      <div className="inner-page activity-page" style={pageBackgroundStyle}>
         <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
           <p className="activity-task-lock-note">Could not load activities: {activitiesError}</p>
           <p className="activity-task-detail">Ensure the `activities` table exists and RLS allows read for authenticated users.</p>
@@ -337,7 +474,7 @@ function ActivityPage() {
 
   if (!tasks.length) {
     return (
-      <div className="inner-page activity-page">
+      <div className="inner-page activity-page" style={pageBackgroundStyle}>
         <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
           <p className="section-label">No activities yet</p>
           <p className="activity-task-detail">Add rows to the `activities` table in Supabase to populate this journey.</p>
@@ -347,22 +484,89 @@ function ActivityPage() {
   }
 
   return (
-    <div className="inner-page activity-page activity-page--skyward-entrance">
-      <div className="activity-content-wrap activity-content-wrap--journey-scroll">
-        <div className="activity-task-list activity-task-list--journey">
-          <SkywardJourney
-            steps={journeySteps}
-            groupedTasks={groupedTasks}
-            entranceFromNav={entranceFromNav}
-            scrollToStepIndex={scrollToStepIndex}
-            renderStepContent={(step, meta) =>
-              renderTaskCard({
-                task: step.task,
-                animationClass: `dashboard-anim-bottom dashboard-anim-delay-${Math.min(meta.stepIndex + 2, 9)}`,
-              })
-            }
-          />
+    <div className="inner-page activity-page activity-page--skyward-entrance" style={pageBackgroundStyle}>
+      <div className="activity-two-col">
+        <div className="activity-col-main">
+          <div className="activity-content-wrap activity-content-wrap--journey-scroll">
+            <div className="activity-task-list activity-task-list--journey">
+              <SkywardJourney
+                steps={journeySteps}
+                groupedTasks={groupedTasks}
+                entranceFromNav={entranceFromNav}
+                scrollToStepIndex={scrollToStepIndex}
+                renderStepContent={(step, meta) =>
+                  renderTaskCard({
+                    task: step.task,
+                    animationClass: `dashboard-anim-bottom dashboard-anim-delay-${Math.min(meta.stepIndex + 2, 9)}`,
+                  })
+                }
+              />
+            </div>
+          </div>
         </div>
+
+        <aside className="activity-col-sidebar no-scrollbar">
+          <section className="dashboard-card dashboard-consistency-card dashboard-anim-right dashboard-anim-delay-3">
+            <p className="dashboard-consistency-kicker">Daily Consistency</p>
+            <div className="dashboard-consistency-value">
+              {streakStats.currentStreak} <img src={iconFire} alt="Streak" className="dashboard-consistency-fire" />
+            </div>
+            <p className="dashboard-consistency-copy">Day Streak Active</p>
+            <div className="dashboard-week-pills" style={{ display: 'flex', gap: '8px' }}>
+              {weekPills.map((pill, idx) => (
+                <div key={idx} className={`dashboard-week-pill ${pill.active ? 'is-active' : ''}`}>
+                  {pill.label}
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="dashboard-card dashboard-level-card dashboard-anim-left dashboard-anim-delay-2">
+            <div className="dashboard-level-decoration" />
+            <div className="dashboard-section-kicker">Rank Progression</div>
+            <h2 className="dashboard-section-title--xl">{levelProgress.levelName}</h2>
+            <p className="dashboard-activity-summary">
+              {activitiesLoading
+                ? 'Loading journey…'
+                : `Activity Journey: ${completedTaskCount}/${Math.max(tasks.length, 1)} Task Complete`}
+            </p>
+            <div className="dashboard-level-track">
+              <div className="dashboard-level-fill" style={{ width: `${sidebarProgressPct}%` }} />
+            </div>
+            <p className="dashboard-activity-xp">{earnedTaskXp}/{totalTaskXp} TASK</p>
+          </section>
+
+          <section className="dashboard-card dashboard-mode-card dashboard-mode-card--training activity-practice-hub dashboard-anim-bottom dashboard-anim-delay-4">
+            <div className="dashboard-mode-badge dashboard-mode-badge--alt">Practice Mode</div>
+            <h3 className="dashboard-mode-title">Practice Hub</h3>
+            <div className="activity-practice-options">
+              <article className="activity-practice-option-card">
+                <p className="activity-practice-option-kicker">Randomizer</p>
+                <p className="activity-practice-option-copy">Get a random topic and practice speaking about it.</p>
+                <Button
+                  variant="practice"
+                  className="dashboard-mode-button"
+                  onClick={() => navigate(ROUTES.PRACTICE)}
+                  icon={IoArrowForward}
+                >
+                  Open Randomizer
+                </Button>
+              </article>
+              <article className="activity-practice-option-card">
+                <p className="activity-practice-option-kicker">Free Speech</p>
+                <p className="activity-practice-option-copy">Impromptu speaking mode focused on flow, tone, and pacing with AI evaluation.</p>
+                <Button
+                  variant="training"
+                  className="dashboard-mode-button"
+                  onClick={() => navigate(ROUTES.TRAINING_SETUP)}
+                  icon={IoArrowForward}
+                >
+                  Open Free Speech
+                </Button>
+              </article>
+            </div>
+          </section>
+        </aside>
       </div>
     </div>
   );

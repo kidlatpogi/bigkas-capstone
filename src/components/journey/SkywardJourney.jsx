@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+  IoTrophy,
   IoChatbubbleEllipses,
   IoCheckmarkCircle,
   IoClose,
@@ -10,10 +11,11 @@ import {
   IoMic,
   IoPulse,
   IoStar,
-  IoTrophy,
   IoSync,
 } from 'react-icons/io5';
-import { FaBrain } from 'react-icons/fa';
+import { FaBrain, FaGhost } from 'react-icons/fa';
+import { GiGoblinHead, GiFishMonster, GiWerewolf, GiVampireDracula } from 'react-icons/gi';
+import { SiDungeonsanddragons } from 'react-icons/si';
 import {
   JOURNEY_NODE_THEMES,
   NODE_STATE,
@@ -21,10 +23,11 @@ import {
 import SkywardJourneyNodeButton from './SkywardJourneyNodeButton';
 import './SkywardJourney.css';
 
-const MAP_SCALE = 1.5;
-const MAP_EDGE_PAN_PADDING = 96;
+const MAP_SCALE = 1;
+const ORTHOGONAL_OFFSETS = [0, 56, 56, 0, -56, -56];
+
 function getHorizontalOffset(index) {
-  return Math.sin(index * 1.0) * 80;
+  return ORTHOGONAL_OFFSETS[index % ORTHOGONAL_OFFSETS.length];
 }
 
 function clampMapState(state, viewportEl, contentEl, scale) {
@@ -39,8 +42,8 @@ function clampMapState(state, viewportEl, contentEl, scale) {
   if (!Number.isFinite(W) || !Number.isFinite(H) || W <= 0 || H <= 0) return state;
   if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return state;
 
-  const horizontalPadding = Math.max(MAP_EDGE_PAN_PADDING * 0.4, W * 0.08);
-  /** Keep the map from being panned completely off-screen (vertical). */
+  const horizontalPadding = 0;
+  /** Keep the map from being panned completely off-screen. */
   const minX = Math.min(0, W - w) - horizontalPadding;
   const maxX = Math.max(0, W - w) + horizontalPadding;
   let minY;
@@ -88,6 +91,29 @@ function JourneyNodeIcon({ step, index, className = '' }) {
   return <Cmp aria-hidden className={`skyward-journey-node-icon ${className}`.trim()} />;
 }
 
+function getStepLevel(step) {
+  const targetLevel = Number(step?.task?.target_level);
+  if (Number.isFinite(targetLevel) && targetLevel > 0) return targetLevel;
+  return 1;
+}
+
+function getBossMonsterIcon(level) {
+  switch (Number(level)) {
+    case 1:
+      return GiGoblinHead;
+    case 2:
+      return GiFishMonster;
+    case 3:
+      return GiWerewolf;
+    case 4:
+      return GiVampireDracula;
+    case 5:
+      return SiDungeonsanddragons;
+    default:
+      return GiGoblinHead;
+  }
+}
+
 /**
  * @param {object} props
  * @param {Array<{ id: string, nodeState: string, task?: object, title?: string }>} props.steps
@@ -96,9 +122,10 @@ function JourneyNodeIcon({ step, index, className = '' }) {
  */
 
 const MapHeaderCard = styled.div`
-  width: min(90vw, 882px);
-  margin: 0;
-  padding: 24px;
+  width: min(100%, 882px);
+  margin: 0 auto;
+  box-sizing: border-box;
+  padding: clamp(14px, 2.2vw, 24px);
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -110,10 +137,8 @@ const MapHeaderCard = styled.div`
   text-align: center;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   border: 2px solid #f18f01;
-  position: fixed;
+  position: sticky;
   top: max(14px, env(safe-area-inset-top, 0px));
-  left: 50%;
-  transform: translateX(-50%);
   z-index: 1400;
   flex-shrink: 0;
 `;
@@ -418,12 +443,13 @@ export default function SkywardJourney({
   entranceFromNav = false,
   scrollToStepIndex = null,
 }) {
+  const gradId = useId().replace(/:/g, '');
   const rootRef = useRef(null);
   const viewportRef = useRef(null);
   const mapContentRef = useRef(null);
   const mapLayerRef = useRef(null);
   const drawerRef = useRef(null);
-  const sectionHeaderRefs = useRef([]);
+  const sectionWrapperRefs = useRef([]);
   const nodeRefs = useRef([]);
   const tapDismissedRef = useRef(false);
   const mapRef = useRef({ tx: 0, ty: 0 });
@@ -437,10 +463,11 @@ export default function SkywardJourney({
   
   const completedCount = useMemo(() => steps.filter(s => s.nodeState === NODE_STATE.COMPLETED).length, [steps]);
 
+  const [pathPoints, setPathPoints] = useState([]);
   const [indexedNodePoints, setIndexedNodePoints] = useState([]);
+  const [svgBounds, setSvgBounds] = useState({ width: 1, height: 1 });
   const [panelOpenId, setPanelOpenId] = useState(null);
   const [panelVisible, setPanelVisible] = useState(false);
-  const [visibleSectionIndex, setVisibleSectionIndex] = useState(0);
   const panelClosePendingRef = useRef(false);
   const [jiggleIndex, setJiggleIndex] = useState(null);
   // removed showTapHint
@@ -468,31 +495,51 @@ export default function SkywardJourney({
     const content = mapContentRef.current;
     if (!content || steps.length < 2) {
       if (indexedNodePoints.length !== 0) setIndexedNodePoints([]);
+      setPathPoints([]);
+      setSvgBounds({ width: 1, height: 1 });
       return;
     }
 
     const cr = content.getBoundingClientRect();
     if (!cr.width || !cr.height) {
       if (indexedNodePoints.length !== 0) setIndexedNodePoints([]);
+      setPathPoints([]);
+      setSvgBounds({ width: 1, height: 1 });
       return;
     }
 
-    const sx = content.scrollWidth / cr.width;
-    const sy = content.scrollHeight / cr.height;
+    const centerX = content.clientWidth / 2;
     const indexed = [];
 
     for (let i = 0; i < steps.length; i += 1) {
-      const el = nodeRefs.current[i];
-      if (!el) continue;
-      const r = el.getBoundingClientRect();
-      indexed[i] = {
-        x: (r.left + r.width / 2 - cr.left) * sx,
-        y: (r.top + r.height / 2 - cr.top) * sy,
-      };
+      const node = nodeRefs.current[i];
+      if (!node) continue;
+
+      let top = 0;
+      let el = node;
+      while (el && el !== content) {
+        top += el.offsetTop;
+        el = el.offsetParent;
+      }
+      const y = top + (node.offsetHeight / 2);
+      const x = centerX + getHorizontalOffset(i);
+      indexed[i] = { x, y };
     }
 
     setIndexedNodePoints(indexed);
-  }, [steps.length]);
+
+    const pts = indexed.filter((p) => p != null);
+    if (pts.length < 2) {
+      setPathPoints([]);
+      return;
+    }
+
+    setSvgBounds({
+      width: Math.max(1, content.clientWidth),
+      height: Math.max(1, content.clientHeight),
+    });
+    setPathPoints(pts);
+  }, [steps.length, indexedNodePoints.length]);
 
   useLayoutEffect(() => {
     const run = () => {
@@ -529,25 +576,40 @@ export default function SkywardJourney({
     return () => cancelAnimationFrame(id);
   }, [recomputePath]);
 
-  /** Hero focus: scroll map / page so the target stage (dashboard handoff or active node) is in view. */
+  /** Hero focus: Mathematically pan the map to center the active node using CSS transforms. */
   useLayoutEffect(() => {
     const targetIndex =
       scrollToStepIndex != null && scrollToStepIndex >= 0 ? scrollToStepIndex : activeIndex;
     if (targetIndex < 0) return undefined;
-    const el = nodeRefs.current[targetIndex];
-    if (!el) return undefined;
 
-    const raf = requestAnimationFrame(() => setMap({ tx: 0, ty: 0 }));
-
-    const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const fromDashboard = scrollToStepIndex != null && scrollToStepIndex >= 0;
     const delay = entranceFromNav || fromDashboard ? 200 : 80;
+
     const t = window.setTimeout(() => {
-      el.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth', inline: 'nearest' });
+      const el = nodeRefs.current[targetIndex];
+      const vp = viewportRef.current;
+      const content = mapContentRef.current;
+      if (!el || !vp || !content) return;
+
+      // Find exact unscaled Y position of the target node
+      let top = 0;
+      let currentEl = el;
+      while (currentEl && currentEl !== content) {
+        top += currentEl.offsetTop;
+        currentEl = currentEl.offsetParent;
+      }
+      const nodeCenterY = top + (el.offsetHeight / 2);
+      const nodeCenterX = (content.clientWidth / 2) + getHorizontalOffset(targetIndex);
+
+      // We want the node exactly at the focus point (32% from the top of the screen)
+      const focusScreenY = vp.clientHeight * 0.32;
+      const targetTy = focusScreenY - (nodeCenterY * MAP_SCALE);
+      const targetTx = (vp.clientWidth / 2) - (nodeCenterX * MAP_SCALE);
+
+      setMap((m) => clampMapState({ tx: targetTx, ty: targetTy }, vp, content, MAP_SCALE));
     }, delay);
 
     return () => {
-      cancelAnimationFrame(raf);
       window.clearTimeout(t);
     };
   }, [activeIndex, entranceFromNav, scrollToStepIndex]);
@@ -686,6 +748,29 @@ export default function SkywardJourney({
     return () => window.clearTimeout(t);
   }, [panelVisible, panelOpenId]);
 
+  const { solidPathD, dashedPathD } = useMemo(() => {
+    let solid = '';
+    let dashed = '';
+    if (pathPoints.length < 2) return { solidPathD: '', dashedPathD: '' };
+
+    for (let i = 1; i < pathPoints.length; i++) {
+      const prev = pathPoints[i - 1];
+      const curr = pathPoints[i];
+      const midY = prev.y + (curr.y - prev.y) / 2;
+      const segment = `M ${prev.x} ${prev.y} V ${midY} H ${curr.x} V ${curr.y} `;
+
+      const prevPhase = getStepPhaseName(steps[i - 1]);
+      const currPhase = getStepPhaseName(steps[i]);
+
+      if (prevPhase !== currPhase) {
+        dashed += segment;
+      } else {
+        solid += segment;
+      }
+    }
+    return { solidPathD: solid, dashedPathD: dashed };
+  }, [pathPoints, steps]);
+
   const closePanel = requestClosePanel;
 
   const handleNodeClick = useCallback(
@@ -760,18 +845,42 @@ export default function SkywardJourney({
       const sectionTitle = section.phaseName || 'Training';
       const sectionIndex = sectionMeta.length;
       const sectionStartIndex = globalNodeIndex;
-      const currentSectionRows = section.tasks.map((step) => {
+      const currentSectionRows = section.tasks.map((step, sectionTaskIndex) => {
         const i = globalNodeIndex++;
         const theme = JOURNEY_NODE_THEMES[i % JOURNEY_NODE_THEMES.length];
         const isActive = step.nodeState === NODE_STATE.ACTIVE;
         const isDone = step.nodeState === NODE_STATE.COMPLETED;
         const isLocked = step.nodeState === NODE_STATE.LOCKED;
         const title = getStepActivityTitle(step);
-        const milestone = step.isRankUp === true || Number(step.stageNumber) === 31 || Number(step.task?.activity_order) === 31;
-        const startStage = isStartNode(step, i);
+        const isSectionEnd = sectionTaskIndex === section.tasks.length - 1;
+        const currentLevel = getStepLevel(step);
+        const nextStep = steps[i + 1];
+        const nextLevel = nextStep ? getStepLevel(nextStep) : currentLevel;
+
+        const isGlobalEnd = i === steps.length - 1;
+        const isStage31 = Number(step.stageNumber) === 31 || Number(step.task?.activity_order) === 31;
+
+        // The Ultimate Boss (Circle/Ghost) is ONLY at the end of Level 5
+        const isUltimateBoss = (isGlobalEnd || isStage31) && currentLevel === 5;
+
+        // A Level End (Square/Monster) triggers if it's Stage 31 of Levels 1-4, OR if the next step jumps to a new level
+        const isLevelEnd = !isUltimateBoss && (isStage31 || (!nextStep || nextLevel !== currentLevel));
+
+        // A Section Trophy is any section end that isn't a Boss
+        const isSectionTrophy = isSectionEnd && !isUltimateBoss && !isLevelEnd;
+        const isEnhancedTrophyNode = !isUltimateBoss && (isSectionTrophy || isLevelEnd);
+        const BossMonsterIcon = getBossMonsterIcon(currentLevel);
+        const startStage = sectionTaskIndex === 0;
         const jiggle = jiggleIndex === i;
         const horizontalOffset = getHorizontalOffset(i);
-        const labelSide = horizontalOffset > 0 ? 'left' : 'right';
+        let labelSide = 'right';
+        if (horizontalOffset > 0) {
+          labelSide = 'left';
+        } else if (horizontalOffset < 0) {
+          labelSide = 'right';
+        } else {
+          labelSide = i % 2 === 0 ? 'right' : 'left';
+        }
         const stageNum = Number(step.stageNumber);
         const stageTotal = Number(step.totalStages);
         const safeStageTotal =
@@ -789,14 +898,21 @@ export default function SkywardJourney({
                 className={`skyward-journey-node-shell${
                   i === 0 && isActive ? ' skyward-journey-node-shell--start-onboarding' : ''
                 }`}
+                style={{ zIndex: 10, position: 'relative' }}
               >
                 <div
-                  className={`skyward-journey-node-cluster${milestone ? ' skyward-journey-node-cluster--milestone' : ''}`}
+                  className={`skyward-journey-node-cluster${isUltimateBoss ? ' skyward-journey-node-cluster--boss' : ''}`}
                   style={{
                     transform: `translateX(${horizontalOffset}px)`,
                   }}
                 >
-                  {startStage ? (
+                  {(isUltimateBoss || isLevelEnd) ? (
+                    <div className="skyward-journey-start-callout" aria-hidden>
+                      <span className="skyward-journey-start-badge" style={{ backgroundColor: '#d32f2f', color: '#fff' }}>
+                        BOSS
+                      </span>
+                    </div>
+                  ) : startStage ? (
                     <div className="skyward-journey-start-callout" aria-hidden>
                       <span className="skyward-journey-start-badge">START</span>
                     </div>
@@ -810,7 +926,8 @@ export default function SkywardJourney({
                     className={[
                       'skyward-journey-node',
                       `skyward-journey-node--${step.nodeState}`,
-                      milestone ? 'skyward-journey-node--milestone' : '',
+                      (isUltimateBoss || isLevelEnd) ? 'skyward-journey-node--boss' : '',
+                      isEnhancedTrophyNode ? 'skyward-journey-node--trophy' : '',
                       jiggle ? 'skyward-journey-node--jiggle' : '',
                       !isLocked ? 'skyward-journey-node--unlocked' : '',
                       isLocked ? 'skyward-journey-node--locked-teaser' : '',
@@ -819,14 +936,24 @@ export default function SkywardJourney({
                       .join(' ')}
                     aria-current={isActive ? 'step' : undefined}
                     aria-expanded={panelOpenId === step.id}
-                    aria-label={`${milestone ? 'Milestone: ' : ''}${theme.shortLabel}: ${title}. ${
+                    aria-label={`${isUltimateBoss ? 'Milestone: ' : ''}${theme.shortLabel}: ${title}. ${
                       isDone ? 'Completed' : isLocked ? 'Locked' : 'Current step'
                     }. Open quest details.`}
                     onClick={() => handleNodeClick(step, i)}
                   >
-                    {milestone ? (
-                      <IoTrophy
+                    {isUltimateBoss ? (
+                      <FaGhost
                         className="skyward-journey-node-icon skyward-journey-node-icon--boss"
+                        aria-hidden
+                      />
+                    ) : isLevelEnd ? (
+                      <BossMonsterIcon
+                        className="skyward-journey-node-icon skyward-journey-node-icon--boss"
+                        aria-hidden
+                      />
+                    ) : isSectionTrophy ? (
+                      <IoTrophy
+                        className="skyward-journey-node-icon skyward-journey-node-icon--trophy"
                         aria-hidden
                       />
                     ) : startStage ? (
@@ -857,10 +984,10 @@ export default function SkywardJourney({
                     aria-hidden
                   >
                     <span className="level-label__title">
-                      {milestone ? 'Summit' : title}
+                      {isUltimateBoss ? 'Summit' : title}
                     </span>
                     <span className="level-label__stage">
-                      {milestone
+                      {isUltimateBoss
                         ? `Boss · Stage ${safeStageNum} of ${safeStageTotal}`
                         : `Stage ${safeStageNum} of ${safeStageTotal}`}
                     </span>
@@ -879,78 +1006,26 @@ export default function SkywardJourney({
       });
 
       sections.push(
-        <section key={`pillar-section-${sectionTitle}`} className="skyward-journey-section">
+        <section
+          key={`pillar-section-${sectionTitle}`}
+          className="skyward-journey-section"
+          ref={(el) => { sectionWrapperRefs.current[sectionIndex] = el; }}
+          data-pillar-text={sectionTitle}
+        >
+          <div className="skyward-journey-section-rows">{currentSectionRows}</div>
           <div
             className="skyward-journey-section-header"
             role="presentation"
-            ref={(el) => {
-              sectionHeaderRefs.current[sectionIndex] = el;
-            }}
           >
             <span className="skyward-journey-section-line" aria-hidden />
             <span className="skyward-journey-section-title">{sectionTitle}</span>
             <span className="skyward-journey-section-line" aria-hidden />
           </div>
-          <div className="skyward-journey-section-rows">{currentSectionRows}</div>
         </section>,
       );
     });
   }
-
-  useEffect(() => {
-    const viewportEl = viewportRef.current;
-    if (!viewportEl || !sectionMeta.length) return undefined;
-
-    const detectVisibleSection = () => {
-      const viewportRect = viewportEl.getBoundingClientRect();
-      const viewportTop = viewportRect.top;
-      const viewportBottom = viewportRect.bottom;
-      const visibleCandidates = [];
-      let nearestAbove = null;
-      let nearestBelow = null;
-
-      sectionHeaderRefs.current.forEach((headerEl, idx) => {
-        if (!headerEl || idx >= sectionMeta.length) return;
-        const rect = headerEl.getBoundingClientRect();
-        const isVisible = rect.bottom > viewportTop && rect.top < viewportBottom;
-
-        if (isVisible) {
-          visibleCandidates.push({ idx, score: Math.abs(rect.top - viewportTop) });
-          return;
-        }
-
-        if (rect.top <= viewportTop) {
-          if (!nearestAbove || rect.top > nearestAbove.top) {
-            nearestAbove = { idx, top: rect.top };
-          }
-          return;
-        }
-
-        if (!nearestBelow || rect.top < nearestBelow.top) {
-          nearestBelow = { idx, top: rect.top };
-        }
-      });
-
-      let nextIndex = 0;
-      if (visibleCandidates.length) {
-        visibleCandidates.sort((a, b) => a.score - b.score);
-        nextIndex = visibleCandidates[0].idx;
-      } else if (nearestAbove) {
-        nextIndex = nearestAbove.idx;
-      } else if (nearestBelow) {
-        nextIndex = nearestBelow.idx;
-      }
-
-      setVisibleSectionIndex((prev) => (prev === nextIndex ? prev : nextIndex));
-    };
-
-    detectVisibleSection();
-    window.addEventListener('resize', detectVisibleSection);
-    return () => {
-      window.removeEventListener('resize', detectVisibleSection);
-    };
-  }, [map.ty, sectionMeta.length]);
-
+  sectionWrapperRefs.current.length = sectionMeta.length;
   const activeStepIndex = steps.findIndex((s) => s.nodeState === NODE_STATE.ACTIVE);
   const lastCompletedStepIndex = (() => {
     for (let i = steps.length - 1; i >= 0; i -= 1) {
@@ -961,46 +1036,69 @@ export default function SkywardJourney({
   const indexToUse = activeStepIndex >= 0
     ? activeStepIndex
     : (lastCompletedStepIndex >= 0 ? lastCompletedStepIndex : 0);
-  const visibleStepIndex = useMemo(() => {
-    const viewportHeight = viewportRef.current?.clientHeight ?? (typeof window !== 'undefined' ? window.innerHeight : 0);
-    if (!viewportHeight || !indexedNodePoints.length) return indexToUse;
-    // Map moves UP (negative ty) as we scroll DOWN the journey (higher index nodes).
-    // The "focus" area is roughly the top 1/3rd of the screen.
-    const focusY = viewportHeight * 0.32;
-    let bestIndex = indexToUse;
-    let bestDistance = Number.POSITIVE_INFINITY;
+  const initialStep = steps[indexToUse];
+  const initialText = initialStep
+    ? getStepPhaseName(initialStep)
+    : 'General';
+  const [currentPillarText, setCurrentPillarText] = useState(initialText);
 
-    indexedNodePoints.forEach((point, i) => {
-      if (!point || !steps[i]) return;
-      // Calculate where the node currently is relative to the viewport top
-      const screenY = (point.y * MAP_SCALE) + map.ty;
-      
-      // If it's completely off screen, ignore it
-      if (screenY < -100 || screenY > viewportHeight + 100) return;
-      
-      const dist = Math.abs(screenY - focusY);
-      if (dist < bestDistance) {
-        bestDistance = dist;
-        bestIndex = i;
+  // Hybrid Section-Based Tracking (Ignores CSS Animation Delays)
+  useEffect(() => {
+    const vp = viewportRef.current;
+    if (!vp || !sectionWrapperRefs.current.length) return;
+
+    // What is the focus Y in the UNSCALED map coordinates?
+    const vHeight = vp.clientHeight || window.innerHeight;
+    const focusScreenY = vHeight * 0.32;
+    // Reverse the transform to find exactly where the camera is mathematically
+    const targetMapY = (focusScreenY - map.ty) / MAP_SCALE;
+
+    let closestText = null;
+    let minDistance = Infinity;
+
+    sectionWrapperRefs.current.forEach((el) => {
+      if (!el) return;
+      // Use offsetTop to get the static layout position, completely bypassing CSS transform animations
+      const sTop = el.offsetTop;
+      const sBottom = sTop + el.offsetHeight;
+
+      // Check if the mathematical camera intersects the static section box
+      if (targetMapY >= sTop && targetMapY <= sBottom) {
+        closestText = el.getAttribute('data-pillar-text');
+        minDistance = 0;
+      } else if (minDistance > 0) {
+        const dist = Math.min(Math.abs(targetMapY - sTop), Math.abs(targetMapY - sBottom));
+        if (dist < minDistance) {
+          minDistance = dist;
+          closestText = el.getAttribute('data-pillar-text');
+        }
       }
     });
-    return bestIndex;
-  }, [indexedNodePoints, indexToUse, map.ty, steps]);
-  const currentStep = steps[visibleStepIndex] || steps[indexToUse] || null;
-  const visibleSectionMeta = sectionMeta[visibleSectionIndex] ?? null;
-  const currentPillarText = (visibleSectionMeta?.step || currentStep)
-    ? `Pillar ${(visibleSectionMeta?.step || currentStep)?.task?.target_level || (visibleSectionMeta?.step || currentStep)?.stageNumber || 1}: ${visibleSectionMeta?.title || getStepPhaseName(visibleSectionMeta?.step || currentStep)}`
-    : 'Pillar 1: General';
+
+    if (closestText) {
+      setCurrentPillarText(closestText);
+    }
+  }, [map.ty]);
+  const activeOrHighestIndex = Math.max(activeStepIndex, lastCompletedStepIndex, 0);
+  let pathFillPercentage = 0;
+  if (pathPoints.length > 1 && pathPoints[activeOrHighestIndex]) {
+    const startY = pathPoints[0].y;
+    const endY = pathPoints[pathPoints.length - 1].y;
+    const currentY = pathPoints[activeOrHighestIndex].y;
+
+    if (startY !== endY) {
+      pathFillPercentage = Math.max(0, Math.min(100, ((startY - currentY) / (startY - endY)) * 100));
+    }
+  }
 
   return (
-    <div className="skyward-journey-wrap">
+    <div className="skyward-journey-wrap" style={{ position: 'relative', width: '100%', height: '100%' }}>
       <div className="skyward-journey skyward-journey-container no-scrollbar" ref={rootRef}>
         <MapHeaderCard className="skyward-journey-anim-header">
           <HeaderTitle>{currentPillarText}</HeaderTitle>
           <HeaderDescription>Master your speaking fundamentals</HeaderDescription>
           <HeaderStatBadge>{completedCount} / {steps.length} Stages Completed</HeaderStatBadge>
         </MapHeaderCard>
-        <div className="skyward-journey-fixed-header-spacer" aria-hidden />
         <div className="skyward-journey-anim-root skyward-journey-map skyward-journey-anim-map">
           <div
             className="skyward-journey-map-viewport"
@@ -1022,8 +1120,54 @@ export default function SkywardJourney({
                 transform: `translate(${map.tx}px, ${map.ty}px) scale(${MAP_SCALE})`,
               }}
             >
-              <div className="skyward-journey-map-content" ref={mapContentRef}>
-                <div className="skyward-journey-column">
+              <div className="skyward-journey-map-content">
+                <div className="skyward-journey-column" ref={mapContentRef} style={{ position: 'relative' }}>
+                  {pathPoints.length > 1 ? (
+                    <svg
+                      className="skyward-journey-svg"
+                      aria-hidden
+                      shapeRendering="geometricPrecision"
+                      preserveAspectRatio="none"
+                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }}
+                    >
+                      <defs>
+                        <linearGradient id={`skyward-journey-line-grad-${gradId}`} x1="0%" y1="100%" x2="0%" y2="0%">
+                          <stop offset="0%" stopColor="#EBF4DD" />
+                          <stop offset={`${pathFillPercentage}%`} stopColor="#EBF4DD" />
+                          <stop offset={`${pathFillPercentage}%`} stopColor="#a1a1aa" />
+                          <stop offset="100%" stopColor="#a1a1aa" />
+                        </linearGradient>
+                      </defs>
+                      <path
+                        className="skyward-journey-polyline skyward-journey-polyline--rim"
+                        fill="none"
+                        d={solidPathD}
+                        stroke="var(--skyward-path-rim, #e4e4e7)"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="20"
+                      />
+                      <path
+                        className="skyward-journey-polyline skyward-journey-polyline--main"
+                        fill="none"
+                        d={solidPathD}
+                        stroke={`url(#skyward-journey-line-grad-${gradId})`}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="12"
+                      />
+                      <path
+                        className="skyward-journey-polyline skyward-journey-polyline--dashed"
+                        fill="none"
+                        d={dashedPathD}
+                        stroke="var(--skyward-path-locked, #a1a1aa)"
+                        strokeDasharray="12 12"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="6"
+                      />
+                    </svg>
+                  ) : null}
                   {sections}
                 </div>
               </div>

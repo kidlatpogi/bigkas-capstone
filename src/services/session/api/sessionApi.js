@@ -16,7 +16,7 @@ export const sessionApi = {
     const to = from + limit - 1;
 
     const { data, error, count } = await supabase
-      .from('practice_sessions')
+      .from('sessions')
       .select('*', { count: 'exact' })
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
@@ -27,12 +27,12 @@ export const sessionApi = {
 
   async getSession(sessionId) {
     if (!ENV.ENABLE_SESSION_PERSISTENCE) return { data: null, error: null };
-    return supabase.from('practice_sessions').select('*').eq('id', sessionId).single();
+    return supabase.from('sessions').select('*').eq('id', sessionId).single();
   },
 
   async deleteSession(sessionId) {
     if (!ENV.ENABLE_SESSION_PERSISTENCE) return { data: null, error: null };
-    return supabase.from('practice_sessions').delete().eq('id', sessionId);
+    return supabase.from('sessions').delete().eq('id', sessionId);
   },
 };
 

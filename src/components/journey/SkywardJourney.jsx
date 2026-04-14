@@ -23,9 +23,8 @@ import {
 import SkywardJourneyNodeButton from './SkywardJourneyNodeButton';
 import './SkywardJourney.css';
 
-const MAP_SCALE = 1.25;
-const MAP_EDGE_PAN_PADDING = 96;
-const ORTHOGONAL_OFFSETS = [0, 72, 72, 0, -72, -72];
+const MAP_SCALE = 1;
+const ORTHOGONAL_OFFSETS = [0, 56, 56, 0, -56, -56];
 
 function getHorizontalOffset(index) {
   return ORTHOGONAL_OFFSETS[index % ORTHOGONAL_OFFSETS.length];
@@ -43,8 +42,8 @@ function clampMapState(state, viewportEl, contentEl, scale) {
   if (!Number.isFinite(W) || !Number.isFinite(H) || W <= 0 || H <= 0) return state;
   if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return state;
 
-  const horizontalPadding = Math.max(MAP_EDGE_PAN_PADDING * 0.4, W * 0.08);
-  /** Keep the map from being panned completely off-screen (vertical). */
+  const horizontalPadding = 0;
+  /** Keep the map from being panned completely off-screen. */
   const minX = Math.min(0, W - w) - horizontalPadding;
   const maxX = Math.max(0, W - w) + horizontalPadding;
   let minY;

@@ -26,6 +26,8 @@
   max-width: none;
   margin: 0;
   padding: 0;
+  border-top-right-radius: 20px;
+  border-bottom-right-radius: 20px;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -60,6 +62,11 @@
   min-width: 0;
   display: flex;
   justify-content: center;
+  background-color: #dce8cf;
+  background-image: url("../../assets/backgrounds/Forest BG.png");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center top;
 }
 
 .activity-col-sidebar {

@@ -23,7 +23,7 @@ import {
 import SkywardJourneyNodeButton from './SkywardJourneyNodeButton';
 import './SkywardJourney.css';
 
-const MAP_SCALE = 1;
+const MAP_SCALE = 0.9;
 const ORTHOGONAL_OFFSETS = [0, 56, 56, 0, -56, -56];
 
 function getHorizontalOffset(index) {

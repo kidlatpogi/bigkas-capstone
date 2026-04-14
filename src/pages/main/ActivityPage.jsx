@@ -21,7 +21,6 @@ import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks
 import { useJourneyRemoteState } from '../../hooks/useJourneyRemoteState';
 import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../services/journeyProgressService';
 import iconFire from '../../assets/icons/Icon-Fire.svg';
-import forestBg from '../../assets/backgrounds/Forest.svg';
 import './InnerPages.css';
 import './ActivityPage.css';
 import './DashboardPage.css';
@@ -332,16 +331,6 @@ function ActivityPage() {
     return idx >= 0 ? idx : 0;
   }, [location.state?.focusCurrentStage, tasks, activeTaskId, totalStages]);
 
-  const pageBackgroundStyle = useMemo(
-    () => ({
-      backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.05)), url(${forestBg})`,
-      backgroundRepeat: 'no-repeat',
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-    }),
-    [],
-  );
-
   useEffect(() => {
     if (location.state?.focusCurrentStage !== true) return undefined;
     const t = window.setTimeout(() => {
@@ -453,7 +442,7 @@ function ActivityPage() {
 
   if (activitiesLoading) {
     return (
-      <div className="inner-page activity-page" style={pageBackgroundStyle}>
+      <div className="inner-page activity-page">
         <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
           <p className="section-label">Loading journey…</p>
         </div>
@@ -463,7 +452,7 @@ function ActivityPage() {
 
   if (activitiesError) {
     return (
-      <div className="inner-page activity-page" style={pageBackgroundStyle}>
+      <div className="inner-page activity-page">
         <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
           <p className="activity-task-lock-note">Could not load activities: {activitiesError}</p>
           <p className="activity-task-detail">Ensure the `activities` table exists and RLS allows read for authenticated users.</p>
@@ -474,7 +463,7 @@ function ActivityPage() {
 
   if (!tasks.length) {
     return (
-      <div className="inner-page activity-page" style={pageBackgroundStyle}>
+      <div className="inner-page activity-page">
         <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
           <p className="section-label">No activities yet</p>
           <p className="activity-task-detail">Add rows to the `activities` table in Supabase to populate this journey.</p>
@@ -484,7 +473,7 @@ function ActivityPage() {
   }
 
   return (
-    <div className="inner-page activity-page activity-page--skyward-entrance" style={pageBackgroundStyle}>
+    <div className="inner-page activity-page activity-page--skyward-entrance">
       <div className="activity-two-col">
         <div className="activity-col-main">
           <div className="activity-content-wrap activity-content-wrap--journey-scroll">

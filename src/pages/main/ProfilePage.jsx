@@ -157,6 +157,7 @@ function ProfilePage() {
       {/* Header */}
       <div className="profile-header">
         <h1 className="inner-page-title">Edit Profile</h1>
+        <p className="profile-subtitle">Refine your profile to keep your speaking journey personalized.</p>
       </div>
 
       {/* AvatarPicker */}

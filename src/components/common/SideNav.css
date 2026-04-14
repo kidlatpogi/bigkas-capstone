@@ -164,13 +164,13 @@
   padding: 0 16px;
   border: 0;
   background: transparent;
-  color: #ffb4b4;
+  color: #dc2626;
   text-decoration: none;
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
-  transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+  transition: background-color 0.18s ease, color 0.18s ease;
   border-radius: 12px;
 }
 
@@ -228,9 +228,8 @@
 }
 
 .side-nav-logout:hover {
-  background: rgba(239, 68, 68, 0.16);
-  color: #fecaca;
-  transform: translateX(-2px);
+  background: rgba(220, 38, 38, 0.14);
+  color: #ef4444;
 }
 
 .side-nav-logout svg {

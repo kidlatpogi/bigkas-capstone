@@ -209,6 +209,7 @@ function AppRouter() {
       <Route element={<PublicRoute />}>
         <Route path={ROUTES.HOME} element={<LandingPage />} />
         <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+        <Route path={ROUTES.ADMIN_LOGIN_BASE} element={<AdminLoginPage />} />
         {ENV.ADMIN_LOGIN_PATH && <Route path={ENV.ADMIN_LOGIN_PATH} element={<AdminLoginPage />} />}
         <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
       </Route>

@@ -451,7 +451,7 @@ export default function SkywardJourney({
   const mapContentRef = useRef(null);
   const mapLayerRef = useRef(null);
   const drawerRef = useRef(null);
-  const sectionHeaderRefs = useRef([]);
+  const sectionWrapperRefs = useRef([]);
   const nodeRefs = useRef([]);
   const tapDismissedRef = useRef(false);
   const mapRef = useRef({ tx: 0, ty: 0 });
@@ -470,7 +470,6 @@ export default function SkywardJourney({
   const [svgBounds, setSvgBounds] = useState({ width: 1, height: 1 });
   const [panelOpenId, setPanelOpenId] = useState(null);
   const [panelVisible, setPanelVisible] = useState(false);
-  const [visibleSectionIndex, setVisibleSectionIndex] = useState(0);
   const panelClosePendingRef = useRef(false);
   const [jiggleIndex, setJiggleIndex] = useState(null);
   // removed showTapHint
@@ -991,14 +990,16 @@ export default function SkywardJourney({
       });
 
       sections.push(
-        <section key={`pillar-section-${sectionTitle}`} className="skyward-journey-section">
+        <section
+          key={`pillar-section-${sectionTitle}`}
+          className="skyward-journey-section"
+          ref={(el) => { sectionWrapperRefs.current[sectionIndex] = el; }}
+          data-pillar-text={`Pillar ${getStepLevel(section.tasks[0])}: ${sectionTitle}`}
+        >
           <div className="skyward-journey-section-rows">{currentSectionRows}</div>
           <div
             className="skyward-journey-section-header"
             role="presentation"
-            ref={(el) => {
-              sectionHeaderRefs.current[sectionIndex] = el;
-            }}
           >
             <span className="skyward-journey-section-line" aria-hidden />
             <span className="skyward-journey-section-title">{sectionTitle}</span>
@@ -1008,7 +1009,7 @@ export default function SkywardJourney({
       );
     });
   }
-  sectionHeaderRefs.current.length = sectionMeta.length;
+  sectionWrapperRefs.current.length = sectionMeta.length;
   const activeStepIndex = steps.findIndex((s) => s.nodeState === NODE_STATE.ACTIVE);
   const lastCompletedStepIndex = (() => {
     for (let i = steps.length - 1; i >= 0; i -= 1) {
@@ -1019,39 +1020,45 @@ export default function SkywardJourney({
   const indexToUse = activeStepIndex >= 0
     ? activeStepIndex
     : (lastCompletedStepIndex >= 0 ? lastCompletedStepIndex : 0);
-  const [visibleStepIndex, setVisibleStepIndex] = useState(indexToUse);
+  const initialStep = steps[indexToUse];
+  const initialText = initialStep
+    ? `Pillar ${getStepLevel(initialStep)}: ${getStepPhaseName(initialStep)}`
+    : 'Pillar 1: General';
+  const [currentPillarText, setCurrentPillarText] = useState(initialText);
 
-  // Pure mathematical tracking (Zero DOM reads during pan/scroll)
+  // True Section-Based Tracking
   useEffect(() => {
-    if (!indexedNodePoints.length || !viewportRef.current) return;
+    const vp = viewportRef.current;
+    if (!vp || !sectionWrapperRefs.current.length) return;
 
-    const vHeight = viewportRef.current.clientHeight || window.innerHeight;
-    // The screen position we consider "in focus" (32% from the top)
-    const focusScreenY = vHeight * 0.32;
+    const rect = vp.getBoundingClientRect();
+    const focusY = rect.top + (rect.height * 0.32);
 
-    // Reverse the CSS transform to find which unscaled map Y-coordinate is currently at the focus point
-    // Equation: screenY = mapY * MAP_SCALE + map.ty
-    const targetContentY = (focusScreenY - map.ty) / MAP_SCALE;
+    let closestText = null;
+    let minDistance = Infinity;
 
-    let bestIdx = indexToUse; // Default fallback
-    let bestDist = Number.POSITIVE_INFINITY;
+    sectionWrapperRefs.current.forEach((el) => {
+      if (!el) return;
+      const sRect = el.getBoundingClientRect();
 
-    indexedNodePoints.forEach((pt, i) => {
-      if (!pt) return;
-      const dist = Math.abs(pt.y - targetContentY);
-      if (dist < bestDist) {
-        bestDist = dist;
-        bestIdx = i;
+      // Check if the focus line overlaps the section container directly
+      if (focusY >= sRect.top && focusY <= sRect.bottom) {
+        closestText = el.getAttribute('data-pillar-text');
+        minDistance = 0;
+      } else if (minDistance > 0) {
+        // If in a margin/gap, find the nearest section edge
+        const dist = Math.min(Math.abs(focusY - sRect.top), Math.abs(focusY - sRect.bottom));
+        if (dist < minDistance) {
+          minDistance = dist;
+          closestText = el.getAttribute('data-pillar-text');
+        }
       }
     });
 
-    setVisibleStepIndex((prev) => (prev === bestIdx ? prev : bestIdx));
-  }, [map.ty, indexedNodePoints, indexToUse]);
-  const currentStep = steps[visibleStepIndex] || steps[indexToUse] || null;
-  const visibleSectionMeta = sectionMeta[visibleSectionIndex] ?? null;
-  const currentPillarText = currentStep
-    ? `Pillar ${getStepLevel(currentStep)}: ${getStepPhaseName(currentStep)}`
-    : 'Pillar 1: General';
+    if (closestText) {
+      setCurrentPillarText(closestText);
+    }
+  }, [map.ty, map.tx]);
   const activeOrHighestIndex = Math.max(activeStepIndex, lastCompletedStepIndex, 0);
   let pathFillPercentage = 0;
   if (pathPoints.length > 1 && pathPoints[activeOrHighestIndex]) {

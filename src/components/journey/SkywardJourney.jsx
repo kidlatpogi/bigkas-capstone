@@ -31,14 +31,14 @@ function getHorizontalOffset(index) {
 
 function buildOrthogonalConnectorPath(points) {
   if (!Array.isArray(points) || points.length < 2) return '';
-  let path = `M ${points[0].x} ${points[0].y}`;
-  for (let i = 0; i < points.length - 1; i += 1) {
+  let pathString = `M ${points[0].x} ${points[0].y} `;
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1];
     const curr = points[i];
-    const next = points[i + 1];
-    const midY = (curr.y + next.y) / 2;
-    path += ` V ${midY} H ${next.x} V ${next.y}`;
+    const midY = prev.y + (curr.y - prev.y) / 2;
+    pathString += `V ${midY} H ${curr.x} V ${curr.y} `;
   }
-  return path;
+  return pathString;
 }
 
 function clampMapState(state, viewportEl, contentEl, scale) {
@@ -500,25 +500,17 @@ export default function SkywardJourney({
     }
 
     const indexed = [];
-    const containerEl = mapContentRef.current;
+    const containerRect = mapContentRef.current.getBoundingClientRect();
+    const scale = MAP_SCALE || 1.5;
 
     for (let i = 0; i < steps.length; i += 1) {
       const node = nodeRefs.current[i];
       if (!node) continue;
       
-      let top = 0;
-      let left = 0;
-      let el = node;
-      
-      while (el && el !== containerEl) {
-        top += el.offsetTop;
-        left += el.offsetLeft;
-        el = el.offsetParent;
-      }
-      
+      const rect = node.getBoundingClientRect();
       indexed[i] = {
-        x: left + (node.offsetWidth / 2),
-        y: top + (node.offsetHeight / 2),
+        x: (rect.left - containerRect.left + rect.width / 2) / scale,
+        y: (rect.top - containerRect.top + rect.height / 2) / scale,
       };
     }
 
@@ -1153,7 +1145,7 @@ export default function SkywardJourney({
                         stroke={`url(#skyward-journey-line-grad-${gradId})`}
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        strokeWidth="var(--skyward-line-width, 12)"
+                        strokeWidth="10"
                       />
                       {flowSegmentPathD ? (
                         <path
@@ -1164,7 +1156,7 @@ export default function SkywardJourney({
                           strokeDasharray="10 16"
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          strokeWidth="8"
+                          strokeWidth="6"
                         />
                       ) : null}
                     </svg>

@@ -914,7 +914,7 @@ export default function SkywardJourney({
                     className={[
                       'skyward-journey-node',
                       `skyward-journey-node--${step.nodeState}`,
-                      isUltimateBoss ? 'skyward-journey-node--boss' : '',
+                      (isUltimateBoss || isLevelEnd) ? 'skyward-journey-node--boss' : '',
                       isEnhancedTrophyNode ? 'skyward-journey-node--trophy' : '',
                       jiggle ? 'skyward-journey-node--jiggle' : '',
                       !isLocked ? 'skyward-journey-node--unlocked' : '',
@@ -1130,6 +1130,17 @@ export default function SkywardJourney({
   const currentPillarText = (visibleSectionMeta?.step || currentStep)
     ? `Pillar ${(visibleSectionMeta?.step || currentStep)?.task?.target_level || (visibleSectionMeta?.step || currentStep)?.stageNumber || 1}: ${visibleSectionMeta?.title || getStepPhaseName(visibleSectionMeta?.step || currentStep)}`
     : 'Pillar 1: General';
+  const activeOrHighestIndex = Math.max(activeStepIndex, lastCompletedStepIndex, 0);
+  let pathFillPercentage = 0;
+  if (pathPoints.length > 1 && pathPoints[activeOrHighestIndex]) {
+    const startY = pathPoints[0].y;
+    const endY = pathPoints[pathPoints.length - 1].y;
+    const currentY = pathPoints[activeOrHighestIndex].y;
+
+    if (startY !== endY) {
+      pathFillPercentage = Math.max(0, Math.min(100, ((startY - currentY) / (startY - endY)) * 100));
+    }
+  }
 
   return (
     <div className="skyward-journey-wrap">
@@ -1173,8 +1184,10 @@ export default function SkywardJourney({
                     >
                       <defs>
                         <linearGradient id={`skyward-journey-line-grad-${gradId}`} x1="0%" y1="100%" x2="0%" y2="0%">
-                          <stop offset="0%" stopColor="var(--skyward-path-completed, #5a7863)" />
-                          <stop offset="100%" stopColor="var(--skyward-path-locked, #a1a1aa)" />
+                          <stop offset="0%" stopColor="#EBF4DD" />
+                          <stop offset={`${pathFillPercentage}%`} stopColor="#EBF4DD" />
+                          <stop offset={`${pathFillPercentage}%`} stopColor="#a1a1aa" />
+                          <stop offset="100%" stopColor="#a1a1aa" />
                         </linearGradient>
                       </defs>
                       <path

@@ -29,18 +29,6 @@ function getHorizontalOffset(index) {
   return ORTHOGONAL_OFFSETS[index % ORTHOGONAL_OFFSETS.length];
 }
 
-function buildOrthogonalConnectorPath(points) {
-  if (!Array.isArray(points) || points.length < 2) return '';
-  let pathString = `M ${points[0].x} ${points[0].y} `;
-  for (let i = 1; i < points.length; i++) {
-    const prev = points[i - 1];
-    const curr = points[i];
-    const midY = prev.y + (curr.y - prev.y) / 2;
-    pathString += `V ${midY} H ${curr.x} V ${curr.y} `;
-  }
-  return pathString;
-}
-
 function clampMapState(state, viewportEl, contentEl, scale) {
   if (!viewportEl || !contentEl) return state;
   const W = viewportEl.clientWidth;
@@ -433,7 +421,6 @@ export default function SkywardJourney({
   scrollToStepIndex = null,
 }) {
   const gradId = useId().replace(/:/g, '');
-  const flowGradId = useId().replace(/:/g, '');
   const rootRef = useRef(null);
   const viewportRef = useRef(null);
   const mapContentRef = useRef(null);
@@ -724,27 +711,28 @@ export default function SkywardJourney({
     return () => window.clearTimeout(t);
   }, [panelVisible, panelOpenId]);
 
-  const lastCompletedIndex = useMemo(() => {
-    let last = -1;
-    steps.forEach((s, i) => {
-      if (s.nodeState === NODE_STATE.COMPLETED) last = i;
-    });
-    return last;
-  }, [steps]);
+  const { solidPathD, dashedPathD } = useMemo(() => {
+    let solid = '';
+    let dashed = '';
+    if (pathPoints.length < 2) return { solidPathD: '', dashedPathD: '' };
 
-  const connectorPathD = useMemo(() => {
-    if (pathPoints.length < 2) return '';
-    return buildOrthogonalConnectorPath(pathPoints);
-  }, [pathPoints]);
+    for (let i = 1; i < pathPoints.length; i++) {
+      const prev = pathPoints[i - 1];
+      const curr = pathPoints[i];
+      const midY = prev.y + (curr.y - prev.y) / 2;
+      const segment = `M ${prev.x} ${prev.y} V ${midY} H ${curr.x} V ${curr.y} `;
 
-  const flowSegmentPathD = useMemo(() => {
-    if (activeIndex < 0 || lastCompletedIndex < 0) return '';
-    if (activeIndex <= lastCompletedIndex) return '';
-    const a = indexedNodePoints[lastCompletedIndex];
-    const b = indexedNodePoints[activeIndex];
-    if (!a || !b) return '';
-    return buildOrthogonalConnectorPath([a, b]);
-  }, [indexedNodePoints, lastCompletedIndex, activeIndex]);
+      const prevPhase = getStepPhaseName(steps[i - 1]);
+      const currPhase = getStepPhaseName(steps[i]);
+
+      if (prevPhase !== currPhase) {
+        dashed += segment;
+      } else {
+        solid += segment;
+      }
+    }
+    return { solidPathD: solid, dashedPathD: dashed };
+  }, [pathPoints, steps]);
 
   const closePanel = requestClosePanel;
 
@@ -835,7 +823,7 @@ export default function SkywardJourney({
           step.isRankUp === true ||
           Number(step.stageNumber) === 31 ||
           Number(step.task?.activity_order) === 31;
-        const startStage = isStartNode(step, i);
+        const startStage = sectionTaskIndex === 0;
         const jiggle = jiggleIndex === i;
         const horizontalOffset = getHorizontalOffset(i);
         let labelSide = 'right';
@@ -955,6 +943,7 @@ export default function SkywardJourney({
 
       sections.push(
         <section key={`pillar-section-${sectionTitle}`} className="skyward-journey-section">
+          <div className="skyward-journey-section-rows">{currentSectionRows}</div>
           <div
             className="skyward-journey-section-header"
             role="presentation"
@@ -966,7 +955,6 @@ export default function SkywardJourney({
             <span className="skyward-journey-section-title">{sectionTitle}</span>
             <span className="skyward-journey-section-line" aria-hidden />
           </div>
-          <div className="skyward-journey-section-rows">{currentSectionRows}</div>
         </section>,
       );
     });
@@ -1136,15 +1124,11 @@ export default function SkywardJourney({
                           <stop offset="0%" stopColor="var(--skyward-path-completed, #5a7863)" />
                           <stop offset="100%" stopColor="var(--skyward-path-locked, #a1a1aa)" />
                         </linearGradient>
-                        <linearGradient id={`skyward-journey-flow-grad-${flowGradId}`} x1="0%" y1="100%" x2="100%" y2="0%">
-                          <stop offset="0%" stopColor="var(--skyward-flow-from, #5a7863)" />
-                          <stop offset="100%" stopColor="var(--skyward-flow-to, #f18f01)" />
-                        </linearGradient>
                       </defs>
                       <path
                         className="skyward-journey-polyline skyward-journey-polyline--rim"
                         fill="none"
-                        d={connectorPathD}
+                        d={solidPathD}
                         stroke="var(--skyward-path-rim, #e4e4e7)"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -1153,24 +1137,22 @@ export default function SkywardJourney({
                       <path
                         className="skyward-journey-polyline skyward-journey-polyline--main"
                         fill="none"
-                        d={connectorPathD}
+                        d={solidPathD}
                         stroke={`url(#skyward-journey-line-grad-${gradId})`}
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth="12"
                       />
-                      {flowSegmentPathD ? (
-                        <path
-                          className="skyward-journey-polyline skyward-journey-polyline--flow"
-                          fill="none"
-                          d={flowSegmentPathD}
-                          stroke={`url(#skyward-journey-flow-grad-${flowGradId})`}
-                          strokeDasharray="10 16"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="6"
-                        />
-                      ) : null}
+                      <path
+                        className="skyward-journey-polyline skyward-journey-polyline--dashed"
+                        fill="none"
+                        d={dashedPathD}
+                        stroke="var(--skyward-path-locked, #a1a1aa)"
+                        strokeDasharray="12 12"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="6"
+                      />
                     </svg>
                   ) : null}
                   {sections}

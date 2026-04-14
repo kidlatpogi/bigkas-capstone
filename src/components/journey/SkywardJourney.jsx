@@ -23,8 +23,8 @@ import {
 import SkywardJourneyNodeButton from './SkywardJourneyNodeButton';
 import './SkywardJourney.css';
 
-const MAP_SCALE = 0.9;
-const ORTHOGONAL_OFFSETS = [0, 56, 56, 0, -56, -56];
+const MAP_SCALE = 1;
+const ORTHOGONAL_OFFSETS = [0, 120, 220, 220, 120, 0, -120, -220, -220, -120];
 
 function getHorizontalOffset(index) {
   return ORTHOGONAL_OFFSETS[index % ORTHOGONAL_OFFSETS.length];
@@ -442,6 +442,8 @@ export default function SkywardJourney({
   renderStepContent,
   entranceFromNav = false,
   scrollToStepIndex = null,
+  currentLevel = 1,
+  onLevelChange,
 }) {
   const gradId = useId().replace(/:/g, '');
   const rootRef = useRef(null);
@@ -810,10 +812,6 @@ export default function SkywardJourney({
     };
   }, [selectedStep, steps]);
 
-  if (!steps.length) {
-    return null;
-  }
-
   const sections = [];
   const sectionMeta = [];
   let currentSectionRows = [];
@@ -1010,7 +1008,7 @@ export default function SkywardJourney({
           key={`pillar-section-${sectionTitle}`}
           className="skyward-journey-section"
           ref={(el) => { sectionWrapperRefs.current[sectionIndex] = el; }}
-          data-pillar-text={sectionTitle}
+          data-pillar-text={`Pillar ${getStepLevel(section.tasks[0])}: ${sectionTitle}`}
         >
           <div className="skyward-journey-section-rows">{currentSectionRows}</div>
           <div
@@ -1095,9 +1093,27 @@ export default function SkywardJourney({
     <div className="skyward-journey-wrap" style={{ position: 'relative', width: '100%', height: '100%' }}>
       <div className="skyward-journey skyward-journey-container no-scrollbar" ref={rootRef}>
         <MapHeaderCard className="skyward-journey-anim-header">
-          <HeaderTitle>{currentPillarText}</HeaderTitle>
-          <HeaderDescription>Master your speaking fundamentals</HeaderDescription>
-          <HeaderStatBadge>{completedCount} / {steps.length} Stages Completed</HeaderStatBadge>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '100%', justifyContent: 'center' }}>
+            <button
+              onClick={() => onLevelChange && onLevelChange(Math.max(1, currentLevel - 1))}
+              disabled={currentLevel <= 1}
+              style={{ padding: '8px 16px', borderRadius: '12px', border: 'none', background: currentLevel <= 1 ? '#e5e5e5' : '#f59b00', color: currentLevel <= 1 ? '#a1a1aa' : '#fff', cursor: currentLevel <= 1 ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+            >
+              &#8592; Prev
+            </button>
+            <div style={{ flex: 1 }}>
+              <HeaderTitle>{steps.length > 0 ? currentPillarText : `Level ${currentLevel}`}</HeaderTitle>
+              <HeaderDescription>Master your speaking fundamentals</HeaderDescription>
+            </div>
+            <button
+              onClick={() => onLevelChange && onLevelChange(Math.min(5, currentLevel + 1))}
+              disabled={currentLevel >= 5}
+              style={{ padding: '8px 16px', borderRadius: '12px', border: 'none', background: currentLevel >= 5 ? '#e5e5e5' : '#f59b00', color: currentLevel >= 5 ? '#a1a1aa' : '#fff', cursor: currentLevel >= 5 ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+            >
+              Next &#8594;
+            </button>
+          </div>
+          {steps.length > 0 && <HeaderStatBadge>{completedCount} / {steps.length} Stages Completed</HeaderStatBadge>}
         </MapHeaderCard>
         <div className="skyward-journey-anim-root skyward-journey-map skyward-journey-anim-map">
           <div
@@ -1168,7 +1184,15 @@ export default function SkywardJourney({
                       />
                     </svg>
                   ) : null}
-                  {sections}
+                  {steps.length === 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', textAlign: 'center', zIndex: 10, position: 'relative' }}>
+                      <div style={{ fontSize: '4rem', marginBottom: '1rem', filter: 'grayscale(100%)', opacity: 0.5 }}>🚧</div>
+                      <h2 style={{ color: '#0b3954', fontSize: '1.8rem', fontWeight: 800, marginBottom: '0.5rem' }}>Level {currentLevel} is locked</h2>
+                      <p style={{ color: '#64748b', fontSize: '1.1rem', fontWeight: 600, maxWidth: '400px' }}>Our engineers are currently building this area. Please complete previous levels first!</p>
+                    </div>
+                  ) : (
+                    sections
+                  )}
                 </div>
               </div>
             </div>

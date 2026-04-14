@@ -97,10 +97,11 @@ function ActivityPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuthContext();
+  const [selectedLevel, setSelectedLevel] = useState(1);
   const [entranceFromNav] = useState(() => location.state?.skywardEntrance === true);
   const scopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
   /** Activities are filtered by `target_level` = Bigkas rank (same as dashboard `levelProgress.levelName`). */
-  const { tasks, loading: activitiesLoading, error: activitiesError } = useActivitiesJourneyTasks();
+  const { tasks, loading: activitiesLoading, error: activitiesError } = useActivitiesJourneyTasks(selectedLevel);
   const { metricsSyncKey, refreshJourney } = useJourneyRemoteState(user);
   const stampResetTimeoutRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -461,17 +462,6 @@ function ActivityPage() {
     );
   }
 
-  if (!tasks.length) {
-    return (
-      <div className="inner-page activity-page">
-        <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
-          <p className="section-label">No activities yet</p>
-          <p className="activity-task-detail">Add rows to the `activities` table in Supabase to populate this journey.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="inner-page activity-page activity-page--skyward-entrance">
       <div className="activity-two-col">
@@ -481,6 +471,8 @@ function ActivityPage() {
               <SkywardJourney
                 steps={journeySteps}
                 groupedTasks={groupedTasks}
+                currentLevel={selectedLevel}
+                onLevelChange={setSelectedLevel}
                 entranceFromNav={entranceFromNav}
                 scrollToStepIndex={scrollToStepIndex}
                 renderStepContent={(step, meta) =>

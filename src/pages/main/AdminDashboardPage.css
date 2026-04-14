@@ -139,6 +139,11 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.admin-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
 .admin-card {
   background: var(--card);
   border: 1px solid #e5e7eb;
@@ -161,7 +166,6 @@
 
 .admin-kpi-card {
   min-height: 140px;
-  max-height: 180px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -240,6 +244,18 @@
 .admin-chart-container {
   width: 100%;
   height: 300px;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-empty-chart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-weight: 600;
 }
 
 .admin-bar-row {
@@ -455,7 +471,8 @@
     margin-top: 10px;
   }
 
-  .admin-grid-2 {
+  .admin-grid-2,
+  .admin-grid-4 {
     grid-template-columns: 1fr;
   }
 }

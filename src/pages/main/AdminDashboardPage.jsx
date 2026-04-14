@@ -8,11 +8,11 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend
+  AreaChart,
+  Area
 } from 'recharts';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
@@ -21,20 +21,6 @@ import './AdminDashboardPage.css';
 const RETENTION_DAYS = 14;
 const SIDEBAR_WIDTH = 280;
 
-function getRangeStart(date, unit) {
-  const d = new Date(date);
-  if (unit === 'day') return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  if (unit === 'week') {
-    const day = d.getDay();
-    const diff = day === 0 ? -6 : 1 - day; // Monday-start week
-    const monday = new Date(d);
-    monday.setDate(d.getDate() + diff);
-    return new Date(monday.getFullYear(), monday.getMonth(), monday.getDate());
-  }
-  if (unit === 'month') return new Date(d.getFullYear(), d.getMonth(), 1);
-  return new Date(d.getFullYear(), 0, 1);
-}
-
 function shiftRange(start, unit, amount) {
   const d = new Date(start);
   if (unit === 'day') d.setDate(d.getDate() + amount);
@@ -42,16 +28,6 @@ function shiftRange(start, unit, amount) {
   else if (unit === 'month') d.setMonth(d.getMonth() + amount);
   else d.setFullYear(d.getFullYear() + amount);
   return d;
-}
-
-function countBetween(items, start, end) {
-  const startMs = start.getTime();
-  const endMs = end.getTime();
-  return items.reduce((acc, item) => {
-    const created = new Date(item.created_at).getTime();
-    if (Number.isNaN(created)) return acc;
-    return created >= startMs && created < endMs ? acc + 1 : acc;
-  }, 0);
 }
 
 function getDisplayName(profile, fallbackId = '') {
@@ -88,8 +64,6 @@ function SimpleBars({ items, suffix = '' }) {
   );
 }
 
-const PIE_COLORS = ['#5a755e', '#7b997f', '#a3c2a8', '#d1e6d4'];
-
 function AdminDashboardPage() {
   const navigate = useNavigate();
   const { logout } = useAuthContext();
@@ -103,7 +77,6 @@ function AdminDashboardPage() {
   const [sessions, setSessions] = useState([]);
   const [metrics, setMetrics] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
-  const [purgeCount, setPurgeCount] = useState(0);
 
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState({
@@ -195,16 +168,6 @@ function AdminDashboardPage() {
         if (!active) return;
         const logs = data || [];
         setAuditLogs(logs);
-        const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-        const purged = logs.filter((a) => {
-          const created = new Date(a.created_at);
-          const action = String(a.action || '').toLowerCase();
-          const entity = String(a.entity_type || '').toLowerCase();
-          return created >= monthStart
-            && (action.includes('purge') || action.includes('delete'))
-            && (entity.includes('session_media') || entity.includes('session_metrics'));
-        }).length;
-        setPurgeCount(purged);
       } catch (e) {
         if (active) setError(e.message || 'Failed to load admin settings data.');
       }
@@ -239,23 +202,68 @@ function AdminDashboardPage() {
     return Object.entries(counts).map(([lv, value]) => ({ label: `Level ${lv}`, value }));
   }, [visibleUsers]);
 
-  const joinPieData = useMemo(() => {
+  const kpis = useMemo(() => {
     const now = new Date();
-    const currentStart = getRangeStart(now, 'day');
-    const weekStart = getRangeStart(now, 'week');
-    const monthStart = getRangeStart(now, 'month');
-    
-    const todayCount = countBetween(visibleUsers, currentStart, shiftRange(currentStart, 'day', 1));
-    const weekCount = countBetween(visibleUsers, weekStart, shiftRange(weekStart, 'week', 1)) - todayCount;
-    const monthCount = countBetween(visibleUsers, monthStart, shiftRange(monthStart, 'month', 1)) - todayCount - Math.max(0, weekCount);
-    const olderCount = visibleUsers.length - todayCount - Math.max(0, weekCount) - Math.max(0, monthCount);
-    
-    return [
-      { name: 'Today', value: todayCount },
-      { name: 'This Week', value: Math.max(0, weekCount) },
-      { name: 'This Month', value: Math.max(0, monthCount) },
-      { name: 'Older', value: Math.max(0, olderCount) }
-    ].filter(d => d.value > 0);
+    const oneWeekAgo = shiftRange(now, 'day', -7);
+    const twoWeeksAgo = shiftRange(now, 'day', -14);
+
+    // TOTAL USERS
+    const totalUsers = visibleUsers.length;
+    const usersLastWeek = visibleUsers.filter(p => new Date(p.created_at) < oneWeekAgo).length;
+    const usersNewThisWeek = totalUsers - usersLastWeek;
+    const usersDeltaText = usersNewThisWeek > 0 ? `+${usersNewThisWeek} new this week` : 'No new users this week';
+
+    // ACTIVE THIS WEEK
+    const activeThisWeekSet = new Set();
+    const activeLastWeekSet = new Set();
+    sessions.forEach(s => {
+      const d = new Date(s.created_at);
+      if (d >= oneWeekAgo) activeThisWeekSet.add(s.user_id);
+      else if (d >= twoWeeksAgo && d < oneWeekAgo) activeLastWeekSet.add(s.user_id);
+    });
+    const activeThisWeek = activeThisWeekSet.size;
+    const activeLastWeek = activeLastWeekSet.size;
+    const activeDelta = activeThisWeek - activeLastWeek;
+    const activeDeltaText = activeDelta >= 0 ? `+${activeDelta} vs last week` : `${activeDelta} vs last week`;
+
+    // SPEECHES ANALYZED
+    const totalSpeeches = sessions.length;
+    const speechesLastWeekCount = sessions.filter(s => new Date(s.created_at) >= oneWeekAgo).length;
+    const speechesPrevWeekCount = sessions.filter(s => {
+      const d = new Date(s.created_at);
+      return d >= twoWeeksAgo && d < oneWeekAgo;
+    }).length;
+    const speechDelta = speechesLastWeekCount - speechesPrevWeekCount;
+    const speechDeltaText = speechDelta >= 0 ? `+${speechesLastWeekCount} this week` : `${speechDelta} vs last week`;
+
+    return {
+      totalUsers, usersDeltaText,
+      activeThisWeek, activeDeltaText,
+      totalSpeeches, speechDeltaText
+    };
+  }, [visibleUsers, sessions]);
+
+  const joinTrendData = useMemo(() => {
+    const days = 14;
+    const now = new Date();
+    const counts = Array.from({ length: days }).map((_, i) => {
+      const d = new Date(now);
+      d.setDate(now.getDate() - (days - 1) + i);
+      return {
+        date: `${d.getMonth() + 1}/${d.getDate()}`,
+        timestamp: d.setHours(0, 0, 0, 0),
+      };
+    });
+
+    counts.forEach(day => {
+      const nextDayMs = day.timestamp + 86400000;
+      day.users = visibleUsers.filter(p => {
+        const createdMs = new Date(p.created_at).getTime();
+        return createdMs >= day.timestamp && createdMs < nextDayMs;
+      }).length;
+    });
+
+    return counts;
   }, [visibleUsers]);
 
   const levelBarData = useMemo(
@@ -422,10 +430,6 @@ function AdminDashboardPage() {
     { key: 'audit', label: 'Audit Logs', icon: HiOutlineCog6Tooth, show: isSuperadmin },
   ].filter((i) => i.show);
 
-  if (loading) {
-    return <div className="admin-dashboard-page"><div className="admin-empty">Loading Admin Command Center...</div></div>;
-  }
-
   return (
     <div className="admin-dashboard-page admin-layout" style={{ ['--admin-sidebar-width']: `${SIDEBAR_WIDTH}px` }}>
       <aside className="admin-rail">
@@ -468,10 +472,21 @@ function AdminDashboardPage() {
 
         {activePage === 'overview' && (
           <>
-            <section className="admin-grid admin-grid-2 admin-kpi-squares">
+            <section className="admin-grid admin-grid-4">
               <article className="admin-card admin-kpi-card">
                 <p className="admin-kpi-label">TOTAL USERS</p>
-                <p className="admin-kpi-value">{visibleUsers.length}</p>
+                {loading ? <Skeleton width={60} height={40} /> : <p className="admin-kpi-value">{kpis.totalUsers}</p>}
+                <p className="admin-kpi-footer">{loading ? <Skeleton width={100} /> : kpis.usersDeltaText}</p>
+              </article>
+              <article className="admin-card admin-kpi-card">
+                <p className="admin-kpi-label">ACTIVE THIS WEEK</p>
+                {loading ? <Skeleton width={60} height={40} /> : <p className="admin-kpi-value">{kpis.activeThisWeek}</p>}
+                <p className="admin-kpi-footer">{loading ? <Skeleton width={100} /> : kpis.activeDeltaText}</p>
+              </article>
+              <article className="admin-card admin-kpi-card">
+                <p className="admin-kpi-label">SPEECHES ANALYZED</p>
+                {loading ? <Skeleton width={60} height={40} /> : <p className="admin-kpi-value">{kpis.totalSpeeches}</p>}
+                <p className="admin-kpi-footer">{loading ? <Skeleton width={100} /> : kpis.speechDeltaText}</p>
               </article>
               <article className="admin-card admin-kpi-card">
                 <p className="admin-kpi-label">PRIVACY COMPLIANCE</p>
@@ -479,52 +494,63 @@ function AdminDashboardPage() {
                   <HiCheckCircle size={30} />
                   <p className="admin-kpi-value admin-kpi-value--privacy">ACTIVE</p>
                 </div>
-                <p className="admin-kpi-footer">{RETENTION_DAYS}-day Auto-Purge Policy Active</p>
-                <p className="admin-kpi-footer">Rows purged this month: <strong>{purgeCount}</strong></p>
+                <p className="admin-kpi-footer">{RETENTION_DAYS}-day auto-purge</p>
               </article>
             </section>
 
             <section className="admin-grid admin-grid-2">
               <article className="admin-card">
                 <div className="admin-card-head">
-                  <h3>User Join Frequency</h3>
+                  <h3>User Join Trend</h3>
                 </div>
                 <div className="admin-chart-container">
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={joinPieData}
-                        dataKey="value"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={100}
-                        innerRadius={60}
-                        paddingAngle={5}
-                        label
-                      >
-                        {joinPieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value) => [`${value} Users`, 'Joined']} />
-                      <Legend verticalAlign="bottom" height={36} />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  {loading ? (
+                    <Skeleton height="100%" borderRadius={16} />
+                  ) : joinTrendData.every(d => d.users === 0) ? (
+                    <div className="admin-empty-chart">No data available yet</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <AreaChart data={joinTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#5A755E" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#5A755E" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <XAxis dataKey="date" tick={{ fill: '#5f6f5f', fontSize: 12 }} tickLine={false} axisLine={false} />
+                        <YAxis allowDecimals={false} tick={{ fill: '#5f6f5f', fontSize: 12 }} tickLine={false} axisLine={false} />
+                        <Tooltip 
+                          contentStyle={{ borderRadius: '12px', border: '1px solid #E5E7EB', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
+                          formatter={(value) => [`${value} New Users`, 'Joined']} 
+                        />
+                        <Area type="monotone" dataKey="users" stroke="#5A755E" strokeWidth={3} fillOpacity={1} fill="url(#colorUsers)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  )}
                 </div>
               </article>
 
               <article className="admin-card">
                 <h3>User Level Distribution</h3>
                 <div className="admin-chart-container">
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={levelBarData}>
-                      <XAxis dataKey="level" />
-                      <YAxis allowDecimals={false} />
-                      <Tooltip formatter={(value) => [`${value}`, 'Users']} />
-                      <Bar dataKey="users" fill="#5A755E" radius={[8, 8, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  {loading ? (
+                    <Skeleton height="100%" borderRadius={16} />
+                  ) : levelBarData.every(d => d.users === 0) ? (
+                    <div className="admin-empty-chart">No data available yet</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={levelBarData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <XAxis dataKey="level" tick={{ fill: '#5f6f5f', fontSize: 12 }} tickLine={false} axisLine={false} />
+                        <YAxis allowDecimals={false} tick={{ fill: '#5f6f5f', fontSize: 12 }} tickLine={false} axisLine={false} />
+                        <Tooltip 
+                          cursor={{ fill: '#f4f7f4' }}
+                          contentStyle={{ borderRadius: '12px', border: '1px solid #E5E7EB', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
+                          formatter={(value) => [`${value}`, 'Users']} 
+                        />
+                        <Bar dataKey="users" fill="#5A755E" radius={[8, 8, 0, 0]} barSize={40} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
                 </div>
               </article>
             </section>

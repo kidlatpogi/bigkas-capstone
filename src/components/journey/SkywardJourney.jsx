@@ -20,6 +20,7 @@ import {
   JOURNEY_NODE_THEMES,
   NODE_STATE,
 } from './journeyConstants';
+import { BIGKAS_LEVELS } from '../../utils/activityProgress';
 import SkywardJourneyNodeButton from './SkywardJourneyNodeButton';
 import './SkywardJourney.css';
 
@@ -112,6 +113,12 @@ function getBossMonsterIcon(level) {
     default:
       return GiGoblinHead;
   }
+}
+
+function getLevelSubtitle(level) {
+  const parsed = Number(level);
+  const found = BIGKAS_LEVELS.find((entry) => Number(entry.number) === parsed);
+  return found?.name || 'Master your speaking fundamentals';
 }
 
 /**
@@ -896,7 +903,7 @@ export default function SkywardJourney({
                 className={`skyward-journey-node-shell${
                   i === 0 && isActive ? ' skyward-journey-node-shell--start-onboarding' : ''
                 }`}
-                style={{ zIndex: 10, position: 'relative' }}
+                style={{ zIndex: startStage ? 60 : 10, position: 'relative' }}
               >
                 <div
                   className={`skyward-journey-node-cluster${isUltimateBoss ? ' skyward-journey-node-cluster--boss' : ''}`}
@@ -1103,7 +1110,7 @@ export default function SkywardJourney({
             </button>
             <div style={{ flex: 1 }}>
               <HeaderTitle>{steps.length > 0 ? currentPillarText : `Level ${currentLevel}`}</HeaderTitle>
-              <HeaderDescription>Master your speaking fundamentals</HeaderDescription>
+              <HeaderDescription>{getLevelSubtitle(currentLevel)}</HeaderDescription>
             </div>
             <button
               onClick={() => onLevelChange && onLevelChange(Math.min(5, currentLevel + 1))}

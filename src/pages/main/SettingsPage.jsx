@@ -11,6 +11,9 @@ import {
 } from 'react-icons/io5';
 import { useSessionContext } from '../../context/useSessionContext';
 import { ROUTES } from '../../utils/constants';
+import LegalModal from '../../components/Legal/LegalModal';
+import { TERMS_AND_CONDITIONS } from '../../constants/legal/terms';
+import { PRIVACY_POLICY } from '../../constants/legal/privacy';
 import './DashboardPage.css';
 import './SettingsPage.css';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
@@ -20,6 +23,11 @@ const MIC_SENSITIVITY_KEY = 'pref_mic_sensitivity';
 function SettingsPage() {
   const navigate = useNavigate();
   const { clearSessionMedia } = useSessionContext();
+
+  const [legalModal, setLegalModal] = useState({ isOpen: false, title: '', content: '' });
+  const showTerms = () => setLegalModal({ isOpen: true, title: 'Terms & Conditions', content: TERMS_AND_CONDITIONS });
+  const showPrivacy = () => setLegalModal({ isOpen: true, title: 'Privacy Policy', content: PRIVACY_POLICY });
+  const closeLegal = () => setLegalModal((prev) => ({ ...prev, isOpen: false }));
 
   const [microphones, setMicrophones] = useState([]);
   const [cameras, setCameras] = useState([]);
@@ -96,7 +104,7 @@ function SettingsPage() {
             <section className="dashboard-card stg-card-section dashboard-anim-left dashboard-anim-delay-1">
               <h2 className="stg-section-title">Legal</h2>
               <div className="stg-rows">
-                <a className="stg-row" href="https://policies.google.com/terms" target="_blank" rel="noreferrer">
+                <button type="button" className="stg-row" onClick={showTerms}>
                   <span className="stg-row-icon">
                     <IoShieldCheckmarkOutline size={20} />
                   </span>
@@ -105,11 +113,11 @@ function SettingsPage() {
                     <span className="stg-row-sub">Review platform usage terms and responsibilities</span>
                   </div>
                   <IoChevronForward size={16} className="stg-chevron" />
-                </a>
+                </button>
 
                 <div className="stg-row-divider" />
 
-                <a className="stg-row" href="https://policies.google.com/privacy" target="_blank" rel="noreferrer">
+                <button type="button" className="stg-row" onClick={showPrivacy}>
                   <span className="stg-row-icon">
                     <IoShieldCheckmarkOutline size={20} />
                   </span>
@@ -118,7 +126,7 @@ function SettingsPage() {
                     <span className="stg-row-sub">Learn how your account and recording data are handled</span>
                   </div>
                   <IoChevronForward size={16} className="stg-chevron" />
-                </a>
+                </button>
               </div>
             </section>
 
@@ -254,6 +262,8 @@ function SettingsPage() {
         onCancel={() => { if (!isClearingMedia) setShowClearMediaModal(false); }}
         onConfirm={() => { if (!isClearingMedia) handleClearMedia(); }}
       />
+
+      <LegalModal isOpen={legalModal.isOpen} onClose={closeLegal} title={legalModal.title} content={legalModal.content} />
     </div>
   );
 }

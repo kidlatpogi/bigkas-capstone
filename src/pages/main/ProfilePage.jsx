@@ -27,7 +27,6 @@ function ProfilePage() {
   const [initialData,     setInitialData]     = useState({
     firstName: '',
     lastName: '',
-    nickname: '',
     email: '',
     avatarUri: null,
   });
@@ -35,7 +34,6 @@ function ProfilePage() {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    nickname: '',
     email: '',
     avatarUri: null,
   });
@@ -49,7 +47,6 @@ function ProfilePage() {
     const nextData = {
       firstName: user.firstName || '',
       lastName:  user.lastName  || '',
-      nickname:  user.nickname  || '',
       email:     user.email     || '',
       avatarUri: user.avatar_url || null,
     };
@@ -68,7 +65,6 @@ function ProfilePage() {
     return (
       formData.firstName.trim() !== initialData.firstName.trim() ||
       formData.lastName.trim() !== initialData.lastName.trim() ||
-      formData.nickname.trim() !== initialData.nickname.trim() ||
       (formData.avatarUri || null) !== (initialData.avatarUri || null)
     );
   }, [formData, initialData]);
@@ -128,7 +124,6 @@ function ProfilePage() {
           first_name: formData.firstName.trim(),
           last_name:  formData.lastName.trim(),
           full_name:  `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim(),
-          nickname:   formData.nickname.trim(),
           avatar_url: formData.avatarUri || null,
         },
       });
@@ -236,17 +231,6 @@ function ProfilePage() {
             readOnly
             disabled
             tabIndex={-1}
-          />
-        </div>
-
-        {/* Nickname */}
-        <div className="profile-field">
-          <label className="profile-label">NICKNAME</label>
-          <input
-            className="profile-input"
-            value={formData.nickname}
-            onChange={e => updateField('nickname', e.target.value)}
-            placeholder="@nickname"
           />
         </div>
 

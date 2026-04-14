@@ -148,6 +148,7 @@
   min-height: 100dvh;
   max-height: none;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 .skyward-journey-map-layer {

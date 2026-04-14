@@ -673,6 +673,8 @@ export default function SkywardJourney({
       if (pinchRef.current) return;
       if (tooltipNodeId) setTooltipNodeId(null);
       if (e.pointerType === 'mouse' && e.button !== 0) return;
+      // Skip pan capturing on mobile devices to let native scrolling take over
+      if (isMobile && e.pointerType === 'touch') return;
       const t = e.target;
       if (t instanceof Element && t.closest('.skyward-journey-node-shell')) return;
       if (t instanceof Element && t.closest('.skyward-journey-unit-header')) return;
@@ -687,7 +689,7 @@ export default function SkywardJourney({
       };
       e.currentTarget.setPointerCapture(e.pointerId);
     },
-    [panelOpenId, tooltipNodeId],
+    [panelOpenId, tooltipNodeId, isMobile],
   );
 
   const onPointerMoveViewport = useCallback((e) => {
@@ -1014,7 +1016,7 @@ export default function SkywardJourney({
           key={`pillar-section-${sectionTitle}`}
           className="skyward-journey-section"
           ref={(el) => { sectionWrapperRefs.current[sectionIndex] = el; }}
-          data-pillar-text={`Pillar ${getStepLevel(section.tasks[0])}: ${sectionTitle}`}
+          data-pillar-text={`${sectionTitle}`}
         >
           <div className="skyward-journey-section-rows">{currentSectionRows}</div>
           <div

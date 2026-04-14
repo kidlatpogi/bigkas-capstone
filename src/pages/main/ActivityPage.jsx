@@ -334,7 +334,7 @@ function ActivityPage() {
 
   const pageBackgroundStyle = useMemo(
     () => ({
-      backgroundImage: `url(${forestBg})`,
+      backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.05)), url(${forestBg})`,
       backgroundRepeat: 'no-repeat',
       backgroundSize: 'cover',
       backgroundPosition: 'center',
@@ -541,27 +541,27 @@ function ActivityPage() {
             <h3 className="dashboard-mode-title">Practice Hub</h3>
             <div className="activity-practice-options">
               <article className="activity-practice-option-card">
-                <p className="activity-practice-option-kicker">Focus Session</p>
-                <p className="activity-practice-option-copy">Master specific architectural components in a controlled environment.</p>
+                <p className="activity-practice-option-kicker">Randomizer</p>
+                <p className="activity-practice-option-copy">Get a random topic and practice speaking about it.</p>
                 <Button
                   variant="practice"
                   className="dashboard-mode-button"
                   onClick={() => navigate(ROUTES.PRACTICE)}
                   icon={IoArrowForward}
                 >
-                  Start Practice
+                  Open Randomizer
                 </Button>
               </article>
               <article className="activity-practice-option-card">
-                <p className="activity-practice-option-kicker">Endurance</p>
-                <p className="activity-practice-option-copy">Push your cognitive limits with real-time structural challenges.</p>
+                <p className="activity-practice-option-kicker">Free Speech</p>
+                <p className="activity-practice-option-copy">Impromptu speaking mode focused on flow, tone, and pacing with AI evaluation.</p>
                 <Button
                   variant="training"
                   className="dashboard-mode-button"
                   onClick={() => navigate(ROUTES.TRAINING_SETUP)}
                   icon={IoArrowForward}
                 >
-                  Begin Training
+                  Open Free Speech
                 </Button>
               </article>
             </div>

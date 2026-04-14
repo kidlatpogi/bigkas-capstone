@@ -578,19 +578,37 @@ export default function SkywardJourney({
     return () => cancelAnimationFrame(id);
   }, [recomputePath]);
 
-  /** Hero focus: scroll map / page so the target stage (dashboard handoff or active node) is in view. */
+  /** Hero focus: Mathematically pan the map to center the active node using CSS transforms. */
   useLayoutEffect(() => {
     const targetIndex =
       scrollToStepIndex != null && scrollToStepIndex >= 0 ? scrollToStepIndex : activeIndex;
     if (targetIndex < 0) return undefined;
-    const el = nodeRefs.current[targetIndex];
-    if (!el) return undefined;
 
-    const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const fromDashboard = scrollToStepIndex != null && scrollToStepIndex >= 0;
     const delay = entranceFromNav || fromDashboard ? 200 : 80;
+
     const t = window.setTimeout(() => {
-      el.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth', inline: 'nearest' });
+      const el = nodeRefs.current[targetIndex];
+      const vp = viewportRef.current;
+      const content = mapContentRef.current;
+      if (!el || !vp || !content) return;
+
+      // Find exact unscaled Y position of the target node
+      let top = 0;
+      let currentEl = el;
+      while (currentEl && currentEl !== content) {
+        top += currentEl.offsetTop;
+        currentEl = currentEl.offsetParent;
+      }
+      const nodeCenterY = top + (el.offsetHeight / 2);
+      const nodeCenterX = (content.clientWidth / 2) + getHorizontalOffset(targetIndex);
+
+      // We want the node exactly at the focus point (32% from the top of the screen)
+      const focusScreenY = vp.clientHeight * 0.32;
+      const targetTy = focusScreenY - (nodeCenterY * MAP_SCALE);
+      const targetTx = (vp.clientWidth / 2) - (nodeCenterX * MAP_SCALE);
+
+      setMap((m) => clampMapState({ tx: targetTx, ty: targetTy }, vp, content, MAP_SCALE));
     }, delay);
 
     return () => {

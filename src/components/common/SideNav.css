@@ -156,7 +156,7 @@
 }
 
 .side-nav-logout {
-  margin-top: 8px;
+  margin-top: auto;
   display: inline-flex;
   align-items: center;
   gap: 12px;
@@ -164,13 +164,13 @@
   padding: 0 16px;
   border: 0;
   background: transparent;
-  color: rgba(247, 251, 255, 0.82);
+  color: #ffb4b4;
   text-decoration: none;
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
-  transition: background-color 0.18s ease, color 0.18s ease;
+  transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
   border-radius: 12px;
 }
 
@@ -228,8 +228,9 @@
 }
 
 .side-nav-logout:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #F18F01;
+  background: rgba(239, 68, 68, 0.16);
+  color: #fecaca;
+  transform: translateX(-2px);
 }
 
 .side-nav-logout svg {

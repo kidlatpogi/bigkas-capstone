@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
+import { useNavigate, useLocation } from 'react-router-dom';
 import BackButton from '../../components/common/BackButton';
+import PasswordToggle from '../../components/common/PasswordToggle';
+import PushButton from '../../components/common/PushButton';
 import { ENV } from '../../config/env';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import { isValidEmail } from '../../utils/validators';
+import { motion } from 'framer-motion';
 import './AdminLoginPage.css';
 
 const ADMIN_LOGIN_LOCKOUT_UNTIL_KEY = 'bigkas_admin_login_lockout_until';
@@ -36,13 +38,26 @@ function formatCountdown(seconds) {
   return `${String(minutes).padStart(2, '0')}:${String(remaining).padStart(2, '0')}`;
 }
 
-function AdminLoginPage() {
+function AdminLoginPage({ managePageClass = true }) {
   const navigate = useNavigate();
   const { adminLogin, isLoading } = useAuthContext();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({});
   const [lockoutSeconds, setLockoutSeconds] = useState(() => getStoredLockoutSeconds());
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (managePageClass) {
+      document.documentElement.classList.add('admin-login-page-active');
+      document.body.classList.add('admin-login-page-active');
+    }
+    return () => {
+      if (managePageClass) {
+        document.documentElement.classList.remove('admin-login-page-active');
+        document.body.classList.remove('admin-login-page-active');
+      }
+    };
+  }, [managePageClass]);
 
   useEffect(() => {
     if (lockoutSeconds <= 0) return;
@@ -121,6 +136,19 @@ function AdminLoginPage() {
     ? `Too many attempts. Try again in ${formatCountdown(lockoutSeconds)}`
     : null;
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+  };
+
   return (
     <div className="auth-page">
       <div className="auth-brand-panel">
@@ -150,15 +178,20 @@ function AdminLoginPage() {
 
       <div className="auth-form-panel">
         <BackButton className="auth-mobile-back" onClick={() => navigate(ROUTES.HOME)} />
-        <div className="auth-form-container">
-          <h2 className="auth-form-title">ADMIN LOGIN</h2>
+        <motion.div 
+          className="auth-form-container floating-card"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <motion.h2 variants={itemVariants} className="auth-form-title">ADMIN LOGIN</motion.h2>
 
           <form className="auth-form" onSubmit={handleSubmit}>
             {(lockoutMessage || errors.submit) && (
-              <div className="auth-error-banner">{lockoutMessage || errors.submit}</div>
+              <motion.div variants={itemVariants} className="auth-error-banner">{lockoutMessage || errors.submit}</motion.div>
             )}
 
-            <div className="form-group">
+            <motion.div variants={itemVariants} className="form-group">
               <label htmlFor="email" className="form-label">EMAIL ADDRESS</label>
               <input
                 type="email"
@@ -172,9 +205,9 @@ function AdminLoginPage() {
                 autoComplete="username"
               />
               {errors.email && <span className="form-error">{errors.email}</span>}
-            </div>
+            </motion.div>
 
-            <div className="form-group">
+            <motion.div variants={itemVariants} className="form-group">
               <label htmlFor="password" className="form-label">PASSWORD</label>
               <div className="pw-input-wrap">
                 <input
@@ -188,27 +221,29 @@ function AdminLoginPage() {
                   disabled={isLoading || lockoutSeconds > 0}
                   autoComplete="current-password"
                 />
-                <button
-                  type="button"
-                  className="pw-toggle-btn"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  onClick={() => setShowPassword((prev) => !prev)}
-                >
-                  {showPassword ? <IoEyeOffOutline size={20} /> : <IoEyeOutline size={20} />}
-                </button>
+                <PasswordToggle
+                  isVisible={showPassword}
+                  onToggle={() => setShowPassword((v) => !v)}
+                  label="password"
+                  disabled={isLoading || lockoutSeconds > 0}
+                />
               </div>
               {errors.password && <span className="form-error">{errors.password}</span>}
-            </div>
+            </motion.div>
 
-            <button
-              type="submit"
-              className="auth-submit-btn"
-              disabled={isLoading || lockoutSeconds > 0}
-            >
-              {isLoading ? 'CHECKING ACCESS...' : lockoutSeconds > 0 ? `LOCKED (${formatCountdown(lockoutSeconds)})` : 'ENTER ADMIN'}
-            </button>
+            <motion.div variants={itemVariants}>
+              <PushButton
+                type="submit"
+                disabled={isLoading || lockoutSeconds > 0}
+                bgColor="#D32F2F"
+                shadowColor="#9A0007"
+                textColor="#ffffff"
+              >
+                {isLoading ? <span className="btn-loader"></span> : (lockoutSeconds > 0 ? `LOCKED (${formatCountdown(lockoutSeconds)})` : 'ENTER ADMIN')}
+              </PushButton>
+            </motion.div>
           </form>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

@@ -15,9 +15,9 @@ import { ROUTES } from '../../utils/constants';
 import './SideNav.css';
 
 const PRIMARY_NAV_ITEMS = [
-  { to: ROUTES.DASHBOARD, label: 'Home', icon: IoHomeOutline },
+  { to: ROUTES.ACTIVITY, label: 'Home', icon: IoHomeOutline },
   { to: ROUTES.PROGRESS, label: 'Progress', icon: IoStatsChartOutline },
-  { to: ROUTES.ACTIVITY, label: 'Activity', icon: MdOutlineBackpack },
+  { to: ROUTES.DASHBOARD, label: 'Dashboard', icon: MdOutlineBackpack },
   { to: ROUTES.FRAMEWORKS, label: 'Learn', icon: IoBookOutline },
 ];
 
@@ -78,7 +78,7 @@ export default function SideNav() {
             key={to}
             to={to}
             state={to === ROUTES.ACTIVITY ? { skywardEntrance: true } : undefined}
-            end={to === ROUTES.DASHBOARD}
+            end={to === ROUTES.ACTIVITY}
             className={({ isActive }) => `side-nav-link${isActive ? ' active' : ''}`}
             aria-label={label}
           >

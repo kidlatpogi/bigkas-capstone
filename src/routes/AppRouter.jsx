@@ -46,6 +46,13 @@ import MainMobileMenu from '../components/common/MainMobileMenu';
 import BackgroundAnalysisToast from '../components/common/BackgroundAnalysisToast';
 import bigkasLogo from '../assets/Temporary Logo.png';
 
+const ADMIN_SESSION_KEY = 'bigkas_admin_session';
+
+function hasStoredAdminSession() {
+  if (typeof window === 'undefined') return false;
+  return window.sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true';
+}
+
 function getAuthenticatedRedirect(user, isAdminAuthenticated) {
   if (isAdminAuthenticated) return ROUTES.ADMIN_DASHBOARD;
   if (user?.onboardingStage === 'profiling') return ROUTES.USER_PROFILING;
@@ -132,6 +139,7 @@ function ProtectedRoute() {
 
 function AdminRoute() {
   const { isAuthenticated, isInitializing, isAdminAuthenticated } = useAuthContext();
+  const adminSessionActive = isAdminAuthenticated || hasStoredAdminSession();
 
   if (isInitializing) {
     if (window.location.pathname === ROUTES.HOME) {
@@ -148,7 +156,7 @@ function AdminRoute() {
     );
   }
 
-  if (isAdminAuthenticated) {
+  if (adminSessionActive) {
     return (
       <>
         <main className="main-content">
@@ -180,9 +188,8 @@ function AdminRoute() {
  * Redirects to dashboard if user is already authenticated
  */
 function PublicRoute() {
-  const { isAuthenticated, isInitializing, isAdminAuthenticated, isLoading, user } = useAuthContext();
-  const { pathname } = useLocation();
-  const isOnAdminLoginRoute = pathname === ROUTES.ADMIN_LOGIN_BASE || (ENV.ADMIN_LOGIN_PATH && pathname === ENV.ADMIN_LOGIN_PATH);
+  const { isAuthenticated, isInitializing, isAdminAuthenticated, user } = useAuthContext();
+  const adminSessionActive = isAdminAuthenticated || hasStoredAdminSession();
 
   if (isInitializing) {
     if (window.location.pathname === ROUTES.HOME) {
@@ -200,13 +207,7 @@ function PublicRoute() {
   }
 
   if (isAuthenticated) {
-    // Prevent auth-state race during admin sign-in:
-    // Supabase session can appear before admin role check completes.
-    // Keep user on admin-login while auth is still processing.
-    if (isOnAdminLoginRoute && isLoading && !isAdminAuthenticated) {
-      return null;
-    }
-    return <Navigate to={getAuthenticatedRedirect(user, isAdminAuthenticated)} replace />;
+    return <Navigate to={getAuthenticatedRedirect(user, adminSessionActive)} replace />;
   }
 
   return (

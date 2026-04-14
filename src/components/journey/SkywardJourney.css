@@ -322,10 +322,10 @@
   height: 52px;
   min-width: 44px;
   min-height: 44px;
-  border-radius: 999px;
+  border-radius: 16px;
   border: 3px solid rgba(15, 68, 98, 0.35);
   background: linear-gradient(160deg, #ffffff 0%, #f4f7f5 100%);
-  box-shadow: 0 8px 20px rgba(11, 57, 84, 0.12);
+  box-shadow: 0 6px 0px 0px rgba(0, 0, 0, 0.15), 0 8px 20px rgba(11, 57, 84, 0.12);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -348,6 +348,7 @@
   min-width: 64px;
   min-height: 64px;
   border-width: 4px;
+  border-radius: 50%;
   border-color: #c9a227;
   background: linear-gradient(165deg, #fff9e6 0%, #ffe8a8 45%, #f5d978 100%);
   box-shadow:

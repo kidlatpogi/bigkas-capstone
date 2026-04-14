@@ -1,1230 +1,1163 @@
-﻿﻿﻿﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { HiOutlineUsers, HiOutlineChartBarSquare, HiOutlineHomeModern, HiOutlineCog6Tooth, HiCheckCircle, HiMagnifyingGlass, HiOutlineTrash, HiOutlinePencilSquare } from 'react-icons/hi2';
 import {
-  IoBarChart,
-  IoCheckmarkCircle,
-  IoCloseCircle,
-  IoPeople,
-  IoPulse,
-  IoSearch,
-  IoServer,
-  IoStatsChart,
-  IoTime,
-} from 'react-icons/io5';
-import { adminApi } from '@session/api/adminApi';
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  LineChart,
+  Line,
+  CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
+  Legend
+} from 'recharts';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
+import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
-import { formatDate, formatDuration } from '../../utils/formatters';
 import './AdminDashboardPage.css';
 
-const PERIOD_OPTIONS = ['week', 'month', 'year'];
-const SORT_OPTIONS = [
-  { value: 'created_at', label: 'Newest' },
-  { value: 'name', label: 'Name' },
-  { value: 'session_count', label: 'Sessions' },
-  { value: 'total_duration_sec', label: 'Time' },
-  { value: 'average_score', label: 'Average Score' },
-  { value: 'improvement_score', label: 'Improvement' },
-  { value: 'last_sign_in_at', label: 'Last Sign In' },
-];
-const ADMIN_VIEWS = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'insights', label: 'Insights' },
-  { key: 'technical', label: 'Technical Health' },
-  { key: 'leaderboards', label: 'Leaderboards' },
-  { key: 'users', label: 'User Management' },
-];
+const RETENTION_DAYS = 14;
+const SIDEBAR_WIDTH = 280;
+const PIE_COLORS = ['#33d2a4', '#51dfb5', '#7bedcc', '#a8f5e1'];
 
-function formatPeriodLabel(period) {
-  if (period === 'week') return 'this week';
-  if (period === 'year') return 'this year';
-  return 'this month';
+function shiftRange(start, unit, amount) {
+  const d = new Date(start);
+  if (unit === 'day') d.setDate(d.getDate() + amount);
+  else if (unit === 'week') d.setDate(d.getDate() + (7 * amount));
+  else if (unit === 'month') d.setMonth(d.getMonth() + amount);
+  else d.setFullYear(d.getFullYear() + amount);
+  return d;
 }
 
-function deltaTone(delta) {
-  if (delta > 0) return 'up';
-  if (delta < 0) return 'down';
-  return 'flat';
+function getDisplayName(profile, fallbackId = '') {
+  const full = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim();
+  if (full) return full;
+  if (profile?.username) return profile.username;
+  return `User ${String(fallbackId).slice(0, 8)}`;
 }
 
-function deltaText(delta) {
-  if (delta > 0) return `+${delta}`;
-  if (delta < 0) return `${delta}`;
-  return '0';
+function modeOf(session) {
+  const origin = String(session?.session_origin || '').toLowerCase();
+  const mode = String(session?.session_mode || '').toLowerCase();
+  const speaking = String(session?.speaking_mode || '').toLowerCase();
+  if (mode.includes('free') || speaking.includes('free') || origin === 'pre-test') return 'Free Speech';
+  if (mode.includes('random') || origin === 'practice') return 'Randomizer';
+  return 'Activities';
 }
 
-function formatPercent(value) {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return '0%';
-  return `${numeric.toFixed(2)}%`;
-}
-
-function formatMb(value) {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return '0 MB';
-  return `${numeric.toFixed(2)} MB`;
-}
-
-function serviceStatusLabel(isOnline) {
-  return isOnline ? 'Online' : 'Offline';
-}
-
-function resolveProviderOnline(primaryValue, fallbackValue = false) {
-  if (typeof primaryValue === 'boolean') return primaryValue;
-  return Boolean(fallbackValue);
-}
-
-function providerHint(provider) {
-  const mode = provider?.mode;
-  if (mode === 'api_key') return 'API key configured';
-  if (mode === 'recent_activity') return 'Recent successful activity detected';
-  if (mode === 'missing_key') return 'API key missing';
-  return 'Awaiting backend provider data';
-}
-
-function DashboardSkeleton({ variant = 'overview' }) {
+function LeaderboardList({ items, suffix = '', emptyMsg = 'No data available' }) {
+  if (!items.length) return <div className="admin-empty-chart">{emptyMsg}</div>;
   return (
-    <div className="admin-skeleton-shell" aria-hidden="true">
-      <section className="admin-summary-grid admin-summary-grid--skeleton">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <article key={`summary-skeleton-${index}`} className="admin-stat-card admin-skeleton-card">
-            <div className="admin-skeleton admin-skeleton--icon" />
-            <div className="admin-skeleton admin-skeleton--text admin-skeleton--short" />
-            <div className="admin-skeleton admin-skeleton--text admin-skeleton--headline" />
-            <div className="admin-skeleton admin-skeleton--text admin-skeleton--medium" />
-          </article>
-        ))}
-      </section>
-
-      <section className={`admin-content-grid ${variant === 'technical' ? 'admin-content-grid--technical' : 'admin-content-grid--charts'}`}>
-        {Array.from({ length: 3 }).map((_, index) => (
-          <article key={`panel-skeleton-${variant}-${index}`} className="admin-panel-card admin-skeleton-card">
-            <div className="admin-panel-header">
-              <div className="admin-skeleton-stack">
-                <div className="admin-skeleton admin-skeleton--text admin-skeleton--short" />
-                <div className="admin-skeleton admin-skeleton--text admin-skeleton--medium" />
-              </div>
-            </div>
-            <div className="admin-skeleton admin-skeleton--panel" />
-            <div className="admin-skeleton admin-skeleton--text admin-skeleton--medium" />
-          </article>
-        ))}
-      </section>
-    </div>
-  );
-}
-
-function MiniSparkline({ values = [] }) {
-  const safeValues = Array.isArray(values) ? values : [];
-  if (!safeValues.length) {
-    return <div className="admin-sparkline admin-sparkline--empty">No data</div>;
-  }
-
-  const min = Math.min(...safeValues);
-  const max = Math.max(...safeValues);
-  const spread = Math.max(1, max - min);
-  const points = safeValues.map((value, index) => {
-    const x = (index / Math.max(1, safeValues.length - 1)) * 100;
-    const y = 32 - (((value - min) / spread) * 24 + 4);
-    return `${x},${y}`;
-  }).join(' ');
-
-  return (
-    <svg viewBox="0 0 100 32" className="admin-sparkline" preserveAspectRatio="none" aria-hidden="true">
-      <polyline points={points} />
-    </svg>
-  );
-}
-
-function TrendBarChart({ points = [], metricKey, tone = 'gold', formatter = (value) => Math.round(value) }) {
-  if (!points.length) {
-    return <div className="admin-chart-empty">No chart data available yet.</div>;
-  }
-
-  const values = points.map((point) => Number(point?.[metricKey] || 0));
-  const max = Math.max(1, ...values);
-  const width = 100;
-  const height = 84;
-  const chartTop = 8;
-  const chartBottom = 66;
-  const chartLeft = 8;
-  const chartRight = 98;
-  const plotWidth = chartRight - chartLeft;
-  const barSpace = plotWidth / Math.max(1, points.length);
-  const barWidth = Math.max(6, barSpace * 0.56);
-  const yTicks = [0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-    const value = Math.round(max * ratio);
-    const y = chartBottom - ((chartBottom - chartTop) * ratio);
-    return { value, y };
-  });
-
-  const bars = points.map((point, index) => {
-    const value = Number(point?.[metricKey] || 0);
-    const heightRatio = Math.max(0, Math.min(1, value / max));
-    const barHeight = heightRatio * (chartBottom - chartTop);
-    const x = chartLeft + barSpace * index + ((barSpace - barWidth) / 2);
-    const y = chartBottom - barHeight;
-    return { x, y, barHeight, value, label: point?.label || '' };
-  });
-
-  return (
-    <div className={`admin-trend-chart admin-trend-chart--${tone}`}>
-      <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="admin-chart-svg" role="img" aria-label="Chart">
-        {yTicks.map((tick, index) => (
-          <g key={`tick-${index}-${tick.value}`}>
-            <line x1={chartLeft} y1={tick.y} x2={chartRight} y2={tick.y} className="admin-chart-grid" />
-            <text x="0" y={tick.y + 1.5} className="admin-chart-y-label">{tick.value}</text>
-          </g>
-        ))}
-
-        {bars.map((bar, index) => (
-          <g key={`bar-${index}-${bar.label}`}>
-            <rect x={bar.x} y={bar.y} width={barWidth} height={Math.max(2, bar.barHeight)} rx="1.6" className="admin-chart-bar" />
-            <text x={bar.x + (barWidth / 2)} y={Math.max(chartTop, bar.y - 1.5)} textAnchor="middle" className="admin-chart-bar-label">
-              {formatter(bar.value)}
-            </text>
-          </g>
-        ))}
-      </svg>
-      <div className="admin-chart-labels">
-        {points.map((point, index) => (
-          <span key={`${index}-${point.label}`}>{point.label}</span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function DonutChart({ items = [], centerLabel = 'Total' }) {
-  const safeItems = items.filter((item) => Number(item?.value || 0) > 0);
-  const total = safeItems.reduce((sum, item) => sum + Number(item.value || 0), 0);
-
-  if (!total) {
-    return <div className="admin-chart-empty">No composition data available yet.</div>;
-  }
-
-  const cumulativeTotals = safeItems.reduce((acc, item) => {
-    const last = acc.length ? acc[acc.length - 1] : 0;
-    return [...acc, last + Number(item.value || 0)];
-  }, []);
-
-  const slices = safeItems.map((item, index) => {
-    const startValue = index === 0 ? 0 : cumulativeTotals[index - 1];
-    const endValue = cumulativeTotals[index];
-    const start = (startValue / total) * 360;
-    const end = (endValue / total) * 360;
-    return `${item.color || '#010101'} ${start}deg ${end}deg`;
-  });
-
-  return (
-    <div className="admin-donut-wrap">
-      <div className="admin-donut" style={{ background: `conic-gradient(${slices.join(', ')})` }}>
-        <div className="admin-donut-center">
-          <strong>{total}</strong>
-          <span>{centerLabel}</span>
-        </div>
-      </div>
-
-      <div className="admin-donut-legend">
-        {safeItems.map((item) => (
-          <div key={item.label} className="admin-donut-legend-item">
-            <span className="admin-donut-swatch" style={{ backgroundColor: item.color || '#010101' }} aria-hidden="true" />
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
+    <div className="admin-leaderboard">
+      {items.map((item, i) => (
+        <div key={item.id} className="admin-lb-row">
+          <div className="admin-lb-rank">{i + 1}</div>
+          <div className="admin-lb-avatar">{item.initial}</div>
+          <div className="admin-lb-name">{item.username}</div>
+          <div className="admin-lb-value">
+            {item.value} {suffix}
           </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function LeaderboardList({ items = [], metricKey, formatter }) {
-  if (!items.length) {
-    return <div className="admin-empty-state">No leaderboard data yet.</div>;
-  }
-
-  return (
-    <div className="admin-leaderboard-list">
-      {items.map((item, index) => (
-        <div key={`${item.id}-${metricKey}`} className="admin-leaderboard-item">
-          <span className="admin-leaderboard-rank">{String(index + 1).padStart(2, '0')}</span>
-          <div className="admin-leaderboard-copy">
-            <strong>{item.name}</strong>
-            <span>{item.email}</span>
-          </div>
-          <strong className="admin-leaderboard-metric">{formatter(item[metricKey])}</strong>
         </div>
       ))}
     </div>
   );
 }
 
-function UserEditorModal({
-  user,
-  formState,
-  saving,
-  onClose,
-  onChange,
-  onSubmit,
-  onToggleActive,
-  onDeleteUser,
-}) {
-  if (!user) return null;
-
-  return (
-    <div className="admin-modal-backdrop" onClick={onClose}>
-      <div className="admin-modal" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true">
-        <div className="admin-modal-header">
-          <div>
-            <p className="admin-section-kicker">User Control</p>
-            <h3>Edit {user.name}</h3>
-          </div>
-          <button type="button" className="admin-icon-btn" onClick={onClose} aria-label="Close editor">
-            <IoCloseCircle size={22} />
-          </button>
-        </div>
-
-        <form className="admin-modal-form" onSubmit={onSubmit}>
-          <label className="admin-form-field">
-            <span>Name</span>
-            <input
-              type="text"
-              value={formState.fullName}
-              onChange={(event) => onChange('fullName', event.target.value)}
-              placeholder="Full name"
-            />
-          </label>
-
-          <label className="admin-form-field">
-            <span>Email</span>
-            <input type="email" value={user.email} disabled readOnly />
-          </label>
-
-          <label className="admin-form-field">
-            <span>New Password</span>
-            <input
-              type="password"
-              value={formState.password}
-              onChange={(event) => onChange('password', event.target.value)}
-              placeholder="Leave blank to keep current password"
-            />
-          </label>
-
-          <div className="admin-modal-actions">
-            <button type="button" className="admin-danger-btn" onClick={onDeleteUser} disabled={saving}>
-              Delete Account
-            </button>
-            <button type="button" className="admin-secondary-btn" onClick={onToggleActive} disabled={saving}>
-              {user.is_active ? 'Deactivate User' : 'Re-activate User'}
-            </button>
-            <button type="submit" className="admin-primary-btn" disabled={saving}>
-              {saving ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
 function AdminDashboardPage() {
   const navigate = useNavigate();
-  const { logout, user } = useAuthContext();
-  const [activeView, setActiveView] = useState('overview');
-  const [period, setPeriod] = useState('month');
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState('created_at');
-  const [sortDir, setSortDir] = useState('desc');
-  const [page, setPage] = useState(1);
-  const [dashboard, setDashboard] = useState(null);
-  const [technicalHealth, setTechnicalHealth] = useState(null);
-  const [isTechnicalLoading, setIsTechnicalLoading] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [refreshIndex, setRefreshIndex] = useState(0);
+  const { logout } = useAuthContext();
+
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [formState, setFormState] = useState({ fullName: '', password: '' });
+  const [role, setRole] = useState('');
+  const [activePage, setActivePage] = useState('overview');
+  const [globalFilter, setGlobalFilter] = useState('30d');
+
+  const [profiles, setProfiles] = useState([]);
+  const [sessions, setSessions] = useState([]);
+  const [metrics, setMetrics] = useState([]);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [auditSearchQuery, setAuditSearchQuery] = useState('');
+  const [auditActionFilter, setAuditActionFilter] = useState('all');
+  const [auditEntityFilter, setAuditEntityFilter] = useState('all');
+  const [auditPage, setAuditPage] = useState(1);
+  const AUDIT_PER_PAGE = 15;
+  const [inspectingLog, setInspectingLog] = useState(null);
+  const [editingUser, setEditingUser] = useState(null);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userLevelFilter, setUserLevelFilter] = useState('all');
+  const [userPage, setUserPage] = useState(1);
+  const USERS_PER_PAGE = 10;
+  const [archivingUserId, setArchivingUserId] = useState(null);
+
+  const [creatingAdmin, setCreatingAdmin] = useState(false);
+  const [createAdminForm, setCreateAdminForm] = useState({
+    email: '',
+    password: '',
+    first_name: '',
+    username: '',
+    role: 'admin',
+  });
+  const [systemSettings, setSystemSettings] = useState({
+    maintenance_mode: false,
+    failover_logging: true,
+    defense_data_mode: false,
+  });
+  const [toastMessage, setToastMessage] = useState(null);
+
+  const showToast = (msg, type = 'success') => {
+    setToastMessage({ text: msg, type });
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const isSuperadmin = role === 'superadmin';
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadDashboard() {
-      setIsLoading(true);
+    let active = true;
+    async function loadCore() {
+      setLoading(true);
       setError('');
-
       try {
-        const nextDashboard = await adminApi.getDashboard({
-          period,
-          search,
-          sortBy,
-          sortDir,
-          page,
-          perPage: 10,
-        });
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        if (authError || !authData?.user?.id) throw new Error('Unable to verify admin session.');
 
-        if (!cancelled) {
-          setDashboard(nextDashboard);
-          if (nextDashboard?.technical_health) {
-            setTechnicalHealth(nextDashboard.technical_health);
-          }
+        const { data: roleProfile, error: roleError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', authData.user.id)
+          .single();
+
+        if (roleError || !roleProfile) throw new Error('Admin profile not found.');
+        if (roleProfile.role !== 'admin' && roleProfile.role !== 'superadmin') {
+          await supabase.auth.signOut();
+          navigate(ROUTES.ADMIN_LOGIN_BASE, { replace: true });
+          throw new Error('Access denied: admin privileges required.');
         }
-      } catch (loadError) {
-        if (!cancelled) {
-          setError(loadError.message || 'Unable to load admin dashboard.');
+
+        const [profilesRes, sessionsRes, metricsRes, settingsRes] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('*')
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('sessions')
+            .select('id, user_id, created_at, duration, session_origin, session_mode, speaking_mode')
+            .order('created_at', { ascending: true }),
+          supabase
+            .from('session_metrics')
+            .select('session_id, overall_score, fluency_score, confidence_score, pronunciation_score'),
+          roleProfile.role === 'superadmin' ? supabase.from('system_settings').select('*') : Promise.resolve({ data: [] })
+        ]);
+
+        if (profilesRes.error) throw profilesRes.error;
+        if (sessionsRes.error) throw sessionsRes.error;
+        if (metricsRes.error) throw metricsRes.error;
+
+        if (!active) return;
+        setRole(roleProfile.role);
+        setProfiles(profilesRes.data || []);
+        setSessions(sessionsRes.data || []);
+        setMetrics(metricsRes.data || []);
+        
+        if (settingsRes.data && settingsRes.data.length > 0) {
+          const sMap = {};
+          settingsRes.data.forEach(s => sMap[s.key] = s.value === 'true');
+          setSystemSettings(prev => ({ ...prev, ...sMap }));
         }
+      } catch (e) {
+        if (active) setError(e.message || 'Failed to load admin dashboard.');
       } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
+        if (active) setLoading(false);
       }
     }
-
-    loadDashboard();
-    return () => {
-      cancelled = true;
-    };
-  }, [page, period, refreshIndex, search, sortBy, sortDir]);
+    loadCore();
+    return () => { active = false; };
+  }, [navigate]);
 
   useEffect(() => {
-    let cancelled = false;
-    async function loadTechnicalHealth() {
-      if (activeView !== 'technical') return;
-      if (technicalHealth) return;
-
-      setIsTechnicalLoading(true);
+    if (!isSuperadmin || (activePage !== 'settings' && activePage !== 'audit')) return;
+    let active = true;
+    async function loadSettingsData() {
       try {
-        const payload = await adminApi.getTechnicalHealth();
-        if (!cancelled) {
-          setTechnicalHealth(payload);
-        }
-      } catch (technicalError) {
-        if (!cancelled) {
-          setError(technicalError.message || 'Unable to load technical health metrics.');
-        }
-      } finally {
-        if (!cancelled) {
-          setIsTechnicalLoading(false);
-        }
+        const { data, error: auditErr } = await supabase
+          .from('audit_logs')
+          .select('id, action, entity_type, entity_id, actor_id, created_at, old_values, new_values, ip_address')
+          .order('created_at', { ascending: false })
+          .limit(1000);
+        if (auditErr) throw auditErr;
+        if (!active) return;
+        const logs = data || [];
+        setAuditLogs(logs);
+      } catch (e) {
+        if (active) setError(e.message || 'Failed to load admin settings data.');
       }
     }
+    loadSettingsData();
+    return () => { active = false; };
+  }, [isSuperadmin, activePage]);
 
-    loadTechnicalHealth();
-    return () => {
-      cancelled = true;
+  const visibleUsers = useMemo(
+    () => profiles.filter((p) => !p.archived_at),
+    [profiles],
+  );
+
+  const profileById = useMemo(() => {
+    const map = new Map();
+    visibleUsers.forEach((p) => map.set(p.id, p));
+    return map;
+  }, [visibleUsers]);
+
+  const filteredSessions = useMemo(() => {
+    if (globalFilter === 'all') return sessions;
+    const now = new Date();
+    let days = 30;
+    if (globalFilter === '7d') days = 7;
+    if (globalFilter === 'ytd') {
+      const startOfYear = new Date(now.getFullYear(), 0, 1).getTime();
+      return sessions.filter(s => new Date(s.created_at).getTime() >= startOfYear);
+    }
+    const cutoff = shiftRange(now, 'day', -days).getTime();
+    return sessions.filter(s => new Date(s.created_at).getTime() >= cutoff);
+  }, [sessions, globalFilter]);
+
+  const metricBySession = useMemo(() => {
+    const map = new Map();
+    metrics.forEach((m) => map.set(m.session_id, {
+      overall: Number(m.overall_score),
+      fluency: Number(m.fluency_score),
+      confidence: Number(m.confidence_score),
+      pronunciation: Number(m.pronunciation_score)
+    }));
+    return map;
+  }, [metrics]);
+
+  const levelDistribution = useMemo(() => {
+    const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    visibleUsers.forEach((p) => {
+      const lv = Number(p.current_level || 1);
+      if (counts[lv] != null) counts[lv] += 1;
+    });
+    return Object.entries(counts).map(([lv, value]) => ({ label: `Level ${lv}`, value }));
+  }, [visibleUsers]);
+
+  const kpis = useMemo(() => {
+    const now = new Date();
+    const oneWeekAgo = shiftRange(now, 'day', -7);
+    const twoWeeksAgo = shiftRange(now, 'day', -14);
+
+    // TOTAL USERS
+    const totalUsers = visibleUsers.length;
+    const usersLastWeek = visibleUsers.filter(p => new Date(p.created_at) < oneWeekAgo).length;
+    const usersNewThisWeek = totalUsers - usersLastWeek;
+    const usersDeltaText = usersNewThisWeek > 0 ? `+${usersNewThisWeek} new this week` : 'No new users this week';
+
+    // ACTIVE THIS WEEK
+    const activeThisWeekSet = new Set();
+    const activeLastWeekSet = new Set();
+    sessions.forEach(s => {
+      const d = new Date(s.created_at);
+      if (d >= oneWeekAgo) activeThisWeekSet.add(s.user_id);
+      else if (d >= twoWeeksAgo && d < oneWeekAgo) activeLastWeekSet.add(s.user_id);
+    });
+    const activeThisWeek = activeThisWeekSet.size;
+    const activeLastWeek = activeLastWeekSet.size;
+    const activeDelta = activeThisWeek - activeLastWeek;
+    const activeDeltaText = activeDelta >= 0 ? `+${activeDelta} vs last week` : `${activeDelta} vs last week`;
+
+    // SPEECHES ANALYZED
+    const totalSpeeches = sessions.length;
+    const speechesLastWeekCount = sessions.filter(s => new Date(s.created_at) >= oneWeekAgo).length;
+    const speechesPrevWeekCount = sessions.filter(s => {
+      const d = new Date(s.created_at);
+      return d >= twoWeeksAgo && d < oneWeekAgo;
+    }).length;
+    const speechDelta = speechesLastWeekCount - speechesPrevWeekCount;
+    const speechDeltaText = speechDelta >= 0 ? `+${speechesLastWeekCount} this week` : `${speechDelta} vs last week`;
+
+    return {
+      totalUsers, usersDeltaText,
+      activeThisWeek, activeDeltaText,
+      totalSpeeches, speechDeltaText
     };
-  }, [activeView, technicalHealth]);
+  }, [visibleUsers, sessions]);
 
-  const summary = dashboard?.summary;
-  const backend = dashboard?.backend;
-  const users = dashboard?.users?.items || [];
-  const pagination = dashboard?.users?.pagination;
-  const leaderboards = dashboard?.leaderboards;
-  const aiProviders = backend?.ai_providers || {};
-  const analysisEngines = backend?.analysis_engines || {};
-  const growthPoints = dashboard?.user_growth?.points || [];
-  const activeUsers = summary?.active_users ?? 0;
-  const totalUsers = summary?.user_count ?? 0;
-  const inactiveUsers = Math.max(0, totalUsers - activeUsers);
-  const userComposition = [
-    { label: 'Active', value: activeUsers, color: '#FCBA04' },
-    { label: 'Inactive', value: inactiveUsers, color: '#010101' },
-  ];
-
-  const selectedUserTrend = useMemo(() => selectedUser?.recent_scores || [], [selectedUser]);
-  const effectiveTechnicalHealth = useMemo(
-    () => technicalHealth || dashboard?.technical_health || null,
-    [dashboard?.technical_health, technicalHealth],
-  );
-
-  const technicalCards = useMemo(() => {
-    const analysisHealth = effectiveTechnicalHealth?.analysis_health || {};
-    const aiFailover = analysisHealth?.ai_provider_failover || {};
-    const providerActivity = analysisHealth?.provider_activity || {};
-    const security = effectiveTechnicalHealth?.security || {};
-    const sync = effectiveTechnicalHealth?.cross_platform_sync || {};
-    const storage = effectiveTechnicalHealth?.storage || {};
-
-    return [
-      {
-        label: 'Low Confidence Rate',
-        value: formatPercent(analysisHealth?.low_confidence_rate_pct),
-        helper: `${analysisHealth?.low_confidence_count || 0} flagged sessions`,
-      },
-      {
-        label: 'Average SNR',
-        value: analysisHealth?.average_snr_db == null ? 'N/A' : `${analysisHealth.average_snr_db.toFixed(2)} dB`,
-        helper: 'Signal quality across sessions',
-      },
-      {
-        label: 'AI Failover Rate',
-        value: formatPercent(aiFailover?.failover_rate_pct),
-        helper: `${aiFailover?.failover_used_count || 0}/${aiFailover?.total_events || 0} fallback events`,
-      },
-      {
-        label: 'Provider 429 Alerts',
-        value: String(providerActivity?.total_rate_limited_count_30d || 0),
-        helper: 'Last 30 days quota or rate-limit signals',
-      },
-      {
-        label: 'Users in Lockout',
-        value: String(security?.users_in_lockout_count || 0),
-        helper: 'Exponential backoff active now',
-      },
-      {
-        label: 'Recordings Storage',
-        value: formatMb(storage?.total_mb),
-        helper: `${formatMb(storage?.wav_mb)} wav | ${formatMb(storage?.webm_mb)} webm`,
-      },
-      {
-        label: 'Web â†’ Mobile Sync',
-        value: formatPercent(sync?.web_sync_success_pct),
-        helper: `${sync?.web_synced_to_mobile_count || 0} synced web sessions`,
-      },
-    ];
-  }, [effectiveTechnicalHealth]);
-
-  const lockoutUsers = useMemo(
-    () => effectiveTechnicalHealth?.security?.users_in_lockout || [],
-    [effectiveTechnicalHealth],
-  );
-  const frequentCooldownUsers = useMemo(
-    () => effectiveTechnicalHealth?.security?.frequent_script_cooldown_users || [],
-    [effectiveTechnicalHealth],
-  );
-  const syncBreakdown = useMemo(
-    () => effectiveTechnicalHealth?.cross_platform_sync?.source_breakdown || {},
-    [effectiveTechnicalHealth],
-  );
-  const providerQuotaSignals = useMemo(
-    () => effectiveTechnicalHealth?.analysis_health?.provider_activity || { providers: [], note: '', window_days: 30 },
-    [effectiveTechnicalHealth],
-  );
-  const hasActiveSearch = Boolean(search.trim());
-  const providerStatusRows = [
-    {
-      key: 'gemini',
-      label: aiProviders?.gemini?.label || 'Gemini',
-      online: resolveProviderOnline(aiProviders?.gemini?.online, backend?.ai_ready),
-      hint: aiProviders?.gemini ? providerHint(aiProviders.gemini) : (backend?.ai_ready ? 'Status inferred from backend routing' : 'API key missing'),
-    },
-    {
-      key: 'groq',
-      label: aiProviders?.groq?.label || 'Groq',
-      online: resolveProviderOnline(aiProviders?.groq?.online, backend?.ai_ready),
-      hint: aiProviders?.groq ? providerHint(aiProviders.groq) : (backend?.ai_ready ? 'Status inferred from backend routing' : 'API key missing'),
-    },
-    {
-      key: 'cohere',
-      label: aiProviders?.cohere?.label || 'Cohere',
-      online: resolveProviderOnline(aiProviders?.cohere?.online, false),
-      hint: aiProviders?.cohere ? providerHint(aiProviders.cohere) : 'Awaiting backend provider data',
-    },
-  ];
-
-  const analysisStatusRows = [
-    {
-      key: 'mediapipe',
-      label: analysisEngines?.mediapipe?.label || 'MediaPipe',
-      online: Boolean(analysisEngines?.mediapipe?.online),
-    },
-    {
-      key: 'librosa',
-      label: analysisEngines?.librosa?.label || 'Librosa',
-      online: Boolean(analysisEngines?.librosa?.online),
-    },
-  ];
-
-  const handleSearchSubmit = (event) => {
-    event.preventDefault();
-    setPage(1);
-    setSearch(searchInput.trim());
-  };
-
-  const handleSearchClear = () => {
-    setSearchInput('');
-    setSearch('');
-    setPage(1);
-  };
-
-  const handleOpenEditor = (nextUser) => {
-    setSelectedUser(nextUser);
-    setFormState({ fullName: nextUser.name || '', password: '' });
-    setSuccessMessage('');
-  };
-
-  const handleCloseEditor = () => {
-    setSelectedUser(null);
-    setFormState({ fullName: '', password: '' });
-  };
-
-  const applyUpdatedUser = (updatedUser) => {
-    setDashboard((prev) => {
-      if (!prev) return prev;
-      const nextItems = prev.users.items.map((item) => (item.id === updatedUser.id ? updatedUser : item));
+  const joinTrendData = useMemo(() => {
+    const days = 14;
+    const now = new Date();
+    const counts = Array.from({ length: days }).map((_, i) => {
+      const d = new Date(now);
+      d.setDate(now.getDate() - (days - 1) + i);
       return {
-        ...prev,
-        users: {
-          ...prev.users,
-          items: nextItems,
-        },
-        leaderboards: prev.leaderboards
-          ? {
-            ...prev.leaderboards,
-            top_time: prev.leaderboards.top_time.map((item) => (item.id === updatedUser.id ? updatedUser : item)),
-            top_sessions: prev.leaderboards.top_sessions.map((item) => (item.id === updatedUser.id ? updatedUser : item)),
-            top_improvers: prev.leaderboards.top_improvers.map((item) => (item.id === updatedUser.id ? updatedUser : item)),
-          }
-          : prev.leaderboards,
+        date: `${d.getMonth() + 1}/${d.getDate()}`,
+        timestamp: d.setHours(0, 0, 0, 0),
       };
     });
-    setSelectedUser(updatedUser);
-  };
 
-  const handleSaveUser = async (event) => {
-    event.preventDefault();
-    if (!selectedUser) return;
+    counts.forEach(day => {
+      const nextDayMs = day.timestamp + 86400000;
+      day.users = visibleUsers.filter(p => {
+        const createdMs = new Date(p.created_at).getTime();
+        return createdMs >= day.timestamp && createdMs < nextDayMs;
+      }).length;
+    });
 
-    setIsSaving(true);
-    setError('');
-    setSuccessMessage('');
+    return counts;
+  }, [visibleUsers]);
 
-    try {
-      const payload = {
-        full_name: formState.fullName.trim(),
-      };
+  const levelBarData = useMemo(
+    () => levelDistribution.map((item) => ({ level: item.label, users: item.value })),
+    [levelDistribution],
+  );
 
-      if (formState.password.trim()) {
-        payload.password = formState.password.trim();
-      }
+  const timeAllocation = useMemo(() => {
+    const totals = { Activities: 0, Randomizer: 0, 'Free Speech': 0 };
+    filteredSessions.forEach((s) => { totals[modeOf(s)] += Number(s.duration || 0); });
+    return Object.entries(totals)
+      .map(([label, value]) => ({ name: label, value: Math.round(value / 60) }))
+      .filter(d => d.value > 0);
+  }, [filteredSessions]);
 
-      const updatedUser = await adminApi.updateUser(selectedUser.id, payload);
-      applyUpdatedUser(updatedUser);
-      setFormState((prev) => ({ ...prev, password: '' }));
-      setSuccessMessage('User updated successfully.');
-      setRefreshIndex((prev) => prev + 1);
-    } catch (saveError) {
-      setError(saveError.message || 'Unable to update user.');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleToggleActive = async () => {
-    if (!selectedUser) return;
-    setIsSaving(true);
-    setError('');
-    setSuccessMessage('');
-
-    try {
-      const updatedUser = await adminApi.updateUser(selectedUser.id, {
-        is_active: !selectedUser.is_active,
-      });
-      applyUpdatedUser(updatedUser);
-      setSuccessMessage(updatedUser.is_active ? 'User re-activated.' : 'User deactivated.');
-      setRefreshIndex((prev) => prev + 1);
-    } catch (saveError) {
-      setError(saveError.message || 'Unable to update user status.');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDeleteUser = async () => {
-    if (!selectedUser) return;
-
-    const confirmDelete = window.confirm(
-      `Delete account for ${selectedUser.email}? This cannot be undone and will remove this user from auth.`
-    );
-    if (!confirmDelete) return;
-
-    setIsSaving(true);
-    setError('');
-    setSuccessMessage('');
-
-    try {
-      await adminApi.deleteUser(selectedUser.id);
-
-      setDashboard((prev) => {
-        if (!prev) return prev;
+  const grind = useMemo(() => {
+    const totals = new Map();
+    filteredSessions.forEach((s) => totals.set(s.user_id, (totals.get(s.user_id) || 0) + Number(s.duration || 0)));
+    return Array.from(totals.entries())
+      .map(([id, sec]) => {
+        const prof = profileById.get(id);
         return {
-          ...prev,
-          users: {
-            ...prev.users,
-            items: prev.users.items.filter((item) => item.id !== selectedUser.id),
-          },
-          leaderboards: prev.leaderboards
-            ? {
-              ...prev.leaderboards,
-              top_time: prev.leaderboards.top_time.filter((item) => item.id !== selectedUser.id),
-              top_sessions: prev.leaderboards.top_sessions.filter((item) => item.id !== selectedUser.id),
-              top_improvers: prev.leaderboards.top_improvers.filter((item) => item.id !== selectedUser.id),
-            }
-            : prev.leaderboards,
+          id,
+          username: prof?.username || getDisplayName(prof, id),
+          initial: (prof?.username || prof?.first_name || 'U')[0].toUpperCase(),
+          value: Math.round(sec / 60)
         };
-      });
+      })
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+  }, [filteredSessions, profileById]);
 
-      setSelectedUser(null);
-      setFormState({ fullName: '', password: '' });
-      setSuccessMessage('User account deleted successfully.');
-      setRefreshIndex((prev) => prev + 1);
-    } catch (deleteError) {
-      setError(deleteError.message || 'Unable to delete user account.');
-    } finally {
-      setIsSaving(false);
+  const risers = useMemo(() => {
+    const byUser = new Map();
+    filteredSessions.forEach((s) => {
+      const scores = metricBySession.get(s.id);
+      if (!scores || !Number.isFinite(scores.overall)) return;
+      const list = byUser.get(s.user_id) || [];
+      list.push({ created_at: s.created_at, score: scores.overall });
+      byUser.set(s.user_id, list);
+    });
+    return Array.from(byUser.entries())
+      .map(([id, list]) => {
+        if (list.length < 2) return null;
+        const sorted = [...list].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        const prof = profileById.get(id);
+        return {
+          id,
+          username: prof?.username || getDisplayName(prof, id),
+          initial: (prof?.username || prof?.first_name || 'U')[0].toUpperCase(),
+          value: Number((sorted[sorted.length - 1].score - sorted[0].score).toFixed(1))
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+  }, [filteredSessions, metricBySession, profileById]);
+
+  const multiDimProgress = useMemo(() => {
+    const buckets = new Map();
+    filteredSessions.forEach((s) => {
+      const scores = metricBySession.get(s.id);
+      if (!scores || !Number.isFinite(scores.fluency)) return;
+      const d = new Date(s.created_at);
+      if (Number.isNaN(d.getTime())) return;
+      const key = `${d.getMonth() + 1}/${d.getDate()}`;
+      const cur = buckets.get(key) || { f: 0, c: 0, p: 0, count: 0 };
+      cur.f += scores.fluency;
+      cur.c += scores.confidence;
+      cur.p += scores.pronunciation;
+      cur.count += 1;
+      buckets.set(key, cur);
+    });
+    return Array.from(buckets.entries())
+      .map(([label, v]) => ({
+        label,
+        fluency_score: Number((v.f / v.count).toFixed(1)),
+        confidence_score: Number((v.c / v.count).toFixed(1)),
+        pronunciation_score: Number((v.p / v.count).toFixed(1)),
+      }))
+      .sort((a, b) => {
+        const [m1, d1] = a.label.split('/').map(Number);
+        const [m2, d2] = b.label.split('/').map(Number);
+        if (m1 !== m2) return m1 - m2;
+        return d1 - d2;
+      });
+  }, [filteredSessions, metricBySession]);
+
+  const filteredUsers = useMemo(() => {
+    let result = profiles; // Including archived for now, but we'll show status
+
+    if (userSearchQuery.trim()) {
+      const q = userSearchQuery.toLowerCase();
+      result = result.filter((p) => {
+        const nameMatch = (p.first_name || '').toLowerCase().includes(q);
+        const userMatch = (p.username || '').toLowerCase().includes(q);
+        return nameMatch || userMatch;
+      });
     }
+
+    if (userLevelFilter !== 'all') {
+      result = result.filter((p) => Number(p.current_level) === Number(userLevelFilter));
+    }
+
+    return result;
+  }, [profiles, userSearchQuery, userLevelFilter]);
+
+  const paginatedUsers = useMemo(() => {
+    const startIndex = (userPage - 1) * USERS_PER_PAGE;
+    return filteredUsers.slice(startIndex, startIndex + USERS_PER_PAGE);
+  }, [filteredUsers, userPage]);
+
+  const totalUserPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE);
+
+  const handleNextUserPage = () => {
+    if (userPage < totalUserPages) setUserPage((prev) => prev + 1);
   };
 
-  const handleLogout = async () => {
+  const handlePrevUserPage = () => {
+    if (userPage > 1) setUserPage((prev) => prev - 1);
+  };
+
+  const filteredAuditLogs = useMemo(() => {
+    let result = auditLogs;
+    if (auditSearchQuery.trim()) {
+      const q = auditSearchQuery.toLowerCase();
+      result = result.filter(log => {
+        const actorName = getDisplayName(profiles.find(p => p.id === log.actor_id), log.actor_id).toLowerCase();
+        return actorName.includes(q) || String(log.actor_id).toLowerCase().includes(q);
+      });
+    }
+    if (auditActionFilter !== 'all') {
+      result = result.filter(log => log.action.toLowerCase() === auditActionFilter.toLowerCase());
+    }
+    if (auditEntityFilter !== 'all') {
+      result = result.filter(log => log.entity_type.toLowerCase() === auditEntityFilter.toLowerCase());
+    }
+    return result;
+  }, [auditLogs, auditSearchQuery, auditActionFilter, auditEntityFilter, profiles]);
+
+  const paginatedAuditLogs = useMemo(() => {
+    const start = (auditPage - 1) * AUDIT_PER_PAGE;
+    return filteredAuditLogs.slice(start, start + AUDIT_PER_PAGE);
+  }, [filteredAuditLogs, auditPage]);
+
+  const totalAuditPages = Math.ceil(filteredAuditLogs.length / AUDIT_PER_PAGE);
+
+  useEffect(() => {
+    setAuditPage(1);
+  }, [auditSearchQuery, auditActionFilter, auditEntityFilter]);
+
+  const getActionBadgeClass = (action) => {
+    const a = action.toLowerCase();
+    if (a.includes('create') || a.includes('insert')) return 'is-active';
+    if (a.includes('update')) return 'is-update';
+    if (a.includes('delete') || a.includes('archive')) return 'is-archived';
+    return '';
+  };
+
+  useEffect(() => {
+    setUserPage(1); // Reset page when filters change
+  }, [userSearchQuery, userLevelFilter]);
+
+  const onLogout = async () => {
     await logout();
     navigate(ROUTES.HOME, { replace: true });
   };
 
+  const openEditUser = (user) => {
+    setEditingUser(user);
+  };
+
+  const archiveUser = async () => {
+    if (!archivingUserId) return;
+    const userId = archivingUserId;
+    const { error: archiveError } = await supabase
+      .from('profiles')
+      .update({ archived_at: new Date().toISOString() })
+      .eq('id', userId);
+    if (archiveError) {
+      setError(archiveError.message || 'Failed to archive user.');
+      setArchivingUserId(null);
+      return;
+    }
+    setProfiles((prev) => prev.map((p) => (p.id === userId ? { ...p, archived_at: new Date().toISOString() } : p)));
+    setArchivingUserId(null);
+  };
+
+  const submitCreateAdmin = async (e) => {
+    e.preventDefault();
+    if (!isSuperadmin) return;
+    setCreatingAdmin(true);
+    const email = String(createAdminForm.email || '').trim();
+    const password = String(createAdminForm.password || '');
+    const firstName = String(createAdminForm.first_name || '').trim();
+    const username = String(createAdminForm.username || '').trim();
+    const newRole = createAdminForm.role || 'admin';
+
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { first_name: firstName, username, role: newRole } },
+    });
+
+    if (signUpError || !data?.user?.id) {
+      setCreatingAdmin(false);
+      showToast(signUpError?.message || 'Failed to create admin auth account.', 'error');
+      return;
+    }
+
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ role: newRole, first_name: firstName || null, username: username || null })
+      .eq('id', data.user.id);
+
+    setCreatingAdmin(false);
+    if (profileError) {
+      showToast(`Auth created, but role update failed: ${profileError.message}`, 'error');
+      return;
+    }
+
+    showToast('Admin account created successfully.', 'success');
+    setCreateAdminForm({ email: '', password: '', first_name: '', username: '', role: 'admin' });
+    
+    // Refresh profiles to show new admin
+    const { data: newProfiles } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+    if (newProfiles) setProfiles(newProfiles);
+  };
+
+  const toggleSetting = async (key, currentValue) => {
+    const newValue = !currentValue;
+    setSystemSettings(prev => ({ ...prev, [key]: newValue }));
+    
+    const { error } = await supabase
+      .from('system_settings')
+      .upsert({ key, value: String(newValue) }, { onConflict: 'key' });
+      
+    if (error) {
+      setSystemSettings(prev => ({ ...prev, [key]: currentValue }));
+      showToast('Failed to update setting', 'error');
+    } else {
+      showToast('Setting updated successfully', 'success');
+    }
+  };
+
+  const navItems = [
+    { key: 'overview', label: 'Overview', icon: HiOutlineHomeModern, show: true },
+    { key: 'analytics', label: 'Analytics', icon: HiOutlineChartBarSquare, show: true },
+    { key: 'users', label: 'User Management', icon: HiOutlineUsers, show: true },
+    { key: 'settings', label: 'Admin Settings', icon: HiOutlineCog6Tooth, show: isSuperadmin },
+    { key: 'audit', label: 'Audit Logs', icon: HiOutlineCog6Tooth, show: isSuperadmin },
+  ].filter((i) => i.show);
+
   return (
-    <div className="admin-dashboard-page">
-      <header className="admin-shell-header">
-        <div className="admin-shell-brand">
-          <div>
-            <p className="admin-section-kicker">Bigkas Admin Console</p>
-            <h1>System Oversight Dashboard</h1>
+    <div className="admin-dashboard-page admin-layout" style={{ ['--admin-sidebar-width']: `${SIDEBAR_WIDTH}px` }}>
+      <aside className="admin-rail">
+        <div className="admin-rail-inner">
+          <div className="admin-rail-brand">
+            <p>BIGKAS</p>
+            <small>Admin Center</small>
           </div>
+          <nav className="admin-rail-nav">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = activePage === item.key;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  className={`admin-rail-btn ${active ? 'is-active' : ''}`}
+                  onClick={() => setActivePage(item.key)}
+                >
+                  <Icon size={18} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+          <button type="button" className="admin-logout admin-logout--rail" onClick={onLogout}>Log Out</button>
         </div>
+      </aside>
 
-        <div className="admin-shell-actions">
-          <button type="button" className="admin-primary-btn" onClick={handleLogout}>
-            Log Out
-          </button>
-        </div>
-      </header>
+      <section className="admin-main">
+        <header className="admin-header">
+          <div>
+            <p className="admin-kicker">Bigkas Analytics Engine</p>
+            <h1>Admin Command Center</h1>
+            <p className="admin-subtitle">Role: <strong>{role || 'unknown'}</strong></p>
+          </div>
+        </header>
 
-      <nav className="admin-view-nav" aria-label="Admin sections">
-        {ADMIN_VIEWS.map((view) => (
-          <button
-            key={view.key}
-            type="button"
-            className={activeView === view.key ? 'is-active' : ''}
-            onClick={() => {
-              setActiveView(view.key);
-              if (view.key !== 'users') {
-                setSelectedUser(null);
-              }
-            }}
-          >
-            {view.label}
-          </button>
-        ))}
-      </nav>
+        {error && <div className="admin-error">{error}</div>}
 
-      <section className="admin-hero-panel">
-        <div>
-          <p className="admin-section-kicker">Operator</p>
-          <h2>{user?.name || user?.email || 'Admin'}</h2>
-          <p>
-            Monitor user health, growth, activity, and intervention points across the platform.
-          </p>
-        </div>
+        {activePage === 'overview' && (
+          <>
+            <section className="admin-grid admin-grid-4">
+              <article className="admin-card admin-kpi-card">
+                <p className="admin-kpi-label">TOTAL USERS</p>
+                {loading ? <Skeleton width={60} height={40} /> : <p className="admin-kpi-value">{kpis.totalUsers}</p>}
+                <p className="admin-kpi-footer">{loading ? <Skeleton width={100} /> : kpis.usersDeltaText}</p>
+              </article>
+              <article className="admin-card admin-kpi-card">
+                <p className="admin-kpi-label">ACTIVE THIS WEEK</p>
+                {loading ? <Skeleton width={60} height={40} /> : <p className="admin-kpi-value">{kpis.activeThisWeek}</p>}
+                <p className="admin-kpi-footer">{loading ? <Skeleton width={100} /> : kpis.activeDeltaText}</p>
+              </article>
+              <article className="admin-card admin-kpi-card">
+                <p className="admin-kpi-label">SPEECHES ANALYZED</p>
+                {loading ? <Skeleton width={60} height={40} /> : <p className="admin-kpi-value">{kpis.totalSpeeches}</p>}
+                <p className="admin-kpi-footer">{loading ? <Skeleton width={100} /> : kpis.speechDeltaText}</p>
+              </article>
+              <article className="admin-card admin-kpi-card">
+                <p className="admin-kpi-label">PRIVACY COMPLIANCE</p>
+                <div className="admin-privacy-status">
+                  <HiCheckCircle size={30} />
+                  <p className="admin-kpi-value admin-kpi-value--privacy">ACTIVE</p>
+                </div>
+                <p className="admin-kpi-footer">{RETENTION_DAYS}-day auto-purge</p>
+              </article>
+            </section>
 
-        <div className="admin-period-switcher" role="tablist" aria-label="Select summary period">
-          {PERIOD_OPTIONS.map((option) => (
-            <button
-              key={option}
-              type="button"
-              className={option === period ? 'is-active' : ''}
-              onClick={() => {
-                setPeriod(option);
-                setPage(1);
-              }}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
+            <section className="admin-grid admin-grid-2">
+              <article className="admin-card">
+                <div className="admin-card-head">
+                  <h3>User Join Trend</h3>
+                </div>
+                <div className="admin-chart-container">
+                  {loading ? (
+                    <Skeleton height="100%" borderRadius={16} />
+                  ) : joinTrendData.every(d => d.users === 0) ? (
+                    <div className="admin-empty-chart">No data available yet</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <AreaChart data={joinTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#33D2A4" stopOpacity={0.15}/>
+                            <stop offset="95%" stopColor="#33D2A4" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <XAxis dataKey="date" tick={{ fill: '#bdc3c7', fontSize: 12 }} tickLine={false} axisLine={false} />
+                        <YAxis allowDecimals={false} tick={{ fill: '#bdc3c7', fontSize: 12 }} tickLine={false} axisLine={false} />
+                        <Tooltip 
+                          contentStyle={{ borderRadius: '12px', border: '1px solid #BDC3C7', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
+                          formatter={(value) => [`${value} New Users`, 'Joined']} 
+                        />
+                        <Area type="monotone" dataKey="users" stroke="#33D2A4" strokeWidth={3} fillOpacity={1} fill="url(#colorUsers)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </article>
+
+              <article className="admin-card">
+                <h3>User Level Distribution</h3>
+                <div className="admin-chart-container">
+                  {loading ? (
+                    <Skeleton height="100%" borderRadius={16} />
+                  ) : levelBarData.every(d => d.users === 0) ? (
+                    <div className="admin-empty-chart">No data available yet</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={levelBarData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <XAxis dataKey="level" tick={{ fill: '#bdc3c7', fontSize: 12 }} tickLine={false} axisLine={false} />
+                        <YAxis allowDecimals={false} tick={{ fill: '#bdc3c7', fontSize: 12 }} tickLine={false} axisLine={false} />
+                        <Tooltip 
+                          cursor={{ fill: '#f9fafb' }}
+                          contentStyle={{ borderRadius: '12px', border: '1px solid #BDC3C7', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
+                          formatter={(value) => [`${value}`, 'Users']} 
+                        />
+                        <Bar dataKey="users" fill="#33D2A4" radius={[8, 8, 0, 0]} barSize={40} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </article>
+            </section>
+          </>
+        )}
+
+        {activePage === 'analytics' && (
+          <>
+            <div className="admin-global-filter">
+              <label htmlFor="global-date-filter">Global Date Filter:</label>
+              <select 
+                id="global-date-filter" 
+                value={globalFilter} 
+                onChange={(e) => setGlobalFilter(e.target.value)}
+                className="admin-filter-select"
+              >
+                <option value="7d">Last 7 Days</option>
+                <option value="30d">Last 30 Days</option>
+                <option value="ytd">Year to Date</option>
+                <option value="all">All Time</option>
+              </select>
+            </div>
+            <section className="admin-grid admin-grid-2">
+              <article className="admin-card">
+                <h3>Improvement Over Time</h3>
+                <div className="admin-chart-container">
+                  {loading ? (
+                    <Skeleton height="100%" borderRadius={16} />
+                  ) : multiDimProgress.length === 0 ? (
+                    <div className="admin-empty-chart">No data available yet</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={multiDimProgress} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#BDC3C7" />
+                        <XAxis dataKey="label" tick={{ fill: '#bdc3c7', fontSize: 12 }} tickLine={false} axisLine={false} />
+                        <YAxis allowDecimals={false} tick={{ fill: '#bdc3c7', fontSize: 12 }} tickLine={false} axisLine={false} />
+                        <Tooltip 
+                          contentStyle={{ borderRadius: '12px', border: '1px solid #BDC3C7', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
+                        />
+                        <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                        <Line type="monotone" dataKey="fluency_score" name="Fluency" stroke="#33D2A4" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                        <Line type="monotone" dataKey="confidence_score" name="Confidence" stroke="#2C3E50" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                        <Line type="monotone" dataKey="pronunciation_score" name="Pronunciation" stroke="#BDC3C7" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </article>
+              <article className="admin-card">
+                <h3>Time Allocation (minutes)</h3>
+                <div className="admin-chart-container">
+                  {loading ? (
+                    <Skeleton height="100%" borderRadius={16} />
+                  ) : timeAllocation.length === 0 ? (
+                    <div className="admin-empty-chart">No data available yet</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={timeAllocation}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={100}
+                          innerRadius={60}
+                          paddingAngle={5}
+                        >
+                          {timeAllocation.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => [`${value} min`, 'Duration']} />
+                        <Legend layout="vertical" verticalAlign="middle" align="right" />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </article>
+            </section>
+            <section className="admin-grid admin-grid-2">
+              <article className="admin-card">
+                <h3>The Grind</h3>
+                {loading ? <Skeleton count={5} height={40} style={{ marginBottom: 8 }} /> : (
+                  <LeaderboardList items={grind} suffix="hrs" emptyMsg="No active users found for this period" />
+                )}
+              </article>
+              <article className="admin-card">
+                <h3>Fastest Risers</h3>
+                {loading ? <Skeleton count={5} height={40} style={{ marginBottom: 8 }} /> : (
+                  <LeaderboardList items={risers} suffix="pts" emptyMsg="No active users found for this period" />
+                )}
+              </article>
+            </section>
+          </>
+        )}
+
+        {activePage === 'users' && (
+          <section className="admin-card">
+            <div className="admin-table-controls">
+              <h3>User Management</h3>
+              <div className="admin-table-actions">
+                <div className="admin-search-box">
+                  <HiMagnifyingGlass className="admin-search-icon" />
+                  <input 
+                    type="text" 
+                    placeholder="Search users..." 
+                    value={userSearchQuery}
+                    onChange={(e) => setUserSearchQuery(e.target.value)}
+                  />
+                </div>
+                <select 
+                  className="admin-filter-select"
+                  value={userLevelFilter}
+                  onChange={(e) => setUserLevelFilter(e.target.value)}
+                >
+                  <option value="all">All Levels</option>
+                  <option value="1">Level 1</option>
+                  <option value="2">Level 2</option>
+                  <option value="3">Level 3</option>
+                  <option value="4">Level 4</option>
+                  <option value="5">Level 5</option>
+                </select>
+              </div>
+            </div>
+
+            {!filteredUsers.length ? (
+              <div className="admin-empty-chart">No users found matching your criteria.</div>
+            ) : (
+              <>
+                <div className="admin-table-wrap">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Username</th>
+                        <th>Role</th>
+                        <th>Level</th>
+                        <th>Points</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedUsers.map((u) => (
+                        <tr key={u.id}>
+                          <td>{getDisplayName(u, u.id)}</td>
+                          <td>{u.username || '-'}</td>
+                          <td>
+                            <span className={`admin-role-badge ${u.role === 'admin' || u.role === 'superadmin' ? 'is-admin' : ''}`}>
+                              {u.role || 'user'}
+                            </span>
+                          </td>
+                          <td>{u.current_level || 1}</td>
+                          <td>{u.speaker_points || 0}</td>
+                          <td>
+                            <span className={`admin-status-badge ${u.archived_at ? 'is-archived' : 'is-active'}`}>
+                              {u.archived_at ? 'Archived' : 'Active'}
+                            </span>
+                          </td>
+                          <td className="admin-actions">
+                            <button type="button" className="admin-icon-btn admin-icon-btn--edit" onClick={() => openEditUser(u)} title="Edit User">
+                              <HiOutlinePencilSquare size={18} />
+                            </button>
+                            <button type="button" className="admin-icon-btn admin-icon-btn--danger" onClick={() => setArchivingUserId(u.id)} title="Archive User" disabled={!!u.archived_at}>
+                              <HiOutlineTrash size={18} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="admin-pagination">
+                  <span className="admin-pagination-info">
+                    Showing {(userPage - 1) * USERS_PER_PAGE + 1} to {Math.min(userPage * USERS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length} entries
+                  </span>
+                  <div className="admin-pagination-controls">
+                    <button type="button" disabled={userPage === 1} onClick={handlePrevUserPage}>Previous</button>
+                    <button type="button" disabled={userPage === totalUserPages || totalUserPages === 0} onClick={handleNextUserPage}>Next</button>
+                  </div>
+                </div>
+              </>
+            )}
+          </section>
+        )}
+
+        {activePage === 'settings' && isSuperadmin && (
+          <section className="admin-grid admin-grid-2">
+            <div className="admin-settings-col">
+              <article className="admin-card">
+                <h3>Create Administrator</h3>
+                <form className="admin-create-form" onSubmit={submitCreateAdmin}>
+                  <input
+                    type="email"
+                    required
+                    placeholder="admin@email.com"
+                    value={createAdminForm.email}
+                    onChange={(e) => setCreateAdminForm((prev) => ({ ...prev, email: e.target.value }))}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Username"
+                    value={createAdminForm.username}
+                    onChange={(e) => setCreateAdminForm((prev) => ({ ...prev, username: e.target.value }))}
+                  />
+                  <input
+                    type="text"
+                    placeholder="First Name"
+                    value={createAdminForm.first_name}
+                    onChange={(e) => setCreateAdminForm((prev) => ({ ...prev, first_name: e.target.value }))}
+                  />
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    placeholder="Temporary Password"
+                    value={createAdminForm.password}
+                    onChange={(e) => setCreateAdminForm((prev) => ({ ...prev, password: e.target.value }))}
+                  />
+                  <select
+                    value={createAdminForm.role}
+                    onChange={(e) => setCreateAdminForm((prev) => ({ ...prev, role: e.target.value }))}
+                    style={{ gridColumn: '1 / -1' }}
+                  >
+                    <option value="admin">Admin</option>
+                    <option value="superadmin">Superadmin</option>
+                  </select>
+                  <button type="submit" className="admin-btn admin-btn--primary" disabled={creatingAdmin} style={{ gridColumn: '1 / -1' }}>
+                    {creatingAdmin ? 'Creating...' : 'Create Admin'}
+                  </button>
+                </form>
+              </article>
+
+              <article className="admin-card">
+                <h3>Active Administrators</h3>
+                <div className="admin-roster-list">
+                  {profiles.filter(p => p.role === 'admin' || p.role === 'superadmin').map(admin => (
+                    <div key={admin.id} className="admin-roster-item">
+                      <div className="admin-lb-avatar">{(admin.username || admin.first_name || 'A')[0].toUpperCase()}</div>
+                      <div className="admin-roster-info">
+                        <strong>{getDisplayName(admin, admin.id)}</strong>
+                      </div>
+                      <span className={`admin-role-badge ${admin.role === 'superadmin' ? 'is-admin' : ''}`}>
+                        {admin.role}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            </div>
+
+            <div className="admin-settings-col">
+              <article className="admin-card">
+                <h3>Platform Configurations</h3>
+                
+                <div className="admin-setting-item">
+                  <div className="admin-setting-info">
+                    <strong>Platform Maintenance Mode</strong>
+                    <p>Disables login for non-admin users and displays a maintenance screen.</p>
+                  </div>
+                  <label className="admin-toggle">
+                    <input 
+                      type="checkbox" 
+                      checked={systemSettings.maintenance_mode} 
+                      onChange={() => toggleSetting('maintenance_mode', systemSettings.maintenance_mode)} 
+                    />
+                    <span className="admin-toggle-slider"></span>
+                  </label>
+                </div>
+
+                <div className="admin-setting-item">
+                  <div className="admin-setting-info">
+                    <strong>Enable AI Failover Logging</strong>
+                    <p>Records all failed AI prompt generations to the database for debugging.</p>
+                  </div>
+                  <label className="admin-toggle">
+                    <input 
+                      type="checkbox" 
+                      checked={systemSettings.failover_logging} 
+                      onChange={() => toggleSetting('failover_logging', systemSettings.failover_logging)} 
+                    />
+                    <span className="admin-toggle-slider"></span>
+                  </label>
+                </div>
+
+                <div className="admin-setting-item">
+                  <div className="admin-setting-info">
+                    <strong>Capstone Defense Data Mode</strong>
+                    <p>Injects mock chart data across the dashboard for presentation purposes.</p>
+                  </div>
+                  <label className="admin-toggle">
+                    <input 
+                      type="checkbox" 
+                      checked={systemSettings.defense_data_mode} 
+                      onChange={() => toggleSetting('defense_data_mode', systemSettings.defense_data_mode)} 
+                    />
+                    <span className="admin-toggle-slider"></span>
+                  </label>
+                </div>
+              </article>
+            </div>
+          </section>
+        )}
+
+        {activePage === 'audit' && isSuperadmin && (
+          <section className="admin-card">
+            <div className="admin-table-controls">
+              <h3>Audit Logs</h3>
+              <div className="admin-table-actions">
+                <div className="admin-search-box">
+                  <HiMagnifyingGlass className="admin-search-icon" />
+                  <input 
+                    type="text" 
+                    placeholder="Search by Actor Name/ID..." 
+                    value={auditSearchQuery}
+                    onChange={(e) => setAuditSearchQuery(e.target.value)}
+                  />
+                </div>
+                <select 
+                  className="admin-filter-select"
+                  value={auditActionFilter}
+                  onChange={(e) => setAuditActionFilter(e.target.value)}
+                >
+                  <option value="all">All Actions</option>
+                  <option value="create">Create</option>
+                  <option value="update">Update</option>
+                  <option value="delete">Delete / Archive</option>
+                </select>
+                <select 
+                  className="admin-filter-select"
+                  value={auditEntityFilter}
+                  onChange={(e) => setAuditEntityFilter(e.target.value)}
+                >
+                  <option value="all">All Entities</option>
+                  <option value="profiles">Profiles</option>
+                  <option value="sessions">Sessions</option>
+                  <option value="system_settings">System Settings</option>
+                </select>
+              </div>
+            </div>
+
+            {loading ? (
+              <Skeleton count={10} height={40} style={{ marginBottom: 8 }} />
+            ) : !filteredAuditLogs.length ? (
+              <p className="admin-empty-chart">No audit logs found matching your criteria.</p>
+            ) : (
+              <>
+                <div className="admin-table-wrap">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Timestamp</th>
+                        <th>Actor</th>
+                        <th>Action</th>
+                        <th>Entity</th>
+                        <th>IP Address</th>
+                        <th>Details</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedAuditLogs.map((log) => (
+                        <tr key={log.id}>
+                          <td>{new Date(log.created_at).toLocaleString()}</td>
+                          <td>
+                            <strong>{getDisplayName(profiles.find(p => p.id === log.actor_id), log.actor_id)}</strong>
+                            <div style={{ fontSize: '0.75rem', color: '#BDC3C7' }}>{String(log.actor_id || '').slice(0, 8)}</div>
+                          </td>
+                          <td>
+                            <span className={`admin-status-badge ${getActionBadgeClass(log.action)}`}>
+                              {log.action}
+                            </span>
+                          </td>
+                          <td style={{ textTransform: 'capitalize' }}>{String(log.entity_type).replace('_', ' ')}</td>
+                          <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#BDC3C7' }}>
+                            {log.ip_address || 'N/A'}
+                          </td>
+                          <td>
+                            <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setInspectingLog(log)}>
+                              Inspect Payload
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="admin-pagination">
+                  <span className="admin-pagination-info">
+                    Showing {(auditPage - 1) * AUDIT_PER_PAGE + 1} to {Math.min(auditPage * AUDIT_PER_PAGE, filteredAuditLogs.length)} of {filteredAuditLogs.length} entries
+                  </span>
+                  <div className="admin-pagination-controls">
+                    <button type="button" disabled={auditPage === 1} onClick={() => setAuditPage(prev => prev - 1)}>Previous</button>
+                    <button type="button" disabled={auditPage === totalAuditPages || totalAuditPages === 0} onClick={() => setAuditPage(prev => prev + 1)}>Next</button>
+                  </div>
+                </div>
+              </>
+            )}
+          </section>
+        )}
       </section>
 
-      {error && <div className="admin-banner admin-banner--error">{error}</div>}
-      {successMessage && <div className="admin-banner admin-banner--success">{successMessage}</div>}
-
-      {isLoading && !dashboard && (
-        <DashboardSkeleton variant={activeView === 'technical' ? 'technical' : 'overview'} />
-      )}
-
-      {dashboard && activeView === 'overview' && (
-        <>
-          <div className="admin-section-heading">
-            <p className="admin-section-kicker">Section 1</p>
-            <h2>Platform Snapshot</h2>
-          </div>
-
-          <section className="admin-summary-grid">
-        <article className="admin-stat-card">
-          <span className="admin-stat-icon"><IoPeople size={18} /></span>
-          <p>Total Users</p>
-          <strong>{summary?.user_count ?? 0}</strong>
-          <em className={`delta-${deltaTone(summary?.user_delta ?? 0)}`}>
-            {deltaText(summary?.user_delta ?? 0)} {formatPeriodLabel(period)}
-          </em>
-        </article>
-
-        <article className="admin-stat-card">
-          <span className="admin-stat-icon"><IoStatsChart size={18} /></span>
-          <p>Completed Sessions</p>
-          <strong>{summary?.completed_sessions ?? 0}</strong>
-          <em>Across all recorded practice runs</em>
-        </article>
-
-        <article className="admin-stat-card">
-          <span className="admin-stat-icon"><IoPulse size={18} /></span>
-          <p>Average Score</p>
-          <strong>{Math.round(summary?.average_score ?? 0)}</strong>
-          <em>Overall speaking confidence baseline</em>
-        </article>
-
-        <article className="admin-stat-card">
-          <span className="admin-stat-icon"><IoCheckmarkCircle size={18} /></span>
-          <p>Active Accounts</p>
-          <strong>{summary?.active_users ?? 0}</strong>
-          <em>Users currently allowed to log in</em>
-        </article>
-          </section>
-        </>
-      )}
-
-      {dashboard && activeView === 'insights' && (
-        <>
-          <div className="admin-section-heading">
-            <p className="admin-section-kicker">Section 2</p>
-            <h2>Trends and Service Health</h2>
-          </div>
-
-          <section className="admin-content-grid admin-content-grid--charts">
-        <article className="admin-panel-card">
-          <div className="admin-panel-header">
-            <div>
-              <p className="admin-section-kicker">Performance Pulse</p>
-              <h3>User Composition</h3>
+        {editingUser && (
+          <div className="admin-modal-backdrop" role="presentation" onClick={() => setEditingUser(null)}>
+            <div className="admin-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+              <h3>View User</h3>
+            <label htmlFor="admin-edit-first-name">First Name</label>
+            <input
+              id="admin-edit-first-name"
+              type="text"
+              value={editingUser.first_name || ''}
+              readOnly
+            />
+            <label htmlFor="admin-edit-username">Username</label>
+            <input
+              id="admin-edit-username"
+              type="text"
+              value={editingUser.username || ''}
+              readOnly
+            />
+            <label htmlFor="admin-edit-last-name">Last Name</label>
+            <input
+              id="admin-edit-last-name"
+              type="text"
+              value={editingUser.last_name || ''}
+              readOnly
+            />
+            <div className="admin-modal-actions">
+              <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setEditingUser(null)}>Close</button>
             </div>
-            <IoBarChart size={20} />
-          </div>
-          <DonutChart items={userComposition} centerLabel="Users" />
-        </article>
-
-        <article className="admin-panel-card">
-          <div className="admin-panel-header">
-            <div>
-              <p className="admin-section-kicker">Growth Signal</p>
-              <h3>User Growth</h3>
-            </div>
-            <IoPeople size={20} />
-          </div>
-          <TrendBarChart
-            points={growthPoints}
-            metricKey="count"
-            tone="black"
-            formatter={(value) => `${Math.round(value)}`}
-          />
-          <div className="admin-panel-subnote">Users created per selected period bucket</div>
-        </article>
-
-        <article className="admin-panel-card admin-panel-card--backend">
-          <div className="admin-panel-header">
-            <div>
-              <p className="admin-section-kicker">Backend Health</p>
-              <h3>Service Readiness</h3>
-            </div>
-            <IoServer size={20} />
-          </div>
-          <div className="admin-health-list">
-            <div className="admin-health-item">
-              <span>Status</span>
-              <strong className="admin-health-pill admin-health-pill--ok">{backend?.status || 'unknown'}</strong>
-            </div>
-            <div className="admin-health-item">
-              <span>Auth Backoff</span>
-              <strong className={backend?.auth_backoff_ready ? 'admin-health-value is-ok' : 'admin-health-value is-warn'}>
-                {backend?.auth_backoff_ready ? 'Ready' : 'Missing config'}
-              </strong>
-            </div>
-            <div className="admin-health-item">
-              <span>LLM Routing</span>
-              <strong className={backend?.ai_ready ? 'admin-health-value is-ok' : 'admin-health-value is-warn'}>
-                {backend?.ai_ready ? 'Provider Online' : 'Template Fallback Mode'}
-              </strong>
-            </div>
-            <div className="admin-health-item">
-              <span>Admin Allowlist</span>
-              <strong className={backend?.admin_ready ? 'admin-health-value is-ok' : 'admin-health-value is-warn'}>
-                {backend?.admin_ready ? 'Enabled' : 'Disabled'}
-              </strong>
-            </div>
-          </div>
-
-          <div className="admin-health-groups">
-            <div className="admin-health-group">
-              <p className="admin-health-group-title">LLM Providers</p>
-              <div className="admin-service-status-list">
-                {providerStatusRows.map((item) => (
-                  <div key={item.key} className="admin-service-status-item">
-                    <div className="admin-service-status-copy">
-                      <strong>{item.label}</strong>
-                      <span>{item.hint}</span>
-                    </div>
-                    <span className={item.online ? 'admin-health-pill admin-health-pill--ok' : 'admin-health-pill admin-health-pill--warn'}>
-                      {serviceStatusLabel(item.online)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="admin-health-group">
-              <p className="admin-health-group-title">Analysis Engines</p>
-              <div className="admin-service-status-list">
-                {analysisStatusRows.map((item) => (
-                  <div key={item.key} className="admin-service-status-item">
-                    <div className="admin-service-status-copy">
-                      <strong>{item.label}</strong>
-                      <span>Runtime package availability</span>
-                    </div>
-                    <span className={item.online ? 'admin-health-pill admin-health-pill--ok' : 'admin-health-pill admin-health-pill--warn'}>
-                      {serviceStatusLabel(item.online)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </article>
-          </section>
-        </>
-      )}
-
-      {dashboard && activeView === 'technical' && (
-        <>
-          <div className="admin-section-heading">
-            <p className="admin-section-kicker">Section 5</p>
-            <h2>Technical and System Health</h2>
-          </div>
-
-          {isTechnicalLoading ? (
-            <DashboardSkeleton variant="technical" />
-          ) : (
-            <>
-              <section className="admin-summary-grid">
-                {technicalCards.map((card) => (
-                  <article key={card.label} className="admin-stat-card">
-                    <p>{card.label}</p>
-                    <strong>{card.value}</strong>
-                    <em>{card.helper}</em>
-                  </article>
-                ))}
-              </section>
-
-              <section className="admin-content-grid admin-content-grid--technical">
-                <article className="admin-panel-card">
-                  <div className="admin-panel-header">
-                    <div>
-                      <p className="admin-section-kicker">Security</p>
-                      <h3>Users in Exponential Backoff</h3>
-                    </div>
-                  </div>
-                  {lockoutUsers.length ? (
-                    <div className="admin-list-compact">
-                      {lockoutUsers.map((item) => (
-                        <div key={item.id} className="admin-list-item">
-                          <span>{item.email}</span>
-                          <strong>{item.failed_login_attempts || 0} attempts</strong>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="admin-empty-state">No users currently in lockout.</div>
-                  )}
-                </article>
-
-                <article className="admin-panel-card">
-                  <div className="admin-panel-header">
-                    <div>
-                      <p className="admin-section-kicker">Rate Limiting</p>
-                      <h3>Frequent Script Cooldown Hits</h3>
-                    </div>
-                  </div>
-                  {frequentCooldownUsers.length ? (
-                    <div className="admin-list-compact">
-                      {frequentCooldownUsers.map((item) => (
-                        <div key={item.id} className="admin-list-item">
-                          <span>{item.email}</span>
-                          <strong>{item.script_cooldown_hits || 0} hits</strong>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="admin-empty-state">No cooldown-heavy users detected.</div>
-                  )}
-                </article>
-
-                <article className="admin-panel-card">
-                  <div className="admin-panel-header">
-                    <div>
-                      <p className="admin-section-kicker">Cross-Platform Sync</p>
-                      <h3>Session Source Breakdown</h3>
-                    </div>
-                  </div>
-                  <div className="admin-health-list">
-                    <div className="admin-health-item">
-                      <span>Web Sessions</span>
-                      <strong>{syncBreakdown.web || 0}</strong>
-                    </div>
-                    <div className="admin-health-item">
-                      <span>Mobile Sessions</span>
-                      <strong>{syncBreakdown.mobile || 0}</strong>
-                    </div>
-                    <div className="admin-health-item">
-                      <span>Unknown Source</span>
-                      <strong>{syncBreakdown.unknown || 0}</strong>
-                    </div>
-                    <div className="admin-health-item">
-                      <span>Web Sync Success</span>
-                      <strong>{formatPercent(effectiveTechnicalHealth?.cross_platform_sync?.web_sync_success_pct)}</strong>
-                    </div>
-                  </div>
-                </article>
-
-                <article className="admin-panel-card">
-                  <div className="admin-panel-header">
-                    <div>
-                      <p className="admin-section-kicker">Provider Signals</p>
-                      <h3>API Usage and Quota Alerts</h3>
-                    </div>
-                  </div>
-                  <div className="admin-service-status-list">
-                    {providerQuotaSignals.providers?.map((item) => (
-                      <div key={`quota-${item.provider}`} className="admin-service-status-item">
-                        <div className="admin-service-status-copy">
-                          <strong>{item.label}</strong>
-                          <span>
-                            {item.request_count_30d || 0} requests in {providerQuotaSignals.window_days || 30}d, {item.rate_limited_count_30d || 0} rate-limited
-                            {item.last_rate_limited_at ? `, last 429 ${formatDate(item.last_rate_limited_at, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : ''}
-                          </span>
-                        </div>
-                        <span className={item.quota_signal === 'rate_limited' ? 'admin-health-pill admin-health-pill--warn' : 'admin-health-pill admin-health-pill--ok'}>
-                          {item.quota_signal === 'rate_limited' ? '429 Alert' : item.quota_signal === 'healthy' ? 'Healthy' : 'No Data'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="admin-panel-subnote">{providerQuotaSignals.note}</div>
-                </article>
-              </section>
-            </>
-          )}
-        </>
-      )}
-
-      {dashboard && activeView === 'leaderboards' && (
-        <>
-          <div className="admin-section-heading">
-            <p className="admin-section-kicker">Section 3</p>
-            <h2>Top Performers</h2>
-          </div>
-
-          <section className="admin-content-grid admin-content-grid--leaderboards">
-        <article className="admin-panel-card">
-          <div className="admin-panel-header">
-            <div>
-              <p className="admin-section-kicker">Leaderboard</p>
-              <h3>Most Time Recorded</h3>
-            </div>
-            <IoTime size={20} />
-          </div>
-          <LeaderboardList items={leaderboards?.top_time} metricKey="total_duration_sec" formatter={(value) => formatDuration(value || 0)} />
-        </article>
-
-        <article className="admin-panel-card">
-          <div className="admin-panel-header">
-            <div>
-              <p className="admin-section-kicker">Leaderboard</p>
-              <h3>Most Sessions Recorded</h3>
-            </div>
-            <IoStatsChart size={20} />
-          </div>
-          <LeaderboardList items={leaderboards?.top_sessions} metricKey="session_count" formatter={(value) => `${value || 0} sessions`} />
-        </article>
-
-        <article className="admin-panel-card">
-          <div className="admin-panel-header">
-            <div>
-              <p className="admin-section-kicker">Leaderboard</p>
-              <h3>Best Improvement</h3>
-            </div>
-            <IoPulse size={20} />
-          </div>
-          <LeaderboardList items={leaderboards?.top_improvers} metricKey="improvement_score" formatter={(value) => `${value > 0 ? '+' : ''}${value || 0}`} />
-        </article>
-          </section>
-        </>
-      )}
-
-      {dashboard && activeView === 'users' && (
-        <>
-          <div className="admin-section-heading">
-            <p className="admin-section-kicker">Section 4</p>
-            <h2>User Management</h2>
-          </div>
-
-          <section className="admin-panel-card admin-panel-card--users">
-        <div className="admin-panel-header admin-panel-header--users">
-          <div>
-            <p className="admin-section-kicker">User Control</p>
-            <h3>User Directory</h3>
-          </div>
-
-          <div className="admin-toolbar">
-            <form className="admin-search-form" onSubmit={handleSearchSubmit}>
-              <label className="admin-search-field">
-                <IoSearch size={16} />
-                <input
-                  type="search"
-                  value={searchInput}
-                  onChange={(event) => setSearchInput(event.target.value)}
-                  placeholder="Search by name or email"
-                />
-              </label>
-              <button type="submit" className="admin-secondary-btn">
-                Search
-              </button>
-              {hasActiveSearch && (
-                <button type="button" className="admin-ghost-btn" onClick={handleSearchClear}>
-                  Clear
-                </button>
-              )}
-            </form>
-
-            <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
-              {SORT_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
-            </select>
-
-            <button type="button" className="admin-ghost-btn" onClick={() => setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'))}>
-              {sortDir === 'asc' ? 'Ascending' : 'Descending'}
-            </button>
           </div>
         </div>
+      )}
 
-        {isLoading ? (
-          <div className="admin-empty-state admin-loading-state">Loading Data...</div>
-        ) : users.length ? (
-          <>
-            <div className="admin-user-table-wrap">
-              <table className="admin-user-table">
-                <thead>
-                  <tr>
-                    <th>User</th>
-                    <th>Status</th>
-                    <th>Sessions</th>
-                    <th>Recorded Time</th>
-                    <th>Average</th>
-                    <th>Improvement</th>
-                    <th>Trend</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((item) => (
-                    <tr key={item.id}>
-                      <td>
-                        <div className="admin-user-copy">
-                          <strong>{item.name}</strong>
-                          <span>{item.email}</span>
-                          <small>Joined {item.created_at ? formatDate(item.created_at, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unknown'}</small>
-                        </div>
-                      </td>
-                      <td>
-                        <span className={`admin-status-pill ${item.is_active ? 'is-active' : 'is-inactive'}`}>
-                          {item.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                      <td>{item.session_count}</td>
-                      <td>{formatDuration(item.total_duration_sec || 0)}</td>
-                      <td>{Math.round(item.average_score || 0)}</td>
-                      <td className={item.improvement_score >= 0 ? 'admin-metric-up' : 'admin-metric-down'}>
-                        {item.improvement_score >= 0 ? '+' : ''}{item.improvement_score}
-                      </td>
-                      <td><MiniSparkline values={item.recent_scores} /></td>
-                      <td>
-                        <button type="button" className="admin-secondary-btn admin-secondary-btn--small" onClick={() => handleOpenEditor(item)}>
-                          Manage
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      {archivingUserId && (
+        <div className="admin-modal-backdrop" role="presentation" onClick={() => setArchivingUserId(null)}>
+          <div className="admin-modal admin-confirm-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <h3>Archive User</h3>
+            <p>Are you sure you want to archive <strong>{getDisplayName(profiles.find(p => p.id === archivingUserId))}</strong>? They will lose access to the platform.</p>
+            <div className="admin-modal-actions">
+              <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setArchivingUserId(null)}>Cancel</button>
+              <button type="button" className="admin-btn admin-btn--danger" onClick={archiveUser}>Confirm Archive</button>
             </div>
+          </div>
+        </div>
+      )}
 
-            <div className="admin-pagination">
-              <span>
-                Page {pagination?.page || 1} of {pagination?.total_pages || 1}
-              </span>
-              <div>
-                <button type="button" className="admin-ghost-btn" disabled={(pagination?.page || 1) <= 1} onClick={() => setPage((prev) => Math.max(1, prev - 1))}>
-                  Previous
-                </button>
-                <button
-                  type="button"
-                  className="admin-primary-btn"
-                  disabled={(pagination?.page || 1) >= (pagination?.total_pages || 1)}
-                  onClick={() => setPage((prev) => prev + 1)}
-                >
-                  Next
-                </button>
+      {inspectingLog && (
+        <div className="admin-modal-backdrop" role="presentation" onClick={() => setInspectingLog(null)}>
+          <div className="admin-modal admin-payload-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-card-head">
+              <h3>Payload Inspector</h3>
+              <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setInspectingLog(null)}>Close</button>
+            </div>
+            <div className="admin-payload-content">
+              <div className="admin-payload-section">
+                <strong>Old Values</strong>
+                <pre><code>{inspectingLog.old_values ? JSON.stringify(inspectingLog.old_values, null, 2) : 'None'}</code></pre>
+              </div>
+              <div className="admin-payload-section">
+                <strong>New Values</strong>
+                <pre><code>{inspectingLog.new_values ? JSON.stringify(inspectingLog.new_values, null, 2) : 'None'}</code></pre>
               </div>
             </div>
-          </>
-        ) : (
-          <div className="admin-empty-state">
-            {hasActiveSearch ? 'No users matched your search.' : 'No users available yet.'}
           </div>
-        )}
-          </section>
-        </>
+        </div>
       )}
 
-      {activeView === 'users' && selectedUser && (
-        <section className="admin-panel-card admin-panel-card--focus">
-          <div className="admin-panel-header">
-            <div>
-              <p className="admin-section-kicker">Focused View</p>
-              <h3>{selectedUser.name} Performance Trend</h3>
-            </div>
-            <button type="button" className="admin-ghost-btn" onClick={handleCloseEditor}>Clear Selection</button>
-          </div>
-          <TrendBarChart
-            points={selectedUserTrend.map((value, index) => ({ label: `S${index + 1}`, value }))}
-            metricKey="value"
-            tone="gold"
-            formatter={(value) => `${Math.round(value)}`}
-          />
-          <div className="admin-focus-meta">
-            <span>Last sign in: {selectedUser.last_sign_in_at ? formatDate(selectedUser.last_sign_in_at) : 'No recent sign in'}</span>
-            <span>Email confirmed: {selectedUser.email_confirmed ? 'Yes' : 'No'}</span>
-            <span>Locked attempts: {selectedUser.failed_login_attempts || 0}</span>
-          </div>
-        </section>
+      {toastMessage && (
+        <div className={`admin-toast ${toastMessage.type}`}>
+          {toastMessage.text}
+        </div>
       )}
-
-      <UserEditorModal
-        user={selectedUser}
-        formState={formState}
-        saving={isSaving}
-        onClose={handleCloseEditor}
-        onChange={(field, value) => setFormState((prev) => ({ ...prev, [field]: value }))}
-        onSubmit={handleSaveUser}
-        onToggleActive={handleToggleActive}
-        onDeleteUser={handleDeleteUser}
-      />
     </div>
   );
 }

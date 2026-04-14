@@ -6,10 +6,9 @@ import {
   IoHomeOutline,
   IoLogOutOutline,
   IoPersonOutline,
+  IoSettingsOutline,
   IoStatsChartOutline,
 } from 'react-icons/io5';
-import { MdOutlineBackpack } from 'react-icons/md';
-import NotificationCenter from './NotificationCenter';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import './SideNav.css';
@@ -17,8 +16,9 @@ import './SideNav.css';
 const PRIMARY_NAV_ITEMS = [
   { to: ROUTES.ACTIVITY, label: 'Home', icon: IoHomeOutline },
   { to: ROUTES.PROGRESS, label: 'Progress', icon: IoStatsChartOutline },
-  { to: ROUTES.DASHBOARD, label: 'Dashboard', icon: MdOutlineBackpack },
   { to: ROUTES.FRAMEWORKS, label: 'Learn', icon: IoBookOutline },
+  { to: ROUTES.PROFILE, label: 'Profile', icon: IoPersonOutline },
+  { to: ROUTES.SETTINGS, label: 'Settings', icon: IoSettingsOutline },
 ];
 
 export default function SideNav() {
@@ -87,18 +87,6 @@ export default function SideNav() {
           </NavLink>
         ))}
       </nav>
-
-      <div className="side-nav-utilities" aria-label="Quick access">
-        <NavLink
-          to={ROUTES.PROFILE}
-          className={({ isActive }) => `side-nav-link${isActive ? ' active' : ''}`}
-          aria-label="Profile"
-        >
-          <IoPersonOutline className="side-nav-icon" aria-hidden="true" />
-          <span>Profile</span>
-        </NavLink>
-        <NotificationCenter label="Notifications" railMode={true} />
-      </div>
 
       <button type="button" className="side-nav-logout" onClick={handleLogoutClick}>
         <IoLogOutOutline aria-hidden="true" />

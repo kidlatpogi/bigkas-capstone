@@ -42,7 +42,7 @@ function resolvePostLoginRoute(user) {
   if (user?.onboardingStage === 'profiling') return ROUTES.USER_PROFILING;
   if (user?.onboardingStage === 'pretest') return ROUTES.USER_PRETEST;
   if (user?.onboardingStage === 'analyzing') return ROUTES.USER_ANALYZING;
-  return ROUTES.DASHBOARD;
+  return ROUTES.HOME;
 }
 
 /**

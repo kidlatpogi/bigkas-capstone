@@ -208,7 +208,7 @@ function EditProfilePage() {
           <button
             type="button"
             className="edit-nav-row"
-            onClick={() => navigate(ROUTES.CHANGE_PASSWORD)}
+            onClick={() => navigate(ROUTES.CHANGE_PASSWORD, { state: { from: 'profile' } })}
           >
             <span>Change Password</span>
             <IoChevronForward size={18} />
@@ -217,7 +217,7 @@ function EditProfilePage() {
           <button
             type="button"
             className="edit-nav-row"
-            onClick={() => navigate(ROUTES.ACCOUNT_SETTINGS)}
+            onClick={() => navigate(ROUTES.ACCOUNT_SETTINGS, { state: { from: 'profile' } })}
           >
             <span>Account Settings</span>
             <IoChevronForward size={18} />

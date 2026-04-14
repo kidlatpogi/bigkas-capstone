@@ -1,76 +1,81 @@
-/* Profile settings — 2-column card grid (profile left, hardware + session right) */
+/* ══════════════════════════════════════════════
+   SettingsProfilePage.css — Design-system aligned
+   Forest Green (#5A7863), Deep Navy (#0B3954), Light Mint (#D3E3BC)
+   ══════════════════════════════════════════════ */
 
 .settings-profile-page.dashboard-page-new {
   padding: 0;
+  background: var(--dashboard-page-bg, #ffffff);
 }
 
-.settings-profile-shell.dashboard-shell {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  box-sizing: border-box;
-}
-
-.settings-profile-inner {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
+.settings-profile-shell {
   width: 100%;
-  max-width: 1180px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 24px 16px 48px;
+  padding: 48px 24px 80px;
   box-sizing: border-box;
+}
+
+/* ── Hero header ─────────────────────────── */
+.settings-profile-hero {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.settings-profile-hero-title {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 48px;
+  font-weight: 600;
+  line-height: 1.07;
+  letter-spacing: -0.28px;
+  color: #0B3954;
+  margin: 0;
+}
+
+.settings-profile-hero-sub {
+  margin: 14px 0 0;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 17px;
+  line-height: 1.47;
+  letter-spacing: -0.374px;
+  color: rgba(11, 57, 84, 0.8);
+}
+
+/* ── 2-row grid (content-sized) ──────────────────────── */
+.settings-profile-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
   align-items: start;
 }
 
-/* One grid row: main vs. stacked hardware + session — avoids row stretch that left a gap under Hardware */
-.settings-profile-card--main {
-  grid-column: 1;
-  grid-row: 1;
-}
-
-.settings-profile-rail-column {
-  grid-column: 2;
-  grid-row: 1;
+.settings-profile-side-col {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  min-width: 0;
-  align-self: start;
 }
 
-.settings-profile-card {
-  margin: 0;
-  padding: 28px 32px;
-  box-sizing: border-box;
+/* ── Card overrides ─────────────────────── */
+.settings-profile-card--main,
+.settings-profile-card--links,
+.settings-profile-card--legal {
+  padding: 36px;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
 }
 
-.settings-profile-card-header {
-  margin-bottom: 20px;
-}
-
-.settings-profile-card-title {
-  margin: 0;
-  font-size: 1.35rem;
-  font-weight: 800;
-  color: #002d4f;
-  letter-spacing: -0.02em;
-}
-
-.settings-profile-main-body {
+/* ── Avatar block ─────────────────────────── */
+.sp-avatar-block {
   display: flex;
-  flex-direction: column;
   align-items: center;
   gap: 24px;
-  width: 100%;
+  margin-bottom: 32px;
 }
 
-.settings-profile-avatar-btn {
+.sp-avatar-btn {
+  position: relative;
   flex-shrink: 0;
-  width: 148px;
-  height: 148px;
+  width: 110px;
+  height: 110px;
   padding: 0;
   border: none;
   background: transparent;
@@ -78,39 +83,87 @@
   border-radius: 50%;
 }
 
-.settings-profile-avatar-ring {
+.sp-avatar-ring {
   display: block;
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: #ffffff;
-  border: 3px solid #010101;
-  box-sizing: border-box;
+  border: 3px solid #5A7863;
   overflow: hidden;
+  box-sizing: border-box;
+  background: #ffffff;
 }
 
-.settings-profile-avatar-img {
+.sp-avatar-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
 
-.settings-profile-avatar-placeholder {
+.sp-avatar-placeholder {
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8fafc;
-  color: #002d4f;
-  font-size: 2.5rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  background: #0B3954;
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.28px;
   user-select: none;
 }
 
-.settings-profile-file-input {
+.sp-avatar-camera {
+  position: absolute;
+  right: 0;
+  bottom: 2px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #5A7863;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  border: 2px solid #ffffff;
+  transition: background-color 0.2s ease;
+}
+
+.sp-avatar-btn:hover .sp-avatar-camera {
+  background: #90AB8B;
+}
+
+.sp-avatar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sp-avatar-name {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.28px;
+  color: #0B3954;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sp-avatar-email {
+  font-size: 14px;
+  color: rgba(11, 57, 84, 0.6);
+  letter-spacing: -0.224px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sp-sr-only {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -121,187 +174,433 @@
   border: 0;
 }
 
-.settings-profile-card.settings-profile-card--main {
-  position: relative;
+/* ── Status messages ──────────────────────── */
+.sp-message {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 20px;
 }
 
-.settings-profile-form-block {
-  width: 100%;
+.sp-message--error {
+  background: rgba(220, 38, 38, 0.08);
+  color: #dc2626;
+}
+
+.sp-message--success {
+  background: rgba(90, 120, 99, 0.1);
+  color: #3d6b4a;
+}
+
+/* ── Form ─────────────────────────────────── */
+.sp-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
-.settings-profile-name-row {
+.sp-name-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
 
-.settings-profile-field {
+.sp-field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
 }
 
-.settings-profile-label {
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: #64748b;
-  line-height: 1.2;
+.sp-label {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(11, 57, 84, 0.72);
+  letter-spacing: 0.02em;
 }
 
-.settings-profile-input,
-.settings-profile-select {
+.sp-input {
   width: 100%;
-  height: 48px;
-  padding: 0 14px;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 400;
-  color: #0f172a;
+  height: 50px;
+  padding: 0 16px;
+  border: 1.5px solid #D3E3BC;
+  border-radius: 10px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  font-size: 16px;
+  color: #3C4952;
   background: #ffffff;
   box-sizing: border-box;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  letter-spacing: -0.374px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
-.settings-profile-input:focus,
-.settings-profile-select:focus {
-  border-color: #ff9f1c;
-  box-shadow: 0 0 0 3px rgba(255, 159, 28, 0.2);
+.sp-input:focus {
+  border-color: #5A7863;
+  box-shadow: 0 0 0 3px rgba(90, 120, 99, 0.15);
 }
 
-.settings-profile-input--readonly {
-  cursor: default;
-  user-select: text;
-  background: #f8fafc;
-  color: #64748b;
+.sp-input::placeholder {
+  color: rgba(60, 73, 82, 0.38);
 }
 
-.settings-profile-btn-row {
+.sp-input--readonly {
+  background: #f7f8f2;
+  color: rgba(11, 57, 84, 0.48);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ── Buttons ──────────────────────────────── */
+.sp-btn-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
-.settings-profile-btn {
-  min-height: 48px;
-  padding: 0 18px;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 700;
+.sp-btn {
+  height: 50px;
+  border-radius: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1;
   cursor: pointer;
   border: none;
-  transition: opacity 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  transition: background-color 0.18s ease, opacity 0.18s ease, transform 0.1s ease;
 }
 
-.settings-profile-btn--cancel {
-  background: #64748b;
-  color: #f8fafc;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+.sp-btn:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
-.settings-profile-btn--save {
-  background: #ff9f1c;
+.sp-btn--save {
+  background: #5A7863;
   color: #ffffff;
-  box-shadow: 0 2px 12px rgba(255, 159, 28, 0.35);
 }
 
-.settings-profile-btn--navy {
-  background: #002d4f;
-  color: #ffffff;
-  box-shadow: 0 2px 12px rgba(0, 45, 79, 0.25);
+.sp-btn--save:hover:not(:disabled) {
+  background: #4a6352;
 }
 
-.settings-profile-btn--danger {
-  background: #d9534f;
-  color: #ffffff;
-  box-shadow: 0 2px 12px rgba(217, 83, 79, 0.35);
-}
-
-.settings-profile-btn--cancel:hover:not(:disabled),
-.settings-profile-btn--save:hover:not(:disabled),
-.settings-profile-btn--navy:hover:not(:disabled),
-.settings-profile-btn--danger:hover:not(:disabled) {
-  opacity: 0.94;
-  transform: scale(1.01);
-}
-
-.settings-profile-btn--cancel:active:not(:disabled),
-.settings-profile-btn--save:active:not(:disabled),
-.settings-profile-btn--navy:active:not(:disabled),
-.settings-profile-btn--danger:active:not(:disabled) {
-  transform: scale(0.99);
-}
-
-.settings-profile-btn-full {
-  width: 100%;
-  margin-top: 4px;
-}
-
-.settings-profile-permission-hint {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 0 0 12px;
-}
-
-.settings-profile-permission-text {
-  margin: 0;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #64748b;
-}
-
-.settings-profile-hardware-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.settings-profile-hardware-row {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: stretch;
-}
-
-.settings-profile-label--hardware {
-  margin: 0;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: #64748b;
-}
-
-.settings-profile-select {
-  appearance: auto;
-  cursor: pointer;
-}
-
-.settings-profile-select:disabled {
-  opacity: 0.85;
+.sp-btn--save:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
-  background: #f1f5f9;
 }
 
-@media (max-width: 1024px) {
-  .settings-profile-inner {
+.sp-btn--cancel {
+  background: #f0f2ed;
+  color: #3C4952;
+}
+
+.sp-btn--cancel:hover:not(:disabled) {
+  background: #e2e5dc;
+}
+
+/* ── Card title ──────────────────────────── */
+.sp-card-title {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: #0B3954;
+  margin: 0 0 18px;
+  letter-spacing: -0.28px;
+}
+
+/* ── Link rows ───────────────────────────── */
+.sp-links-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.sp-link-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 0;
+  border: none;
+  background: transparent;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #3C4952;
+  cursor: pointer;
+  transition: color 0.15s ease;
+  text-align: left;
+}
+
+.sp-link-row:not(:last-child) {
+  border-bottom: 1px solid rgba(211, 227, 188, 0.5);
+}
+
+.sp-link-row:hover {
+  color: #5A7863;
+}
+
+.sp-link-chevron {
+  color: rgba(11, 57, 84, 0.3);
+  flex-shrink: 0;
+}
+
+/* ── Avatar modal ─────────────────────────── */
+.sp-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 57, 84, 0.4);
+  display: grid;
+  place-items: center;
+  z-index: 1100;
+  padding: 16px;
+}
+
+.sp-modal {
+  width: min(400px, 100%);
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: rgba(11, 57, 84, 0.22) 0px 20px 40px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sp-modal-title {
+  margin: 0 0 10px;
+  text-align: center;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: #0B3954;
+}
+
+.sp-modal-action,
+.sp-modal-cancel {
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  padding: 13px 16px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color 0.2s ease;
+}
+
+.sp-modal-action {
+  background: #f0f2ed;
+  color: #3C4952;
+}
+
+.sp-modal-action:hover {
+  background: #e2e5dc;
+}
+
+.sp-modal-action--danger {
+  color: #dc2626;
+}
+
+.sp-modal-action--danger:hover {
+  background: #fef2f2;
+}
+
+.sp-modal-cancel {
+  background: #0B3954;
+  color: #ffffff;
+  margin-top: 6px;
+}
+
+.sp-modal-cancel:hover {
+  background: #082a3d;
+}
+
+/* ══════════════════════════════════════════════
+   Dark mode
+   ══════════════════════════════════════════════ */
+[data-theme="dark"] .settings-profile-page.dashboard-page-new {
+  background: var(--dashboard-page-bg, #0B0B0D);
+}
+
+[data-theme="dark"] .settings-profile-hero-title {
+  color: #F0F0F0;
+}
+
+[data-theme="dark"] .settings-profile-hero-sub {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+[data-theme="dark"] .sp-avatar-ring {
+  border-color: #90AB8B;
+  background: #1a2418;
+}
+
+[data-theme="dark"] .sp-avatar-placeholder {
+  background: #111827;
+  color: #f3f4f6;
+}
+
+[data-theme="dark"] .sp-avatar-camera {
+  border-color: #1a2418;
+}
+
+[data-theme="dark"] .sp-avatar-name {
+  color: #F0F0F0;
+}
+
+[data-theme="dark"] .sp-avatar-email {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+[data-theme="dark"] .sp-label {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+[data-theme="dark"] .sp-input {
+  background: #1c2720;
+  border-color: #314338;
+  color: #F0F0F0;
+}
+
+[data-theme="dark"] .sp-input:focus {
+  border-color: #90AB8B;
+  box-shadow: 0 0 0 3px rgba(144, 171, 139, 0.2);
+}
+
+[data-theme="dark"] .sp-input::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+[data-theme="dark"] .sp-input--readonly {
+  background: #1a231d;
+  color: rgba(255, 255, 255, 0.32);
+}
+
+[data-theme="dark"] .sp-btn--save {
+  background: #5A7863;
+}
+
+[data-theme="dark"] .sp-btn--save:disabled {
+  background: #2a3a2e;
+  color: #7c8e7f;
+  opacity: 1;
+}
+
+[data-theme="dark"] .sp-btn--cancel {
+  background: #1e1e1e;
+  color: #9eb59d;
+}
+
+[data-theme="dark"] .sp-btn--cancel:hover:not(:disabled) {
+  background: #2a2a2a;
+}
+
+[data-theme="dark"] .sp-card-title {
+  color: #F0F0F0;
+}
+
+[data-theme="dark"] .sp-link-row {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+[data-theme="dark"] .sp-link-row:not(:last-child) {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .sp-link-row:hover {
+  color: #90AB8B;
+}
+
+[data-theme="dark"] .sp-link-chevron {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .sp-message--error {
+  background: rgba(220, 38, 38, 0.12);
+  color: #ff6b6b;
+}
+
+[data-theme="dark"] .sp-message--success {
+  background: rgba(90, 120, 99, 0.15);
+  color: #90AB8B;
+}
+
+[data-theme="dark"] .sp-modal {
+  background: #1e1e1e;
+}
+
+[data-theme="dark"] .sp-modal-title {
+  color: #F0F0F0;
+}
+
+[data-theme="dark"] .sp-modal-action {
+  background: #2a2a2a;
+  color: #F0F0F0;
+}
+
+[data-theme="dark"] .sp-modal-action:hover {
+  background: #333;
+}
+
+[data-theme="dark"] .sp-modal-action--danger {
+  color: #ff6b6b;
+}
+
+[data-theme="dark"] .sp-modal-cancel {
+  background: #333;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ── Responsive ──────────────────────────── */
+@media (max-width: 900px) {
+  .settings-profile-grid {
     grid-template-columns: 1fr;
+  }
+
+  .settings-profile-shell {
+    padding: 32px 16px 100px;
+  }
+
+  .settings-profile-hero-title {
+    font-size: 36px;
+  }
+}
+
+@media (max-width: 600px) {
+  .settings-profile-hero {
+    margin-bottom: 32px;
+  }
+
+  .settings-profile-hero-title {
+    font-size: 30px;
   }
 
   .settings-profile-card--main,
-  .settings-profile-rail-column {
-    grid-column: 1;
-    grid-row: auto;
+  .settings-profile-card--links,
+  .settings-profile-card--legal {
+    padding: 24px 20px;
   }
-}
 
-@media (max-width: 720px) {
-  .settings-profile-name-row {
+  .sp-avatar-block {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .sp-avatar-info {
+    align-items: center;
+  }
+
+  .sp-name-row {
     grid-template-columns: 1fr;
+  }
+
+  .sp-btn-row {
+    grid-template-columns: 1fr;
+  }
+
+  .sp-input {
+    font-size: 16px;
   }
 }

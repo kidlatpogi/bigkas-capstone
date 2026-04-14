@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import BackButton from '../../components/common/BackButton';
+import { Link, useNavigate } from 'react-router-dom';
+import { ROUTES } from '../../utils/constants';
 import './TestAudioVideoPage.css';
 
 const MIC_SENSITIVITY_KEY = 'pref_mic_sensitivity';
@@ -203,83 +203,91 @@ export default function TestAudioVideoPage() {
 
   return (
     <div className="av-page">
-      {/* Header */}
-      <div className="av-header">
-        <BackButton />
-        <h1 className="av-title">Test Audio / Video</h1>
-        <div style={{ width: 40 }} />
-      </div>
+      <section className="av-single-card">
+        <nav className="av-breadcrumb" aria-label="Breadcrumb">
+          <Link className="av-breadcrumb-link" to={ROUTES.SETTINGS}>
+            Settings
+          </Link>
+          <span className="av-breadcrumb-sep">&gt;</span>
+          <span className="av-breadcrumb-current">Test Audio/ Video</span>
+        </nav>
 
-      {/* Camera Preview */}
-      <section className="av-section">
-        <p className="av-section-label">CAMERA PREVIEW</p>
-        <div className="av-camera-wrap">
-          {cameraPermission !== false ? (
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="av-video"
-            />
-          ) : (
-            <div className="av-camera-placeholder">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="1" y1="1" x2="23" y2="23"/>
-                <path d="M21 21H3a2 2 0 01-2-2V8a2 2 0 012-2h3m3-3h6l2 3h4a2 2 0 012 2v9.34m-7.72-2.06A4 4 0 1111.17 12.98"/>
-              </svg>
-              <p>Camera permission not granted</p>
+        <p className="av-kicker">Hardware Check</p>
+        <h1>Test Audio / Video</h1>
+        <p className="av-subtitle">
+          Verify your camera and microphone before starting your speaking sessions.
+        </p>
+
+        {/* Camera Preview */}
+        <section className="av-section">
+          <p className="av-section-label">CAMERA PREVIEW</p>
+          <div className="av-camera-wrap">
+            {cameraPermission !== false ? (
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="av-video"
+              />
+            ) : (
+              <div className="av-camera-placeholder">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                  <path d="M21 21H3a2 2 0 01-2-2V8a2 2 0 012-2h3m3-3h6l2 3h4a2 2 0 012 2v9.34m-7.72-2.06A4 4 0 1111.17 12.98"/>
+                </svg>
+                <p>Camera permission not granted</p>
+              </div>
+            )}
+
+            {/* Flip camera button */}
+            {cameraPermission && cameraReady && (
+              <button
+                className="av-flip-btn"
+                onClick={handleFlipCamera}
+                aria-label="Flip camera"
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M1 4v6h6"/>
+                  <path d="M23 20v-6h-6"/>
+                  <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4-4.64 4.36A9 9 0 013.51 15"/>
+                </svg>
+              </button>
+            )}
+          </div>
+          <div className="av-status-row">
+            <StatusDot status={camStatus} />
+            <span className="av-status-text">{camStatusText}</span>
+          </div>
+        </section>
+
+        {/* Microphone Test */}
+        <section className="av-section">
+          <p className="av-section-label">MICROPHONE TEST</p>
+          <div className="av-mic-card">
+            <div className="av-visualizer">
+              <AudioLevelBars level={audioLevel} isActive={isMicTesting} barCount={24} />
             </div>
-          )}
-
-          {/* Flip camera button */}
-          {cameraPermission && cameraReady && (
+            <div className="av-status-row av-status-row--center">
+              <StatusDot status={micStatusColor} />
+              <span className="av-status-text">{micStatusText}</span>
+            </div>
             <button
-              className="av-flip-btn"
-              onClick={handleFlipCamera}
-              aria-label="Flip camera"
+              className={`av-mic-btn${isMicTesting ? ' av-mic-btn-stop' : ''}`}
+              onClick={handleToggleMicTest}
+              disabled={audioPermission === false}
             >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M1 4v6h6"/>
-                <path d="M23 20v-6h-6"/>
-                <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4-4.64 4.36A9 9 0 013.51 15"/>
-              </svg>
+              {isMicTesting ? 'Stop Mic Test' : 'Start Mic Test'}
             </button>
-          )}
-        </div>
-        <div className="av-status-row">
-          <StatusDot status={camStatus} />
-          <span className="av-status-text">{camStatusText}</span>
-        </div>
-      </section>
+          </div>
+        </section>
 
-      {/* Microphone Test */}
-      <section className="av-section">
-        <p className="av-section-label">MICROPHONE TEST</p>
-        <div className="av-mic-card">
-          <div className="av-visualizer">
-            <AudioLevelBars level={audioLevel} isActive={isMicTesting} barCount={24} />
-          </div>
-          <div className="av-status-row" style={{ justifyContent: 'center', marginBottom: 16 }}>
-            <StatusDot status={micStatusColor} />
-            <span className="av-status-text">{micStatusText}</span>
-          </div>
-          <button
-            className={`av-mic-btn${isMicTesting ? ' av-mic-btn-stop' : ''}`}
-            onClick={handleToggleMicTest}
-            disabled={audioPermission === false}
-          >
-            {isMicTesting ? 'Stop Mic Test' : 'Start Mic Test'}
+        <div className="av-done-wrap">
+          <button className="av-done-btn" onClick={() => navigate(ROUTES.SETTINGS)}>
+            Done
           </button>
         </div>
       </section>
-
-      {/* Done button */}
-      <div className="av-done-wrap">
-        <button className="av-done-btn" onClick={() => navigate(-1)}>
-          Done
-        </button>
-      </div>
     </div>
   );
 }

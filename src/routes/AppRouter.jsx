@@ -46,13 +46,6 @@ import MainMobileMenu from '../components/common/MainMobileMenu';
 import BackgroundAnalysisToast from '../components/common/BackgroundAnalysisToast';
 import bigkasLogo from '../assets/Temporary Logo.png';
 
-const ADMIN_SESSION_KEY = 'bigkas_admin_session';
-
-function hasStoredAdminSession() {
-  if (typeof window === 'undefined') return false;
-  return window.sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true';
-}
-
 function getAuthenticatedRedirect(user, isAdminAuthenticated) {
   if (isAdminAuthenticated) return ROUTES.ADMIN_DASHBOARD;
   if (user?.onboardingStage === 'profiling') return ROUTES.USER_PROFILING;
@@ -75,7 +68,8 @@ function ProtectedRoute() {
     pathname === ROUTES.DASHBOARD ||
     pathname === ROUTES.PROGRESS ||
     pathname === ROUTES.FRAMEWORKS ||
-    pathname === ROUTES.PROFILE;
+    pathname === ROUTES.PROFILE ||
+    pathname === ROUTES.SETTINGS;
 
   const hideMainNav =
     pathname === ROUTES.USER_PROFILING ||
@@ -139,7 +133,6 @@ function ProtectedRoute() {
 
 function AdminRoute() {
   const { isAuthenticated, isInitializing, isAdminAuthenticated } = useAuthContext();
-  const adminSessionActive = isAdminAuthenticated || hasStoredAdminSession();
 
   if (isInitializing) {
     if (window.location.pathname === ROUTES.HOME) {
@@ -156,7 +149,7 @@ function AdminRoute() {
     );
   }
 
-  if (adminSessionActive) {
+  if (isAdminAuthenticated) {
     return (
       <>
         <main className="main-content">
@@ -189,7 +182,6 @@ function AdminRoute() {
  */
 function PublicRoute() {
   const { isAuthenticated, isInitializing, isAdminAuthenticated, user } = useAuthContext();
-  const adminSessionActive = isAdminAuthenticated || hasStoredAdminSession();
 
   if (isInitializing) {
     if (window.location.pathname === ROUTES.HOME) {
@@ -207,7 +199,7 @@ function PublicRoute() {
   }
 
   if (isAuthenticated) {
-    return <Navigate to={getAuthenticatedRedirect(user, adminSessionActive)} replace />;
+    return <Navigate to={getAuthenticatedRedirect(user, isAdminAuthenticated)} replace />;
   }
 
   return (

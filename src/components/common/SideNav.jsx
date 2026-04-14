@@ -6,6 +6,7 @@ import {
   IoHomeOutline,
   IoLogOutOutline,
   IoPersonOutline,
+  IoSettingsOutline,
   IoStatsChartOutline,
 } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
@@ -17,6 +18,7 @@ const PRIMARY_NAV_ITEMS = [
   { to: ROUTES.PROGRESS, label: 'Progress', icon: IoStatsChartOutline },
   { to: ROUTES.FRAMEWORKS, label: 'Learn', icon: IoBookOutline },
   { to: ROUTES.PROFILE, label: 'Profile', icon: IoPersonOutline },
+  { to: ROUTES.SETTINGS, label: 'Settings', icon: IoSettingsOutline },
 ];
 
 export default function SideNav() {

@@ -18,6 +18,7 @@ function MainMobileMenu() {
       { label: 'Dashboard', link: ROUTES.DASHBOARD, active: pathname === ROUTES.DASHBOARD },
       { label: 'Learn', link: ROUTES.FRAMEWORKS, active: pathname === ROUTES.FRAMEWORKS },
       { label: 'Profile', link: ROUTES.PROFILE, active: pathname === ROUTES.PROFILE },
+      { label: 'Settings', link: ROUTES.SETTINGS, active: pathname === ROUTES.SETTINGS },
       { label: 'Log Out', link: '#', onClick: logout },
     ],
     [logout, pathname],

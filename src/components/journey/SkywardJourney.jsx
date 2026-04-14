@@ -1021,106 +1021,32 @@ export default function SkywardJourney({
     : (lastCompletedStepIndex >= 0 ? lastCompletedStepIndex : 0);
   const [visibleStepIndex, setVisibleStepIndex] = useState(indexToUse);
 
+  // Pure mathematical tracking (Zero DOM reads during pan/scroll)
   useEffect(() => {
-    const viewportEl = viewportRef.current;
-    if (!viewportEl || !sectionMeta.length) return undefined;
+    if (!indexedNodePoints.length || !viewportRef.current) return;
 
-    const detectVisibleSection = () => {
-      const viewportRect = viewportEl.getBoundingClientRect();
-      const viewportTop = viewportRect.top;
-      const viewportBottom = viewportRect.bottom;
-      const visibleCandidates = [];
-      let nearestAbove = null;
-      let nearestBelow = null;
+    const vHeight = viewportRef.current.clientHeight || window.innerHeight;
+    // The screen position we consider "in focus" (32% from the top)
+    const focusScreenY = vHeight * 0.32;
 
-      sectionHeaderRefs.current.forEach((headerEl, idx) => {
-        if (!headerEl || idx >= sectionMeta.length) return;
-        const rect = headerEl.getBoundingClientRect();
-        const isVisible = rect.bottom > viewportTop && rect.top < viewportBottom;
+    // Reverse the CSS transform to find which unscaled map Y-coordinate is currently at the focus point
+    // Equation: screenY = mapY * MAP_SCALE + map.ty
+    const targetContentY = (focusScreenY - map.ty) / MAP_SCALE;
 
-        if (isVisible) {
-          visibleCandidates.push({ idx, score: Math.abs(rect.top - viewportTop) });
-          return;
-        }
+    let bestIdx = indexToUse; // Default fallback
+    let bestDist = Number.POSITIVE_INFINITY;
 
-        if (rect.top <= viewportTop) {
-          if (!nearestAbove || rect.top > nearestAbove.top) {
-            nearestAbove = { idx, top: rect.top };
-          }
-          return;
-        }
-
-        if (!nearestBelow || rect.top < nearestBelow.top) {
-          nearestBelow = { idx, top: rect.top };
-        }
-      });
-
-      let nextIndex = 0;
-      if (visibleCandidates.length) {
-        visibleCandidates.sort((a, b) => a.score - b.score);
-        nextIndex = visibleCandidates[0].idx;
-      } else if (nearestAbove) {
-        nextIndex = nearestAbove.idx;
-      } else if (nearestBelow) {
-        nextIndex = nearestBelow.idx;
+    indexedNodePoints.forEach((pt, i) => {
+      if (!pt) return;
+      const dist = Math.abs(pt.y - targetContentY);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestIdx = i;
       }
+    });
 
-      setVisibleSectionIndex((prev) => (prev === nextIndex ? prev : nextIndex));
-      // Native DOM tracking for the current step (immune to CSS/Scroll mismatch)
-      const vHeight = viewportEl.clientHeight || window.innerHeight;
-      const focusY = vHeight * 0.32;
-      let bestIdx = null; // Do NOT fallback to indexToUse
-      let bestDist = Number.POSITIVE_INFINITY;
-
-      nodeRefs.current.forEach((el, i) => {
-        if (!el) return;
-        const rect = el.getBoundingClientRect();
-
-        // Calculate the exact center of the node
-        const nodeCenterY = rect.top + (rect.height / 2);
-        const dist = Math.abs(nodeCenterY - focusY);
-
-        // Find the absolute closest node to the focus point, regardless of screen boundaries
-        if (dist < bestDist) {
-          bestDist = dist;
-          bestIdx = i;
-        }
-      });
-
-      if (bestIdx !== null) {
-        setVisibleStepIndex((prev) => (prev === bestIdx ? prev : bestIdx));
-      }
-    };
-
-    let rafId = 0;
-    const scheduleDetectVisibleSection = () => {
-      if (rafId) return;
-      rafId = requestAnimationFrame(() => {
-        rafId = 0;
-        detectVisibleSection();
-      });
-    };
-
-    scheduleDetectVisibleSection();
-    window.addEventListener('resize', scheduleDetectVisibleSection);
-    // Capture phase lets us react to whichever parent is actually scrolling.
-    window.addEventListener('scroll', scheduleDetectVisibleSection, true);
-
-    let ro;
-    if (typeof ResizeObserver !== 'undefined') {
-      ro = new ResizeObserver(scheduleDetectVisibleSection);
-      ro.observe(viewportEl);
-      if (rootRef.current) ro.observe(rootRef.current);
-      if (mapContentRef.current) ro.observe(mapContentRef.current);
-    }
-
-    return () => {
-      if (rafId) cancelAnimationFrame(rafId);
-      window.removeEventListener('resize', scheduleDetectVisibleSection);
-      window.removeEventListener('scroll', scheduleDetectVisibleSection, true);
-      ro?.disconnect();
-    };
-  }, [indexToUse, sectionMeta.length]);
+    setVisibleStepIndex((prev) => (prev === bestIdx ? prev : bestIdx));
+  }, [map.ty, indexedNodePoints, indexToUse]);
   const currentStep = steps[visibleStepIndex] || steps[indexToUse] || null;
   const visibleSectionMeta = sectionMeta[visibleSectionIndex] ?? null;
   const currentPillarText = currentStep

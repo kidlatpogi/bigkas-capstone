@@ -21,6 +21,7 @@ import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks
 import { useJourneyRemoteState } from '../../hooks/useJourneyRemoteState';
 import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../services/journeyProgressService';
 import iconFire from '../../assets/icons/Icon-Fire.svg';
+import forestBg from '../../assets/backgrounds/Forest.svg';
 import './InnerPages.css';
 import './ActivityPage.css';
 import './DashboardPage.css';
@@ -331,6 +332,16 @@ function ActivityPage() {
     return idx >= 0 ? idx : 0;
   }, [location.state?.focusCurrentStage, tasks, activeTaskId, totalStages]);
 
+  const pageBackgroundStyle = useMemo(
+    () => ({
+      backgroundImage: `url(${forestBg})`,
+      backgroundRepeat: 'no-repeat',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+    }),
+    [],
+  );
+
   useEffect(() => {
     if (location.state?.focusCurrentStage !== true) return undefined;
     const t = window.setTimeout(() => {
@@ -442,7 +453,7 @@ function ActivityPage() {
 
   if (activitiesLoading) {
     return (
-      <div className="inner-page activity-page">
+      <div className="inner-page activity-page" style={pageBackgroundStyle}>
         <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
           <p className="section-label">Loading journey…</p>
         </div>
@@ -452,7 +463,7 @@ function ActivityPage() {
 
   if (activitiesError) {
     return (
-      <div className="inner-page activity-page">
+      <div className="inner-page activity-page" style={pageBackgroundStyle}>
         <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
           <p className="activity-task-lock-note">Could not load activities: {activitiesError}</p>
           <p className="activity-task-detail">Ensure the `activities` table exists and RLS allows read for authenticated users.</p>
@@ -463,7 +474,7 @@ function ActivityPage() {
 
   if (!tasks.length) {
     return (
-      <div className="inner-page activity-page">
+      <div className="inner-page activity-page" style={pageBackgroundStyle}>
         <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
           <p className="section-label">No activities yet</p>
           <p className="activity-task-detail">Add rows to the `activities` table in Supabase to populate this journey.</p>
@@ -473,7 +484,7 @@ function ActivityPage() {
   }
 
   return (
-    <div className="inner-page activity-page activity-page--skyward-entrance">
+    <div className="inner-page activity-page activity-page--skyward-entrance" style={pageBackgroundStyle}>
       <div className="activity-two-col">
         <div className="activity-col-main">
           <div className="activity-content-wrap activity-content-wrap--journey-scroll">
@@ -495,21 +506,6 @@ function ActivityPage() {
         </div>
 
         <aside className="activity-col-sidebar no-scrollbar">
-          <section className="dashboard-card dashboard-level-card dashboard-anim-left dashboard-anim-delay-2">
-            <div className="dashboard-level-decoration" />
-            <div className="dashboard-section-kicker">Rank Progression</div>
-            <h2 className="dashboard-section-title--xl">{levelProgress.levelName}</h2>
-            <p className="dashboard-activity-summary">
-              {activitiesLoading
-                ? 'Loading journey…'
-                : `Activity Journey: ${completedTaskCount}/${Math.max(tasks.length, 1)} Task Complete`}
-            </p>
-            <div className="dashboard-level-track">
-              <div className="dashboard-level-fill" style={{ width: `${sidebarProgressPct}%` }} />
-            </div>
-            <p className="dashboard-activity-xp">{earnedTaskXp}/{totalTaskXp} TASK</p>
-          </section>
-
           <section className="dashboard-card dashboard-consistency-card dashboard-anim-right dashboard-anim-delay-3">
             <p className="dashboard-consistency-kicker">Daily Consistency</p>
             <div className="dashboard-consistency-value">
@@ -525,32 +521,50 @@ function ActivityPage() {
             </div>
           </section>
 
-          <section className="dashboard-card dashboard-mode-card dashboard-mode-card--practice dashboard-anim-bottom dashboard-anim-delay-4">
-            <div className="dashboard-mode-badge">Focus Session</div>
-            <h3 className="dashboard-mode-title">Practice Mode</h3>
-            <p className="dashboard-mode-copy">Master specific architectural components in a controlled environment.</p>
-            <Button
-              variant="practice"
-              className="dashboard-mode-button"
-              onClick={() => navigate(ROUTES.PRACTICE)}
-              icon={IoArrowForward}
-            >
-              Start Practice
-            </Button>
+          <section className="dashboard-card dashboard-level-card dashboard-anim-left dashboard-anim-delay-2">
+            <div className="dashboard-level-decoration" />
+            <div className="dashboard-section-kicker">Rank Progression</div>
+            <h2 className="dashboard-section-title--xl">{levelProgress.levelName}</h2>
+            <p className="dashboard-activity-summary">
+              {activitiesLoading
+                ? 'Loading journey…'
+                : `Activity Journey: ${completedTaskCount}/${Math.max(tasks.length, 1)} Task Complete`}
+            </p>
+            <div className="dashboard-level-track">
+              <div className="dashboard-level-fill" style={{ width: `${sidebarProgressPct}%` }} />
+            </div>
+            <p className="dashboard-activity-xp">{earnedTaskXp}/{totalTaskXp} TASK</p>
           </section>
 
-          <section className="dashboard-card dashboard-mode-card dashboard-mode-card--training dashboard-anim-bottom dashboard-anim-delay-5">
-            <div className="dashboard-mode-badge dashboard-mode-badge--alt">Endurance</div>
-            <h3 className="dashboard-mode-title">Training Mode</h3>
-            <p className="dashboard-mode-copy dashboard-mode-copy--inverse">Push your cognitive limits with real-time structural challenges.</p>
-            <Button
-              variant="training"
-              className="dashboard-mode-button"
-              onClick={() => navigate(ROUTES.TRAINING_SETUP)}
-              icon={IoArrowForward}
-            >
-              Begin Training
-            </Button>
+          <section className="dashboard-card dashboard-mode-card dashboard-mode-card--training activity-practice-hub dashboard-anim-bottom dashboard-anim-delay-4">
+            <div className="dashboard-mode-badge dashboard-mode-badge--alt">Practice Mode</div>
+            <h3 className="dashboard-mode-title">Practice Hub</h3>
+            <div className="activity-practice-options">
+              <article className="activity-practice-option-card">
+                <p className="activity-practice-option-kicker">Focus Session</p>
+                <p className="activity-practice-option-copy">Master specific architectural components in a controlled environment.</p>
+                <Button
+                  variant="practice"
+                  className="dashboard-mode-button"
+                  onClick={() => navigate(ROUTES.PRACTICE)}
+                  icon={IoArrowForward}
+                >
+                  Start Practice
+                </Button>
+              </article>
+              <article className="activity-practice-option-card">
+                <p className="activity-practice-option-kicker">Endurance</p>
+                <p className="activity-practice-option-copy">Push your cognitive limits with real-time structural challenges.</p>
+                <Button
+                  variant="training"
+                  className="dashboard-mode-button"
+                  onClick={() => navigate(ROUTES.TRAINING_SETUP)}
+                  icon={IoArrowForward}
+                >
+                  Begin Training
+                </Button>
+              </article>
+            </div>
           </section>
         </aside>
       </div>

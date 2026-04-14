@@ -235,6 +235,9 @@
   z-index: 1;
   padding-top: 240px;
   padding-bottom: 220px;
+  width: 100%;
+  min-height: 100dvh;
+  height: 100dvh;
 }
 
 .skyward-journey-section {
@@ -318,27 +321,27 @@
 }
 
 .skyward-journey-node-cluster {
-  --skyward-node-half: 28px;
+  --skyward-node-half: 34px;
   position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
   width: min(22rem, 92vw);
-  min-height: 56px;
+  min-height: 68px;
   flex-shrink: 0;
 }
 
 .skyward-journey-node-cluster--boss {
-  --skyward-node-half: 42px;
-  min-height: 84px;
+  --skyward-node-half: 50px;
+  min-height: 100px;
 }
 
 .skyward-journey-node {
   position: relative;
-  width: 52px;
-  height: 52px;
-  min-width: 44px;
-  min-height: 44px;
+  width: 64px;
+  height: 64px;
+  min-width: 54px;
+  min-height: 54px;
   border-radius: 16px;
   border: 3px solid rgba(15, 68, 98, 0.35);
   background: linear-gradient(160deg, #ffffff 0%, #f4f7f5 100%);
@@ -364,10 +367,10 @@
 
 /* Boss / milestone — 1.5× footprint */
 .skyward-journey-node--boss {
-  width: 76px;
-  height: 76px;
-  min-width: 64px;
-  min-height: 64px;
+  width: 92px;
+  height: 92px;
+  min-width: 78px;
+  min-height: 78px;
   border-width: 4px;
   border-radius: 50% !important;
   border-color: #c9a227;
@@ -570,14 +573,14 @@
 }
 
 .skyward-journey-node-icon {
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   color: #0b3954;
 }
 
 .skyward-journey-node--boss .skyward-journey-node-icon {
-  width: 36px;
-  height: 36px;
+  width: 46px;
+  height: 46px;
 }
 
 .skyward-journey-node--active .skyward-journey-node-icon {
@@ -593,13 +596,13 @@
 }
 
 .skyward-journey-node-state-icon {
-  width: 28px;
-  height: 28px;
+  width: 34px;
+  height: 34px;
 }
 
 .skyward-journey-node--boss .skyward-journey-node-state-icon {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
 }
 
 .skyward-journey-node--completed .skyward-journey-node-state-icon {

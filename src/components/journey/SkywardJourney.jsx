@@ -587,8 +587,6 @@ export default function SkywardJourney({
     const el = nodeRefs.current[targetIndex];
     if (!el) return undefined;
 
-    const raf = requestAnimationFrame(() => setMap({ tx: 0, ty: 0 }));
-
     const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const fromDashboard = scrollToStepIndex != null && scrollToStepIndex >= 0;
     const delay = entranceFromNav || fromDashboard ? 200 : 80;
@@ -597,7 +595,6 @@ export default function SkywardJourney({
     }, delay);
 
     return () => {
-      cancelAnimationFrame(raf);
       window.clearTimeout(t);
     };
   }, [activeIndex, entranceFromNav, scrollToStepIndex]);
@@ -1012,6 +1009,17 @@ export default function SkywardJourney({
     });
   }
   sectionHeaderRefs.current.length = sectionMeta.length;
+  const activeStepIndex = steps.findIndex((s) => s.nodeState === NODE_STATE.ACTIVE);
+  const lastCompletedStepIndex = (() => {
+    for (let i = steps.length - 1; i >= 0; i -= 1) {
+      if (steps[i]?.nodeState === NODE_STATE.COMPLETED) return i;
+    }
+    return -1;
+  })();
+  const indexToUse = activeStepIndex >= 0
+    ? activeStepIndex
+    : (lastCompletedStepIndex >= 0 ? lastCompletedStepIndex : 0);
+  const [visibleStepIndex, setVisibleStepIndex] = useState(indexToUse);
 
   useEffect(() => {
     const viewportEl = viewportRef.current;
@@ -1058,6 +1066,24 @@ export default function SkywardJourney({
       }
 
       setVisibleSectionIndex((prev) => (prev === nextIndex ? prev : nextIndex));
+      // Native DOM tracking for the current step (immune to CSS/Scroll mismatch)
+      const vHeight = viewportEl.clientHeight || window.innerHeight;
+      const focusY = vHeight * 0.32;
+      let bestIdx = indexToUse;
+      let bestDist = Number.POSITIVE_INFINITY;
+
+      nodeRefs.current.forEach((el, i) => {
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        // Ignore nodes way off screen
+        if (rect.top < -200 || rect.bottom > vHeight + 200) return;
+        const dist = Math.abs(rect.top - focusY);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestIdx = i;
+        }
+      });
+      setVisibleStepIndex((prev) => (prev === bestIdx ? prev : bestIdx));
     };
 
     let rafId = 0;
@@ -1088,43 +1114,7 @@ export default function SkywardJourney({
       window.removeEventListener('scroll', scheduleDetectVisibleSection, true);
       ro?.disconnect();
     };
-  }, [map.ty, sectionMeta.length]);
-
-  const activeStepIndex = steps.findIndex((s) => s.nodeState === NODE_STATE.ACTIVE);
-  const lastCompletedStepIndex = (() => {
-    for (let i = steps.length - 1; i >= 0; i -= 1) {
-      if (steps[i]?.nodeState === NODE_STATE.COMPLETED) return i;
-    }
-    return -1;
-  })();
-  const indexToUse = activeStepIndex >= 0
-    ? activeStepIndex
-    : (lastCompletedStepIndex >= 0 ? lastCompletedStepIndex : 0);
-  const visibleStepIndex = useMemo(() => {
-    const viewportHeight = viewportRef.current?.clientHeight ?? (typeof window !== 'undefined' ? window.innerHeight : 0);
-    if (!viewportHeight || !indexedNodePoints.length) return indexToUse;
-    // Map moves UP (negative ty) as we scroll DOWN the journey (higher index nodes).
-    // The "focus" area is roughly the top 1/3rd of the screen.
-    const focusY = viewportHeight * 0.32;
-    let bestIndex = indexToUse;
-    let bestDistance = Number.POSITIVE_INFINITY;
-
-    indexedNodePoints.forEach((point, i) => {
-      if (!point || !steps[i]) return;
-      // Calculate where the node currently is relative to the viewport top
-      const screenY = (point.y * MAP_SCALE) + map.ty;
-      
-      // If it's completely off screen, ignore it
-      if (screenY < -100 || screenY > viewportHeight + 100) return;
-      
-      const dist = Math.abs(screenY - focusY);
-      if (dist < bestDistance) {
-        bestDistance = dist;
-        bestIndex = i;
-      }
-    });
-    return bestIndex;
-  }, [indexedNodePoints, indexToUse, map.ty, steps]);
+  }, [indexToUse, sectionMeta.length]);
   const currentStep = steps[visibleStepIndex] || steps[indexToUse] || null;
   const visibleSectionMeta = sectionMeta[visibleSectionIndex] ?? null;
   const currentPillarText = currentStep

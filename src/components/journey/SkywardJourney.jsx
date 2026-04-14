@@ -23,7 +23,7 @@ import './SkywardJourney.css';
 
 const MAP_SCALE = 1.5;
 const MAP_EDGE_PAN_PADDING = 96;
-const ORTHOGONAL_OFFSETS = [0, 65, 65, 0, -65, -65];
+const ORTHOGONAL_OFFSETS = [0, 90, 90, 0, -90, -90];
 
 function getHorizontalOffset(index) {
   return ORTHOGONAL_OFFSETS[index % ORTHOGONAL_OFFSETS.length];
@@ -838,7 +838,14 @@ export default function SkywardJourney({
         const startStage = isStartNode(step, i);
         const jiggle = jiggleIndex === i;
         const horizontalOffset = getHorizontalOffset(i);
-        const labelSide = horizontalOffset > 0 ? 'left' : 'right';
+        let labelSide = 'right';
+        if (horizontalOffset > 0) {
+          labelSide = 'left';
+        } else if (horizontalOffset < 0) {
+          labelSide = 'right';
+        } else {
+          labelSide = i % 2 === 0 ? 'right' : 'left';
+        }
         const stageNum = Number(step.stageNumber);
         const stageTotal = Number(step.totalStages);
         const safeStageTotal =
@@ -1141,7 +1148,7 @@ export default function SkywardJourney({
                         stroke="var(--skyward-path-rim, #e4e4e7)"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        strokeWidth="var(--skyward-line-rim, 18)"
+                        strokeWidth="20"
                       />
                       <path
                         className="skyward-journey-polyline skyward-journey-polyline--main"
@@ -1150,7 +1157,7 @@ export default function SkywardJourney({
                         stroke={`url(#skyward-journey-line-grad-${gradId})`}
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        strokeWidth="10"
+                        strokeWidth="12"
                       />
                       {flowSegmentPathD ? (
                         <path

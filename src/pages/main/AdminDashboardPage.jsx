@@ -1,37 +1,57 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HiOutlineUsers, HiOutlineChartBarSquare, HiOutlineHomeModern, HiOutlineCog6Tooth } from 'react-icons/hi2';
+import { HiOutlineUsers, HiOutlineChartBarSquare, HiOutlineHomeModern, HiOutlineCog6Tooth, HiCheckCircle } from 'react-icons/hi2';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend
+} from 'recharts';
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import './AdminDashboardPage.css';
 
 const RETENTION_DAYS = 14;
+const SIDEBAR_WIDTH = 280;
 
-function toDateOnly(value) {
-  const d = value ? new Date(value) : null;
-  if (!d || Number.isNaN(d.getTime())) return '';
-  return d.toISOString().slice(0, 10);
+function getRangeStart(date, unit) {
+  const d = new Date(date);
+  if (unit === 'day') return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  if (unit === 'week') {
+    const day = d.getDay();
+    const diff = day === 0 ? -6 : 1 - day; // Monday-start week
+    const monday = new Date(d);
+    monday.setDate(d.getDate() + diff);
+    return new Date(monday.getFullYear(), monday.getMonth(), monday.getDate());
+  }
+  if (unit === 'month') return new Date(d.getFullYear(), d.getMonth(), 1);
+  return new Date(d.getFullYear(), 0, 1);
 }
 
-function getDefaultRange(granularity) {
-  const now = new Date();
-  if (granularity === 'month') {
-    return {
-      start: toDateOnly(new Date(now.getFullYear(), now.getMonth() - 11, 1)),
-      end: toDateOnly(now),
-    };
-  }
-  if (granularity === 'year') {
-    return {
-      start: toDateOnly(new Date(now.getFullYear() - 4, 0, 1)),
-      end: toDateOnly(now),
-    };
-  }
-  return {
-    start: toDateOnly(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29)),
-    end: toDateOnly(now),
-  };
+function shiftRange(start, unit, amount) {
+  const d = new Date(start);
+  if (unit === 'day') d.setDate(d.getDate() + amount);
+  else if (unit === 'week') d.setDate(d.getDate() + (7 * amount));
+  else if (unit === 'month') d.setMonth(d.getMonth() + amount);
+  else d.setFullYear(d.getFullYear() + amount);
+  return d;
+}
+
+function countBetween(items, start, end) {
+  const startMs = start.getTime();
+  const endMs = end.getTime();
+  return items.reduce((acc, item) => {
+    const created = new Date(item.created_at).getTime();
+    if (Number.isNaN(created)) return acc;
+    return created >= startMs && created < endMs ? acc + 1 : acc;
+  }, 0);
 }
 
 function getDisplayName(profile, fallbackId = '') {
@@ -68,6 +88,8 @@ function SimpleBars({ items, suffix = '' }) {
   );
 }
 
+const PIE_COLORS = ['#5a755e', '#7b997f', '#a3c2a8', '#d1e6d4'];
+
 function AdminDashboardPage() {
   const navigate = useNavigate();
   const { logout } = useAuthContext();
@@ -82,11 +104,6 @@ function AdminDashboardPage() {
   const [metrics, setMetrics] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [purgeCount, setPurgeCount] = useState(0);
-
-  const [joinGranularity, setJoinGranularity] = useState('day');
-  const defaultRange = useMemo(() => getDefaultRange('day'), []);
-  const [startDate, setStartDate] = useState(defaultRange.start);
-  const [endDate, setEndDate] = useState(defaultRange.end);
 
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState({
@@ -108,13 +125,6 @@ function AdminDashboardPage() {
   });
 
   const isSuperadmin = role === 'superadmin';
-
-  useEffect(() => {
-    if (joinGranularity === 'custom') return;
-    const range = getDefaultRange(joinGranularity);
-    setStartDate(range.start);
-    setEndDate(range.end);
-  }, [joinGranularity]);
 
   useEffect(() => {
     let active = true;
@@ -229,24 +239,29 @@ function AdminDashboardPage() {
     return Object.entries(counts).map(([lv, value]) => ({ label: `Level ${lv}`, value }));
   }, [visibleUsers]);
 
-  const joinFrequency = useMemo(() => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return [];
-    const buckets = new Map();
-    visibleUsers.forEach((p) => {
-      const d = new Date(p.created_at);
-      if (Number.isNaN(d.getTime()) || d < start || d > end) return;
-      let key = '';
-      if (joinGranularity === 'day' || joinGranularity === 'custom') key = d.toISOString().slice(0, 10);
-      else if (joinGranularity === 'month') key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      else key = `${d.getFullYear()}`;
-      buckets.set(key, (buckets.get(key) || 0) + 1);
-    });
-    return Array.from(buckets.entries())
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([label, value]) => ({ label, value }));
-  }, [visibleUsers, startDate, endDate, joinGranularity]);
+  const joinPieData = useMemo(() => {
+    const now = new Date();
+    const currentStart = getRangeStart(now, 'day');
+    const weekStart = getRangeStart(now, 'week');
+    const monthStart = getRangeStart(now, 'month');
+    
+    const todayCount = countBetween(visibleUsers, currentStart, shiftRange(currentStart, 'day', 1));
+    const weekCount = countBetween(visibleUsers, weekStart, shiftRange(weekStart, 'week', 1)) - todayCount;
+    const monthCount = countBetween(visibleUsers, monthStart, shiftRange(monthStart, 'month', 1)) - todayCount - Math.max(0, weekCount);
+    const olderCount = visibleUsers.length - todayCount - Math.max(0, weekCount) - Math.max(0, monthCount);
+    
+    return [
+      { name: 'Today', value: todayCount },
+      { name: 'This Week', value: Math.max(0, weekCount) },
+      { name: 'This Month', value: Math.max(0, monthCount) },
+      { name: 'Older', value: Math.max(0, olderCount) }
+    ].filter(d => d.value > 0);
+  }, [visibleUsers]);
+
+  const levelBarData = useMemo(
+    () => levelDistribution.map((item) => ({ level: item.label, users: item.value })),
+    [levelDistribution],
+  );
 
   const timeAllocation = useMemo(() => {
     const totals = { Activities: 0, Randomizer: 0, 'Free Speech': 0 };
@@ -412,30 +427,32 @@ function AdminDashboardPage() {
   }
 
   return (
-    <div className="admin-dashboard-page admin-layout">
+    <div className="admin-dashboard-page admin-layout" style={{ ['--admin-sidebar-width']: `${SIDEBAR_WIDTH}px` }}>
       <aside className="admin-rail">
-        <div className="admin-rail-brand">
-          <p>BIGKAS</p>
-          <small>Admin Center</small>
+        <div className="admin-rail-inner">
+          <div className="admin-rail-brand">
+            <p>BIGKAS</p>
+            <small>Admin Center</small>
+          </div>
+          <nav className="admin-rail-nav">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = activePage === item.key;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  className={`admin-rail-btn ${active ? 'is-active' : ''}`}
+                  onClick={() => setActivePage(item.key)}
+                >
+                  <Icon size={18} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+          <button type="button" className="admin-logout admin-logout--rail" onClick={onLogout}>Log Out</button>
         </div>
-        <nav className="admin-rail-nav">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = activePage === item.key;
-            return (
-              <button
-                key={item.key}
-                type="button"
-                className={`admin-rail-btn ${active ? 'is-active' : ''}`}
-                onClick={() => setActivePage(item.key)}
-              >
-                <Icon size={18} />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-        <button type="button" className="admin-logout admin-logout--rail" onClick={onLogout}>Log Out</button>
       </aside>
 
       <section className="admin-main">
@@ -451,39 +468,65 @@ function AdminDashboardPage() {
 
         {activePage === 'overview' && (
           <>
+            <section className="admin-grid admin-grid-2 admin-kpi-squares">
+              <article className="admin-card admin-kpi-card">
+                <p className="admin-kpi-label">TOTAL USERS</p>
+                <p className="admin-kpi-value">{visibleUsers.length}</p>
+              </article>
+              <article className="admin-card admin-kpi-card">
+                <p className="admin-kpi-label">PRIVACY COMPLIANCE</p>
+                <div className="admin-privacy-status">
+                  <HiCheckCircle size={30} />
+                  <p className="admin-kpi-value admin-kpi-value--privacy">ACTIVE</p>
+                </div>
+                <p className="admin-kpi-footer">{RETENTION_DAYS}-day Auto-Purge Policy Active</p>
+                <p className="admin-kpi-footer">Rows purged this month: <strong>{purgeCount}</strong></p>
+              </article>
+            </section>
+
             <section className="admin-grid admin-grid-2">
               <article className="admin-card">
-                <h3>Total Users</h3>
-                <p className="admin-kpi">{visibleUsers.length}</p>
-              </article>
-              <article className="admin-card">
-                <h3>Privacy Badge</h3>
-                <p className="admin-kpi">Active</p>
-                <p className="admin-note">{RETENTION_DAYS}-day retention policy compliance</p>
-                <p className="admin-note">Rows purged this month: <strong>{purgeCount}</strong></p>
-              </article>
-            </section>
-
-            <section className="admin-card">
-              <div className="admin-card-head">
-                <h3>User Join Frequency</h3>
-                <div className="admin-filters">
-                  <select value={joinGranularity} onChange={(e) => setJoinGranularity(e.target.value)}>
-                    <option value="day">Day</option>
-                    <option value="month">Month</option>
-                    <option value="year">Year</option>
-                    <option value="custom">Custom</option>
-                  </select>
-                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                  <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                <div className="admin-card-head">
+                  <h3>User Join Frequency</h3>
                 </div>
-              </div>
-              <SimpleBars items={joinFrequency} />
-            </section>
+                <div className="admin-chart-container">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={joinPieData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={100}
+                        innerRadius={60}
+                        paddingAngle={5}
+                        label
+                      >
+                        {joinPieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => [`${value} Users`, 'Joined']} />
+                      <Legend verticalAlign="bottom" height={36} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </article>
 
-            <section className="admin-card">
-              <h3>User Level Distribution</h3>
-              <SimpleBars items={levelDistribution} />
+              <article className="admin-card">
+                <h3>User Level Distribution</h3>
+                <div className="admin-chart-container">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={levelBarData}>
+                      <XAxis dataKey="level" />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip formatter={(value) => [`${value}`, 'Users']} />
+                      <Bar dataKey="users" fill="#5A755E" radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </article>
             </section>
           </>
         )}

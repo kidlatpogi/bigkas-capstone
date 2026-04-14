@@ -713,6 +713,158 @@ body.skyward-journey-modal-open .activity-sticky-shell {
   }
 }
 
+/* ========================================
+   Responsive Matrix
+   - Large / Medium / Small Screens
+   - Large / Medium / Small Phones
+======================================== */
+
+/* Large screens (desktop, wide monitors) */
+@media (min-width: 1441px) {
+  .activity-two-col {
+    grid-template-columns: minmax(0, 2.45fr) minmax(340px, 1fr);
+  }
+
+  .activity-col-main .activity-content-wrap--journey-scroll {
+    max-width: 1220px;
+    padding-inline: clamp(0.5rem, 1vw, 1.25rem);
+  }
+}
+
+/* Medium screens (laptop/desktop) */
+@media (min-width: 1201px) and (max-width: 1440px) {
+  .activity-two-col {
+    grid-template-columns: minmax(0, 2.15fr) minmax(310px, 1fr);
+  }
+
+  .activity-col-main .activity-content-wrap--journey-scroll {
+    max-width: 1080px;
+    padding-inline: clamp(0.35rem, 0.9vw, 1rem);
+  }
+}
+
+/* Small screens (tablets / small laptops) */
+@media (min-width: 769px) and (max-width: 1200px) {
+  .activity-two-col {
+    display: block;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100vh;
+  }
+
+  .activity-col-main {
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100vh;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .activity-col-main .activity-content-wrap--journey-scroll {
+    max-width: none;
+    padding-inline: 0;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .activity-col-sidebar {
+    display: none !important;
+  }
+}
+
+/* Large phones */
+@media (min-width: 431px) and (max-width: 768px) {
+  .activity-two-col,
+  .activity-col-main,
+  .activity-content-wrap--journey-scroll {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100vh;
+  }
+
+  .activity-col-main .activity-content-wrap--journey-scroll {
+    padding-inline: 0;
+  }
+
+  .activity-task-list--journey {
+    gap: 14px;
+    padding-inline: 0.15rem;
+    padding-bottom: 130px;
+  }
+
+  .activity-task-card {
+    padding: 1.2rem;
+  }
+}
+
+/* Medium phones */
+@media (min-width: 391px) and (max-width: 430px) {
+  .activity-two-col,
+  .activity-col-main,
+  .activity-content-wrap--journey-scroll {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100vh;
+  }
+
+  .activity-task-list--journey {
+    gap: 12px;
+    padding-inline: 0.1rem;
+    padding-bottom: 120px;
+  }
+
+  .activity-task-card {
+    padding: 1.05rem;
+    border-radius: 14px;
+  }
+
+  .activity-task-name {
+    font-size: 18px;
+  }
+}
+
+/* Small phones */
+@media (max-width: 390px) {
+  .activity-two-col,
+  .activity-col-main,
+  .activity-content-wrap--journey-scroll {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100vh;
+  }
+
+  .activity-col-main .activity-content-wrap--journey-scroll {
+    padding-inline: 0;
+  }
+
+  .activity-task-list--journey {
+    gap: 10px;
+    padding-inline: 0;
+    padding-bottom: 112px;
+  }
+
+  .activity-task-card {
+    padding: 0.95rem;
+    border-radius: 13px;
+  }
+
+  .activity-task-name {
+    font-size: 17px;
+    line-height: 1.24;
+  }
+
+  .activity-task-detail {
+    font-size: 14px;
+  }
+
+  .activity-action-btn {
+    min-height: 2.75rem;
+    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+  }
+}
+
 @media (max-width: 1600px) and (min-width: 1025px) {
   .activity-page {
     padding: var(--responsive-page-padding);

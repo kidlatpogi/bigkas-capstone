@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../context/useAuthContext';
+import { ROUTES } from '../../utils/constants';
 import './InnerPages.css';
 import './ChangePasswordPage.css';
 
@@ -60,6 +61,7 @@ function PwdField({ label, value, onChange, show, onToggle }) {
 
 function ChangePasswordPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { changePassword } = useAuthContext();
 
   const [currentPwd, setCurrentPwd] = useState('');
@@ -73,6 +75,11 @@ function ChangePasswordPage() {
   const [showCur, setShowCur] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showCon, setShowCon] = useState(false);
+  const fromParam = new URLSearchParams(location.search).get('from');
+  const fromSource = String(location.state?.from || fromParam || '').toLowerCase();
+  const breadcrumbParent = fromSource === 'profile'
+    ? { label: 'Profile', to: ROUTES.PROFILE }
+    : { label: 'Settings', to: ROUTES.SETTINGS };
 
   const handleSave = async () => {
     setError('');
@@ -106,41 +113,53 @@ function ChangePasswordPage() {
   };
 
   return (
-    <div className="inner-page change-password-page">
-      <div className="inner-page-header change-password-header">
-        <h1 className="inner-page-title">Change Password</h1>
-      </div>
+    <div className="subpage-layout change-password-layout">
+      <div className="subpage-frame">
+        <nav className="subpage-breadcrumb" aria-label="Breadcrumb">
+          <Link className="subpage-breadcrumb-link" to={breadcrumbParent.to}>
+            {breadcrumbParent.label}
+          </Link>
+          <span className="subpage-breadcrumb-sep">&gt;</span>
+          <span className="subpage-breadcrumb-current">Change Password</span>
+        </nav>
 
-      {error   && <div className="page-error">{error}</div>}
-      {success && <div className="page-success">Password changed! Redirecting…</div>}
+        <div className="inner-page change-password-page">
+          <div className="inner-page-header change-password-header">
+            <h1 className="inner-page-title">Change Password</h1>
+          </div>
 
-      <PwdField
-        label="Current Password"
-        value={currentPwd}
-        onChange={setCurrentPwd}
-        show={showCur}
-        onToggle={() => setShowCur(v => !v)}
-      />
-      <PwdField
-        label="New Password"
-        value={newPwd}
-        onChange={setNewPwd}
-        show={showNew}
-        onToggle={() => setShowNew(v => !v)}
-      />
-      <PwdField
-        label="Confirm New Password"
-        value={confirmPwd}
-        onChange={setConfirmPwd}
-        show={showCon}
-        onToggle={() => setShowCon(v => !v)}
-      />
+          {error && <div className="page-error">{error}</div>}
+          {success && <div className="page-success">Password changed! Redirecting…</div>}
 
-      <div className="btn-row">
-        <button className="btn-secondary" onClick={() => navigate(-1)} disabled={isSaving}>Cancel</button>
-        <button className="btn-primary cp-btn-primary" onClick={handleSave} disabled={isSaving}>
-          {isSaving ? 'Saving…' : 'Save New Password'}
-        </button>
+          <PwdField
+            label="Current Password"
+            value={currentPwd}
+            onChange={setCurrentPwd}
+            show={showCur}
+            onToggle={() => setShowCur(v => !v)}
+          />
+          <PwdField
+            label="New Password"
+            value={newPwd}
+            onChange={setNewPwd}
+            show={showNew}
+            onToggle={() => setShowNew(v => !v)}
+          />
+          <PwdField
+            label="Confirm New Password"
+            value={confirmPwd}
+            onChange={setConfirmPwd}
+            show={showCon}
+            onToggle={() => setShowCon(v => !v)}
+          />
+
+          <div className="btn-row">
+            <button className="btn-secondary" onClick={() => navigate(-1)} disabled={isSaving}>Cancel</button>
+            <button className="btn-primary cp-btn-primary" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? 'Saving…' : 'Save New Password'}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

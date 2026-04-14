@@ -269,11 +269,11 @@ function SettingsProfilePage() {
             <section className="dashboard-card settings-profile-card--links dashboard-anim-right dashboard-anim-delay-3">
               <h2 className="sp-card-title">Account</h2>
               <div className="sp-links-stack">
-                <button type="button" className="sp-link-row" onClick={() => navigate(ROUTES.CHANGE_PASSWORD)}>
+                <button type="button" className="sp-link-row" onClick={() => navigate(ROUTES.CHANGE_PASSWORD, { state: { from: 'profile' } })}>
                   <span>Change Password</span>
                   <IoChevronForward size={16} className="sp-link-chevron" />
                 </button>
-                <button type="button" className="sp-link-row" onClick={() => navigate(ROUTES.ACCOUNT_SETTINGS)}>
+                <button type="button" className="sp-link-row" onClick={() => navigate(ROUTES.ACCOUNT_SETTINGS, { state: { from: 'profile' } })}>
                   <span>Account Settings</span>
                   <IoChevronForward size={16} className="sp-link-chevron" />
                 </button>

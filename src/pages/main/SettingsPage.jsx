@@ -97,7 +97,7 @@ function SettingsPage() {
             <section className="dashboard-card stg-card-section dashboard-anim-left dashboard-anim-delay-1">
               <h2 className="stg-section-title">Security</h2>
               <div className="stg-rows">
-                <button className="stg-row" onClick={() => navigate(ROUTES.CHANGE_PASSWORD)}>
+                <button className="stg-row" onClick={() => navigate(ROUTES.CHANGE_PASSWORD, { state: { from: 'settings' } })}>
                   <span className="stg-row-icon">
                     <IoKeyOutline size={20} />
                   </span>
@@ -110,7 +110,7 @@ function SettingsPage() {
 
                 <div className="stg-row-divider" />
 
-                <button className="stg-row" onClick={() => navigate(ROUTES.ACCOUNT_SETTINGS)}>
+                <button className="stg-row" onClick={() => navigate(ROUTES.ACCOUNT_SETTINGS, { state: { from: 'settings' } })}>
                   <span className="stg-row-icon">
                     <IoShieldCheckmarkOutline size={20} />
                   </span>

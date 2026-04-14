@@ -1,31 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../context/useAuthContext';
-import BackButton from '../../components/common/BackButton';
+import { ROUTES } from '../../utils/constants';
 import './InnerPages.css';
-
-/* SVG eye / eye-off icons */
-function EyeOffIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/>
-      <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/>
-      <path d="M14.12 14.12a3 3 0 01-4.24-4.24"/>
-      <line x1="1" y1="1" x2="23" y2="23"/>
-    </svg>
-  );
-}
-
-function EyeIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-      <circle cx="12" cy="12" r="3"/>
-    </svg>
-  );
-}
+import './ChangePasswordPage.css';
 
 function PwdField({ label, value, onChange, show, onToggle }) {
   return (
@@ -42,16 +20,11 @@ function PwdField({ label, value, onChange, show, onToggle }) {
         <button
           type="button"
           onClick={onToggle}
-          style={{
-            position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-            background: 'none', border: 'none', cursor: 'pointer', color: '#888',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: 0, lineHeight: 1,
-          }}
+          className="cp-visibility-toggle"
           tabIndex={-1}
           aria-label={show ? 'Hide password' : 'Show password'}
         >
-          {show ? <EyeOffIcon /> : <EyeIcon />}
+          {show ? 'Hide' : 'Show'}
         </button>
       </div>
     </div>
@@ -60,6 +33,7 @@ function PwdField({ label, value, onChange, show, onToggle }) {
 
 function ChangePasswordPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { changePassword } = useAuthContext();
 
   const [currentPwd, setCurrentPwd] = useState('');
@@ -73,6 +47,11 @@ function ChangePasswordPage() {
   const [showCur, setShowCur] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showCon, setShowCon] = useState(false);
+  const fromParam = new URLSearchParams(location.search).get('from');
+  const fromSource = String(location.state?.from || fromParam || '').toLowerCase();
+  const breadcrumbParent = fromSource === 'profile'
+    ? { label: 'Profile', to: ROUTES.PROFILE }
+    : { label: 'Settings', to: ROUTES.SETTINGS };
 
   const handleSave = async () => {
     setError('');
@@ -106,42 +85,53 @@ function ChangePasswordPage() {
   };
 
   return (
-    <div className="inner-page">
-      <div className="inner-page-header" style={{ position: 'relative', justifyContent: 'center' }}>
-        <BackButton style={{ position: 'absolute', left: 0 }} onClick={() => navigate(-1)} />
-        <h1 className="inner-page-title">Change Password</h1>
-      </div>
+    <div className="subpage-layout change-password-layout">
+      <div className="subpage-frame">
+        <nav className="subpage-breadcrumb" aria-label="Breadcrumb">
+          <Link className="subpage-breadcrumb-link" to={breadcrumbParent.to}>
+            {breadcrumbParent.label}
+          </Link>
+          <span className="subpage-breadcrumb-sep">&gt;</span>
+          <span className="subpage-breadcrumb-current">Change Password</span>
+        </nav>
 
-      {error   && <div className="page-error">{error}</div>}
-      {success && <div className="page-success">Password changed! Redirecting…</div>}
+        <div className="inner-page change-password-page">
+          <div className="inner-page-header change-password-header">
+            <h1 className="inner-page-title">Change Password</h1>
+          </div>
 
-      <PwdField
-        label="Current Password"
-        value={currentPwd}
-        onChange={setCurrentPwd}
-        show={showCur}
-        onToggle={() => setShowCur(v => !v)}
-      />
-      <PwdField
-        label="New Password"
-        value={newPwd}
-        onChange={setNewPwd}
-        show={showNew}
-        onToggle={() => setShowNew(v => !v)}
-      />
-      <PwdField
-        label="Confirm New Password"
-        value={confirmPwd}
-        onChange={setConfirmPwd}
-        show={showCon}
-        onToggle={() => setShowCon(v => !v)}
-      />
+          {error && <div className="page-error">{error}</div>}
+          {success && <div className="page-success">Password changed! Redirecting…</div>}
 
-      <div className="btn-row">
-        <button className="btn-secondary" onClick={() => navigate(-1)} disabled={isSaving}>Cancel</button>
-        <button className="btn-primary" onClick={handleSave} disabled={isSaving}>
-          {isSaving ? 'Saving…' : 'Save New Password'}
-        </button>
+          <PwdField
+            label="Current Password"
+            value={currentPwd}
+            onChange={setCurrentPwd}
+            show={showCur}
+            onToggle={() => setShowCur(v => !v)}
+          />
+          <PwdField
+            label="New Password"
+            value={newPwd}
+            onChange={setNewPwd}
+            show={showNew}
+            onToggle={() => setShowNew(v => !v)}
+          />
+          <PwdField
+            label="Confirm New Password"
+            value={confirmPwd}
+            onChange={setConfirmPwd}
+            show={showCon}
+            onToggle={() => setShowCon(v => !v)}
+          />
+
+          <div className="btn-row">
+            <button className="btn-secondary" onClick={() => navigate(-1)} disabled={isSaving}>Cancel</button>
+            <button className="btn-primary cp-btn-primary" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? 'Saving…' : 'Save New Password'}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

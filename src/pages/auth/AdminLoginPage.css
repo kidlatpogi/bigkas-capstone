@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Auth Pages — Split-panel layout matching Figma screenshots
  * Left: Branding panel (white, BIGKAS + features)
  * Right: Form panel (white, form fields + yellow CTA)
@@ -159,7 +159,7 @@
 .auth-error-banner {
   background-color: rgba(255, 0, 0, 0.05);
   border: 1px solid rgba(255, 0, 0, 0.2);
-  color: #ff0000;
+  color: black;
   padding: 10px 16px;
   border-radius: 8px;
   font-size: 13px;
@@ -1292,5 +1292,227 @@
 
   .auth-footer {
     margin-top: 24px;
+  }
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Nunito+Sans:wght@400;500;600;700;800&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Clean reset for admin login route */
+html.admin-login-page-active,
+body.admin-login-page-active,
+body.admin-login-page-active #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  height: 100%;
+  min-height: 100dvh;
+}
+
+html.admin-login-page-active,
+body.admin-login-page-active {
+  overflow: clip;
+  scrollbar-width: none;
+  background: #ffffff;
+  animation: fadeInPage 0.5s ease-out;
+}
+
+html.admin-login-page-active::-webkit-scrollbar,
+body.admin-login-page-active::-webkit-scrollbar {
+  display: none;
+}
+
+body.admin-login-page-active #root {
+  display: block;
+  overflow: clip;
+  background: #ffffff;
+}
+
+body.admin-login-page-active {
+  min-width: 0;
+  padding: 0;
+}
+
+@media (min-width: 701px) {
+  body.admin-login-page-active {
+    padding: 0;
+    background: #ffffff;
+    overflow-x: hidden;
+  }
+  body.admin-login-page-active #root {
+    min-height: 100dvh;
+    background: #ffffff;
+  }
+}
+
+body.admin-login-page-active .auth-page {
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  animation: fadeInPage 0.5s ease-out;
+}
+
+/* Hide brand panel matching standard login redesign */
+body.admin-login-page-active .auth-brand-panel,
+body.admin-login-page-active .auth-back-btn,
+body.admin-login-page-active .auth-mobile-back {
+  display: none;
+}
+
+body.admin-login-page-active .auth-form-panel {
+  background: #D32F2F; /* Admin specific red background */
+  width: 100vw;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  position: relative;
+  z-index: 1;
+}
+
+body.admin-login-page-active .auth-form-container {
+  width: 100%;
+  max-width: 26rem;
+  box-sizing: border-box;
+}
+
+body.admin-login-page-active .floating-card {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 2.5rem 2rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+}
+
+body.admin-login-page-active .auth-form-title {
+  font-family: 'Nunito', sans-serif;
+  color: #D32F2F; /* Admin specific red title */
+  font-size: 2rem;
+  line-height: 1;
+  font-weight: 900;
+  text-align: center;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+}
+
+body.admin-login-page-active .auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+body.admin-login-page-active .auth-error-banner,
+body.admin-login-page-active .form-error {
+  font-size: 0.875rem;
+}
+
+body.admin-login-page-active .auth-error-banner {
+  background-color: rgba(255, 0, 0, 0.08);
+  border: 1px solid rgba(255, 0, 0, 0.25);
+  color: #ffffff;
+  padding: 0.625rem 1rem;
+  border-radius: 0.5rem;
+  text-align: center;
+}
+
+body.admin-login-page-active .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+body.admin-login-page-active .form-label {
+  font-family: 'Nunito', sans-serif;
+  color: #333333;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
+  margin-top: 0;
+  margin-bottom: 0.25rem;
+}
+
+body.admin-login-page-active .form-input {
+  min-height: 3.5rem;
+  border: 2px solid #e5e5e5;
+  border-radius: 12px;
+  background: #FFFFFF;
+  color: #1F2937;
+  padding: 0.625rem 1rem;
+  font-size: 1.125rem;
+  letter-spacing: 0;
+  outline: none;
+  margin-bottom: 1rem;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+body.admin-login-page-active input[type="password"]::-ms-reveal,
+body.admin-login-page-active input[type="password"]::-ms-clear {
+  display: none;
+}
+
+body.admin-login-page-active input[type="password"]::-webkit-credentials-auto-fill-button,
+body.admin-login-page-active input[type="password"]::-webkit-textfield-decoration-container {
+  display: none !important;
+}
+
+body.admin-login-page-active .form-input:focus {
+  border-color: #D32F2F;
+  outline: none;
+}
+
+body.admin-login-page-active .form-input::placeholder {
+  color: #9CA3AF;
+}
+
+body.admin-login-page-active .form-input-error {
+  border-color: #EF4444;
+}
+
+body.admin-login-page-active .form-error {
+  color: #EF4444;
+  margin-top: 0.125rem;
+  font-weight: 600;
+}
+
+body.admin-login-page-active .pw-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+body.admin-login-page-active .pw-input-wrap .form-input {
+  flex: 1;
+  padding-right: 4.5rem;
+  margin-bottom: 0;
+}
+
+@keyframes fadeInPage {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 480px) {
+  body.admin-login-page-active .auth-form-container {
+    max-width: 21rem;
+    padding: 0 1rem;
   }
 }

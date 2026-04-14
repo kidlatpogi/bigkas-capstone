@@ -68,7 +68,8 @@ function ProtectedRoute() {
     pathname === ROUTES.DASHBOARD ||
     pathname === ROUTES.PROGRESS ||
     pathname === ROUTES.FRAMEWORKS ||
-    pathname === ROUTES.PROFILE;
+    pathname === ROUTES.PROFILE ||
+    pathname === ROUTES.SETTINGS;
 
   const hideMainNav =
     pathname === ROUTES.USER_PROFILING ||
@@ -148,12 +149,22 @@ function AdminRoute() {
     );
   }
 
+  if (isAdminAuthenticated) {
+    return (
+      <>
+        <main className="main-content">
+          <Outlet />
+        </main>
+      </>
+    );
+  }
+
   if (!isAuthenticated) {
-    return <Navigate to={ENV.ADMIN_LOGIN_PATH || ROUTES.LOGIN} replace />;
+    return <Navigate to={ENV.ADMIN_LOGIN_PATH || ROUTES.ADMIN_LOGIN_BASE} replace />;
   }
 
   if (!isAdminAuthenticated) {
-    return <Navigate to={ROUTES.DASHBOARD} replace />;
+    return <Navigate to={ENV.ADMIN_LOGIN_PATH || ROUTES.ADMIN_LOGIN_BASE} replace />;
   }
 
   return (
@@ -209,6 +220,7 @@ function AppRouter() {
       <Route element={<PublicRoute />}>
         <Route path={ROUTES.HOME} element={<LandingPage />} />
         <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+        <Route path={ROUTES.ADMIN_LOGIN_BASE} element={<AdminLoginPage />} />
         {ENV.ADMIN_LOGIN_PATH && <Route path={ENV.ADMIN_LOGIN_PATH} element={<AdminLoginPage />} />}
         <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
       </Route>
@@ -272,4 +284,3 @@ function AppRouter() {
 }
 
 export default AppRouter;
-

@@ -7,7 +7,6 @@ import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import {
   GLOBAL_ACTIVITY_SCOPE,
-  buildActivityMetricsKey,
   getActivityTaskProgress,
   getActivityMetrics,
   getActivityCompletionHistory,
@@ -21,7 +20,6 @@ import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks
 import { useJourneyRemoteState } from '../../hooks/useJourneyRemoteState';
 import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../services/journeyProgressService';
 import iconFire from '../../assets/icons/Icon-Fire.svg';
-import forestBg from '../../assets/backgrounds/Forest.svg';
 import './InnerPages.css';
 import './ActivityPage.css';
 import './DashboardPage.css';
@@ -98,20 +96,30 @@ function ActivityPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuthContext();
+  const [selectedLevel, setSelectedLevel] = useState(1);
+  const [showDesktopSidebar, setShowDesktopSidebar] = useState(
+    typeof window === 'undefined' ? true : window.matchMedia('(min-width: 1025px)').matches,
+  );
   const [entranceFromNav] = useState(() => location.state?.skywardEntrance === true);
   const scopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
   /** Activities are filtered by `target_level` = Bigkas rank (same as dashboard `levelProgress.levelName`). */
-  const { tasks, loading: activitiesLoading, error: activitiesError } = useActivitiesJourneyTasks();
+  const { tasks, loading: activitiesLoading, error: activitiesError } = useActivitiesJourneyTasks(selectedLevel);
   const { metricsSyncKey, refreshJourney } = useJourneyRemoteState(user);
   const stampResetTimeoutRef = useRef(null);
   const audioContextRef = useRef(null);
   const previousTaskStateRef = useRef({});
   const hasTaskStateHydratedRef = useRef(false);
 
-  const [activityMetrics, setActivityMetrics] = useState(() => getActivityMetrics(scopeKey));
   const [recentStampedTaskId, setRecentStampedTaskId] = useState(null);
   const { sessions, fetchAllSessions } = useSessions();
-  const [activityHistory, setActivityHistory] = useState([]);
+  const activityMetrics = useMemo(
+    () => getActivityMetrics(scopeKey),
+    [scopeKey, metricsSyncKey],
+  );
+  const activityHistory = useMemo(
+    () => (user?.id ? getActivityCompletionHistory(scopeKey) : []),
+    [scopeKey, user?.id, metricsSyncKey],
+  );
 
   useEffect(() => {
     return () => {
@@ -125,41 +133,19 @@ function ActivityPage() {
   }, []);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-
-    const refreshMetrics = () => {
-      setActivityMetrics(getActivityMetrics(scopeKey));
-    };
-    const onStorage = (event) => {
-      if (event.key === buildActivityMetricsKey(scopeKey)) {
-        refreshMetrics();
-      }
-    };
-
-    window.addEventListener('focus', refreshMetrics);
-    window.addEventListener('storage', onStorage);
-    document.addEventListener('visibilitychange', refreshMetrics);
-
-    return () => {
-      window.removeEventListener('focus', refreshMetrics);
-      window.removeEventListener('storage', onStorage);
-      document.removeEventListener('visibilitychange', refreshMetrics);
-    };
-  }, [scopeKey]);
-
-  useEffect(() => {
-    setActivityMetrics(getActivityMetrics(scopeKey));
-  }, [scopeKey, metricsSyncKey]);
-
-  useEffect(() => {
     if (!user?.id) return;
     fetchAllSessions?.();
   }, [fetchAllSessions, user?.id]);
 
   useEffect(() => {
-    if (!user?.id) return;
-    setActivityHistory(getActivityCompletionHistory(scopeKey));
-  }, [scopeKey, user?.id, metricsSyncKey]);
+    if (typeof window === 'undefined') return undefined;
+    const onResize = () => {
+      setShowDesktopSidebar(window.matchMedia('(min-width: 1025px)').matches);
+    };
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
 
@@ -332,16 +318,6 @@ function ActivityPage() {
     return idx >= 0 ? idx : 0;
   }, [location.state?.focusCurrentStage, tasks, activeTaskId, totalStages]);
 
-  const pageBackgroundStyle = useMemo(
-    () => ({
-      backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.05)), url(${forestBg})`,
-      backgroundRepeat: 'no-repeat',
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-    }),
-    [],
-  );
-
   useEffect(() => {
     if (location.state?.focusCurrentStage !== true) return undefined;
     const t = window.setTimeout(() => {
@@ -453,7 +429,7 @@ function ActivityPage() {
 
   if (activitiesLoading) {
     return (
-      <div className="inner-page activity-page" style={pageBackgroundStyle}>
+      <div className="inner-page activity-page">
         <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
           <p className="section-label">Loading journey…</p>
         </div>
@@ -463,7 +439,7 @@ function ActivityPage() {
 
   if (activitiesError) {
     return (
-      <div className="inner-page activity-page" style={pageBackgroundStyle}>
+      <div className="inner-page activity-page">
         <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
           <p className="activity-task-lock-note">Could not load activities: {activitiesError}</p>
           <p className="activity-task-detail">Ensure the `activities` table exists and RLS allows read for authenticated users.</p>
@@ -472,19 +448,8 @@ function ActivityPage() {
     );
   }
 
-  if (!tasks.length) {
-    return (
-      <div className="inner-page activity-page" style={pageBackgroundStyle}>
-        <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
-          <p className="section-label">No activities yet</p>
-          <p className="activity-task-detail">Add rows to the `activities` table in Supabase to populate this journey.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="inner-page activity-page activity-page--skyward-entrance" style={pageBackgroundStyle}>
+    <div className="inner-page activity-page activity-page--skyward-entrance">
       <div className="activity-two-col">
         <div className="activity-col-main">
           <div className="activity-content-wrap activity-content-wrap--journey-scroll">
@@ -492,6 +457,8 @@ function ActivityPage() {
               <SkywardJourney
                 steps={journeySteps}
                 groupedTasks={groupedTasks}
+                currentLevel={selectedLevel}
+                onLevelChange={setSelectedLevel}
                 entranceFromNav={entranceFromNav}
                 scrollToStepIndex={scrollToStepIndex}
                 renderStepContent={(step, meta) =>
@@ -505,6 +472,7 @@ function ActivityPage() {
           </div>
         </div>
 
+        {showDesktopSidebar ? (
         <aside className="activity-col-sidebar no-scrollbar">
           <section className="dashboard-card dashboard-consistency-card dashboard-anim-right dashboard-anim-delay-3">
             <p className="dashboard-consistency-kicker">Daily Consistency</p>
@@ -537,7 +505,6 @@ function ActivityPage() {
           </section>
 
           <section className="dashboard-card dashboard-mode-card dashboard-mode-card--training activity-practice-hub dashboard-anim-bottom dashboard-anim-delay-4">
-            <div className="dashboard-mode-badge dashboard-mode-badge--alt">Practice Mode</div>
             <h3 className="dashboard-mode-title">Practice Hub</h3>
             <div className="activity-practice-options">
               <article className="activity-practice-option-card">
@@ -567,6 +534,7 @@ function ActivityPage() {
             </div>
           </section>
         </aside>
+        ) : null}
       </div>
     </div>
   );

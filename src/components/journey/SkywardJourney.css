@@ -148,6 +148,7 @@
   min-height: 100dvh;
   max-height: none;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 .skyward-journey-map-layer {
@@ -689,7 +690,7 @@
   align-items: center;
   gap: 6px;
   pointer-events: none;
-  z-index: 2;
+  z-index: 40;
   animation: skyward-start-bob 2.8s ease-in-out infinite;
   width: max-content;
   max-width: min(18rem, calc(100vw - 48px));
@@ -712,6 +713,8 @@
   padding: 4px 12px;
   border-radius: 999px;
   box-shadow: 0 4px 14px rgba(241, 143, 1, 0.45);
+  position: relative;
+  z-index: 41;
 }
 
 .skyward-journey-start-bubble {

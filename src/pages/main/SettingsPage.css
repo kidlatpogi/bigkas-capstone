@@ -1,37 +1,88 @@
-﻿/* ══════════════════════════════════════════════
-   SettingsPage.css — redesigned
-   ══════════════════════════════════════════════ */
+﻿/* ══════════════════════════════════════════════
+   SettingsPage.css — Design-system aligned
+   Forest Green (#5A7863), Deep Navy (#0B3954), Light Mint (#D3E3BC)
+   ══════════════════════════════════════════════ */
 
-.settings-page {
-  max-width: 560px;
+.stg-page.dashboard-page-new {
+  padding: 0;
+  background: var(--dashboard-page-bg, #ffffff);
+}
+
+.stg-shell {
+  width: 100%;
+  max-width: 1100px;
   margin: 0 auto;
+  padding: 48px 24px 80px;
+  box-sizing: border-box;
 }
 
-/* ── Section label ─────────────────────────── */
-.stg-section-label {
-  font-size: 11px;
-  font-weight: 800;
-  color: #999;
-  letter-spacing: 0.1em;
-  margin: 24px 0 8px 4px;
+/* ── Hero header ─────────────────────────── */
+.stg-hero {
+  text-align: center;
+  margin-bottom: 48px;
 }
 
-/* ── Card ──────────────────────────────────── */
-.stg-card {
-  background: #ffffff;
-  border-radius: 18px;
-  border: 1.5px solid #ebebeb;
-  overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+.stg-hero-title {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 48px;
+  font-weight: 600;
+  line-height: 1.07;
+  letter-spacing: -0.28px;
+  color: #0B3954;
+  margin: 0;
+}
+
+.stg-hero-sub {
+  margin: 14px 0 0;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 17px;
+  line-height: 1.47;
+  letter-spacing: -0.374px;
+  color: rgba(11, 57, 84, 0.8);
+}
+
+/* ── 2-column grid ──────────────────────── */
+.stg-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: stretch;
+  margin-bottom: 24px;
+}
+
+.stg-col-main,
+.stg-col-side {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ── Card section ─────────────────────────── */
+.stg-card-section {
+  padding: 32px;
+}
+
+.stg-section-title {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: #0B3954;
+  margin: 0 0 20px;
+  letter-spacing: -0.28px;
 }
 
 /* ── Row ──────────────────────────────────── */
+.stg-rows {
+  display: flex;
+  flex-direction: column;
+}
+
 .stg-row {
   display: flex;
   align-items: center;
   gap: 14px;
   width: 100%;
-  padding: 15px 18px;
+  padding: 14px 4px;
   background: transparent;
   border: none;
   text-align: left;
@@ -40,17 +91,18 @@
   transition: background 0.15s;
   text-decoration: none;
   color: inherit;
+  border-radius: 8px;
 }
 
 .stg-row:hover {
-  background: rgba(0, 0, 0, 0.03);
+  background: rgba(90, 120, 99, 0.05);
 }
 
 .stg-row--select {
   cursor: default;
   align-items: flex-start;
-  padding-top: 16px;
-  padding-bottom: 16px;
+  padding-top: 14px;
+  padding-bottom: 14px;
 }
 
 .stg-row--select:hover {
@@ -73,44 +125,14 @@
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: #F5F5F5;
-  color: #555;
+  background: rgba(211, 227, 188, 0.4);
+  color: #5A7863;
   flex-shrink: 0;
-  margin-top: 1px;
-  overflow: hidden;
 }
 
-.stg-row-icon.stg-icon-gold {
-  background: rgba(252, 186, 4, 0.15);
-  color: #c98800;
-}
-
-.stg-row-icon.stg-icon-danger {
-  background: rgba(229, 36, 59, 0.12);
-  color: #c71f35;
-}
-
-/* Avatar photo inside profile row icon */
-.stg-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  object-fit: cover;
-  display: block;
-}
-
-.stg-avatar-fallback {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(252, 186, 4, 0.18);
-  color: #8a5a00;
-  font-size: 18px;
-  font-weight: 800;
-  text-transform: uppercase;
+.stg-row-icon--green {
+  background: rgba(90, 120, 99, 0.12);
+  color: #5A7863;
 }
 
 /* ── Row text body ─────────────────────────── */
@@ -121,73 +143,69 @@
 
 .stg-row-title {
   display: block;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
   font-size: 15px;
   font-weight: 600;
-  color: #010101;
+  color: #3C4952;
   line-height: 1.3;
 }
 
 .stg-row-sub {
   display: block;
-  font-size: 14px;
-  color: #999;
-  margin-top: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 13px;
+  color: rgba(11, 57, 84, 0.55);
+  margin-top: 3px;
+  letter-spacing: -0.224px;
 }
 
-/* ── Chevron arrow ─────────────────────────── */
+/* ── Chevron ─────────────────────────────── */
 .stg-chevron {
-  color: #bbb;
+  color: rgba(11, 57, 84, 0.28);
   flex-shrink: 0;
 }
 
-/* ── Divider ───────────────────────────────── */
-.stg-divider {
+/* ── Divider ──────────────────────────────── */
+.stg-row-divider {
   height: 1px;
-  background: #F0F0F0;
-  margin: 0 18px;
+  background: rgba(211, 227, 188, 0.5);
+  margin: 0 4px;
 }
 
-/* ── Select inside row ─────────────────────── */
+/* ── Select inside row ────────────────────── */
 .stg-select-wrap {
   position: relative;
   display: flex;
   align-items: center;
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
 .stg-select {
   width: 100%;
-  padding: 10px 36px 10px 12px;
-  border: 1.5px solid #E8E8E8;
-  border-radius: 10px;
-  font-size: 13px;
+  padding: 10px 14px;
+  border: 1.5px solid #D3E3BC;
+  border-radius: 8px;
+  font-size: 14px;
   font-weight: 500;
-  color: #333;
-  background: #F8F8F8;
+  color: #3C4952;
+  background: #f7f8f2;
   appearance: none;
   -webkit-appearance: none;
   cursor: pointer;
   outline: none;
   font-family: inherit;
   transition: border-color 0.15s;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235A7863' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 32px;
 }
 
 .stg-select:focus {
-  border-color: #FCBA04;
+  border-color: #5A7863;
+  box-shadow: 0 0 0 3px rgba(90, 120, 99, 0.12);
 }
 
-.stg-select-arrow {
-  position: absolute;
-  right: 10px;
-  color: #bbb;
-  pointer-events: none;
-  transform: rotate(90deg);
-}
-
-/* ── Toggle switch ─────────────────────────── */
+/* ── Toggle switch ────────────────────────── */
 .stg-switch {
   margin-left: auto;
   position: relative;
@@ -195,6 +213,7 @@
   height: 28px;
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .stg-switch-input {
@@ -207,7 +226,7 @@
 .stg-switch-slider {
   position: absolute;
   inset: 0;
-  background: #d9d9d9;
+  background: rgba(11, 57, 84, 0.18);
   border-radius: 999px;
   transition: background 0.2s ease;
 }
@@ -225,78 +244,163 @@
   transition: transform 0.2s ease;
 }
 
-.stg-switch-input:checked+.stg-switch-slider {
-  background: #FCBA04;
+.stg-switch-input:checked + .stg-switch-slider {
+  background: #5A7863;
 }
 
-.stg-switch-input:checked+.stg-switch-slider::before {
+.stg-switch-input:checked + .stg-switch-slider::before {
   transform: translateX(20px);
 }
 
-.stg-switch-input:focus-visible+.stg-switch-slider {
-  outline: 2px solid rgba(252, 186, 4, 0.55);
+.stg-switch-input:focus-visible + .stg-switch-slider {
+  outline: 2px solid rgba(90, 120, 99, 0.45);
   outline-offset: 2px;
 }
 
-/* ── Log Out button ────────────────────────── */
-.stg-btn-logout {
+/* ══════════════════════════════════════════════
+   Danger Zone
+   ══════════════════════════════════════════════ */
+.stg-danger-zone {
+  padding: 32px;
+  border: 1.5px solid rgba(220, 38, 38, 0.2) !important;
+  box-shadow: 0 8px 24px rgba(220, 38, 38, 0.06), 0 4px 10px rgba(0, 0, 0, 0.04) !important;
+}
+
+.stg-danger-header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 9px;
-  width: 100%;
-  margin-top: 28px;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.stg-danger-icon {
+  color: #dc2626;
+}
+
+.stg-danger-title {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: #dc2626;
+  margin: 0;
+  letter-spacing: -0.28px;
+}
+
+.stg-danger-desc {
+  font-size: 14px;
+  color: rgba(11, 57, 84, 0.6);
+  margin: 0 0 24px;
+  line-height: 1.47;
+  letter-spacing: -0.224px;
+}
+
+.stg-danger-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stg-danger-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   padding: 16px;
-  background: #E5243B;
-  border: none;
-  border-radius: 16px;
+  background: rgba(220, 38, 38, 0.04);
+  border-radius: 10px;
+  border: 1px solid rgba(220, 38, 38, 0.1);
+}
+
+.stg-danger-action-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.stg-danger-action-icon {
+  color: rgba(220, 38, 38, 0.7);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.stg-danger-action-label {
+  display: block;
   font-size: 15px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  color: #fff;
+  font-weight: 600;
+  color: #3C4952;
+  line-height: 1.3;
+}
+
+.stg-danger-action-sub {
+  display: block;
+  font-size: 13px;
+  color: rgba(11, 57, 84, 0.55);
+  margin-top: 2px;
+}
+
+.stg-danger-btn {
+  flex-shrink: 0;
+  padding: 9px 20px;
+  border: 1.5px solid #dc2626;
+  border-radius: 8px;
+  background: transparent;
+  color: #dc2626;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   font-family: inherit;
-  transition: opacity 0.15s, transform 0.1s;
-  box-shadow: 0 4px 14px rgba(229, 36, 59, 0.3);
+  transition: background-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
 }
 
-.stg-btn-logout:hover {
-  opacity: 0.88;
+.stg-danger-btn:hover {
+  background: #dc2626;
+  color: #ffffff;
 }
 
-.stg-btn-logout:active {
-  transform: scale(0.98);
+.stg-danger-btn--logout {
+  border-color: #dc2626;
+  color: #dc2626;
 }
 
-.stg-inline-message {
-  margin: 10px 4px 0;
+.stg-danger-btn--logout:hover {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.stg-danger-message {
   font-size: 13px;
-  color: #5f5f5f;
+  padding: 0 16px;
+  color: rgba(11, 57, 84, 0.6);
 }
 
-.stg-inline-message--success {
-  color: #1f8f4d;
+.stg-danger-message--success {
+  color: #3d6b4a;
 }
 
-.stg-inline-message--error {
-  color: #c71f35;
+.stg-danger-message--error {
+  color: #dc2626;
 }
 
-/* ══════════════════════════════════════════════
+/* ══════════════════════════════════════════════
    Dark mode
-   ══════════════════════════════════════════════ */
-[data-theme="dark"] .settings-page {
-  background: #0B0B0D;
+   ══════════════════════════════════════════════ */
+[data-theme="dark"] .stg-page.dashboard-page-new {
+  background: var(--dashboard-page-bg, #0B0B0D);
 }
 
-[data-theme="dark"] .stg-section-label {
-  color: #555;
+[data-theme="dark"] .stg-hero-title {
+  color: #F0F0F0;
 }
 
-[data-theme="dark"] .stg-card {
-  background: #161618;
-  border-color: #2a2a2a;
-  box-shadow: none;
+[data-theme="dark"] .stg-hero-sub {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+[data-theme="dark"] .stg-section-title {
+  color: #F0F0F0;
 }
 
 [data-theme="dark"] .stg-row:hover {
@@ -304,18 +408,8 @@
 }
 
 [data-theme="dark"] .stg-row-icon {
-  background: #242424;
-  color: #888;
-}
-
-[data-theme="dark"] .stg-row-icon.stg-icon-gold {
-  background: rgba(252, 186, 4, 0.12);
-  color: #FCBA04;
-}
-
-[data-theme="dark"] .stg-row-icon.stg-icon-danger {
-  background: rgba(229, 36, 59, 0.18);
-  color: #ff6a7f;
+  background: rgba(90, 120, 99, 0.2);
+  color: #90AB8B;
 }
 
 [data-theme="dark"] .stg-row-title {
@@ -323,85 +417,141 @@
 }
 
 [data-theme="dark"] .stg-row-sub {
-  color: #555;
+  color: rgba(255, 255, 255, 0.4);
 }
 
 [data-theme="dark"] .stg-chevron {
-  color: #444;
+  color: rgba(255, 255, 255, 0.2);
 }
 
-[data-theme="dark"] .stg-divider {
-  background: #242424;
-  margin: 0 18px;
+[data-theme="dark"] .stg-row-divider {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 [data-theme="dark"] .stg-select {
-  background: #1e1e1e;
-  border-color: #333;
+  background: #1c2720;
+  border-color: #314338;
   color: #F0F0F0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2390AB8B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
 }
 
 [data-theme="dark"] .stg-select:focus {
-  border-color: #FCBA04;
-}
-
-[data-theme="dark"] .stg-select-arrow {
-  color: #555;
+  border-color: #90AB8B;
+  box-shadow: 0 0 0 3px rgba(144, 171, 139, 0.15);
 }
 
 [data-theme="dark"] .stg-switch-slider {
   background: #3a3a3a;
 }
 
-[data-theme="dark"] .stg-switch-slider::before {
-  background: #f4f4f4;
+[data-theme="dark"] .stg-switch-input:checked + .stg-switch-slider {
+  background: #5A7863;
 }
 
-[data-theme="dark"] .stg-switch-input:checked+.stg-switch-slider {
-  background: #FCBA04;
+/* Dark danger zone */
+[data-theme="dark"] .stg-danger-zone {
+  border-color: rgba(255, 107, 107, 0.2) !important;
+  box-shadow: 0 8px 24px rgba(220, 38, 38, 0.08), 0 4px 10px rgba(0, 0, 0, 0.15) !important;
 }
 
-[data-theme="dark"] .stg-btn-logout {
-  background: #C41E33;
-  box-shadow: 0 4px 14px rgba(196, 30, 51, 0.25);
+[data-theme="dark"] .stg-danger-title {
+  color: #ff6b6b;
 }
 
-[data-theme="dark"] .stg-inline-message {
-  color: #a6a6a6;
+[data-theme="dark"] .stg-danger-icon {
+  color: #ff6b6b;
 }
 
-[data-theme="dark"] .stg-inline-message--success {
-  color: #4ed58d;
+[data-theme="dark"] .stg-danger-desc {
+  color: rgba(255, 255, 255, 0.45);
 }
 
-[data-theme="dark"] .stg-inline-message--error {
-  color: #ff6a7f;
+[data-theme="dark"] .stg-danger-action-row {
+  background: rgba(220, 38, 38, 0.06);
+  border-color: rgba(255, 107, 107, 0.12);
 }
 
-/* ── Mobile responsive ── */
-@media (max-width: 600px) {
+[data-theme="dark"] .stg-danger-action-label {
+  color: #F0F0F0;
+}
 
-  /* Rows: bigger tap targets */
-  .stg-row {
-    min-height: 52px;
-    padding: 14px 16px;
+[data-theme="dark"] .stg-danger-action-sub {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+[data-theme="dark"] .stg-danger-action-icon {
+  color: rgba(255, 107, 107, 0.7);
+}
+
+[data-theme="dark"] .stg-danger-btn {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+[data-theme="dark"] .stg-danger-btn:hover {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .stg-danger-message {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+[data-theme="dark"] .stg-danger-message--success {
+  color: #90AB8B;
+}
+
+[data-theme="dark"] .stg-danger-message--error {
+  color: #ff6b6b;
+}
+
+/* ── Responsive ──────────────────────────── */
+@media (max-width: 900px) {
+  .stg-grid {
+    grid-template-columns: 1fr;
   }
 
-  /* Select: iOS zoom prevention (must be >= 16px) */
+  .stg-shell {
+    padding: 32px 16px 100px;
+  }
+
+  .stg-hero-title {
+    font-size: 36px;
+  }
+}
+
+@media (max-width: 600px) {
+  .stg-hero {
+    margin-bottom: 32px;
+  }
+
+  .stg-hero-title {
+    font-size: 30px;
+  }
+
+  .stg-card-section {
+    padding: 24px 20px;
+  }
+
+  .stg-danger-zone {
+    padding: 24px 20px;
+  }
+
+  .stg-danger-action-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .stg-danger-btn {
+    width: 100%;
+    text-align: center;
+  }
+
   .stg-select {
     font-size: 16px;
     min-height: 44px;
-    padding: 10px 36px 10px 12px;
-  }
-
-  /* Section label: breathing room */
-  .stg-section-label {
-    margin-top: 20px;
-  }
-
-  /* Log out button: full width and comfortable height */
-  .stg-btn-logout {
-    min-height: 52px;
-    font-size: 16px;
   }
 }

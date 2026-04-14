@@ -20,14 +20,17 @@ import {
   JOURNEY_NODE_THEMES,
   NODE_STATE,
 } from './journeyConstants';
+import { BIGKAS_LEVELS } from '../../utils/activityProgress';
 import SkywardJourneyNodeButton from './SkywardJourneyNodeButton';
 import './SkywardJourney.css';
 
 const MAP_SCALE = 1;
-const ORTHOGONAL_OFFSETS = [0, 56, 56, 0, -56, -56];
+const DESKTOP_OFFSETS = [0, 120, 220, 220, 120, 0, -120, -220, -220, -120];
+const MOBILE_OFFSETS  = [0, 45, 85, 85, 45, 0, -45, -85, -85, -45];
 
-function getHorizontalOffset(index) {
-  return ORTHOGONAL_OFFSETS[index % ORTHOGONAL_OFFSETS.length];
+function getHorizontalOffset(index, isMobile) {
+  const arr = isMobile ? MOBILE_OFFSETS : DESKTOP_OFFSETS;
+  return arr[index % arr.length];
 }
 
 function clampMapState(state, viewportEl, contentEl, scale) {
@@ -70,25 +73,40 @@ function getPhaseIcon(step) {
   const phase = getStepPhaseName(step).toLowerCase();
   switch (true) {
     case phase.includes('gaze'):
-      return IoEye;
+      return 'gaze';
     case phase.includes('vocal'):
-      return IoMic;
+      return 'vocal';
     case phase.includes('verbal'):
-      return IoChatbubbleEllipses;
+      return 'verbal';
     case phase.includes('sync'):
     case phase.includes('multi'):
-      return IoSync;
+      return 'sync';
     case phase.includes('context'):
     case phase.includes('advanced'):
-      return FaBrain;
+      return 'context';
     default:
-      return IoCheckmarkCircle;
+      return 'default';
   }
 }
 
 function JourneyNodeIcon({ step, index, className = '' }) {
-  const Cmp = isStartNode(step, index) ? IoStar : getPhaseIcon(step);
-  return <Cmp aria-hidden className={`skyward-journey-node-icon ${className}`.trim()} />;
+  const iconClassName = `skyward-journey-node-icon ${className}`.trim();
+  if (isStartNode(step, index)) return <IoStar aria-hidden className={iconClassName} />;
+
+  switch (getPhaseIcon(step)) {
+    case 'gaze':
+      return <IoEye aria-hidden className={iconClassName} />;
+    case 'vocal':
+      return <IoMic aria-hidden className={iconClassName} />;
+    case 'verbal':
+      return <IoChatbubbleEllipses aria-hidden className={iconClassName} />;
+    case 'sync':
+      return <IoSync aria-hidden className={iconClassName} />;
+    case 'context':
+      return <FaBrain aria-hidden className={iconClassName} />;
+    default:
+      return <IoCheckmarkCircle aria-hidden className={iconClassName} />;
+  }
 }
 
 function getStepLevel(step) {
@@ -112,6 +130,12 @@ function getBossMonsterIcon(level) {
     default:
       return GiGoblinHead;
   }
+}
+
+function getLevelSubtitle(level) {
+  const parsed = Number(level);
+  const found = BIGKAS_LEVELS.find((entry) => Number(entry.number) === parsed);
+  return found?.name || 'Master your speaking fundamentals';
 }
 
 /**
@@ -338,7 +362,7 @@ export const JourneyTooltip = ({ step, onStart, onClose, nodeRef, forceBottom = 
       window.removeEventListener('resize', update);
       window.removeEventListener('scroll', update, true);
     };
-  }, [nodeRef, step.id]);
+  }, [nodeRef, step.id, forceBottom]);
 
   const isLocked = step.nodeState === 'locked';
 
@@ -442,6 +466,8 @@ export default function SkywardJourney({
   renderStepContent,
   entranceFromNav = false,
   scrollToStepIndex = null,
+  currentLevel = 1,
+  onLevelChange,
 }) {
   const gradId = useId().replace(/:/g, '');
   const rootRef = useRef(null);
@@ -456,6 +482,15 @@ export default function SkywardJourney({
   const pointerPanRef = useRef(null);
   const pinchRef = useRef(null);
 
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const activeIndex = useMemo(
     () => steps.findIndex((s) => s.nodeState === NODE_STATE.ACTIVE),
     [steps],
@@ -465,7 +500,6 @@ export default function SkywardJourney({
 
   const [pathPoints, setPathPoints] = useState([]);
   const [indexedNodePoints, setIndexedNodePoints] = useState([]);
-  const [svgBounds, setSvgBounds] = useState({ width: 1, height: 1 });
   const [panelOpenId, setPanelOpenId] = useState(null);
   const [panelVisible, setPanelVisible] = useState(false);
   const panelClosePendingRef = useRef(false);
@@ -496,7 +530,6 @@ export default function SkywardJourney({
     if (!content || steps.length < 2) {
       if (indexedNodePoints.length !== 0) setIndexedNodePoints([]);
       setPathPoints([]);
-      setSvgBounds({ width: 1, height: 1 });
       return;
     }
 
@@ -504,7 +537,6 @@ export default function SkywardJourney({
     if (!cr.width || !cr.height) {
       if (indexedNodePoints.length !== 0) setIndexedNodePoints([]);
       setPathPoints([]);
-      setSvgBounds({ width: 1, height: 1 });
       return;
     }
 
@@ -522,7 +554,7 @@ export default function SkywardJourney({
         el = el.offsetParent;
       }
       const y = top + (node.offsetHeight / 2);
-      const x = centerX + getHorizontalOffset(i);
+      const x = centerX + getHorizontalOffset(i, isMobile);
       indexed[i] = { x, y };
     }
 
@@ -534,12 +566,8 @@ export default function SkywardJourney({
       return;
     }
 
-    setSvgBounds({
-      width: Math.max(1, content.clientWidth),
-      height: Math.max(1, content.clientHeight),
-    });
     setPathPoints(pts);
-  }, [steps.length, indexedNodePoints.length]);
+  }, [steps.length, indexedNodePoints.length, isMobile]);
 
   useLayoutEffect(() => {
     const run = () => {
@@ -599,20 +627,20 @@ export default function SkywardJourney({
         currentEl = currentEl.offsetParent;
       }
       const nodeCenterY = top + (el.offsetHeight / 2);
-      const nodeCenterX = (content.clientWidth / 2) + getHorizontalOffset(targetIndex);
+      const nodeCenterX = (content.clientWidth / 2) + getHorizontalOffset(targetIndex, isMobile);
 
       // We want the node exactly at the focus point (32% from the top of the screen)
       const focusScreenY = vp.clientHeight * 0.32;
       const targetTy = focusScreenY - (nodeCenterY * MAP_SCALE);
       const targetTx = (vp.clientWidth / 2) - (nodeCenterX * MAP_SCALE);
 
-      setMap((m) => clampMapState({ tx: targetTx, ty: targetTy }, vp, content, MAP_SCALE));
+      setMap(clampMapState({ tx: targetTx, ty: targetTy }, vp, content, MAP_SCALE));
     }, delay);
 
     return () => {
       window.clearTimeout(t);
     };
-  }, [activeIndex, entranceFromNav, scrollToStepIndex]);
+  }, [activeIndex, entranceFromNav, scrollToStepIndex, isMobile]);
 
   /** Wheel pans map vertically while preserving current zoom scale. */
   useEffect(() => {
@@ -645,6 +673,8 @@ export default function SkywardJourney({
       if (pinchRef.current) return;
       if (tooltipNodeId) setTooltipNodeId(null);
       if (e.pointerType === 'mouse' && e.button !== 0) return;
+      // Skip pan capturing on mobile devices to let native scrolling take over
+      if (isMobile && e.pointerType === 'touch') return;
       const t = e.target;
       if (t instanceof Element && t.closest('.skyward-journey-node-shell')) return;
       if (t instanceof Element && t.closest('.skyward-journey-unit-header')) return;
@@ -659,7 +689,7 @@ export default function SkywardJourney({
       };
       e.currentTarget.setPointerCapture(e.pointerId);
     },
-    [panelOpenId, tooltipNodeId],
+    [panelOpenId, tooltipNodeId, isMobile],
   );
 
   const onPointerMoveViewport = useCallback((e) => {
@@ -810,32 +840,8 @@ export default function SkywardJourney({
     };
   }, [selectedStep, steps]);
 
-  if (!steps.length) {
-    return null;
-  }
-
   const sections = [];
   const sectionMeta = [];
-  let currentSectionRows = [];
-  let sectionPillarTitle = null;
-  let pillarSectionIndex = 0;
-
-  const flushPillarSection = () => {
-    if (!currentSectionRows.length) return;
-    const sectionTitle = sectionPillarTitle || 'Training';
-    pillarSectionIndex += 1;
-    sections.push(
-      <section key={`pillar-section-${sectionTitle}-${pillarSectionIndex}`} className="skyward-journey-section">
-        <div className="skyward-journey-section-rows">{currentSectionRows}</div>
-        <div className="skyward-journey-section-header" role="presentation">
-          <span className="skyward-journey-section-line" aria-hidden />
-          <span className="skyward-journey-section-title">{sectionTitle}</span>
-          <span className="skyward-journey-section-line" aria-hidden />
-        </div>
-      </section>,
-    );
-    currentSectionRows = [];
-  };
 
   const totalStageCount = steps.length;
   let globalNodeIndex = 0;
@@ -872,7 +878,7 @@ export default function SkywardJourney({
         const BossMonsterIcon = getBossMonsterIcon(currentLevel);
         const startStage = sectionTaskIndex === 0;
         const jiggle = jiggleIndex === i;
-        const horizontalOffset = getHorizontalOffset(i);
+        const horizontalOffset = getHorizontalOffset(i, isMobile);
         let labelSide = 'right';
         if (horizontalOffset > 0) {
           labelSide = 'left';
@@ -898,7 +904,7 @@ export default function SkywardJourney({
                 className={`skyward-journey-node-shell${
                   i === 0 && isActive ? ' skyward-journey-node-shell--start-onboarding' : ''
                 }`}
-                style={{ zIndex: 10, position: 'relative' }}
+                style={{ zIndex: startStage ? 60 : 10, position: 'relative' }}
               >
                 <div
                   className={`skyward-journey-node-cluster${isUltimateBoss ? ' skyward-journey-node-cluster--boss' : ''}`}
@@ -1010,7 +1016,7 @@ export default function SkywardJourney({
           key={`pillar-section-${sectionTitle}`}
           className="skyward-journey-section"
           ref={(el) => { sectionWrapperRefs.current[sectionIndex] = el; }}
-          data-pillar-text={sectionTitle}
+          data-pillar-text={`${sectionTitle}`}
         >
           <div className="skyward-journey-section-rows">{currentSectionRows}</div>
           <div
@@ -1095,9 +1101,27 @@ export default function SkywardJourney({
     <div className="skyward-journey-wrap" style={{ position: 'relative', width: '100%', height: '100%' }}>
       <div className="skyward-journey skyward-journey-container no-scrollbar" ref={rootRef}>
         <MapHeaderCard className="skyward-journey-anim-header">
-          <HeaderTitle>{currentPillarText}</HeaderTitle>
-          <HeaderDescription>Master your speaking fundamentals</HeaderDescription>
-          <HeaderStatBadge>{completedCount} / {steps.length} Stages Completed</HeaderStatBadge>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '100%', justifyContent: 'center' }}>
+            <button
+              onClick={() => onLevelChange && onLevelChange(Math.max(1, currentLevel - 1))}
+              disabled={currentLevel <= 1}
+              style={{ padding: isMobile ? '8px 12px' : '8px 16px', borderRadius: '12px', border: 'none', background: currentLevel <= 1 ? '#e5e5e5' : '#f59b00', color: currentLevel <= 1 ? '#a1a1aa' : '#fff', cursor: currentLevel <= 1 ? 'not-allowed' : 'pointer', fontWeight: 'bold', flexShrink: 0 }}
+            >
+              &#8592; {isMobile ? '' : 'Prev'}
+            </button>
+            <div style={{ flex: 1 }}>
+              <HeaderTitle>{steps.length > 0 ? currentPillarText : `Level ${currentLevel}`}</HeaderTitle>
+              <HeaderDescription>{getLevelSubtitle(currentLevel)}</HeaderDescription>
+            </div>
+            <button
+              onClick={() => onLevelChange && onLevelChange(Math.min(5, currentLevel + 1))}
+              disabled={currentLevel >= 5}
+              style={{ padding: isMobile ? '8px 12px' : '8px 16px', borderRadius: '12px', border: 'none', background: currentLevel >= 5 ? '#e5e5e5' : '#f59b00', color: currentLevel >= 5 ? '#a1a1aa' : '#fff', cursor: currentLevel >= 5 ? 'not-allowed' : 'pointer', fontWeight: 'bold', flexShrink: 0 }}
+            >
+              {isMobile ? '' : 'Next'} &#8594;
+            </button>
+          </div>
+          {steps.length > 0 && <HeaderStatBadge>{completedCount} / {steps.length} Stages Completed</HeaderStatBadge>}
         </MapHeaderCard>
         <div className="skyward-journey-anim-root skyward-journey-map skyward-journey-anim-map">
           <div
@@ -1168,7 +1192,15 @@ export default function SkywardJourney({
                       />
                     </svg>
                   ) : null}
-                  {sections}
+                  {steps.length === 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', textAlign: 'center', zIndex: 10, position: 'relative' }}>
+                      <div style={{ fontSize: '4rem', marginBottom: '1rem', filter: 'grayscale(100%)', opacity: 0.5 }}>🚧</div>
+                      <h2 style={{ color: '#0b3954', fontSize: '1.8rem', fontWeight: 800, marginBottom: '0.5rem' }}>Level {currentLevel} is locked</h2>
+                      <p style={{ color: '#64748b', fontSize: '1.1rem', fontWeight: 600, maxWidth: '400px' }}>Our engineers are currently building this area. Please complete previous levels first!</p>
+                    </div>
+                  ) : (
+                    sections
+                  )}
                 </div>
               </div>
             </div>

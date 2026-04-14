@@ -1,13 +1,19 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../context/useAuthContext';
-import BackButton from '../../components/common/BackButton';
+import { ROUTES } from '../../utils/constants';
 import './InnerPages.css';
 import './AccountSettingsPage.css';
 
 function AccountSettingsPage() {
+  const location = useLocation();
   const navigate = useNavigate();
   const { deactivateAccount, deleteAccount } = useAuthContext();
+  const fromParam = new URLSearchParams(location.search).get('from');
+  const fromSource = String(location.state?.from || fromParam || '').toLowerCase();
+  const breadcrumbParent = fromSource === 'profile'
+    ? { label: 'Profile', to: ROUTES.PROFILE }
+    : { label: 'Settings', to: ROUTES.SETTINGS };
 
   /* ── Delete modal state ── */
   const [showDeleteModal,   setShowDeleteModal]   = useState(false);
@@ -67,32 +73,47 @@ function AccountSettingsPage() {
   };
 
   return (
-    <div className="inner-page">
-      <div className="inner-page-header" style={{ position: 'relative', justifyContent: 'center' }}>
-        <BackButton style={{ position: 'absolute', left: 0 }} onClick={() => navigate(-1)} />
-        <h1 className="inner-page-title">Account Settings</h1>
-      </div>
+    <div className="subpage-layout account-settings-layout">
+      <div className="subpage-frame">
+        <nav className="subpage-breadcrumb" aria-label="Breadcrumb">
+          <Link className="subpage-breadcrumb-link" to={breadcrumbParent.to}>
+            {breadcrumbParent.label}
+          </Link>
+          <span className="subpage-breadcrumb-sep">&gt;</span>
+          <span className="subpage-breadcrumb-current">Account Settings</span>
+        </nav>
 
-      {/* Deactivate section */}
-      <div className="page-card account-section">
-        <p className="account-section-title">Deactivate Profile</p>
-        <p className="account-section-desc">
-          Temporarily deactivate your account. Your data will be preserved and you can reactivate by logging back in.
-        </p>
-        <button className="btn-outline" onClick={() => { setDeactivatePassword(''); setDeactivateError(''); setShowDeactivateModal(true); }}>
-          Deactivate Account
-        </button>
-      </div>
+        <div className="inner-page account-settings-page">
+          <div className="inner-page-header account-settings-header">
+            <h1 className="inner-page-title">Account Settings</h1>
+          </div>
 
-      {/* Delete section */}
-      <div className="page-card account-section danger-zone">
-        <p className="account-section-title danger">Delete Account</p>
-        <p className="account-section-desc">
-          Permanently delete your account and all associated data. This action cannot be undone.
-        </p>
-        <button className="btn-danger" onClick={() => { setPassword(''); setConfirmText(''); setDeleteError(''); setShowDeleteModal(true); }}>
-          Delete Account
-        </button>
+          {/* Deactivate section */}
+          <div className="page-card account-section">
+            <p className="account-section-title">Deactivate Profile</p>
+            <p className="account-section-desc">
+              Temporarily deactivate your account. Your data will be preserved and you can reactivate by logging back in.
+            </p>
+            <button className="btn-outline" onClick={() => { setDeactivatePassword(''); setDeactivateError(''); setShowDeactivateModal(true); }}>
+              Deactivate Account
+            </button>
+          </div>
+
+          {/* Delete section */}
+          <div className="page-card account-section danger-zone">
+            <p className="account-section-title danger">Delete Account</p>
+            <p className="account-section-desc">
+              Permanently delete your account and all associated data. This action cannot be undone.
+            </p>
+            <button className="btn-danger account-btn-primary" onClick={() => { setPassword(''); setConfirmText(''); setDeleteError(''); setShowDeleteModal(true); }}>
+              Delete Account
+            </button>
+          </div>
+
+          <div className="btn-row">
+            <button className="btn-secondary" onClick={() => navigate(-1)}>Cancel</button>
+          </div>
+        </div>
       </div>
 
       {/* ── Deactivate confirmation modal ── */}
@@ -122,7 +143,7 @@ function AccountSettingsPage() {
               <button className="btn-secondary" onClick={() => { setShowDeactivateModal(false); setDeactivateError(''); }}>
                 Cancel
               </button>
-              <button className="btn-outline" onClick={handleDeactivate} disabled={isDeactivating}>
+              <button className="btn-outline account-btn-primary" onClick={handleDeactivate} disabled={isDeactivating}>
                 {isDeactivating ? 'Deactivating…' : 'Deactivate'}
               </button>
             </div>
@@ -167,7 +188,7 @@ function AccountSettingsPage() {
               <button className="btn-secondary" onClick={() => { setShowDeleteModal(false); setDeleteError(''); }}>
                 Cancel
               </button>
-              <button className="btn-danger" onClick={handleDelete} disabled={isDeleting}>
+              <button className="btn-danger account-btn-primary" onClick={handleDelete} disabled={isDeleting}>
                 {isDeleting ? 'Deleting…' : 'Delete'}
               </button>
             </div>

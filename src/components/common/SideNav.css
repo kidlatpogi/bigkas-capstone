@@ -156,7 +156,7 @@
 }
 
 .side-nav-logout {
-  margin-top: 8px;
+  margin-top: auto;
   display: inline-flex;
   align-items: center;
   gap: 12px;
@@ -164,7 +164,7 @@
   padding: 0 16px;
   border: 0;
   background: transparent;
-  color: rgba(247, 251, 255, 0.82);
+  color: white;
   text-decoration: none;
   font-size: 1rem;
   font-weight: 700;
@@ -228,8 +228,8 @@
 }
 
 .side-nav-logout:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #F18F01;
+  background: rgba(220, 38, 38, 0.14);
+  color: #ef4444;
 }
 
 .side-nav-logout svg {
@@ -291,7 +291,7 @@
 }
 
 .side-nav-modal-btn--confirm {
-  background: #f18f01;
+  background: red;
   color: #ffffff;
 }
 

@@ -55,11 +55,19 @@
 
 .activity-col-main {
   width: 100%;
-  height: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100vh;
   overflow: hidden;
   min-width: 0;
   display: flex;
   justify-content: center;
+  background-color: white;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center center;
+  border-top-right-radius: 20px;
+  border-bottom-right-radius: 20px;
 }
 
 .activity-col-sidebar {
@@ -140,6 +148,9 @@
   margin-inline: auto;
   padding-inline: clamp(0.25rem, 1vw, 1rem);
   box-sizing: border-box;
+  border-top-right-radius: 20px;
+  border-bottom-right-radius: 20px;
+  overflow: hidden;
 }
 
 @media (min-width: 1800px) {
@@ -156,39 +167,38 @@
 
 @media (max-width: 1024px) {
   .activity-two-col {
-    display: flex;
-    flex-direction: column;
-    height: auto;
+    display: block;
+    height: 100vh;
+    height: 100dvh;
     min-height: 100vh;
   }
 
   .activity-col-main {
-    flex: 1 1 auto;
+    width: 100%;
+    height: 100vh;
     height: 100dvh;
+    min-height: 100vh;
     display: block;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
   }
 
   .activity-col-main .activity-content-wrap--journey-scroll {
     max-width: none;
     padding-inline: 0;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
   }
 
   .activity-col-sidebar {
-    flex: 0 0 auto;
-    height: auto;
-    overflow-y: visible;
-    padding: 1rem;
+    display: none !important;
   }
 }
 
 @media (max-width: 768px) {
   .activity-col-main {
-    height: min(100dvh, 780px);
-  }
-
-  .activity-col-sidebar {
-    padding: 0.75rem;
-    gap: 0.75rem;
+    height: 100vh;
+    height: 100dvh;
   }
 }
 
@@ -929,3 +939,135 @@ body.skyward-journey-modal-open .activity-sticky-shell {
   border-color: #4d6e57;
   background: #4d6e57;
 }
+
+/* ==========================================================================
+   Comprehensive Responsive Design System
+   ========================================================================== */
+
+/* Global mobile adjustments to eliminate horizontal scroll */
+@media (max-width: 767px) {
+  .activity-page {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden !important;
+    box-sizing: border-box;
+  }
+  .activity-two-col,
+  .activity-col-main,
+  .activity-content-wrap,
+  .activity-task-list {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden !important;
+    box-sizing: border-box;
+  }
+}
+
+/* Large screens (≥1200px) */
+@media (min-width: 1200px) {
+  .activity-col-main .activity-content-wrap--journey-scroll {
+    max-width: 1100px;
+    padding-inline: 2rem;
+  }
+}
+
+/* Medium screens (768px - 1199px) */
+@media (max-width: 1199px) and (min-width: 768px) {
+  .activity-col-main .activity-content-wrap--journey-scroll {
+    max-width: 100%;
+    padding-inline: 1.5rem;
+  }
+  .activity-task-name {
+    font-size: 18px;
+  }
+  .activity-task-card {
+    padding: 1.25rem;
+  }
+}
+
+/* Small screens (481px - 767px) */
+@media (max-width: 767px) and (min-width: 481px) {
+  .activity-col-main .activity-content-wrap--journey-scroll {
+    padding-inline: 1rem;
+  }
+  .activity-task-name {
+    font-size: 17px;
+  }
+  .activity-task-card {
+    padding: 1.15rem;
+  }
+  .activity-action-btn {
+    min-height: 48px; /* Touch target size */
+    padding: 0.8rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Large phones (415px - 480px) */
+@media (max-width: 480px) and (min-width: 415px) {
+  .activity-col-main .activity-content-wrap--journey-scroll {
+    padding-inline: 0.75rem;
+  }
+  .activity-task-name {
+    font-size: 16px;
+  }
+  .activity-task-card {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+  .activity-action-btn {
+    min-height: 48px;
+    font-size: 0.85rem;
+  }
+  .activity-task-detail {
+    font-size: 14px;
+  }
+}
+
+/* Medium phones (376px - 414px) */
+@media (max-width: 414px) and (min-width: 376px) {
+  .activity-col-main .activity-content-wrap--journey-scroll {
+    padding-inline: 0.5rem;
+  }
+  .activity-task-name {
+    font-size: 15px;
+  }
+  .activity-task-card {
+    padding: 0.875rem;
+    border-radius: 12px;
+  }
+  .activity-action-btn {
+    min-height: 48px;
+    font-size: 0.85rem;
+  }
+  .activity-task-detail {
+    font-size: 13px;
+  }
+}
+
+/* Small phones (≤375px) */
+@media (max-width: 375px) {
+  .activity-col-main .activity-content-wrap--journey-scroll {
+    padding-inline: 0.25rem;
+  }
+  .activity-task-name {
+    font-size: 14px;
+  }
+  .activity-task-card {
+    padding: 0.75rem;
+    border-radius: 10px;
+  }
+  .activity-action-btn {
+    min-height: 44px; /* Minimum acceptable touch target */
+    font-size: 0.8rem;
+    padding: 0.6rem 0.8rem;
+  }
+  .activity-task-detail {
+    font-size: 12px;
+  }
+  .activity-task-xp {
+    font-size: 0.65rem;
+    padding: 0.25rem 0.5rem;
+  }
+}
+

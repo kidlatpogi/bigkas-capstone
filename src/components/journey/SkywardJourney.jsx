@@ -95,8 +95,6 @@ function JourneyNodeIcon({ step, index, className = '' }) {
 function getStepLevel(step) {
   const targetLevel = Number(step?.task?.target_level);
   if (Number.isFinite(targetLevel) && targetLevel > 0) return targetLevel;
-  const stage = Number(step?.stageNumber);
-  if (Number.isFinite(stage) && stage > 0) return stage;
   return 1;
 }
 
@@ -843,14 +841,21 @@ export default function SkywardJourney({
         const isLocked = step.nodeState === NODE_STATE.LOCKED;
         const title = getStepActivityTitle(step);
         const isSectionEnd = sectionTaskIndex === section.tasks.length - 1;
-        const isGlobalEnd = i === steps.length - 1;
-        const isUltimateBoss =
-          isGlobalEnd || Number(step.stageNumber) === 31 || Number(step.task?.activity_order) === 31;
-        const isSectionTrophy = isSectionEnd && !isUltimateBoss;
         const currentLevel = getStepLevel(step);
         const nextStep = steps[i + 1];
         const nextLevel = nextStep ? getStepLevel(nextStep) : currentLevel;
-        const isLevelEnd = !isUltimateBoss && (!nextStep || nextLevel !== currentLevel);
+
+        const isGlobalEnd = i === steps.length - 1;
+        const isStage31 = Number(step.stageNumber) === 31 || Number(step.task?.activity_order) === 31;
+
+        // The Ultimate Boss (Circle/Ghost) is ONLY at the end of Level 5
+        const isUltimateBoss = (isGlobalEnd || isStage31) && currentLevel === 5;
+
+        // A Level End (Square/Monster) triggers if it's Stage 31 of Levels 1-4, OR if the next step jumps to a new level
+        const isLevelEnd = !isUltimateBoss && (isStage31 || (!nextStep || nextLevel !== currentLevel));
+
+        // A Section Trophy is any section end that isn't a Boss
+        const isSectionTrophy = isSectionEnd && !isUltimateBoss && !isLevelEnd;
         const isEnhancedTrophyNode = !isUltimateBoss && (isSectionTrophy || isLevelEnd);
         const BossMonsterIcon = getBossMonsterIcon(currentLevel);
         const startStage = sectionTaskIndex === 0;
@@ -889,7 +894,7 @@ export default function SkywardJourney({
                     transform: `translateX(${horizontalOffset}px)`,
                   }}
                 >
-                  {isUltimateBoss ? (
+                  {(isUltimateBoss || isLevelEnd) ? (
                     <div className="skyward-journey-start-callout" aria-hidden>
                       <span className="skyward-journey-start-badge" style={{ backgroundColor: '#d32f2f', color: '#fff' }}>
                         BOSS
@@ -929,7 +934,7 @@ export default function SkywardJourney({
                         className="skyward-journey-node-icon skyward-journey-node-icon--boss"
                         aria-hidden
                       />
-                    ) : isSectionEnd && isLevelEnd ? (
+                    ) : isLevelEnd ? (
                       <BossMonsterIcon
                         className="skyward-journey-node-icon skyward-journey-node-icon--boss"
                         aria-hidden

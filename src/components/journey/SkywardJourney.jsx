@@ -432,6 +432,8 @@ export default function SkywardJourney({
   entranceFromNav = false,
   scrollToStepIndex = null,
 }) {
+  const gradId = useId().replace(/:/g, '');
+  const flowGradId = useId().replace(/:/g, '');
   const rootRef = useRef(null);
   const viewportRef = useRef(null);
   const mapContentRef = useRef(null);

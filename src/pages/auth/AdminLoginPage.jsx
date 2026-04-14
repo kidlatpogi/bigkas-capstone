@@ -102,11 +102,6 @@ function AdminLoginPage({ managePageClass = true }) {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!ENV.ADMIN_LOGIN_SLUG) {
-      setErrors({ submit: 'Admin access is not configured.' });
-      return;
-    }
-
     if (lockoutSeconds > 0) {
       setErrors({ submit: `Too many attempts. Try again in ${formatCountdown(lockoutSeconds)}` });
       return;

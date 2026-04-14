@@ -98,157 +98,151 @@ function SettingsPage() {
         </header>
 
         <div className="stg-grid">
-          {/* ── Left column ── */}
-          <div className="stg-col-main">
-            {/* Legal */}
-            <section className="dashboard-card stg-card-section dashboard-anim-left dashboard-anim-delay-1">
-              <h2 className="stg-section-title">Legal</h2>
-              <div className="stg-rows">
-                <button type="button" className="stg-row" onClick={showTerms}>
-                  <span className="stg-row-icon">
-                    <IoShieldCheckmarkOutline size={20} />
-                  </span>
-                  <div className="stg-row-body">
-                    <span className="stg-row-title">Terms &amp; Conditions</span>
-                    <span className="stg-row-sub">Review platform usage terms and responsibilities</span>
+          {/* Hardware */}
+          <section className="dashboard-card stg-card-section dashboard-anim-right dashboard-anim-delay-2">
+            <h2 className="stg-section-title">Hardware</h2>
+            <div className="stg-rows">
+              <div className="stg-row stg-row--select">
+                <span className="stg-row-icon">
+                  <IoMicOutline size={20} />
+                </span>
+                <div className="stg-row-body">
+                  <span className="stg-row-title">Microphone</span>
+                  <div className="stg-select-wrap">
+                    <select className="stg-select" value={mic} onChange={handleMicChange}>
+                      {microphones.map(d => (
+                        <option key={d.deviceId} value={d.deviceId}>
+                          {d.label || `Microphone ${d.deviceId.slice(0, 6)}`}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <IoChevronForward size={16} className="stg-chevron" />
-                </button>
-
-                <div className="stg-row-divider" />
-
-                <button type="button" className="stg-row" onClick={showPrivacy}>
-                  <span className="stg-row-icon">
-                    <IoShieldCheckmarkOutline size={20} />
-                  </span>
-                  <div className="stg-row-body">
-                    <span className="stg-row-title">Privacy Policy</span>
-                    <span className="stg-row-sub">Learn how your account and recording data are handled</span>
-                  </div>
-                  <IoChevronForward size={16} className="stg-chevron" />
-                </button>
+                </div>
               </div>
-            </section>
 
-            {/* ── Danger Zone ── */}
-            <section className="dashboard-card stg-danger-zone dashboard-anim-bottom dashboard-anim-delay-3">
-              <div className="stg-danger-header">
-                <IoWarningOutline size={22} className="stg-danger-icon" />
-                <h2 className="stg-danger-title">Danger Zone</h2>
+              <div className="stg-row-divider" />
+
+              <div className="stg-row stg-row--select">
+                <span className="stg-row-icon">
+                  <IoMicOutline size={20} />
+                </span>
+                <div className="stg-row-body">
+                  <span className="stg-row-title">Mic Sensitivity</span>
+                  <span className="stg-row-sub">Increase if your voice isn&apos;t picked up clearly</span>
+                  <div className="stg-select-wrap">
+                    <select className="stg-select" value={micSensitivity} onChange={handleMicSensitivityChange}>
+                      <option value="low">Low</option>
+                      <option value="normal">Normal</option>
+                      <option value="high">High (Recommended)</option>
+                    </select>
+                  </div>
+                </div>
               </div>
-              <p className="stg-danger-desc">
-                Actions in this section are destructive and cannot be undone. Proceed with caution.
-              </p>
 
-              <div className="stg-danger-actions">
-                <div className="stg-danger-action-row">
-                  <div className="stg-danger-action-info">
-                    <IoTrashOutline size={18} className="stg-danger-action-icon" />
-                    <div>
-                      <span className="stg-danger-action-label">Clear Recordings</span>
-                      <span className="stg-danger-action-sub">Remove all saved audio/video files from cloud storage</span>
-                    </div>
+              <div className="stg-row-divider" />
+
+              <div className="stg-row stg-row--select">
+                <span className="stg-row-icon">
+                  <IoCameraOutline size={20} />
+                </span>
+                <div className="stg-row-body">
+                  <span className="stg-row-title">Camera</span>
+                  <div className="stg-select-wrap">
+                    <select className="stg-select" value={cam} onChange={handleCamChange}>
+                      {cameras.map(d => (
+                        <option key={d.deviceId} value={d.deviceId}>
+                          {d.label || `Camera ${d.deviceId.slice(0, 6)}`}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <button
-                    type="button"
-                    className="stg-danger-btn"
-                    onClick={() => setShowClearMediaModal(true)}
-                  >
-                    Clear Data
-                  </button>
                 </div>
-
-                {clearMediaMessage && (
-                  <p
-                    className={`stg-danger-message ${clearMediaStatus === 'success' ? 'stg-danger-message--success' : ''} ${clearMediaStatus === 'error' ? 'stg-danger-message--error' : ''}`.trim()}
-                    role="status"
-                    aria-live="polite"
-                  >
-                    {clearMediaMessage}
-                  </p>
-                )}
               </div>
-            </section>
-          </div>
 
-          {/* ── Right column ── */}
-          <div className="stg-col-side">
-            {/* Hardware */}
-            <section className="dashboard-card stg-card-section dashboard-anim-right dashboard-anim-delay-2">
-              <h2 className="stg-section-title">Hardware</h2>
-              <div className="stg-rows">
-                <div className="stg-row stg-row--select">
-                  <span className="stg-row-icon">
-                    <IoMicOutline size={20} />
-                  </span>
-                  <div className="stg-row-body">
-                    <span className="stg-row-title">Microphone</span>
-                    <div className="stg-select-wrap">
-                      <select className="stg-select" value={mic} onChange={handleMicChange}>
-                        {microphones.map(d => (
-                          <option key={d.deviceId} value={d.deviceId}>
-                            {d.label || `Microphone ${d.deviceId.slice(0, 6)}`}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+              <div className="stg-row-divider" />
+
+              <button className="stg-row" onClick={() => navigate(ROUTES.AUDIO_TEST)}>
+                <span className="stg-row-icon">
+                  <IoHardwareChipOutline size={20} />
+                </span>
+                <div className="stg-row-body">
+                  <span className="stg-row-title">Test Audio / Video</span>
+                  <span className="stg-row-sub">Check your mic and camera work correctly</span>
+                </div>
+                <IoChevronForward size={16} className="stg-chevron" />
+              </button>
+            </div>
+          </section>
+
+          {/* Legal */}
+          <section className="dashboard-card stg-card-section dashboard-anim-left dashboard-anim-delay-1">
+            <h2 className="stg-section-title">Legal</h2>
+            <div className="stg-rows">
+              <button type="button" className="stg-row" onClick={showTerms}>
+                <span className="stg-row-icon">
+                  <IoShieldCheckmarkOutline size={20} />
+                </span>
+                <div className="stg-row-body">
+                  <span className="stg-row-title">Terms &amp; Conditions</span>
+                  <span className="stg-row-sub">Review platform usage terms and responsibilities</span>
+                </div>
+                <IoChevronForward size={16} className="stg-chevron" />
+              </button>
+
+              <div className="stg-row-divider" />
+
+              <button type="button" className="stg-row" onClick={showPrivacy}>
+                <span className="stg-row-icon">
+                  <IoShieldCheckmarkOutline size={20} />
+                </span>
+                <div className="stg-row-body">
+                  <span className="stg-row-title">Privacy Policy</span>
+                  <span className="stg-row-sub">Learn how your account and recording data are handled</span>
+                </div>
+                <IoChevronForward size={16} className="stg-chevron" />
+              </button>
+            </div>
+          </section>
+
+          {/* ── Danger Zone ── */}
+          <section className="dashboard-card stg-danger-zone dashboard-anim-bottom dashboard-anim-delay-3">
+            <div className="stg-danger-header">
+              <IoWarningOutline size={22} className="stg-danger-icon" />
+              <h2 className="stg-danger-title">Danger Zone</h2>
+            </div>
+            <p className="stg-danger-desc">
+              Actions in this section are destructive and cannot be undone. Proceed with caution.
+            </p>
+
+            <div className="stg-danger-actions">
+              <div className="stg-danger-action-row">
+                <div className="stg-danger-action-info">
+                  <IoTrashOutline size={18} className="stg-danger-action-icon" />
+                  <div>
+                    <span className="stg-danger-action-label">Clear Recordings</span>
+                    <span className="stg-danger-action-sub">Remove all saved audio/video files from cloud storage</span>
                   </div>
                 </div>
-
-                <div className="stg-row-divider" />
-
-                <div className="stg-row stg-row--select">
-                  <span className="stg-row-icon">
-                    <IoMicOutline size={20} />
-                  </span>
-                  <div className="stg-row-body">
-                    <span className="stg-row-title">Mic Sensitivity</span>
-                    <span className="stg-row-sub">Increase if your voice isn&apos;t picked up clearly</span>
-                    <div className="stg-select-wrap">
-                      <select className="stg-select" value={micSensitivity} onChange={handleMicSensitivityChange}>
-                        <option value="low">Low</option>
-                        <option value="normal">Normal</option>
-                        <option value="high">High (Recommended)</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="stg-row-divider" />
-
-                <div className="stg-row stg-row--select">
-                  <span className="stg-row-icon">
-                    <IoCameraOutline size={20} />
-                  </span>
-                  <div className="stg-row-body">
-                    <span className="stg-row-title">Camera</span>
-                    <div className="stg-select-wrap">
-                      <select className="stg-select" value={cam} onChange={handleCamChange}>
-                        {cameras.map(d => (
-                          <option key={d.deviceId} value={d.deviceId}>
-                            {d.label || `Camera ${d.deviceId.slice(0, 6)}`}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="stg-row-divider" />
-
-                <button className="stg-row" onClick={() => navigate(ROUTES.AUDIO_TEST)}>
-                  <span className="stg-row-icon">
-                    <IoHardwareChipOutline size={20} />
-                  </span>
-                  <div className="stg-row-body">
-                    <span className="stg-row-title">Test Audio / Video</span>
-                    <span className="stg-row-sub">Check your mic and camera work correctly</span>
-                  </div>
-                  <IoChevronForward size={16} className="stg-chevron" />
+                <button
+                  type="button"
+                  className="stg-danger-btn"
+                  onClick={() => setShowClearMediaModal(true)}
+                >
+                  Clear Data
                 </button>
               </div>
-            </section>
-          </div>
+
+              {clearMediaMessage && (
+                <p
+                  className={`stg-danger-message ${clearMediaStatus === 'success' ? 'stg-danger-message--success' : ''} ${clearMediaStatus === 'error' ? 'stg-danger-message--error' : ''}`.trim()}
+                  role="status"
+                  aria-live="polite"
+                >
+                  {clearMediaMessage}
+                </p>
+              )}
+            </div>
+          </section>
         </div>
       </div>
 

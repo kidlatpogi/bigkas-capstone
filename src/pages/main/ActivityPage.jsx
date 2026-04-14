@@ -526,7 +526,6 @@ function ActivityPage() {
           </section>
 
           <section className="dashboard-card dashboard-mode-card dashboard-mode-card--training activity-practice-hub dashboard-anim-bottom dashboard-anim-delay-4">
-            <div className="dashboard-mode-badge dashboard-mode-badge--alt">Practice Mode</div>
             <h3 className="dashboard-mode-title">Practice Hub</h3>
             <div className="activity-practice-options">
               <article className="activity-practice-option-card">

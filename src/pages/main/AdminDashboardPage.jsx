@@ -9,7 +9,14 @@ import {
   Tooltip,
   ResponsiveContainer,
   AreaChart,
-  Area
+  Area,
+  LineChart,
+  Line,
+  CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
+  Legend
 } from 'recharts';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
@@ -20,6 +27,7 @@ import './AdminDashboardPage.css';
 
 const RETENTION_DAYS = 14;
 const SIDEBAR_WIDTH = 280;
+const PIE_COLORS = ['#5a755e', '#7b997f', '#a3c2a8', '#d1e6d4'];
 
 function shiftRange(start, unit, amount) {
   const d = new Date(start);
@@ -46,18 +54,18 @@ function modeOf(session) {
   return 'Activities';
 }
 
-function SimpleBars({ items, suffix = '' }) {
-  if (!items.length) return <p className="admin-empty">No data yet.</p>;
-  const max = Math.max(1, ...items.map((i) => Number(i.value || 0)));
+function LeaderboardList({ items, suffix = '', emptyMsg = 'No data available' }) {
+  if (!items.length) return <div className="admin-empty-chart">{emptyMsg}</div>;
   return (
-    <div className="admin-bars">
-      {items.map((item) => (
-        <div key={item.label} className="admin-bar-row">
-          <span className="admin-bar-label">{item.label}</span>
-          <div className="admin-bar-track">
-            <div className="admin-bar-fill" style={{ width: `${(item.value / max) * 100}%` }} />
+    <div className="admin-leaderboard">
+      {items.map((item, i) => (
+        <div key={item.id} className="admin-lb-row">
+          <div className="admin-lb-rank">{i + 1}</div>
+          <div className="admin-lb-avatar">{item.initial}</div>
+          <div className="admin-lb-name">{item.username}</div>
+          <div className="admin-lb-value">
+            {item.value} {suffix}
           </div>
-          <strong className="admin-bar-value">{item.value}{suffix}</strong>
         </div>
       ))}
     </div>
@@ -72,6 +80,7 @@ function AdminDashboardPage() {
   const [error, setError] = useState('');
   const [role, setRole] = useState('');
   const [activePage, setActivePage] = useState('overview');
+  const [globalFilter, setGlobalFilter] = useState('30d');
 
   const [profiles, setProfiles] = useState([]);
   const [sessions, setSessions] = useState([]);
@@ -132,7 +141,7 @@ function AdminDashboardPage() {
             .order('created_at', { ascending: true }),
           supabase
             .from('session_metrics')
-            .select('session_id, overall_score'),
+            .select('session_id, overall_score, fluency_score, confidence_score, pronunciation_score'),
         ]);
 
         if (profilesRes.error) throw profilesRes.error;
@@ -187,9 +196,27 @@ function AdminDashboardPage() {
     return map;
   }, [visibleUsers]);
 
+  const filteredSessions = useMemo(() => {
+    if (globalFilter === 'all') return sessions;
+    const now = new Date();
+    let days = 30;
+    if (globalFilter === '7d') days = 7;
+    if (globalFilter === 'ytd') {
+      const startOfYear = new Date(now.getFullYear(), 0, 1).getTime();
+      return sessions.filter(s => new Date(s.created_at).getTime() >= startOfYear);
+    }
+    const cutoff = shiftRange(now, 'day', -days).getTime();
+    return sessions.filter(s => new Date(s.created_at).getTime() >= cutoff);
+  }, [sessions, globalFilter]);
+
   const metricBySession = useMemo(() => {
     const map = new Map();
-    metrics.forEach((m) => map.set(m.session_id, Number(m.overall_score)));
+    metrics.forEach((m) => map.set(m.session_id, {
+      overall: Number(m.overall_score),
+      fluency: Number(m.fluency_score),
+      confidence: Number(m.confidence_score),
+      pronunciation: Number(m.pronunciation_score)
+    }));
     return map;
   }, [metrics]);
 
@@ -273,54 +300,84 @@ function AdminDashboardPage() {
 
   const timeAllocation = useMemo(() => {
     const totals = { Activities: 0, Randomizer: 0, 'Free Speech': 0 };
-    sessions.forEach((s) => { totals[modeOf(s)] += Number(s.duration || 0); });
-    return Object.entries(totals).map(([label, value]) => ({ label, value: Math.round(value / 60) }));
-  }, [sessions]);
+    filteredSessions.forEach((s) => { totals[modeOf(s)] += Number(s.duration || 0); });
+    return Object.entries(totals)
+      .map(([label, value]) => ({ name: label, value: Math.round(value / 60) }))
+      .filter(d => d.value > 0);
+  }, [filteredSessions]);
 
   const grind = useMemo(() => {
     const totals = new Map();
-    sessions.forEach((s) => totals.set(s.user_id, (totals.get(s.user_id) || 0) + Number(s.duration || 0)));
+    filteredSessions.forEach((s) => totals.set(s.user_id, (totals.get(s.user_id) || 0) + Number(s.duration || 0)));
     return Array.from(totals.entries())
-      .map(([id, sec]) => ({ label: getDisplayName(profileById.get(id), id), value: Math.round(sec / 60) }))
+      .map(([id, sec]) => {
+        const prof = profileById.get(id);
+        return {
+          id,
+          username: prof?.username || getDisplayName(prof, id),
+          initial: (prof?.username || prof?.first_name || 'U')[0].toUpperCase(),
+          value: Math.round(sec / 60)
+        };
+      })
       .sort((a, b) => b.value - a.value)
-      .slice(0, 10);
-  }, [sessions, profileById]);
+      .slice(0, 5);
+  }, [filteredSessions, profileById]);
 
   const risers = useMemo(() => {
     const byUser = new Map();
-    sessions.forEach((s) => {
-      const score = metricBySession.get(s.id);
-      if (!Number.isFinite(score)) return;
+    filteredSessions.forEach((s) => {
+      const scores = metricBySession.get(s.id);
+      if (!scores || !Number.isFinite(scores.overall)) return;
       const list = byUser.get(s.user_id) || [];
-      list.push({ created_at: s.created_at, score });
+      list.push({ created_at: s.created_at, score: scores.overall });
       byUser.set(s.user_id, list);
     });
     return Array.from(byUser.entries())
       .map(([id, list]) => {
+        if (list.length < 2) return null;
         const sorted = [...list].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-        return { label: getDisplayName(profileById.get(id), id), value: Number((sorted[sorted.length - 1].score - sorted[0].score).toFixed(1)) };
+        const prof = profileById.get(id);
+        return {
+          id,
+          username: prof?.username || getDisplayName(prof, id),
+          initial: (prof?.username || prof?.first_name || 'U')[0].toUpperCase(),
+          value: Number((sorted[sorted.length - 1].score - sorted[0].score).toFixed(1))
+        };
       })
+      .filter(Boolean)
       .sort((a, b) => b.value - a.value)
-      .slice(0, 10);
-  }, [sessions, metricBySession, profileById]);
+      .slice(0, 5);
+  }, [filteredSessions, metricBySession, profileById]);
 
-  const avgProgress = useMemo(() => {
+  const multiDimProgress = useMemo(() => {
     const buckets = new Map();
-    sessions.forEach((s) => {
-      const score = metricBySession.get(s.id);
-      if (!Number.isFinite(score)) return;
+    filteredSessions.forEach((s) => {
+      const scores = metricBySession.get(s.id);
+      if (!scores || !Number.isFinite(scores.fluency)) return;
       const d = new Date(s.created_at);
       if (Number.isNaN(d.getTime())) return;
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const cur = buckets.get(key) || { sum: 0, count: 0 };
-      cur.sum += score;
+      const key = `${d.getMonth() + 1}/${d.getDate()}`;
+      const cur = buckets.get(key) || { f: 0, c: 0, p: 0, count: 0 };
+      cur.f += scores.fluency;
+      cur.c += scores.confidence;
+      cur.p += scores.pronunciation;
       cur.count += 1;
       buckets.set(key, cur);
     });
     return Array.from(buckets.entries())
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([label, v]) => ({ label, value: Number((v.sum / v.count).toFixed(1)) }));
-  }, [sessions, metricBySession]);
+      .map(([label, v]) => ({
+        label,
+        fluency_score: Number((v.f / v.count).toFixed(1)),
+        confidence_score: Number((v.c / v.count).toFixed(1)),
+        pronunciation_score: Number((v.p / v.count).toFixed(1)),
+      }))
+      .sort((a, b) => {
+        const [m1, d1] = a.label.split('/').map(Number);
+        const [m2, d2] = b.label.split('/').map(Number);
+        if (m1 !== m2) return m1 - m2;
+        return d1 - d2;
+      });
+  }, [filteredSessions, metricBySession]);
 
   const onLogout = async () => {
     await logout();
@@ -559,24 +616,90 @@ function AdminDashboardPage() {
 
         {activePage === 'analytics' && (
           <>
+            <div className="admin-global-filter">
+              <label htmlFor="global-date-filter">Global Date Filter:</label>
+              <select 
+                id="global-date-filter" 
+                value={globalFilter} 
+                onChange={(e) => setGlobalFilter(e.target.value)}
+                className="admin-filter-select"
+              >
+                <option value="7d">Last 7 Days</option>
+                <option value="30d">Last 30 Days</option>
+                <option value="ytd">Year to Date</option>
+                <option value="all">All Time</option>
+              </select>
+            </div>
             <section className="admin-grid admin-grid-2">
               <article className="admin-card">
-                <h3>Improvement Bar Graph</h3>
-                <SimpleBars items={avgProgress} />
+                <h3>Improvement Over Time</h3>
+                <div className="admin-chart-container">
+                  {loading ? (
+                    <Skeleton height="100%" borderRadius={16} />
+                  ) : multiDimProgress.length === 0 ? (
+                    <div className="admin-empty-chart">No data available yet</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={multiDimProgress} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                        <XAxis dataKey="label" tick={{ fill: '#5f6f5f', fontSize: 12 }} tickLine={false} axisLine={false} />
+                        <YAxis allowDecimals={false} tick={{ fill: '#5f6f5f', fontSize: 12 }} tickLine={false} axisLine={false} />
+                        <Tooltip 
+                          contentStyle={{ borderRadius: '12px', border: '1px solid #E5E7EB', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
+                        />
+                        <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                        <Line type="monotone" dataKey="fluency_score" name="Fluency" stroke="#5A755E" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                        <Line type="monotone" dataKey="confidence_score" name="Confidence" stroke="#F18F01" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                        <Line type="monotone" dataKey="pronunciation_score" name="Pronunciation" stroke="#4D6E57" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
               </article>
               <article className="admin-card">
                 <h3>Time Allocation (minutes)</h3>
-                <SimpleBars items={timeAllocation} />
+                <div className="admin-chart-container">
+                  {loading ? (
+                    <Skeleton height="100%" borderRadius={16} />
+                  ) : timeAllocation.length === 0 ? (
+                    <div className="admin-empty-chart">No data available yet</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={timeAllocation}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={100}
+                          innerRadius={60}
+                          paddingAngle={5}
+                        >
+                          {timeAllocation.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => [`${value} min`, 'Duration']} />
+                        <Legend layout="vertical" verticalAlign="middle" align="right" />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
               </article>
             </section>
             <section className="admin-grid admin-grid-2">
               <article className="admin-card">
                 <h3>The Grind</h3>
-                <SimpleBars items={grind} suffix="m" />
+                {loading ? <Skeleton count={5} height={40} style={{ marginBottom: 8 }} /> : (
+                  <LeaderboardList items={grind} suffix="hrs" emptyMsg="No active users found for this period" />
+                )}
               </article>
               <article className="admin-card">
                 <h3>Fastest Risers</h3>
-                <SimpleBars items={risers} />
+                {loading ? <Skeleton count={5} height={40} style={{ marginBottom: 8 }} /> : (
+                  <LeaderboardList items={risers} suffix="pts" emptyMsg="No active users found for this period" />
+                )}
               </article>
             </section>
           </>

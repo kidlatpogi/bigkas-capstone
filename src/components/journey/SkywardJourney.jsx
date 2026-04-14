@@ -1099,7 +1099,6 @@ export default function SkywardJourney({
           <HeaderDescription>Master your speaking fundamentals</HeaderDescription>
           <HeaderStatBadge>{completedCount} / {steps.length} Stages Completed</HeaderStatBadge>
         </MapHeaderCard>
-        <div className="skyward-journey-fixed-header-spacer" aria-hidden />
         <div className="skyward-journey-anim-root skyward-journey-map skyward-journey-anim-map">
           <div
             className="skyward-journey-map-viewport"

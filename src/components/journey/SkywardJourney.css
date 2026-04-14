@@ -67,20 +67,6 @@
   animation: none;
 }
 
-/* Reserves layout space for the fixed journey header (see MapHeaderCard in SkywardJourney.jsx) */
-.skyward-journey-fixed-header-spacer {
-  flex-shrink: 0;
-  width: 100%;
-  min-height: 188px;
-  pointer-events: none;
-}
-
-@media (max-width: 520px) {
-  .skyward-journey-fixed-header-spacer {
-    min-height: 200px;
-  }
-}
-
 .skyward-journey-anim-map {
   opacity: 0;
   transform: translateY(3rem);
@@ -233,11 +219,8 @@
   gap: 40px;
   position: relative;
   z-index: 1;
-  padding-top: 240px;
-  padding-bottom: 220px;
-  width: 100%;
-  min-height: 100dvh;
-  height: 100dvh;
+  padding-top: 56px;
+  padding-bottom: 140px;
 }
 
 .skyward-journey-section {
@@ -321,27 +304,27 @@
 }
 
 .skyward-journey-node-cluster {
-  --skyward-node-half: 34px;
+  --skyward-node-half: 38px;
   position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
   width: min(22rem, 92vw);
-  min-height: 68px;
+  min-height: 76px;
   flex-shrink: 0;
 }
 
 .skyward-journey-node-cluster--boss {
-  --skyward-node-half: 50px;
-  min-height: 100px;
+  --skyward-node-half: 54px;
+  min-height: 108px;
 }
 
 .skyward-journey-node {
   position: relative;
-  width: 64px;
-  height: 64px;
-  min-width: 54px;
-  min-height: 54px;
+  width: 72px;
+  height: 72px;
+  min-width: 60px;
+  min-height: 60px;
   border-radius: 16px;
   border: 3px solid rgba(15, 68, 98, 0.35);
   background: linear-gradient(160deg, #ffffff 0%, #f4f7f5 100%);
@@ -367,10 +350,10 @@
 
 /* Boss / milestone — 1.5× footprint */
 .skyward-journey-node--boss {
-  width: 92px;
-  height: 92px;
-  min-width: 78px;
-  min-height: 78px;
+  width: 104px;
+  height: 104px;
+  min-width: 88px;
+  min-height: 88px;
   border-width: 4px;
   border-radius: 50% !important;
   border-color: #c9a227;
@@ -573,14 +556,14 @@
 }
 
 .skyward-journey-node-icon {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   color: #0b3954;
 }
 
 .skyward-journey-node--boss .skyward-journey-node-icon {
-  width: 46px;
-  height: 46px;
+  width: 52px;
+  height: 52px;
 }
 
 .skyward-journey-node--active .skyward-journey-node-icon {
@@ -596,13 +579,13 @@
 }
 
 .skyward-journey-node-state-icon {
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
 }
 
 .skyward-journey-node--boss .skyward-journey-node-state-icon {
-  width: 44px;
-  height: 44px;
+  width: 50px;
+  height: 50px;
 }
 
 .skyward-journey-node--completed .skyward-journey-node-state-icon {

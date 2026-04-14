@@ -14,6 +14,8 @@ import {
   IoSync,
 } from 'react-icons/io5';
 import { FaBrain, FaGhost } from 'react-icons/fa';
+import { GiGoblinHead, GiFishMonster, GiWerewolf, GiVampireDracula } from 'react-icons/gi';
+import { SiDungeonsanddragons } from 'react-icons/si';
 import {
   JOURNEY_NODE_THEMES,
   NODE_STATE,
@@ -88,6 +90,31 @@ function getPhaseIcon(step) {
 function JourneyNodeIcon({ step, index, className = '' }) {
   const Cmp = isStartNode(step, index) ? IoStar : getPhaseIcon(step);
   return <Cmp aria-hidden className={`skyward-journey-node-icon ${className}`.trim()} />;
+}
+
+function getStepLevel(step) {
+  const targetLevel = Number(step?.task?.target_level);
+  if (Number.isFinite(targetLevel) && targetLevel > 0) return targetLevel;
+  const stage = Number(step?.stageNumber);
+  if (Number.isFinite(stage) && stage > 0) return stage;
+  return 1;
+}
+
+function getBossMonsterIcon(level) {
+  switch (Number(level)) {
+    case 1:
+      return GiGoblinHead;
+    case 2:
+      return GiFishMonster;
+    case 3:
+      return GiWerewolf;
+    case 4:
+      return GiVampireDracula;
+    case 5:
+      return SiDungeonsanddragons;
+    default:
+      return GiGoblinHead;
+  }
 }
 
 /**
@@ -820,6 +847,12 @@ export default function SkywardJourney({
         const isUltimateBoss =
           isGlobalEnd || Number(step.stageNumber) === 31 || Number(step.task?.activity_order) === 31;
         const isSectionTrophy = isSectionEnd && !isUltimateBoss;
+        const currentLevel = getStepLevel(step);
+        const nextStep = steps[i + 1];
+        const nextLevel = nextStep ? getStepLevel(nextStep) : currentLevel;
+        const isLevelEnd = !isUltimateBoss && (!nextStep || nextLevel !== currentLevel);
+        const isEnhancedTrophyNode = !isUltimateBoss && (isSectionTrophy || isLevelEnd);
+        const BossMonsterIcon = getBossMonsterIcon(currentLevel);
         const startStage = sectionTaskIndex === 0;
         const jiggle = jiggleIndex === i;
         const horizontalOffset = getHorizontalOffset(i);
@@ -877,6 +910,7 @@ export default function SkywardJourney({
                       'skyward-journey-node',
                       `skyward-journey-node--${step.nodeState}`,
                       isUltimateBoss ? 'skyward-journey-node--boss' : '',
+                      isEnhancedTrophyNode ? 'skyward-journey-node--trophy' : '',
                       jiggle ? 'skyward-journey-node--jiggle' : '',
                       !isLocked ? 'skyward-journey-node--unlocked' : '',
                       isLocked ? 'skyward-journey-node--locked-teaser' : '',
@@ -892,6 +926,11 @@ export default function SkywardJourney({
                   >
                     {isUltimateBoss ? (
                       <FaGhost
+                        className="skyward-journey-node-icon skyward-journey-node-icon--boss"
+                        aria-hidden
+                      />
+                    ) : isSectionEnd && isLevelEnd ? (
+                      <BossMonsterIcon
                         className="skyward-journey-node-icon skyward-journey-node-icon--boss"
                         aria-hidden
                       />

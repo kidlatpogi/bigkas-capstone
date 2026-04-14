@@ -349,6 +349,10 @@
     filter 0.2s ease;
 }
 
+.skyward-journey-node--trophy {
+  transform: scale(1.15);
+}
+
 /* Boss / milestone — 1.5× footprint */
 .skyward-journey-node--boss {
   width: 76px;

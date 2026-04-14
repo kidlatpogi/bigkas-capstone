@@ -150,7 +150,7 @@
 }
 
 .skyward-journey-map-viewport {
-  overflow: visible;
+  overflow: hidden;
   position: relative;
   width: 100%;
   max-width: 100%;

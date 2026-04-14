@@ -124,7 +124,7 @@ function getBossMonsterIcon(level) {
 
 const MapHeaderCard = styled.div`
   width: min(90vw, 882px);
-  margin: 0;
+  margin: 0 auto;
   padding: 24px;
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
@@ -137,10 +137,8 @@ const MapHeaderCard = styled.div`
   text-align: center;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   border: 2px solid #f18f01;
-  position: absolute;
+  position: sticky;
   top: max(14px, env(safe-area-inset-top, 0px));
-  left: 50%;
-  transform: translateX(-50%);
   z-index: 1400;
   flex-shrink: 0;
 `;
@@ -1094,7 +1092,7 @@ export default function SkywardJourney({
   }
 
   return (
-    <div className="skyward-journey-wrap" style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
+    <div className="skyward-journey-wrap" style={{ position: 'relative', width: '100%', height: '100%' }}>
       <div className="skyward-journey skyward-journey-container no-scrollbar" ref={rootRef}>
         <MapHeaderCard className="skyward-journey-anim-header">
           <HeaderTitle>{currentPillarText}</HeaderTitle>

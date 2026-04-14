@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { IoArrowForward, IoCheckmarkCircle, IoLockClosed } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
-import CalendarHeatmap from 'react-calendar-heatmap';
 import { useAuthContext } from '../../context/useAuthContext';
 import { useSessions } from '../../hooks/useSessions';
 import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
@@ -19,7 +18,6 @@ import {
   getTaskXp,
   getTotalActivityPoints,
 } from '../../utils/activityProgress';
-import 'react-calendar-heatmap/dist/styles.css';
 import './DashboardPage.css';
 
 import iconFire from '../../assets/icons/Icon-Fire.svg';
@@ -48,27 +46,6 @@ function getDayKeyFromDate(dateInput) {
   const date = new Date(dateInput);
   if (Number.isNaN(date.getTime())) return null;
   return getLocalDateKey(date);
-}
-
-function buildDayActivityMap(sessions = []) {
-  const dayCounts = new Map();
-
-  const addCount = (dateInput, seconds = 0) => {
-    const key = getDayKeyFromDate(dateInput);
-    if (!key) return;
-    const current = dayCounts.get(key) || 0;
-    dayCounts.set(key, current + seconds);
-  };
-
-  sessions.forEach((session) => {
-    if (isPreTestSession(session)) return;
-    const sessionDate = getSessionDate(session);
-    if (!sessionDate) return;
-    const sessionSeconds = Math.max(0, Number(session?.duration_sec ?? session?.duration ?? 0) || 0);
-    addCount(sessionDate, sessionSeconds);
-  });
-
-  return dayCounts;
 }
 
 function isPreTestSession(session) {
@@ -177,11 +154,6 @@ export default function DashboardPage() {
   const { sessions, fetchAllSessions } = useSessions();
   const activityScopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
 
-  const [insight] = useState({
-    text: 'The only way to do great work is to love what you do.',
-    author: 'Steve Jobs',
-  });
-
   const [totalActivityPoints, setTotalActivityPoints] = useState(0);
   const [activityHistory, setActivityHistory] = useState([]);
   const [activityMetrics, setActivityMetrics] = useState(() => getActivityMetrics(activityScopeKey));
@@ -217,24 +189,6 @@ export default function DashboardPage() {
   );
 
   const weekPills = useMemo(() => getWeekdayPills(activeDayKeys), [activeDayKeys]);
-
-  const dayCounts = useMemo(() => buildDayActivityMap(sessions), [sessions]);
-
-  const heatmapValues = useMemo(() => {
-    const values = [];
-    const end = new Date();
-    const start = new Date();
-    start.setMonth(start.getMonth() - 4);
-
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      const key = getLocalDateKey(d);
-      values.push({
-        date: key,
-        count: dayCounts.get(key) || 0,
-      });
-    }
-    return values;
-  }, [dayCounts]);
 
   const effectiveTotalActivityPoints = Math.max(totalActivityPoints, getPointsFromUser(user));
 
@@ -344,58 +298,6 @@ export default function DashboardPage() {
   return (
     <div className="dashboard-page-new no-scrollbar" style={{ height: '100dvh', overflowY: 'auto' }}>
       <div className="dashboard-layout">
-          <section className="dashboard-card dashboard-insight-card dashboard-anim-top">
-            <div className="dashboard-insight-header">
-              <div>
-                <h3 className="dashboard-insight-title">Daily Insight</h3>
-                <p className="dashboard-insight-source">From "{insight.author}"</p>
-              </div>
-              <span className="dashboard-insight-mark">"</span>
-            </div>
-            <p className="dashboard-insight-copy">"{insight.text}"</p>
-          </section>
-
-          <section className="dashboard-card dashboard-heatmap-card dashboard-anim-top dashboard-anim-delay-1">
-            <div className="dashboard-card-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 className="dashboard-section-title" style={{ margin: 0 }}>Consistency Visualization</h2>
-              <div className="dashboard-heatmap-legend">
-                <span>Less</span>
-                <span className="heatmap-swatch color-empty" style={{ background: '#dde4d0' }} />
-                <span className="heatmap-swatch color-scale-1" style={{ background: '#cfe9c7' }} />
-                <span className="heatmap-swatch color-scale-2" style={{ background: '#9caf92' }} />
-                <span className="heatmap-swatch color-scale-3" style={{ background: '#587455' }} />
-                <span>More</span>
-              </div>
-            </div>
-            <div className="heatmap-container" style={{ padding: '0 10px' }}>
-              <CalendarHeatmap
-                startDate={new Date(new Date().setMonth(new Date().getMonth() - 4))}
-                endDate={new Date()}
-                values={heatmapValues}
-                classForValue={(value) => {
-                  const speakingSeconds = Number(value?.count) || 0;
-                  if (speakingSeconds <= 0) return 'color-empty';
-                  if (speakingSeconds <= 5 * 60) return 'color-scale-1';
-                  if (speakingSeconds <= 15 * 60) return 'color-scale-2';
-                  if (speakingSeconds <= 30 * 60) return 'color-scale-3';
-                  return 'color-scale-4';
-                }}
-                titleForValue={(value) => {
-                  if (!value?.date) return '';
-                  const speakingSeconds = Math.max(0, Number(value?.count) || 0);
-                  const minutes = Math.round(speakingSeconds / 60);
-                  const readableDate = new Date(value.date).toLocaleDateString(undefined, {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  });
-                  return `${readableDate}: ${minutes} min speaking time`;
-                }}
-                showWeekdayLabels={false}
-              />
-            </div>
-          </section>
-
           <section className="dashboard-card dashboard-level-card dashboard-anim-left dashboard-anim-delay-2">
             <div className="dashboard-level-decoration" />
             <div className="dashboard-section-kicker">

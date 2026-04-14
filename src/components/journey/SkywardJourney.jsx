@@ -499,19 +499,22 @@ export default function SkywardJourney({
       return;
     }
 
+    const centerX = content.clientWidth / 2;
     const indexed = [];
-    const containerRect = mapContentRef.current.getBoundingClientRect();
-    const scale = MAP_SCALE || 1.5;
 
     for (let i = 0; i < steps.length; i += 1) {
       const node = nodeRefs.current[i];
       if (!node) continue;
-      
-      const rect = node.getBoundingClientRect();
-      indexed[i] = {
-        x: (rect.left - containerRect.left + rect.width / 2) / scale,
-        y: (rect.top - containerRect.top + rect.height / 2) / scale,
-      };
+
+      let top = 0;
+      let el = node;
+      while (el && el !== content) {
+        top += el.offsetTop;
+        el = el.offsetParent;
+      }
+      const y = top + (node.offsetHeight / 2);
+      const x = centerX + getHorizontalOffset(i);
+      indexed[i] = { x, y };
     }
 
     setIndexedNodePoints(indexed);
@@ -853,6 +856,7 @@ export default function SkywardJourney({
                 className={`skyward-journey-node-shell${
                   i === 0 && isActive ? ' skyward-journey-node-shell--start-onboarding' : ''
                 }`}
+                style={{ zIndex: 10, position: 'relative' }}
               >
                 <div
                   className={`skyward-journey-node-cluster${milestone ? ' skyward-journey-node-cluster--milestone' : ''}`}
@@ -1110,14 +1114,15 @@ export default function SkywardJourney({
                 transform: `translate(${map.tx}px, ${map.ty}px) scale(${MAP_SCALE})`,
               }}
             >
-              <div className="skyward-journey-map-content" ref={mapContentRef}>
-                <div className="skyward-journey-column">
+              <div className="skyward-journey-map-content">
+                <div className="skyward-journey-column" ref={mapContentRef} style={{ position: 'relative' }}>
                   {pathPoints.length > 1 ? (
                     <svg
                       className="skyward-journey-svg"
                       aria-hidden
                       shapeRendering="geometricPrecision"
                       preserveAspectRatio="none"
+                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }}
                     >
                       <defs>
                         <linearGradient id={`skyward-journey-line-grad-${gradId}`} x1="0%" y1="100%" x2="0%" y2="0%">

@@ -28,7 +28,7 @@ import './DashboardPage.css';
 
 const DAY_MS = 86_400_000;
 const ACTIVITY_CELEBRATION_STORAGE_KEY = 'bigkas_pending_activity_celebration_v1';
-const ACTIVITY_CLEAR_MODAL_KEY_PREFIX = 'bigkas_activity_clear_modal_v1';
+const LAST_SHOWN_COMPLETION_EVENT_KEY = 'bigkas_last_completion_event_v1';
 
 function getLocalDateKey(date = new Date()) {
   const year = date.getFullYear();
@@ -241,20 +241,6 @@ function ActivityPage() {
     return acc;
   }, {}), [tasks]);
 
-  const maybeShowCompletionCelebration = useCallback((activityId, titleFallback = 'This activity') => {
-    if (typeof window === 'undefined') return;
-    const safeActivityId = String(activityId || '').trim();
-    if (!safeActivityId) return;
-    const uid = String(user?.id || 'guest');
-    const key = `${ACTIVITY_CLEAR_MODAL_KEY_PREFIX}:${uid}:${safeActivityId}`;
-    if (window.localStorage.getItem(key) === '1') return;
-
-    setCompletionModalTaskTitle(String(titleFallback || 'This activity'));
-    setShowCompletionCelebration(true);
-    playCompletionSound();
-    window.localStorage.setItem(key, '1');
-  }, [playCompletionSound, user?.id]);
-
   const activeTaskId = useMemo(
     () => getActiveTaskId(tasks, taskState, taskUnlockState),
     [tasks, taskState, taskUnlockState],
@@ -304,6 +290,13 @@ function ActivityPage() {
     osc.stop(now + 0.24);
   }, []);
 
+  const maybeShowCompletionCelebration = useCallback((titleFallback = 'This activity') => {
+    if (typeof window === 'undefined') return;
+    setCompletionModalTaskTitle(String(titleFallback || 'This activity'));
+    setShowCompletionCelebration(true);
+    playCompletionSound();
+  }, [playCompletionSound]);
+
   useEffect(() => {
     if (!hasTaskStateHydratedRef.current) {
       previousTaskStateRef.current = taskState;
@@ -321,7 +314,6 @@ function ActivityPage() {
     if (!newlyCompletedTask) return;
 
     setRecentStampedTaskId(newlyCompletedTask.id);
-    maybeShowCompletionCelebration(newlyCompletedTask.id, newlyCompletedTask.title || 'This activity');
 
     if (stampResetTimeoutRef.current) {
       window.clearTimeout(stampResetTimeoutRef.current);
@@ -330,7 +322,7 @@ function ActivityPage() {
     stampResetTimeoutRef.current = window.setTimeout(() => {
       setRecentStampedTaskId((current) => (current === newlyCompletedTask.id ? null : current));
     }, 700);
-  }, [maybeShowCompletionCelebration, taskState, tasks]);
+  }, [taskState, tasks]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !tasks.length) return;
@@ -340,6 +332,9 @@ function ActivityPage() {
     try {
       const payload = JSON.parse(raw);
       const activityId = String(payload?.activityId || '').trim();
+      const activityTitleFromPayload = String(payload?.activityTitle || '').trim();
+      const completedAt = Number(payload?.completedAt || 0);
+      const eventKey = `${activityId}:${Number.isFinite(completedAt) ? completedAt : 0}`;
       if (!activityId) {
         window.sessionStorage.removeItem(ACTIVITY_CELEBRATION_STORAGE_KEY);
         return;
@@ -347,9 +342,17 @@ function ActivityPage() {
       if (taskState[activityId] !== true) {
         return;
       }
+      const lastShown = window.sessionStorage.getItem(LAST_SHOWN_COMPLETION_EVENT_KEY);
+      if (lastShown === eventKey) {
+        window.sessionStorage.removeItem(ACTIVITY_CELEBRATION_STORAGE_KEY);
+        return;
+      }
 
       setRecentStampedTaskId(activityId);
-      maybeShowCompletionCelebration(activityId, taskTitleById[activityId] || 'This activity');
+      maybeShowCompletionCelebration(
+        activityTitleFromPayload || taskTitleById[activityId] || 'This activity',
+      );
+      window.sessionStorage.setItem(LAST_SHOWN_COMPLETION_EVENT_KEY, eventKey);
       window.sessionStorage.removeItem(ACTIVITY_CELEBRATION_STORAGE_KEY);
     } catch {
       window.sessionStorage.removeItem(ACTIVITY_CELEBRATION_STORAGE_KEY);

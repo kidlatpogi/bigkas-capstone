@@ -907,6 +907,10 @@ export default function SkywardJourney({
           <div
             key={step.id}
             className="skyward-journey-row dashboard-anim-bottom"
+            style={{
+              position: 'relative',
+              zIndex: isActive ? 320 : ((startStage && !isDone) ? 260 : 1),
+            }}
           >
             <div className="skyward-journey-track">
               <div

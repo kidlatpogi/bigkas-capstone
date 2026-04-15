@@ -806,6 +806,7 @@ function TrainingPage() {
                 ACTIVITY_CELEBRATION_STORAGE_KEY,
                 JSON.stringify({
                   activityId: fromActivity,
+                  activityTitle: String(state?.step?.title || freeTopic || '').trim(),
                   completedAt: Date.now(),
                 }),
               );

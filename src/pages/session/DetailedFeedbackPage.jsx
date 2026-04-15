@@ -76,16 +76,42 @@ function clamp(value, min = 0, max = 100) {
 function buildBucketPublicUrl(pathOrUrl) {
   const value = String(pathOrUrl || '').trim();
   if (!value) return null;
-  if (/^https?:\/\//i.test(value)) return value;
-  if (value.includes('/storage/v1/object/public/')) return value;
+  if (/^https?:\/\//i.test(value) && !value.includes(`/${SESSION_MEDIA_BUCKET}/`)) return value;
   const marker = `/storage/v1/object/public/${SESSION_MEDIA_BUCKET}/`;
   const markerIdx = value.indexOf(marker);
-  const fromMarker = markerIdx >= 0 ? value.slice(markerIdx + marker.length) : value;
+  const signedMarker = `/storage/v1/object/sign/${SESSION_MEDIA_BUCKET}/`;
+  const signedMarkerIdx = value.indexOf(signedMarker);
+  const fromMarker = markerIdx >= 0
+    ? value.slice(markerIdx + marker.length)
+    : (signedMarkerIdx >= 0 ? value.slice(signedMarkerIdx + signedMarker.length) : value);
   const cleaned = fromMarker
     .replace(/^\/+/, '')
-    .replace(new RegExp(`^${SESSION_MEDIA_BUCKET}/`), '');
+    .replace(new RegExp(`^${SESSION_MEDIA_BUCKET}/`), '')
+    .split('?')[0];
   const { data } = supabase.storage.from(SESSION_MEDIA_BUCKET).getPublicUrl(cleaned);
   return data?.publicUrl || null;
+}
+
+function extractBucketStoragePath(pathOrUrl) {
+  const value = String(pathOrUrl || '').trim();
+  if (!value) return null;
+  const fromBucket = value.match(new RegExp(`/${SESSION_MEDIA_BUCKET}/([^?]+)`));
+  if (fromBucket?.[1]) return decodeURIComponent(fromBucket[1]);
+  if (/^https?:\/\//i.test(value)) return null;
+  return value
+    .replace(/^\/+/, '')
+    .replace(new RegExp(`^${SESSION_MEDIA_BUCKET}/`), '')
+    .split('?')[0];
+}
+
+async function resolvePlayableStorageUrl(pathOrUrl) {
+  const storagePath = extractBucketStoragePath(pathOrUrl);
+  if (!storagePath) return buildBucketPublicUrl(pathOrUrl);
+  const { data, error } = await supabase.storage
+    .from(SESSION_MEDIA_BUCKET)
+    .createSignedUrl(storagePath, 3600);
+  if (!error && data?.signedUrl) return data.signedUrl;
+  return buildBucketPublicUrl(storagePath);
 }
 
 function isMissingVideoStorageColumn(error) {
@@ -255,9 +281,14 @@ function DetailedFeedbackPage() {
       }
 
       if (!isMounted) return;
+      const [resolvedAudioUrl, resolvedVideoUrl] = await Promise.all([
+        resolvePlayableStorageUrl(audioUrl),
+        resolvePlayableStorageUrl(videoUrl),
+      ]);
+      if (!isMounted) return;
       setRecordingMedia({
-        audioUrl: buildBucketPublicUrl(audioUrl),
-        videoUrl: buildBucketPublicUrl(videoUrl),
+        audioUrl: resolvedAudioUrl,
+        videoUrl: resolvedVideoUrl,
       });
     };
 

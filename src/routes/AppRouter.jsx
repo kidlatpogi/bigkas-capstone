@@ -15,11 +15,7 @@ import ForgotPasswordPage from '../pages/auth/ForgotPasswordPage';
 import DashboardPage from '../pages/main/DashboardPage';
 import AdminDashboardPage from '../pages/main/AdminDashboardPage';
 import ProgressPage from '../pages/main/ProgressPage';
-import HistoryPage from '../pages/main/HistoryPage';
-import AllSessionsPage from '../pages/main/AllSessionsPage';
-import PreTestHistoryPage from '../pages/main/PreTestHistoryPage';
 import SettingsProfilePage from '../pages/main/SettingsProfilePage';
-import EditProfilePage from '../pages/main/EditProfilePage';
 import SettingsPage from '../pages/main/SettingsPage';
 import ChangePasswordPage from '../pages/main/ChangePasswordPage';
 import AccountSettingsPage from '../pages/main/AccountSettingsPage';
@@ -250,16 +246,12 @@ function AppRouter() {
         {/* Frameworks / Training Hub */}
         <Route path={ROUTES.FRAMEWORKS} element={<FrameworksPage />} />
 
-        {/* History / Progress */}
-        <Route path={ROUTES.HISTORY} element={<HistoryPage />} />
-        <Route path={ROUTES.ALL_SESSIONS} element={<AllSessionsPage />} />
-        <Route path={ROUTES.PRETEST_HISTORY} element={<PreTestHistoryPage />} />
+        {/* Progress / Activity */}
         <Route path={ROUTES.PROGRESS} element={<ProgressPage />} />
         <Route path={ROUTES.ACTIVITY} element={<ActivityPage />} />
 
         {/* Profile */}
         <Route path={ROUTES.PROFILE} element={<SettingsProfilePage />} />
-        <Route path={ROUTES.EDIT_PROFILE} element={<EditProfilePage />} />
 
         {/* Settings */}
         <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />

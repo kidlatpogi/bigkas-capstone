@@ -717,6 +717,37 @@ export function SessionProvider({ children }) {
       formData.append('session_origin', normalizeSessionOriginForPersistence(scriptType));
       formData.append('speaking_mode', String(speakingMode || '').trim());
 
+      const mediaUploadPromise = ENV.ENABLE_SESSION_PERSISTENCE
+        ? (async () => {
+          const audioStorageUrl = await uploadSessionMediaBlob({ userId: uid, blob: audioBlob, kind: 'audio' });
+          if (!audioStorageUrl) {
+            throw new Error('Failed to upload session audio to storage bucket.');
+          }
+
+          let videoStorageUrl = null;
+          if (videoBlob) {
+            try {
+              videoStorageUrl = await uploadSessionMediaBlob({ userId: uid, blob: videoBlob, kind: 'video' });
+            } catch (videoUploadErr) {
+              if (!isObjectTooLargeError(videoUploadErr)) {
+                throw videoUploadErr;
+              }
+              videoStorageUrl = null;
+            }
+          }
+
+          return { audioStorageUrl, videoStorageUrl };
+        })().catch((uploadError) => ({
+          audioStorageUrl: null,
+          videoStorageUrl: null,
+          uploadError,
+        }))
+        : Promise.resolve({
+          audioStorageUrl: null,
+          videoStorageUrl: null,
+          uploadError: null,
+        });
+
       const res = await fetch(`${apiUrl}/api/analyze-speech`, {
         method: 'POST',
         headers: authSession?.access_token ? { Authorization: `Bearer ${authSession.access_token}` } : undefined,
@@ -756,24 +787,13 @@ export function SessionProvider({ children }) {
       }
       const analysisResult = await res.json();
 
-      let audioStorageUrl = null;
-      let videoStorageUrl = null;
-      if (ENV.ENABLE_SESSION_PERSISTENCE) {
-        audioStorageUrl = await uploadSessionMediaBlob({ userId: uid, blob: audioBlob, kind: 'audio' });
-        if (!audioStorageUrl) {
-          throw new Error('Failed to upload session audio to storage bucket.');
-        }
-
-        if (videoBlob) {
-          try {
-            videoStorageUrl = await uploadSessionMediaBlob({ userId: uid, blob: videoBlob, kind: 'video' });
-          } catch (videoUploadErr) {
-            if (!isObjectTooLargeError(videoUploadErr)) {
-              throw videoUploadErr;
-            }
-            videoStorageUrl = null;
-          }
-        }
+      const {
+        audioStorageUrl,
+        videoStorageUrl,
+        uploadError,
+      } = await mediaUploadPromise;
+      if (uploadError) {
+        throw uploadError;
       }
 
       const normalizedSpeakingMode = String(speakingMode || '').trim().toLowerCase();

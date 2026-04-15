@@ -23,11 +23,15 @@ import { useVisualAnalysis } from '../../hooks/useVisualAnalysis';
 import './TrainingPage.css';
 
 /* ─── Helpers ──────────────────────────────────────────────────────────────── */
-function getAudioMimeType() {
-  if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) return 'audio/webm;codecs=opus';
-  if (MediaRecorder.isTypeSupported('audio/webm')) return 'audio/webm';
-  if (MediaRecorder.isTypeSupported('audio/mp4')) return 'audio/mp4';
-  return '';
+function getSupportedMime() {
+  const types = [
+    'audio/mp4;codecs=mp4a.40.2',
+    'audio/mp4',
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/ogg;codecs=opus',
+  ];
+  return types.find((t) => MediaRecorder.isTypeSupported(t)) || '';
 }
 function getSupportedVideoMime() {
   const types = [
@@ -556,12 +560,12 @@ function TrainingPage() {
         },
       };
 
-      const mainStream = await navigator.mediaDevices.getUserMedia(constraints);
-      streamRef.current = mainStream;
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
 
       /* Attach video */
-      if (videoRef.current && mainStream.getVideoTracks().length > 0) {
-        videoRef.current.srcObject = mainStream;
+      if (videoRef.current && stream.getVideoTracks().length > 0) {
+        videoRef.current.srcObject = stream;
       }
 
       /* Audio analyser → waveform history */
@@ -576,15 +580,13 @@ function TrainingPage() {
         await ctx.resume();
       }
 
-      const audioTracks = mainStream.getAudioTracks();
+      const audioTracks = stream.getAudioTracks();
       if (audioTracks.length === 0) {
         throw new Error('No microphone track available for recording.');
       }
 
-      // Keep webcam available for visual analysis, but record only the mic track.
-      const primaryAudioTrack = audioTracks[0];
-      const audioStream = new MediaStream([primaryAudioTrack]);
-      const src = ctx.createMediaStreamSource(audioStream);
+      const audioOnlyStream = new MediaStream(audioTracks);
+      const src = ctx.createMediaStreamSource(audioOnlyStream);
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 512;
       analyser.smoothingTimeConstant = 0.7;
@@ -594,23 +596,17 @@ function TrainingPage() {
       src.connect(analyser);
       startWaveformLoop();
 
-      /* MediaRecorder records audio only; the camera stream is only for preview. */
-      const recorderMime = getAudioMimeType();
+      const recordingStream = new MediaStream(audioTracks);
+      const recorderMime = getSupportedMime();
       const audioRecorderOptions = recorderMime
         ? { mimeType: recorderMime, audioBitsPerSecond: 64000 }
         : { audioBitsPerSecond: 64000 };
-      const recorder = new MediaRecorder(audioStream, audioRecorderOptions);
+      const audioRecorder = new MediaRecorder(recordingStream, audioRecorderOptions);
 
-      mediaRef.current = recorder;
-      chunksRef.current = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-      recorder.start(200);
-
-      if (mainStream.getVideoTracks().length > 0) {
+      let videoRecorder = null;
+      if (stream.getVideoTracks().length > 0) {
         const videoMime = getSupportedVideoMime();
-        const videoTracks = mainStream.getVideoTracks();
+        const videoTracks = stream.getVideoTracks();
         const avRecordingStream = new MediaStream([...audioTracks, ...videoTracks]);
         const videoRecorderOptions = videoMime
           ? {
@@ -622,17 +618,31 @@ function TrainingPage() {
               videoBitsPerSecond: 800000,
               audioBitsPerSecond: 96000,
             };
-        const videoRecorder = new MediaRecorder(avRecordingStream, videoRecorderOptions);
+        videoRecorder = new MediaRecorder(avRecordingStream, videoRecorderOptions);
+      }
 
-        visualMediaRef.current = videoRecorder;
-        visualChunksRef.current = [];
-        visualMimeRef.current = videoRecorder.mimeType || videoMime || 'video/webm';
+      mediaRef.current = audioRecorder;
+      chunksRef.current = [];
+      audioRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
 
+      visualMediaRef.current = videoRecorder;
+      visualChunksRef.current = [];
+      visualMimeRef.current = videoRecorder
+        ? (videoRecorder.mimeType || getSupportedVideoMime() || 'video/webm')
+        : '';
+      if (videoRecorder) {
         videoRecorder.ondataavailable = (e) => {
           if (e.data.size > 0) visualChunksRef.current.push(e.data);
         };
+      }
+
+      // Dual-recorder start: keep audio analysis recording and full A/V storage recording aligned.
+      if (videoRecorder) {
         videoRecorder.start(250);
       }
+      audioRecorder.start(200);
 
       setStatus('recording');
       recordingDurationSecRef.current = 0;
@@ -688,11 +698,13 @@ function TrainingPage() {
     setShowMicWarning(false);
     const recorder = mediaRef.current;
     if (!recorder || recorder.state === 'inactive') return;
+    const videoRecorder = visualMediaRef.current;
+    const videoStopPromise = stopRecorderSafely(videoRecorder);
 
     recorder.onstop = async () => {
       // Stop visual analysis with final averaged scores.
       visualScoresRef.current = stopAnalysis();
-      const mime = recorder.mimeType || getAudioMimeType() || 'audio/webm';
+      const mime = recorder.mimeType || getSupportedMime() || 'audio/webm';
       const blob = new Blob(chunksRef.current, { type: mime });
       if (blob.size < 1024) {
         if (isMountedRef.current) {
@@ -704,8 +716,7 @@ function TrainingPage() {
       }
 
       let videoBlob = null;
-      const videoRecorder = visualMediaRef.current;
-      await stopRecorderSafely(videoRecorder);
+      await videoStopPromise;
       if (visualChunksRef.current.length > 0) {
         const candidateVideoBlob = new Blob(visualChunksRef.current, {
           type: visualMimeRef.current || 'video/webm',
@@ -907,6 +918,13 @@ function TrainingPage() {
       recorder.requestData();
     } catch {
       // Best-effort flush before stop.
+    }
+    if (videoRecorder && videoRecorder.state === 'recording') {
+      try {
+        videoRecorder.requestData();
+      } catch {
+        // Best-effort flush before stop.
+      }
     }
     recorder.stop();
   };

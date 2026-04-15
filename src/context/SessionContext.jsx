@@ -28,9 +28,7 @@ const SESSIONS_SELECT_QUERY = `
   created_at,
   session_media (
     audio_url,
-    transcript,
-    video_url,
-    video_storage_url
+    transcript
   ),
   session_metrics (
     overall_score,
@@ -54,7 +52,6 @@ const SESSIONS_SELECT_QUERY = `
     eye_contact_score,
     facial_expression_score,
     gesture_score,
-    confidence_score,
     snr_db,
     low_confidence
   ),
@@ -762,7 +759,6 @@ export function SessionProvider({ children }) {
           session_id: sessionId,
           audio_url: audioStorageUrl,
           transcript,
-          video_storage_url: videoStorageUrl,
         };
         // Backend already inserted session_media; update avoids upsert INSERT path (stricter RLS).
         const { data: mediaUpdated, error: mediaUpdateErr } = await supabase
@@ -770,7 +766,6 @@ export function SessionProvider({ children }) {
           .update({
             audio_url: audioStorageUrl,
             transcript,
-            video_storage_url: videoStorageUrl,
           })
           .eq('session_id', sessionId)
           .select('session_id');
@@ -814,7 +809,6 @@ export function SessionProvider({ children }) {
           session_id: sessionId,
           audio_url: audioStorageUrl,
           transcript,
-          video_storage_url: videoStorageUrl,
         };
         const metricsRow = {
           session_id: sessionId,

@@ -302,8 +302,9 @@ function ProgressPage() {
 
     return {
       sessionsThisWeek: weekSessions.length,
-      averageScore: toFivePointScore(avgScoreRaw),
-      totalSpeakingTime: totalTimeMin
+      averageScoreLabel: formatFivePointScore(avgScoreRaw),
+      averageScoreRaw: avgScoreRaw,
+      totalSpeakingTime: totalTimeMin,
     };
   }, [userSessions]);
 
@@ -531,7 +532,7 @@ function ProgressPage() {
                 <IoTrophyOutline />
               </div>
               <p className="stat-title">Average Score</p>
-              <p className={`stat-num ${stats.averageScore > 0 ? 'glow-text' : ''}`}>{stats.averageScore}</p>
+              <p className={`stat-num ${stats.averageScoreRaw > 0 ? 'glow-text' : ''}`}>{stats.averageScoreLabel}</p>
               <p className="stat-desc">/5.0</p>
             </div>
             <div className="stat-block dashboard-anim-bottom dashboard-anim-delay-3">

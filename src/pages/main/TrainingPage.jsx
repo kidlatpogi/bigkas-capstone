@@ -23,15 +23,11 @@ import { useVisualAnalysis } from '../../hooks/useVisualAnalysis';
 import './TrainingPage.css';
 
 /* ─── Helpers ──────────────────────────────────────────────────────────────── */
-function getSupportedMime() {
-  const types = [
-    'audio/mp4;codecs=mp4a.40.2',
-    'audio/mp4',
-    'audio/webm;codecs=opus',
-    'audio/webm',
-    'audio/ogg;codecs=opus',
-  ];
-  return types.find((t) => MediaRecorder.isTypeSupported(t)) || '';
+function getAudioMimeType() {
+  if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) return 'audio/webm;codecs=opus';
+  if (MediaRecorder.isTypeSupported('audio/webm')) return 'audio/webm';
+  if (MediaRecorder.isTypeSupported('audio/mp4')) return 'audio/mp4';
+  return '';
 }
 function getSupportedVideoMime() {
   const types = [
@@ -560,12 +556,12 @@ function TrainingPage() {
         },
       };
 
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      streamRef.current = stream;
+      const mainStream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = mainStream;
 
       /* Attach video */
-      if (videoRef.current && stream.getVideoTracks().length > 0) {
-        videoRef.current.srcObject = stream;
+      if (videoRef.current && mainStream.getVideoTracks().length > 0) {
+        videoRef.current.srcObject = mainStream;
       }
 
       /* Audio analyser → waveform history */
@@ -580,13 +576,15 @@ function TrainingPage() {
         await ctx.resume();
       }
 
-      const audioTracks = stream.getAudioTracks();
+      const audioTracks = mainStream.getAudioTracks();
       if (audioTracks.length === 0) {
         throw new Error('No microphone track available for recording.');
       }
 
-      const audioOnlyStream = new MediaStream(audioTracks);
-      const src = ctx.createMediaStreamSource(audioOnlyStream);
+      // Keep webcam available for visual analysis, but record only the mic track.
+      const primaryAudioTrack = audioTracks[0];
+      const audioStream = new MediaStream([primaryAudioTrack]);
+      const src = ctx.createMediaStreamSource(audioStream);
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 512;
       analyser.smoothingTimeConstant = 0.7;
@@ -597,12 +595,11 @@ function TrainingPage() {
       startWaveformLoop();
 
       /* MediaRecorder records audio only; the camera stream is only for preview. */
-      const recordingStream = new MediaStream(audioTracks);
-      const recorderMime = getSupportedMime();
+      const recorderMime = getAudioMimeType();
       const audioRecorderOptions = recorderMime
         ? { mimeType: recorderMime, audioBitsPerSecond: 64000 }
         : { audioBitsPerSecond: 64000 };
-      const recorder = new MediaRecorder(recordingStream, audioRecorderOptions);
+      const recorder = new MediaRecorder(audioStream, audioRecorderOptions);
 
       mediaRef.current = recorder;
       chunksRef.current = [];
@@ -611,9 +608,9 @@ function TrainingPage() {
       };
       recorder.start(200);
 
-      if (stream.getVideoTracks().length > 0) {
+      if (mainStream.getVideoTracks().length > 0) {
         const videoMime = getSupportedVideoMime();
-        const videoTracks = stream.getVideoTracks();
+        const videoTracks = mainStream.getVideoTracks();
         const avRecordingStream = new MediaStream([...audioTracks, ...videoTracks]);
         const videoRecorderOptions = videoMime
           ? {
@@ -695,7 +692,7 @@ function TrainingPage() {
     recorder.onstop = async () => {
       // Stop visual analysis with final averaged scores.
       visualScoresRef.current = stopAnalysis();
-      const mime = recorder.mimeType || getSupportedMime() || 'audio/webm';
+      const mime = recorder.mimeType || getAudioMimeType() || 'audio/webm';
       const blob = new Blob(chunksRef.current, { type: mime });
       if (blob.size < 1024) {
         if (isMountedRef.current) {

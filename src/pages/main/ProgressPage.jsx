@@ -15,9 +15,6 @@ import {
   IoChevronForward, 
   IoTimeOutline, 
   IoCalendarOutline,
-  IoVideocamOutline,
-  IoMicOutline,
-  IoChatbubbleEllipsesOutline,
   IoTrophyOutline,
 } from 'react-icons/io5';
 import { useSessionContext } from '../../context/useSessionContext';
@@ -39,13 +36,21 @@ import {
   appendSpeakerPointsHistory,
   createSpeakerPointsHistoryEntry,
 } from '../../utils/speakerPointsHistory';
+import { sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
 import './ProgressPage.css';
 
 const TIME_RANGES = ['daily', 'Weekly', 'Monthly', 'Yearly'];
 const HISTORY_FILTERS = ['All', 'Today', 'This Week', 'This Month'];
 
 function toFivePointScore(rawScore) {
-  const normalized = Math.max(0, Math.min(100, Number(rawScore) || 0));
+  const numeric = Number(rawScore);
+  if (!Number.isFinite(numeric)) return 1;
+
+  if (numeric <= 5) {
+    return Math.round(Math.max(1, Math.min(5, numeric)) * 10) / 10;
+  }
+
+  const normalized = Math.max(0, Math.min(100, numeric));
   return Math.round((1 + (normalized / 100) * 4) * 10) / 10;
 }
 
@@ -53,8 +58,61 @@ function formatFivePointScore(rawScore) {
   return toFivePointScore(rawScore).toFixed(1);
 }
 
+function getAverageTrendScore15(sessionsList) {
+  if (!Array.isArray(sessionsList) || sessionsList.length === 0) return null;
+  const avg = sessionsList.reduce((sum, session) => (
+    sum + toFivePointScore(session?.confidence_score)
+  ), 0) / sessionsList.length;
+  return Math.round(avg * 10) / 10;
+}
+
+function getScoreTier15(score) {
+  if (score >= 4.0) return { label: 'Excellent', color: '#5A7863' };
+  if (score >= 3.0) return { label: 'Good', color: '#90AB8B' };
+  if (score >= 2.0) return { label: 'Fair', color: '#F18F01' };
+  return { label: 'Needs Work', color: '#D94F3B' };
+}
+
+function clamp15(value) {
+  const v = Number(value);
+  if (!Number.isFinite(v)) return null;
+  return Math.max(1, Math.min(5, v));
+}
+
+function score100to15(value) {
+  const v = Number(value);
+  if (!Number.isFinite(v)) return null;
+  const bounded = Math.max(0, Math.min(100, v));
+  return 1 + (bounded / 100) * 4;
+}
+
+function score15ToPercent(score15) {
+  const clamped = clamp15(score15);
+  if (!Number.isFinite(clamped)) return 0;
+  return Math.round(((clamped - 1) / 4) * 100);
+}
+
+function resolveTripleVForProgress(session) {
+  const visual = clamp15(session?.visual_avg) ?? score100to15(session?.visual_score);
+  const vocal = clamp15(session?.vocal_avg) ?? score100to15(session?.acoustic_score);
+  const verbal = clamp15(session?.verbal_avg) ?? score100to15(session?.context_score);
+  return {
+    visual: clamp15(visual),
+    vocal: clamp15(vocal),
+    verbal: clamp15(verbal),
+  };
+}
+
+function resolveSubMetric15(session, key) {
+  const raw = Number(session?.[key]);
+  if (!Number.isFinite(raw)) return null;
+  if (raw > 5) return score100to15(raw);
+  return clamp15(raw);
+}
+
 function buildSessionTitleOrTopic(session) {
   const candidates = [
+    session?.activity_title,
     session?.script_title,
     session?.title,
     session?.topic,
@@ -68,7 +126,7 @@ function buildSessionTitleOrTopic(session) {
   const firstMatch = candidates.find((value) => typeof value === 'string' && value.trim());
   if (firstMatch) return firstMatch.trim();
 
-  const transcript = String(session?.transcript || '').trim();
+  const transcript = sanitizeTranscriptForDisplay(session?.transcript, '');
   if (transcript) {
     return transcript.length > 64 ? `${transcript.slice(0, 61)}...` : transcript;
   }
@@ -227,7 +285,7 @@ function ProgressPage() {
           const d = new Date(s.created_at);
           return d.getTime() >= hour.getTime() && d.getTime() < hour.getTime() + 3600000;
         });
-        const avg = hourSessions.length ? Math.round(hourSessions.reduce((a, b) => a + (b.confidence_score || 0), 0) / hourSessions.length) : 0;
+        const avg = getAverageTrendScore15(hourSessions);
         result.push({ label: `${hour.getHours()}:00`, value: avg });
       }
       return result;
@@ -244,7 +302,7 @@ function ProgressPage() {
           d.setHours(0, 0, 0, 0);
           return d.getTime() === day.getTime();
         });
-        const avg = daySessions.length ? Math.round(daySessions.reduce((a, b) => a + (b.confidence_score || 0), 0) / daySessions.length) : 0;
+        const avg = getAverageTrendScore15(daySessions);
         result.push({ label: dayNames[day.getDay()], value: avg });
       }
       return result;
@@ -263,7 +321,7 @@ function ProgressPage() {
           const d = new Date(s.created_at);
           return d >= weekStart && d <= weekEnd;
         });
-        const avg = weekSessions.length ? Math.round(weekSessions.reduce((a, b) => a + (b.confidence_score || 0), 0) / weekSessions.length) : 0;
+        const avg = getAverageTrendScore15(weekSessions);
         result.push({ label: `Wk ${4-i}`, value: avg });
       }
       return result;
@@ -278,7 +336,7 @@ function ProgressPage() {
           const d = new Date(s.created_at);
           return d >= monthStart && d <= monthEnd;
         });
-        const avg = monthSessions.length ? Math.round(monthSessions.reduce((a, b) => a + (b.confidence_score || 0), 0) / monthSessions.length) : 0;
+        const avg = getAverageTrendScore15(monthSessions);
         result.push({ label: monthNames[monthStart.getMonth()], value: avg });
       }
       return result;
@@ -301,8 +359,9 @@ function ProgressPage() {
 
     return {
       sessionsThisWeek: weekSessions.length,
-      averageScore: toFivePointScore(avgScoreRaw),
-      totalSpeakingTime: totalTimeMin
+      averageScoreLabel: formatFivePointScore(avgScoreRaw),
+      averageScoreRaw: avgScoreRaw,
+      totalSpeakingTime: totalTimeMin,
     };
   }, [userSessions]);
 
@@ -336,61 +395,21 @@ function ProgressPage() {
     const metricConfig = [
       {
         key: 'visual',
-        label: 'Visual Presence',
-        color: '#2d5a27',
-        icon: IoVideocamOutline,
-        iconBg: 'rgba(45, 90, 39, 0.1)',
-        resolver: (session) => {
-          const facial = Number(session.facial_expression_score);
-          const gesture = Number(session.gesture_score);
-          const pool = [facial, gesture].filter((value) => Number.isFinite(value));
-          if (!pool.length) return null;
-          return pool.reduce((sum, value) => sum + value, 0) / pool.length;
-        },
-        subMetricsConfig: [
-          { label: 'Eye Contact', resolver: (s) => Number(s.facial_expression_score) },
-          { label: 'Gestures', resolver: (s) => Number(s.gesture_score) }
-        ]
+        label: 'Visual',
+        desc: 'Eye contact & gestures',
+        resolver: (session) => resolveTripleVForProgress(session).visual,
       },
       {
         key: 'verbal',
-        label: 'Verbal Flow',
-        color: '#2d5a27',
-        icon: IoChatbubbleEllipsesOutline,
-        iconBg: 'rgba(45, 90, 39, 0.1)',
-        resolver: (session) => {
-          const context = Number(session.context_score);
-          const fluency = Number(session.fluency_score);
-          const pool = [context, fluency].filter((value) => Number.isFinite(value));
-          if (!pool.length) return null;
-          return pool.reduce((sum, value) => sum + value, 0) / pool.length;
-        },
-        subMetricsConfig: [
-          { label: 'Pronunciation', resolver: (s) => Number(s.pronunciation_score) },
-          { label: 'Context Awareness', resolver: (s) => Number(s.context_score) }
-        ]
+        label: 'Verbal',
+        desc: 'Pronunciation & clarity',
+        resolver: (session) => resolveTripleVForProgress(session).verbal,
       },
       {
         key: 'vocal',
-        label: 'Vocal Clarity',
-        color: '#2d5a27',
-        icon: IoMicOutline,
-        iconBg: 'rgba(45, 90, 39, 0.1)',
-        resolver: (session) => {
-          const pronunciation = Number(session.pronunciation_score);
-          const jitter = Number(session.jitter_score);
-          const shimmer = Number(session.shimmer_score);
-          const jitterAdjusted = Number.isFinite(jitter) ? 100 - jitter : null;
-          const shimmerAdjusted = Number.isFinite(shimmer) ? 100 - shimmer : null;
-          const pool = [pronunciation, jitterAdjusted, shimmerAdjusted]
-            .filter((value) => Number.isFinite(value));
-          if (!pool.length) return null;
-          return pool.reduce((sum, value) => sum + value, 0) / pool.length;
-        },
-        subMetricsConfig: [
-          { label: 'Shimmer', resolver: (s) => Number.isFinite(Number(s.shimmer_score)) ? Number(s.shimmer_score) : null },
-          { label: 'Jitter', resolver: (s) => Number.isFinite(Number(s.jitter_score)) ? Number(s.jitter_score) : null }
-        ]
+        label: 'Vocal',
+        desc: 'Voice quality & stability',
+        resolver: (session) => resolveTripleVForProgress(session).vocal,
       }
     ];
 
@@ -399,23 +418,15 @@ function ProgressPage() {
         .map((session) => pillar.resolver(session))
         .filter((value) => Number.isFinite(value) && value !== null);
 
-      const avg = values.length
-        ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length)
+      const avg15 = values.length
+        ? values.reduce((sum, value) => sum + value, 0) / values.length
         : 0;
 
-      const subMetrics = pillar.subMetricsConfig.map((sub) => {
-        const subValues = filteredSessions
-          .map((session) => sub.resolver(session))
-          .filter((value) => Number.isFinite(value) && value !== null);
-        
-        const subAvg = subValues.length
-          ? Math.round(subValues.reduce((sum, value) => sum + value, 0) / subValues.length)
-          : 0;
-          
-        return { label: sub.label, value: subAvg };
-      });
-
-      return { ...pillar, value: avg, subMetrics };
+      return {
+        ...pillar,
+        score: clamp15(avg15) ?? 1,
+        value: score15ToPercent(avg15),
+      };
     });
   }, [pillarRange, userSessions]);
 
@@ -475,13 +486,14 @@ function ProgressPage() {
             <div className="progress-chart-header">
               <div className="progress-range-labels">
                 {TIME_RANGES.map(r => (
-                  <span 
+                  <button
+                    type="button"
                     key={r} 
-                    style={{ cursor: 'pointer', color: range === r ? '#F18F01' : '#666' }}
+                    className={`progress-range-chip ${range === r ? 'active' : ''}`}
                     onClick={() => setRange(r)}
                   >
                     {r}
-                  </span>
+                  </button>
                 ))}
               </div>
             </div>
@@ -499,15 +511,18 @@ function ProgressPage() {
                     axisLine={false} 
                     tickLine={false} 
                     tick={{ fontSize: 12, fill: '#888' }}
-                    domain={[0, 100]}
+                    ticks={[1, 2, 3, 4, 5]}
+                    tickFormatter={(value) => Number(value).toFixed(1)}
+                    domain={[1, 5]}
                   />
                   <Tooltip 
                     cursor={{ fill: '#f8f8f8' }}
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    formatter={(value) => [`${Number(value).toFixed(1)} / 5.0`, 'Score']}
                   />
-                  <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={range === 'daily' ? 10 : 30}>
+                  <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={range === 'daily' ? 10 : 26} minPointSize={4}>
                     {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.value > 0 ? '#F18F01' : '#f0f0f0'} />
+                      <Cell key={`cell-${index}`} fill={Number.isFinite(entry.value) ? '#F18F01' : '#f0f0f0'} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -530,7 +545,7 @@ function ProgressPage() {
                 <IoTrophyOutline />
               </div>
               <p className="stat-title">Average Score</p>
-              <p className={`stat-num ${stats.averageScore > 0 ? 'glow-text' : ''}`}>{stats.averageScore}</p>
+              <p className={`stat-num ${stats.averageScoreRaw > 0 ? 'glow-text' : ''}`}>{stats.averageScoreLabel}</p>
               <p className="stat-desc">/5.0</p>
             </div>
             <div className="stat-block dashboard-anim-bottom dashboard-anim-delay-3">
@@ -548,56 +563,39 @@ function ProgressPage() {
             <h3 className="progress-pillars-title">Pillar Trends</h3>
             <div className="progress-range-labels">
               {TIME_RANGES.map((r) => (
-                <span
+                <button
+                  type="button"
                   key={`pillar-${r}`}
-                  style={{ cursor: 'pointer', color: pillarRange === r ? '#F18F01' : '#666' }}
+                  className={`progress-range-chip ${pillarRange === r ? 'active' : ''}`}
                   onClick={() => setPillarRange(r)}
                 >
                   {r}
-                </span>
+                </button>
               ))}
             </div>
           </div>
           <div className="progress-pillars-grid">
             {pillarStats.map((pillar, index) => (
               <div key={pillar.key} className={`pillar-card dashboard-anim-bottom dashboard-anim-delay-${5 + index}`}>
-                <div className="pillar-main-section">
-                  <div className="pillar-info">
-                    <span className="pillar-icon" style={{ background: pillar.iconBg, color: pillar.color }}>
-                      <pillar.icon />
-                    </span>
-                    <div className="pillar-label-group">
-                      <span className="pillar-label">{pillar.label}</span>
-                    </div>
-                  </div>
-                  <div className="pillar-progress-container">
-                    <div className="pillar-progress-header" style={{ width: `${pillar.value}%` }}>
-                      <span className="pillar-value">{pillar.value}%</span>
-                    </div>
-                    <div className="pillar-track">
-                      <div 
-                        className={`pillar-fill ${pillar.value > 80 ? 'mastery-pulse' : ''}`} 
-                        style={{ width: `${pillar.value}%` }} 
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="pillar-divider" />
-                
-                <div className="pillar-sub-section">
-                  {pillar.subMetrics.map((sub, i) => (
-                    <div key={i} className="sub-metric">
-                      <div className="sub-metric-header">
-                        <span>{sub.label}</span>
-                        <span>{sub.value}%</span>
+                {(() => {
+                  const tier = getScoreTier15(pillar.score);
+                  return (
+                    <>
+                      <div className="progress-pillar-header">
+                        <span className="progress-pillar-label">{pillar.label}</span>
+                        <span className="progress-pillar-tier" style={{ color: tier.color }}>{tier.label}</span>
                       </div>
-                      <div className="sub-metric-track">
-                        <div className="sub-metric-fill" style={{ width: `${sub.value}%` }} />
+                      <p className="progress-pillar-score">{pillar.score.toFixed(1)}<span>/5.0</span></p>
+                      <p className="progress-pillar-desc">{pillar.desc}</p>
+                      <div className="progress-pillar-track">
+                        <div
+                          className="progress-pillar-track-fill"
+                          style={{ width: `${pillar.value}%`, background: tier.color }}
+                        />
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    </>
+                  );
+                })()}
               </div>
             ))}
           </div>

@@ -500,6 +500,14 @@
   padding: 0 20px 18px;
 }
 
+.df-recordings-empty {
+  margin: 0;
+  padding: 8px 0 4px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(11, 57, 84, 0.65);
+}
+
 /* ── Session info rows ── */
 .df-info-row {
   display: flex;

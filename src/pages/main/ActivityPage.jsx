@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { IoArrowForward } from 'react-icons/io5';
+import Confetti from 'react-confetti';
 import { useAuthContext } from '../../context/useAuthContext';
 import { useSessions } from '../../hooks/useSessions';
 import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
+import PushButton from '../../components/common/PushButton';
 import {
   GLOBAL_ACTIVITY_SCOPE,
   getActivityTaskProgress,
@@ -25,6 +27,8 @@ import './ActivityPage.css';
 import './DashboardPage.css';
 
 const DAY_MS = 86_400_000;
+const ACTIVITY_CELEBRATION_STORAGE_KEY = 'bigkas_pending_activity_celebration_v1';
+const LAST_SHOWN_COMPLETION_EVENT_KEY = 'bigkas_last_completion_event_v1';
 
 function getLocalDateKey(date = new Date()) {
   const year = date.getFullYear();
@@ -111,6 +115,12 @@ function ActivityPage() {
   const hasTaskStateHydratedRef = useRef(false);
 
   const [recentStampedTaskId, setRecentStampedTaskId] = useState(null);
+  const [showCompletionCelebration, setShowCompletionCelebration] = useState(false);
+  const [completionModalTaskTitle, setCompletionModalTaskTitle] = useState('');
+  const [viewportSize, setViewportSize] = useState(() => ({
+    width: typeof window !== 'undefined' ? window.innerWidth : 0,
+    height: typeof window !== 'undefined' ? window.innerHeight : 0,
+  }));
   const { sessions, fetchAllSessions } = useSessions();
   const activityMetrics = useMemo(
     () => getActivityMetrics(scopeKey),
@@ -141,6 +151,7 @@ function ActivityPage() {
     if (typeof window === 'undefined') return undefined;
     const onResize = () => {
       setShowDesktopSidebar(window.matchMedia('(min-width: 1025px)').matches);
+      setViewportSize({ width: window.innerWidth, height: window.innerHeight });
     };
     onResize();
     window.addEventListener('resize', onResize);
@@ -225,6 +236,11 @@ function ActivityPage() {
     }, {});
   }, [taskState, tasks]);
 
+  const taskTitleById = useMemo(() => tasks.reduce((acc, task) => {
+    acc[task.id] = String(task.title || '').trim();
+    return acc;
+  }, {}), [tasks]);
+
   const activeTaskId = useMemo(
     () => getActiveTaskId(tasks, taskState, taskUnlockState),
     [tasks, taskState, taskUnlockState],
@@ -274,6 +290,13 @@ function ActivityPage() {
     osc.stop(now + 0.24);
   }, []);
 
+  const maybeShowCompletionCelebration = useCallback((titleFallback = 'This activity') => {
+    if (typeof window === 'undefined') return;
+    setCompletionModalTaskTitle(String(titleFallback || 'This activity'));
+    setShowCompletionCelebration(true);
+    playCompletionSound();
+  }, [playCompletionSound]);
+
   useEffect(() => {
     if (!hasTaskStateHydratedRef.current) {
       previousTaskStateRef.current = taskState;
@@ -291,7 +314,6 @@ function ActivityPage() {
     if (!newlyCompletedTask) return;
 
     setRecentStampedTaskId(newlyCompletedTask.id);
-    playCompletionSound();
 
     if (stampResetTimeoutRef.current) {
       window.clearTimeout(stampResetTimeoutRef.current);
@@ -300,12 +322,54 @@ function ActivityPage() {
     stampResetTimeoutRef.current = window.setTimeout(() => {
       setRecentStampedTaskId((current) => (current === newlyCompletedTask.id ? null : current));
     }, 700);
-  }, [playCompletionSound, taskState, tasks]);
+  }, [taskState, tasks]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !tasks.length) return;
+    const raw = window.sessionStorage.getItem(ACTIVITY_CELEBRATION_STORAGE_KEY);
+    if (!raw) return;
+
+    try {
+      const payload = JSON.parse(raw);
+      const activityId = String(payload?.activityId || '').trim();
+      const activityTitleFromPayload = String(payload?.activityTitle || '').trim();
+      const completedAt = Number(payload?.completedAt || 0);
+      const eventKey = `${activityId}:${Number.isFinite(completedAt) ? completedAt : 0}`;
+      if (!activityId) {
+        window.sessionStorage.removeItem(ACTIVITY_CELEBRATION_STORAGE_KEY);
+        return;
+      }
+      if (taskState[activityId] !== true) {
+        return;
+      }
+      const lastShown = window.sessionStorage.getItem(LAST_SHOWN_COMPLETION_EVENT_KEY);
+      if (lastShown === eventKey) {
+        window.sessionStorage.removeItem(ACTIVITY_CELEBRATION_STORAGE_KEY);
+        return;
+      }
+
+      setRecentStampedTaskId(activityId);
+      maybeShowCompletionCelebration(
+        activityTitleFromPayload || taskTitleById[activityId] || 'This activity',
+      );
+      window.sessionStorage.setItem(LAST_SHOWN_COMPLETION_EVENT_KEY, eventKey);
+      window.sessionStorage.removeItem(ACTIVITY_CELEBRATION_STORAGE_KEY);
+    } catch {
+      window.sessionStorage.removeItem(ACTIVITY_CELEBRATION_STORAGE_KEY);
+    }
+  }, [maybeShowCompletionCelebration, taskState, taskTitleById, tasks.length]);
 
   const handleTaskAction = useCallback((task) => {
-    navigate(task.actionRoute, {
+    navigate(`${ROUTES.TRAINING}?autostart=1`, {
       state: {
+        freeTopic: task.title,
+        objective: task.objective || task.detail,
+        focus: 'free',
+        sessionType: 'training',
+        entryPoint: 'activity',
+        autoStartCountdown: true,
         fromActivityTaskId: task.id,
+        step: task,
       },
     });
   }, [navigate]);
@@ -450,6 +514,36 @@ function ActivityPage() {
 
   return (
     <div className="inner-page activity-page activity-page--skyward-entrance">
+      {showCompletionCelebration && (
+        <Confetti
+          width={viewportSize.width}
+          height={viewportSize.height}
+          recycle
+          numberOfPieces={280}
+          gravity={0.24}
+        />
+      )}
+      {showCompletionCelebration && (
+        <div className="activity-clear-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="activity-clear-modal-title">
+          <div className="activity-clear-modal">
+            <h3 id="activity-clear-modal-title" className="activity-clear-modal-title">
+              Congratulations, you've cleared: {completionModalTaskTitle || 'This stage'}
+            </h3>
+            <PushButton
+              className="activity-clear-modal-continue-btn"
+              bgColor="#2d5a27"
+              shadowColor="#1a3b16"
+              textColor="#ffffff"
+              onClick={() => {
+                setShowCompletionCelebration(false);
+                setCompletionModalTaskTitle('');
+              }}
+            >
+              Continue
+            </PushButton>
+          </div>
+        </div>
+      )}
       <div className="activity-two-col">
         <div className="activity-col-main">
           <div className="activity-content-wrap activity-content-wrap--journey-scroll">

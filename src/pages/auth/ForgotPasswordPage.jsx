@@ -51,8 +51,10 @@ function ForgotPasswordPage() {
 
   // Set page class on mount, remove on unmount
   useEffect(() => {
+    document.documentElement.classList.add('forgot-page-active');
     document.body.classList.add('forgot-page-active');
     return () => {
+      document.documentElement.classList.remove('forgot-page-active');
       document.body.classList.remove('forgot-page-active');
     };
   }, []);
@@ -379,7 +381,7 @@ function ForgotPasswordPage() {
                 {isResetStep && 'Create your new password after successful code verification.'}
               </p>
 
-              <form className="auth-form" onSubmit={handleSubmit}>
+              <form className={`auth-form forgot-auth-form${isVerifyStep ? ' forgot-auth-form--verify' : ''}`} onSubmit={handleSubmit}>
                 {error && (
                   <div className="auth-error-banner">{error}</div>
                 )}
@@ -499,10 +501,11 @@ function ForgotPasswordPage() {
                 )}
 
                 <PushButton
+                  className="forgot-submit-btn"
                   type="submit"
                   disabled={isLoading || (isVerifyStep && digits.some((d) => !d))}
-                  bgColor="#2d5a27"
-                  shadowColor="#1a3b16"
+                  bgColor="#5A7863"
+                  shadowColor="#3E5646"
                   textColor="#ffffff"
                 >
                   {isRequestStep && 'SEND CODE'}
@@ -513,7 +516,7 @@ function ForgotPasswordPage() {
 
               {isVerifyStep && (
                 <div className="resend-section">
-                  <p className="resend-text">Didn't receive the code?</p>
+                  <p className="resend-text">Didn&apos;t receive the code?</p>
                   <Button
                     type="button"
                     variant="ghost"

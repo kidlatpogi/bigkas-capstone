@@ -69,9 +69,6 @@ function UserProfilingPage() {
 
   const totalSteps = QUESTIONS.length;
   const currentQuestion = QUESTIONS[currentIndex];
-  const answeredCount = useMemo(() => {
-    return QUESTIONS.filter((question) => isQuestionAnswered(question, form[question.key])).length;
-  }, [form]);
   const progress = Math.round(((currentIndex + 1) / totalSteps) * 100);
 
   const baselineScore = useMemo(() => computeBaselineScore(form), [form]);

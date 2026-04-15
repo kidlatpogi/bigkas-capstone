@@ -219,7 +219,7 @@ const TooltipBox = styled.div`
   text-align: center;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
 
-  /* The Beak (Pointer) */
+  /* Pointer notch that points to the node */
   &::after {
     content: '';
     position: absolute;
@@ -227,23 +227,23 @@ const TooltipBox = styled.div`
     transform: translateX(-50%);
     width: 0;
     height: 0;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
+    border-left: 13px solid transparent;
+    border-right: 13px solid transparent;
     z-index: 2;
 
     ${(props) =>
       props.$placement === 'bottom'
         ? `
-      top: -10px;
-      border-bottom: 10px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#2d5a27'};
+      top: -12px;
+      border-bottom: 12px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#2d5a27'};
     `
         : `
-      bottom: -10px;
-      border-top: 10px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#2d5a27'};
+      bottom: -12px;
+      border-top: 12px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#2d5a27'};
     `}
   }
 
-  /* Beak border for locked/active state */
+  /* Outer rim for pointer notch */
   &::before {
     content: '';
     position: absolute;
@@ -251,13 +251,13 @@ const TooltipBox = styled.div`
     transform: translateX(-50%);
     width: 0;
     height: 0;
-    border-left: 12.5px solid transparent;
-    border-right: 12.5px solid transparent;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
     z-index: 1;
     ${(props) =>
       props.$placement === 'bottom'
-        ? `top: -13px; border-bottom: 13px solid ${props.$nodeState === 'locked' ? '#e5e5e5' : '#1a3b16'};`
-        : `bottom: -13px; border-top: 13px solid ${props.$nodeState === 'locked' ? '#e5e5e5' : '#1a3b16'};`
+        ? `top: -15px; border-bottom: 15px solid ${props.$nodeState === 'locked' ? '#e5e5e5' : '#1a3b16'};`
+        : `bottom: -15px; border-top: 15px solid ${props.$nodeState === 'locked' ? '#e5e5e5' : '#1a3b16'};`
     }
   }
 `;
@@ -421,14 +421,23 @@ export const JourneyTooltip = ({ step, onStart, onClose, nodeRef, forceBottom = 
                 })()}
           </TooltipDescription>
           <TooltipStartButton
+            type="button"
             $nodeState={step.nodeState}
             disabled={isLocked}
             onClick={(e) => {
+              e.preventDefault();
               e.stopPropagation();
               if (!isLocked) onStart(step);
             }}
+            onPointerDown={(e) => e.stopPropagation()}
           >
-            {isLocked ? 'LOCKED' : 'START'}
+            {isLocked
+              ? 'LOCKED'
+              : step.nodeState === NODE_STATE.ACTIVE
+                ? 'CONTINUE'
+                : step.nodeState === NODE_STATE.COMPLETED
+                  ? 'REVIEW'
+                  : 'START'}
           </TooltipStartButton>
         </TooltipBox>
       </motion.div>
@@ -898,13 +907,17 @@ export default function SkywardJourney({
           <div
             key={step.id}
             className="skyward-journey-row dashboard-anim-bottom"
+            style={{
+              position: 'relative',
+              zIndex: isActive ? 320 : ((startStage && !isDone) ? 260 : 1),
+            }}
           >
             <div className="skyward-journey-track">
               <div
                 className={`skyward-journey-node-shell${
                   i === 0 && isActive ? ' skyward-journey-node-shell--start-onboarding' : ''
                 }`}
-                style={{ zIndex: startStage ? 60 : 10, position: 'relative' }}
+                style={{ zIndex: isActive ? 140 : (startStage ? 120 : 10), position: 'relative' }}
               >
                 <div
                   className={`skyward-journey-node-cluster${isUltimateBoss ? ' skyward-journey-node-cluster--boss' : ''}`}
@@ -918,9 +931,14 @@ export default function SkywardJourney({
                         BOSS
                       </span>
                     </div>
-                  ) : startStage ? (
+                  ) : startStage && !isDone && !isActive ? (
                     <div className="skyward-journey-start-callout" aria-hidden>
                       <span className="skyward-journey-start-badge">START</span>
+                    </div>
+                  ) : null}
+                  {isActive ? (
+                    <div className="skyward-journey-current-callout" aria-hidden>
+                      <span className="skyward-journey-current-badge">YOU ARE HERE</span>
                     </div>
                   ) : null}
                   <SkywardJourneyNodeButton
@@ -978,7 +996,7 @@ export default function SkywardJourney({
                       <JourneyTooltip
                         key={step.id}
                         step={step}
-                        onStart={(s) => setPanelOpenId(s.id)}
+                        onStart={(s) => s.onActivate ? s.onActivate() : setPanelOpenId(s.id)}
                         onClose={() => setTooltipNodeId(null)}
                         nodeRef={{ get current() { return nodeRefs.current[i]; } }}
                         forceBottom={i >= steps.length - 2}

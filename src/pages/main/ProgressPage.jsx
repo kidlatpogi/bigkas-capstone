@@ -54,6 +54,43 @@ function formatFivePointScore(rawScore) {
   return toFivePointScore(rawScore).toFixed(1);
 }
 
+function clamp15(value) {
+  const v = Number(value);
+  if (!Number.isFinite(v)) return null;
+  return Math.max(1, Math.min(5, v));
+}
+
+function score100to15(value) {
+  const v = Number(value);
+  if (!Number.isFinite(v)) return null;
+  const bounded = Math.max(0, Math.min(100, v));
+  return 1 + (bounded / 100) * 4;
+}
+
+function score15ToPercent(score15) {
+  const clamped = clamp15(score15);
+  if (!Number.isFinite(clamped)) return 0;
+  return Math.round(((clamped - 1) / 4) * 100);
+}
+
+function resolveTripleVForProgress(session) {
+  const visual = clamp15(session?.visual_avg) ?? score100to15(session?.visual_score);
+  const vocal = clamp15(session?.vocal_avg) ?? score100to15(session?.acoustic_score);
+  const verbal = clamp15(session?.verbal_avg) ?? score100to15(session?.context_score);
+  return {
+    visual: clamp15(visual),
+    vocal: clamp15(vocal),
+    verbal: clamp15(verbal),
+  };
+}
+
+function resolveSubMetric15(session, key) {
+  const raw = Number(session?.[key]);
+  if (!Number.isFinite(raw)) return null;
+  if (raw > 5) return score100to15(raw);
+  return clamp15(raw);
+}
+
 function buildSessionTitleOrTopic(session) {
   const candidates = [
     session?.activity_title,
@@ -343,16 +380,17 @@ function ProgressPage() {
         color: '#2d5a27',
         icon: IoVideocamOutline,
         iconBg: 'rgba(45, 90, 39, 0.1)',
-        resolver: (session) => {
-          const facial = Number(session.facial_expression_score);
-          const gesture = Number(session.gesture_score);
-          const pool = [facial, gesture].filter((value) => Number.isFinite(value));
-          if (!pool.length) return null;
-          return pool.reduce((sum, value) => sum + value, 0) / pool.length;
-        },
+        resolver: (session) => resolveTripleVForProgress(session).visual,
         subMetricsConfig: [
-          { label: 'Eye Contact', resolver: (s) => Number(s.facial_expression_score) },
-          { label: 'Gestures', resolver: (s) => Number(s.gesture_score) }
+          {
+            label: 'Eye Contact',
+            resolver: (s) => {
+              const eye = resolveSubMetric15(s, 'eye_contact_score');
+              const facial = resolveSubMetric15(s, 'facial_expression_score');
+              return eye ?? facial;
+            },
+          },
+          { label: 'Gestures', resolver: (s) => resolveSubMetric15(s, 'gesture_score') }
         ]
       },
       {
@@ -361,16 +399,10 @@ function ProgressPage() {
         color: '#2d5a27',
         icon: IoChatbubbleEllipsesOutline,
         iconBg: 'rgba(45, 90, 39, 0.1)',
-        resolver: (session) => {
-          const context = Number(session.context_score);
-          const fluency = Number(session.fluency_score);
-          const pool = [context, fluency].filter((value) => Number.isFinite(value));
-          if (!pool.length) return null;
-          return pool.reduce((sum, value) => sum + value, 0) / pool.length;
-        },
+        resolver: (session) => resolveTripleVForProgress(session).verbal,
         subMetricsConfig: [
-          { label: 'Pronunciation', resolver: (s) => Number(s.pronunciation_score) },
-          { label: 'Context Awareness', resolver: (s) => Number(s.context_score) }
+          { label: 'Pronunciation', resolver: (s) => resolveSubMetric15(s, 'pronunciation_score') },
+          { label: 'Context Awareness', resolver: (s) => score100to15(s?.context_score) }
         ]
       },
       {
@@ -379,20 +411,24 @@ function ProgressPage() {
         color: '#2d5a27',
         icon: IoMicOutline,
         iconBg: 'rgba(45, 90, 39, 0.1)',
-        resolver: (session) => {
-          const pronunciation = Number(session.pronunciation_score);
-          const jitter = Number(session.jitter_score);
-          const shimmer = Number(session.shimmer_score);
-          const jitterAdjusted = Number.isFinite(jitter) ? 100 - jitter : null;
-          const shimmerAdjusted = Number.isFinite(shimmer) ? 100 - shimmer : null;
-          const pool = [pronunciation, jitterAdjusted, shimmerAdjusted]
-            .filter((value) => Number.isFinite(value));
-          if (!pool.length) return null;
-          return pool.reduce((sum, value) => sum + value, 0) / pool.length;
-        },
+        resolver: (session) => resolveTripleVForProgress(session).vocal,
         subMetricsConfig: [
-          { label: 'Shimmer', resolver: (s) => Number.isFinite(Number(s.shimmer_score)) ? Number(s.shimmer_score) : null },
-          { label: 'Jitter', resolver: (s) => Number.isFinite(Number(s.jitter_score)) ? Number(s.jitter_score) : null }
+          {
+            label: 'Shimmer',
+            resolver: (s) => {
+              const shimmer = Number(s?.shimmer_score);
+              if (!Number.isFinite(shimmer)) return null;
+              return score100to15(100 - shimmer);
+            },
+          },
+          {
+            label: 'Jitter',
+            resolver: (s) => {
+              const jitter = Number(s?.jitter_score);
+              if (!Number.isFinite(jitter)) return null;
+              return score100to15(100 - jitter);
+            },
+          }
         ]
       }
     ];
@@ -402,8 +438,8 @@ function ProgressPage() {
         .map((session) => pillar.resolver(session))
         .filter((value) => Number.isFinite(value) && value !== null);
 
-      const avg = values.length
-        ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length)
+      const avg15 = values.length
+        ? values.reduce((sum, value) => sum + value, 0) / values.length
         : 0;
 
       const subMetrics = pillar.subMetricsConfig.map((sub) => {
@@ -411,14 +447,14 @@ function ProgressPage() {
           .map((session) => sub.resolver(session))
           .filter((value) => Number.isFinite(value) && value !== null);
         
-        const subAvg = subValues.length
-          ? Math.round(subValues.reduce((sum, value) => sum + value, 0) / subValues.length)
+        const subAvg15 = subValues.length
+          ? subValues.reduce((sum, value) => sum + value, 0) / subValues.length
           : 0;
           
-        return { label: sub.label, value: subAvg };
+        return { label: sub.label, value: score15ToPercent(subAvg15) };
       });
 
-      return { ...pillar, value: avg, subMetrics };
+      return { ...pillar, value: score15ToPercent(avg15), subMetrics };
     });
   }, [pillarRange, userSessions]);
 

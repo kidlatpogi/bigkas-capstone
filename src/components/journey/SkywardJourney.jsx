@@ -219,7 +219,7 @@ const TooltipBox = styled.div`
   text-align: center;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
 
-  /* The Beak (Pointer) */
+  /* Pointer notch that points to the node */
   &::after {
     content: '';
     position: absolute;
@@ -227,23 +227,23 @@ const TooltipBox = styled.div`
     transform: translateX(-50%);
     width: 0;
     height: 0;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
+    border-left: 13px solid transparent;
+    border-right: 13px solid transparent;
     z-index: 2;
 
     ${(props) =>
       props.$placement === 'bottom'
         ? `
-      top: -10px;
-      border-bottom: 10px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#2d5a27'};
+      top: -12px;
+      border-bottom: 12px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#2d5a27'};
     `
         : `
-      bottom: -10px;
-      border-top: 10px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#2d5a27'};
+      bottom: -12px;
+      border-top: 12px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#2d5a27'};
     `}
   }
 
-  /* Beak border for locked/active state */
+  /* Outer rim for pointer notch */
   &::before {
     content: '';
     position: absolute;
@@ -251,13 +251,13 @@ const TooltipBox = styled.div`
     transform: translateX(-50%);
     width: 0;
     height: 0;
-    border-left: 12.5px solid transparent;
-    border-right: 12.5px solid transparent;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
     z-index: 1;
     ${(props) =>
       props.$placement === 'bottom'
-        ? `top: -13px; border-bottom: 13px solid ${props.$nodeState === 'locked' ? '#e5e5e5' : '#1a3b16'};`
-        : `bottom: -13px; border-top: 13px solid ${props.$nodeState === 'locked' ? '#e5e5e5' : '#1a3b16'};`
+        ? `top: -15px; border-bottom: 15px solid ${props.$nodeState === 'locked' ? '#e5e5e5' : '#1a3b16'};`
+        : `bottom: -15px; border-top: 15px solid ${props.$nodeState === 'locked' ? '#e5e5e5' : '#1a3b16'};`
     }
   }
 `;

@@ -5,7 +5,6 @@ import { useSessionContext } from '../../context/useSessionContext';
 import { useAuthContext } from '../../context/useAuthContext';
 import { buildRoute, ROUTES } from '../../utils/constants';
 import BackButton from '../../components/common/BackButton';
-import { pushBackgroundAnalysisNotification } from '../../utils/backgroundAnalysisNotifications';
 import {
   GLOBAL_ACTIVITY_SCOPE,
   addPointsToSpeakerProgress,
@@ -66,6 +65,7 @@ const MIC_SENSITIVITY_KEY = 'pref_mic_sensitivity';
 const MIC_LOW_PICKUP_TRIGGER_MS = 2500;
 const TRAINING_FONT_SIZE_KEY = 'training_settings_font_size';
 const TRAINING_WPM_KEY = 'training_settings_wpm';
+const ACTIVITY_CELEBRATION_STORAGE_KEY = 'bigkas_pending_activity_celebration_v1';
 
 function readNumericSetting(key, fallback, min, max) {
   if (typeof window === 'undefined') return fallback;
@@ -197,8 +197,6 @@ function TrainingPage() {
   const countdownAudioCtxRef = useRef(null);
   const micLowStartRef = useRef(null);
   const micWarningVisibleRef = useRef(false);
-  const analysisModeRef = useRef('foreground');
-  const backgroundLeaveInitiatedRef = useRef(false);
   const isMountedRef = useRef(true);
   const visualScoresRef = useRef(null);
 
@@ -376,32 +374,6 @@ function TrainingPage() {
       setShowMicWarning(false);
     };
   }, []);
-
-  const notifyBrowser = useCallback((title, message) => {
-    if (typeof window === 'undefined' || !('Notification' in window)) return;
-    if (Notification.permission === 'granted') {
-      try {
-        new Notification(title, { body: message });
-      } catch {
-        // Ignore browser notification errors.
-      }
-    }
-  }, []);
-
-  const handleAnalyzeInBackground = useCallback(() => {
-    if (status !== 'analysing') return;
-    if (isPreTestSession) return;
-    if (backgroundLeaveInitiatedRef.current) return;
-
-    backgroundLeaveInitiatedRef.current = true;
-    analysisModeRef.current = 'background';
-    pushBackgroundAnalysisNotification({
-      status: 'info',
-      title: 'Analysis is running in background',
-      message: 'You can continue using Bigkas. We will notify you when it is done.',
-    });
-    navigate(ROUTES.DASHBOARD);
-  }, [isPreTestSession, navigate, status]);
 
   const playCountdownCue = useCallback((type = 'tick') => {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -717,8 +689,6 @@ function TrainingPage() {
         audioCtxRef.current = null;
       }
       analyserRef.current = null;
-      analysisModeRef.current = 'foreground';
-      backgroundLeaveInitiatedRef.current = false;
 
       const recordingDurationSec = recordingDurationSecRef.current;
       if (recordingDurationSec < MIN_RECORDING_SECONDS) {
@@ -755,12 +725,12 @@ function TrainingPage() {
           scriptType: sessionType,
           speakingMode: focus,
           scriptTitle: focus === 'scripted' ? (script?.title || '') : freeTopic,
+          activityId: String(state?.fromActivityTaskId || '').trim() || null,
           visualAnalysis: visualScoresRef.current,
           topic: focus === 'scripted' ? (script?.title || 'Scripted Speech') : (freeTopic || 'General Speaking'),
           profilingAnswers,
         });
 
-        const runInBackground = analysisModeRef.current === 'background';
         if (result?.success && result?.data?.id) {
           const rawSessionScore = Number(result?.data?.confidence_score ?? result?.data?.score ?? 0);
           const normalizedSessionScore = Number.isFinite(rawSessionScore)
@@ -796,6 +766,15 @@ function TrainingPage() {
               type: 'activity-complete',
               activityId: fromActivity,
             }, activityScopeKey);
+            if (typeof window !== 'undefined') {
+              window.sessionStorage.setItem(
+                ACTIVITY_CELEBRATION_STORAGE_KEY,
+                JSON.stringify({
+                  activityId: fromActivity,
+                  completedAt: Date.now(),
+                }),
+              );
+            }
           }
 
           if (sessionType !== 'pre-test') {
@@ -877,55 +856,14 @@ function TrainingPage() {
             await updateUserMetadata(metadataUpdates);
           }
 
-          if (runInBackground) {
-            pushBackgroundAnalysisNotification({
-              status: 'success',
-              title: 'Background analysis complete',
-              message: `Score ${Math.round(normalizedSessionScore)}/100 is ready.`,
-              sessionId: result.data.id,
-            });
-            notifyBrowser('Bigkas Analysis Complete', `Your session score is ${Math.round(normalizedSessionScore)}/100.`);
-            if (isMountedRef.current) {
-              setStatus('idle');
-            }
-            return;
-          }
-
           navigate(buildRoute.sessionResult(result.data.id), { state: result.data });
         } else {
-          if (runInBackground) {
-            pushBackgroundAnalysisNotification({
-              status: 'error',
-              title: 'Background analysis failed',
-              message: result?.error || 'Please retry your recording.',
-            });
-            notifyBrowser('Bigkas Analysis Failed', result?.error || 'Please retry your recording.');
-            if (isMountedRef.current) {
-              setStatus('idle');
-            }
-            return;
-          }
-
           if (isMountedRef.current) {
             setErrorMsg(result?.error || 'Analysis failed. Please try again.');
             setStatus('error');
           }
         }
       } catch (err) {
-        const runInBackground = analysisModeRef.current === 'background';
-        if (runInBackground) {
-          pushBackgroundAnalysisNotification({
-            status: 'error',
-            title: 'Background analysis failed',
-            message: err?.message || 'An unexpected error occurred during analysis.',
-          });
-          notifyBrowser('Bigkas Analysis Failed', err?.message || 'An unexpected error occurred during analysis.');
-          if (isMountedRef.current) {
-            setStatus('idle');
-          }
-          return;
-        }
-
         if (isMountedRef.current) {
           setErrorMsg('An unexpected error occurred during analysis.');
           setStatus('error');
@@ -1309,15 +1247,6 @@ function TrainingPage() {
           <div className="tp-countdown-box">
             <span className="tp-analysing-spinner" />
             <span className="tp-analysing-text">Analysing…</span>
-            {!isPreTestSession && (
-              <button
-                type="button"
-                className="tp-analyse-bg-btn"
-                onClick={handleAnalyzeInBackground}
-              >
-                Analyze in Background
-              </button>
-            )}
           </div>
         </div>
       )}

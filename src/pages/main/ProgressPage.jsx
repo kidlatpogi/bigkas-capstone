@@ -56,6 +56,7 @@ function formatFivePointScore(rawScore) {
 
 function buildSessionTitleOrTopic(session) {
   const candidates = [
+    session?.activity_title,
     session?.script_title,
     session?.title,
     session?.topic,

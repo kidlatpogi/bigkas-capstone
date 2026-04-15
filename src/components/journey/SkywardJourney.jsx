@@ -431,7 +431,13 @@ export const JourneyTooltip = ({ step, onStart, onClose, nodeRef, forceBottom = 
             }}
             onPointerDown={(e) => e.stopPropagation()}
           >
-            {isLocked ? 'LOCKED' : 'START'}
+            {isLocked
+              ? 'LOCKED'
+              : step.nodeState === NODE_STATE.ACTIVE
+                ? 'CONTINUE'
+                : step.nodeState === NODE_STATE.COMPLETED
+                  ? 'REVIEW'
+                  : 'START'}
           </TooltipStartButton>
         </TooltipBox>
       </motion.div>
@@ -921,9 +927,15 @@ export default function SkywardJourney({
                         BOSS
                       </span>
                     </div>
-                  ) : startStage ? (
+                  ) : startStage && !isDone && !isActive ? (
                     <div className="skyward-journey-start-callout" aria-hidden>
                       <span className="skyward-journey-start-badge">START</span>
+                    </div>
+                  ) : null}
+                  {isActive ? (
+                    <div className="skyward-journey-current-callout" aria-hidden>
+                      <span className="skyward-journey-current-badge">YOU ARE HERE</span>
+                      <span className="skyward-journey-current-sub">Level {currentLevel} • Stage {safeStageNum}</span>
                     </div>
                   ) : null}
                   <SkywardJourneyNodeButton

@@ -82,6 +82,48 @@ function buildBucketPublicUrl(pathOrUrl) {
   return data?.publicUrl || null;
 }
 
+function parseRecordingTimestamp(path) {
+  const value = String(path || '').trim();
+  if (!value) return null;
+  const match = value.match(/\/(\d{13})-[^/]+\.[a-z0-9]+$/i);
+  if (!match) return null;
+  const parsed = Number(match[1]);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function pickClosestRecordingPath(paths, targetMs) {
+  if (!Array.isArray(paths) || !paths.length || !Number.isFinite(targetMs)) return null;
+  let bestPath = null;
+  let bestDelta = Number.POSITIVE_INFINITY;
+  for (const path of paths) {
+    const ts = parseRecordingTimestamp(path);
+    if (!Number.isFinite(ts)) continue;
+    const delta = Math.abs(ts - targetMs);
+    if (delta < bestDelta) {
+      bestDelta = delta;
+      bestPath = path;
+    }
+  }
+  return bestPath;
+}
+
+async function findLikelyVideoUrl({ userId, createdAt }) {
+  const safeUserId = String(userId || '').trim();
+  if (!safeUserId || !createdAt) return null;
+  const sessionTs = new Date(createdAt).getTime();
+  if (!Number.isFinite(sessionTs)) return null;
+  const { data, error } = await supabase.storage
+    .from(SESSION_MEDIA_BUCKET)
+    .list(`${safeUserId}/video`, { limit: 200, sortBy: { column: 'name', order: 'desc' } });
+  if (error || !Array.isArray(data) || !data.length) return null;
+  const storagePaths = data
+    .map((file) => file?.name ? `${safeUserId}/video/${file.name}` : null)
+    .filter(Boolean);
+  const closestPath = pickClosestRecordingPath(storagePaths, sessionTs);
+  if (!closestPath) return null;
+  return buildBucketPublicUrl(closestPath);
+}
+
 function buildReplayAction(session, navigate, isFree) {
   const mode = getSessionMode(session);
   const isPractice = mode === 'Practice';
@@ -152,13 +194,12 @@ function DetailedFeedbackPage() {
 
       const { data: richMedia, error: richMediaErr } = await supabase
         .from('session_media')
-        .select('audio_url, video_url, video_storage_url')
+        .select('audio_url')
         .eq('session_id', sessionId)
         .maybeSingle();
 
       if (!richMediaErr && richMedia) {
         audioUrl = richMedia.audio_url ?? null;
-        videoUrl = richMedia.video_url ?? richMedia.video_storage_url ?? null;
       } else {
         const { data: basicMedia } = await supabase
           .from('session_media')
@@ -166,6 +207,13 @@ function DetailedFeedbackPage() {
           .eq('session_id', sessionId)
           .maybeSingle();
         audioUrl = basicMedia?.audio_url ?? null;
+      }
+
+      if (!videoUrl) {
+        videoUrl = await findLikelyVideoUrl({
+          userId: session?.user_id,
+          createdAt: session?.created_at,
+        });
       }
 
       if (!isMounted) return;
@@ -177,7 +225,7 @@ function DetailedFeedbackPage() {
 
     loadSessionMedia();
     return () => { isMounted = false; };
-  }, [sessionId]);
+  }, [session?.created_at, session?.user_id, sessionId]);
 
   if (isLoading && !session) {
     return (

@@ -11,6 +11,7 @@ const PAGE_SIZE = 10;
 const LEGACY_LOCAL_SESSIONS_KEY = 'bigkas_local_sessions_v1';
 const SESSION_TITLE_CACHE_KEY = 'bigkas_session_title_cache_v1';
 const SESSION_TITLE_COLUMN_SUPPORT_KEY = 'bigkas_session_title_column_supported_v1';
+const SESSION_VIDEO_CACHE_KEY = 'bigkas_session_video_cache_v1';
 const SESSION_MEDIA_BUCKET = 'session-recordings';
 const SESSIONS_CACHE_TTL_MS = 15000;
 const SESSIONS_SELECT_QUERY = `
@@ -26,6 +27,11 @@ const SESSIONS_SELECT_QUERY = `
   duration,
   synced_to_mobile_at,
   created_at,
+  activity_id,
+  activities (
+    title,
+    objective
+  ),
   session_media (
     audio_url,
     transcript
@@ -172,6 +178,9 @@ const SessionContext = createContext(null);
 function normalizeSessionRow(session) {
   if (!session) return session;
   const cachedTitle = getSessionTitleCacheEntry(session.id);
+  const cachedVideoUrl = getSessionVideoCacheEntry(session.id);
+  const activity = Array.isArray(session.activities) ? session.activities[0] : session.activities;
+  const activityTitle = String(activity?.title || '').trim() || null;
   const media = Array.isArray(session.session_media) ? session.session_media[0] : session.session_media;
   const metrics = Array.isArray(session.session_metrics) ? session.session_metrics[0] : session.session_metrics;
   const feedback = Array.isArray(session.session_feedback) ? session.session_feedback[0] : session.session_feedback;
@@ -198,10 +207,13 @@ function normalizeSessionRow(session) {
     session_metrics: undefined,
     session_feedback: undefined,
     session_recommendations: undefined,
+    activities: undefined,
+    activity_id: session.activity_id || null,
+    activity_title: activityTitle,
     speech_type: normalizedSpeechType || null,
     speaking_mode: session.speaking_mode || normalizedSpeechType || null,
     session_origin: normalizedSessionOrigin || null,
-    script_title: session.script_title ?? session.title ?? cachedTitle ?? null,
+    script_title: session.script_title ?? session.title ?? activityTitle ?? cachedTitle ?? null,
     score: toNumeric(metrics?.overall_score ?? confidenceScore, 0),
     confidence_score: confidenceScore,
     acoustic_score: toNumeric(metrics?.vocal_score ?? 0, 0),
@@ -221,11 +233,12 @@ function normalizeSessionRow(session) {
     transcript: sanitizeTranscriptForDisplay(media?.transcript, ''),
     feedback: feedback?.general_feedback || '',
     detailed_feedback: feedback?.detailed_feedback || '',
+    objective_name: session.objective_name ?? activity?.objective ?? null,
     recommendations,
     recommendation_timestamps,
     audio_url: media?.audio_url || null,
-    video_url: media?.video_url || null,
-    video_storage_url: media?.video_storage_url || null,
+    video_url: media?.video_url || cachedVideoUrl || null,
+    video_storage_url: media?.video_storage_url || cachedVideoUrl || null,
   };
 }
 
@@ -265,6 +278,34 @@ function getSessionTitleCacheEntry(sessionId) {
   const sid = String(sessionId || '').trim();
   if (!sid) return null;
   const cache = getSessionTitleCache();
+  const value = cache[sid];
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function getSessionVideoCache() {
+  if (typeof window === 'undefined') return {};
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(SESSION_VIDEO_CACHE_KEY) || '{}');
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function setSessionVideoCacheEntry(sessionId, videoUrl) {
+  if (typeof window === 'undefined') return;
+  const sid = String(sessionId || '').trim();
+  const safeVideo = String(videoUrl || '').trim();
+  if (!sid || !safeVideo) return;
+  const cache = getSessionVideoCache();
+  cache[sid] = safeVideo;
+  window.localStorage.setItem(SESSION_VIDEO_CACHE_KEY, JSON.stringify(cache));
+}
+
+function getSessionVideoCacheEntry(sessionId) {
+  const sid = String(sessionId || '').trim();
+  if (!sid) return null;
+  const cache = getSessionVideoCache();
   const value = cache[sid];
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
@@ -631,6 +672,7 @@ export function SessionProvider({ children }) {
     scriptType = 'free-speech',
     speakingMode = '',
     scriptTitle = '',
+    activityId = null,
     visualAnalysis = null,
     topic = '',
     profilingAnswers = [],
@@ -744,6 +786,7 @@ export function SessionProvider({ children }) {
             session_origin: normalizedSessionOrigin || 'training',
             speaking_mode: normalizedSpeakingMode || null,
             session_mode: normalizedSessionMode,
+            activity_id: activityId || null,
             duration: toInt(analysisResult.duration_sec, 0),
           })
           .eq('id', sessionId)
@@ -785,6 +828,7 @@ export function SessionProvider({ children }) {
           session_origin: normalizedSessionOrigin || 'training',
           speaking_mode: normalizedSpeakingMode || null,
           source: 'web',
+          activity_id: activityId || null,
           duration: toInt(analysisResult.duration_sec, 0),
         };
 
@@ -850,6 +894,10 @@ export function SessionProvider({ children }) {
             .insert(recommendationRows);
           if (recommendationErr) throw new Error(recommendationErr.message || 'Failed to save recommendations.');
         }
+      }
+
+      if (videoStorageUrl && sessionId) {
+        setSessionVideoCacheEntry(sessionId, videoStorageUrl);
       }
 
       const { data: persistedSession, error: persistedErr } = await supabase

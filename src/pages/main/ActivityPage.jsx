@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { IoArrowForward } from 'react-icons/io5';
+import Confetti from 'react-confetti';
 import { useAuthContext } from '../../context/useAuthContext';
 import { useSessions } from '../../hooks/useSessions';
 import { ROUTES } from '../../utils/constants';
@@ -25,6 +26,7 @@ import './ActivityPage.css';
 import './DashboardPage.css';
 
 const DAY_MS = 86_400_000;
+const ACTIVITY_CELEBRATION_STORAGE_KEY = 'bigkas_pending_activity_celebration_v1';
 
 function getLocalDateKey(date = new Date()) {
   const year = date.getFullYear();
@@ -111,6 +113,11 @@ function ActivityPage() {
   const hasTaskStateHydratedRef = useRef(false);
 
   const [recentStampedTaskId, setRecentStampedTaskId] = useState(null);
+  const [showCompletionCelebration, setShowCompletionCelebration] = useState(false);
+  const [viewportSize, setViewportSize] = useState(() => ({
+    width: typeof window !== 'undefined' ? window.innerWidth : 0,
+    height: typeof window !== 'undefined' ? window.innerHeight : 0,
+  }));
   const { sessions, fetchAllSessions } = useSessions();
   const activityMetrics = useMemo(
     () => getActivityMetrics(scopeKey),
@@ -141,6 +148,7 @@ function ActivityPage() {
     if (typeof window === 'undefined') return undefined;
     const onResize = () => {
       setShowDesktopSidebar(window.matchMedia('(min-width: 1025px)').matches);
+      setViewportSize({ width: window.innerWidth, height: window.innerHeight });
     };
     onResize();
     window.addEventListener('resize', onResize);
@@ -291,6 +299,7 @@ function ActivityPage() {
     if (!newlyCompletedTask) return;
 
     setRecentStampedTaskId(newlyCompletedTask.id);
+    setShowCompletionCelebration(true);
     playCompletionSound();
 
     if (stampResetTimeoutRef.current) {
@@ -300,7 +309,34 @@ function ActivityPage() {
     stampResetTimeoutRef.current = window.setTimeout(() => {
       setRecentStampedTaskId((current) => (current === newlyCompletedTask.id ? null : current));
     }, 700);
+    window.setTimeout(() => setShowCompletionCelebration(false), 4200);
   }, [playCompletionSound, taskState, tasks]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !tasks.length) return;
+    const raw = window.sessionStorage.getItem(ACTIVITY_CELEBRATION_STORAGE_KEY);
+    if (!raw) return;
+
+    try {
+      const payload = JSON.parse(raw);
+      const activityId = String(payload?.activityId || '').trim();
+      if (!activityId) {
+        window.sessionStorage.removeItem(ACTIVITY_CELEBRATION_STORAGE_KEY);
+        return;
+      }
+      if (taskState[activityId] !== true) {
+        return;
+      }
+
+      setRecentStampedTaskId(activityId);
+      setShowCompletionCelebration(true);
+      playCompletionSound();
+      window.sessionStorage.removeItem(ACTIVITY_CELEBRATION_STORAGE_KEY);
+      window.setTimeout(() => setShowCompletionCelebration(false), 4200);
+    } catch {
+      window.sessionStorage.removeItem(ACTIVITY_CELEBRATION_STORAGE_KEY);
+    }
+  }, [playCompletionSound, taskState, tasks.length]);
 
   const handleTaskAction = useCallback((task) => {
     navigate(`${ROUTES.TRAINING}?autostart=1`, {
@@ -308,7 +344,7 @@ function ActivityPage() {
         freeTopic: task.title,
         objective: task.objective || task.detail,
         focus: 'free',
-        sessionType: 'activity',
+        sessionType: 'training',
         entryPoint: 'activity',
         autoStartCountdown: true,
         fromActivityTaskId: task.id,
@@ -457,6 +493,15 @@ function ActivityPage() {
 
   return (
     <div className="inner-page activity-page activity-page--skyward-entrance">
+      {showCompletionCelebration && (
+        <Confetti
+          width={viewportSize.width}
+          height={viewportSize.height}
+          recycle={false}
+          numberOfPieces={280}
+          gravity={0.24}
+        />
+      )}
       <div className="activity-two-col">
         <div className="activity-col-main">
           <div className="activity-content-wrap activity-content-wrap--journey-scroll">

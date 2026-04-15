@@ -596,21 +596,14 @@ function TrainingPage() {
       src.connect(analyser);
       startWaveformLoop();
 
-      /* MediaRecorder records audio only; the camera stream is only for preview. */
       const recordingStream = new MediaStream(audioTracks);
       const recorderMime = getSupportedMime();
       const audioRecorderOptions = recorderMime
         ? { mimeType: recorderMime, audioBitsPerSecond: 64000 }
         : { audioBitsPerSecond: 64000 };
-      const recorder = new MediaRecorder(recordingStream, audioRecorderOptions);
+      const audioRecorder = new MediaRecorder(recordingStream, audioRecorderOptions);
 
-      mediaRef.current = recorder;
-      chunksRef.current = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-      recorder.start(200);
-
+      let videoRecorder = null;
       if (stream.getVideoTracks().length > 0) {
         const videoMime = getSupportedVideoMime();
         const videoTracks = stream.getVideoTracks();
@@ -625,17 +618,31 @@ function TrainingPage() {
               videoBitsPerSecond: 800000,
               audioBitsPerSecond: 96000,
             };
-        const videoRecorder = new MediaRecorder(avRecordingStream, videoRecorderOptions);
+        videoRecorder = new MediaRecorder(avRecordingStream, videoRecorderOptions);
+      }
 
-        visualMediaRef.current = videoRecorder;
-        visualChunksRef.current = [];
-        visualMimeRef.current = videoRecorder.mimeType || videoMime || 'video/webm';
+      mediaRef.current = audioRecorder;
+      chunksRef.current = [];
+      audioRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
 
+      visualMediaRef.current = videoRecorder;
+      visualChunksRef.current = [];
+      visualMimeRef.current = videoRecorder
+        ? (videoRecorder.mimeType || getSupportedVideoMime() || 'video/webm')
+        : '';
+      if (videoRecorder) {
         videoRecorder.ondataavailable = (e) => {
           if (e.data.size > 0) visualChunksRef.current.push(e.data);
         };
+      }
+
+      // Dual-recorder start: keep audio analysis recording and full A/V storage recording aligned.
+      if (videoRecorder) {
         videoRecorder.start(250);
       }
+      audioRecorder.start(200);
 
       setStatus('recording');
       recordingDurationSecRef.current = 0;
@@ -691,6 +698,8 @@ function TrainingPage() {
     setShowMicWarning(false);
     const recorder = mediaRef.current;
     if (!recorder || recorder.state === 'inactive') return;
+    const videoRecorder = visualMediaRef.current;
+    const videoStopPromise = stopRecorderSafely(videoRecorder);
 
     recorder.onstop = async () => {
       // Stop visual analysis with final averaged scores.
@@ -707,8 +716,7 @@ function TrainingPage() {
       }
 
       let videoBlob = null;
-      const videoRecorder = visualMediaRef.current;
-      await stopRecorderSafely(videoRecorder);
+      await videoStopPromise;
       if (visualChunksRef.current.length > 0) {
         const candidateVideoBlob = new Blob(visualChunksRef.current, {
           type: visualMimeRef.current || 'video/webm',
@@ -910,6 +918,13 @@ function TrainingPage() {
       recorder.requestData();
     } catch {
       // Best-effort flush before stop.
+    }
+    if (videoRecorder && videoRecorder.state === 'recording') {
+      try {
+        videoRecorder.requestData();
+      } catch {
+        // Best-effort flush before stop.
+      }
     }
     recorder.stop();
   };

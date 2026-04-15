@@ -194,6 +194,18 @@ const HeaderStatBadge = styled.div`
   margin-top: 4px;
 `;
 
+const HeaderSkipNotice = styled.div`
+  width: min(100%, 640px);
+  background: rgba(90, 120, 99, 0.12);
+  color: #3c4952;
+  border: 1px solid rgba(90, 120, 99, 0.35);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+`;
+
 const TooltipBox = styled.div`
   background: ${(props) => (props.$nodeState === 'locked' ? '#ffffff' : '#2d5a27')};
   color: ${(props) => (props.$nodeState === 'locked' ? '#333333' : '#ffffff')};
@@ -476,6 +488,7 @@ export default function SkywardJourney({
   entranceFromNav = false,
   scrollToStepIndex = null,
   currentLevel = 1,
+  recommendedLevel = 1,
   onLevelChange,
 }) {
   const gradId = useId().replace(/:/g, '');
@@ -1139,6 +1152,11 @@ export default function SkywardJourney({
               {isMobile ? '' : 'Next'} &#8594;
             </button>
           </div>
+          {Number(currentLevel) > 1 && Number(currentLevel) === Number(recommendedLevel) ? (
+            <HeaderSkipNotice>
+              We assessed your speaking level as <strong>Level {currentLevel}</strong>, so we fast-tracked earlier lessons and placed you where your growth is most meaningful.
+            </HeaderSkipNotice>
+          ) : null}
           {steps.length > 0 && <HeaderStatBadge>{completedCount} / {steps.length} Stages Completed</HeaderStatBadge>}
         </MapHeaderCard>
         <div className="skyward-journey-anim-root skyward-journey-map skyward-journey-anim-map">

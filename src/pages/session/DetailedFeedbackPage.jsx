@@ -269,6 +269,18 @@ function DetailedFeedbackPage() {
         }
       }
 
+      if (!mediaTranscript) {
+        const { data: sessionMediaFromJoin } = await supabase
+          .from('sessions')
+          .select('session_media(transcript)')
+          .eq('id', sessionId)
+          .maybeSingle();
+        const mediaFromJoin = Array.isArray(sessionMediaFromJoin?.session_media)
+          ? sessionMediaFromJoin.session_media[0]
+          : sessionMediaFromJoin?.session_media;
+        mediaTranscript = String(mediaFromJoin?.transcript || '').trim();
+      }
+
       if (!videoUrl) {
         videoUrl = await findLikelyVideoUrl({
           userId: session?.user_id,
@@ -330,7 +342,14 @@ function DetailedFeedbackPage() {
   const mode = getSessionMode(session);
   const isFreeSession = getSessionSpeechType(session) === 'Free Speech';
   const durationSec = Math.max(1, Math.round(session?.duration_sec ?? session?.duration ?? 1));
-  const practicedText = sanitizeTranscriptForDisplay(recordingMedia.transcript || session?.transcript, '')
+  const practicedText = sanitizeTranscriptForDisplay(
+    recordingMedia.transcript
+      || session?.transcript
+      || session?.target_text
+      || session?.analysis?.transcript_exact
+      || '',
+    '',
+  )
     || 'No recorded text available.';
   const audioUrl = recordingMedia.audioUrl
     || buildBucketPublicUrl(session?.audio_url)

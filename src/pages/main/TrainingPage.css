@@ -49,20 +49,23 @@ body.training-page-active {
 }
 
 .tp-back-btn {
+  flex-shrink: 0;
   width: 38px;
   height: 38px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255,255,255,0.18);
-  color: #FFFFFF;
+  border-radius: 999px;
+  border: 1.5px solid #0B3954;
+  background: #F18F01;
+  color: #0B3954;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.15s;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
-.tp-back-btn:hover { background: rgba(255,255,255,0.22); }
+.tp-back-btn:hover { 
+  background: #F6A320;
+  border-color: #0B3954;
+}
 
 .tp-header-title {
   flex: 1;

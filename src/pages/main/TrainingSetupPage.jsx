@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../utils/constants';
+import BackButton from '../../components/common/BackButton';
 import './InnerPages.css';
 import './TrainingSetupPage.css';
 import './PracticePage.css';
@@ -39,6 +40,7 @@ function TrainingSetupPage() {
     <div className="practice-page">
       <div className="practice-wrap">
         <div className="practice-header">
+          <BackButton className="inner-page-back" onClick={() => navigate(-1)} aria-label="Go back" />
           <h1 className="practice-title">Training Setup</h1>
         </div>
         <p className="practice-sub">

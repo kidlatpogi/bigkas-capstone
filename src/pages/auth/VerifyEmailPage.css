@@ -5,6 +5,163 @@
  * Colors from Bigkas-mobile: primary #FCBA04, secondary #010101, bg #F5F5F5
  */
 
+html.verify-page-active,
+body.verify-page-active,
+body.verify-page-active #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  height: 100%;
+  min-height: 100dvh;
+}
+
+html.verify-page-active,
+body.verify-page-active {
+  overflow: clip;
+  background: #ffffff;
+}
+
+body.verify-page-active .auth-page {
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+  min-height: 100dvh;
+  padding: 0;
+  overflow: hidden;
+}
+
+body.verify-page-active .auth-login-back {
+  position: absolute;
+  top: 1.5rem;
+  left: 1.5rem;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  border: 1.5px solid #0B3954;
+  background: #F18F01;
+  color: #0B3954;
+  z-index: 20;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+body.verify-page-active .auth-login-back:hover {
+  background: #F6A320;
+  border-color: #0B3954;
+}
+
+body.verify-page-active .auth-form-panel {
+  background: transparent;
+  width: 100%;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+body.verify-page-active .auth-form-container {
+  width: 100%;
+  max-width: 26rem;
+}
+
+body.verify-page-active .floating-card.verify-email-card {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 2.3rem 2rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+body.verify-page-active .auth-form-title {
+  font-family: 'Nunito', sans-serif;
+  color: #5A7863;
+  font-size: 2rem;
+  line-height: 1;
+  font-weight: 900;
+  text-align: center;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+}
+
+body.verify-page-active .verify-submit-btn {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+body.verify-page-active .verify-submit-btn button {
+  min-height: 54px;
+  border-radius: 12px;
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+}
+
+body.verify-page-active .otp-instructions {
+  margin: 0 0 0.9rem;
+  text-align: center;
+  color: #4b5563;
+}
+
+body.verify-page-active .otp-boxes {
+  margin-bottom: 0.5rem;
+}
+
+body.verify-page-active .otp-box {
+  width: 52px;
+  height: 58px;
+  border: 2px solid #e5e5e5;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+body.verify-page-active .otp-box:focus {
+  border-color: #5A7863;
+  box-shadow: 0 0 0 3px rgba(90, 120, 99, 0.2);
+}
+
+body.verify-page-active .otp-resend-row {
+  margin-top: 0.7rem;
+}
+
+body.verify-page-active .otp-back-row {
+  margin-top: 0.3rem;
+}
+
+body.verify-page-active .otp-resend-btn {
+  color: #5A7863;
+}
+
+body.verify-page-active .otp-resend-btn:hover:not(:disabled) {
+  color: #3E5646;
+}
+
+body.verify-page-active .auth-forgot-link:hover {
+  color: #5A7863;
+}
+
+@media (max-width: 480px) {
+  body.verify-page-active .auth-login-back {
+    top: 1rem;
+    left: 1rem;
+  }
+
+  body.verify-page-active .auth-form-container {
+    max-width: 21rem;
+    padding: 0 1rem;
+  }
+
+  body.verify-page-active .auth-form-title {
+    font-size: 1.65rem;
+  }
+}
+
 /* ── Page shell — full viewport, two columns ── */
 .auth-page {
   min-height: 100vh;

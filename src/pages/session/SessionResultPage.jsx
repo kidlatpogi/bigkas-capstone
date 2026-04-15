@@ -6,6 +6,7 @@ import { useSessionContext } from '../../context/useSessionContext';
 import { useAuthContext } from '../../context/useAuthContext';
 import { buildRoute, ROUTES } from '../../utils/constants';
 import { getSessionMode } from '../../utils/sessionFormatting';
+import { sanitizeRecommendationLines } from '../../utils/analysisTranscript';
 import '../main/InnerPages.css';
 import './SessionResultPage.css';
 
@@ -181,7 +182,9 @@ function SessionResultPage() {
     breadcrumbRoute = state?.backTo || ROUTES.DASHBOARD;
   }
 
-  const recommendations = Array.isArray(result.recommendations) ? result.recommendations : [];
+  const recommendations = sanitizeRecommendationLines(
+    Array.isArray(result.recommendations) ? result.recommendations : [],
+  );
   const pillars = [
     { key: 'visual', label: 'Visual', desc: 'Eye contact & gestures', score: tripleV.visualAvg },
     { key: 'vocal', label: 'Vocal', desc: 'Voice quality & stability', score: tripleV.vocalAvg },

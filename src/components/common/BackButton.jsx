@@ -8,6 +8,7 @@ import './BackButton.css';
 function BackButton({
   onClick,
   to,
+  fallbackTo = '/',
   label = 'Go back',
   className = '',
   style,
@@ -19,7 +20,17 @@ function BackButton({
 }) {
   const navigate = useNavigate();
 
-  const handleClick = onClick || (() => (to ? navigate(to) : navigate(-1)));
+  const handleClick = onClick || (() => {
+    if (to) {
+      navigate(to);
+      return;
+    }
+    if (typeof window !== 'undefined' && window.history.length <= 1) {
+      navigate(fallbackTo, { replace: true });
+      return;
+    }
+    navigate(-1);
+  });
   const buttonClassName = [
     variant === 'pill' ? 'back-btn-pill' : 'back-btn',
     className,

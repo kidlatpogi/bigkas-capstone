@@ -105,10 +105,34 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
 .progress-range-labels {
   display: flex;
-  gap: 12px;
-  font-size: 14px;
-  color: #666;
-  font-weight: 600;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 999px;
+  background: #F4F6F8;
+  width: fit-content;
+}
+
+.progress-range-chip {
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: transparent;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.progress-range-chip:hover {
+  color: #0B3954;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.progress-range-chip.active {
+  background: #FFFFFF;
+  color: #F18F01;
+  box-shadow: 0 1px 4px rgba(11, 57, 84, 0.12);
 }
 
 .progress-chart-container {
@@ -731,6 +755,24 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 [data-theme='dark'] .history-sticky-header {
   background: #0b0b0d;
   border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme='dark'] .progress-range-labels {
+  background: #1B1D21;
+}
+
+[data-theme='dark'] .progress-range-chip {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+[data-theme='dark'] .progress-range-chip:hover {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme='dark'] .progress-range-chip.active {
+  background: #2A2D33;
+  color: #F18F01;
 }
 
 [data-theme='dark'] .progress-trend-card,

@@ -253,7 +253,7 @@ function LoginPage({ managePageClass = true }) {
 
   return (
     <div className="auth-page">
-      <BackButton className="auth-login-back" />
+      <BackButton className="auth-login-back" to={ROUTES.HOME} />
       <div className="auth-form-panel">
         <motion.div 
           className="auth-form-container floating-card"

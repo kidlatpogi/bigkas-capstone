@@ -43,12 +43,27 @@ const TIME_RANGES = ['daily', 'Weekly', 'Monthly', 'Yearly'];
 const HISTORY_FILTERS = ['All', 'Today', 'This Week', 'This Month'];
 
 function toFivePointScore(rawScore) {
-  const normalized = Math.max(0, Math.min(100, Number(rawScore) || 0));
+  const numeric = Number(rawScore);
+  if (!Number.isFinite(numeric)) return 1;
+
+  if (numeric <= 5) {
+    return Math.round(Math.max(1, Math.min(5, numeric)) * 10) / 10;
+  }
+
+  const normalized = Math.max(0, Math.min(100, numeric));
   return Math.round((1 + (normalized / 100) * 4) * 10) / 10;
 }
 
 function formatFivePointScore(rawScore) {
   return toFivePointScore(rawScore).toFixed(1);
+}
+
+function getAverageTrendScore15(sessionsList) {
+  if (!Array.isArray(sessionsList) || sessionsList.length === 0) return null;
+  const avg = sessionsList.reduce((sum, session) => (
+    sum + toFivePointScore(session?.confidence_score)
+  ), 0) / sessionsList.length;
+  return Math.round(avg * 10) / 10;
 }
 
 function getScoreTier15(score) {
@@ -270,7 +285,7 @@ function ProgressPage() {
           const d = new Date(s.created_at);
           return d.getTime() >= hour.getTime() && d.getTime() < hour.getTime() + 3600000;
         });
-        const avg = hourSessions.length ? Math.round(hourSessions.reduce((a, b) => a + (b.confidence_score || 0), 0) / hourSessions.length) : 0;
+        const avg = getAverageTrendScore15(hourSessions);
         result.push({ label: `${hour.getHours()}:00`, value: avg });
       }
       return result;
@@ -287,7 +302,7 @@ function ProgressPage() {
           d.setHours(0, 0, 0, 0);
           return d.getTime() === day.getTime();
         });
-        const avg = daySessions.length ? Math.round(daySessions.reduce((a, b) => a + (b.confidence_score || 0), 0) / daySessions.length) : 0;
+        const avg = getAverageTrendScore15(daySessions);
         result.push({ label: dayNames[day.getDay()], value: avg });
       }
       return result;
@@ -306,7 +321,7 @@ function ProgressPage() {
           const d = new Date(s.created_at);
           return d >= weekStart && d <= weekEnd;
         });
-        const avg = weekSessions.length ? Math.round(weekSessions.reduce((a, b) => a + (b.confidence_score || 0), 0) / weekSessions.length) : 0;
+        const avg = getAverageTrendScore15(weekSessions);
         result.push({ label: `Wk ${4-i}`, value: avg });
       }
       return result;
@@ -321,7 +336,7 @@ function ProgressPage() {
           const d = new Date(s.created_at);
           return d >= monthStart && d <= monthEnd;
         });
-        const avg = monthSessions.length ? Math.round(monthSessions.reduce((a, b) => a + (b.confidence_score || 0), 0) / monthSessions.length) : 0;
+        const avg = getAverageTrendScore15(monthSessions);
         result.push({ label: monthNames[monthStart.getMonth()], value: avg });
       }
       return result;
@@ -471,13 +486,14 @@ function ProgressPage() {
             <div className="progress-chart-header">
               <div className="progress-range-labels">
                 {TIME_RANGES.map(r => (
-                  <span 
+                  <button
+                    type="button"
                     key={r} 
-                    style={{ cursor: 'pointer', color: range === r ? '#F18F01' : '#666' }}
+                    className={`progress-range-chip ${range === r ? 'active' : ''}`}
                     onClick={() => setRange(r)}
                   >
                     {r}
-                  </span>
+                  </button>
                 ))}
               </div>
             </div>
@@ -495,15 +511,18 @@ function ProgressPage() {
                     axisLine={false} 
                     tickLine={false} 
                     tick={{ fontSize: 12, fill: '#888' }}
-                    domain={[0, 100]}
+                    ticks={[1, 2, 3, 4, 5]}
+                    tickFormatter={(value) => Number(value).toFixed(1)}
+                    domain={[1, 5]}
                   />
                   <Tooltip 
                     cursor={{ fill: '#f8f8f8' }}
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    formatter={(value) => [`${Number(value).toFixed(1)} / 5.0`, 'Score']}
                   />
-                  <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={range === 'daily' ? 10 : 30}>
+                  <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={range === 'daily' ? 10 : 26} minPointSize={4}>
                     {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.value > 0 ? '#F18F01' : '#f0f0f0'} />
+                      <Cell key={`cell-${index}`} fill={Number.isFinite(entry.value) ? '#F18F01' : '#f0f0f0'} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -544,13 +563,14 @@ function ProgressPage() {
             <h3 className="progress-pillars-title">Pillar Trends</h3>
             <div className="progress-range-labels">
               {TIME_RANGES.map((r) => (
-                <span
+                <button
+                  type="button"
                   key={`pillar-${r}`}
-                  style={{ cursor: 'pointer', color: pillarRange === r ? '#F18F01' : '#666' }}
+                  className={`progress-range-chip ${pillarRange === r ? 'active' : ''}`}
                   onClick={() => setPillarRange(r)}
                 >
                   {r}
-                </span>
+                </button>
               ))}
             </div>
           </div>

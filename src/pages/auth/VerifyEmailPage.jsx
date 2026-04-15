@@ -5,6 +5,7 @@ import { ROUTES } from '../../utils/constants';
 import bigkasLogo from '../../assets/Temporary Logo.png';
 import Button from '../../components/common/Button';
 import PushButton from '../../components/common/PushButton';
+import BackButton from '../../components/common/BackButton';
 import './VerifyEmailPage.css';
 
 const OTP_LENGTH = 6;
@@ -65,6 +66,15 @@ function VerifyEmailPage() {
   // Focus first box on mount
   useEffect(() => {
     inputRefs.current[0]?.focus();
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.add('verify-page-active');
+    document.body.classList.add('verify-page-active');
+    return () => {
+      document.documentElement.classList.remove('verify-page-active');
+      document.body.classList.remove('verify-page-active');
+    };
   }, []);
 
   // Resend countdown
@@ -224,33 +234,10 @@ function VerifyEmailPage() {
   // â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   return (
     <div className="auth-page">
-      {/* â”€â”€ Left branding panel â”€â”€ */}
-      <div className="auth-brand-panel">
-        <div className="auth-brand-content">
-          <img src={bigkasLogo} alt="Bigkas Logo" className="verify-logo" />
-          <h1 className="auth-brand-name">BIGKAS</h1>
-          <p className="auth-brand-tagline">PUBLIC SPEAKING COACH</p>
-          <div className="auth-brand-line" />
-          <ul className="auth-brand-features">
-            <li>
-              <span className="feature-num">01</span>
-              <span className="feature-text">REAL-TIME FEEDBACK</span>
-            </li>
-            <li>
-              <span className="feature-num">02</span>
-              <span className="feature-text">AI SPEECH ANALYSIS</span>
-            </li>
-            <li>
-              <span className="feature-num">03</span>
-              <span className="feature-text">TRACK YOUR PROGRESS</span>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      {/* â”€â”€ Right form panel â”€â”€ */}
+      <BackButton className="auth-login-back" to={ROUTES.REGISTER} fallbackTo={ROUTES.HOME} />
       <div className="auth-form-panel">
-        <div className="auth-form-container">
+        <div className="auth-form-container floating-card verify-email-card">
+          <img src={bigkasLogo} alt="Bigkas Logo" className="verify-logo" />
           <h2 className="auth-form-title">VERIFY YOUR EMAIL</h2>
 
           <p className="otp-instructions">

@@ -31,7 +31,23 @@
 .practice-header .inner-page-back {
   position: absolute;
   left: 0;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  border: 1.5px solid #0B3954;
+  background: #F18F01;
+  color: #0B3954;
   z-index: 20;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.practice-header .inner-page-back:hover {
+  background: #F6A320;
+  border-color: #0B3954;
 }
 
 /* Title */

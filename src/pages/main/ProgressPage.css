@@ -221,16 +221,76 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 .pillar-card {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 20px;
-  padding: 24px;
+  padding: 20px 18px 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
   height: auto;
   min-height: 0;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.progress-pillar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.progress-pillar-label {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #3C4952;
+}
+
+.progress-pillar-tier {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.progress-pillar-score {
+  margin: 0 0 4px;
+  font-size: 36px;
+  font-weight: 600;
+  color: #3C4952;
+  line-height: 1.1;
+  letter-spacing: -0.28px;
+}
+
+.progress-pillar-score span {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(11, 57, 84, 0.48);
+  margin-left: 4px;
+}
+
+.progress-pillar-desc {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: rgba(11, 57, 84, 0.48);
+  letter-spacing: -0.224px;
+  line-height: 1.4;
+}
+
+.progress-pillar-track {
+  height: 8px;
+  border-radius: 999px;
+  background: #E8EDE9;
+  overflow: hidden;
+}
+
+.progress-pillar-track-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.5s ease;
 }
 
 .pillar-card:hover {
@@ -685,8 +745,15 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
 [data-theme='dark'] .history-title,
 [data-theme='dark'] .pillar-label,
+[data-theme='dark'] .progress-pillar-label,
+[data-theme='dark'] .progress-pillar-score,
 [data-theme='dark'] .history-item-title {
   color: #FFFFFF;
+}
+
+[data-theme='dark'] .progress-pillar-score span,
+[data-theme='dark'] .progress-pillar-desc {
+  color: rgba(255, 255, 255, 0.5);
 }
 
 [data-theme='dark'] .progress-pillars-title {

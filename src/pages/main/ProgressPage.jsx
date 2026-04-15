@@ -15,9 +15,6 @@ import {
   IoChevronForward, 
   IoTimeOutline, 
   IoCalendarOutline,
-  IoVideocamOutline,
-  IoMicOutline,
-  IoChatbubbleEllipsesOutline,
   IoTrophyOutline,
 } from 'react-icons/io5';
 import { useSessionContext } from '../../context/useSessionContext';
@@ -52,6 +49,13 @@ function toFivePointScore(rawScore) {
 
 function formatFivePointScore(rawScore) {
   return toFivePointScore(rawScore).toFixed(1);
+}
+
+function getScoreTier15(score) {
+  if (score >= 4.0) return { label: 'Excellent', color: '#5A7863' };
+  if (score >= 3.0) return { label: 'Good', color: '#90AB8B' };
+  if (score >= 2.0) return { label: 'Fair', color: '#F18F01' };
+  return { label: 'Needs Work', color: '#D94F3B' };
 }
 
 function clamp15(value) {
@@ -376,72 +380,21 @@ function ProgressPage() {
     const metricConfig = [
       {
         key: 'visual',
-        label: 'Visual Presence',
-        color: '#2d5a27',
-        icon: IoVideocamOutline,
-        iconBg: 'rgba(45, 90, 39, 0.1)',
+        label: 'Visual',
+        desc: 'Eye contact & gestures',
         resolver: (session) => resolveTripleVForProgress(session).visual,
-        subMetricsConfig: [
-          {
-            label: 'Eye Contact',
-            resolver: (s) => {
-              const eye = resolveSubMetric15(s, 'eye_contact_score');
-              const facial = resolveSubMetric15(s, 'facial_expression_score');
-              return eye ?? facial ?? resolveTripleVForProgress(s).visual;
-            },
-          },
-          {
-            label: 'Gestures',
-            resolver: (s) => resolveSubMetric15(s, 'gesture_score') ?? resolveTripleVForProgress(s).visual,
-          }
-        ]
       },
       {
         key: 'verbal',
-        label: 'Verbal Flow',
-        color: '#2d5a27',
-        icon: IoChatbubbleEllipsesOutline,
-        iconBg: 'rgba(45, 90, 39, 0.1)',
+        label: 'Verbal',
+        desc: 'Pronunciation & clarity',
         resolver: (session) => resolveTripleVForProgress(session).verbal,
-        subMetricsConfig: [
-          {
-            label: 'Pronunciation',
-            resolver: (s) => resolveSubMetric15(s, 'pronunciation_score') ?? resolveTripleVForProgress(s).verbal,
-          },
-          {
-            label: 'Context Awareness',
-            resolver: (s) => score100to15(s?.context_score) ?? resolveTripleVForProgress(s).verbal,
-          }
-        ]
       },
       {
         key: 'vocal',
-        label: 'Vocal Clarity',
-        color: '#2d5a27',
-        icon: IoMicOutline,
-        iconBg: 'rgba(45, 90, 39, 0.1)',
+        label: 'Vocal',
+        desc: 'Voice quality & stability',
         resolver: (session) => resolveTripleVForProgress(session).vocal,
-        subMetricsConfig: [
-          {
-            label: 'Shimmer',
-            resolver: (s) => {
-              const shimmer = Number(s?.shimmer_score);
-              if (!Number.isFinite(shimmer)) return null;
-              return score100to15(100 - shimmer);
-            },
-          },
-          {
-            label: 'Jitter',
-            resolver: (s) => {
-              const jitter = Number(s?.jitter_score);
-              if (!Number.isFinite(jitter)) return null;
-              return score100to15(100 - jitter);
-            },
-          }
-        ].map((sub) => ({
-          ...sub,
-          resolver: (s) => sub.resolver(s) ?? resolveTripleVForProgress(s).vocal,
-        }))
       }
     ];
 
@@ -454,19 +407,11 @@ function ProgressPage() {
         ? values.reduce((sum, value) => sum + value, 0) / values.length
         : 0;
 
-      const subMetrics = pillar.subMetricsConfig.map((sub) => {
-        const subValues = filteredSessions
-          .map((session) => sub.resolver(session))
-          .filter((value) => Number.isFinite(value) && value !== null);
-        
-        const subAvg15 = subValues.length
-          ? subValues.reduce((sum, value) => sum + value, 0) / subValues.length
-          : 0;
-          
-        return { label: sub.label, value: score15ToPercent(subAvg15) };
-      });
-
-      return { ...pillar, value: score15ToPercent(avg15), subMetrics };
+      return {
+        ...pillar,
+        score: clamp15(avg15) ?? 1,
+        value: score15ToPercent(avg15),
+      };
     });
   }, [pillarRange, userSessions]);
 
@@ -612,43 +557,25 @@ function ProgressPage() {
           <div className="progress-pillars-grid">
             {pillarStats.map((pillar, index) => (
               <div key={pillar.key} className={`pillar-card dashboard-anim-bottom dashboard-anim-delay-${5 + index}`}>
-                <div className="pillar-main-section">
-                  <div className="pillar-info">
-                    <span className="pillar-icon" style={{ background: pillar.iconBg, color: pillar.color }}>
-                      <pillar.icon />
-                    </span>
-                    <div className="pillar-label-group">
-                      <span className="pillar-label">{pillar.label}</span>
-                    </div>
-                  </div>
-                  <div className="pillar-progress-container">
-                    <div className="pillar-progress-header" style={{ width: `${pillar.value}%` }}>
-                      <span className="pillar-value">{pillar.value}%</span>
-                    </div>
-                    <div className="pillar-track">
-                      <div 
-                        className={`pillar-fill ${pillar.value > 80 ? 'mastery-pulse' : ''}`} 
-                        style={{ width: `${pillar.value}%` }} 
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="pillar-divider" />
-                
-                <div className="pillar-sub-section">
-                  {pillar.subMetrics.map((sub, i) => (
-                    <div key={i} className="sub-metric">
-                      <div className="sub-metric-header">
-                        <span>{sub.label}</span>
-                        <span>{sub.value}%</span>
+                {(() => {
+                  const tier = getScoreTier15(pillar.score);
+                  return (
+                    <>
+                      <div className="progress-pillar-header">
+                        <span className="progress-pillar-label">{pillar.label}</span>
+                        <span className="progress-pillar-tier" style={{ color: tier.color }}>{tier.label}</span>
                       </div>
-                      <div className="sub-metric-track">
-                        <div className="sub-metric-fill" style={{ width: `${sub.value}%` }} />
+                      <p className="progress-pillar-score">{pillar.score.toFixed(1)}<span>/5.0</span></p>
+                      <p className="progress-pillar-desc">{pillar.desc}</p>
+                      <div className="progress-pillar-track">
+                        <div
+                          className="progress-pillar-track-fill"
+                          style={{ width: `${pillar.value}%`, background: tier.color }}
+                        />
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    </>
+                  );
+                })()}
               </div>
             ))}
           </div>

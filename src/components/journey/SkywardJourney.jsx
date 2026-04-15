@@ -421,12 +421,15 @@ export const JourneyTooltip = ({ step, onStart, onClose, nodeRef, forceBottom = 
                 })()}
           </TooltipDescription>
           <TooltipStartButton
+            type="button"
             $nodeState={step.nodeState}
             disabled={isLocked}
             onClick={(e) => {
+              e.preventDefault();
               e.stopPropagation();
               if (!isLocked) onStart(step);
             }}
+            onPointerDown={(e) => e.stopPropagation()}
           >
             {isLocked ? 'LOCKED' : 'START'}
           </TooltipStartButton>

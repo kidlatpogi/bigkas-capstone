@@ -935,7 +935,6 @@ export default function SkywardJourney({
                   {isActive ? (
                     <div className="skyward-journey-current-callout" aria-hidden>
                       <span className="skyward-journey-current-badge">YOU ARE HERE</span>
-                      <span className="skyward-journey-current-sub">Level {currentLevel} • Stage {safeStageNum}</span>
                     </div>
                   ) : null}
                   <SkywardJourneyNodeButton

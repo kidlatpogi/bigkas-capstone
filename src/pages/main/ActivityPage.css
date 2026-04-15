@@ -236,16 +236,9 @@
   font-weight: 800;
 }
 
-.activity-clear-modal-continue {
-  border: none;
-  border-radius: 999px;
-  background: #f18f01;
-  color: #ffffff;
-  font-weight: 800;
-  font-size: 15px;
-  padding: 12px 22px;
-  cursor: pointer;
-  box-shadow: 0 6px 14px rgba(241, 143, 1, 0.34);
+.activity-clear-modal-continue-btn {
+  width: 260px;
+  margin: 0 auto;
 }
 
 @keyframes activityPageSkywardEnter {

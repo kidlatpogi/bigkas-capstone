@@ -6,6 +6,7 @@ import { useAuthContext } from '../../context/useAuthContext';
 import { useSessions } from '../../hooks/useSessions';
 import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
+import PushButton from '../../components/common/PushButton';
 import {
   GLOBAL_ACTIVITY_SCOPE,
   getActivityTaskProgress,
@@ -27,6 +28,7 @@ import './DashboardPage.css';
 
 const DAY_MS = 86_400_000;
 const ACTIVITY_CELEBRATION_STORAGE_KEY = 'bigkas_pending_activity_celebration_v1';
+const LEVEL_CLEAR_MODAL_KEY_PREFIX = 'bigkas_level_clear_modal_v1';
 
 function getLocalDateKey(date = new Date()) {
   const year = date.getFullYear();
@@ -111,6 +113,8 @@ function ActivityPage() {
   const audioContextRef = useRef(null);
   const previousTaskStateRef = useRef({});
   const hasTaskStateHydratedRef = useRef(false);
+  const hasCompletedCountHydratedRef = useRef(false);
+  const previousCompletedCountRef = useRef(0);
 
   const [recentStampedTaskId, setRecentStampedTaskId] = useState(null);
   const [showCompletionCelebration, setShowCompletionCelebration] = useState(false);
@@ -305,8 +309,6 @@ function ActivityPage() {
     if (!newlyCompletedTask) return;
 
     setRecentStampedTaskId(newlyCompletedTask.id);
-    setShowCompletionCelebration(true);
-    setCompletionModalTaskTitle(newlyCompletedTask.title || 'This activity');
     playCompletionSound();
 
     if (stampResetTimeoutRef.current) {
@@ -335,14 +337,41 @@ function ActivityPage() {
       }
 
       setRecentStampedTaskId(activityId);
-      setShowCompletionCelebration(true);
-      setCompletionModalTaskTitle(taskTitleById[activityId] || 'This activity');
-      playCompletionSound();
       window.sessionStorage.removeItem(ACTIVITY_CELEBRATION_STORAGE_KEY);
     } catch {
       window.sessionStorage.removeItem(ACTIVITY_CELEBRATION_STORAGE_KEY);
     }
-  }, [playCompletionSound, taskState, taskTitleById, tasks.length]);
+  }, [taskState, tasks.length]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!tasks.length) return;
+    const currentCompleted = completedTaskCount;
+    const total = tasks.length;
+
+    if (!hasCompletedCountHydratedRef.current) {
+      hasCompletedCountHydratedRef.current = true;
+      previousCompletedCountRef.current = currentCompleted;
+      return;
+    }
+
+    const previousCompleted = previousCompletedCountRef.current;
+    previousCompletedCountRef.current = currentCompleted;
+
+    const hasJustClearedLevel = previousCompleted < total && currentCompleted === total;
+    if (!hasJustClearedLevel) return;
+
+    const uid = String(user?.id || 'guest');
+    const key = `${LEVEL_CLEAR_MODAL_KEY_PREFIX}:${uid}:${selectedLevel}`;
+    if (window.localStorage.getItem(key) === '1') return;
+
+    const fallbackTitle = tasks[tasks.length - 1]?.title || `Level ${selectedLevel}`;
+    setCompletionModalTaskTitle(fallbackTitle);
+    setShowCompletionCelebration(true);
+    playCompletionSound();
+    window.localStorage.setItem(key, '1');
+    window.sessionStorage.removeItem(ACTIVITY_CELEBRATION_STORAGE_KEY);
+  }, [completedTaskCount, playCompletionSound, selectedLevel, tasks, user?.id]);
 
   const handleTaskAction = useCallback((task) => {
     navigate(`${ROUTES.TRAINING}?autostart=1`, {
@@ -514,16 +543,18 @@ function ActivityPage() {
             <h3 id="activity-clear-modal-title" className="activity-clear-modal-title">
               Congratulations, you've cleared: {completionModalTaskTitle || 'This stage'}
             </h3>
-            <button
-              type="button"
-              className="activity-clear-modal-continue"
+            <PushButton
+              className="activity-clear-modal-continue-btn"
+              bgColor="#2d5a27"
+              shadowColor="#1a3b16"
+              textColor="#ffffff"
               onClick={() => {
                 setShowCompletionCelebration(false);
                 setCompletionModalTaskTitle('');
               }}
             >
               Continue
-            </button>
+            </PushButton>
           </div>
         </div>
       )}

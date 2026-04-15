@@ -815,17 +815,18 @@ export function SessionProvider({ children }) {
         const mediaRow = {
           session_id: sessionId,
           audio_url: audioStorageUrl,
-          transcript,
           video_storage_url: videoStorageUrl,
+          ...(transcript ? { transcript } : {}),
         };
         // Backend already inserted session_media; update avoids upsert INSERT path (stricter RLS).
+        const mediaUpdatePayload = {
+          audio_url: audioStorageUrl,
+          video_storage_url: videoStorageUrl,
+          ...(transcript ? { transcript } : {}),
+        };
         const { data: mediaUpdated, error: mediaUpdateErr } = await supabase
           .from('session_media')
-          .update({
-            audio_url: audioStorageUrl,
-            transcript,
-            video_storage_url: videoStorageUrl,
-          })
+          .update(mediaUpdatePayload)
           .eq('session_id', sessionId)
           .select('session_id');
         if (mediaUpdateErr) {
@@ -868,8 +869,8 @@ export function SessionProvider({ children }) {
         const mediaRow = {
           session_id: sessionId,
           audio_url: audioStorageUrl,
-          transcript,
           video_storage_url: videoStorageUrl,
+          ...(transcript ? { transcript } : {}),
         };
         const metricsRow = {
           session_id: sessionId,

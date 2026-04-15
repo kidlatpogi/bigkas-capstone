@@ -1,6 +1,11 @@
 import { createContext, useCallback, useEffect, useReducer } from 'react';
 import { supabase } from '../lib/supabase';
 import { ENV } from '../config/env';
+import {
+  isFailedAnalysisTranscript,
+  sanitizeRecommendationLines,
+  sanitizeTranscriptForDisplay,
+} from '../utils/analysisTranscript';
 
 const PAGE_SIZE = 10;
 const LEGACY_LOCAL_SESSIONS_KEY = 'bigkas_local_sessions_v1';
@@ -23,7 +28,9 @@ const SESSIONS_SELECT_QUERY = `
   created_at,
   session_media (
     audio_url,
-    transcript
+    transcript,
+    video_url,
+    video_storage_url
   ),
   session_metrics (
     overall_score,
@@ -101,6 +108,26 @@ function invalidateSessionCaches() {
   inFlightSessionQueries.clear();
 }
 
+function normalizeSessionOriginForPersistence(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return 'training';
+  if (normalized.includes('pre-test') || normalized.includes('pretest')) return 'pre-test';
+  if (normalized.includes('practice')) return 'practice';
+  if (normalized.includes('activity')) return 'training';
+  if (normalized.includes('training')) return 'training';
+  return 'training';
+}
+
+function normalizeSessionModeForPersistence({ scriptType, speakingMode }) {
+  const normalizedOrigin = normalizeSessionOriginForPersistence(scriptType);
+  const normalizedSpeakingMode = String(speakingMode || '').trim().toLowerCase();
+
+  if (normalizedOrigin === 'practice') return 'randomizer';
+  if (normalizedOrigin === 'pre-test') return normalizedSpeakingMode === 'free' ? 'free_speech' : 'activity';
+  if (normalizedSpeakingMode === 'free') return 'free_speech';
+  return 'activity';
+}
+
 const initialState = {
   sessions:       [],
   currentSession: null,
@@ -162,10 +189,10 @@ function normalizeSessionRow(session) {
       start_sec: null,
       end_sec: null,
     }))
-    .filter((item) => item.text);
-  const recommendations = recs
-    .map((item) => String(item?.recommendation_text || '').trim())
-    .filter(Boolean);
+    .filter((item) => item.text && !isFailedAnalysisTranscript(item.text));
+  const recommendations = sanitizeRecommendationLines(
+    recs.map((item) => String(item?.recommendation_text || '').trim()),
+  );
   const confidenceScore = toInt(metrics?.confidence_score ?? metrics?.overall_score ?? 0, 0);
 
   return {
@@ -193,15 +220,15 @@ function normalizeSessionRow(session) {
     facial_expression_score: metrics?.facial_expression_score == null ? null : toInt(metrics.facial_expression_score, 0),
     gesture_score: metrics?.gesture_score == null ? null : toInt(metrics.gesture_score, 0),
     duration_sec: session.duration ?? 0,
-    target_text: media?.transcript || '',
-    transcript: media?.transcript || '',
+    target_text: sanitizeTranscriptForDisplay(media?.transcript, ''),
+    transcript: sanitizeTranscriptForDisplay(media?.transcript, ''),
     feedback: feedback?.general_feedback || '',
     detailed_feedback: feedback?.detailed_feedback || '',
     recommendations,
     recommendation_timestamps,
     audio_url: media?.audio_url || null,
-    video_url: null,
-    video_storage_url: null,
+    video_url: media?.video_url || null,
+    video_storage_url: media?.video_storage_url || null,
   };
 }
 
@@ -634,7 +661,7 @@ export function SessionProvider({ children }) {
           ? profilingAnswers
           : ['No', 'No', 'No', 'No', 'No', 'No', 'No', 'No', 'No']
       ));
-      formData.append('session_origin', String(scriptType || 'training').trim() || 'training');
+      formData.append('session_origin', normalizeSessionOriginForPersistence(scriptType));
       formData.append('speaking_mode', String(speakingMode || '').trim());
 
       const res = await fetch(`${apiUrl}/api/analyze-speech`, {
@@ -697,7 +724,11 @@ export function SessionProvider({ children }) {
       }
 
       const normalizedSpeakingMode = String(speakingMode || '').trim().toLowerCase();
-      const normalizedSessionOrigin = String(scriptType || '').trim().toLowerCase();
+      const normalizedSessionOrigin = normalizeSessionOriginForPersistence(scriptType);
+      const normalizedSessionMode = normalizeSessionModeForPersistence({
+        scriptType,
+        speakingMode,
+      });
 
       if (!ENV.ENABLE_SESSION_PERSISTENCE) {
         throw new Error('Session persistence is disabled. Enable database persistence to save sessions.');
@@ -715,7 +746,7 @@ export function SessionProvider({ children }) {
           .update({
             session_origin: normalizedSessionOrigin || 'training',
             speaking_mode: normalizedSpeakingMode || null,
-            session_mode: normalizedSpeakingMode || null,
+            session_mode: normalizedSessionMode,
             duration: toInt(analysisResult.duration_sec, 0),
           })
           .eq('id', sessionId)
@@ -725,16 +756,22 @@ export function SessionProvider({ children }) {
           throw new Error(sessionUpdateErr.message || 'Failed to update session after analysis.');
         }
 
-        const transcript = analysisResult.transcript ?? '';
+        const rawTranscript = analysisResult.transcript ?? '';
+        const transcript = isFailedAnalysisTranscript(rawTranscript) ? '' : rawTranscript;
         const mediaRow = {
           session_id: sessionId,
           audio_url: audioStorageUrl,
           transcript,
+          video_storage_url: videoStorageUrl,
         };
         // Backend already inserted session_media; update avoids upsert INSERT path (stricter RLS).
         const { data: mediaUpdated, error: mediaUpdateErr } = await supabase
           .from('session_media')
-          .update({ audio_url: audioStorageUrl, transcript })
+          .update({
+            audio_url: audioStorageUrl,
+            transcript,
+            video_storage_url: videoStorageUrl,
+          })
           .eq('session_id', sessionId)
           .select('session_id');
         if (mediaUpdateErr) {
@@ -749,7 +786,7 @@ export function SessionProvider({ children }) {
           user_id: uid,
           status: 'completed',
           difficulty: null,
-          session_mode: normalizedSpeakingMode || null,
+          session_mode: normalizedSessionMode,
           session_origin: normalizedSessionOrigin || 'training',
           speaking_mode: normalizedSpeakingMode || null,
           source: 'web',
@@ -770,12 +807,14 @@ export function SessionProvider({ children }) {
         }
 
         sessionId = saved.id;
-        const transcript = analysisResult.transcript ?? '';
+        const rawTranscript = analysisResult.transcript ?? '';
+        const transcript = isFailedAnalysisTranscript(rawTranscript) ? '' : rawTranscript;
 
         const mediaRow = {
           session_id: sessionId,
           audio_url: audioStorageUrl,
           transcript,
+          video_storage_url: videoStorageUrl,
         };
         const metricsRow = {
           session_id: sessionId,
@@ -804,9 +843,9 @@ export function SessionProvider({ children }) {
         const { error: feedbackErr } = await supabase.from('session_feedback').upsert(feedbackRow);
         if (feedbackErr) throw new Error(feedbackErr.message || 'Failed to save session feedback.');
 
-        const recommendations = Array.isArray(analysisResult.recommendations)
-          ? analysisResult.recommendations.filter((text) => String(text || '').trim())
-          : [];
+        const recommendations = sanitizeRecommendationLines(
+          Array.isArray(analysisResult.recommendations) ? analysisResult.recommendations : [],
+        );
         if (recommendations.length > 0) {
           const recommendationRows = recommendations.map((text) => ({
             session_id: sessionId,
@@ -838,7 +877,7 @@ export function SessionProvider({ children }) {
           speech_type: normalizedSpeakingMode,
           session_origin: normalizedSessionOrigin,
           // Keep free/scripted signal available for speech-type labeling even on older schemas.
-          session_mode: normalizedSpeakingMode || normalizedSaved.session_mode || null,
+          session_mode: normalizedSessionMode || normalizedSaved.session_mode || null,
           // Include speaking_mode so getSessionSpeechType can correctly identify Free Speech vs Scripted
           speaking_mode: normalizedSpeakingMode,
           confidence_score: analysisResult.confidence_score ?? normalizedSaved.score ?? 0,

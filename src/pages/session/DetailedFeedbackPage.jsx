@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase';
 import { ROUTES } from '../../utils/constants';
 import { formatDate, formatDuration } from '../../utils/formatters';
 import { getSessionMode, getSessionSpeechType } from '../../utils/sessionFormatting';
+import { sanitizeRecommendationLines, sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
 import '../main/InnerPages.css';
 import './DetailedFeedbackPage.css';
 
@@ -118,7 +119,7 @@ function DetailedFeedbackPage() {
   const { sessionId } = useParams();
   const { state: locationState } = useLocation();
   const { currentSession, fetchSessionById, isLoading } = useSessionContext();
-  const [isRecordingsOpen, setIsRecordingsOpen] = useState(false);
+  const [isRecordingsOpen, setIsRecordingsOpen] = useState(true);
   const [isSessionInfoOpen, setIsSessionInfoOpen] = useState(false);
   const [recordingMedia, setRecordingMedia] = useState({ audioUrl: null, videoUrl: null });
 
@@ -208,7 +209,8 @@ function DetailedFeedbackPage() {
   const mode = getSessionMode(session);
   const isFreeSession = getSessionSpeechType(session) === 'Free Speech';
   const durationSec = Math.max(1, Math.round(session?.duration_sec ?? session?.duration ?? 1));
-  const practicedText = session?.transcript || 'No recorded text available.';
+  const practicedText = sanitizeTranscriptForDisplay(session?.transcript, '')
+    || 'No recorded text available.';
   const audioUrl = recordingMedia.audioUrl
     || buildBucketPublicUrl(session?.audio_url)
     || null;
@@ -270,7 +272,7 @@ function DetailedFeedbackPage() {
     },
   ];
 
-  const timelinePoints = useMemo(() => {
+  const timelinePoints = (() => {
     const pointCount = clamp(Math.floor(durationSec / 15) + 1, 4, 8);
     return Array.from({ length: pointCount }, (_, idx) => {
       const progress = pointCount === 1 ? 1 : idx / (pointCount - 1);
@@ -288,12 +290,14 @@ function DetailedFeedbackPage() {
 
       return { idx, timeSec, label: formatDuration(timeSec), values };
     });
-  }, [durationSec, pillars]);
+  })();
 
   const pillarColors = { visual: FOREST_GREEN, vocal: SOFT_SAGE, verbal: VIBRANT_ORANGE };
 
-  const recommendations = useMemo(() => {
-    const apiRecs = Array.isArray(session?.recommendations) ? session.recommendations : [];
+  const recommendations = (() => {
+    const apiRecs = sanitizeRecommendationLines(
+      Array.isArray(session?.recommendations) ? session.recommendations : [],
+    );
 
     const pillarTips = pillars
       .filter((p) => p.score < 3.0)
@@ -323,7 +327,7 @@ function DetailedFeedbackPage() {
     }
 
     return unique;
-  }, [pillars, session?.recommendations]);
+  })();
 
   return (
     <div className="df-page">
@@ -490,36 +494,40 @@ function DetailedFeedbackPage() {
         )}
       </section>
 
-      {/* Session Recordings */}
-      {(audioUrl || videoUrl) && (
-        <div className="df-collapsible">
-          <button
-            className="df-collapsible-toggle"
-            onClick={() => setIsRecordingsOpen((o) => !o)}
-            type="button"
-            aria-expanded={isRecordingsOpen}
-          >
-            <span className="df-collapsible-label">Session Recordings</span>
-            <IoChevronDown className={`df-collapsible-icon${isRecordingsOpen ? ' open' : ''}`} />
-          </button>
-          {isRecordingsOpen && (
-            <div className="df-collapsible-body">
-              {videoUrl && (
-                <div className="df-video-wrap">
-                  <video className="df-video" controls preload="metadata" src={videoUrl}>
-                    Your browser does not support video playback.
-                  </video>
-                </div>
-              )}
-              {audioUrl && (
-                <audio className="df-audio" controls preload="metadata" src={audioUrl}>
-                  Your browser does not support audio playback.
-                </audio>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+      {/* Session Recordings — always show; media loaded from session_media + session row */}
+      <div className="df-collapsible">
+        <button
+          className="df-collapsible-toggle"
+          onClick={() => setIsRecordingsOpen((o) => !o)}
+          type="button"
+          aria-expanded={isRecordingsOpen}
+        >
+          <span className="df-collapsible-label">Session Recordings</span>
+          <IoChevronDown className={`df-collapsible-icon${isRecordingsOpen ? ' open' : ''}`} />
+        </button>
+        {isRecordingsOpen && (
+          <div className="df-collapsible-body">
+            {videoUrl && (
+              <div className="df-video-wrap">
+                <video className="df-video" controls preload="metadata" src={videoUrl}>
+                  Your browser does not support video playback.
+                </video>
+              </div>
+            )}
+            {audioUrl && (
+              <audio className="df-audio" controls preload="metadata" src={audioUrl}>
+                Your browser does not support audio playback.
+              </audio>
+            )}
+            {!videoUrl && !audioUrl && (
+              <p className="df-recordings-empty">
+                No video or voice recording is stored for this session. New sessions save recordings when
+                session persistence and storage are enabled.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Session Information */}
       <div className="df-collapsible">

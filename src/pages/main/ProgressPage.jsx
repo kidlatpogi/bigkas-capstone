@@ -39,6 +39,7 @@ import {
   appendSpeakerPointsHistory,
   createSpeakerPointsHistoryEntry,
 } from '../../utils/speakerPointsHistory';
+import { sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
 import './ProgressPage.css';
 
 const TIME_RANGES = ['daily', 'Weekly', 'Monthly', 'Yearly'];
@@ -68,7 +69,7 @@ function buildSessionTitleOrTopic(session) {
   const firstMatch = candidates.find((value) => typeof value === 'string' && value.trim());
   if (firstMatch) return firstMatch.trim();
 
-  const transcript = String(session?.transcript || '').trim();
+  const transcript = sanitizeTranscriptForDisplay(session?.transcript, '');
   if (transcript) {
     return transcript.length > 64 ? `${transcript.slice(0, 61)}...` : transcript;
   }

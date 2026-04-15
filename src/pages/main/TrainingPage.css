@@ -49,20 +49,11 @@ body.training-page-active {
 }
 
 .tp-back-btn {
+  /* Using standard BackButton component styles */
+  flex-shrink: 0;
   width: 38px;
   height: 38px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255,255,255,0.18);
-  color: #FFFFFF;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.15s;
 }
-.tp-back-btn:hover { background: rgba(255,255,255,0.22); }
 
 .tp-header-title {
   flex: 1;

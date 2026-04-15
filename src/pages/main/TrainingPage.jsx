@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LuRotateCcw } from 'react-icons/lu';
-import { IoChevronBack } from 'react-icons/io5';
 import { useSessionContext } from '../../context/useSessionContext';
 import { useAuthContext } from '../../context/useAuthContext';
 import { buildRoute, ROUTES } from '../../utils/constants';
+import BackButton from '../../components/common/BackButton';
 import { pushBackgroundAnalysisNotification } from '../../utils/backgroundAnalysisNotifications';
 import {
   GLOBAL_ACTIVITY_SCOPE,
@@ -1039,9 +1039,7 @@ function TrainingPage() {
     return (
       <div className="tp-page">
         <div className="tp-header">
-          <button className="tp-back-btn" onClick={() => navigate(-1)} aria-label="Go Back">
-            <IoChevronBack size={24} />
-          </button>
+          <BackButton className="tp-back-btn" onClick={() => navigate(-1)} aria-label="Go Back" />
           <span className="tp-header-title">Training</span>
           <div className="tp-header-spacer" />
         </div>
@@ -1059,9 +1057,7 @@ function TrainingPage() {
     return (
       <div className="tp-page">
         <div className="tp-header">
-          <button className="tp-back-btn" onClick={() => navigate(-1)} aria-label="Go Back">
-            <IoChevronBack size={24} />
-          </button>
+          <BackButton className="tp-back-btn" onClick={() => navigate(-1)} aria-label="Go Back" />
           <span className="tp-header-title">Free Speech</span>
           <div className="tp-header-spacer" />
         </div>
@@ -1092,9 +1088,7 @@ function TrainingPage() {
     <div className="tp-page">
       {/* ── Dark Header ── */}
       <div className="tp-header">
-        <button className="tp-back-btn" onClick={handleBackPress} aria-label="Go Back">
-          <IoChevronBack size={24} />
-        </button>
+        <BackButton className="tp-back-btn" onClick={handleBackPress} aria-label="Go Back" />
         <span className="tp-header-title">{title}</span>
         {focus === 'scripted' ? (
           <button className="tp-settings-btn" onClick={() => setShowSettings(true)} aria-label="Settings">

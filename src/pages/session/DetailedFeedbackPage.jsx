@@ -217,7 +217,7 @@ function DetailedFeedbackPage() {
   const { currentSession, fetchSessionById, isLoading } = useSessionContext();
   const [isRecordingsOpen, setIsRecordingsOpen] = useState(true);
   const [isSessionInfoOpen, setIsSessionInfoOpen] = useState(false);
-  const [recordingMedia, setRecordingMedia] = useState({ audioUrl: null, videoUrl: null });
+  const [recordingMedia, setRecordingMedia] = useState({ audioUrl: null, videoUrl: null, transcript: '' });
 
   const hasCompleteLocationState = useMemo(() => {
     if (!locationState || typeof locationState !== 'object') return false;
@@ -248,21 +248,24 @@ function DetailedFeedbackPage() {
 
       const { data: richMedia, error: richMediaErr } = await supabase
         .from('session_media')
-        .select('audio_url, video_storage_url')
+        .select('audio_url, video_storage_url, transcript')
         .eq('session_id', sessionId)
         .maybeSingle();
 
+      let mediaTranscript = '';
       if (!richMediaErr && richMedia) {
         audioUrl = richMedia.audio_url ?? null;
         videoUrl = richMedia.video_storage_url ?? null;
+        mediaTranscript = String(richMedia.transcript || '').trim();
       } else {
         if (isMissingVideoStorageColumn(richMediaErr)) {
           const { data: basicMedia } = await supabase
             .from('session_media')
-            .select('audio_url')
+            .select('audio_url, transcript')
             .eq('session_id', sessionId)
             .maybeSingle();
           audioUrl = basicMedia?.audio_url ?? null;
+          mediaTranscript = String(basicMedia?.transcript || '').trim();
         }
       }
 
@@ -289,6 +292,7 @@ function DetailedFeedbackPage() {
       setRecordingMedia({
         audioUrl: resolvedAudioUrl,
         videoUrl: resolvedVideoUrl,
+        transcript: mediaTranscript,
       });
     };
 
@@ -326,7 +330,7 @@ function DetailedFeedbackPage() {
   const mode = getSessionMode(session);
   const isFreeSession = getSessionSpeechType(session) === 'Free Speech';
   const durationSec = Math.max(1, Math.round(session?.duration_sec ?? session?.duration ?? 1));
-  const practicedText = sanitizeTranscriptForDisplay(session?.transcript, '')
+  const practicedText = sanitizeTranscriptForDisplay(recordingMedia.transcript || session?.transcript, '')
     || 'No recorded text available.';
   const audioUrl = recordingMedia.audioUrl
     || buildBucketPublicUrl(session?.audio_url)
@@ -678,7 +682,7 @@ function DetailedFeedbackPage() {
               <span className="df-info-val">{isFreeSession ? 'Free Speech' : 'Scripted'}</span>
             </div>
             <div className="df-practiced-section">
-              <p className="df-practiced-label">Practiced Text</p>
+              <p className="df-practiced-label">Transcript</p>
               <p className="df-practiced-text">{practicedText}</p>
             </div>
           </div>

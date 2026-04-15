@@ -387,10 +387,13 @@ function ProgressPage() {
             resolver: (s) => {
               const eye = resolveSubMetric15(s, 'eye_contact_score');
               const facial = resolveSubMetric15(s, 'facial_expression_score');
-              return eye ?? facial;
+              return eye ?? facial ?? resolveTripleVForProgress(s).visual;
             },
           },
-          { label: 'Gestures', resolver: (s) => resolveSubMetric15(s, 'gesture_score') }
+          {
+            label: 'Gestures',
+            resolver: (s) => resolveSubMetric15(s, 'gesture_score') ?? resolveTripleVForProgress(s).visual,
+          }
         ]
       },
       {
@@ -401,8 +404,14 @@ function ProgressPage() {
         iconBg: 'rgba(45, 90, 39, 0.1)',
         resolver: (session) => resolveTripleVForProgress(session).verbal,
         subMetricsConfig: [
-          { label: 'Pronunciation', resolver: (s) => resolveSubMetric15(s, 'pronunciation_score') },
-          { label: 'Context Awareness', resolver: (s) => score100to15(s?.context_score) }
+          {
+            label: 'Pronunciation',
+            resolver: (s) => resolveSubMetric15(s, 'pronunciation_score') ?? resolveTripleVForProgress(s).verbal,
+          },
+          {
+            label: 'Context Awareness',
+            resolver: (s) => score100to15(s?.context_score) ?? resolveTripleVForProgress(s).verbal,
+          }
         ]
       },
       {
@@ -429,7 +438,10 @@ function ProgressPage() {
               return score100to15(100 - jitter);
             },
           }
-        ]
+        ].map((sub) => ({
+          ...sub,
+          resolver: (s) => sub.resolver(s) ?? resolveTripleVForProgress(s).vocal,
+        }))
       }
     ];
 

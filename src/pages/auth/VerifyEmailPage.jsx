@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { authApi } from '@session/api/authApi';
 import { ROUTES } from '../../utils/constants';
-import bigkasLogo from '../../assets/Temporary Logo.png';
 import Button from '../../components/common/Button';
 import PushButton from '../../components/common/PushButton';
 import BackButton from '../../components/common/BackButton';
@@ -237,7 +236,6 @@ function VerifyEmailPage() {
       <BackButton className="auth-login-back" to={ROUTES.REGISTER} fallbackTo={ROUTES.HOME} />
       <div className="auth-form-panel">
         <div className="auth-form-container floating-card verify-email-card">
-          <img src={bigkasLogo} alt="Bigkas Logo" className="verify-logo" />
           <h2 className="auth-form-title">VERIFY YOUR EMAIL</h2>
 
           <p className="otp-instructions">
@@ -288,11 +286,11 @@ function VerifyEmailPage() {
           {/* â”€â”€ Verify button â”€â”€ */}
           <PushButton
             type="button"
-            className="auth-submit-btn"
+            className="verify-submit-btn"
             onClick={handleVerify}
             disabled={isVerifying || !allFilled}
-            bgColor="#2d5a27"
-            shadowColor="#1a3b16"
+            bgColor="#5A7863"
+            shadowColor="#3E5646"
             textColor="#ffffff"
           >
             {isVerifying ? <span className="btn-loader"></span> : 'VERIFY EMAIL'}

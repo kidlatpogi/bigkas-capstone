@@ -76,8 +76,14 @@ function clamp(value, min = 0, max = 100) {
 function buildBucketPublicUrl(pathOrUrl) {
   const value = String(pathOrUrl || '').trim();
   if (!value) return null;
+  if (/^https?:\/\//i.test(value)) return value;
   if (value.includes('/storage/v1/object/public/')) return value;
-  const cleaned = value.replace(/^\/+/, '');
+  const marker = `/storage/v1/object/public/${SESSION_MEDIA_BUCKET}/`;
+  const markerIdx = value.indexOf(marker);
+  const fromMarker = markerIdx >= 0 ? value.slice(markerIdx + marker.length) : value;
+  const cleaned = fromMarker
+    .replace(/^\/+/, '')
+    .replace(new RegExp(`^${SESSION_MEDIA_BUCKET}/`), '');
   const { data } = supabase.storage.from(SESSION_MEDIA_BUCKET).getPublicUrl(cleaned);
   return data?.publicUrl || null;
 }
@@ -123,6 +129,23 @@ async function findLikelyVideoUrl({ userId, createdAt }) {
   if (error || !Array.isArray(data) || !data.length) return null;
   const storagePaths = data
     .map((file) => file?.name ? `${safeUserId}/video/${file.name}` : null)
+    .filter(Boolean);
+  const closestPath = pickClosestRecordingPath(storagePaths, sessionTs);
+  if (!closestPath) return null;
+  return buildBucketPublicUrl(closestPath);
+}
+
+async function findLikelyAudioUrl({ userId, createdAt }) {
+  const safeUserId = String(userId || '').trim();
+  if (!safeUserId || !createdAt) return null;
+  const sessionTs = new Date(createdAt).getTime();
+  if (!Number.isFinite(sessionTs)) return null;
+  const { data, error } = await supabase.storage
+    .from(SESSION_MEDIA_BUCKET)
+    .list(`${safeUserId}/audio`, { limit: 200, sortBy: { column: 'name', order: 'desc' } });
+  if (error || !Array.isArray(data) || !data.length) return null;
+  const storagePaths = data
+    .map((file) => file?.name ? `${safeUserId}/audio/${file.name}` : null)
     .filter(Boolean);
   const closestPath = pickClosestRecordingPath(storagePaths, sessionTs);
   if (!closestPath) return null;
@@ -224,6 +247,13 @@ function DetailedFeedbackPage() {
         });
       }
 
+      if (!audioUrl) {
+        audioUrl = await findLikelyAudioUrl({
+          userId: session?.user_id,
+          createdAt: session?.created_at,
+        });
+      }
+
       if (!isMounted) return;
       setRecordingMedia({
         audioUrl: buildBucketPublicUrl(audioUrl),
@@ -272,6 +302,7 @@ function DetailedFeedbackPage() {
     || null;
   const videoUrl = recordingMedia.videoUrl
     || buildBucketPublicUrl(session?.video_storage_url)
+    || buildBucketPublicUrl(session?.video_url)
     || null;
   const replayAction = buildReplayAction(session, navigate, isFreeSession);
 

@@ -28,7 +28,7 @@ import './DashboardPage.css';
 
 const DAY_MS = 86_400_000;
 const ACTIVITY_CELEBRATION_STORAGE_KEY = 'bigkas_pending_activity_celebration_v1';
-const LEVEL_CLEAR_MODAL_KEY_PREFIX = 'bigkas_level_clear_modal_v1';
+const ACTIVITY_CLEAR_MODAL_KEY_PREFIX = 'bigkas_activity_clear_modal_v1';
 
 function getLocalDateKey(date = new Date()) {
   const year = date.getFullYear();
@@ -113,8 +113,6 @@ function ActivityPage() {
   const audioContextRef = useRef(null);
   const previousTaskStateRef = useRef({});
   const hasTaskStateHydratedRef = useRef(false);
-  const hasCompletedCountHydratedRef = useRef(false);
-  const previousCompletedCountRef = useRef(0);
 
   const [recentStampedTaskId, setRecentStampedTaskId] = useState(null);
   const [showCompletionCelebration, setShowCompletionCelebration] = useState(false);
@@ -243,6 +241,20 @@ function ActivityPage() {
     return acc;
   }, {}), [tasks]);
 
+  const maybeShowCompletionCelebration = useCallback((activityId, titleFallback = 'This activity') => {
+    if (typeof window === 'undefined') return;
+    const safeActivityId = String(activityId || '').trim();
+    if (!safeActivityId) return;
+    const uid = String(user?.id || 'guest');
+    const key = `${ACTIVITY_CLEAR_MODAL_KEY_PREFIX}:${uid}:${safeActivityId}`;
+    if (window.localStorage.getItem(key) === '1') return;
+
+    setCompletionModalTaskTitle(String(titleFallback || 'This activity'));
+    setShowCompletionCelebration(true);
+    playCompletionSound();
+    window.localStorage.setItem(key, '1');
+  }, [playCompletionSound, user?.id]);
+
   const activeTaskId = useMemo(
     () => getActiveTaskId(tasks, taskState, taskUnlockState),
     [tasks, taskState, taskUnlockState],
@@ -309,7 +321,7 @@ function ActivityPage() {
     if (!newlyCompletedTask) return;
 
     setRecentStampedTaskId(newlyCompletedTask.id);
-    playCompletionSound();
+    maybeShowCompletionCelebration(newlyCompletedTask.id, newlyCompletedTask.title || 'This activity');
 
     if (stampResetTimeoutRef.current) {
       window.clearTimeout(stampResetTimeoutRef.current);
@@ -318,7 +330,7 @@ function ActivityPage() {
     stampResetTimeoutRef.current = window.setTimeout(() => {
       setRecentStampedTaskId((current) => (current === newlyCompletedTask.id ? null : current));
     }, 700);
-  }, [playCompletionSound, taskState, tasks]);
+  }, [maybeShowCompletionCelebration, taskState, tasks]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !tasks.length) return;
@@ -337,41 +349,12 @@ function ActivityPage() {
       }
 
       setRecentStampedTaskId(activityId);
+      maybeShowCompletionCelebration(activityId, taskTitleById[activityId] || 'This activity');
       window.sessionStorage.removeItem(ACTIVITY_CELEBRATION_STORAGE_KEY);
     } catch {
       window.sessionStorage.removeItem(ACTIVITY_CELEBRATION_STORAGE_KEY);
     }
-  }, [taskState, tasks.length]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!tasks.length) return;
-    const currentCompleted = completedTaskCount;
-    const total = tasks.length;
-
-    if (!hasCompletedCountHydratedRef.current) {
-      hasCompletedCountHydratedRef.current = true;
-      previousCompletedCountRef.current = currentCompleted;
-      return;
-    }
-
-    const previousCompleted = previousCompletedCountRef.current;
-    previousCompletedCountRef.current = currentCompleted;
-
-    const hasJustClearedLevel = previousCompleted < total && currentCompleted === total;
-    if (!hasJustClearedLevel) return;
-
-    const uid = String(user?.id || 'guest');
-    const key = `${LEVEL_CLEAR_MODAL_KEY_PREFIX}:${uid}:${selectedLevel}`;
-    if (window.localStorage.getItem(key) === '1') return;
-
-    const fallbackTitle = tasks[tasks.length - 1]?.title || `Level ${selectedLevel}`;
-    setCompletionModalTaskTitle(fallbackTitle);
-    setShowCompletionCelebration(true);
-    playCompletionSound();
-    window.localStorage.setItem(key, '1');
-    window.sessionStorage.removeItem(ACTIVITY_CELEBRATION_STORAGE_KEY);
-  }, [completedTaskCount, playCompletionSound, selectedLevel, tasks, user?.id]);
+  }, [maybeShowCompletionCelebration, taskState, taskTitleById, tasks.length]);
 
   const handleTaskAction = useCallback((task) => {
     navigate(`${ROUTES.TRAINING}?autostart=1`, {

@@ -913,7 +913,7 @@ export default function SkywardJourney({
                 className={`skyward-journey-node-shell${
                   i === 0 && isActive ? ' skyward-journey-node-shell--start-onboarding' : ''
                 }`}
-                style={{ zIndex: startStage ? 60 : 10, position: 'relative' }}
+                style={{ zIndex: isActive ? 140 : (startStage ? 120 : 10), position: 'relative' }}
               >
                 <div
                   className={`skyward-journey-node-cluster${isUltimateBoss ? ' skyward-journey-node-cluster--boss' : ''}`}

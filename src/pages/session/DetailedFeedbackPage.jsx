@@ -82,6 +82,11 @@ function buildBucketPublicUrl(pathOrUrl) {
   return data?.publicUrl || null;
 }
 
+function isMissingVideoStorageColumn(error) {
+  const msg = String(error?.message || '').toLowerCase();
+  return msg.includes('video_storage_url') && msg.includes('does not exist');
+}
+
 function parseRecordingTimestamp(path) {
   const value = String(path || '').trim();
   if (!value) return null;
@@ -194,19 +199,22 @@ function DetailedFeedbackPage() {
 
       const { data: richMedia, error: richMediaErr } = await supabase
         .from('session_media')
-        .select('audio_url')
+        .select('audio_url, video_storage_url')
         .eq('session_id', sessionId)
         .maybeSingle();
 
       if (!richMediaErr && richMedia) {
         audioUrl = richMedia.audio_url ?? null;
+        videoUrl = richMedia.video_storage_url ?? null;
       } else {
-        const { data: basicMedia } = await supabase
-          .from('session_media')
-          .select('audio_url')
-          .eq('session_id', sessionId)
-          .maybeSingle();
-        audioUrl = basicMedia?.audio_url ?? null;
+        if (isMissingVideoStorageColumn(richMediaErr)) {
+          const { data: basicMedia } = await supabase
+            .from('session_media')
+            .select('audio_url')
+            .eq('session_id', sessionId)
+            .maybeSingle();
+          audioUrl = basicMedia?.audio_url ?? null;
+        }
       }
 
       if (!videoUrl) {
@@ -263,7 +271,6 @@ function DetailedFeedbackPage() {
     || buildBucketPublicUrl(session?.audio_url)
     || null;
   const videoUrl = recordingMedia.videoUrl
-    || buildBucketPublicUrl(session?.video_url)
     || buildBucketPublicUrl(session?.video_storage_url)
     || null;
   const replayAction = buildReplayAction(session, navigate, isFreeSession);

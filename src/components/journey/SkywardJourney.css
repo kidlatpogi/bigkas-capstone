@@ -390,28 +390,28 @@
 }
 
 .skyward-journey-node--active {
-  border-color: #f18f01;
-  background: #f18f01;
+  border-color: #2d5a27;
+  background: #2d5a27;
   color: #ffffff;
   box-shadow:
-    #c46f00 0px 10px 0px 0px,
-    0 0 0 4px rgba(241, 143, 1, 0.3),
-    0 12px 28px rgba(241, 143, 1, 0.32);
+    #1a3b16 0px 10px 0px 0px,
+    0 0 0 4px rgba(45, 90, 39, 0.28),
+    0 12px 28px rgba(45, 90, 39, 0.3);
 }
 
 /* 3D lip: hover shortens shadow + moves down slightly; active presses flush */
 .skyward-journey-node--active.skyward-journey-node--unlocked:hover:not(:active) {
   box-shadow:
-    #c46f00 0px 7px 0px 0px,
-    0 0 0 4px rgba(241, 143, 1, 0.24),
-    0 12px 28px rgba(241, 143, 1, 0.27);
+    #1a3b16 0px 7px 0px 0px,
+    0 0 0 4px rgba(45, 90, 39, 0.22),
+    0 12px 28px rgba(45, 90, 39, 0.25);
   transform: translateX(var(--skyward-node-offset, 0%)) translateY(3px);
 }
 
 .skyward-journey-node--active:active:not(:disabled) {
   box-shadow:
-    #c46f00 0px 0px 0px 0px,
-    0 0 0 4px rgba(241, 143, 1, 0.3);
+    #1a3b16 0px 0px 0px 0px,
+    0 0 0 4px rgba(45, 90, 39, 0.28);
   transform: translateX(var(--skyward-node-offset, 0%)) translateY(10px);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -475,7 +475,7 @@
 .skyward-journey-node--active.skyward-journey-node--float:hover:not(:active) {
   animation: none;
   box-shadow:
-    #c46f00 0px 7px 0px 0px,
+    #cd8b76 0px 7px 0px 0px,
     0 0 0 4px rgba(241, 143, 1, 0.22),
     0 12px 28px rgba(241, 143, 1, 0.25);
   transform: translateX(var(--skyward-node-offset, 0%)) translateY(3px);

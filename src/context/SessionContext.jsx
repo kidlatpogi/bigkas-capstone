@@ -34,7 +34,8 @@ const SESSIONS_SELECT_QUERY = `
   ),
   session_media (
     audio_url,
-    transcript
+    transcript,
+    video_storage_url
   ),
   session_metrics (
     overall_score,
@@ -237,7 +238,7 @@ function normalizeSessionRow(session) {
     recommendations,
     recommendation_timestamps,
     audio_url: media?.audio_url || null,
-    video_url: media?.video_url || cachedVideoUrl || null,
+    video_url: media?.video_storage_url || cachedVideoUrl || null,
     video_storage_url: media?.video_storage_url || cachedVideoUrl || null,
   };
 }
@@ -802,6 +803,7 @@ export function SessionProvider({ children }) {
           session_id: sessionId,
           audio_url: audioStorageUrl,
           transcript,
+          video_storage_url: videoStorageUrl,
         };
         // Backend already inserted session_media; update avoids upsert INSERT path (stricter RLS).
         const { data: mediaUpdated, error: mediaUpdateErr } = await supabase
@@ -809,6 +811,7 @@ export function SessionProvider({ children }) {
           .update({
             audio_url: audioStorageUrl,
             transcript,
+            video_storage_url: videoStorageUrl,
           })
           .eq('session_id', sessionId)
           .select('session_id');
@@ -853,6 +856,7 @@ export function SessionProvider({ children }) {
           session_id: sessionId,
           audio_url: audioStorageUrl,
           transcript,
+          video_storage_url: videoStorageUrl,
         };
         const metricsRow = {
           session_id: sessionId,
@@ -899,6 +903,10 @@ export function SessionProvider({ children }) {
       if (videoStorageUrl && sessionId) {
         setSessionVideoCacheEntry(sessionId, videoStorageUrl);
       }
+      setSessionTitleCacheEntry(
+        sessionId,
+        String(scriptTitle || targetText || topic || '').trim(),
+      );
 
       const { data: persistedSession, error: persistedErr } = await supabase
         .from('sessions')
@@ -994,9 +1002,9 @@ export function SessionProvider({ children }) {
     try {
       const { data: sessionRows, error: sessionReadErr } = await supabase
         .from('session_media')
-        .select('audio_url, session_id, sessions!inner(user_id)')
+        .select('audio_url, video_storage_url, session_id, sessions!inner(user_id)')
         .eq('sessions.user_id', uid)
-        .not('audio_url', 'is', null);
+        .or('audio_url.not.is.null,video_storage_url.not.is.null');
 
       if (sessionReadErr) {
         throw new Error(sessionReadErr.message);
@@ -1005,7 +1013,9 @@ export function SessionProvider({ children }) {
       const dbAudioPaths = (sessionRows ?? [])
         .map((row) => toSessionRecordingStoragePath(row.audio_url))
         .filter(Boolean);
-      const dbVideoPaths = [];
+      const dbVideoPaths = (sessionRows ?? [])
+        .map((row) => toSessionRecordingStoragePath(row.video_storage_url))
+        .filter(Boolean);
 
       const [audioPaths, videoPaths] = await Promise.all([
         listUserStoragePaths(uid, 'audio').catch(() => []),
@@ -1028,7 +1038,7 @@ export function SessionProvider({ children }) {
       if (sessionIds.length > 0) {
         const { error: clearDbErr } = await supabase
           .from('session_media')
-          .update({ audio_url: null })
+          .update({ audio_url: null, video_storage_url: null })
           .in('session_id', sessionIds);
         if (clearDbErr) {
           throw new Error(clearDbErr.message);

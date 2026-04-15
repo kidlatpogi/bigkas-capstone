@@ -114,6 +114,7 @@ function ActivityPage() {
 
   const [recentStampedTaskId, setRecentStampedTaskId] = useState(null);
   const [showCompletionCelebration, setShowCompletionCelebration] = useState(false);
+  const [completionModalTaskTitle, setCompletionModalTaskTitle] = useState('');
   const [viewportSize, setViewportSize] = useState(() => ({
     width: typeof window !== 'undefined' ? window.innerWidth : 0,
     height: typeof window !== 'undefined' ? window.innerHeight : 0,
@@ -233,6 +234,11 @@ function ActivityPage() {
     }, {});
   }, [taskState, tasks]);
 
+  const taskTitleById = useMemo(() => tasks.reduce((acc, task) => {
+    acc[task.id] = String(task.title || '').trim();
+    return acc;
+  }, {}), [tasks]);
+
   const activeTaskId = useMemo(
     () => getActiveTaskId(tasks, taskState, taskUnlockState),
     [tasks, taskState, taskUnlockState],
@@ -300,6 +306,7 @@ function ActivityPage() {
 
     setRecentStampedTaskId(newlyCompletedTask.id);
     setShowCompletionCelebration(true);
+    setCompletionModalTaskTitle(newlyCompletedTask.title || 'This activity');
     playCompletionSound();
 
     if (stampResetTimeoutRef.current) {
@@ -309,7 +316,6 @@ function ActivityPage() {
     stampResetTimeoutRef.current = window.setTimeout(() => {
       setRecentStampedTaskId((current) => (current === newlyCompletedTask.id ? null : current));
     }, 700);
-    window.setTimeout(() => setShowCompletionCelebration(false), 4200);
   }, [playCompletionSound, taskState, tasks]);
 
   useEffect(() => {
@@ -330,13 +336,13 @@ function ActivityPage() {
 
       setRecentStampedTaskId(activityId);
       setShowCompletionCelebration(true);
+      setCompletionModalTaskTitle(taskTitleById[activityId] || 'This activity');
       playCompletionSound();
       window.sessionStorage.removeItem(ACTIVITY_CELEBRATION_STORAGE_KEY);
-      window.setTimeout(() => setShowCompletionCelebration(false), 4200);
     } catch {
       window.sessionStorage.removeItem(ACTIVITY_CELEBRATION_STORAGE_KEY);
     }
-  }, [playCompletionSound, taskState, tasks.length]);
+  }, [playCompletionSound, taskState, taskTitleById, tasks.length]);
 
   const handleTaskAction = useCallback((task) => {
     navigate(`${ROUTES.TRAINING}?autostart=1`, {
@@ -497,10 +503,29 @@ function ActivityPage() {
         <Confetti
           width={viewportSize.width}
           height={viewportSize.height}
-          recycle={false}
+          recycle
           numberOfPieces={280}
           gravity={0.24}
         />
+      )}
+      {showCompletionCelebration && (
+        <div className="activity-clear-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="activity-clear-modal-title">
+          <div className="activity-clear-modal">
+            <h3 id="activity-clear-modal-title" className="activity-clear-modal-title">
+              Congratulations, you've cleared: {completionModalTaskTitle || 'This stage'}
+            </h3>
+            <button
+              type="button"
+              className="activity-clear-modal-continue"
+              onClick={() => {
+                setShowCompletionCelebration(false);
+                setCompletionModalTaskTitle('');
+              }}
+            >
+              Continue
+            </button>
+          </div>
+        </div>
       )}
       <div className="activity-two-col">
         <div className="activity-col-main">

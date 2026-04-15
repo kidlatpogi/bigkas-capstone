@@ -47,6 +47,38 @@ function getSupportedVideoMime() {
   return types.find((t) => MediaRecorder.isTypeSupported(t)) || '';
 }
 
+async function stopRecorderSafely(recorder) {
+  if (!recorder || recorder.state === 'inactive') return;
+  await new Promise((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    };
+    const prevStop = recorder.onstop;
+    recorder.onstop = (event) => {
+      if (typeof prevStop === 'function') {
+        prevStop(event);
+      }
+      finish();
+    };
+    recorder.onerror = () => finish();
+    try {
+      if (recorder.state === 'recording') {
+        recorder.requestData();
+      }
+    } catch {
+      // Continue stopping even if requestData is unsupported.
+    }
+    try {
+      recorder.stop();
+    } catch {
+      finish();
+    }
+  });
+}
+
 const MAX_VIDEO_BLOB_BYTES = 18 * 1024 * 1024;
 
 /** Minimum recording length (seconds) before FastAPI / Supabase analysis runs. */
@@ -582,18 +614,18 @@ function TrainingPage() {
       if (stream.getVideoTracks().length > 0) {
         const videoMime = getSupportedVideoMime();
         const videoTracks = stream.getVideoTracks();
-        const videoOnlyStream = new MediaStream(videoTracks);
+        const avRecordingStream = new MediaStream([...audioTracks, ...videoTracks]);
         const videoRecorderOptions = videoMime
           ? {
               mimeType: videoMime,
-              videoBitsPerSecond: 450000,
-              audioBitsPerSecond: 64000,
+              videoBitsPerSecond: 800000,
+              audioBitsPerSecond: 96000,
             }
           : {
-              videoBitsPerSecond: 450000,
-              audioBitsPerSecond: 64000,
+              videoBitsPerSecond: 800000,
+              audioBitsPerSecond: 96000,
             };
-        const videoRecorder = new MediaRecorder(videoOnlyStream, videoRecorderOptions);
+        const videoRecorder = new MediaRecorder(avRecordingStream, videoRecorderOptions);
 
         visualMediaRef.current = videoRecorder;
         visualChunksRef.current = [];
@@ -602,7 +634,7 @@ function TrainingPage() {
         videoRecorder.ondataavailable = (e) => {
           if (e.data.size > 0) visualChunksRef.current.push(e.data);
         };
-        videoRecorder.start(400);
+        videoRecorder.start(250);
       }
 
       setStatus('recording');
@@ -665,20 +697,23 @@ function TrainingPage() {
       visualScoresRef.current = stopAnalysis();
       const mime = recorder.mimeType || getSupportedMime() || 'audio/webm';
       const blob = new Blob(chunksRef.current, { type: mime });
+      if (blob.size < 1024) {
+        if (isMountedRef.current) {
+          setErrorMsg('Recorded audio was empty. Please check microphone permission and try again.');
+          setStatus('error');
+        }
+        handleRestart();
+        return;
+      }
 
       let videoBlob = null;
       const videoRecorder = visualMediaRef.current;
-      if (videoRecorder && videoRecorder.state !== 'inactive') {
-        await new Promise((resolve) => {
-          videoRecorder.onstop = () => resolve();
-          videoRecorder.stop();
-        });
-      }
+      await stopRecorderSafely(videoRecorder);
       if (visualChunksRef.current.length > 0) {
         const candidateVideoBlob = new Blob(visualChunksRef.current, {
           type: visualMimeRef.current || 'video/webm',
         });
-        if (candidateVideoBlob.size <= MAX_VIDEO_BLOB_BYTES) {
+        if (candidateVideoBlob.size > 1024 && candidateVideoBlob.size <= MAX_VIDEO_BLOB_BYTES) {
           videoBlob = candidateVideoBlob;
         }
       }
@@ -870,6 +905,11 @@ function TrainingPage() {
         }
       }
     };
+    try {
+      recorder.requestData();
+    } catch {
+      // Best-effort flush before stop.
+    }
     recorder.stop();
   };
 

@@ -43,14 +43,6 @@ function getScoreTier15(score) {
   return { label: 'Needs Work', color: '#D94F3B' };
 }
 
-function getLevelFromScore(score) {
-  if (score >= 5.0) return { level: 5, label: 'Demonstrating Expertise' };
-  if (score >= 4.0) return { level: 4, label: 'Building Skills' };
-  if (score >= 3.0) return { level: 3, label: 'Increasing Knowledge' };
-  if (score >= 2.0) return { level: 2, label: 'Learning Your Style' };
-  return { level: 1, label: 'Mastering Fundamentals' };
-}
-
 function scoreBarPercent(score) {
   return Math.max(0, Math.min(100, ((score - 1) / 4) * 100));
 }
@@ -257,16 +249,23 @@ function DetailedFeedbackPage() {
         audioUrl = richMedia.audio_url ?? null;
         videoUrl = richMedia.video_storage_url ?? null;
         mediaTranscript = String(richMedia.transcript || '').trim();
-      } else {
-        if (isMissingVideoStorageColumn(richMediaErr)) {
-          const { data: basicMedia } = await supabase
-            .from('session_media')
-            .select('audio_url, transcript')
-            .eq('session_id', sessionId)
-            .maybeSingle();
-          audioUrl = basicMedia?.audio_url ?? null;
-          mediaTranscript = String(basicMedia?.transcript || '').trim();
-        }
+      } else if (isMissingVideoStorageColumn(richMediaErr)) {
+        const { data: basicMedia } = await supabase
+          .from('session_media')
+          .select('audio_url, transcript')
+          .eq('session_id', sessionId)
+          .maybeSingle();
+        audioUrl = basicMedia?.audio_url ?? null;
+        mediaTranscript = String(basicMedia?.transcript || '').trim();
+      }
+
+      if (!mediaTranscript) {
+        const { data: transcriptOnlyMedia } = await supabase
+          .from('session_media')
+          .select('transcript')
+          .eq('session_id', sessionId)
+          .maybeSingle();
+        mediaTranscript = String(transcriptOnlyMedia?.transcript || '').trim();
       }
 
       if (!mediaTranscript) {
@@ -335,10 +334,6 @@ function DetailedFeedbackPage() {
 
   const tripleV = getTripleVScores(session);
   const overallTier = getScoreTier15(tripleV.entryPoint);
-  const levelInfo = session.level_label
-    ? { level: session.level, label: session.level_label }
-    : getLevelFromScore(tripleV.entryPoint);
-
   const mode = getSessionMode(session);
   const isFreeSession = getSessionSpeechType(session) === 'Free Speech';
   const durationSec = Math.max(1, Math.round(session?.duration_sec ?? session?.duration ?? 1));
@@ -347,6 +342,7 @@ function DetailedFeedbackPage() {
       || session?.transcript
       || session?.target_text
       || session?.analysis?.transcript_exact
+      || session?.analysis?.transcript
       || '',
     '',
   )
@@ -519,9 +515,6 @@ function DetailedFeedbackPage() {
             style={{ width: `${scoreBarPercent(tripleV.entryPoint)}%` }}
           />
         </div>
-        <p className="df-hero-level">
-          Level {levelInfo.level} — {levelInfo.label}
-        </p>
       </section>
 
       {/* Performance Timeline */}

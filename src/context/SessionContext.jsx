@@ -122,6 +122,19 @@ function normalizeSessionOriginForPersistence(value) {
   return 'training';
 }
 
+function resolveAnalysisTranscript(analysisResult) {
+  const candidates = [
+    analysisResult?.transcript,
+    analysisResult?.transcript_exact,
+    analysisResult?.analysis?.transcript_exact,
+    analysisResult?.analysis?.transcript,
+    analysisResult?.data?.transcript,
+    analysisResult?.data?.transcript_exact,
+  ];
+  const first = candidates.find((value) => typeof value === 'string' && value.trim());
+  return first ? first.trim() : '';
+}
+
 function normalizeSessionModeForPersistence({ scriptType, speakingMode }) {
   const normalizedOrigin = normalizeSessionOriginForPersistence(scriptType);
   const normalizedSpeakingMode = String(speakingMode || '').trim().toLowerCase();
@@ -797,7 +810,7 @@ export function SessionProvider({ children }) {
           throw new Error(sessionUpdateErr.message || 'Failed to update session after analysis.');
         }
 
-        const rawTranscript = analysisResult.transcript ?? '';
+        const rawTranscript = resolveAnalysisTranscript(analysisResult);
         const transcript = isFailedAnalysisTranscript(rawTranscript) ? '' : rawTranscript;
         const mediaRow = {
           session_id: sessionId,
@@ -849,7 +862,7 @@ export function SessionProvider({ children }) {
         }
 
         sessionId = saved.id;
-        const rawTranscript = analysisResult.transcript ?? '';
+        const rawTranscript = resolveAnalysisTranscript(analysisResult);
         const transcript = isFailedAnalysisTranscript(rawTranscript) ? '' : rawTranscript;
 
         const mediaRow = {
@@ -948,7 +961,7 @@ export function SessionProvider({ children }) {
           context_score: analysisResult.context_score ?? normalizedSaved.context_score ?? null,
           recommendations: analysisResult.recommendations ?? [],
           recommendation_timestamps: analysisResult.recommendation_timestamps ?? [],
-          transcript: analysisResult.transcript ?? '',
+          transcript: resolveAnalysisTranscript(analysisResult),
           scripted_accuracy: analysisResult.scripted_accuracy ?? null,
           duration_sec: analysisResult.duration_sec ?? normalizedSaved.duration ?? 0,
           summary: analysisResult.summary ?? normalizedSaved.feedback ?? '',

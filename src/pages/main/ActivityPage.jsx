@@ -159,6 +159,19 @@ function ActivityPage() {
   }, []);
 
   const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
+  const recommendedLevel = useMemo(() => {
+    const level = Number(levelProgress?.levelNumber || 1);
+    if (!Number.isFinite(level)) return 1;
+    return Math.max(1, Math.min(5, Math.round(level)));
+  }, [levelProgress?.levelNumber]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    setSelectedLevel((prev) => {
+      if (prev === 1 && recommendedLevel > 1) return recommendedLevel;
+      return prev;
+    });
+  }, [recommendedLevel, user?.id]);
 
   const completedTaskCount = useMemo(
     () => tasks.filter((t) => isActivityTaskCompleted(t.id, activityMetrics)).length,
@@ -552,6 +565,7 @@ function ActivityPage() {
                 steps={journeySteps}
                 groupedTasks={groupedTasks}
                 currentLevel={selectedLevel}
+                recommendedLevel={recommendedLevel}
                 onLevelChange={setSelectedLevel}
                 entranceFromNav={entranceFromNav}
                 scrollToStepIndex={scrollToStepIndex}

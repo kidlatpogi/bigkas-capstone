@@ -44,14 +44,6 @@ function getScoreTier15(score) {
   return { label: 'Needs Work', color: '#D94F3B' };
 }
 
-function getLevelFromScore(score) {
-  if (score >= 5.0) return { level: 5, label: 'Demonstrating Expertise' };
-  if (score >= 4.0) return { level: 4, label: 'Building Skills' };
-  if (score >= 3.0) return { level: 3, label: 'Increasing Knowledge' };
-  if (score >= 2.0) return { level: 2, label: 'Learning Your Style' };
-  return { level: 1, label: 'Mastering Fundamentals' };
-}
-
 function scoreBarPercent(score) {
   return Math.max(0, Math.min(100, ((score - 1) / 4) * 100));
 }
@@ -164,10 +156,6 @@ function SessionResultPage() {
 
   const tripleV = getTripleVScores(result);
   const overallTier = getScoreTier15(tripleV.entryPoint);
-  const levelInfo = result.level_label
-    ? { level: result.level, label: result.level_label }
-    : getLevelFromScore(tripleV.entryPoint);
-
   const sessionTitle = result?.script_title || result?.title || 'Session';
   const mode = getSessionMode(result);
   const sourceNav = state?.source;
@@ -259,10 +247,6 @@ function SessionResultPage() {
             style={{ width: `${scoreBarPercent(tripleV.entryPoint)}%` }}
           />
         </div>
-
-        <p className="sr-hero-level">
-          Level {levelInfo.level} — {levelInfo.label}
-        </p>
 
         <p className="sr-hero-message">
           {tripleV.entryPoint >= 4.0

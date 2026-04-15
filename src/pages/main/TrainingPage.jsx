@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LuRotateCcw } from 'react-icons/lu';
+import { IoChevronBack } from 'react-icons/io5';
 import { useSessionContext } from '../../context/useSessionContext';
 import { useAuthContext } from '../../context/useAuthContext';
 import { buildRoute, ROUTES } from '../../utils/constants';
@@ -50,7 +51,7 @@ function getSupportedVideoMime() {
 const MAX_VIDEO_BLOB_BYTES = 18 * 1024 * 1024;
 
 /** Minimum recording length (seconds) before FastAPI / Supabase analysis runs. */
-const MIN_RECORDING_SECONDS = 20;
+const DEFAULT_MIN_RECORDING_SECONDS = 20;
 
 function formatTime(sec) {
   const h = Math.floor(sec / 3600).toString().padStart(2, '0');
@@ -133,8 +134,17 @@ function TrainingPage() {
   const focus = state?.focus || 'scripted';
   const sessionType = state?.sessionType || focus;
   const freeTopic = (state?.freeTopic || '').trim();
+  const objectiveText = (state?.objective || state?.step?.objective || '').trim();
   const isPreTestSession = String(sessionType || '').toLowerCase().includes('pre-test') || String(sessionType || '').toLowerCase().includes('pretest');
   const hidePermissionRetry = isPreTestSession && focus === 'scripted';
+
+  const MIN_RECORDING_SECONDS = useMemo(() => {
+    const match = objectiveText.match(/(\d+)\s+Seconds/i) || objectiveText.match(/for\s+(\d+)\s+s/i);
+    if (match && match[1]) {
+      return parseInt(match[1], 10);
+    }
+    return DEFAULT_MIN_RECORDING_SECONDS;
+  }, [objectiveText]);
 
   /* Recording state */
   const [status, setStatus] = useState('idle'); // idle | countdown | recording | paused | analysing | error
@@ -1029,7 +1039,9 @@ function TrainingPage() {
     return (
       <div className="tp-page">
         <div className="tp-header">
-          <div className="tp-header-spacer" />
+          <button className="tp-back-btn" onClick={() => navigate(-1)} aria-label="Go Back">
+            <IoChevronBack size={24} />
+          </button>
           <span className="tp-header-title">Training</span>
           <div className="tp-header-spacer" />
         </div>
@@ -1047,7 +1059,9 @@ function TrainingPage() {
     return (
       <div className="tp-page">
         <div className="tp-header">
-          <div className="tp-header-spacer" />
+          <button className="tp-back-btn" onClick={() => navigate(-1)} aria-label="Go Back">
+            <IoChevronBack size={24} />
+          </button>
           <span className="tp-header-title">Free Speech</span>
           <div className="tp-header-spacer" />
         </div>
@@ -1078,7 +1092,9 @@ function TrainingPage() {
     <div className="tp-page">
       {/* ── Dark Header ── */}
       <div className="tp-header">
-        <div className="tp-header-spacer" />
+        <button className="tp-back-btn" onClick={handleBackPress} aria-label="Go Back">
+          <IoChevronBack size={24} />
+        </button>
         <span className="tp-header-title">{title}</span>
         {focus === 'scripted' ? (
           <button className="tp-settings-btn" onClick={() => setShowSettings(true)} aria-label="Settings">
@@ -1097,7 +1113,7 @@ function TrainingPage() {
           {focus === 'free' && (
             <section className="tp-topic-card" aria-label="Topic">
               <p className="tp-topic-label">TOPIC</p>
-              <h2 className="tp-topic-title">{freeTopic}</h2>
+              <h2 className="tp-topic-title">{objectiveText || freeTopic}</h2>
             </section>
           )}
 

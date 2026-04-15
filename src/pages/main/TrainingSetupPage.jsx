@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { IoChevronBack } from 'react-icons/io5';
 import { ROUTES } from '../../utils/constants';
 import './InnerPages.css';
 import './TrainingSetupPage.css';
@@ -39,6 +40,9 @@ function TrainingSetupPage() {
     <div className="practice-page">
       <div className="practice-wrap">
         <div className="practice-header">
+          <button className="inner-page-back" onClick={() => navigate(-1)} aria-label="Go back">
+            <IoChevronBack size={24} />
+          </button>
           <h1 className="practice-title">Training Setup</h1>
         </div>
         <p className="practice-sub">

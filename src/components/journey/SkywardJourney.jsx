@@ -978,7 +978,7 @@ export default function SkywardJourney({
                       <JourneyTooltip
                         key={step.id}
                         step={step}
-                        onStart={(s) => setPanelOpenId(s.id)}
+                        onStart={(s) => s.onActivate ? s.onActivate() : setPanelOpenId(s.id)}
                         onClose={() => setTooltipNodeId(null)}
                         nodeRef={{ get current() { return nodeRefs.current[i]; } }}
                         forceBottom={i >= steps.length - 2}

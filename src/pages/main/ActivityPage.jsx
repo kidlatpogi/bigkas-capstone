@@ -303,9 +303,16 @@ function ActivityPage() {
   }, [playCompletionSound, taskState, tasks]);
 
   const handleTaskAction = useCallback((task) => {
-    navigate(task.actionRoute, {
+    navigate(`${ROUTES.TRAINING}?autostart=1`, {
       state: {
+        freeTopic: task.title,
+        objective: task.objective || task.detail,
+        focus: 'free',
+        sessionType: 'activity',
+        entryPoint: 'activity',
+        autoStartCountdown: true,
         fromActivityTaskId: task.id,
+        step: task,
       },
     });
   }, [navigate]);

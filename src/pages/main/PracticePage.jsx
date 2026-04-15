@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { IoChevronBack } from 'react-icons/io5';
 import { ROUTES } from '../../utils/constants';
 import { RANDOM_TOPICS } from '../../utils/practiceData';
 import './PracticePage.css';
@@ -61,6 +62,9 @@ export default function PracticePage() {
     <div className="practice-page">
       <div className="practice-wrap">
         <div className="practice-header">
+          <button className="inner-page-back" onClick={() => navigate(-1)} aria-label="Go back">
+            <IoChevronBack size={24} />
+          </button>
           <h1 className="practice-title">Practice Setup</h1>
         </div>
         <p className="practice-sub">

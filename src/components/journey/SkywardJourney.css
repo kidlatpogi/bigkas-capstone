@@ -1080,15 +1080,15 @@
   }
 
   .skyward-journey-map-viewport {
-    min-height: calc(100dvh - 144px);
-    height: calc(100dvh - 144px);
+    min-height: calc(100dvh - 160px);
+    height: calc(100dvh - 160px);
     overflow-y: auto;
     overscroll-behavior-y: contain;
   }
 
   .skyward-journey-column {
     padding-top: 40px;
-    padding-bottom: 120px;
+    padding-bottom: 60px;
   }
 }
 

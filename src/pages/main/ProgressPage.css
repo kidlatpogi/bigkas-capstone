@@ -939,6 +939,18 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
     gap: 1.5rem;
   }
 
+  .progress-trend-card,
+  .progress-pillars-header,
+  .stat-block,
+  .pillar-card,
+  .progress-mobile-history-toggle-wrap,
+  .history-item,
+  .dashboard-anim-bottom {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+
   .progress-left-content,
   .progress-stats-row,
   .progress-pillars-grid,

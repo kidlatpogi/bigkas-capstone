@@ -1060,10 +1060,10 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   .progress-history-sidebar.history-visible {
     display: flex;
     position: fixed;
-    left: var(--mobile-px);
-    right: var(--mobile-px);
-    top: calc(64px + var(--mobile-px));
-    bottom: calc(80px + env(safe-area-inset-bottom));
+    left: calc(var(--mobile-px) + 8px);
+    right: calc(var(--mobile-px) + 8px);
+    top: calc(64px + var(--mobile-px) + 8px);
+    bottom: calc(80px + env(safe-area-inset-bottom) + 8px);
     z-index: 120;
     height: auto;
     min-height: 0;
@@ -1081,7 +1081,8 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   .history-pagination-shell {
     position: static;
     margin-top: 24px;
-    padding-bottom: calc(var(--mobile-px) + env(safe-area-inset-bottom));
+    padding: 0.4rem 0.8rem;
+    width: fit-content;
     display: flex;
     justify-content: center;
     align-items: center;

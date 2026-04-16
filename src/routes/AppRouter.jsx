@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { useAuthContext } from '../context/useAuthContext';
 import { ENV } from '../config/env';
 import { ROUTES } from '../utils/constants';
@@ -221,11 +222,16 @@ function PublicRoute() {
  * Defines all application routes
  */
 function AppRouter() {
+  const isNative = Capacitor.isNativePlatform();
+
   return (
     <Routes>
       {/* Public Routes - accessible only when not logged in */}
       <Route element={<PublicRoute />}>
-        <Route path={ROUTES.HOME} element={<LandingPage />} />
+        <Route
+          path={ROUTES.HOME}
+          element={isNative ? <Navigate to={ROUTES.LOGIN} replace /> : <LandingPage />}
+        />
         <Route path={ROUTES.LOGIN} element={<LoginPage />} />
         <Route path={ROUTES.ADMIN_LOGIN_BASE} element={<AdminLoginPage />} />
         {ENV.ADMIN_LOGIN_PATH && <Route path={ENV.ADMIN_LOGIN_PATH} element={<AdminLoginPage />} />}

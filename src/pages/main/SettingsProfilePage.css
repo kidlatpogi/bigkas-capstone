@@ -340,6 +340,18 @@
   color: #5A7863;
 }
 
+.sp-link-row--logout {
+  margin-top: 8px;
+  color: #c62828;
+  font-weight: 700;
+  justify-content: center;
+  border-top: 1px solid rgba(211, 227, 188, 0.5);
+}
+
+.sp-link-row--logout:hover {
+  color: #a81f1f;
+}
+
 .sp-link-chevron {
   color: rgba(11, 57, 84, 0.3);
   flex-shrink: 0;
@@ -510,6 +522,15 @@
 
 [data-theme="dark"] .sp-link-row:hover {
   color: #90AB8B;
+}
+
+[data-theme="dark"] .sp-link-row--logout {
+  color: #ff8a80;
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .sp-link-row--logout:hover {
+  color: #ffb4ae;
 }
 
 [data-theme="dark"] .sp-link-chevron {

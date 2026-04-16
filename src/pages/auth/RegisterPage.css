@@ -148,7 +148,7 @@ body.register-page-active .auth-back-btn {
 }
 
 body.register-page-active .auth-back-btn:hover {
-  background: #F6A320;
+  background: #F18F01;
   border-color: #0B3954;
 }
 
@@ -186,7 +186,7 @@ body.register-page-active .auth-back-btn:hover {
 .auth-brand-line {
   width: 60px;
   height: 3px;
-  background: #FCBA04;
+  background: #F18F01;
   border-radius: 2px;
   margin-bottom: 48px;
 }
@@ -207,7 +207,7 @@ body.register-page-active .auth-back-btn:hover {
 .feature-num {
   font-size: 16px;
   font-weight: 700;
-  color: #FCBA04;
+  color: #F18F01;
   min-width: 28px;
 }
 
@@ -266,7 +266,7 @@ body.register-page-active .auth-mobile-back {
 }
 
 body.register-page-active .auth-mobile-back:hover {
-  background: #F6A320;
+  background: #F18F01;
   border-color: #0B3954;
 }
 
@@ -411,7 +411,7 @@ body.register-page-active .auth-unverified-banner {
 .auth-resend-btn {
   background: transparent;
   border: 1px solid rgba(252, 186, 4, 0.6);
-  color: #FCBA04;
+  color: #F18F01;
   padding: 6px 16px;
   border-radius: 6px;
   font-size: 12px;
@@ -438,7 +438,7 @@ body.register-page-active .auth-resend-btn {
 
 .auth-resend-btn:hover:not(:disabled) {
   background: rgba(252, 186, 4, 0.1);
-  border-color: #FCBA04;
+  border-color: #F18F01;
 }
 
 body.register-page-active .auth-resend-btn:hover:not(:disabled) {
@@ -532,7 +532,7 @@ body.register-page-active .auth-resend-btn:disabled {
 }
 
 .auth-submit-btn-primary {
-  background: #FCBA04;
+  background: #F18F01;
   color: #010101;
 }
 
@@ -609,7 +609,7 @@ body.register-page-active .form-input {
 }
 
 .form-input:focus {
-  border-bottom-color: #FCBA04;
+  border-bottom-color: #F18F01;
 }
 
 body.register-page-active .form-input:focus {
@@ -894,6 +894,7 @@ body.register-page-active .auth-link:hover {
 
   body.register-page-active .auth-form-title {
     font-size: 1.75rem;
+    margin-top: 1rem;
     margin-bottom: 1.25rem;
   }
 
@@ -904,5 +905,41 @@ body.register-page-active .auth-link:hover {
   body.register-page-active .form-input {
     font-size: 1rem;
     min-height: 3rem;
+  }
+}
+
+@media (max-width: 1366px) and (min-width: 1024px) {
+  body.register-page-active .auth-page {
+    padding: 1rem;
+    overflow-y: auto;
+  }
+
+  body.register-page-active .auth-form-container {
+    max-width: 24rem;
+  }
+
+  body.register-page-active .floating-card {
+    padding: 1.9rem 1.5rem;
+    border-radius: 20px;
+  }
+
+  body.register-page-active .auth-form-title {
+    font-size: 1.7rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  body.register-page-active .auth-form {
+    gap: 0.75rem;
+  }
+
+  body.register-page-active .form-label {
+    font-size: 0.98rem;
+  }
+
+  body.register-page-active .form-input {
+    min-height: 3.1rem;
+    font-size: 1rem;
+    margin-bottom: 0.6rem;
   }
 }

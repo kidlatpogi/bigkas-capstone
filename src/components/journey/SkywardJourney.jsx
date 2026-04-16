@@ -50,7 +50,7 @@ function clampMapState(state, viewportEl, contentEl, scale) {
   /** Keep the map from being panned completely off-screen. */
   const minX = Math.min(0, W - w) - horizontalPadding;
   const maxX = Math.max(0, W - w) + horizontalPadding;
-  const verticalPadding = 24;
+  const verticalPadding = W <= 768 ? 92 : 24;
   let minY;
   let maxY;
   if (h > H) {
@@ -170,8 +170,8 @@ const MapHeaderCard = styled.div`
   flex-shrink: 0;
 
   @media (max-width: 768px) {
-    margin-top: 1rem;
-    top: calc(64px + 1rem + env(safe-area-inset-top, 0px));
+    margin-top: -2rem;
+    top: calc(64px + -2rem + env(safe-area-inset-top, 0px));
     z-index: 1600;
   }
 `;
@@ -710,9 +710,6 @@ export default function SkywardJourney({
       if (tooltipNodeId) setTooltipNodeId(null);
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       const t = e.target;
-      if (t instanceof Element && t.closest('.skyward-journey-node-shell')) return;
-      if (t instanceof Element && t.closest('.skyward-journey-unit-header')) return;
-      if (t instanceof Element && t.closest('.skyward-journey-start-callout')) return;
       const m = mapRef.current;
       pointerPanRef.current = {
         pid: e.pointerId,
@@ -1170,7 +1167,7 @@ export default function SkywardJourney({
                     onLevelChange && onLevelChange(Math.max(1, currentLevel - 1));
                   }}
                   disabled={currentLevel <= 1}
-                  style={{ padding: isMobile ? '8px 12px' : '8px 16px', borderRadius: '12px', border: 'none', background: currentLevel <= 1 ? '#e5e5e5' : '#f59b00', color: currentLevel <= 1 ? '#a1a1aa' : '#fff', cursor: currentLevel <= 1 ? 'not-allowed' : 'pointer', fontWeight: 'bold', flexShrink: 0 }}
+                  style={{ padding: isMobile ? '8px 12px' : '8px 16px', borderRadius: '12px', border: 'none', background: currentLevel <= 1 ? '#e5e5e5' : '#f18f01', color: currentLevel <= 1 ? '#a1a1aa' : '#fff', cursor: currentLevel <= 1 ? 'not-allowed' : 'pointer', fontWeight: 'bold', flexShrink: 0 }}
                 >
                   &#8592; {isMobile ? '' : 'Prev'}
                 </button>
@@ -1183,7 +1180,7 @@ export default function SkywardJourney({
                     onLevelChange && onLevelChange(Math.min(5, currentLevel + 1));
                   }}
                   disabled={currentLevel >= 5}
-                  style={{ padding: isMobile ? '8px 12px' : '8px 16px', borderRadius: '12px', border: 'none', background: currentLevel >= 5 ? '#e5e5e5' : '#f59b00', color: currentLevel >= 5 ? '#a1a1aa' : '#fff', cursor: currentLevel >= 5 ? 'not-allowed' : 'pointer', fontWeight: 'bold', flexShrink: 0 }}
+                  style={{ padding: isMobile ? '8px 12px' : '8px 16px', borderRadius: '12px', border: 'none', background: currentLevel >= 5 ? '#e5e5e5' : '#f18f01', color: currentLevel >= 5 ? '#a1a1aa' : '#fff', cursor: currentLevel >= 5 ? 'not-allowed' : 'pointer', fontWeight: 'bold', flexShrink: 0 }}
                 >
                   {isMobile ? '' : 'Next'} &#8594;
                 </button>

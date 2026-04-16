@@ -172,6 +172,11 @@
   max-height: none;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
+  cursor: grab;
+}
+
+.skyward-journey-map-viewport:active {
+  cursor: grabbing;
 }
 
 .skyward-journey-map-layer {
@@ -1103,7 +1108,7 @@
   }
 
   .skyward-journey-anim-header {
-    margin-top: 1rem;
+    margin-top: -2rem;
   }
 
   .skyward-journey-header-card--interactive {
@@ -1123,8 +1128,8 @@
   }
 
   .skyward-journey-column {
-    padding-top: 40px;
-    padding-bottom: 80px;
+    padding-top: 92px;
+    padding-bottom: 160px;
   }
 }
 
@@ -1145,7 +1150,7 @@
 
 [data-theme='dark'] .skyward-journey-node--active {
   background: #f18f01;
-  border-color: #f59b00;
+  border-color: #f18f01;
 }
 
 [data-theme='dark'] .skyward-journey-node--completed {
@@ -1217,7 +1222,7 @@
 
 [data-theme='dark'] .skyward-journey-anim-header {
   background: rgba(26, 26, 29, 0.94) !important;
-  border-color: #f59b00 !important;
+  border-color: #f18f01 !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45) !important;
 }
 

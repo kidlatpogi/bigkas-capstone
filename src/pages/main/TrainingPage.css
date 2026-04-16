@@ -1218,6 +1218,11 @@ body.training-page-active {
     overflow-x: hidden !important;
   }
 
+  .tp-page {
+    width: calc(100% + (var(--mobile-px) * 2));
+    margin-inline: calc(var(--mobile-px) * -1);
+  }
+
   /* Create a tiny natural page scroll range so mobile browsers can collapse URL bars. */
   .tp-page {
     min-height: calc(100dvh + 1px);
@@ -1270,8 +1275,12 @@ body.training-page-active {
 
 @media (max-width: 480px) {
   .tp-header {
-    padding: 10px 12px;
+    padding: 10px 0;
     min-height: 48px;
+  }
+
+  .tp-left {
+    padding: 14px 0 16px;
   }
 
   .tp-camera-wrap {

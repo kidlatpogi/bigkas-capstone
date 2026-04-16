@@ -1,0 +1,45 @@
+.mobile-top-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 50;
+  width: 100%;
+  min-height: 64px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.mobile-top-bar__brand {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: #010101;
+}
+
+.mobile-top-bar__profile-link {
+  min-width: 48px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #010101;
+}
+
+.mobile-top-bar__profile-link svg {
+  width: 28px;
+  height: 28px;
+}
+
+[data-theme='dark'] .mobile-top-bar {
+  background: #101011;
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+[data-theme='dark'] .mobile-top-bar__brand,
+[data-theme='dark'] .mobile-top-bar__profile-link {
+  color: #f4f4f5;
+}

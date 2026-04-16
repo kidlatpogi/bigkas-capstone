@@ -319,7 +319,7 @@ function ForgotPasswordPage() {
     <div className="auth-page">
       {/* ── Left branding panel ── */}
       <div className="auth-brand-panel">
-        <BackButton className="auth-mobile-back" />
+        <BackButton className="auth-mobile-back" to={ROUTES.LOGIN} />
 
         <div className="auth-brand-content">
           <h1 className="auth-brand-name">BIGKAS</h1>

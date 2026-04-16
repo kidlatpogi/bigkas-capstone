@@ -343,6 +343,15 @@ section[id] {
   scroll-margin-top: 80px;
 }
 
+.dashboard-anim-top,
+.dashboard-anim-left,
+.dashboard-anim-right,
+.dashboard-anim-bottom,
+.theme-anim {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}
+
 /* Activity page layout refinements */
 .activity-content-wrap {
   width: 70%;

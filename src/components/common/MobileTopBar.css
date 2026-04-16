@@ -29,13 +29,18 @@
   color: #010101;
 }
 
-.mobile-topbar-profile-img {
-  width: 32px;
-  height: 32px;
+.mobile-avatar {
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--color-primary);
-  background: #ffffff;
+  background: #f18f01;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 1px;
 }
 
 [data-theme='dark'] .mobile-top-bar {
@@ -48,6 +53,7 @@
   color: #f4f4f5;
 }
 
-[data-theme='dark'] .mobile-topbar-profile-img {
-  background: #1f1f22;
+[data-theme='dark'] .mobile-avatar {
+  background: #f18f01;
+  color: #fff;
 }

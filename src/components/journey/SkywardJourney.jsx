@@ -50,14 +50,16 @@ function clampMapState(state, viewportEl, contentEl, scale) {
   /** Keep the map from being panned completely off-screen. */
   const minX = Math.min(0, W - w) - horizontalPadding;
   const maxX = Math.max(0, W - w) + horizontalPadding;
+  const verticalPadding = 24;
   let minY;
   let maxY;
   if (h > H) {
-    minY = H - h;
-    maxY = 0;
+    minY = H - h - verticalPadding;
+    maxY = verticalPadding;
   } else {
-    minY = Math.min(0, H - h);
-    maxY = Math.max(0, H - h);
+    const centeredY = (H - h) / 2;
+    minY = centeredY;
+    maxY = centeredY;
   }
 
   return {
@@ -701,8 +703,6 @@ export default function SkywardJourney({
       if (pinchRef.current) return;
       if (tooltipNodeId) setTooltipNodeId(null);
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-      // Skip pan capturing on mobile devices to let native scrolling take over
-      if (isMobile && e.pointerType === 'touch') return;
       const t = e.target;
       if (t instanceof Element && t.closest('.skyward-journey-node-shell')) return;
       if (t instanceof Element && t.closest('.skyward-journey-unit-header')) return;
@@ -717,7 +717,7 @@ export default function SkywardJourney({
       };
       e.currentTarget.setPointerCapture(e.pointerId);
     },
-    [panelOpenId, tooltipNodeId, isMobile],
+    [panelOpenId, tooltipNodeId],
   );
 
   const onPointerMoveViewport = useCallback((e) => {

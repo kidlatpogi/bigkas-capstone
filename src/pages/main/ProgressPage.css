@@ -242,6 +242,9 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   align-items: center;
   gap: 12px;
   flex: 0 0 auto;
+  position: relative;
+  z-index: 10;
+  margin-bottom: 24px;
 }
 
 .progress-pillars-title {
@@ -498,6 +501,8 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
 .progress-mobile-history-toggle-wrap {
   display: none;
+  position: relative;
+  z-index: 20;
 }
 
 .progress-mobile-history-toggle {
@@ -877,6 +882,8 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   }
 
   .progress-pillars-header {
+    position: relative;
+    display: flex;
     flex-direction: column;
     align-items: flex-start;
   }

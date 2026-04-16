@@ -24,6 +24,29 @@
   margin-inline: auto;
 }
 
+.skyward-journey-header-card {
+  transition: padding 0.22s ease, box-shadow 0.22s ease;
+}
+
+.skyward-journey-header-title-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.skyward-journey-header-chevron {
+  width: 18px;
+  height: 18px;
+  color: #f18f01;
+  transition: transform 0.22s ease;
+}
+
+.skyward-journey-header-chevron.is-expanded {
+  transform: rotate(180deg);
+}
+
 @keyframes nodeEntrancePop {
   0% {
     opacity: 0;
@@ -1077,6 +1100,14 @@
 @media (max-width: 768px) {
   .skyward-journey {
     --skyward-shift: 28px;
+  }
+
+  .skyward-journey-header-card--interactive {
+    padding: 14px 16px;
+  }
+
+  .skyward-journey-header-card--collapsed {
+    padding: 12px 16px;
   }
 
   .skyward-journey-map-viewport {

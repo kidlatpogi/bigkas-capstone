@@ -168,6 +168,12 @@ const MapHeaderCard = styled.div`
   top: max(14px, env(safe-area-inset-top, 0px));
   z-index: 1400;
   flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    margin-top: 1rem;
+    top: calc(64px + 1rem + env(safe-area-inset-top, 0px));
+    z-index: 1600;
+  }
 `;
 
 const HeaderTitle = styled.h1`

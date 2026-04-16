@@ -501,8 +501,6 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
 .progress-mobile-history-toggle-wrap {
   display: none;
-  position: relative;
-  z-index: 20;
 }
 
 .progress-mobile-history-toggle {

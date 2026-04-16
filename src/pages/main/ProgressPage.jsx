@@ -600,20 +600,20 @@ function ProgressPage() {
               </div>
             ))}
           </div>
+          <div className="progress-mobile-history-toggle-wrap">
+            <button
+              type="button"
+              className="progress-mobile-history-toggle"
+              onClick={() => setShowMobileHistory((current) => !current)}
+              aria-expanded={showMobileHistory}
+              aria-controls="progress-history-sidebar"
+            >
+              {showMobileHistory ? 'Hide History' : 'View History'}
+            </button>
+          </div>
         </div>
 
         {/* History Sidebar */}
-        <div className="progress-mobile-history-toggle-wrap">
-          <button
-            type="button"
-            className="progress-mobile-history-toggle"
-            onClick={() => setShowMobileHistory((current) => !current)}
-            aria-expanded={showMobileHistory}
-            aria-controls="progress-history-sidebar"
-          >
-            {showMobileHistory ? 'Hide History' : 'View History'}
-          </button>
-        </div>
         <div
           id="progress-history-sidebar"
           className={`progress-history-sidebar${showMobileHistory ? ' history-visible' : ''}`}

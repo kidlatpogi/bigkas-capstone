@@ -709,6 +709,7 @@ export default function SkywardJourney({
       if (pinchRef.current) return;
       if (tooltipNodeId) setTooltipNodeId(null);
       if (e.pointerType === 'mouse' && e.button !== 0) return;
+      if (isMobile && e.pointerType === 'touch') return;
       const t = e.target;
       if (t instanceof Element && t.closest('.skyward-journey-node-shell')) return;
       if (t instanceof Element && t.closest('.skyward-journey-unit-header')) return;
@@ -723,7 +724,7 @@ export default function SkywardJourney({
       };
       e.currentTarget.setPointerCapture(e.pointerId);
     },
-    [panelOpenId, tooltipNodeId],
+    [panelOpenId, tooltipNodeId, isMobile],
   );
 
   const onPointerMoveViewport = useCallback((e) => {
@@ -1170,7 +1171,7 @@ export default function SkywardJourney({
                     onLevelChange && onLevelChange(Math.max(1, currentLevel - 1));
                   }}
                   disabled={currentLevel <= 1}
-                  style={{ padding: isMobile ? '8px 12px' : '8px 16px', borderRadius: '12px', border: 'none', background: currentLevel <= 1 ? '#e5e5e5' : '#f59b00', color: currentLevel <= 1 ? '#a1a1aa' : '#fff', cursor: currentLevel <= 1 ? 'not-allowed' : 'pointer', fontWeight: 'bold', flexShrink: 0 }}
+                  style={{ padding: isMobile ? '8px 12px' : '8px 16px', borderRadius: '12px', border: 'none', background: currentLevel <= 1 ? '#e5e5e5' : '#f18f01', color: currentLevel <= 1 ? '#a1a1aa' : '#fff', cursor: currentLevel <= 1 ? 'not-allowed' : 'pointer', fontWeight: 'bold', flexShrink: 0 }}
                 >
                   &#8592; {isMobile ? '' : 'Prev'}
                 </button>
@@ -1183,7 +1184,7 @@ export default function SkywardJourney({
                     onLevelChange && onLevelChange(Math.min(5, currentLevel + 1));
                   }}
                   disabled={currentLevel >= 5}
-                  style={{ padding: isMobile ? '8px 12px' : '8px 16px', borderRadius: '12px', border: 'none', background: currentLevel >= 5 ? '#e5e5e5' : '#f59b00', color: currentLevel >= 5 ? '#a1a1aa' : '#fff', cursor: currentLevel >= 5 ? 'not-allowed' : 'pointer', fontWeight: 'bold', flexShrink: 0 }}
+                  style={{ padding: isMobile ? '8px 12px' : '8px 16px', borderRadius: '12px', border: 'none', background: currentLevel >= 5 ? '#e5e5e5' : '#f18f01', color: currentLevel >= 5 ? '#a1a1aa' : '#fff', cursor: currentLevel >= 5 ? 'not-allowed' : 'pointer', fontWeight: 'bold', flexShrink: 0 }}
                 >
                   {isMobile ? '' : 'Next'} &#8594;
                 </button>

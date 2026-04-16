@@ -1117,9 +1117,10 @@
   .skyward-journey-map-viewport {
     min-height: calc(100dvh - 160px);
     height: calc(100dvh - 160px);
-    overflow: hidden;
-    overscroll-behavior: none;
-    touch-action: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
   }
 
   .skyward-journey-column {
@@ -1145,7 +1146,7 @@
 
 [data-theme='dark'] .skyward-journey-node--active {
   background: #f18f01;
-  border-color: #f59b00;
+  border-color: #f18f01;
 }
 
 [data-theme='dark'] .skyward-journey-node--completed {
@@ -1217,7 +1218,7 @@
 
 [data-theme='dark'] .skyward-journey-anim-header {
   background: rgba(26, 26, 29, 0.94) !important;
-  border-color: #f59b00 !important;
+  border-color: #f18f01 !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45) !important;
 }
 

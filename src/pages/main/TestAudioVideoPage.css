@@ -104,7 +104,7 @@
 .av-video {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   display: block;
   background: #1a1a1a;
 }
@@ -321,5 +321,14 @@
   .av-single-card {
     padding: 22px 18px;
     border-radius: 20px;
+  }
+
+  .av-camera-wrap {
+    min-height: 200px;
+  }
+
+  .av-flip-btn {
+    width: 44px;
+    height: 44px;
   }
 }

@@ -24,11 +24,9 @@ type StartAnalysisArgs = {
   canvasElement?: HTMLCanvasElement | null;
 };
 
-const VISION_WASM_CDN = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm";
-const FACE_MODEL_CDN =
-  "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task";
-const GESTURE_MODEL_CDN =
-  "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/latest/gesture_recognizer.task";
+const VISION_WASM_PATH = "/models/wasm";
+const FACE_MODEL_PATH = "/models/face_landmarker.task";
+const GESTURE_MODEL_PATH = "/models/gesture_recognizer.task";
 
 // Fallback hand skeleton connections for canvas drawing.
 const HAND_CONNECTIONS: number[][] = [
@@ -131,11 +129,11 @@ export function useVisualAnalysis() {
       return;
     }
 
-    const vision = await FilesetResolver.forVisionTasks(VISION_WASM_CDN);
+    const vision = await FilesetResolver.forVisionTasks(VISION_WASM_PATH);
 
     faceLandmarkerRef.current = await FaceLandmarker.createFromOptions(vision, {
       baseOptions: {
-        modelAssetPath: FACE_MODEL_CDN,
+        modelAssetPath: FACE_MODEL_PATH,
       },
       runningMode: "VIDEO",
       numFaces: 1,
@@ -145,7 +143,7 @@ export function useVisualAnalysis() {
 
     gestureRecognizerRef.current = await GestureRecognizer.createFromOptions(vision, {
       baseOptions: {
-        modelAssetPath: GESTURE_MODEL_CDN,
+        modelAssetPath: GESTURE_MODEL_PATH,
       },
       runningMode: "VIDEO",
       numHands: 2,

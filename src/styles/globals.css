@@ -6,6 +6,13 @@
 
 /* Root variables */
 :root {
+  /* Breakpoints */
+  --bp-sm: 360px;
+  --bp-md: 768px;
+  --bp-lg: 1024px;
+  --bp-xl: 1440px;
+  --bp-2k: 2000px;
+
   /* Colors — Bigkas design tokens (primary: gold #FCBA04, dark: #010101) */
   --color-primary: #FCBA04;
   --color-primary-dark: #D59300;
@@ -242,9 +249,12 @@ img {
   .main-content {
     padding-left: 0;
   }
+}
 
-  .main-content.main-content--with-mobile-menu {
-    padding-top: 60px;
+@media (max-width: 767px) {
+  .main-content.main-content--with-mobile-nav {
+    padding-top: 64px;
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
   }
 }
 
@@ -398,3 +408,19 @@ section[id] {
   white-space: nowrap;
   border: 0;
 }
+
+/* 8px spacing utilities */
+.p-8 { padding: 8px; }
+.p-16 { padding: 16px; }
+.p-24 { padding: 24px; }
+.p-32 { padding: 32px; }
+
+.m-8 { margin: 8px; }
+.m-16 { margin: 16px; }
+.m-24 { margin: 24px; }
+.m-32 { margin: 32px; }
+
+.gap-8 { gap: 8px; }
+.gap-16 { gap: 16px; }
+.gap-24 { gap: 24px; }
+.gap-32 { gap: 32px; }

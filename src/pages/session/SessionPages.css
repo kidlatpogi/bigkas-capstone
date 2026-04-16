@@ -514,6 +514,7 @@
   width: 100%;
   display: block;
   max-height: 420px;
+  object-fit: cover;
 }
 
 .session-actions {
@@ -1180,5 +1181,13 @@
   /* Practiced text: readable font on mobile */
   .practiced-text {
     font-size: 15px;
+  }
+
+  .session-video-wrap {
+    min-height: 200px;
+  }
+
+  .session-video {
+    min-height: 200px;
   }
 }

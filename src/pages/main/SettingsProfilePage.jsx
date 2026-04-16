@@ -8,7 +8,7 @@ import './SettingsProfilePage.css';
 
 function SettingsProfilePage() {
   const navigate = useNavigate();
-  const { user, updateProfile, uploadAvatar } = useAuthContext();
+  const { user, updateProfile, uploadAvatar, logout } = useAuthContext();
   const fileRef = useRef(null);
 
   const [firstName, setFirstName] = useState('');
@@ -138,6 +138,11 @@ function SettingsProfilePage() {
     setSaveSuccess(false);
   };
 
+  const handleLogout = async () => {
+    await logout();
+    navigate(ROUTES.HOME, { replace: true });
+  };
+
   return (
     <div className="dashboard-page-new settings-profile-page">
       <div className="settings-profile-shell">
@@ -254,6 +259,9 @@ function SettingsProfilePage() {
                 <button type="button" className="sp-link-row" onClick={() => navigate(ROUTES.SETTINGS)}>
                   <span>App Settings</span>
                   <IoChevronForward size={16} className="sp-link-chevron" />
+                </button>
+                <button type="button" className="sp-link-row sp-link-row--logout" onClick={handleLogout}>
+                  <span>Log Out</span>
                 </button>
               </div>
             </section>

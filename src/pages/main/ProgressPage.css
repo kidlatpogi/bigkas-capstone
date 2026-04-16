@@ -624,9 +624,6 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.15);
   width: fit-content;
   margin: 0 auto;
-  position: sticky;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
-  z-index: 3;
 }
 
 .history-pagination-page {
@@ -951,6 +948,20 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
   .history-title {
     font-size: 24px;
+  }
+
+  .history-pagination-shell {
+    position: static;
+    margin-top: 24px;
+    padding-bottom: calc(var(--mobile-px) + env(safe-area-inset-bottom));
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .history-pagination-link {
+    min-width: 44px;
+    min-height: 44px;
   }
 }
 

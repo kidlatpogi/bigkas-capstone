@@ -1102,6 +1102,10 @@
     --skyward-shift: 28px;
   }
 
+  .skyward-journey-anim-header {
+    margin-top: 1rem;
+  }
+
   .skyward-journey-header-card--interactive {
     padding: 14px 16px;
   }
@@ -1113,13 +1117,14 @@
   .skyward-journey-map-viewport {
     min-height: calc(100dvh - 160px);
     height: calc(100dvh - 160px);
-    overflow-y: auto;
-    overscroll-behavior-y: contain;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none;
   }
 
   .skyward-journey-column {
     padding-top: 40px;
-    padding-bottom: 60px;
+    padding-bottom: 80px;
   }
 }
 

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+  IoChevronDown,
   IoTrophy,
   IoChatbubbleEllipses,
   IoCheckmarkCircle,
@@ -505,6 +506,7 @@ export default function SkywardJourney({
   const pinchRef = useRef(null);
 
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -512,6 +514,10 @@ export default function SkywardJourney({
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    setIsHeaderCollapsed(isMobile);
+  }, [isMobile]);
 
   const activeIndex = useMemo(
     () => steps.findIndex((s) => s.nodeState === NODE_STATE.ACTIVE),
@@ -1131,33 +1137,59 @@ export default function SkywardJourney({
   return (
     <div className="skyward-journey-wrap" style={{ position: 'relative', width: '100%', height: '100%' }}>
       <div className="skyward-journey skyward-journey-container no-scrollbar" ref={rootRef}>
-        <MapHeaderCard className="skyward-journey-anim-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '100%', justifyContent: 'center' }}>
-            <button
-              onClick={() => onLevelChange && onLevelChange(Math.max(1, currentLevel - 1))}
-              disabled={currentLevel <= 1}
-              style={{ padding: isMobile ? '8px 12px' : '8px 16px', borderRadius: '12px', border: 'none', background: currentLevel <= 1 ? '#e5e5e5' : '#f59b00', color: currentLevel <= 1 ? '#a1a1aa' : '#fff', cursor: currentLevel <= 1 ? 'not-allowed' : 'pointer', fontWeight: 'bold', flexShrink: 0 }}
-            >
-              &#8592; {isMobile ? '' : 'Prev'}
-            </button>
-            <div style={{ flex: 1 }}>
-              <HeaderTitle>{steps.length > 0 ? currentPillarText : `Level ${currentLevel}`}</HeaderTitle>
-              <HeaderDescription>{getLevelSubtitle(currentLevel)}</HeaderDescription>
-            </div>
-            <button
-              onClick={() => onLevelChange && onLevelChange(Math.min(5, currentLevel + 1))}
-              disabled={currentLevel >= 5}
-              style={{ padding: isMobile ? '8px 12px' : '8px 16px', borderRadius: '12px', border: 'none', background: currentLevel >= 5 ? '#e5e5e5' : '#f59b00', color: currentLevel >= 5 ? '#a1a1aa' : '#fff', cursor: currentLevel >= 5 ? 'not-allowed' : 'pointer', fontWeight: 'bold', flexShrink: 0 }}
-            >
-              {isMobile ? '' : 'Next'} &#8594;
-            </button>
+        <MapHeaderCard
+          className={`skyward-journey-anim-header${isMobile ? ' skyward-journey-header-card skyward-journey-header-card--interactive' : ' skyward-journey-header-card'}${isMobile && isHeaderCollapsed ? ' skyward-journey-header-card--collapsed' : ''}`}
+          onClick={() => {
+            if (isMobile) {
+              setIsHeaderCollapsed((current) => !current);
+            }
+          }}
+          style={{ cursor: isMobile ? 'pointer' : 'default' }}
+        >
+          <div className="skyward-journey-header-title-row">
+            <HeaderTitle>{steps.length > 0 ? currentPillarText : `Level ${currentLevel}`}</HeaderTitle>
+            {isMobile ? (
+              <IoChevronDown
+                aria-hidden="true"
+                className={`skyward-journey-header-chevron${isHeaderCollapsed ? '' : ' is-expanded'}`}
+              />
+            ) : null}
           </div>
-          {Number(currentLevel) > 1 && Number(currentLevel) === Number(recommendedLevel) ? (
-            <HeaderSkipNotice>
-              We assessed your speaking level as <strong>Level {currentLevel}</strong>, so we fast-tracked earlier lessons and placed you where your growth is most meaningful.
-            </HeaderSkipNotice>
+          {!isMobile || !isHeaderCollapsed ? (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '100%', justifyContent: 'center' }}>
+                <button
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onLevelChange && onLevelChange(Math.max(1, currentLevel - 1));
+                  }}
+                  disabled={currentLevel <= 1}
+                  style={{ padding: isMobile ? '8px 12px' : '8px 16px', borderRadius: '12px', border: 'none', background: currentLevel <= 1 ? '#e5e5e5' : '#f59b00', color: currentLevel <= 1 ? '#a1a1aa' : '#fff', cursor: currentLevel <= 1 ? 'not-allowed' : 'pointer', fontWeight: 'bold', flexShrink: 0 }}
+                >
+                  &#8592; {isMobile ? '' : 'Prev'}
+                </button>
+                <div style={{ flex: 1 }}>
+                  <HeaderDescription>{getLevelSubtitle(currentLevel)}</HeaderDescription>
+                </div>
+                <button
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onLevelChange && onLevelChange(Math.min(5, currentLevel + 1));
+                  }}
+                  disabled={currentLevel >= 5}
+                  style={{ padding: isMobile ? '8px 12px' : '8px 16px', borderRadius: '12px', border: 'none', background: currentLevel >= 5 ? '#e5e5e5' : '#f59b00', color: currentLevel >= 5 ? '#a1a1aa' : '#fff', cursor: currentLevel >= 5 ? 'not-allowed' : 'pointer', fontWeight: 'bold', flexShrink: 0 }}
+                >
+                  {isMobile ? '' : 'Next'} &#8594;
+                </button>
+              </div>
+              {Number(currentLevel) > 1 && Number(currentLevel) === Number(recommendedLevel) ? (
+                <HeaderSkipNotice>
+                  We assessed your speaking level as <strong>Level {currentLevel}</strong>, so we fast-tracked earlier lessons and placed you where your growth is most meaningful.
+                </HeaderSkipNotice>
+              ) : null}
+              {steps.length > 0 && <HeaderStatBadge>{completedCount} / {steps.length} Stages Completed</HeaderStatBadge>}
+            </>
           ) : null}
-          {steps.length > 0 && <HeaderStatBadge>{completedCount} / {steps.length} Stages Completed</HeaderStatBadge>}
         </MapHeaderCard>
         <div className="skyward-journey-anim-root skyward-journey-map skyward-journey-anim-map">
           <div

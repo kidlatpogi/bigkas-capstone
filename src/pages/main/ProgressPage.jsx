@@ -176,6 +176,7 @@ function ProgressPage() {
   const [historyStartDate, setHistoryStartDate] = useState('');
   const [historyEndDate, setHistoryEndDate] = useState('');
   const [historyPage, setHistoryPage] = useState(0);
+  const [showMobileHistory, setShowMobileHistory] = useState(false);
   const [historyPageSize, setHistoryPageSize] = useState(() =>
     getResponsiveHistoryPageSize(typeof window !== 'undefined' ? window.innerHeight : 1080),
   );
@@ -602,7 +603,21 @@ function ProgressPage() {
         </div>
 
         {/* History Sidebar */}
-        <div className="progress-history-sidebar">
+        <div className="progress-mobile-history-toggle-wrap">
+          <button
+            type="button"
+            className="progress-mobile-history-toggle"
+            onClick={() => setShowMobileHistory((current) => !current)}
+            aria-expanded={showMobileHistory}
+            aria-controls="progress-history-sidebar"
+          >
+            {showMobileHistory ? 'Hide History' : 'View History'}
+          </button>
+        </div>
+        <div
+          id="progress-history-sidebar"
+          className={`progress-history-sidebar${showMobileHistory ? ' history-visible' : ''}`}
+        >
           <div className="history-container">
             <div className="history-sticky-header dashboard-anim-top dashboard-anim-delay-1">
               <h2 className="history-title">History</h2>

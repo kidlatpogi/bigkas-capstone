@@ -496,6 +496,21 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   -ms-overflow-style: none;
 }
 
+.progress-mobile-history-toggle-wrap {
+  display: none;
+}
+
+.progress-mobile-history-toggle {
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: #2d5a27;
+  color: #ffffff;
+  font-weight: 700;
+  margin-top: 16px;
+}
+
 .history-container {
   display: flex;
   flex-direction: column;
@@ -866,10 +881,19 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
     align-items: flex-start;
   }
 
+  .progress-mobile-history-toggle-wrap {
+    display: block;
+  }
+
   .progress-history-sidebar {
+    display: none;
     max-height: none;
     top: 0;
     justify-self: stretch;
+  }
+
+  .progress-history-sidebar.history-visible {
+    display: flex;
   }
 
   .history-container {

@@ -249,9 +249,12 @@ img {
   .main-content {
     padding-left: 0;
   }
+}
 
-  .main-content.main-content--with-mobile-menu {
-    padding-top: 60px;
+@media (max-width: 767px) {
+  .main-content.main-content--with-mobile-nav {
+    padding-top: 64px;
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
   }
 }
 

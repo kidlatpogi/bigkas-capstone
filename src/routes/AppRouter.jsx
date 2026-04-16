@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthContext } from '../context/useAuthContext';
 import { ENV } from '../config/env';
@@ -38,7 +39,8 @@ import PracticePage from '../pages/main/PracticePage';
 
 // Components
 import SideNav from '../components/common/SideNav';
-import MainMobileMenu from '../components/common/MainMobileMenu';
+import MobileTopBar from '../components/common/MobileTopBar';
+import BottomNav from '../components/common/BottomNav';
 import bigkasLogo from '../assets/Temporary Logo.png';
 
 function getAuthenticatedRedirect(user, isAdminAuthenticated) {
@@ -57,14 +59,22 @@ function getAuthenticatedRedirect(user, isAdminAuthenticated) {
 function ProtectedRoute() {
   const { isAuthenticated, isInitializing, user } = useAuthContext();
   const { pathname } = useLocation();
+  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 768);
 
-  const showMobileMainMenu =
-    pathname === ROUTES.ACTIVITY ||
-    pathname === ROUTES.DASHBOARD ||
-    pathname === ROUTES.PROGRESS ||
-    pathname === ROUTES.FRAMEWORKS ||
-    pathname === ROUTES.PROFILE ||
-    pathname === ROUTES.SETTINGS;
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const handleViewportChange = (event) => setIsMobileViewport(event.matches);
+
+    setIsMobileViewport(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleViewportChange);
+      return () => mediaQuery.removeEventListener('change', handleViewportChange);
+    }
+
+    mediaQuery.addListener(handleViewportChange);
+    return () => mediaQuery.removeListener(handleViewportChange);
+  }, []);
 
   const hideMainNav =
     pathname === ROUTES.USER_PROFILING ||
@@ -116,9 +126,12 @@ function ProtectedRoute() {
 
   return (
     <>
-      {!hideMainNav && <SideNav />}
-      {showMobileMainMenu && <MainMobileMenu />}
-      <main className={`main-content${hideMainNav ? ' main-content--full' : ''}${showMobileMainMenu ? ' main-content--with-mobile-menu' : ''}`}>
+      {!hideMainNav && isMobileViewport && <MobileTopBar />}
+      {!hideMainNav && isMobileViewport && <BottomNav />}
+      {!hideMainNav && !isMobileViewport && <SideNav />}
+      <main
+        className={`main-content${hideMainNav ? ' main-content--full' : ''}${!hideMainNav && isMobileViewport ? ' main-content--with-mobile-nav' : ''}`}
+      >
         <Outlet />
       </main>
     </>

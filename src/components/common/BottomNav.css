@@ -30,10 +30,16 @@
 .bottom-nav__item svg {
   width: 20px;
   height: 20px;
+  transition: transform 150ms ease, color 150ms ease;
 }
 
-.bottom-nav__item.active {
-  color: #010101;
+.bottom-nav__item.active,
+.bottom-nav__item.active-nav-item {
+  color: var(--color-primary);
+}
+
+.bottom-nav__item.active-nav-item svg {
+  transform: scale(1.08);
 }
 
 [data-theme='dark'] .bottom-nav {
@@ -45,6 +51,7 @@
   color: rgba(255, 255, 255, 0.72);
 }
 
-[data-theme='dark'] .bottom-nav__item.active {
-  color: #ffffff;
+[data-theme='dark'] .bottom-nav__item.active,
+[data-theme='dark'] .bottom-nav__item.active-nav-item {
+  color: var(--color-primary);
 }

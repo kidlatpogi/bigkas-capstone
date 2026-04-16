@@ -566,6 +566,7 @@
   width: 100%;
   display: block;
   max-height: 400px;
+  object-fit: cover;
 }
 
 .df-audio {

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Bigkas</string>
+    <string name="title_activity_main">Bigkas</string>
+    <string name="package_name">org.nationalu.bigkas</string>
+    <string name="custom_url_scheme">org.nationalu.bigkas</string>
+</resources>

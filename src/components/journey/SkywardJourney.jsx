@@ -50,7 +50,7 @@ function clampMapState(state, viewportEl, contentEl, scale) {
   /** Keep the map from being panned completely off-screen. */
   const minX = Math.min(0, W - w) - horizontalPadding;
   const maxX = Math.max(0, W - w) + horizontalPadding;
-  const verticalPadding = 0;
+  const verticalPadding = W <= 768 ? 92 : 24;
   let minY;
   let maxY;
   if (h > H) {
@@ -709,11 +709,7 @@ export default function SkywardJourney({
       if (pinchRef.current) return;
       if (tooltipNodeId) setTooltipNodeId(null);
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-      if (isMobile && e.pointerType === 'touch') return;
       const t = e.target;
-      if (t instanceof Element && t.closest('.skyward-journey-node-shell')) return;
-      if (t instanceof Element && t.closest('.skyward-journey-unit-header')) return;
-      if (t instanceof Element && t.closest('.skyward-journey-start-callout')) return;
       const m = mapRef.current;
       pointerPanRef.current = {
         pid: e.pointerId,
@@ -724,7 +720,7 @@ export default function SkywardJourney({
       };
       e.currentTarget.setPointerCapture(e.pointerId);
     },
-    [panelOpenId, tooltipNodeId, isMobile],
+    [panelOpenId, tooltipNodeId],
   );
 
   const onPointerMoveViewport = useCallback((e) => {

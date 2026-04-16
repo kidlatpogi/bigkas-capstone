@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { useAuthContext } from '../../context/useAuthContext';
 import { isValidEmail } from '../../utils/validators';
 import { ROUTES } from '../../utils/constants';
@@ -50,6 +51,7 @@ function resolvePostLoginRoute(user) {
  * Split layout: left branding panel + right form panel
  */
 function LoginPage({ managePageClass = true }) {
+  const isNative = Capacitor.isNativePlatform();
   const navigate = useNavigate();
   const location = useLocation();
   const {
@@ -253,7 +255,7 @@ function LoginPage({ managePageClass = true }) {
 
   return (
     <div className="auth-page">
-      <BackButton className="auth-login-back" to={ROUTES.HOME} />
+      {!isNative && <BackButton className="auth-login-back" to={ROUTES.HOME} />}
       <div className="auth-form-panel">
         <motion.div 
           className="auth-form-container floating-card"

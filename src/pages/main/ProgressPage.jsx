@@ -13,6 +13,7 @@ import {
 import { 
   IoChevronBack, 
   IoChevronForward, 
+  IoClose,
   IoTimeOutline, 
   IoCalendarOutline,
   IoTrophyOutline,
@@ -614,13 +615,29 @@ function ProgressPage() {
         </div>
 
         {/* History Sidebar */}
+        <button
+          type="button"
+          className={`progress-history-overlay${showMobileHistory ? ' is-visible' : ''}`}
+          aria-label="Close history overlay"
+          onClick={() => setShowMobileHistory(false)}
+        />
         <div
           id="progress-history-sidebar"
           className={`progress-history-sidebar${showMobileHistory ? ' history-visible' : ''}`}
         >
           <div className="history-container">
             <div className="history-sticky-header dashboard-anim-top dashboard-anim-delay-1">
-              <h2 className="history-title">History</h2>
+              <div className="history-header-row">
+                <h2 className="history-title">History</h2>
+                <button
+                  type="button"
+                  className="history-close-btn"
+                  aria-label="Close history"
+                  onClick={() => setShowMobileHistory(false)}
+                >
+                  <IoClose aria-hidden="true" />
+                </button>
+              </div>
               <div className="history-filters">
                 {HISTORY_FILTERS.map(f => (
                   <button 
@@ -672,7 +689,10 @@ function ProgressPage() {
                 <div 
                   key={s.id} 
                   className={`history-item dashboard-anim-bottom dashboard-anim-delay-${delay}`}
-                  onClick={() => navigate(buildRoute.sessionResult(s.id), { state: { ...s, source: 'progress' } })}
+                  onClick={() => {
+                    setShowMobileHistory(false);
+                    navigate(buildRoute.sessionResult(s.id), { state: { ...s, source: 'progress' } });
+                  }}
                   style={{ cursor: 'pointer' }}
                 >
                   <div className="history-item-top">

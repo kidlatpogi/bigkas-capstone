@@ -514,6 +514,10 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   margin-top: 16px;
 }
 
+.progress-history-overlay {
+  display: none;
+}
+
 .history-container {
   display: flex;
   flex-direction: column;
@@ -529,6 +533,28 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   color: #0b3954;
   margin: 0 0 0.5rem;
   letter-spacing: -0.02em;
+}
+
+.history-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.history-close-btn {
+  display: none;
+  width: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 999px;
+  background: rgba(11, 57, 84, 0.08);
+  color: #0b3954;
+}
+
+.history-close-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
 .history-sticky-header {
@@ -830,6 +856,11 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   color: #f3f4f6;
 }
 
+[data-theme='dark'] .history-close-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f3f4f6;
+}
+
 [data-theme='dark'] .history-date-field {
   color: #f3f4f6;
 }
@@ -949,6 +980,23 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
     animation: none;
   }
 
+  .progress-history-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    border: 0;
+    background: rgba(15, 23, 42, 0.42);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 119;
+  }
+
+  .progress-history-overlay.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
   .progress-left-content,
   .progress-stats-row,
   .progress-pillars-grid,
@@ -1000,6 +1048,34 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
   .history-title {
     font-size: 24px;
+    margin-bottom: 0;
+  }
+
+  .history-close-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .progress-history-sidebar.history-visible {
+    display: flex;
+    position: fixed;
+    left: var(--mobile-px);
+    right: var(--mobile-px);
+    top: calc(64px + var(--mobile-px));
+    bottom: calc(80px + env(safe-area-inset-bottom));
+    z-index: 120;
+    height: auto;
+    min-height: 0;
+    padding: 0;
+    overflow-y: auto;
+    border-radius: 20px;
+    background: #ffffff;
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+  }
+
+  .history-container {
+    padding: 16px;
   }
 
   .history-pagination-shell {

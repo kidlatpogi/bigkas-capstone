@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { useAuthContext } from '../../context/useAuthContext';
 import { isValidEmail, validatePassword } from '../../utils/validators';
 import { ROUTES } from '../../utils/constants';
@@ -18,6 +19,7 @@ import './RegisterPage.css';
  * Separate styling from Login page
  */
 function RegisterPage() {
+  const isNative = Capacitor.isNativePlatform();
   const navigate = useNavigate();
   const { register, loginWithGoogle, isLoading } = useAuthContext();
 
@@ -199,7 +201,7 @@ function RegisterPage() {
 
   return (
     <div className="auth-page">
-      <BackButton className="auth-mobile-back" />
+      {!isNative && <BackButton className="auth-mobile-back" />}
 
       {/* ── Left branding panel ── */}
       <div className="auth-brand-panel">

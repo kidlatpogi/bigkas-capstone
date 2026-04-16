@@ -1102,6 +1102,10 @@
     --skyward-shift: 28px;
   }
 
+  .skyward-journey-anim-header {
+    margin-top: 16px;
+  }
+
   .skyward-journey-header-card--interactive {
     padding: 14px 16px;
   }

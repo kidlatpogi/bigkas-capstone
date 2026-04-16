@@ -39,7 +39,6 @@ import PracticePage from '../pages/main/PracticePage';
 // Components
 import SideNav from '../components/common/SideNav';
 import MainMobileMenu from '../components/common/MainMobileMenu';
-import BackgroundAnalysisToast from '../components/common/BackgroundAnalysisToast';
 import bigkasLogo from '../assets/Temporary Logo.png';
 
 function getAuthenticatedRedirect(user, isAdminAuthenticated) {
@@ -117,7 +116,6 @@ function ProtectedRoute() {
 
   return (
     <>
-      <BackgroundAnalysisToast />
       {!hideMainNav && <SideNav />}
       {showMobileMainMenu && <MainMobileMenu />}
       <main className={`main-content${hideMainNav ? ' main-content--full' : ''}${showMobileMainMenu ? ' main-content--with-mobile-menu' : ''}`}>

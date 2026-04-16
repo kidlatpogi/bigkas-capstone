@@ -960,6 +960,17 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
     gap: 16px;
   }
 
+  .progress-left-content {
+    height: auto;
+    min-height: 0;
+  }
+
+  .progress-stats-row,
+  .progress-pillars-grid,
+  .progress-trend-card {
+    flex: none;
+  }
+
   .progress-trend-card,
   .stat-block,
   .pillar-card,

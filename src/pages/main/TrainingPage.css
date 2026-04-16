@@ -1218,6 +1218,11 @@ body.training-page-active {
     overflow-x: hidden !important;
   }
 
+  .tp-page {
+    width: calc(100% + (var(--mobile-px) * 2));
+    margin-inline: calc(var(--mobile-px) * -1);
+  }
+
   /* Create a tiny natural page scroll range so mobile browsers can collapse URL bars. */
   .tp-page {
     min-height: calc(100dvh + 1px);
@@ -1274,6 +1279,10 @@ body.training-page-active {
     min-height: 48px;
   }
 
+  .tp-left {
+    padding: 14px 16px 16px;
+  }
+
   .tp-camera-wrap {
     min-height: 200px;
     max-height: 26vh;
@@ -1281,7 +1290,7 @@ body.training-page-active {
 
   /* Record button: already 80×80, ensure spacing */
   .tp-controls {
-    padding: 8px 0 10px;
+    padding: 8px 8px 10px;
     gap: 12px;
   }
 

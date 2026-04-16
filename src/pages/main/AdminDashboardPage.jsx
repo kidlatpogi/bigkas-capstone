@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { HiOutlineUsers, HiOutlineChartBarSquare, HiOutlineHomeModern, HiOutlineCog6Tooth, HiCheckCircle, HiMagnifyingGlass, HiOutlineTrash, HiOutlinePencilSquare } from 'react-icons/hi2';
 import {
@@ -100,6 +101,7 @@ function AdminDashboardPage() {
   const [archivingUserId, setArchivingUserId] = useState(null);
 
   const [creatingAdmin, setCreatingAdmin] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [createAdminForm, setCreateAdminForm] = useState({
     email: '',
     password: '',
@@ -474,7 +476,16 @@ function AdminDashboardPage() {
     setUserPage(1); // Reset page when filters change
   }, [userSearchQuery, userLevelFilter]);
 
-  const onLogout = async () => {
+  const onLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
+  };
+
+  const handleConfirmLogout = async () => {
+    setShowLogoutConfirm(false);
     await logout();
     navigate(ROUTES.HOME, { replace: true });
   };
@@ -564,8 +575,43 @@ function AdminDashboardPage() {
     { key: 'audit', label: 'Audit Logs', icon: HiOutlineCog6Tooth, show: isSuperadmin },
   ].filter((i) => i.show);
 
+  const logoutModal = showLogoutConfirm && typeof document !== 'undefined'
+    ? createPortal(
+      <div className="admin-logout-modal-backdrop" role="presentation" onClick={handleCancelLogout}>
+        <div
+          className="admin-logout-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="admin-logout-title"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <h3 id="admin-logout-title">Log out?</h3>
+          <p>Are you sure you want to log out?</p>
+          <div className="admin-logout-modal-actions">
+            <button
+              type="button"
+              className="admin-logout-modal-btn admin-logout-modal-btn--cancel"
+              onClick={handleCancelLogout}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="admin-logout-modal-btn admin-logout-modal-btn--confirm"
+              onClick={handleConfirmLogout}
+            >
+              Log Out
+            </button>
+          </div>
+        </div>
+      </div>,
+      document.body,
+    )
+    : null;
+
   return (
-    <div className="admin-dashboard-page admin-layout" style={{ ['--admin-sidebar-width']: `${SIDEBAR_WIDTH}px` }}>
+    <>
+      <div className="admin-dashboard-page admin-layout" style={{ ['--admin-sidebar-width']: `${SIDEBAR_WIDTH}px` }}>
       <aside className="admin-rail">
         <div className="admin-rail-inner">
           <div className="admin-rail-brand">
@@ -1153,12 +1199,14 @@ function AdminDashboardPage() {
         </div>
       )}
 
-      {toastMessage && (
-        <div className={`admin-toast ${toastMessage.type}`}>
-          {toastMessage.text}
-        </div>
-      )}
-    </div>
+        {toastMessage && (
+          <div className={`admin-toast ${toastMessage.type}`}>
+            {toastMessage.text}
+          </div>
+        )}
+      </div>
+      {logoutModal}
+    </>
   );
 }
 

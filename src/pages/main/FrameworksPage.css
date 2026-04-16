@@ -525,6 +525,16 @@
 }
 
 @media (max-width: 768px) {
+  .fh-tabs {
+    display: flex;
+    overflow-x: auto;
+    white-space: nowrap;
+    flex-wrap: nowrap;
+    padding-bottom: 8px;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .fh-pagination-wrap {
     position: relative;
     left: auto;

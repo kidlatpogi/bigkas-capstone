@@ -214,7 +214,9 @@
 /* ── Mobile responsive ── */
 @media (max-width: 600px) {
   .practice-page {
-    padding: 32px 16px 200px;
+    width: calc(100% + (var(--mobile-px) * 2));
+    margin-inline: calc(var(--mobile-px) * -1);
+    padding: 32px 0 200px;
   }
   
   .practice-title {

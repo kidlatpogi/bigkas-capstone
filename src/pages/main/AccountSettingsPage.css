@@ -140,3 +140,21 @@
 [data-theme='dark'] .danger-zone {
   border-color: rgba(255,59,48,0.42);
 }
+
+@media (max-width: 768px) {
+  .subpage-layout.account-settings-layout {
+    min-height: calc(100dvh - 160px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    overflow-y: auto;
+    padding: var(--mobile-px);
+  }
+
+  .subpage-layout.account-settings-layout .subpage-frame,
+  .account-settings-page {
+    width: 100%;
+    max-width: 400px;
+  }
+}

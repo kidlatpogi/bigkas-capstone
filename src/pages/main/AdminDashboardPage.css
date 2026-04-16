@@ -139,6 +139,64 @@
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
+.admin-logout-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 12, 26, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1300;
+}
+
+.admin-logout-modal {
+  width: min(92vw, 360px);
+  border-radius: 14px;
+  padding: 18px;
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 14px 36px rgba(2, 12, 26, 0.28);
+}
+
+.admin-logout-modal h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.admin-logout-modal p {
+  margin: 10px 0 0;
+  font-size: 0.95rem;
+  color: #475569;
+}
+
+.admin-logout-modal-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.admin-logout-modal-btn {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-logout-modal-btn--cancel {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.admin-logout-modal-btn--confirm {
+  background: red;
+  color: #ffffff;
+}
+
 .admin-grid {
   display: grid;
   gap: 1.5rem;

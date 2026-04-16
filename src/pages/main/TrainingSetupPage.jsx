@@ -37,18 +37,18 @@ function TrainingSetupPage() {
   };
 
   return (
-    <div className="practice-page">
-      <div className="practice-wrap">
-        <div className="practice-header">
+    <div className="practice-page training-setup-page">
+      <div className="practice-wrap training-setup-wrap">
+        <div className="practice-header training-setup-header">
           <BackButton className="inner-page-back" onClick={() => navigate(-1)} aria-label="Go back" />
           <h1 className="practice-title">Training Setup</h1>
         </div>
-        <p className="practice-sub">
+        <p className="practice-sub training-setup-sub">
           Set up your training parameters and begin!
         </p>
 
-        <div className="practice-rand-wrap">
-          <div className="practice-rand-card">
+        <div className="practice-rand-wrap training-setup-content">
+          <div className="practice-rand-card training-setup-card">
             <h3 className="practice-rand-title">Free Speech Mode</h3>
             <p className="practice-rand-body">
               Impromptu speaking style. Focus on flow, tone, and pacing. The AI will evaluate your delivery in real time.

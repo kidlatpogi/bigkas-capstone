@@ -91,7 +91,15 @@
 
 /* Center the Training Setup page — matches standard inner-page width */
 .training-setup-page {
+  display: flex;
+  justify-content: center;
+  padding-inline: 24px;
   max-width: 860px;
+}
+
+.training-setup-wrap {
+  width: min(100%, 720px);
+  margin-inline: auto;
 }
 
 .training-setup-header {
@@ -117,6 +125,20 @@
   height: 52px;
   font-size: 16px;
   border-radius: 14px;
+}
+
+.training-setup-sub {
+  max-width: 640px;
+  margin-inline: auto;
+}
+
+.training-setup-content {
+  align-items: center;
+}
+
+.training-setup-card {
+  width: min(100%, 640px);
+  margin-inline: auto;
 }
 
 .ts-select-script-label {
@@ -302,6 +324,16 @@ body:has(.training-setup-page) .theme-toggle-wrap {
 
 /* ── Mobile responsive ── */
 @media (max-width: 600px) {
+  .training-setup-page {
+    padding-inline: 16px;
+  }
+
+  .training-setup-wrap,
+  .training-setup-card,
+  .training-setup-sub {
+    width: 100%;
+  }
+
   /* Filter chips: bigger tap target */
   .ts-chip {
     height: 44px;

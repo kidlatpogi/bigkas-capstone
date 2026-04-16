@@ -165,6 +165,62 @@
   }
 }
 
+@media (max-width: 1366px) and (min-width: 1025px) {
+  .activity-two-col {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+  }
+
+  .activity-col-sidebar {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .activity-col-sidebar .dashboard-card {
+    border-radius: 20px;
+  }
+
+  .activity-col-sidebar .dashboard-consistency-card,
+  .activity-col-sidebar .dashboard-level-card,
+  .activity-col-sidebar .dashboard-mode-card {
+    padding: 24px 20px;
+  }
+
+  .activity-col-sidebar .dashboard-consistency-value {
+    font-size: 3.2rem;
+    gap: 10px;
+  }
+
+  .activity-col-sidebar .dashboard-consistency-fire {
+    width: 42px;
+    height: 42px;
+  }
+
+  .activity-col-sidebar .dashboard-consistency-copy,
+  .activity-col-sidebar .dashboard-activity-summary,
+  .activity-col-sidebar .dashboard-mode-copy,
+  .activity-col-sidebar .activity-practice-option-copy {
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+
+  .activity-col-sidebar .dashboard-section-title--xl {
+    font-size: 1.9rem;
+  }
+
+  .activity-col-sidebar .dashboard-mode-title {
+    font-size: 1.3rem;
+  }
+
+  .activity-col-sidebar .dashboard-mode-button {
+    width: 100%;
+  }
+
+  .activity-col-sidebar .activity-practice-option-card {
+    padding: 12px;
+    gap: 8px;
+  }
+}
+
 @media (max-width: 1024px) {
   .activity-two-col {
     display: block;

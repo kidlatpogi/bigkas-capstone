@@ -297,6 +297,13 @@
 
 /* 640 x 960 and 360 - 800 */
 @media (max-width: 768px) {
+  .dashboard-sidebar-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: stretch;
+  }
+
   .dashboard-layout {
     grid-template-columns: 1fr;
     grid-template-areas:
@@ -316,6 +323,10 @@
     margin-bottom: 8px;
   }
   .dashboard-card {
+    width: 100%;
+    height: auto;
+    min-height: max-content;
+    align-self: flex-start;
     border-radius: 28px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
   }

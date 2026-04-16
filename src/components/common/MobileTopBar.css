@@ -29,9 +29,13 @@
   color: #010101;
 }
 
-.mobile-top-bar__profile-link svg {
-  width: 28px;
-  height: 28px;
+.mobile-topbar-profile-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--color-primary);
+  background: #ffffff;
 }
 
 [data-theme='dark'] .mobile-top-bar {
@@ -42,4 +46,8 @@
 [data-theme='dark'] .mobile-top-bar__brand,
 [data-theme='dark'] .mobile-top-bar__profile-link {
   color: #f4f4f5;
+}
+
+[data-theme='dark'] .mobile-topbar-profile-img {
+  background: #1f1f22;
 }

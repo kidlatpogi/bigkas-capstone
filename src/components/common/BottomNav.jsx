@@ -1,16 +1,16 @@
 import { NavLink } from 'react-router-dom';
 import {
   IoBookOutline,
+  IoGridOutline,
   IoHomeOutline,
   IoSettingsOutline,
-  IoSpeedometerOutline,
   IoStatsChartOutline,
 } from 'react-icons/io5';
 import { ROUTES } from '../../utils/constants';
 import './BottomNav.css';
 
 const NAV_ITEMS = [
-  { label: 'Dashboard', to: ROUTES.DASHBOARD, icon: IoSpeedometerOutline },
+  { label: 'Dashboard', to: ROUTES.DASHBOARD, icon: IoGridOutline },
   { label: 'Progress', to: ROUTES.PROGRESS, icon: IoStatsChartOutline },
   { label: 'Home', to: ROUTES.ACTIVITY, icon: IoHomeOutline },
   { label: 'Learn', to: ROUTES.FRAMEWORKS, icon: IoBookOutline },
@@ -24,7 +24,7 @@ function BottomNav() {
         <NavLink
           key={to}
           to={to}
-          className={({ isActive }) => `bottom-nav__item${isActive ? ' active' : ''}`}
+          className={({ isActive }) => `bottom-nav__item${isActive ? ' active active-nav-item' : ''}`}
           aria-label={label}
         >
           <Icon aria-hidden="true" />

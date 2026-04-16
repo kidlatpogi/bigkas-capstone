@@ -12,6 +12,7 @@
   --bp-lg: 1024px;
   --bp-xl: 1440px;
   --bp-2k: 2000px;
+  --mobile-px: 16px;
 
   /* Colors — Bigkas design tokens (primary: gold #FCBA04, dark: #010101) */
   --color-primary: #FCBA04;
@@ -252,9 +253,14 @@ img {
 }
 
 @media (max-width: 767px) {
+  .main-content {
+    padding-left: var(--mobile-px);
+    padding-right: var(--mobile-px);
+  }
+
   .main-content.main-content--with-mobile-nav {
     padding-top: 64px;
-    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
   }
 }
 

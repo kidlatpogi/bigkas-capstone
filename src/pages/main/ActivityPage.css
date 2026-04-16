@@ -406,12 +406,21 @@ body.skyward-journey-modal-open .activity-sticky-shell {
 
 @media (max-width: 768px) {
   .activity-content-wrap--journey-scroll {
+    min-height: calc(100dvh - 144px);
+    height: auto;
     overflow-y: auto;
+    overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
   }
 
+  .activity-content-wrap--journey-scroll {
+    overflow-x: hidden;
+  }
+
   .activity-content-wrap--journey-scroll .activity-task-list--journey {
-    padding-bottom: 150px;
+    min-height: calc(100dvh - 144px);
+    padding-top: 40px;
+    padding-bottom: 120px;
     -webkit-overflow-scrolling: touch;
   }
 }

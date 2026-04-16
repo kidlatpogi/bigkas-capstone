@@ -1078,6 +1078,18 @@
   .skyward-journey {
     --skyward-shift: 28px;
   }
+
+  .skyward-journey-map-viewport {
+    min-height: calc(100dvh - 144px);
+    height: calc(100dvh - 144px);
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+
+  .skyward-journey-column {
+    padding-top: 40px;
+    padding-bottom: 120px;
+  }
 }
 
 @media (max-width: 480px) {

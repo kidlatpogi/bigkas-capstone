@@ -172,6 +172,11 @@
   max-height: none;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
+  cursor: grab;
+}
+
+.skyward-journey-map-viewport:active {
+  cursor: grabbing;
 }
 
 .skyward-journey-map-layer {
@@ -1117,15 +1122,14 @@
   .skyward-journey-map-viewport {
     min-height: calc(100dvh - 160px);
     height: calc(100dvh - 160px);
-    overflow-y: auto;
-    overflow-x: hidden;
-    overscroll-behavior-y: contain;
-    touch-action: pan-y;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none;
   }
 
   .skyward-journey-column {
-    padding-top: 40px;
-    padding-bottom: 80px;
+    padding-top: 92px;
+    padding-bottom: 160px;
   }
 }
 

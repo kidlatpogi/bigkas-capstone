@@ -50,7 +50,7 @@ function clampMapState(state, viewportEl, contentEl, scale) {
   /** Keep the map from being panned completely off-screen. */
   const minX = Math.min(0, W - w) - horizontalPadding;
   const maxX = Math.max(0, W - w) + horizontalPadding;
-  const verticalPadding = 24;
+  const verticalPadding = 0;
   let minY;
   let maxY;
   if (h > H) {
@@ -170,8 +170,8 @@ const MapHeaderCard = styled.div`
   flex-shrink: 0;
 
   @media (max-width: 768px) {
-    margin-top: 1rem;
-    top: calc(64px + 1rem + env(safe-area-inset-top, 0px));
+    margin-top: -2rem;
+    top: calc(64px + -2rem + env(safe-area-inset-top, 0px));
     z-index: 1600;
   }
 `;

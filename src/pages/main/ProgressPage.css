@@ -902,12 +902,24 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
     gap: 1.5rem;
   }
 
+  .progress-left-content,
+  .progress-stats-row,
+  .progress-pillars-grid,
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
   .progress-trend-card,
   .stat-block,
   .pillar-card,
   .history-item {
+    width: 100%;
+    box-sizing: border-box;
     padding: 1.5rem;
-    border-radius: 20px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(11, 57, 84, 0.08);
   }
 
   .stat-block,

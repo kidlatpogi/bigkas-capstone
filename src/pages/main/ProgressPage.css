@@ -19,6 +19,15 @@
   align-items: center;
 }
 
+.progress-page-bg {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.progress-page-bg::-webkit-scrollbar {
+  display: none;
+}
+
 html.progress-page-active,
 body.progress-page-active,
 body.progress-page-active #root {

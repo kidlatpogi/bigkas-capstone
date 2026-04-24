@@ -449,15 +449,33 @@ function UserProfilingPage() {
       )}
 
       {screen === 'outro' && (
-        <section className="profiling-gate profiling-gate--pop">
-          <p className="profiling-gate-kicker">Almost there</p>
-          <h1>Nearly there we will just make you complete 1 more test</h1>
-          <p>
-            You are all set. Complete the pre-test naturally so we can measure your true baseline performance.
-          </p>
-          <button type="button" className="profiling-primary" onClick={continueToPretest}>
-            Continue
-          </button>
+        <section className="profiling-intro profiling-gate--pop">
+          <article className="profiling-intro-bubble profiling-intro-bubble--pretest" aria-label="Before pre-testing message">
+            <p className="profiling-pretest-text">
+              <strong>B-01:</strong>
+              <br />
+              You&apos;ve made it to the final step! To wrap things up, let&apos;s try a quick Free Speech Pre-test.
+            </p>
+            <p className="profiling-pretest-text profiling-pretest-text--mission">
+              <strong>Your mission:</strong>
+              <br />
+              speak for at least <strong>30 seconds</strong> on the topic, <strong>&apos;Tell me about yourself.&apos;</strong> Don&apos;t
+              overthink it-just be you and let your voice lead the way!
+            </p>
+            <div className="profiling-intro-actions profiling-intro-actions--end">
+              <div className="profiling-submit-btn">
+                <button type="button" onClick={continueToPretest}>
+                  Continue
+                </button>
+              </div>
+            </div>
+          </article>
+
+          <div className="profiling-intro-robot">
+            <div className="profiling-intro-robot-media profiling-intro-robot-media--ready" aria-hidden="true">
+              <img src={robotReadyImage} alt="" className="profiling-ready-image" />
+            </div>
+          </div>
         </section>
       )}
     </div>

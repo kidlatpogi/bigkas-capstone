@@ -232,6 +232,7 @@ function UserProfilingPage() {
   const continueToPretest = () => {
     navigate(ROUTES.USER_PRETEST, { replace: true });
   };
+  const canProceedQuestion = isQuestionAnswered(currentQuestion, form[currentQuestion.key]);
 
   const handleQuestionBack = () => {
     if (isSubmitting) return;
@@ -379,7 +380,12 @@ function UserProfilingPage() {
               <button type="button" className="profiling-ready-btn profiling-ready-btn--back" onClick={handleQuestionBack}>
                 Back
               </button>
-              <button type="button" className="profiling-ready-btn profiling-ready-btn--next" onClick={handleQuestionNext}>
+              <button
+                type="button"
+                className="profiling-ready-btn profiling-ready-btn--next"
+                onClick={handleQuestionNext}
+                disabled={!canProceedQuestion || isSubmitting}
+              >
                 {currentIndex >= totalSteps - 1 ? 'Finish' : 'Next'}
               </button>
             </div>
@@ -388,9 +394,6 @@ function UserProfilingPage() {
           <div className="profiling-question-lower">
             <div className="profiling-question-robot-wrap" aria-hidden="true">
               <img src={robotQuestionImage} alt="" className="profiling-question-robot-image" />
-              <div className="profiling-question-robot-badge">
-                {currentIndex + 1}/{totalSteps}
-              </div>
             </div>
 
             <div className="profiling-question-options-wrap">

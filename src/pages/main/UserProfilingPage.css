@@ -75,6 +75,9 @@
 
 .profiling-intro-bubble--ready {
   width: min(100%, 34rem);
+  position: relative;
+  top: 5rem;
+  z-index: 60;
 }
 
 .profiling-ready-text {
@@ -187,6 +190,8 @@
   display: grid;
   justify-items: center;
   gap: 0.5rem;
+  position: relative;
+  z-index: 8;
 }
 
 .profiling-intro-robot-media {
@@ -197,6 +202,8 @@
 .profiling-intro-robot-media--ready {
   width: 100%;
   overflow: hidden;
+  position: relative;
+  z-index: 8;
 }
 
 .profiling-intro-video {
@@ -215,12 +222,16 @@
   object-fit: contain;
   display: block;
   margin-left: -16%;
+  position: relative;
+  z-index: 8;
 }
 
 .profiling-intro-audio-action {
   display: flex;
   justify-content: center;
   width: 100%;
+  position: relative;
+  z-index: 9;
 }
 
 .profiling-audio-toggle {
@@ -764,6 +775,11 @@
   .profiling-intro-bubble p {
     font-size: 0.95rem;
     line-height: 1.42;
+  }
+
+  .profiling-intro-bubble--ready {
+    top: 4rem;
+    z-index: 60;
   }
 
   .profiling-intro-actions {

@@ -5,6 +5,7 @@ import { isValidEmail } from '../../utils/validators';
 import { ROUTES } from '../../utils/constants';
 import PasswordToggle from '../../components/common/PasswordToggle';
 import kamayImage from '../../assets/backgrounds/Login/Kamay.png';
+import googleLogo from '../../assets/logos/Google-Logo.png';
 import { motion } from 'framer-motion';
 import './LoginPage.css';
 
@@ -53,6 +54,7 @@ function LoginPage({ managePageClass = true }) {
   const location = useLocation();
   const {
     login,
+    loginWithGoogle,
     resendVerificationEmail,
     isLoading,
   } = useAuthContext();
@@ -142,6 +144,56 @@ function LoginPage({ managePageClass = true }) {
     observer.observe(layoutRef.current);
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!root) return undefined;
+
+    const setKeyboardOffset = () => {
+      if (layoutMode !== 'stack') {
+        root.style.setProperty('--login-kb-offset', '0px');
+        return;
+      }
+
+      const vv = window.visualViewport;
+      if (!vv) {
+        root.style.setProperty('--login-kb-offset', '0px');
+        return;
+      }
+
+      const keyboardOffset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      root.style.setProperty('--login-kb-offset', `${Math.round(keyboardOffset)}px`);
+    };
+
+    setKeyboardOffset();
+    window.visualViewport?.addEventListener('resize', setKeyboardOffset);
+    window.visualViewport?.addEventListener('scroll', setKeyboardOffset);
+    window.addEventListener('resize', setKeyboardOffset);
+
+    return () => {
+      root.style.setProperty('--login-kb-offset', '0px');
+      window.visualViewport?.removeEventListener('resize', setKeyboardOffset);
+      window.visualViewport?.removeEventListener('scroll', setKeyboardOffset);
+      window.removeEventListener('resize', setKeyboardOffset);
+    };
+  }, [layoutMode]);
+
+  useEffect(() => {
+    if (layoutMode !== 'stack') return undefined;
+
+    const handleFocusIn = (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (!target.matches('input, textarea, select')) return;
+
+      window.setTimeout(() => {
+        target.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+      }, 120);
+    };
+
+    document.addEventListener('focusin', handleFocusIn);
+    return () => document.removeEventListener('focusin', handleFocusIn);
+  }, [layoutMode]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -233,6 +285,16 @@ function LoginPage({ managePageClass = true }) {
       ...prev,
       submit: result.error || 'Unable to resend verification email.',
     }));
+  };
+
+  const handleGoogleSignIn = async () => {
+    const result = await loginWithGoogle();
+    if (!result?.success) {
+      setErrors((prev) => ({
+        ...prev,
+        submit: result?.error || 'Google sign-in failed. Please try again.',
+      }));
+    }
   };
 
   const lockoutMessage = lockoutSeconds > 0
@@ -376,6 +438,19 @@ function LoginPage({ managePageClass = true }) {
                   disabled={isLoading || lockoutSeconds > 0}
                 >
                   {isLoading ? <span className="btn-loader"></span> : (lockoutSeconds > 0 ? `LOCKED (${formatCountdown(lockoutSeconds)})` : 'LOGIN')}
+                </button>
+              </div>
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <div className="auth-google-btn">
+                <button
+                  type="button"
+                  onClick={handleGoogleSignIn}
+                  disabled={isLoading}
+                >
+                  <img src={googleLogo} alt="Google" className="auth-google-logo" />
+                  <span>LOGIN WITH GOOGLE</span>
                 </button>
               </div>
             </motion.div>

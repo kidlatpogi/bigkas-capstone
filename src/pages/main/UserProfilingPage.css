@@ -116,10 +116,12 @@
 }
 
 .profiling-intro-robot {
-  width: min(100%, 24rem);
-  max-width: 24rem;
-  margin-top: clamp(0.35rem, 1.2vw, 0.7rem);
-  overflow: hidden;
+  width: min(100%, 26rem);
+  max-width: 26rem;
+  margin-top: clamp(0.6rem, 1.8vw, 1.2rem);
+  align-self: end;
+  justify-self: center;
+  overflow: visible;
 }
 
 .profiling-intro-video {
@@ -127,8 +129,6 @@
   height: auto;
   display: block;
   object-fit: contain;
-  transform: scale(1.45);
-  transform-origin: center 38%;
 }
 
 .profiling-gate {
@@ -629,13 +629,9 @@
   }
 
   .profiling-intro-robot {
-    width: min(100%, 16rem);
-    max-width: 16rem;
-  }
-
-  .profiling-intro-video {
-    transform: scale(1.26);
-    transform-origin: center 40%;
+    width: min(100%, 18rem);
+    max-width: 18rem;
+    margin-top: 0.65rem;
   }
 
   .profiling-card {

@@ -1,4 +1,10 @@
 .fh-page {
+  --font-logo: clamp(1.125rem, 1rem + 0.5vw, 1.375rem);
+  --font-heading: clamp(1.5rem, 1.2rem + 1vw, 1.75rem);
+  --font-subheading: clamp(1rem, 0.8rem + 0.6vw, 1.25rem);
+  --font-body: clamp(0.95rem, 0.9rem + 0.2vw, 1rem);
+  --font-small: clamp(0.8125rem, 0.78rem + 0.15vw, 0.875rem);
+  --font-button: clamp(0.95rem, 0.9rem + 0.2vw, 1rem);
   width: 100%;
   margin: 0;
   padding: var(--responsive-page-padding);
@@ -31,12 +37,12 @@
 
 .fh-search {
   width: 100%;
-  height: 2.75rem;
+  height: 3.375rem;
   border-radius: 999px;
   border: 1px solid #ececec;
   background: #ffffff;
   padding: 0 2.25rem 0 2.5rem;
-  font-size: 0.875rem;
+  font-size: var(--font-body);
   color: #010101;
 }
 
@@ -56,12 +62,12 @@
 
 .fh-sort {
   width: 100%;
-  height: 2.75rem;
+  height: 3.375rem;
   border-radius: 999px;
   border: 1px solid #ececec;
   background: #ffffff;
   padding: 0 0.95rem;
-  font-size: 0.875rem;
+  font-size: var(--font-body);
   color: #010101;
   appearance: none;
   padding-right: 2rem;
@@ -100,7 +106,7 @@
   border-radius: 999px;
   background: transparent;
   color: #010101;
-  font-size: 0.8rem;
+  font-size: var(--font-small);
   font-weight: 700;
   padding: 0.5rem 1rem;
   white-space: nowrap;
@@ -187,7 +193,7 @@
 
 .fh-card-name {
   margin: 0 0 0.2rem;
-  font-size: 0.98rem;
+  font-size: var(--font-subheading);
   font-weight: 800;
   color: #010101;
   line-height: 1.35;
@@ -195,14 +201,14 @@
 
 .fh-card-author {
   margin: 0 0 0.18rem;
-  font-size: 0.76rem;
+  font-size: var(--font-small);
   font-weight: 700;
   color: rgba(1, 1, 1, 0.64);
 }
 
 .fh-card-summary {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: var(--font-body);
   color: rgba(1, 1, 1, 0.58);
   line-height: 1.45;
 }
@@ -514,6 +520,22 @@
   }
 }
 
+@media (max-width: 1200px) {
+  .fh-page {
+    padding: clamp(1rem, 2.5vw, 1.4rem);
+  }
+
+  .fh-search,
+  .fh-sort {
+    height: 54px;
+    font-size: var(--font-body);
+  }
+
+  .fh-tab {
+    font-size: var(--font-small);
+  }
+}
+
 @media (max-width: 680px) {
   .fh-grid {
     grid-template-columns: 1fr;
@@ -521,6 +543,27 @@
 
   .fh-page {
     padding-bottom: 100px;
+  }
+}
+
+@media (max-width: 520px) {
+  .fh-page {
+    padding: 1rem;
+    padding-bottom: calc(1rem + 6rem);
+  }
+
+  .fh-search,
+  .fh-sort {
+    height: 54px;
+    font-size: 1rem;
+  }
+
+  .fh-card-name {
+    font-size: 1rem;
+  }
+
+  .fh-card-summary {
+    font-size: 0.95rem;
   }
 }
 

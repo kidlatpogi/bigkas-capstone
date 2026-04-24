@@ -7,8 +7,8 @@
   --dashboard-muted: rgba(26, 36, 24, 0.58);
   --dashboard-dark: #1a2418;
   --dashboard-dark-deep: #0d140c;
-  --dashboard-accent: #f59b00;
-  --dashboard-accent-strong: #fcba04;
+  --dashboard-accent: #f18f01;
+  --dashboard-accent-strong: #f18f01;
   --dashboard-success-0: #eef4e8;
   --dashboard-success-1: #dce8d8;
   --dashboard-success-2: #a9c2a4;
@@ -658,7 +658,7 @@
 }
 
 .dashboard-consistency-kicker {
-  color: #ffb020;
+  color: #f18f01;
   font-size: 0.75rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -696,7 +696,7 @@
 }
 
 .dashboard-week-pill.is-active {
-  background: #f59b00;
+  background: #f18f01;
   color: #ffffff;
 }
 

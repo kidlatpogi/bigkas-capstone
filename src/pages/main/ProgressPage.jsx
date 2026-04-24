@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { 
   IoChevronBack, 
+  IoChevronDown,
   IoChevronForward, 
   IoClose,
   IoTimeOutline, 
@@ -178,6 +179,9 @@ function ProgressPage() {
   const [historyEndDate, setHistoryEndDate] = useState('');
   const [historyPage, setHistoryPage] = useState(0);
   const [showMobileHistory, setShowMobileHistory] = useState(false);
+  const [isHistoryDateRangeExpanded, setIsHistoryDateRangeExpanded] = useState(() =>
+    typeof window === 'undefined' ? true : window.innerWidth > 768,
+  );
   const [historyPageSize, setHistoryPageSize] = useState(() =>
     getResponsiveHistoryPageSize(typeof window !== 'undefined' ? window.innerHeight : 1080),
   );
@@ -652,32 +656,46 @@ function ProgressPage() {
                   </button>
                 ))}
               </div>
-              <div className="history-date-range">
-                <div className="history-sort-label">Date range</div>
-                <div className="history-date-grid">
-                  <label className="history-date-field">
-                    <span>Start date</span>
-                    <input
-                      type="date"
-                      value={historyStartDate}
-                      onChange={(event) => {
-                        setHistoryStartDate(event.target.value);
-                        setHistoryPage(0);
-                      }}
-                    />
-                  </label>
-                  <label className="history-date-field">
-                    <span>End date</span>
-                    <input
-                      type="date"
-                      value={historyEndDate}
-                      onChange={(event) => {
-                        setHistoryEndDate(event.target.value);
-                        setHistoryPage(0);
-                      }}
-                    />
-                  </label>
-                </div>
+              <div className={`history-date-range${isHistoryDateRangeExpanded ? ' is-expanded' : ''}`}>
+                <button
+                  type="button"
+                  className="history-date-range-toggle"
+                  aria-expanded={isHistoryDateRangeExpanded}
+                  aria-controls="history-date-range-content"
+                  onClick={() => setIsHistoryDateRangeExpanded((current) => !current)}
+                >
+                  <span className="history-sort-label">Date range</span>
+                  <IoChevronDown
+                    aria-hidden="true"
+                    className={`history-date-range-chevron${isHistoryDateRangeExpanded ? ' is-expanded' : ''}`}
+                  />
+                </button>
+                {isHistoryDateRangeExpanded ? (
+                  <div id="history-date-range-content" className="history-date-grid">
+                    <label className="history-date-field">
+                      <span>Start date</span>
+                      <input
+                        type="date"
+                        value={historyStartDate}
+                        onChange={(event) => {
+                          setHistoryStartDate(event.target.value);
+                          setHistoryPage(0);
+                        }}
+                      />
+                    </label>
+                    <label className="history-date-field">
+                      <span>End date</span>
+                      <input
+                        type="date"
+                        value={historyEndDate}
+                        onChange={(event) => {
+                          setHistoryEndDate(event.target.value);
+                          setHistoryPage(0);
+                        }}
+                      />
+                    </label>
+                  </div>
+                ) : null}
               </div>
             </div>
 

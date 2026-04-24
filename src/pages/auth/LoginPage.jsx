@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../context/useAuthContext';
 import { isValidEmail } from '../../utils/validators';
 import { ROUTES } from '../../utils/constants';
+import PasswordToggle from '../../components/common/PasswordToggle';
 import kamayImage from '../../assets/backgrounds/Login/Kamay.png';
 import { motion } from 'framer-motion';
 import './LoginPage.css';
@@ -47,6 +48,7 @@ function resolvePostLoginRoute(user) {
  * Split layout: left branding panel + right form panel
  */
 function LoginPage({ managePageClass = true }) {
+  const layoutRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
   const {
@@ -67,6 +69,8 @@ function LoginPage({ managePageClass = true }) {
   const [resendSuccess, setResendSuccess] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [lockoutSeconds, setLockoutSeconds] = useState(() => getStoredLockoutSeconds());
+  const [showPassword, setShowPassword] = useState(false);
+  const [layoutMode, setLayoutMode] = useState('split');
 
   // Show the "Account created" banner from navigation state, auto-clear after 3s
   useEffect(() => {
@@ -126,6 +130,18 @@ function LoginPage({ managePageClass = true }) {
       }
     };
   }, [managePageClass]);
+
+  useEffect(() => {
+    if (!layoutRef.current || typeof ResizeObserver === 'undefined') return undefined;
+
+    const observer = new ResizeObserver(([entry]) => {
+      const width = entry.contentRect?.width || window.innerWidth;
+      setLayoutMode(width < 960 ? 'stack' : 'split');
+    });
+
+    observer.observe(layoutRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -236,154 +252,140 @@ function LoginPage({ managePageClass = true }) {
     visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
   };
 
-  const heroBars = [
-    { left: '3%', top: '12%', h: '60%' },
-    { left: '12%', top: '28%', h: '40%' },
-    { left: '21%', top: '44%', h: '24%' },
-    { left: '30%', top: '22%', h: '52%' },
-    { left: '39%', top: '34%', h: '34%' },
-    { left: '48%', top: '10%', h: '68%' },
-    { left: '57%', top: '24%', h: '46%' },
-    { left: '66%', top: '16%', h: '58%' },
-    { left: '75%', top: '28%', h: '40%' },
-    { left: '84%', top: '12%', h: '60%' },
-    { left: '93%', top: '44%', h: '26%' },
-  ];
-
   return (
-    <div className="min-h-dvh w-full bg-[#064E3B] lg:flex">
-      <section className="relative hidden overflow-hidden bg-[#064E3B] lg:block lg:w-1/2">
-        <p className="pt-5 text-center font-nunito text-[12px] font-semibold text-white">
-          Just you and the mic. No judgement. Just Data
-        </p>
-
-        <div className="absolute inset-0">
-          {heroBars.map((bar, index) => (
-            <div
-              key={`${bar.left}-${index}`}
-              className="absolute w-[72px] rounded-full bg-[#34D399] opacity-50"
-              style={{ left: bar.left, top: bar.top, height: bar.h }}
-            />
+    <div
+      ref={layoutRef}
+      className="auth-page"
+      data-layout={layoutMode}
+    >
+      <div className="auth-hero-panel" aria-hidden="true">
+        <p className="auth-hero-subtitle">Just you and the mic. No judgement. Just Data</p>
+        <div className="auth-wave-pattern">
+          {Array.from({ length: 10 }).map((_, index) => (
+            <span key={`bar-${index}`} className={`auth-wave-bar auth-wave-bar-${index + 1}`} />
           ))}
         </div>
-
-        <img
-          src={kamayImage}
-          alt="Hand holding phone"
-          className="absolute bottom-0 left-0 z-10 h-[70%] max-h-[760px] w-auto object-contain"
-        />
-
-        <h1 className="absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 whitespace-pre-line text-center font-nunito text-[60px] font-extrabold leading-[0.95] text-white">
-          Master{'\n'}Speaking
+        <img src={kamayImage} alt="" className="auth-hero-kamay" />
+        <h1 className="auth-hero-title">
+          Master
+          <br />
+          Speaking
         </h1>
-      </section>
+      </div>
 
-      <section className="relative flex min-h-dvh w-full items-center justify-center px-4 py-6 lg:w-1/2 lg:justify-end lg:px-0 lg:py-0">
+      <div className="auth-form-panel">
         <motion.div
-          className="relative w-full max-w-[540px] overflow-hidden rounded-3xl bg-[#FDFDF9] p-7 sm:p-10 lg:h-dvh lg:max-w-[560px] lg:rounded-none lg:rounded-l-[24px] lg:pl-7 lg:pr-10"
+          className="auth-form-container floating-card"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
         >
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[rgba(52,211,153,0.18)] to-transparent" />
+          <motion.div variants={itemVariants} className="auth-brand">Bigkas</motion.div>
+          <motion.h2 variants={itemVariants} className="auth-form-title">Login</motion.h2>
 
-          <motion.h1 variants={itemVariants} className="relative z-10 font-fredoka text-[52px] leading-none text-[#059669]">
-            Bigkas
-          </motion.h1>
-
-          <div className="relative z-10 flex min-h-[76dvh] items-center justify-center lg:min-h-[calc(100dvh-90px)]">
-            <form className="w-full max-w-[360px] font-nunito" onSubmit={handleLogin}>
-              <motion.h2 variants={itemVariants} className="mb-10 text-center font-nunito text-[44px] font-semibold text-[#111827]">
-                Login
-              </motion.h2>
-
-              <motion.div variants={itemVariants} className="mb-5">
-                <label htmlFor="email" className="mb-1.5 block text-[28px] font-semibold text-[#111827]">Email</label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  className={`h-[54px] w-full rounded-full border bg-white px-6 text-[22px] outline-none transition ${errors.email ? 'border-red-500' : 'border-[#111827]'}`}
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="name@gmail.com"
-                  disabled={isLoading || lockoutSeconds > 0}
-                />
-                {errors.email && <span className="mt-1 block text-sm text-red-600">{errors.email}</span>}
+          <form className="auth-form" onSubmit={handleLogin}>
+            {showAccountCreated && !showUnverified && !errors.submit && (
+              <motion.div variants={itemVariants} className="auth-success-banner">
+                Account created successfully! Please check your email to verify your account before logging in.
               </motion.div>
+            )}
 
-              <motion.div variants={itemVariants} className="mb-2">
-                <label htmlFor="password" className="mb-1.5 block text-[28px] font-semibold text-[#111827]">Password</label>
+            {showAccountVerified && !showUnverified && !errors.submit && (
+              <motion.div variants={itemVariants} className="auth-success-banner">
+                ✓ Email verified! You can now log in.
+              </motion.div>
+            )}
+
+            {resendSuccess && (
+              <motion.div variants={itemVariants} className="auth-success-banner">
+                Verification email resent! Please check your inbox.
+              </motion.div>
+            )}
+
+            {(lockoutMessage || errors.submit) && !showUnverified && (
+              <motion.div variants={itemVariants} className="auth-error-banner">{lockoutMessage || errors.submit}</motion.div>
+            )}
+
+            {showUnverified && (
+              <motion.div variants={itemVariants} className="auth-unverified-banner">
+                <p className="auth-unverified-text">
+                  Verify your Email Address. Check your inbox and spam folder for the verification link.
+                </p>
+                <button
+                  type="button"
+                  className="auth-resend-btn"
+                  onClick={handleResendVerification}
+                  disabled={resendLoading || resendCooldown > 0}
+                >
+                  {resendLoading
+                    ? 'Sending...'
+                    : resendCooldown > 0
+                      ? `Resend available in ${resendCooldown}s`
+                      : 'Resend Verification Email'}
+                </button>
+              </motion.div>
+            )}
+
+            <motion.div variants={itemVariants} className="form-group">
+              <label htmlFor="email" className="form-label">Email</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                className={`form-input ${errors.email ? 'form-input-error' : ''}`}
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="name@gmail.com"
+                disabled={isLoading || lockoutSeconds > 0}
+              />
+              {errors.email && <span className="form-error">{errors.email}</span>}
+            </motion.div>
+
+            <motion.div variants={itemVariants} className="form-group">
+              <label htmlFor="password" className="form-label">Password</label>
+              <div className="pw-input-wrap">
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   id="password"
                   name="password"
-                  className={`h-[54px] w-full rounded-full border bg-white px-6 text-[26px] outline-none transition ${errors.password ? 'border-red-500' : 'border-[#111827]'}`}
+                  className={`form-input ${errors.password ? 'form-input-error' : ''}`}
                   value={formData.password}
                   onChange={handleChange}
-                  placeholder="••••••••••"
+                  placeholder="••••••••"
                   disabled={isLoading || lockoutSeconds > 0}
                   autoComplete="current-password"
                 />
-                {errors.password && <span className="mt-1 block text-sm text-red-600">{errors.password}</span>}
-              </motion.div>
+                <PasswordToggle
+                  isVisible={showPassword}
+                  onToggle={() => setShowPassword((v) => !v)}
+                  label="password"
+                  disabled={isLoading || lockoutSeconds > 0}
+                />
+              </div>
+              {errors.password && <span className="form-error">{errors.password}</span>}
+            </motion.div>
 
-              <motion.div variants={itemVariants} className="mb-8 text-right">
-                <Link to={ROUTES.FORGOT_PASSWORD} className="text-[31px] font-semibold text-[#111827]">
-                  Forgot Password?
-                </Link>
-              </motion.div>
+            <motion.div variants={itemVariants}>
+              <Link to={ROUTES.FORGOT_PASSWORD} className="auth-forgot-link">Forgot Password?</Link>
+            </motion.div>
 
-              {(lockoutMessage || errors.submit) && !showUnverified && (
-                <motion.div variants={itemVariants} className="mb-4 rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-700">
-                  {lockoutMessage || errors.submit}
-                </motion.div>
-              )}
+            <motion.div variants={itemVariants}>
+              <div className="auth-submit-btn">
+                <button
+                  type="submit"
+                  disabled={isLoading || lockoutSeconds > 0}
+                >
+                  {isLoading ? <span className="btn-loader"></span> : (lockoutSeconds > 0 ? `LOCKED (${formatCountdown(lockoutSeconds)})` : 'LOGIN')}
+                </button>
+              </div>
+            </motion.div>
 
-              {showUnverified && (
-                <motion.div variants={itemVariants} className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
-                  <p className="mb-2">
-                    Verify your Email Address. Check your inbox and spam folder for the verification link.
-                  </p>
-                  <button
-                    type="button"
-                    className="rounded-md border border-amber-400 px-3 py-1.5 text-xs font-semibold"
-                    onClick={handleResendVerification}
-                    disabled={resendLoading || resendCooldown > 0}
-                  >
-                    {resendLoading
-                      ? 'Sending...'
-                      : resendCooldown > 0
-                        ? `Resend available in ${resendCooldown}s`
-                        : 'Resend Verification Email'}
-                  </button>
-                </motion.div>
-              )}
-
-              {resendSuccess && (
-                <motion.div variants={itemVariants} className="mb-4 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm text-emerald-700">
-                  Verification email resent! Please check your inbox.
-                </motion.div>
-              )}
-
-              <motion.button
-                variants={itemVariants}
-                type="submit"
-                disabled={isLoading || lockoutSeconds > 0}
-                className="h-[60px] w-full rounded-full border border-[#7C2D12] bg-[#F97316] text-[30px] font-semibold text-white shadow-[0_4px_0_0_#7C2D12] transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isLoading ? 'Loading...' : (lockoutSeconds > 0 ? `Locked (${formatCountdown(lockoutSeconds)})` : 'Login')}
-              </motion.button>
-
-              <motion.div variants={itemVariants} className="mt-7 text-center">
-                <Link to={ROUTES.REGISTER} className="text-[33px] font-semibold text-[#111827]">
-                  Create Account?
-                </Link>
-              </motion.div>
-            </form>
-          </div>
+            <motion.div variants={itemVariants} style={{ width: '100%', textAlign: 'center' }}>
+              <Link to={ROUTES.REGISTER} className="auth-link">Create Account?</Link>
+            </motion.div>
+          </form>
         </motion.div>
-      </section>
+      </div>
     </div>
   );
 }

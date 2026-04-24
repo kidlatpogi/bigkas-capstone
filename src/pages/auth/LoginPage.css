@@ -337,8 +337,8 @@ body.login-page-active input[type="password"]::-webkit-textfield-decoration-cont
 }
 
 body.login-page-active .form-input:focus {
-  border-color: #059669;
-  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.14);
+  border-color: #F97316;
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.22);
 }
 
 body.login-page-active .form-input::placeholder {
@@ -400,6 +400,11 @@ body.login-page-active .auth-submit-btn {
   display: contents;
 }
 
+body.login-page-active .auth-google-btn {
+  margin-top: 0.72rem;
+  display: contents;
+}
+
 body.login-page-active .auth-submit-btn button {
   height: 54px;
   width: 100%;
@@ -432,6 +437,48 @@ body.login-page-active .auth-submit-btn button:disabled {
   cursor: not-allowed;
 }
 
+body.login-page-active .auth-google-btn button {
+  height: 54px;
+  width: 100%;
+  border: 0;
+  background: #ffffff;
+  color: #333333;
+  font-family: 'Fredoka', sans-serif;
+  padding: 0 1.2rem;
+  border-radius: 999px;
+  letter-spacing: 0;
+  font-size: var(--font-button);
+  font-weight: 500;
+  box-shadow: #d5d5d5 0 5px 0 0;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+body.login-page-active .auth-google-btn button:hover:not(:disabled) {
+  box-shadow: #d5d5d5 0 4px 0 0;
+  transform: translateY(2px);
+}
+
+body.login-page-active .auth-google-btn button:active:not(:disabled) {
+  box-shadow: #d5d5d5 0 0 0 0;
+  transform: translateY(6px);
+}
+
+body.login-page-active .auth-google-btn button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+body.login-page-active .auth-google-logo {
+  width: 1.25rem;
+  height: 1.25rem;
+  object-fit: contain;
+}
+
 body.login-page-active .auth-link {
   display: inline-block;
   margin-top: 0.72rem;
@@ -442,7 +489,13 @@ body.login-page-active .auth-link {
 
 body.login-page-active .auth-forgot-link:hover,
 body.login-page-active .auth-link:hover {
-  color: #059669;
+  color: #F97316;
+}
+
+body.login-page-active .auth-forgot-link:focus-visible,
+body.login-page-active .auth-link:focus-visible {
+  color: #F97316;
+  outline: none;
 }
 
 @media (max-width: 1080px) {
@@ -459,48 +512,107 @@ body.login-page-active .auth-link:hover {
 
 }
 
+@media (max-width: 1200px) {
+  html.login-page-active,
+  body.login-page-active,
+  body.login-page-active #root {
+    background: #FDFDF9;
+  }
+
+  body.login-page-active .auth-page {
+    grid-template-columns: 1fr;
+    min-height: 100dvh;
+    background: #FDFDF9;
+  }
+
+  body.login-page-active .auth-hero-panel {
+    display: none;
+  }
+
+  body.login-page-active .auth-form-panel {
+    min-height: 100dvh;
+    height: 100dvh;
+    border-radius: 0;
+    background: #FDFDF9;
+  }
+
+  body.login-page-active .floating-card {
+    min-height: 100dvh;
+    height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
+    padding: clamp(1.25rem, 2.8vw, 2rem) clamp(1rem, 3.2vw, 1.6rem) 2rem;
+  }
+
+  body.login-page-active .floating-card::after {
+    display: none;
+  }
+
+  body.login-page-active .auth-brand {
+    position: relative;
+    top: 0;
+    left: 0;
+    margin-bottom: clamp(3rem, 8vw, 5rem);
+    font-size: clamp(2rem, 1.5rem + 2vw, 2.5rem);
+  }
+
+  body.login-page-active .auth-form-title {
+    margin: 0 0 clamp(2rem, 6vw, 2.8rem);
+    font-size: clamp(2rem, 1.5rem + 1.8vw, 2.8rem);
+    color: #1E293B;
+  }
+
+  body.login-page-active .auth-form {
+    max-width: 22rem;
+    gap: clamp(0.7rem, 2vw, 0.95rem);
+  }
+
+  body.login-page-active .form-label {
+    font-size: clamp(1.35rem, 1.1rem + 0.9vw, 1.5rem);
+    color: #1E293B;
+  }
+
+  body.login-page-active .form-input {
+    height: 54px;
+    border-width: 1.5px;
+    border-color: #111827;
+    border-radius: 999px;
+    background: transparent;
+    font-size: var(--font-body);
+  }
+
+  body.login-page-active .auth-forgot-link {
+    margin-top: 0.15rem;
+    font-size: clamp(1.45rem, 1.2rem + 0.7vw, 1.55rem);
+  }
+
+  body.login-page-active .auth-submit-btn,
+  body.login-page-active .auth-google-btn {
+    margin-top: 0.55rem;
+  }
+
+  body.login-page-active .auth-submit-btn button,
+  body.login-page-active .auth-google-btn button {
+    height: 54px;
+    border-radius: 999px;
+  }
+
+  body.login-page-active .auth-link {
+    margin-top: 0.55rem;
+    font-size: clamp(1.35rem, 1.05rem + 0.7vw, 1.5rem);
+  }
+}
+
 @media (max-width: 960px) {
   html.login-page-active,
   body.login-page-active {
     overflow-y: auto;
   }
 
-  body.login-page-active .auth-page { min-height: auto; }
-
-  body.login-page-active .auth-hero-panel {
-    min-height: 44vh;
-  }
-
-  body.login-page-active .auth-hero-subtitle {
-    top: 0.8rem;
-    font-size: 0.72rem;
-  }
-
-  body.login-page-active .auth-hero-kamay {
-    left: 0.9rem;
-    width: clamp(11rem, 38vw, 14rem);
-    bottom: -1rem;
-  }
-
-  body.login-page-active .auth-hero-title {
-    left: 62%;
-    font-size: clamp(1.9rem, 7vw, 2.6rem);
-  }
-
-  body.login-page-active .auth-form-panel {
-    min-height: auto;
-  }
-
   body.login-page-active .floating-card {
-    min-height: auto;
-    border-radius: 24px 24px 0 0;
-    padding: 5.5rem 1.25rem 2rem;
-  }
-
-  body.login-page-active .auth-brand {
-    top: 1.35rem;
-    left: 1.25rem;
-    font-size: 2.25rem;
+    min-height: 100dvh;
+    height: auto;
+    padding-top: clamp(1.1rem, 3.2vw, 1.5rem);
   }
 
   body.login-page-active .auth-form {
@@ -510,35 +622,26 @@ body.login-page-active .auth-link:hover {
 }
 
 @media (max-width: 520px) {
-  body.login-page-active .auth-hero-panel {
-    min-height: 38vh;
+  body.login-page-active .auth-form {
+    max-width: 100%;
   }
 
-  body.login-page-active .auth-wave-pattern {
-    padding: 0;
-  }
-
-  body.login-page-active .auth-wave-bar {
-    width: 2.45rem;
-  }
-
-  body.login-page-active .auth-hero-kamay {
-    left: 0.4rem;
-    max-width: clamp(11.5rem, 56vw, 15.5rem);
-  }
-
-  body.login-page-active .auth-hero-title {
-    left: 64%;
-    font-size: 1.95rem;
+  body.login-page-active .auth-brand {
+    margin-bottom: 4rem;
+    font-size: 2.1rem;
   }
 
   body.login-page-active .auth-form-title {
-    margin-top: 0;
-    margin-bottom: 1.15rem;
-    font-size: 2rem;
+    margin-bottom: 2.2rem;
+    font-size: 2.2rem;
   }
 
-  body.login-page-active .auth-form {
-    max-width: 100%;
+  body.login-page-active .form-label {
+    font-size: 1.45rem;
+  }
+
+  body.login-page-active .auth-forgot-link,
+  body.login-page-active .auth-link {
+    font-size: 1.25rem;
   }
 }

@@ -86,6 +86,26 @@
   line-height: 1.42;
 }
 
+.profiling-intro-bubble--pretest {
+  width: min(100%, 34rem);
+  z-index: 50;
+}
+
+.profiling-pretest-text {
+  margin: 0;
+  font-family: 'Nunito', sans-serif;
+  font-size: clamp(1rem, 0.95rem + 0.22vw, 1.06rem);
+  line-height: 1.42;
+}
+
+.profiling-pretest-text + .profiling-pretest-text {
+  margin-top: 0.95rem;
+}
+
+.profiling-pretest-text--mission strong:first-child {
+  color: #F97316;
+}
+
 .profiling-intro-actions {
   margin-top: 0.95rem;
   display: flex;
@@ -95,6 +115,10 @@
 .profiling-intro-actions--split {
   justify-content: space-between;
   align-items: center;
+}
+
+.profiling-intro-actions--end {
+  justify-content: flex-end;
 }
 
 .profiling-ready-btn {
@@ -932,6 +956,10 @@
     justify-content: space-between;
   }
 
+  .profiling-intro-actions--end {
+    justify-content: center;
+  }
+
   .profiling-ready-btn {
     width: clamp(4.8rem, 24vw, 5.6rem);
     height: 42px;
@@ -955,6 +983,15 @@
 
   .profiling-intro-robot-media--ready {
     width: 100%;
+  }
+
+  .profiling-intro-bubble--pretest {
+    width: min(100%, 22rem);
+  }
+
+  .profiling-pretest-text {
+    font-size: 0.95rem;
+    line-height: 1.42;
   }
 
   .profiling-question-stage {

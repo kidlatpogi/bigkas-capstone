@@ -371,10 +371,12 @@ function RegisterPage() {
               </label>
             </motion.div>
 
-            <motion.div variants={itemVariants} className="auth-submit-btn">
-              <button type="submit" disabled={isLoading || !consentChecked}>
-                {isLoading ? <span className="btn-loader"></span> : 'Create Account'}
-              </button>
+            <motion.div variants={itemVariants}>
+              <div className="auth-submit-btn">
+                <button type="submit" disabled={isLoading || !consentChecked}>
+                  {isLoading ? <span className="btn-loader"></span> : 'Create Account'}
+                </button>
+              </div>
             </motion.div>
 
             <motion.div variants={itemVariants} className="auth-footer">

@@ -3,7 +3,7 @@
   --btn-text: #FFFFFF;
   --btn-border: transparent;
   --btn-glow: rgba(241, 143, 1, 0.3);
-  --btn-hover-bg: #F6A320;
+  --btn-hover-bg: #F18F01;
   --btn-active-scale: 0.98;
   --btn-radius: 14px;
   --btn-height: 52px;
@@ -73,8 +73,8 @@
 
 /* Variant: Primary (Orange) */
 .bigkas-btn--primary {
-  --btn-bg: linear-gradient(135deg, #F6A320 0%, #F18F01 100%);
-  --btn-hover-bg: linear-gradient(135deg, #FFB02E 0%, #F6A320 100%);
+  --btn-bg: linear-gradient(135deg, #F18F01 0%, #F18F01 100%);
+  --btn-hover-bg: linear-gradient(135deg, #F18F01 0%, #F18F01 100%);
   --btn-glow: rgba(241, 143, 1, 0.4);
 }
 
@@ -137,9 +137,9 @@
 
 /* Variant: Practice (Orange) */
 .bigkas-btn--practice {
-  --btn-bg: #F59B00;
+  --btn-bg: #F18F01;
   --btn-text: #FFFFFF;
-  --btn-hover-bg: #FFB020;
+  --btn-hover-bg: #F18F01;
   --btn-glow: rgba(245, 155, 0, 0.4);
 }
 

@@ -114,7 +114,7 @@
 
 /* type variants */
 .cm-btn-confirm.danger  { background: #FF3B30; color: #FFFFFF; }
-.cm-btn-confirm.warning { background: #FCBA04; color: #010101; }
+.cm-btn-confirm.warning { background: #F18F01; color: #010101; }
 .cm-btn-confirm.info,
 .cm-btn-confirm.default { background: #010101; color: #FFFFFF; }
 

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import questionsData from '../../assets/data/profiling_questions.json';
+import waveWebm from '../../assets/Sprites/Robot Animated/Wave-webm.webm';
+import waveMp4 from '../../assets/Sprites/Robot Animated/Wave-mp4.mp4';
 import './UserProfilingPage.css';
 
 const QUESTIONS = questionsData;
@@ -158,15 +160,31 @@ function UserProfilingPage() {
   return (
     <div className={`user-profiling-page ${screen !== 'questions' ? 'is-gate-screen' : ''}`}>
       {screen === 'intro' && (
-        <section className="profiling-gate profiling-gate--pop">
-          <p className="profiling-gate-kicker">Before we start</p>
-          <h1>We will have you answer some questions</h1>
-          <p>
-            This helps us set your speaking baseline so your coaching and pre-test feedback are more personalized.
-          </p>
-          <button type="button" className="profiling-primary" onClick={() => setScreen('questions')}>
-            Continue
-          </button>
+        <section className="profiling-intro profiling-gate--pop">
+          <article className="profiling-intro-bubble" aria-label="Welcome message">
+            <p>
+              Kumusta! I&apos;m <strong>B-01</strong>, your personal guide on this exciting journey to master public
+              speaking with Bigkas.
+            </p>
+            <p>
+              Before we begin, we need to assess your current speaking level. This includes 9 short profiling
+              questions and one small speaking pre-test. These tests ensure I can customize your experience and guide
+              you smoothly throughout your entire Bigkas journey!
+            </p>
+            <div className="profiling-intro-actions">
+              <div className="profiling-submit-btn">
+                <button type="button" onClick={() => setScreen('questions')}>
+                  Continue
+                </button>
+              </div>
+            </div>
+          </article>
+          <div className="profiling-intro-robot" aria-hidden="true">
+            <video className="profiling-intro-video" autoPlay loop muted playsInline>
+              <source src={waveWebm} type="video/webm" />
+              <source src={waveMp4} type="video/mp4" />
+            </video>
+          </div>
         </section>
       )}
 

@@ -580,6 +580,40 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   padding: 12px;
 }
 
+.history-date-range-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.history-date-range-toggle .history-sort-label {
+  margin-bottom: 0;
+}
+
+.history-date-range-chevron {
+  width: 18px;
+  height: 18px;
+  color: #0B3954;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.history-date-range-chevron.is-expanded {
+  transform: rotate(180deg);
+}
+
+.history-date-range .history-date-grid {
+  margin-top: 10px;
+}
+
 .history-sort-label {
   font-size: 12px;
   font-weight: 700;
@@ -1059,6 +1093,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
   .progress-history-sidebar.history-visible {
     display: flex;
+    flex-direction: column;
     position: fixed;
     left: calc(var(--mobile-px) + 8px);
     right: calc(var(--mobile-px) + 8px);
@@ -1066,16 +1101,26 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
     bottom: calc(80px + env(safe-area-inset-bottom) + 8px);
     z-index: 120;
     height: auto;
+    max-height: calc(100dvh - 64px - 80px - env(safe-area-inset-bottom) - (var(--mobile-px) * 2) - 16px);
     min-height: 0;
     padding: 0;
-    overflow-y: auto;
+    overflow: hidden;
+    touch-action: pan-y;
     border-radius: 20px;
     background: #ffffff;
     box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
   }
 
   .history-container {
+    flex: 1 1 auto;
+    height: 100%;
+    min-height: 0;
     padding: 16px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
   }
 
   .history-pagination-shell {

@@ -557,7 +557,9 @@ body.login-page-active .auth-link:focus-visible {
   }
 
   body.login-page-active .floating-card::after {
-    display: none;
+    display: block;
+    height: 30%;
+    background: linear-gradient(to top, rgba(52, 211, 153, 0.18), rgba(52, 211, 153, 0));
   }
 
   body.login-page-active .auth-brand {
@@ -573,14 +575,21 @@ body.login-page-active .auth-link:focus-visible {
     margin: 0 0 clamp(1.3rem, 5vw, 2rem);
     font-size: clamp(2rem, 1.6rem + 1vw, 2.25rem);
     color: #1E293B;
-    width: 100%;
+    width: min(100%, 22rem);
+    max-width: 22rem;
+    margin-inline: auto;
     text-align: center;
   }
 
   body.login-page-active .auth-form {
+    width: min(100%, 22rem);
     max-width: 22rem;
     gap: clamp(0.7rem, 2vw, 0.95rem);
     margin: 0 auto;
+  }
+
+  body.login-page-active .auth-form > * {
+    width: 100%;
   }
 
   body.login-page-active .form-label {
@@ -636,11 +645,23 @@ body.login-page-active .auth-link:focus-visible {
     width: 100%;
     max-width: 22rem;
   }
+
+  body.login-page-active .auth-form-title {
+    width: min(100%, 22rem);
+    max-width: 22rem;
+    margin-inline: auto;
+  }
 }
 
 @media (max-width: 520px) {
   body.login-page-active .auth-form {
     max-width: 100%;
+  }
+
+  body.login-page-active .auth-form-title {
+    width: min(100%, 22rem);
+    max-width: 100%;
+    margin-inline: auto;
   }
 
   body.login-page-active .auth-brand {

@@ -5,9 +5,9 @@
 
 export const theme = {
   colors: {
-    // Primary — Brand yellow
+    // Primary — Brand accent
     primary: {
-      main: '#FCBA04',
+      main: '#F18F01',
       dark: '#D59300',
       light: '#FFC340',
       contrast: '#010101',

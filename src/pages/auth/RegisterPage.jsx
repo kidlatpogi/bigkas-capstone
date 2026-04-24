@@ -1,13 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Capacitor } from '@capacitor/core';
 import { useAuthContext } from '../../context/useAuthContext';
 import { isValidEmail, validatePassword } from '../../utils/validators';
 import { ROUTES } from '../../utils/constants';
-import googleLogo from '../../assets/Google-Logo.png';
-import BackButton from '../../components/common/BackButton';
+import macbookImage from '../../assets/backgrounds/Login/MacBook.png';
 import PasswordToggle from '../../components/common/PasswordToggle';
-import PushButton from '../../components/common/PushButton';
 import LegalModal from '../../components/Legal/LegalModal';
 import { TERMS_AND_CONDITIONS } from '../../constants/legal/terms';
 import { PRIVACY_POLICY } from '../../constants/legal/privacy';
@@ -19,9 +16,9 @@ import './RegisterPage.css';
  * Separate styling from Login page
  */
 function RegisterPage() {
-  const isNative = Capacitor.isNativePlatform();
+  const layoutRef = useRef(null);
   const navigate = useNavigate();
-  const { register, loginWithGoogle, isLoading } = useAuthContext();
+  const { register, isLoading } = useAuthContext();
 
   const [legalModal, setLegalModal] = useState({ isOpen: false, title: '', content: '' });
   const [consentChecked, setConsentChecked] = useState(false);
@@ -58,6 +55,7 @@ function RegisterPage() {
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [layoutMode, setLayoutMode] = useState('split');
 
   /* Password strength — 0..4 */
   const passwordStrength = (() => {
@@ -171,20 +169,50 @@ function RegisterPage() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    const result = await loginWithGoogle();
-    if (!result?.success) {
-      setErrors((prev) => ({
-        ...prev,
-        submit: result?.error || 'Google sign-in failed. Please try again.',
-      }));
-    }
-  };
+  useEffect(() => {
+    if (!layoutRef.current || typeof ResizeObserver === 'undefined') return undefined;
 
-  const handleGoToLogin = () => {
-    document.documentElement.classList.remove('register-page-active');
-    document.body.classList.remove('register-page-active');
-  };
+    const observer = new ResizeObserver(([entry]) => {
+      const width = entry.contentRect?.width || window.innerWidth;
+      setLayoutMode(width < 960 ? 'stack' : 'split');
+    });
+
+    observer.observe(layoutRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!root) return undefined;
+
+    const setKeyboardOffset = () => {
+      if (layoutMode !== 'stack') {
+        root.style.setProperty('--register-kb-offset', '0px');
+        return;
+      }
+
+      const vv = window.visualViewport;
+      if (!vv) {
+        root.style.setProperty('--register-kb-offset', '0px');
+        return;
+      }
+
+      const keyboardOffset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      root.style.setProperty('--register-kb-offset', `${Math.round(keyboardOffset)}px`);
+    };
+
+    setKeyboardOffset();
+    window.visualViewport?.addEventListener('resize', setKeyboardOffset);
+    window.visualViewport?.addEventListener('scroll', setKeyboardOffset);
+    window.addEventListener('resize', setKeyboardOffset);
+
+    return () => {
+      root.style.setProperty('--register-kb-offset', '0px');
+      window.visualViewport?.removeEventListener('resize', setKeyboardOffset);
+      window.visualViewport?.removeEventListener('scroll', setKeyboardOffset);
+      window.removeEventListener('resize', setKeyboardOffset);
+    };
+  }, [layoutMode]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -200,42 +228,20 @@ function RegisterPage() {
   };
 
   return (
-    <div className="auth-page">
-      {!isNative && <BackButton className="auth-mobile-back" />}
-
-      {/* ── Left branding panel ── */}
-      <div className="auth-brand-panel">
-        <div className="auth-brand-content">
-          <h1 className="auth-brand-name">BIGKAS</h1>
-          <p className="auth-brand-tagline">PUBLIC SPEAKING COACH</p>
-          <div className="auth-brand-line" />
-
-          <ul className="auth-brand-features">
-            <li>
-              <span className="feature-num">01</span>
-              <span className="feature-text">SPEECH ANALYSIS</span>
-            </li>
-            <li>
-              <span className="feature-num">02</span>
-              <span className="feature-text">CONFIDENCE SCORING</span>
-            </li>
-            <li>
-              <span className="feature-num">03</span>
-              <span className="feature-text">RHETORIC DESIGN</span>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      {/* ── Right form panel ── */}
+    <div
+      ref={layoutRef}
+      className="auth-page"
+      data-layout={layoutMode}
+    >
       <div className="auth-form-panel">
-        <motion.div 
-          className="auth-form-container floating-card"
+        <motion.div
+          className="floating-card"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
         >
-          <motion.h2 variants={itemVariants} className="auth-form-title">CREATE ACCOUNT</motion.h2>
+          <motion.div variants={itemVariants} className="auth-brand">Bigkas</motion.div>
+          <motion.h2 variants={itemVariants} className="auth-form-title">Create Account</motion.h2>
 
           <form className="auth-form" onSubmit={handleSubmit}>
             {errors.submit && (
@@ -244,7 +250,7 @@ function RegisterPage() {
 
             <motion.div variants={itemVariants} className="form-row">
               <div className="form-group">
-                <label htmlFor="firstName" className="form-label">FIRST NAME</label>
+                <label htmlFor="firstName" className="form-label">First Name</label>
                 <input
                   type="text"
                   id="firstName"
@@ -252,14 +258,14 @@ function RegisterPage() {
                   className={`form-input ${errors.firstName ? 'form-input-error' : ''}`}
                   value={formData.firstName}
                   onChange={handleChange}
-                  placeholder="FIRST"
+                  placeholder="First Name"
                   disabled={isLoading}
                 />
                 {errors.firstName && <span className="form-error">{errors.firstName}</span>}
               </div>
 
               <div className="form-group">
-                <label htmlFor="lastName" className="form-label">LAST NAME</label>
+                <label htmlFor="lastName" className="form-label">Last Name</label>
                 <input
                   type="text"
                   id="lastName"
@@ -267,7 +273,7 @@ function RegisterPage() {
                   className={`form-input ${errors.lastName ? 'form-input-error' : ''}`}
                   value={formData.lastName}
                   onChange={handleChange}
-                  placeholder="LAST"
+                  placeholder="Last Name"
                   disabled={isLoading}
                 />
                 {errors.lastName && <span className="form-error">{errors.lastName}</span>}
@@ -275,7 +281,7 @@ function RegisterPage() {
             </motion.div>
 
             <motion.div variants={itemVariants} className="form-group">
-              <label htmlFor="email" className="form-label">EMAIL ADDRESS</label>
+              <label htmlFor="email" className="form-label">Email</label>
               <input
                 type="email"
                 id="email"
@@ -290,7 +296,7 @@ function RegisterPage() {
             </motion.div>
 
             <motion.div variants={itemVariants} className="form-group">
-              <label htmlFor="password" className="form-label">PASSWORD</label>
+              <label htmlFor="password" className="form-label">Current Password</label>
               <div className="pw-input-wrap">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -324,12 +330,11 @@ function RegisterPage() {
                   <span className="pw-strength-label" style={{ color: strengthColor }}>{strengthLabel}</span>
                 </div>
               )}
-              <span className="pw-hint">Min. 8 characters with letters and numbers</span>
               {errors.password && <span className="form-error">{errors.password}</span>}
             </motion.div>
 
             <motion.div variants={itemVariants} className="form-group">
-              <label htmlFor="confirmPassword" className="form-label">CONFIRM PASSWORD</label>
+              <label htmlFor="confirmPassword" className="form-label">Confirm Password</label>
               <div className="pw-input-wrap">
                 <input
                   type={showConfirm ? 'text' : 'password'}
@@ -352,7 +357,7 @@ function RegisterPage() {
               {errors.confirmPassword && <span className="form-error">{errors.confirmPassword}</span>}
             </motion.div>
 
-            <motion.div variants={itemVariants} className="form-group consent-group" style={{ marginTop: '12px', marginBottom: '16px' }}>
+            <motion.div variants={itemVariants} className="form-group consent-group">
               <label className="consent-label" style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', fontSize: '13px', color: '#4b5563', lineHeight: '1.4' }}>
                 <input
                   type="checkbox"
@@ -366,43 +371,31 @@ function RegisterPage() {
               </label>
             </motion.div>
 
-            <motion.div variants={itemVariants}>
-              <PushButton
-                type="submit"
-                disabled={isLoading || !consentChecked}
-                bgColor="#2d5a27"
-                shadowColor="#1a3b16"
-                textColor="#ffffff"
-              >
-                {isLoading ? <span className="btn-loader"></span> : 'CREATE ACCOUNT'}
-              </PushButton>
+            <motion.div variants={itemVariants} className="auth-submit-btn">
+              <button type="submit" disabled={isLoading || !consentChecked}>
+                {isLoading ? <span className="btn-loader"></span> : 'Create Account'}
+              </button>
+            </motion.div>
+
+            <motion.div variants={itemVariants} className="auth-footer">
+              <Link to={ROUTES.LOGIN} className="auth-link">Login?</Link>
             </motion.div>
           </form>
-
-          <motion.div variants={itemVariants} className="auth-divider">
-            <span className="auth-divider-line" />
-            <span className="auth-divider-text">or</span>
-            <span className="auth-divider-line" />
-          </motion.div>
-
-          <motion.div variants={itemVariants}>
-            <PushButton
-              type="button" 
-              onClick={handleGoogleSignIn} 
-              disabled={isLoading || !consentChecked}
-              bgColor="#ffffff"
-              shadowColor="#d5d5d5"
-              textColor="#333333"
-            >
-              <img src={googleLogo} alt="Google" className="auth-google-logo" style={{ width: '1.5rem', height: '1.5rem', objectFit: 'contain' }} />
-              <span className="btn-content">Continue with Google</span>
-            </PushButton>
-          </motion.div>
-
-          <motion.div variants={itemVariants} style={{ width: '100%', textAlign: 'center' }}>
-            <Link to={ROUTES.LOGIN} className="auth-link" onClick={handleGoToLogin}>Login</Link>
-          </motion.div>
         </motion.div>
+      </div>
+
+      <div className="auth-hero-panel" aria-hidden="true">
+        <div className="auth-wave-pattern">
+          {Array.from({ length: 10 }).map((_, index) => (
+            <span key={`bar-${index}`} className={`auth-wave-bar auth-wave-bar-${index + 1}`} />
+          ))}
+        </div>
+        <img src={macbookImage} alt="" className="auth-hero-macbook" />
+        <h1 className="auth-hero-title">
+          Start you
+          <br />
+          Journey
+        </h1>
       </div>
 
       <LegalModal

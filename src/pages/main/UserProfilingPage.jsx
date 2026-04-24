@@ -7,6 +7,7 @@ import questionsData from '../../assets/data/profiling_questions.json';
 import waveWebm from '../../assets/Sprites/Robot Animated/Wave-webm.webm';
 import waveMp4 from '../../assets/Sprites/Robot Animated/Wave-mp4.mp4';
 import robotReadyImage from '../../assets/Sprites/Robot/0015.webp';
+import robotQuestionImage from '../../assets/Sprites/Robot/0020.webp';
 import './UserProfilingPage.css';
 
 const QUESTIONS = questionsData;
@@ -188,14 +189,9 @@ function UserProfilingPage() {
     setCurrentIndex((prev) => Math.min(totalSteps - 1, prev + 1));
   };
 
-  const selectSingleAnswer = async (questionKey, option) => {
+  const selectSingleAnswer = (questionKey, option) => {
     if (isSubmitting) return;
     updateField(questionKey, option);
-    if (currentIndex < totalSteps - 1) {
-      setCurrentIndex((prev) => Math.min(totalSteps - 1, prev + 1));
-      return;
-    }
-    await handleSubmit({ nextForm: { ...form, [questionKey]: option } });
   };
 
   const handleSubmit = async ({ nextForm = null } = {}) => {
@@ -235,6 +231,31 @@ function UserProfilingPage() {
 
   const continueToPretest = () => {
     navigate(ROUTES.USER_PRETEST, { replace: true });
+  };
+
+  const handleQuestionBack = () => {
+    if (isSubmitting) return;
+    if (currentIndex === 0) {
+      setScreen('ready');
+      return;
+    }
+    goToPreviousQuestion();
+  };
+
+  const handleQuestionNext = async () => {
+    if (isSubmitting) return;
+    const currentValue = form[currentQuestion.key];
+    if (!isQuestionAnswered(currentQuestion, currentValue)) {
+      setError('Please select an answer before proceeding.');
+      return;
+    }
+
+    if (currentIndex >= totalSteps - 1) {
+      await handleSubmit();
+      return;
+    }
+    setError('');
+    goToNextQuestion();
   };
 
   const handleToggleMute = () => {
@@ -344,116 +365,87 @@ function UserProfilingPage() {
       )}
 
       {screen === 'questions' && (
-      <div className="profiling-shell">
-        <section className="profiling-survey-top">
-          <div className="profiling-survey-nav">
-            <button
-              type="button"
-              className="profiling-nav-arrow"
-              onClick={goToPreviousQuestion}
-              disabled={currentIndex === 0 || isSubmitting}
-              aria-label="Previous question"
-            >
-              &#8249;
-            </button>
-            <button
-              type="button"
-              className="profiling-nav-arrow"
-              onClick={goToNextQuestion}
-              disabled={currentIndex >= totalSteps - 1 || isSubmitting}
-              aria-label="Next question"
-            >
-              &#8250;
-            </button>
-          </div>
-          <p className="profiling-survey-label">Survey name</p>
-          <p className="profiling-survey-step">
-            {String(currentIndex + 1).padStart(2, '0')}/{String(totalSteps).padStart(2, '0')}
-          </p>
-          <div className="profiling-survey-progress" aria-hidden="true">
-            <span style={{ width: `${progress}%` }} />
-          </div>
-          <h1>{currentQuestion.label}</h1>
-          <p className="profiling-subtitle">
-            {currentQuestion.type === 'multi' ? 'Select all that apply.' : 'Select one option to continue.'}
-          </p>
-        </section>
+        <section className="profiling-question-stage profiling-gate--pop">
+          <article className="profiling-question-bubble">
+            <h2 className="profiling-question-count">
+              <span>Question:</span> {currentIndex + 1}/{totalSteps}
+            </h2>
+            <p className="profiling-question-text">
+              <strong>B-01:</strong>
+              <br />
+              {currentQuestion.label}
+            </p>
+            <div className="profiling-intro-actions profiling-intro-actions--split">
+              <button type="button" className="profiling-ready-btn profiling-ready-btn--back" onClick={handleQuestionBack}>
+                Back
+              </button>
+              <button type="button" className="profiling-ready-btn profiling-ready-btn--next" onClick={handleQuestionNext}>
+                {currentIndex >= totalSteps - 1 ? 'Finish' : 'Next'}
+              </button>
+            </div>
+          </article>
 
-        <section className="profiling-card profiling-card--pop">
-          <div className="profiling-question-list">
-            <div className="profiling-question">
-              <div className="profiling-question-row">
-                <div className="profiling-question-left">
-                  <p className="profiling-question-number">Question {currentIndex + 1}</p>
-                  <h3>{currentQuestion.label}</h3>
-                  <small>{currentQuestion.type === 'multi' ? 'Select all that apply' : 'Select one'}</small>
-                </div>
-                <div className="profiling-question-right">
-                  {currentQuestion.type === 'number' && (
-                    <input
-                      className="profiling-input"
-                      type="number"
-                      min="1"
-                      max="120"
-                      value={form[currentQuestion.key]}
-                      onChange={(e) => updateField(currentQuestion.key, e.target.value)}
-                      placeholder={currentQuestion.placeholder}
-                    />
-                  )}
-
-                  {currentQuestion.type === 'single' && (
-                    <div className={`profiling-options ${currentQuestion.options.length > 4 ? 'is-two-column' : ''}`}>
-                      {currentQuestion.options.map((option, optionIndex) => {
-                        const isActive = form[currentQuestion.key] === option;
-                        return (
-                          <button
-                            key={option}
-                            type="button"
-                            className={`profiling-option ${isActive ? 'is-active' : ''}`}
-                            onClick={() => selectSingleAnswer(currentQuestion.key, option)}
-                          >
-                            <span className="profiling-option-main">
-                              <span className="profiling-option-badge">
-                                {String.fromCharCode(65 + (optionIndex % 26))}
-                              </span>
-                              <span>{option}</span>
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {currentQuestion.type === 'multi' && (
-                    <div className={`profiling-options ${currentQuestion.options.length > 4 ? 'is-two-column' : ''}`}>
-                      {currentQuestion.options.map((option, optionIndex) => {
-                        const isActive = Array.isArray(form[currentQuestion.key]) && form[currentQuestion.key].includes(option);
-                        return (
-                          <button
-                            key={option}
-                            type="button"
-                            className={`profiling-option ${isActive ? 'is-active' : ''}`}
-                            onClick={() => toggleMultiValue(currentQuestion.key, option)}
-                          >
-                            <span className="profiling-option-main">
-                              <span className="profiling-option-badge">
-                                {String.fromCharCode(65 + (optionIndex % 26))}
-                              </span>
-                              <span>{option}</span>
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+          <div className="profiling-question-lower">
+            <div className="profiling-question-robot-wrap" aria-hidden="true">
+              <img src={robotQuestionImage} alt="" className="profiling-question-robot-image" />
+              <div className="profiling-question-robot-badge">
+                {currentIndex + 1}/{totalSteps}
               </div>
             </div>
-          </div>
 
-          {error && <p className="profiling-error">{error}</p>}
+            <div className="profiling-question-options-wrap">
+              {currentQuestion.type === 'single' && (
+                <div className="profiling-question-options">
+                  {currentQuestion.options.map((option) => {
+                    const isActive = form[currentQuestion.key] === option;
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        className={`profiling-question-option ${isActive ? 'is-active' : ''}`}
+                        onClick={() => selectSingleAnswer(currentQuestion.key, option)}
+                      >
+                        {option}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {currentQuestion.type === 'multi' && (
+                <div className="profiling-question-options">
+                  {currentQuestion.options.map((option) => {
+                    const isActive = Array.isArray(form[currentQuestion.key]) && form[currentQuestion.key].includes(option);
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        className={`profiling-question-option ${isActive ? 'is-active' : ''}`}
+                        onClick={() => toggleMultiValue(currentQuestion.key, option)}
+                      >
+                        {option}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {currentQuestion.type === 'number' && (
+                <input
+                  className="profiling-input"
+                  type="number"
+                  min="1"
+                  max="120"
+                  value={form[currentQuestion.key]}
+                  onChange={(e) => updateField(currentQuestion.key, e.target.value)}
+                  placeholder={currentQuestion.placeholder}
+                />
+              )}
+
+              {error && <p className="profiling-error">{error}</p>}
+            </div>
+          </div>
         </section>
-      </div>
       )}
 
       {screen === 'outro' && (

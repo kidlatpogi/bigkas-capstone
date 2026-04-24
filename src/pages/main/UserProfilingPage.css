@@ -28,11 +28,11 @@
   justify-items: center;
   align-content: center;
   padding: clamp(1rem, 2.2vw, 2rem);
-  gap: clamp(0.4rem, 1.5vw, 1rem);
+  gap: clamp(0.2rem, 1vw, 0.6rem);
 }
 
 .profiling-intro-bubble {
-  width: min(100%, 33.5rem);
+  width: min(100%, 34rem);
   max-width: 100%;
   background: #fdfdfd;
   border-radius: 1.5rem;
@@ -60,7 +60,7 @@
 .profiling-intro-bubble p {
   margin: 0;
   font-family: 'Nunito', sans-serif;
-  font-size: clamp(0.95rem, 0.9rem + 0.2vw, 1rem);
+  font-size: clamp(1rem, 0.95rem + 0.25vw, 1.08rem);
   line-height: 1.45;
 }
 
@@ -84,8 +84,8 @@
 }
 
 .profiling-submit-btn button {
-  height: 54px;
-  width: clamp(8.5rem, 25vw, 10.5rem);
+  height: 44px;
+  width: clamp(7.8rem, 16vw, 9.2rem);
   border: 0;
   background: #059669;
   color: #ffffff;
@@ -93,7 +93,7 @@
   padding: 0 2rem;
   border-radius: 999px;
   letter-spacing: 0;
-  font-size: clamp(0.95rem, 0.9rem + 0.2vw, 1rem);
+  font-size: clamp(0.9rem, 0.86rem + 0.2vw, 0.98rem);
   font-weight: 500;
   box-shadow: #047857 0 5px 0 0;
   cursor: pointer;
@@ -116,9 +116,9 @@
 }
 
 .profiling-intro-robot {
-  width: min(100%, 26rem);
-  max-width: 26rem;
-  margin-top: clamp(0.6rem, 1.8vw, 1.2rem);
+  width: min(100%, 23rem);
+  max-width: 23rem;
+  margin-top: clamp(0.2rem, 1vw, 0.6rem);
   align-self: end;
   justify-self: center;
   overflow: visible;
@@ -129,6 +129,7 @@
   height: auto;
   display: block;
   object-fit: contain;
+  clip-path: inset(10% 18% 8% 18%);
 }
 
 .profiling-gate {
@@ -603,9 +604,10 @@
 
 @media (max-width: 520px) {
   .profiling-intro {
-    align-content: start;
-    padding-top: clamp(1.25rem, 7.5vw, 2.2rem);
-    gap: 0.5rem;
+    align-content: end;
+    padding-top: 0;
+    padding-bottom: clamp(1.1rem, 5.6vw, 1.8rem);
+    gap: 0.15rem;
   }
 
   .profiling-intro-bubble {
@@ -620,18 +622,23 @@
   }
 
   .profiling-intro-actions {
-    justify-content: center;
-    margin-top: 0.85rem;
+    justify-content: flex-end;
+    margin-top: 0.75rem;
   }
 
   .profiling-submit-btn button {
-    width: min(100%, 22rem);
+    width: clamp(7.8rem, 34vw, 8.8rem);
+    height: 42px;
   }
 
   .profiling-intro-robot {
-    width: min(100%, 18rem);
-    max-width: 18rem;
-    margin-top: 0.65rem;
+    width: min(100%, 15.25rem);
+    max-width: 15.25rem;
+    margin-top: 0.2rem;
+  }
+
+  .profiling-intro-video {
+    clip-path: inset(8% 14% 7% 14%);
   }
 
   .profiling-card {

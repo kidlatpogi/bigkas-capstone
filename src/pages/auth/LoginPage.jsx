@@ -275,7 +275,7 @@ function LoginPage({ managePageClass = true }) {
 
       <div className="auth-form-panel">
         <motion.div
-          className="auth-form-container floating-card"
+          className="floating-card"
           variants={containerVariants}
           initial="hidden"
           animate="visible"

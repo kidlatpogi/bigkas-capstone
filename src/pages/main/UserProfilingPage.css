@@ -89,6 +89,8 @@
 .profiling-intro-bubble--pretest {
   width: min(100%, 34rem);
   z-index: 50;
+  position: relative;
+  top: 8rem;
 }
 
 .profiling-pretest-text {
@@ -712,7 +714,7 @@
   grid-template-areas:
     'bubble'
     'lower';
-  grid-template-rows: auto 1fr;
+  grid-template-rows: 1fr auto;
   align-content: stretch;
   justify-items: center;
   padding: clamp(1.2rem, 2.8vw, 2.3rem);
@@ -724,9 +726,10 @@
   width: min(100%, 34rem);
   max-width: 100%;
   margin-inline: auto;
-  align-self: start;
+  align-self: center;
   justify-self: center;
   position: relative;
+  top: 8rem;
   background: #fdfdfd;
   border-radius: 1.5rem;
   border: 1px solid rgba(11, 57, 84, 0.1);
@@ -1013,6 +1016,7 @@
 
   .profiling-intro-bubble--pretest {
     width: min(100%, 22rem);
+    top: 6rem;
   }
 
   .profiling-pretest-text {
@@ -1030,6 +1034,7 @@
     width: min(100%, 22rem);
     border-radius: 1.2rem;
     padding: 0.95rem 0.9rem;
+    top: 8rem;
   }
 
   .profiling-question-count {

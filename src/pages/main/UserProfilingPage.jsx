@@ -92,7 +92,7 @@ function UserProfilingPage() {
   const baselineLevelNumber = useMemo(() => getSpeakerLevelNumber(baselineScore), [baselineScore]);
   const introSpeech = useMemo(
     () => [
-      "Kumusta! I'm B-01, your personal guide on this exciting journey to master public speaking with Bigkas.",
+      "Hello! I'm B-01, your personal guide on this exciting journey to master public speaking with Bigkas.",
       'Before we begin, we need to assess your current speaking level. This includes 9 short profiling questions and one small speaking pre-test. These tests ensure I can customize your experience and guide you smoothly throughout your entire Bigkas journey!',
     ],
     []
@@ -215,7 +215,7 @@ function UserProfilingPage() {
         responses: { ...workingForm },
       },
       profiling_completed: true,
-      onboarding_stage: 'pretest',
+      onboarding_stage: 'profiling',
     };
 
     const result = await updateUserMetadata(payload);
@@ -229,7 +229,15 @@ function UserProfilingPage() {
     setScreen('outro');
   };
 
-  const continueToPretest = () => {
+  const continueToPretest = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    const result = await updateUserMetadata({ onboarding_stage: 'pretest' });
+    setIsSubmitting(false);
+    if (!result?.success) {
+      setError(result?.error || 'Failed to continue to pre-test. Please try again.');
+      return;
+    }
     navigate(ROUTES.USER_PRETEST, { replace: true });
   };
   const canProceedQuestion = isQuestionAnswered(currentQuestion, form[currentQuestion.key]);

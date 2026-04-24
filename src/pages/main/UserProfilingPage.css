@@ -108,8 +108,8 @@
 }
 
 .profiling-ready-btn--back {
-  background: #F97316;
-  box-shadow: #C85E14 0 5px 0 0;
+  background: #EF4444;
+  box-shadow: #B91C1C 0 5px 0 0;
 }
 
 .profiling-ready-btn--next {
@@ -122,7 +122,7 @@
 }
 
 .profiling-ready-btn--back:hover:not(:disabled) {
-  box-shadow: #C85E14 0 4px 0 0;
+  box-shadow: #B91C1C 0 4px 0 0;
 }
 
 .profiling-ready-btn--next:hover:not(:disabled) {
@@ -134,7 +134,7 @@
 }
 
 .profiling-ready-btn--back:active:not(:disabled) {
-  box-shadow: #C85E14 0 0 0 0;
+  box-shadow: #B91C1C 0 0 0 0;
 }
 
 .profiling-ready-btn--next:active:not(:disabled) {
@@ -195,8 +195,8 @@
 }
 
 .profiling-intro-robot-media--ready {
-  width: min(100%, 17.5rem);
-  overflow: visible;
+  width: 100%;
+  overflow: hidden;
 }
 
 .profiling-intro-video {
@@ -209,10 +209,12 @@
 }
 
 .profiling-ready-image {
-  width: 100%;
+  width: 132%;
+  max-width: none;
   height: auto;
   object-fit: contain;
   display: block;
+  margin-left: -16%;
 }
 
 .profiling-intro-audio-action {
@@ -795,7 +797,7 @@
   }
 
   .profiling-intro-robot-media--ready {
-    width: min(100%, 14rem);
+    width: 100%;
   }
 
   .profiling-audio-toggle {

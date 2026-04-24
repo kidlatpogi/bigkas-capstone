@@ -61,7 +61,7 @@ body.register-page-active .auth-form-panel {
   padding: 0;
   z-index: 5;
   width: 100%;
-  border-radius: 24px 0 0 24px;
+  border-radius: 0 24px 24px 0;
   overflow: hidden;
 }
 
@@ -76,7 +76,7 @@ body.register-page-active .floating-card {
   height: 100%;
   margin: 0;
   background: #FDFDF9;
-  border-radius: 24px 0 0 24px;
+  border-radius: 0 24px 24px 0;
   padding: 2.4rem clamp(1.8rem, 4.1vw, 4.4rem);
   box-shadow: inset 0 -120px 120px -92px rgba(52, 211, 153, 0.18);
   overflow: hidden;
@@ -171,7 +171,7 @@ body.register-page-active .form-input {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.55);
   color: #111827;
-  padding: 0.5rem 1.2rem;
+  padding: 0.5rem 1.45rem;
   font-family: 'Nunito', sans-serif;
   font-size: var(--font-body);
   line-height: 1;
@@ -256,6 +256,7 @@ body.register-page-active .consent-label {
 
 body.register-page-active .auth-submit-btn {
   margin-top: 0.55rem;
+  display: contents;
 }
 
 body.register-page-active .auth-submit-btn button {
@@ -352,6 +353,21 @@ body.register-page-active .auth-wave-bar-7 { height: 86%; }
 body.register-page-active .auth-wave-bar-8 { height: 44%; }
 body.register-page-active .auth-wave-bar-9 { height: 44%; }
 body.register-page-active .auth-wave-bar-10 { height: 70%; }
+
+body.register-page-active .auth-wave-pattern .auth-wave-bar:nth-child(odd) {
+  animation-duration: 2.2s;
+  animation-delay: 0.25s;
+}
+
+body.register-page-active .auth-wave-pattern .auth-wave-bar:nth-child(even) {
+  animation-duration: 1.8s;
+  animation-delay: 0.45s;
+}
+
+body.register-page-active .auth-wave-pattern .auth-wave-bar:nth-child(3n) {
+  animation-duration: 2.4s;
+  animation-delay: -0.6s;
+}
 
 body.register-page-active .auth-hero-macbook {
   position: absolute;

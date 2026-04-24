@@ -15,15 +15,7 @@ import LandingFooterSection from './sections/LandingFooterSection';
 
 const SCROLL_OFFSET = 0;
 
-const LOADER_DURATION_MS = 4000;
-const LOADER_EXIT_MS = 650;
 const FEATURE_CARD_COUNT = 3;
-
-function easeInOutCubic(value) {
-  return value < 0.5
-    ? 4 * value * value * value
-    : 1 - ((-2 * value + 2) ** 3) / 2;
-}
 
 function scrollToSectionById(sectionId, setMenuOpen) {
   scroller.scrollTo(sectionId, {
@@ -38,15 +30,10 @@ function scrollToSectionById(sectionId, setMenuOpen) {
 export default function LandingPage({ managePageClass = true }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const isLandingRoute = location.pathname === ROUTES.HOME;
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeTheme, setActiveTheme] = useState('light');
   const [activeSection, setActiveSection] = useState('hero');
   const [isNavVisible, setIsNavVisible] = useState(false);
-  const [isPageLoading, setIsPageLoading] = useState(true);
-  const [loaderProgress, setLoaderProgress] = useState(0);
-  const [isLoaderExiting, setIsLoaderExiting] = useState(false);
-  const [hasWindowLoaded, setHasWindowLoaded] = useState(document.readyState === 'complete');
   const [heroScrollProgress, setHeroScrollProgress] = useState(0);
   const [revealStep, setRevealStep] = useState(0);
   const [featureCardIndex, setFeatureCardIndex] = useState(0);
@@ -54,8 +41,6 @@ export default function LandingPage({ managePageClass = true }) {
   const heroSectionRef = useRef(null);
   const featuresGridRef = useRef(null);
   const howSectionRef = useRef(null);
-  const loaderFrameRef = useRef(0);
-  const loaderExitTimerRef = useRef(0);
   const revealStepRef = useRef(0);
   const instantSectionLocksRef = useRef({
     features: false,
@@ -113,64 +98,16 @@ export default function LandingPage({ managePageClass = true }) {
   }, [managePageClass]);
 
   useEffect(() => {
-    const isLandingRoute = location.pathname === ROUTES.HOME;
-    const skipLoader = location.state?.skipLoader;
+    const isHomeRoute = location.pathname === ROUTES.HOME;
 
-    if (!isLandingRoute) {
-      const resetLoaderTimer = window.setTimeout(() => {
-        setIsPageLoading(false);
-        setIsLoaderExiting(false);
-      }, 0);
-
+    if (!isHomeRoute) {
       const closeMenuTimer = window.setTimeout(() => {
         setMenuOpen(false);
       }, 0);
 
       return () => {
-        window.clearTimeout(resetLoaderTimer);
         window.clearTimeout(closeMenuTimer);
       };
-    }
-
-    // Skip loader animation if returning from auth pages
-    if (skipLoader) {
-      const skipLoaderTimer = window.setTimeout(() => {
-        setIsPageLoading(false);
-        setIsLoaderExiting(false);
-        setLoaderProgress(100);
-        setIsNavVisible(true);
-      }, 0);
-
-      return () => window.clearTimeout(skipLoaderTimer);
-    }
-
-    const initializeLoaderTimer = window.setTimeout(() => {
-      setIsPageLoading(true);
-      setIsLoaderExiting(false);
-      setLoaderProgress(0);
-      setHasWindowLoaded(document.readyState === 'complete');
-
-      const startTime = window.performance.now();
-
-      const animateLoader = (now) => {
-        const elapsed = Math.min(now - startTime, LOADER_DURATION_MS);
-        const progress = Math.min(100, Math.round(easeInOutCubic(elapsed / LOADER_DURATION_MS) * 100));
-        setLoaderProgress(progress);
-
-        if (elapsed < LOADER_DURATION_MS) {
-          loaderFrameRef.current = window.requestAnimationFrame(animateLoader);
-        }
-      };
-
-      loaderFrameRef.current = window.requestAnimationFrame(animateLoader);
-    }, 0);
-
-    const onWindowLoad = () => {
-      setHasWindowLoaded(true);
-    };
-
-    if (document.readyState !== 'complete') {
-      window.addEventListener('load', onWindowLoad, { once: true });
     }
 
     // Force the landing page to start from the hero on reload.
@@ -192,36 +129,10 @@ export default function LandingPage({ managePageClass = true }) {
     }, 500);
 
     return () => {
-      window.clearTimeout(initializeLoaderTimer);
-      window.cancelAnimationFrame(loaderFrameRef.current);
       window.clearTimeout(resetVisibilityTimer);
       window.clearTimeout(showVisibilityTimer);
-      window.removeEventListener('load', onWindowLoad);
-      window.clearTimeout(loaderExitTimerRef.current);
     };
   }, [location]);
-
-  useEffect(() => {
-    if (location.pathname !== ROUTES.HOME || !isPageLoading || isLoaderExiting) {
-      return undefined;
-    }
-
-    if (!hasWindowLoaded || loaderProgress < 100) {
-      return undefined;
-    }
-
-    const triggerExitTimer = window.setTimeout(() => {
-      setIsLoaderExiting(true);
-      loaderExitTimerRef.current = window.setTimeout(() => {
-        setIsPageLoading(false);
-      }, LOADER_EXIT_MS);
-    }, 0);
-
-    return () => {
-      window.clearTimeout(triggerExitTimer);
-      window.clearTimeout(loaderExitTimerRef.current);
-    };
-  }, [hasWindowLoaded, isLoaderExiting, isPageLoading, loaderProgress, location.pathname]);
 
   useEffect(() => {
     if (menuOpen) {
@@ -432,18 +343,6 @@ export default function LandingPage({ managePageClass = true }) {
 
   return (
     <div className="figma-landing">
-      {isLandingRoute && isPageLoading && (
-        <div className={`landing-loader-overlay ${isLoaderExiting ? 'is-exiting' : ''}`} aria-label={`Loading ${loaderProgress}%`}>
-          <div className="container" role="status" aria-live="polite" aria-atomic="true">
-            <div className="loader" />
-            <div className="loader" />
-            <div className="loader" />
-            <span className="landing-loader-percent">{loaderProgress}%</span>
-            <span className="landing-loader-word">Bigkas</span>
-          </div>
-        </div>
-      )}
-
       <nav
         className={`figma-nav ${activeTheme === 'dark' ? 'nav-theme-dark' : ''} ${activeSection === 'hero' ? 'nav-on-hero' : ''} ${activeSection === 'how-it-works' || activeSection === 'science' ? 'nav-on-green-sections' : ''} ${activeSection === 'features' ? 'nav-menu-black' : ''} ${activeSection === 'section-5' ? 'nav-on-last-section' : ''} ${menuOpen ? 'menu-open' : ''} ${isNavVisible ? 'nav-visible' : 'nav-hidden'}`}
         aria-label="Primary landing navigation"

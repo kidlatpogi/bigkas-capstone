@@ -5,6 +5,8 @@ import { ROUTES } from '../../utils/constants';
 import questionsData from '../../assets/data/profiling_questions.json';
 import waveWebm from '../../assets/Sprites/Robot Animated/Wave-webm.webm';
 import waveMp4 from '../../assets/Sprites/Robot Animated/Wave-mp4.mp4';
+import maxVolumeIcon from '../../assets/Sprites/common/max-volume.png';
+import muteIcon from '../../assets/Sprites/common/mute.png';
 import PushButton from '../../components/common/PushButton';
 import './UserProfilingPage.css';
 
@@ -264,12 +266,13 @@ function UserProfilingPage() {
                   shadowColor="#0F766E"
                   textColor="#FFFFFF"
                 >
-                  <span
+                  <img
+                    src={isMuted ? muteIcon : maxVolumeIcon}
+                    alt={isMuted ? 'Muted' : 'Volume on'}
+                    className="profiling-audio-icon-image"
                     aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
                     title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                  >
-                    {isMuted ? '🔇' : '🔊'}
-                  </span>
+                  />
                 </PushButton>
               </div>
             </div>

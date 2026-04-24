@@ -158,9 +158,11 @@
   box-shadow: #0F766E 0 0 0 0;
 }
 
-.profiling-audio-icon-btn span {
-  font-size: clamp(1.25rem, 2.4vw, 1.45rem);
-  line-height: 1;
+.profiling-audio-icon-image {
+  width: clamp(1.5rem, 3.2vw, 1.9rem);
+  height: clamp(1.5rem, 3.2vw, 1.9rem);
+  object-fit: contain;
+  display: block;
 }
 
 .profiling-intro-audio-action {

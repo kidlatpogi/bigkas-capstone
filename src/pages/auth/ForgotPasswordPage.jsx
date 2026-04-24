@@ -3,10 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { isValidEmail, validatePassword } from '../../utils/validators';
 import { ROUTES } from '../../utils/constants';
-import BackButton from '../../components/common/BackButton';
-import Button from '../../components/common/Button';
-import PasswordToggle from '../../components/common/PasswordToggle';
-import PushButton from '../../components/common/PushButton';
+import kamayImage from '../../assets/backgrounds/Login/Kamay.png';
 import './ForgotPasswordPage.css';
 
 const OTP_LENGTH = 6;
@@ -58,20 +55,6 @@ function ForgotPasswordPage() {
       document.body.classList.remove('forgot-page-active');
     };
   }, []);
-
-  const passwordStrength = (() => {
-    const p = newPassword;
-    if (!p) return 0;
-    let score = 0;
-    if (p.length >= 8) score += 1;
-    if (p.length >= 12) score += 1;
-    if (/[A-Z]/.test(p) && /[a-z]/.test(p)) score += 1;
-    if (/\d/.test(p)) score += 1;
-    if (/[^A-Za-z0-9]/.test(p)) score += 1;
-    return Math.min(score, 4);
-  })();
-  const strengthLabel = ['', 'Weak', 'Fair', 'Good', 'Strong'][passwordStrength];
-  const strengthColor = ['', '#EF4444', '#F59E0B', '#3B82F6', '#10B981'][passwordStrength];
 
   useEffect(() => {
     if (!isVerifyStep) return;
@@ -315,112 +298,99 @@ function ForgotPasswordPage() {
     }
   };
 
+  const heroBars = [
+    { left: '3%', top: '12%', h: '60%' },
+    { left: '12%', top: '28%', h: '40%' },
+    { left: '21%', top: '44%', h: '24%' },
+    { left: '30%', top: '22%', h: '52%' },
+    { left: '39%', top: '34%', h: '34%' },
+    { left: '48%', top: '10%', h: '68%' },
+    { left: '57%', top: '24%', h: '46%' },
+    { left: '66%', top: '16%', h: '58%' },
+    { left: '75%', top: '28%', h: '40%' },
+    { left: '84%', top: '12%', h: '60%' },
+    { left: '93%', top: '44%', h: '26%' },
+  ];
+
   return (
-    <div className="auth-page">
-      {/* ── Left branding panel ── */}
-      <div className="auth-brand-panel">
-        <BackButton className="auth-mobile-back" to={ROUTES.LOGIN} />
+    <div className="min-h-dvh w-full bg-[#064E3B] lg:flex">
+      <section className="relative hidden overflow-hidden bg-[#064E3B] lg:block lg:w-1/2">
+        <p className="pt-5 text-center font-nunito text-[12px] font-semibold text-white">
+          Just you and the mic. No judgement. Just Data
+        </p>
 
-        <div className="auth-brand-content">
-          <h1 className="auth-brand-name">BIGKAS</h1>
-          <p className="auth-brand-tagline">PUBLIC SPEAKING COACH</p>
-          <div className="auth-brand-line" />
-
-          <ul className="auth-brand-features">
-            <li>
-              <span className="feature-num">01</span>
-              <span className="feature-text">SPEECH ANALYSIS</span>
-            </li>
-            <li>
-              <span className="feature-num">02</span>
-              <span className="feature-text">CONFIDENCE SCORING</span>
-            </li>
-            <li>
-              <span className="feature-num">03</span>
-              <span className="feature-text">RHETORIC DESIGN</span>
-            </li>
-          </ul>
+        <div className="absolute inset-0">
+          {heroBars.map((bar, index) => (
+            <div
+              key={`${bar.left}-${index}`}
+              className="absolute w-[72px] rounded-full bg-[#34D399] opacity-50"
+              style={{ left: bar.left, top: bar.top, height: bar.h }}
+            />
+          ))}
         </div>
-      </div>
 
-      {/* ── Right form panel ── */}
-      <div className="auth-form-panel">
-        <div className="auth-form-container floating-card">
-          <h2 className="auth-form-title forgot-password-title">FORGOT PASSWORD</h2>
+        <img
+          src={kamayImage}
+          alt="Hand holding phone"
+          className="absolute bottom-0 left-0 z-10 h-[70%] max-h-[760px] w-auto object-contain"
+        />
 
-          {isDoneStep ? (
-            <div className="forgot-success">
-              <div className="forgot-success-icon">
-                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                  <circle cx="24" cy="24" r="23" stroke="#FCBA04" strokeWidth="2" />
-                  <path d="M14 24l7 7 13-13" stroke="#FCBA04" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-              <h3 className="forgot-success-title">PASSWORD UPDATED</h3>
-              <p className="forgot-success-text">
-                Your password was changed successfully for{' '}
-                <strong>{email.trim()}</strong>.
-              </p>
-              <p className="forgot-success-note">You can now log in using your new password.</p>
+        <h1 className="absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 whitespace-pre-line text-center font-fredoka text-[60px] font-semibold leading-[0.95] text-white">
+          Master{'\n'}Speaking
+        </h1>
+      </section>
 
-              <PushButton
-                type="button"
-                onClick={handleBackToLogin}
-                bgColor="#ffffff"
-                shadowColor="#d5d5d5"
-                textColor="#333333"
-              >
-                BACK TO LOG IN
-              </PushButton>
-            </div>
-          ) : (
-            <>
-              <p className="forgot-description">
-                {isRequestStep && 'Enter your account email and we\'ll send a 6-digit reset code.'}
-                {isVerifyStep && 'Enter the 6-digit reset code from your email.'}
-                {isResetStep && 'Create your new password after successful code verification.'}
-              </p>
+      <section className="relative flex min-h-dvh w-full items-center justify-center px-4 py-6 lg:w-1/2 lg:justify-end lg:px-0 lg:py-0">
+        <div className="relative w-full max-w-[540px] overflow-hidden rounded-3xl bg-[#FDFDF9] p-7 sm:p-10 lg:h-dvh lg:max-w-[560px] lg:rounded-none lg:rounded-l-[24px] lg:pl-7 lg:pr-10">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[rgba(52,211,153,0.18)] to-transparent" />
 
-              <form className={`auth-form forgot-auth-form${isVerifyStep ? ' forgot-auth-form--verify' : ''}`} onSubmit={handleSubmit}>
+          <h1 className="relative z-10 font-fredoka text-[28px] font-semibold leading-none text-[#059669]">
+            Bigkas
+          </h1>
+
+          <div className="relative z-10 flex min-h-[76dvh] items-center justify-center lg:min-h-[calc(100dvh-90px)]">
+            <div className="w-full max-w-[360px]">
+              <h2 className="mb-10 text-center font-fredoka text-[32px] font-semibold text-[#1E293B]">
+                {isRequestStep && 'Forgot Password'}
+                {isVerifyStep && 'Verify Code'}
+                {isResetStep && 'Set New Password'}
+                {isDoneStep && 'Password Updated'}
+              </h2>
+
+              <form className="font-nunito" onSubmit={handleSubmit}>
                 {error && (
-                  <div className="auth-error-banner">{error}</div>
+                  <div className="mb-4 rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>
                 )}
-
                 {!error && infoMessage && (
-                  <div className="auth-success-banner">{infoMessage}</div>
+                  <div className="mb-4 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm text-emerald-700">{infoMessage}</div>
                 )}
 
                 {isRequestStep && (
-                  <div className="form-group">
-                    <label htmlFor="reset-email" className="form-label">EMAIL ADDRESS</label>
+                  <div className="mb-5">
+                    <label htmlFor="reset-email" className="mb-1.5 block text-[20px] font-semibold text-[#1E293B]">Email</label>
                     <input
                       type="email"
                       id="reset-email"
                       name="email"
-                      className={`form-input ${error ? 'form-input-error' : ''}`}
                       value={email}
                       onChange={(e) => { setEmail(e.target.value); setError(null); }}
                       placeholder="name@gmail.com"
-                      disabled={isLoading || isResetStep}
+                      disabled={isLoading}
                       autoFocus
+                      className="h-[54px] w-full rounded-full border border-[#1E293B] bg-white px-6 text-[20px] text-[#1E293B] outline-none"
                     />
                   </div>
                 )}
 
                 {isVerifyStep && (
-                  <div className="form-group">
-                    <label className="form-label">6-DIGIT CODE</label>
-                    <div
-                      className="otp-boxes"
-                      onPaste={handlePaste}
-                      role="group"
-                      aria-label="One-time password input"
-                    >
+                  <div className="mb-5">
+                    <label className="mb-2 block text-[20px] font-semibold text-[#1E293B]">Code</label>
+                    <div className="flex justify-between gap-2" onPaste={handlePaste} role="group" aria-label="One-time password input">
                       {digits.map((digit, i) => (
                         <input
                           key={i}
                           ref={(el) => { inputRefs.current[i] = el; }}
-                          className={`otp-box${error ? ' otp-box-error' : ''}`}
+                          className="h-12 w-12 rounded-xl border border-[#1E293B] text-center text-xl"
                           type="text"
                           inputMode="numeric"
                           pattern="[0-9]*"
@@ -439,104 +409,77 @@ function ForgotPasswordPage() {
 
                 {isResetStep && (
                   <>
-                    <div className="form-group">
-                      <label htmlFor="new-password" className="form-label">NEW PASSWORD</label>
-                      <div className="pw-input-wrap">
-                        <input
-                          type={showPassword ? 'text' : 'password'}
-                          id="new-password"
-                          name="new-password"
-                          className={`form-input ${error ? 'form-input-error' : ''}`}
-                          value={newPassword}
-                          onChange={(e) => { setNewPassword(e.target.value); setError(null); }}
-                          placeholder="••••••••"
-                          disabled={isLoading}
-                          autoComplete="new-password"
-                        />
-                        <PasswordToggle
-                          isVisible={showPassword}
-                          onToggle={() => setShowPassword((v) => !v)}
-                          disabled={isLoading}
-                        />
-                      </div>
-                      {newPassword && (
-                        <div className="pw-strength">
-                          <div className="pw-strength-bars">
-                            {[1, 2, 3, 4].map((n) => (
-                              <div
-                                key={n}
-                                className="pw-strength-bar"
-                                style={{ background: n <= passwordStrength ? strengthColor : '#E5E7EB' }}
-                              />
-                            ))}
-                          </div>
-                          <span className="pw-strength-label" style={{ color: strengthColor }}>{strengthLabel}</span>
-                        </div>
-                      )}
-                      <span className="pw-hint">Min. 8 characters with letters and numbers</span>
+                    <div className="mb-4">
+                      <label htmlFor="new-password" className="mb-1.5 block text-[20px] font-semibold text-[#1E293B]">New Password</label>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        id="new-password"
+                        value={newPassword}
+                        onChange={(e) => { setNewPassword(e.target.value); setError(null); }}
+                        placeholder="••••••••"
+                        disabled={isLoading}
+                        autoComplete="new-password"
+                        className="h-[54px] w-full rounded-full border border-[#1E293B] bg-white px-6 text-[20px] text-[#1E293B] outline-none"
+                      />
                     </div>
-
-                    <div className="form-group">
-                      <label htmlFor="confirm-password" className="form-label">CONFIRM PASSWORD</label>
-                      <div className="pw-input-wrap">
-                        <input
-                          type={showConfirm ? 'text' : 'password'}
-                          id="confirm-password"
-                          name="confirm-password"
-                          className={`form-input ${error ? 'form-input-error' : ''}`}
-                          value={confirmPassword}
-                          onChange={(e) => { setConfirmPassword(e.target.value); setError(null); }}
-                          placeholder="••••••••"
-                          disabled={isLoading}
-                          autoComplete="new-password"
-                        />
-                        <PasswordToggle
-                          isVisible={showConfirm}
-                          onToggle={() => setShowConfirm((v) => !v)}
-                          disabled={isLoading}
-                        />
-                      </div>
+                    <div className="mb-5">
+                      <label htmlFor="confirm-password" className="mb-1.5 block text-[20px] font-semibold text-[#1E293B]">Confirm Password</label>
+                      <input
+                        type={showConfirm ? 'text' : 'password'}
+                        id="confirm-password"
+                        value={confirmPassword}
+                        onChange={(e) => { setConfirmPassword(e.target.value); setError(null); }}
+                        placeholder="••••••••"
+                        disabled={isLoading}
+                        autoComplete="new-password"
+                        className="h-[54px] w-full rounded-full border border-[#1E293B] bg-white px-6 text-[20px] text-[#1E293B] outline-none"
+                      />
                     </div>
                   </>
                 )}
 
-                <PushButton
-                  className="forgot-submit-btn"
-                  type="submit"
-                  disabled={isLoading || (isVerifyStep && digits.some((d) => !d))}
-                  bgColor="#5A7863"
-                  shadowColor="#3E5646"
-                  textColor="#ffffff"
-                >
-                  {isRequestStep && 'SEND CODE'}
-                  {isVerifyStep && 'VERIFY CODE'}
-                  {isResetStep && 'RESET PASSWORD'}
-                </PushButton>
+                {isDoneStep ? (
+                  <button
+                    type="button"
+                    onClick={handleBackToLogin}
+                    className="h-[60px] w-full rounded-full border border-[#7C2D12] bg-[#FF721F] font-fredoka text-[28px] font-medium text-white shadow-[0_4px_0_0_#7C2D12]"
+                  >
+                    Back to Login
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={isLoading || (isVerifyStep && digits.some((d) => !d))}
+                    className="h-[60px] w-full rounded-full border border-[#7C2D12] bg-[#FF721F] font-fredoka text-[28px] font-medium text-white shadow-[0_4px_0_0_#7C2D12] disabled:opacity-70"
+                  >
+                    {isRequestStep && 'Send Code'}
+                    {isVerifyStep && (isLoading ? 'Verifying...' : 'Verify Code')}
+                    {isResetStep && (isLoading ? 'Resetting...' : 'Reset Password')}
+                  </button>
+                )}
               </form>
 
               {isVerifyStep && (
-                <div className="resend-section">
-                  <p className="resend-text">Didn&apos;t receive the code?</p>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="resend-btn"
-                    onClick={handleResendCode}
-                    disabled={isLoading || resendCooldown > 0}
-                  >
-                    {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'RESEND CODE'}
-                  </Button>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleResendCode}
+                  disabled={isLoading || resendCooldown > 0}
+                  className="mt-4 w-full text-center font-nunito text-base font-semibold text-[#1E293B] underline disabled:no-underline disabled:opacity-60"
+                >
+                  {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
+                </button>
               )}
 
-              <div className="auth-footer" style={{ marginTop: 24 }}>
-                <p className="auth-footer-label">REMEMBER YOUR PASSWORD?</p>
-                <Link to={ROUTES.LOGIN} className="auth-link" onClick={handleBackToLogin}>BACK TO LOG IN</Link>
-              </div>
-            </>
-          )}
+              <p className="mt-7 text-center font-nunito text-[28px] text-[#1E293B]">
+                Remember your password?{' '}
+                <Link to={ROUTES.LOGIN} onClick={handleBackToLogin} className="font-extrabold underline">
+                  Back to Login
+                </Link>
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

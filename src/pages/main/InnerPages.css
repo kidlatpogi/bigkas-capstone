@@ -7,7 +7,7 @@
 /* -- Page wrapper -- */
 .inner-page {
   /* Design tokens — match fh-page so fh-* components work on any inner page */
-  --primary: #FCBA04;
+  --primary: #F18F01;
   --black: #010101;
   --bg: #F5F5F5;
   --surface: #FFFFFF;
@@ -111,7 +111,7 @@
 }
 
 .tab-btn.active {
-  background: #FCBA04;
+  background: #F18F01;
   color: #010101;
   font-weight: 700;
 }
@@ -185,7 +185,7 @@
 .form-input:focus,
 .form-textarea:focus,
 .form-select:focus {
-  border-color: #FCBA04;
+  border-color: #F18F01;
   background: #FFFFFF;
 }
 
@@ -222,7 +222,7 @@
   justify-content: center;
   gap: 8px;
   padding: 13px 24px;
-  background: #FCBA04;
+  background: #F18F01;
   color: #010101;
   border: none;
   border-radius: 12px;
@@ -589,7 +589,7 @@
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  background: #FCBA04;
+  background: #F18F01;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -749,7 +749,7 @@
 }
 
 [data-theme="dark"] .tab-btn.active {
-  background: #FCBA04;
+  background: #F18F01;
   color: #010101;
 }
 
@@ -776,7 +776,7 @@
 [data-theme="dark"] .form-input:focus,
 [data-theme="dark"] .form-textarea:focus,
 [data-theme="dark"] .form-select:focus {
-  border-color: #FCBA04;
+  border-color: #F18F01;
   background: #2E2E2E;
 }
 
@@ -955,7 +955,7 @@
 }
 
 .paged-btn:hover:not(:disabled) {
-  border-color: #FCBA04;
+  border-color: #F18F01;
   background: rgba(252, 186, 4, 0.06);
 }
 
@@ -1005,7 +1005,7 @@
 }
 
 [data-theme="dark"] .paged-btn:hover:not(:disabled) {
-  border-color: #FCBA04;
+  border-color: #F18F01;
   background: rgba(252, 186, 4, 0.06);
 }
 

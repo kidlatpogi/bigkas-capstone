@@ -113,7 +113,7 @@ ul, ol { list-style: none; }
   width: 40px;
   height: 40px;
   border: 3.5px solid rgba(252, 186, 4, 0.25);
-  border-top-color: #FCBA04;
+  border-top-color: #F18F01;
   border-radius: 50%;
   animation: spin 0.75s linear infinite;
 }

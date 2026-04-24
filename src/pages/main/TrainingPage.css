@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════════════════
    TrainingPage — 1:1 redesign from Bigkas-mobile TrainingScriptedScreen
-   Design tokens: primary #FCBA04 · black #010101 · white #FFFFFF
+   Design tokens: primary #F18F01 · black #010101 · white #FFFFFF
    ══════════════════════════════════════════════════════════════════════ */
 
 /* ── Page shell — fixed full-screen training layout ── */
@@ -63,7 +63,7 @@ body.training-page-active {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 .tp-back-btn:hover { 
-  background: #F6A320;
+  background: #F18F01;
   border-color: #0B3954;
 }
 
@@ -184,7 +184,7 @@ body.training-page-active {
 .tp-min-duration__fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #f59b00 0%, #f18f01 100%);
+  background: linear-gradient(90deg, #f18f01 0%, #f18f01 100%);
   transition: width 0.35s ease, background 0.35s ease;
 }
 
@@ -351,7 +351,7 @@ body.training-page-active {
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: #FCBA04;
+  background: #F18F01;
 }
 
 .tp-idle-label {
@@ -609,7 +609,7 @@ body.training-page-active {
   line-height: 1.85;
   color: rgba(1,1,1,0.55);
   padding-right: 4px;
-  border-left: 3px solid #FCBA04;
+  border-left: 3px solid #F18F01;
   padding-left: 12px;
   border-radius: 2px;
   min-height: 0;  /* allow flexbox shrink */
@@ -669,7 +669,7 @@ body.training-page-active {
 .tp-countdown-num {
   font-size: 110px;
   font-weight: 900;
-  color: #FCBA04;
+  color: #F18F01;
   line-height: 1;
 }
 
@@ -677,7 +677,7 @@ body.training-page-active {
   width: 48px;
   height: 48px;
   border: 4px solid rgba(255,255,255,0.2);
-  border-top-color: #FCBA04;
+  border-top-color: #F18F01;
   border-radius: 50%;
   animation: tp-spin 0.8s linear infinite;
 }
@@ -819,7 +819,7 @@ body.training-page-active {
   padding: 13px;
   border-radius: 14px;
   border: none;
-  background: #FCBA04;
+  background: #F18F01;
   color: #010101;
   font-size: 15px;
   font-weight: 700;
@@ -867,7 +867,7 @@ body.training-page-active {
 .tp-go-back-btn {
   margin-top: 12px;
   padding: 12px 28px;
-  background: #FCBA04;
+  background: #F18F01;
   color: #010101;
   border: none;
   border-radius: 50px;
@@ -972,7 +972,7 @@ body.training-page-active {
 
 .tp-modal-slider {
   width: 100%;
-  accent-color: #FCBA04;
+  accent-color: #F18F01;
   min-height: 44px;
   touch-action: pan-y;
 }
@@ -991,7 +991,7 @@ body.training-page-active {
   margin-top: -6px;
   border: 2px solid #ffffff;
   border-radius: 50%;
-  background: #FCBA04;
+  background: #F18F01;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
 }
 
@@ -1007,7 +1007,7 @@ body.training-page-active {
   height: 20px;
   border: 2px solid #ffffff;
   border-radius: 50%;
-  background: #FCBA04;
+  background: #F18F01;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
 }
 
@@ -1027,7 +1027,7 @@ body.training-page-active {
 }
 
 .tp-toggle-btn--on {
-  background: #FCBA04;
+  background: #F18F01;
   box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04);
 }
 
@@ -1138,7 +1138,7 @@ body.training-page-active {
 [data-theme="dark"] .tp-modal-val { color: #F0F0F0; }
 [data-theme="dark"] .tp-modal-done { background: #F0F0F0; color: #010101; }
 [data-theme="dark"] .tp-toggle-btn { background: #3a3a3a; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1); }
-[data-theme="dark"] .tp-toggle-btn--on { background: #FCBA04; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08); }
+[data-theme="dark"] .tp-toggle-btn--on { background: #F18F01; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08); }
 [data-theme="dark"] .tp-modal-slider::-webkit-slider-runnable-track,
 [data-theme="dark"] .tp-modal-slider::-moz-range-track {
   background: rgba(255, 255, 255, 0.16);
@@ -1155,7 +1155,7 @@ body.training-page-active {
   left: 50%;
   transform: translateX(-50%);
   width: min(92vw, 420px);
-  background: #FCBA04;
+  background: #F18F01;
   color: #010101;
   border-radius: 14px;
   padding: 14px 18px 14px 20px;

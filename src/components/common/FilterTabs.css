@@ -1,6 +1,6 @@
 ﻿/**
  * FilterTabs — reusable horizontal pill/tab filter bar.
- * Design tokens: Primary #FCBA04  ·  Black #010101  ·  BG #F5F5F5
+ * Design tokens: Primary #F18F01  ·  Black #010101  ·  BG #F5F5F5
  */
 
 .filter-tabs {
@@ -52,13 +52,13 @@
 }
 
 .filter-tab-btn.active {
-  background: #FCBA04;
+  background: #F18F01;
   color: #010101;
-  border-color: #FCBA04;
+  border-color: #F18F01;
 }
 
 .filter-tab-btn:focus-visible {
-  outline: 2px solid #FCBA04;
+  outline: 2px solid #F18F01;
   outline-offset: 2px;
 }
 

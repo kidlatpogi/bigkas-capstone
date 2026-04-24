@@ -14,8 +14,8 @@
   --bp-2k: 2000px;
   --mobile-px: 16px;
 
-  /* Colors — Bigkas design tokens (primary: gold #FCBA04, dark: #010101) */
-  --color-primary: #FCBA04;
+  /* Colors — Bigkas design tokens (primary: #F18F01, dark: #010101) */
+  --color-primary: #F18F01;
   --color-primary-dark: #D59300;
   --color-primary-light: #FFCF4D;
   --color-primary-text: #8A5A00;
@@ -210,7 +210,7 @@ img {
 
 /* Dark mode link color */
 [data-theme="dark"] a {
-  color: #FCBA04;
+  color: #F18F01;
 }
 
 [data-theme="dark"] a:hover {
@@ -219,7 +219,7 @@ img {
 
 /* Dark mode focus */
 [data-theme="dark"] :focus-visible {
-  outline-color: #FCBA04;
+  outline-color: #F18F01;
 }
 
 /* Main content area — no top nav, content sits at the top */

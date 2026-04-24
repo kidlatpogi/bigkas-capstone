@@ -2,7 +2,7 @@
  * Auth Pages — Split-panel layout matching Figma screenshots
  * Left: Branding panel (white, BIGKAS + features)
  * Right: Form panel (white, form fields + yellow CTA)
- * Colors from Bigkas-mobile: primary #FCBA04, secondary #010101, bg #F5F5F5
+ * Colors from Bigkas-mobile: primary #F18F01, secondary #010101, bg #F5F5F5
  */
 
 html.verify-page-active,
@@ -50,7 +50,7 @@ body.verify-page-active .auth-login-back {
 }
 
 body.verify-page-active .auth-login-back:hover {
-  background: #F6A320;
+  background: #F18F01;
   border-color: #0B3954;
 }
 
@@ -239,7 +239,7 @@ body.verify-page-active .auth-forgot-link:hover {
 .auth-brand-line {
   width: 60px;
   height: 3px;
-  background: #FCBA04;
+  background: #F18F01;
   border-radius: 2px;
   margin-bottom: 48px;
 }
@@ -260,7 +260,7 @@ body.verify-page-active .auth-forgot-link:hover {
 .feature-num {
   font-size: 16px;
   font-weight: 700;
-  color: #FCBA04;
+  color: #F18F01;
   min-width: 28px;
 }
 
@@ -365,7 +365,7 @@ body.verify-page-active .auth-forgot-link:hover {
 .auth-resend-btn {
   background: transparent;
   border: 1px solid rgba(252, 186, 4, 0.6);
-  color: #FCBA04;
+  color: #F18F01;
   padding: 6px 16px;
   border-radius: 6px;
   font-size: 12px;
@@ -378,7 +378,7 @@ body.verify-page-active .auth-forgot-link:hover {
 
 .auth-resend-btn:hover:not(:disabled) {
   background: rgba(252, 186, 4, 0.1);
-  border-color: #FCBA04;
+  border-color: #F18F01;
 }
 
 .auth-resend-btn:disabled {
@@ -462,7 +462,7 @@ body.verify-page-active .auth-forgot-link:hover {
 }
 
 .auth-submit-btn-primary {
-  background: #FCBA04;
+  background: #F18F01;
   color: #010101;
 }
 
@@ -507,7 +507,7 @@ body.verify-page-active .auth-forgot-link:hover {
 }
 
 .form-input:focus {
-  border-bottom-color: #FCBA04;
+  border-bottom-color: #F18F01;
 }
 
 .form-input::placeholder {
@@ -623,7 +623,7 @@ body.verify-page-active .auth-forgot-link:hover {
 }
 
 .auth-forgot-link:hover {
-  color: #FCBA04;
+  color: #F18F01;
 }
 
 /* ── Divider — "or" ── */
@@ -703,7 +703,7 @@ body.verify-page-active .auth-forgot-link:hover {
 }
 
 .auth-link:hover {
-  color: #FCBA04;
+  color: #F18F01;
 }
 
 /* ===========================================
@@ -818,14 +818,14 @@ body.verify-page-active .auth-forgot-link:hover {
 
 .login-redesign .auth-submit-btn {
   color: #FFFFFF;
-  background: linear-gradient(180deg, #F6A320 0%, #F18F01 100%);
+  background: linear-gradient(180deg, #F18F01 0%, #F18F01 100%);
   box-shadow: 0 var(--elevate) 0 #CD8B76, 0 10px 18px rgba(0, 0, 0, 0.24);
   margin-top: 0.75rem;
 }
 
 .login-redesign .auth-submit-btn:hover:not(:disabled) {
   filter: brightness(1.03);
-  background: linear-gradient(180deg, #F6A320 0%, #F18F01 100%);
+  background: linear-gradient(180deg, #F18F01 0%, #F18F01 100%);
   color: #FFFFFF;
 }
 
@@ -1034,7 +1034,7 @@ body.verify-page-active .auth-forgot-link:hover {
 }
 
 [data-theme="dark"] .auth-forgot-link:hover {
-  color: #FCBA04;
+  color: #F18F01;
 }
 
 [data-theme="dark"] .auth-divider-line {
@@ -1065,7 +1065,7 @@ body.verify-page-active .auth-forgot-link:hover {
 }
 
 [data-theme="dark"] .auth-link:hover {
-  color: #FCBA04;
+  color: #F18F01;
 }
 
 [data-theme="dark"] .auth-info-banner {
@@ -1231,7 +1231,7 @@ body.verify-page-active .auth-forgot-link:hover {
 }
 
 .otp-box:focus {
-  border-color: #FCBA04;
+  border-color: #F18F01;
   box-shadow: 0 0 0 3px rgba(252, 186, 4, 0.18);
   background: #FFFFFF;
 }
@@ -1291,7 +1291,7 @@ body.verify-page-active .auth-forgot-link:hover {
 }
 
 [data-theme="dark"] .otp-box:focus {
-  border-color: #FCBA04;
+  border-color: #F18F01;
   background: #1E1E1E;
 }
 

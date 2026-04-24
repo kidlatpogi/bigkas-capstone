@@ -5,6 +5,7 @@ import { ROUTES } from '../../utils/constants';
 import questionsData from '../../assets/data/profiling_questions.json';
 import waveWebm from '../../assets/Sprites/Robot Animated/Wave-webm.webm';
 import waveMp4 from '../../assets/Sprites/Robot Animated/Wave-mp4.mp4';
+import PushButton from '../../components/common/PushButton';
 import './UserProfilingPage.css';
 
 const QUESTIONS = questionsData;
@@ -68,6 +69,7 @@ function UserProfilingPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [isMuted, setIsMuted] = useState(false);
 
   const totalSteps = QUESTIONS.length;
   const currentQuestion = QUESTIONS[currentIndex];
@@ -75,12 +77,69 @@ function UserProfilingPage() {
 
   const baselineScore = useMemo(() => computeBaselineScore(form), [form]);
   const baselineLevelNumber = useMemo(() => getSpeakerLevelNumber(baselineScore), [baselineScore]);
+  const introSpeech = useMemo(
+    () => [
+      "Kumusta! I'm B-01, your personal guide on this exciting journey to master public speaking with Bigkas.",
+      'Before we begin, we need to assess your current speaking level. This includes 9 short profiling questions and one small speaking pre-test. These tests ensure I can customize your experience and guide you smoothly throughout your entire Bigkas journey!',
+    ],
+    []
+  );
 
   useEffect(() => {
     if (isAdminAuthenticated) {
       navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
     }
   }, [isAdminAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (screen !== 'intro' || isMuted || typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      return undefined;
+    }
+
+    const pickFriendlyVoice = () => {
+      const voices = window.speechSynthesis.getVoices();
+      if (!voices?.length) return null;
+
+      const normalized = voices.map((voice) => ({
+        voice,
+        id: `${voice.name} ${voice.lang}`.toLowerCase(),
+      }));
+
+      const exactPriority = ['google us english', 'samantha', 'microsoft zira'];
+      for (const target of exactPriority) {
+        const match = normalized.find(({ id }) => id.includes(target));
+        if (match) return match.voice;
+      }
+
+      const englishFallback = normalized.find(({ id }) => id.includes('english') || id.includes('en-us'));
+      return englishFallback?.voice || voices[0];
+    };
+
+    const speakIntro = () => {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(introSpeech.join(' '));
+      utterance.voice = pickFriendlyVoice();
+      utterance.rate = 1.15;
+      utterance.pitch = 1.9;
+      utterance.volume = 1.0;
+      window.speechSynthesis.speak(utterance);
+    };
+
+    speakIntro();
+
+    const handleVoicesChanged = () => {
+      // Re-speak once voices are fully available in browsers that load them lazily.
+      if (!window.speechSynthesis.speaking && !isMuted && screen === 'intro') {
+        speakIntro();
+      }
+    };
+    window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
+
+    return () => {
+      window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
+      window.speechSynthesis.cancel();
+    };
+  }, [introSpeech, isMuted, screen]);
 
   const updateField = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -155,6 +214,16 @@ function UserProfilingPage() {
     navigate(ROUTES.USER_PRETEST, { replace: true });
   };
 
+  const handleToggleMute = () => {
+    setIsMuted((prev) => {
+      const next = !prev;
+      if (next && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      return next;
+    });
+  };
+
   if (isAdminAuthenticated) return null;
 
   return (
@@ -179,11 +248,31 @@ function UserProfilingPage() {
               </div>
             </div>
           </article>
-          <div className="profiling-intro-robot" aria-hidden="true">
-            <video className="profiling-intro-video" autoPlay loop muted playsInline>
-              <source src={waveWebm} type="video/webm" />
-              <source src={waveMp4} type="video/mp4" />
-            </video>
+          <div className="profiling-intro-robot">
+            <div className="profiling-intro-robot-media" aria-hidden="true">
+              <video className="profiling-intro-video" autoPlay loop muted playsInline>
+                <source src={waveWebm} type="video/webm" />
+                <source src={waveMp4} type="video/mp4" />
+              </video>
+            </div>
+            <div className="profiling-intro-audio-action">
+              <div className="profiling-submit-btn profiling-submit-btn--audio">
+                <PushButton
+                  onClick={handleToggleMute}
+                  className="profiling-audio-icon-btn"
+                  bgColor="#0EA5A4"
+                  shadowColor="#0F766E"
+                  textColor="#FFFFFF"
+                >
+                  <span
+                    aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                    title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                  >
+                    {isMuted ? '🔇' : '🔊'}
+                  </span>
+                </PushButton>
+              </div>
+            </div>
           </div>
         </section>
       )}

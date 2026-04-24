@@ -85,7 +85,7 @@
 
 .profiling-submit-btn button {
   height: 44px;
-  width: clamp(7.8rem, 16vw, 9.2rem);
+  width: clamp(9rem, 18vw, 10.6rem);
   border: 0;
   background: #059669;
   color: #ffffff;
@@ -122,14 +122,51 @@
   align-self: end;
   justify-self: center;
   overflow: visible;
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+}
+
+.profiling-intro-robot-media {
+  width: 100%;
+  overflow: hidden;
 }
 
 .profiling-intro-video {
-  width: 100%;
+  width: 132%;
+  max-width: none;
   height: auto;
   display: block;
   object-fit: contain;
-  clip-path: inset(10% 18% 8% 18%);
+  margin-left: -16%;
+}
+
+.profiling-submit-btn--audio button {
+  width: clamp(3rem, 6vw, 3.4rem);
+  height: clamp(3rem, 6vw, 3.4rem);
+  border-radius: 999px;
+  padding: 0;
+  background: #0EA5A4;
+  box-shadow: #0F766E 0 5px 0 0;
+}
+
+.profiling-submit-btn--audio button:hover:not(:disabled) {
+  box-shadow: #0F766E 0 4px 0 0;
+}
+
+.profiling-submit-btn--audio button:active:not(:disabled) {
+  box-shadow: #0F766E 0 0 0 0;
+}
+
+.profiling-audio-icon-btn span {
+  font-size: clamp(1.25rem, 2.4vw, 1.45rem);
+  line-height: 1;
+}
+
+.profiling-intro-audio-action {
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
 
 .profiling-gate {
@@ -627,7 +664,7 @@
   }
 
   .profiling-submit-btn button {
-    width: clamp(7.8rem, 34vw, 8.8rem);
+    width: clamp(8.8rem, 34vw, 10rem);
     height: 42px;
   }
 
@@ -638,7 +675,13 @@
   }
 
   .profiling-intro-video {
-    clip-path: inset(8% 14% 7% 14%);
+    width: 124%;
+    margin-left: -12%;
+  }
+
+  .profiling-submit-btn--audio button {
+    width: 3rem;
+    height: 3rem;
   }
 
   .profiling-card {

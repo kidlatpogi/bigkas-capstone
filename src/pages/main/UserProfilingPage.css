@@ -73,10 +73,72 @@
   font-weight: 800;
 }
 
+.profiling-intro-bubble--ready {
+  width: min(100%, 34rem);
+}
+
+.profiling-ready-text {
+  font-family: 'Nunito', sans-serif;
+  font-size: clamp(1rem, 0.95rem + 0.22vw, 1.06rem);
+  line-height: 1.42;
+}
+
 .profiling-intro-actions {
   margin-top: 0.95rem;
   display: flex;
   justify-content: center;
+}
+
+.profiling-intro-actions--split {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.profiling-ready-btn {
+  width: clamp(5rem, 10vw, 6rem);
+  height: 44px;
+  border: 0;
+  border-radius: 999px;
+  font-family: 'Fredoka', sans-serif;
+  font-size: clamp(0.86rem, 0.82rem + 0.2vw, 0.95rem);
+  font-weight: 500;
+  color: #ffffff;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.profiling-ready-btn--back {
+  background: #F97316;
+  box-shadow: #C85E14 0 5px 0 0;
+}
+
+.profiling-ready-btn--next {
+  background: #059669;
+  box-shadow: #047857 0 5px 0 0;
+}
+
+.profiling-ready-btn:hover:not(:disabled) {
+  transform: translateY(2px);
+}
+
+.profiling-ready-btn--back:hover:not(:disabled) {
+  box-shadow: #C85E14 0 4px 0 0;
+}
+
+.profiling-ready-btn--next:hover:not(:disabled) {
+  box-shadow: #047857 0 4px 0 0;
+}
+
+.profiling-ready-btn:active:not(:disabled) {
+  transform: translateY(6px);
+}
+
+.profiling-ready-btn--back:active:not(:disabled) {
+  box-shadow: #C85E14 0 0 0 0;
+}
+
+.profiling-ready-btn--next:active:not(:disabled) {
+  box-shadow: #047857 0 0 0 0;
 }
 
 .profiling-submit-btn {
@@ -132,6 +194,11 @@
   overflow: hidden;
 }
 
+.profiling-intro-robot-media--ready {
+  width: min(100%, 17.5rem);
+  overflow: visible;
+}
+
 .profiling-intro-video {
   width: 132%;
   max-width: none;
@@ -141,58 +208,71 @@
   margin-left: -16%;
 }
 
-.profiling-audio-toggle {
-  width: clamp(4.5rem, 7vw, 5rem);
-  height: clamp(4.5rem, 7vw, 5rem);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: #ffffff;
-  border-radius: 35%;
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.28rem;
-  cursor: pointer;
-  transition: transform 220ms ease, background-color 220ms ease, border-color 220ms ease;
-  padding: 0.35rem;
-}
-
-.profiling-audio-toggle:hover {
-  transform: scale(1.05);
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.18);
-}
-
-.profiling-audio-toggle:active {
-  transform: scale(1.01);
-}
-
-.profiling-audio-gradient-defs {
-  position: absolute;
-}
-
-.profiling-audio-toggle-icon {
-  width: 32px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.profiling-audio-toggle-text {
-  font-family: 'Nunito', sans-serif;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
-  line-height: 1;
+.profiling-ready-image {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  display: block;
 }
 
 .profiling-intro-audio-action {
   display: flex;
   justify-content: center;
   width: 100%;
+}
+
+.profiling-audio-toggle {
+  width: clamp(3.35rem, 6.2vw, 3.8rem);
+  height: clamp(3.35rem, 6.2vw, 3.8rem);
+  min-height: 0;
+  border-radius: 1rem;
+  border: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.profiling-audio-toggle.is-unmuted {
+  background: #10B981;
+  box-shadow: #047857 0 5px 0 0;
+}
+
+.profiling-audio-toggle.is-muted {
+  background: #EF4444;
+  box-shadow: #B91C1C 0 5px 0 0;
+}
+
+.profiling-audio-toggle:hover {
+  transform: translateY(2px);
+}
+
+.profiling-audio-toggle.is-unmuted:hover {
+  box-shadow: #047857 0 4px 0 0;
+}
+
+.profiling-audio-toggle.is-muted:hover {
+  box-shadow: #B91C1C 0 4px 0 0;
+}
+
+.profiling-audio-toggle:active {
+  transform: translateY(6px);
+}
+
+.profiling-audio-toggle.is-unmuted:active {
+  box-shadow: #047857 0 0 0 0;
+}
+
+.profiling-audio-toggle.is-muted:active {
+  box-shadow: #B91C1C 0 0 0 0;
+}
+
+.profiling-audio-toggle svg {
+  width: clamp(1.2rem, 2.5vw, 1.45rem);
+  height: clamp(1.2rem, 2.5vw, 1.45rem);
 }
 
 .profiling-gate {
@@ -689,6 +769,15 @@
     margin-top: 0.75rem;
   }
 
+  .profiling-intro-actions--split {
+    justify-content: space-between;
+  }
+
+  .profiling-ready-btn {
+    width: clamp(4.8rem, 24vw, 5.6rem);
+    height: 42px;
+  }
+
   .profiling-submit-btn button {
     width: clamp(8.8rem, 34vw, 10rem);
     height: 42px;
@@ -705,9 +794,14 @@
     margin-left: -12%;
   }
 
+  .profiling-intro-robot-media--ready {
+    width: min(100%, 14rem);
+  }
+
   .profiling-audio-toggle {
-    width: clamp(4.35rem, 18vw, 4.8rem);
-    height: clamp(4.35rem, 18vw, 4.8rem);
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 0.95rem;
   }
 
   .profiling-card {

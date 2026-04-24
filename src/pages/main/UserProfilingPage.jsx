@@ -1,11 +1,12 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Volume2, VolumeX } from 'lucide-react';
+import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import questionsData from '../../assets/data/profiling_questions.json';
 import waveWebm from '../../assets/Sprites/Robot Animated/Wave-webm.webm';
 import waveMp4 from '../../assets/Sprites/Robot Animated/Wave-mp4.mp4';
+import robotReadyImage from '../../assets/Sprites/Robot/0015.webp';
 import './UserProfilingPage.css';
 
 const QUESTIONS = questionsData;
@@ -257,7 +258,7 @@ function UserProfilingPage() {
         <section className="profiling-intro profiling-gate--pop">
           <article className="profiling-intro-bubble" aria-label="Welcome message">
             <p>
-              Kumusta! I&apos;m <strong>B-01</strong>, your personal guide on this exciting journey to master public
+              Hello! I&apos;m <strong>B-01</strong>, your personal guide on this exciting journey to master public
               speaking with Bigkas.
             </p>
             <p>
@@ -267,7 +268,7 @@ function UserProfilingPage() {
             </p>
             <div className="profiling-intro-actions">
               <div className="profiling-submit-btn">
-                <button type="button" onClick={() => setScreen('questions')}>
+                <button type="button" onClick={() => setScreen('ready')}>
                   Continue
                 </button>
               </div>
@@ -286,36 +287,56 @@ function UserProfilingPage() {
                 onClick={handleToggleMute}
                 aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
                 title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                className="profiling-audio-toggle"
+                className={`profiling-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
               >
-                <svg className="profiling-audio-gradient-defs" width="0" height="0" aria-hidden="true" focusable="false">
-                  <defs>
-                    <linearGradient id="profilingAudioGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#EB922B" />
-                      <stop offset="100%" stopColor="#751197" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-                <span className="profiling-audio-toggle-icon" aria-hidden="true">
-                  {isMuted ? (
-                    <VolumeX
-                      size={32}
-                      stroke="url(#profilingAudioGradient)"
-                      fill="url(#profilingAudioGradient)"
-                      fillOpacity="0.08"
-                      strokeWidth={2.25}
-                    />
-                  ) : (
-                    <Volume2
-                      size={32}
-                      stroke="url(#profilingAudioGradient)"
-                      fill="url(#profilingAudioGradient)"
-                      fillOpacity="0.08"
-                      strokeWidth={2.25}
-                    />
-                  )}
-                </span>
-                <span className="profiling-audio-toggle-text">{isMuted ? 'Unmute' : 'Mute'}</span>
+                {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {screen === 'ready' && (
+        <section className="profiling-intro profiling-gate--pop">
+          <article className="profiling-intro-bubble profiling-intro-bubble--ready" aria-label="Ready message">
+            <p className="profiling-ready-text">
+              <strong>B-01:</strong>
+              <br />
+              Awesome! Since you&apos;re ready, let&apos;s jump right into your 9 profiling questions! And don&apos;t worry,
+              you can answer every single one with a simple <strong>Yes</strong>, <strong>Sometimes</strong>, or
+              <strong> No</strong>.
+            </p>
+            <div className="profiling-intro-actions profiling-intro-actions--split">
+              <button
+                type="button"
+                className="profiling-ready-btn profiling-ready-btn--back"
+                onClick={() => setScreen('intro')}
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                className="profiling-ready-btn profiling-ready-btn--next"
+                onClick={() => setScreen('questions')}
+              >
+                Next
+              </button>
+            </div>
+          </article>
+
+          <div className="profiling-intro-robot">
+            <div className="profiling-intro-robot-media profiling-intro-robot-media--ready" aria-hidden="true">
+              <img src={robotReadyImage} alt="" className="profiling-ready-image" />
+            </div>
+            <div className="profiling-intro-audio-action">
+              <button
+                type="button"
+                onClick={handleToggleMute}
+                aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                className={`profiling-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
+              >
+                {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
               </button>
             </div>
           </div>

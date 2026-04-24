@@ -17,6 +17,14 @@ const INITIAL_FORM = QUESTIONS.reduce((acc, question) => {
   return acc;
 }, {});
 
+const INTRO_MUTE_KEY = 'bigkas_profiling_intro_muted';
+const INTRO_VOICE_KEY = 'bigkas_profiling_intro_voice';
+const INTRO_TTS = {
+  pitch: 1.9,
+  rate: 1.15,
+  volume: 1.0,
+};
+
 function getSpeakerLevelNumber(score) {
   if (score >= 85) return 5;
   if (score >= 70) return 4;
@@ -71,7 +79,10 @@ function UserProfilingPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(INTRO_MUTE_KEY) === '1';
+  });
 
   const totalSteps = QUESTIONS.length;
   const currentQuestion = QUESTIONS[currentIndex];
@@ -107,23 +118,34 @@ function UserProfilingPage() {
         id: `${voice.name} ${voice.lang}`.toLowerCase(),
       }));
 
+      const storedVoiceName = window.localStorage.getItem(INTRO_VOICE_KEY);
+      if (storedVoiceName) {
+        const stored = voices.find((voice) => voice.name === storedVoiceName);
+        if (stored) return stored;
+      }
+
       const exactPriority = ['google us english', 'samantha', 'microsoft zira'];
       for (const target of exactPriority) {
         const match = normalized.find(({ id }) => id.includes(target));
-        if (match) return match.voice;
+        if (match) {
+          window.localStorage.setItem(INTRO_VOICE_KEY, match.voice.name);
+          return match.voice;
+        }
       }
 
       const englishFallback = normalized.find(({ id }) => id.includes('english') || id.includes('en-us'));
-      return englishFallback?.voice || voices[0];
+      const resolved = englishFallback?.voice || voices[0];
+      window.localStorage.setItem(INTRO_VOICE_KEY, resolved.name);
+      return resolved;
     };
 
     const speakIntro = () => {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(introSpeech.join(' '));
       utterance.voice = pickFriendlyVoice();
-      utterance.rate = 1.15;
-      utterance.pitch = 1.9;
-      utterance.volume = 1.0;
+      utterance.rate = INTRO_TTS.rate;
+      utterance.pitch = INTRO_TTS.pitch;
+      utterance.volume = INTRO_TTS.volume;
       window.speechSynthesis.speak(utterance);
     };
 
@@ -219,6 +241,9 @@ function UserProfilingPage() {
   const handleToggleMute = () => {
     setIsMuted((prev) => {
       const next = !prev;
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(INTRO_MUTE_KEY, next ? '1' : '0');
+      }
       if (next && typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel();
       }
@@ -262,8 +287,8 @@ function UserProfilingPage() {
                 <PushButton
                   onClick={handleToggleMute}
                   className="profiling-audio-icon-btn"
-                  bgColor="#0EA5A4"
-                  shadowColor="#0F766E"
+                  bgColor="#F59E0B"
+                  shadowColor="#EA580C"
                   textColor="#FFFFFF"
                 >
                   <img

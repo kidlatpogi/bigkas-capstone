@@ -144,6 +144,14 @@
   box-shadow: #047857 0 5px 0 0;
 }
 
+.profiling-ready-btn--next:disabled {
+  background: #94A3B8;
+  box-shadow: #64748B 0 5px 0 0;
+  color: #E2E8F0;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .profiling-ready-btn:hover:not(:disabled) {
   transform: translateY(2px);
 }
@@ -653,7 +661,7 @@
 
 .profiling-error {
   margin-top: 14px;
-  color: #ffe1e1;
+  color: #1E293B;
 }
 
 .profiling-actions {
@@ -766,33 +774,18 @@
 .profiling-question-robot-wrap {
   position: relative;
   width: 100%;
-  max-width: 13rem;
+  max-width: 31rem;
   justify-self: center;
 }
 
 .profiling-question-robot-image {
-  width: 100%;
+  width: 132%;
+  max-width: none;
   height: auto;
   display: block;
   object-fit: contain;
+  margin-left: -16%;
   filter: drop-shadow(0 8px 12px rgba(15, 23, 42, 0.18));
-}
-
-.profiling-question-robot-badge {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: clamp(1.35rem, 2.6vw, 1.8rem);
-  min-width: clamp(4.6rem, 8vw, 5.2rem);
-  text-align: center;
-  padding: 0.26rem 0.7rem;
-  border-radius: 0.35rem;
-  background: #166534;
-  color: #ffffff;
-  font-family: 'Nunito', sans-serif;
-  font-size: clamp(1.35rem, 1.28rem + 0.24vw, 1.5rem);
-  font-weight: 900;
-  line-height: 1.1;
 }
 
 .profiling-question-options-wrap {
@@ -1024,13 +1017,7 @@
   }
 
   .profiling-question-robot-wrap {
-    max-width: 11rem;
-  }
-
-  .profiling-question-robot-badge {
-    bottom: 1.15rem;
-    min-width: 4.2rem;
-    font-size: 1.2rem;
+    max-width: 19.25rem;
   }
 
   .profiling-question-options-wrap {

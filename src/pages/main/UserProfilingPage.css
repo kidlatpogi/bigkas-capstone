@@ -76,7 +76,7 @@
 .profiling-intro-actions {
   margin-top: 0.95rem;
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 .profiling-submit-btn {
@@ -116,8 +116,8 @@
 }
 
 .profiling-intro-robot {
-  width: min(100%, 23rem);
-  max-width: 23rem;
+  width: min(100%, 31rem);
+  max-width: 31rem;
   margin-top: clamp(0.2rem, 1vw, 0.6rem);
   align-self: end;
   justify-self: center;
@@ -622,7 +622,7 @@
   }
 
   .profiling-intro-actions {
-    justify-content: flex-end;
+    justify-content: center;
     margin-top: 0.75rem;
   }
 
@@ -632,8 +632,8 @@
   }
 
   .profiling-intro-robot {
-    width: min(100%, 15.25rem);
-    max-width: 15.25rem;
+    width: min(100%, 19.25rem);
+    max-width: 19.25rem;
     margin-top: 0.2rem;
   }
 

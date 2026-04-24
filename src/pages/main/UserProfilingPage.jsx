@@ -1,13 +1,11 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Volume2, VolumeX } from 'lucide-react';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import questionsData from '../../assets/data/profiling_questions.json';
 import waveWebm from '../../assets/Sprites/Robot Animated/Wave-webm.webm';
 import waveMp4 from '../../assets/Sprites/Robot Animated/Wave-mp4.mp4';
-import maxVolumeIcon from '../../assets/Sprites/common/max-volume.png';
-import muteIcon from '../../assets/Sprites/common/mute.png';
-import PushButton from '../../components/common/PushButton';
 import './UserProfilingPage.css';
 
 const QUESTIONS = questionsData;
@@ -283,23 +281,42 @@ function UserProfilingPage() {
               </video>
             </div>
             <div className="profiling-intro-audio-action">
-              <div className="profiling-submit-btn profiling-submit-btn--audio">
-                <PushButton
-                  onClick={handleToggleMute}
-                  className="profiling-audio-icon-btn"
-                  bgColor="#F59E0B"
-                  shadowColor="#EA580C"
-                  textColor="#FFFFFF"
-                >
-                  <img
-                    src={isMuted ? muteIcon : maxVolumeIcon}
-                    alt={isMuted ? 'Muted' : 'Volume on'}
-                    className="profiling-audio-icon-image"
-                    aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                    title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                  />
-                </PushButton>
-              </div>
+              <button
+                type="button"
+                onClick={handleToggleMute}
+                aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                className="profiling-audio-toggle"
+              >
+                <svg className="profiling-audio-gradient-defs" width="0" height="0" aria-hidden="true" focusable="false">
+                  <defs>
+                    <linearGradient id="profilingAudioGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#EB922B" />
+                      <stop offset="100%" stopColor="#751197" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <span className="profiling-audio-toggle-icon" aria-hidden="true">
+                  {isMuted ? (
+                    <VolumeX
+                      size={32}
+                      stroke="url(#profilingAudioGradient)"
+                      fill="url(#profilingAudioGradient)"
+                      fillOpacity="0.08"
+                      strokeWidth={2.25}
+                    />
+                  ) : (
+                    <Volume2
+                      size={32}
+                      stroke="url(#profilingAudioGradient)"
+                      fill="url(#profilingAudioGradient)"
+                      fillOpacity="0.08"
+                      strokeWidth={2.25}
+                    />
+                  )}
+                </span>
+                <span className="profiling-audio-toggle-text">{isMuted ? 'Unmute' : 'Mute'}</span>
+              </button>
             </div>
           </div>
         </section>

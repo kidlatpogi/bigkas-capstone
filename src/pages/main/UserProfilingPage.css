@@ -76,7 +76,7 @@
 .profiling-intro-bubble--ready {
   width: min(100%, 34rem);
   position: relative;
-  top: 5rem;
+  top: 10rem;
   z-index: 60;
 }
 
@@ -671,6 +671,147 @@
   cursor: not-allowed;
 }
 
+/* New question stage layout (after ready -> next) */
+.profiling-question-stage {
+  width: 100%;
+  max-width: min(100%, 72rem);
+  min-height: 100dvh;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  padding: clamp(1.2rem, 2.8vw, 2.3rem);
+  row-gap: clamp(1.1rem, 2vw, 1.8rem);
+}
+
+.profiling-question-bubble {
+  width: min(100%, 34rem);
+  max-width: 100%;
+  background: #fdfdfd;
+  border-radius: 1.5rem;
+  border: 1px solid rgba(11, 57, 84, 0.1);
+  box-shadow: 0 10px 22px -14px rgba(15, 23, 42, 0.45), 0 14px 34px -28px rgba(15, 23, 42, 0.5);
+  padding: clamp(0.95rem, 1.8vw, 1.2rem) clamp(1rem, 2vw, 1.3rem);
+  position: relative;
+  z-index: 30;
+}
+
+.profiling-question-bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -0.72rem;
+  width: 1.15rem;
+  height: 1.15rem;
+  background: #fdfdfd;
+  border-right: 1px solid rgba(11, 57, 84, 0.1);
+  border-bottom: 1px solid rgba(11, 57, 84, 0.1);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.profiling-question-count {
+  margin: 0;
+  text-align: center;
+  font-family: 'Nunito', sans-serif;
+  font-size: clamp(1rem, 0.95rem + 0.18vw, 1.08rem);
+}
+
+.profiling-question-count span {
+  font-weight: 800;
+}
+
+.profiling-question-text {
+  margin: 1rem 0 0;
+  font-family: 'Nunito', sans-serif;
+  font-size: clamp(1rem, 0.95rem + 0.22vw, 1.06rem);
+  line-height: 1.42;
+}
+
+.profiling-question-text strong {
+  color: #059669;
+  font-weight: 800;
+}
+
+.profiling-question-lower {
+  width: min(100%, 50rem);
+  display: grid;
+  grid-template-columns: minmax(9.5rem, 13rem) minmax(14rem, 1fr);
+  gap: clamp(1rem, 2.5vw, 2.4rem);
+  align-items: center;
+}
+
+.profiling-question-robot-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 13rem;
+  justify-self: center;
+}
+
+.profiling-question-robot-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 12px rgba(15, 23, 42, 0.18));
+}
+
+.profiling-question-robot-badge {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: clamp(1.35rem, 2.6vw, 1.8rem);
+  min-width: clamp(4.6rem, 8vw, 5.2rem);
+  text-align: center;
+  padding: 0.26rem 0.7rem;
+  border-radius: 0.35rem;
+  background: #166534;
+  color: #ffffff;
+  font-family: 'Nunito', sans-serif;
+  font-size: clamp(1.35rem, 1.28rem + 0.24vw, 1.5rem);
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.profiling-question-options-wrap {
+  width: 100%;
+  max-width: 20rem;
+  justify-self: center;
+}
+
+.profiling-question-options {
+  display: grid;
+  gap: 0.62rem;
+}
+
+.profiling-question-option {
+  width: 100%;
+  height: 2rem;
+  border: 0;
+  border-radius: 999px;
+  background: #059669;
+  color: #ffffff;
+  font-family: 'Nunito', sans-serif;
+  font-size: clamp(0.95rem, 0.9rem + 0.15vw, 1rem);
+  font-weight: 600;
+  box-shadow: #047857 0 5px 0 0;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.profiling-question-option:hover {
+  transform: translateY(2px);
+  box-shadow: #047857 0 4px 0 0;
+}
+
+.profiling-question-option:active {
+  transform: translateY(6px);
+  box-shadow: #047857 0 0 0 0;
+}
+
+.profiling-question-option.is-active {
+  background: #047857;
+  box-shadow: #065F46 0 5px 0 0;
+}
+
 [data-theme='dark'] .user-profiling-page {
   background: #0b0b0d;
 }
@@ -814,6 +955,49 @@
 
   .profiling-intro-robot-media--ready {
     width: 100%;
+  }
+
+  .profiling-question-stage {
+    align-content: start;
+    padding-top: clamp(1rem, 4.8vw, 1.6rem);
+    row-gap: 1rem;
+  }
+
+  .profiling-question-bubble {
+    width: min(100%, 22rem);
+    border-radius: 1.2rem;
+    padding: 0.95rem 0.9rem;
+  }
+
+  .profiling-question-count {
+    font-size: 0.98rem;
+  }
+
+  .profiling-question-text {
+    margin-top: 0.85rem;
+    font-size: 0.95rem;
+    line-height: 1.42;
+  }
+
+  .profiling-question-lower {
+    width: 100%;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 0.75rem;
+  }
+
+  .profiling-question-robot-wrap {
+    max-width: 11rem;
+  }
+
+  .profiling-question-robot-badge {
+    bottom: 1.15rem;
+    min-width: 4.2rem;
+    font-size: 1.2rem;
+  }
+
+  .profiling-question-options-wrap {
+    max-width: 22rem;
   }
 
   .profiling-audio-toggle {

@@ -103,10 +103,10 @@ body.login-page-active .auth-wave-bar-10 { height: 70%; transform: translateY(2%
 
 body.login-page-active .auth-hero-kamay {
   position: absolute;
-  left: calc(1.25rem + 0vw);
-  bottom: calc(0px + env(safe-area-inset-bottom, 0px));
+  left: calc(1rem + 0.25rem);
+  bottom: calc(0px);
   width: 100%;
-  max-width: min(100%, clamp(16rem, 31vw, 25.5rem));
+  max-width: clamp(50rem, calc(31vw + 0px), 25.5rem);
   height: auto;
   object-fit: contain;
   z-index: 2;
@@ -493,8 +493,8 @@ body.login-page-active .auth-link:hover {
   }
 
   body.login-page-active .auth-hero-kamay {
-    left: calc(0.4rem + 0vw);
-    max-width: min(100%, clamp(11.5rem, 56vw, 15.5rem));
+    left: 0.4rem;
+    max-width: clamp(11.5rem, 56vw, 15.5rem);
   }
 
   body.login-page-active .auth-hero-title {

@@ -141,28 +141,52 @@
   margin-left: -16%;
 }
 
-.profiling-submit-btn--audio button {
-  width: clamp(3rem, 6vw, 3.4rem);
-  height: clamp(3rem, 6vw, 3.4rem);
-  border-radius: 999px;
-  padding: 0;
-  background: #0EA5A4;
-  box-shadow: #0F766E 0 5px 0 0;
+.profiling-audio-toggle {
+  width: clamp(4.5rem, 7vw, 5rem);
+  height: clamp(4.5rem, 7vw, 5rem);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #ffffff;
+  border-radius: 35%;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.28rem;
+  cursor: pointer;
+  transition: transform 220ms ease, background-color 220ms ease, border-color 220ms ease;
+  padding: 0.35rem;
 }
 
-.profiling-submit-btn--audio button:hover:not(:disabled) {
-  box-shadow: #0F766E 0 4px 0 0;
+.profiling-audio-toggle:hover {
+  transform: scale(1.05);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
-.profiling-submit-btn--audio button:active:not(:disabled) {
-  box-shadow: #0F766E 0 0 0 0;
+.profiling-audio-toggle:active {
+  transform: scale(1.01);
 }
 
-.profiling-audio-icon-image {
-  width: clamp(1.5rem, 3.2vw, 1.9rem);
-  height: clamp(1.5rem, 3.2vw, 1.9rem);
-  object-fit: contain;
-  display: block;
+.profiling-audio-gradient-defs {
+  position: absolute;
+}
+
+.profiling-audio-toggle-icon {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profiling-audio-toggle-text {
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1;
 }
 
 .profiling-intro-audio-action {
@@ -681,9 +705,9 @@
     margin-left: -12%;
   }
 
-  .profiling-submit-btn--audio button {
-    width: 3rem;
-    height: 3rem;
+  .profiling-audio-toggle {
+    width: clamp(4.35rem, 18vw, 4.8rem);
+    height: clamp(4.35rem, 18vw, 4.8rem);
   }
 
   .profiling-card {

@@ -25,7 +25,7 @@
 }
 
 .tutorial-robot-img {
-  width: clamp(70px, 12vw, 140px);
+  width: clamp(140px, 22vw, 360px);
   height: auto;
   flex-shrink: 0;
 }
@@ -34,7 +34,7 @@
   width: 100%;
   background: #FDFDF9;
   border-radius: 1rem;
-  max-width: clamp(260px, 40vw, 400px);
+  max-width: clamp(260px, 40vw, 480px);
   padding: clamp(1rem, 2.5vw, 1.5rem);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   position: relative;

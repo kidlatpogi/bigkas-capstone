@@ -97,6 +97,13 @@ function UserProfilingPage() {
     ],
     []
   );
+  const readySpeech = useMemo(
+    () => [
+      "B-01: Awesome! Since you're ready, let's jump right into your 9 profiling questions!",
+      "And don't worry, you can answer every single one with a simple Yes, Sometimes, or No.",
+    ],
+    []
+  );
 
   useEffect(() => {
     if (isAdminAuthenticated) {
@@ -105,7 +112,16 @@ function UserProfilingPage() {
   }, [isAdminAuthenticated, navigate]);
 
   useEffect(() => {
-    if (screen !== 'intro' || isMuted || typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    if (isMuted || typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      return undefined;
+    }
+
+    const screenSpeechMap = {
+      intro: introSpeech,
+      ready: readySpeech,
+    };
+    const linesToSpeak = screenSpeechMap[screen];
+    if (!Array.isArray(linesToSpeak) || linesToSpeak.length === 0) {
       return undefined;
     }
 
@@ -139,9 +155,9 @@ function UserProfilingPage() {
       return resolved;
     };
 
-    const speakIntro = () => {
+    const speakCurrentScreen = () => {
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(introSpeech.join(' '));
+      const utterance = new SpeechSynthesisUtterance(linesToSpeak.join(' '));
       utterance.voice = pickFriendlyVoice();
       utterance.rate = INTRO_TTS.rate;
       utterance.pitch = INTRO_TTS.pitch;
@@ -149,12 +165,12 @@ function UserProfilingPage() {
       window.speechSynthesis.speak(utterance);
     };
 
-    speakIntro();
+    speakCurrentScreen();
 
     const handleVoicesChanged = () => {
       // Re-speak once voices are fully available in browsers that load them lazily.
-      if (!window.speechSynthesis.speaking && !isMuted && screen === 'intro') {
-        speakIntro();
+      if (!window.speechSynthesis.speaking && !isMuted) {
+        speakCurrentScreen();
       }
     };
     window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
@@ -163,7 +179,7 @@ function UserProfilingPage() {
       window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
       window.speechSynthesis.cancel();
     };
-  }, [introSpeech, isMuted, screen]);
+  }, [introSpeech, isMuted, readySpeech, screen]);
 
   const updateField = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -470,7 +486,7 @@ function UserProfilingPage() {
             <p className="profiling-pretest-text profiling-pretest-text--mission">
               <strong>Your mission:</strong>
               <br />
-              speak for at least <strong>30 seconds</strong> on the topic, <strong>&apos;Tell me about yourself.&apos;</strong> Don&apos;t
+              Speak for at least <strong>30 seconds</strong> on the topic, <strong>&apos;Tell me about yourself.&apos;</strong> Don&apos;t
               overthink it-just be you and let your voice lead the way!
             </p>
             <div className="profiling-intro-actions profiling-intro-actions--end">

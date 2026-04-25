@@ -99,8 +99,15 @@ function UserProfilingPage() {
   );
   const readySpeech = useMemo(
     () => [
-      "B-01: Awesome! Since you're ready, let's jump right into your 9 profiling questions!",
+      "Awesome! Since you're ready, let's jump right into your 9 profiling questions!",
       "And don't worry, you can answer every single one with a simple Yes, Sometimes, or No.",
+    ],
+    []
+  );
+  const outroSpeech = useMemo(
+    () => [
+      "You've made it to the final step! To wrap things up, let's try a quick Free Speech Pre-test.",
+      "Your mission: Speak for at least 30 seconds on the topic, Tell me about yourself. Don't overthink it - just be you and let your voice lead the way!",
     ],
     []
   );
@@ -119,6 +126,7 @@ function UserProfilingPage() {
     const screenSpeechMap = {
       intro: introSpeech,
       ready: readySpeech,
+      outro: outroSpeech,
     };
     const linesToSpeak = screenSpeechMap[screen];
     if (!Array.isArray(linesToSpeak) || linesToSpeak.length === 0) {
@@ -179,7 +187,7 @@ function UserProfilingPage() {
       window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
       window.speechSynthesis.cancel();
     };
-  }, [introSpeech, isMuted, readySpeech, screen]);
+  }, [introSpeech, isMuted, outroSpeech, readySpeech, screen]);
 
   const updateField = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -476,7 +484,7 @@ function UserProfilingPage() {
       )}
 
       {screen === 'outro' && (
-        <section className="profiling-intro profiling-gate--pop">
+        <section className="profiling-intro profiling-intro--pretest profiling-gate--pop">
           <article className="profiling-intro-bubble profiling-intro-bubble--pretest" aria-label="Before pre-testing message">
             <p className="profiling-pretest-text">
               <strong>B-01:</strong>
@@ -501,6 +509,17 @@ function UserProfilingPage() {
           <div className="profiling-intro-robot">
             <div className="profiling-intro-robot-media profiling-intro-robot-media--ready" aria-hidden="true">
               <img src={robotReadyImage} alt="" className="profiling-ready-image" />
+            </div>
+            <div className="profiling-intro-audio-action">
+              <button
+                type="button"
+                onClick={handleToggleMute}
+                aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                className={`profiling-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
+              >
+                {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+              </button>
             </div>
           </div>
         </section>

@@ -93,6 +93,31 @@
   top: 8rem;
 }
 
+.profiling-intro--pretest {
+  width: 100%;
+  max-width: min(100%, 72rem);
+  min-height: 100dvh;
+  align-content: center;
+  justify-items: center;
+  padding-top: clamp(1rem, 2.2vw, 2rem);
+  padding-bottom: clamp(1rem, 2.2vw, 2rem);
+}
+
+.profiling-intro--pretest .profiling-intro-bubble--pretest {
+  top: clamp(5.4rem, 8vw, 8rem);
+}
+
+.profiling-intro--pretest .profiling-intro-robot {
+  width: min(100%, 31rem);
+  max-width: 31rem;
+}
+
+.profiling-intro--pretest .profiling-ready-image {
+  width: 132%;
+  max-width: none;
+  margin-left: -16%;
+}
+
 .profiling-pretest-text {
   margin: 0;
   font-family: 'Nunito', sans-serif;
@@ -1017,6 +1042,21 @@
   .profiling-intro-bubble--pretest {
     width: min(100%, 22rem);
     top: 6rem;
+  }
+
+  .profiling-intro--pretest {
+    align-content: center;
+    padding-top: clamp(0.7rem, 3.2vw, 1rem);
+    padding-bottom: clamp(0.9rem, 4.2vw, 1.4rem);
+  }
+
+  .profiling-intro--pretest .profiling-intro-bubble--pretest {
+    top: clamp(3.6rem, 10vw, 4.8rem);
+  }
+
+  .profiling-intro--pretest .profiling-intro-robot {
+    width: min(100%, 19.25rem);
+    max-width: 19.25rem;
   }
 
   .profiling-pretest-text {

@@ -11,6 +11,7 @@ import robotQuestionImage from '../../assets/Sprites/Robot/0012.webp';
 import introVoice1 from '../../assets/Voices/Introductions/Intro 1.mp3';
 import introVoice2 from '../../assets/Voices/Introductions/Intro 2.mp3';
 import introVoice3 from '../../assets/Voices/Introductions/Intro 3.mp3';
+import beforePretestingVoice from '../../assets/Voices/Profiling and Pre-Testing/Before pre-testing.mp3';
 import './UserProfilingPage.css';
 
 const QUESTIONS = questionsData;
@@ -77,12 +78,18 @@ function UserProfilingPage() {
     'Before we begin, we need to assess your current speaking level. This includes 9 short profiling questions and one small speaking pre-test. These tests ensure I can customize your experience and guide you smoothly throughout your entire journey!';
   const readyMessage =
     "Awesome! Since you're ready, let's jump right into your 9 profiling questions! And don't worry, you can answer every single one with a simple Yes, Sometimes, or No.";
+  const outroFirstMessage = "You've made it to the final step! To wrap things up, let's try a quick Free Speech Pre-test.";
+  const outroMissionMessage =
+    "Speak for at least 30 seconds on the topic, 'Tell me about yourself.' Don't overthink it-just be you and let your voice lead the way!";
   const [screen, setScreen] = useState('intro');
   const [introStep, setIntroStep] = useState(0);
   const [typedIntroText, setTypedIntroText] = useState('');
   const [isIntroTypingDone, setIsIntroTypingDone] = useState(false);
   const [typedReadyText, setTypedReadyText] = useState('');
   const [isReadyTypingDone, setIsReadyTypingDone] = useState(false);
+  const [typedOutroFirstText, setTypedOutroFirstText] = useState('');
+  const [typedOutroMissionText, setTypedOutroMissionText] = useState('');
+  const [isOutroTypingDone, setIsOutroTypingDone] = useState(false);
   const [form, setForm] = useState(INITIAL_FORM);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -94,6 +101,7 @@ function UserProfilingPage() {
   const introAudioRef = useRef(null);
   const stepTwoAudioRef = useRef(null);
   const readyAudioRef = useRef(null);
+  const outroAudioRef = useRef(null);
 
   const totalSteps = QUESTIONS.length;
   const currentQuestion = QUESTIONS[currentIndex];
@@ -154,13 +162,49 @@ function UserProfilingPage() {
   }, [readyMessage, screen]);
 
   useEffect(() => {
+    if (screen !== 'outro') {
+      return undefined;
+    }
+
+    setTypedOutroFirstText('');
+    setTypedOutroMissionText('');
+    setIsOutroTypingDone(false);
+
+    let firstIndex = 0;
+    let missionIndex = 0;
+    let isFirstDone = false;
+    const typingInterval = window.setInterval(() => {
+      if (!isFirstDone) {
+        firstIndex += 1;
+        setTypedOutroFirstText(outroFirstMessage.slice(0, firstIndex));
+        if (firstIndex >= outroFirstMessage.length) {
+          isFirstDone = true;
+        }
+        return;
+      }
+
+      missionIndex += 1;
+      setTypedOutroMissionText(outroMissionMessage.slice(0, missionIndex));
+      if (missionIndex >= outroMissionMessage.length) {
+        window.clearInterval(typingInterval);
+        setIsOutroTypingDone(true);
+      }
+    }, 12);
+
+    return () => {
+      window.clearInterval(typingInterval);
+    };
+  }, [outroFirstMessage, outroMissionMessage, screen]);
+
+  useEffect(() => {
     if (typeof window === 'undefined') return undefined;
 
     introAudioRef.current = new Audio(introVoice1);
     stepTwoAudioRef.current = new Audio(introVoice2);
     readyAudioRef.current = new Audio(introVoice3);
+    outroAudioRef.current = new Audio(beforePretestingVoice);
 
-    const refs = [introAudioRef.current, stepTwoAudioRef.current, readyAudioRef.current];
+    const refs = [introAudioRef.current, stepTwoAudioRef.current, readyAudioRef.current, outroAudioRef.current];
     refs.forEach((audio) => {
       audio.preload = 'auto';
       audio.muted = false;
@@ -174,11 +218,12 @@ function UserProfilingPage() {
       introAudioRef.current = null;
       stepTwoAudioRef.current = null;
       readyAudioRef.current = null;
+      outroAudioRef.current = null;
     };
-  }, []);
+  }, [beforePretestingVoice]);
 
   useEffect(() => {
-    const refs = [introAudioRef.current, stepTwoAudioRef.current, readyAudioRef.current];
+    const refs = [introAudioRef.current, stepTwoAudioRef.current, readyAudioRef.current, outroAudioRef.current];
     refs.forEach((audio) => {
       if (!audio) return;
       audio.muted = isMuted;
@@ -193,7 +238,7 @@ function UserProfilingPage() {
 
     const playClip = (audioRef) => {
       if (!audioRef?.current) return;
-      [introAudioRef.current, stepTwoAudioRef.current, readyAudioRef.current].forEach((audio) => {
+      [introAudioRef.current, stepTwoAudioRef.current, readyAudioRef.current, outroAudioRef.current].forEach((audio) => {
         if (audio && audio !== audioRef.current) {
           audio.pause();
           audio.currentTime = 0;
@@ -209,6 +254,8 @@ function UserProfilingPage() {
       playClip(stepTwoAudioRef);
     } else if (screen === 'ready') {
       playClip(readyAudioRef);
+    } else if (screen === 'outro') {
+      playClip(outroAudioRef);
     }
   }, [introStep, isMuted, screen]);
 
@@ -286,6 +333,7 @@ function UserProfilingPage() {
 
   const continueToPretest = async () => {
     if (isSubmitting) return;
+    stopAllIntroAudios();
     setIsSubmitting(true);
     const result = await updateUserMetadata({ onboarding_stage: 'pretest' });
     setIsSubmitting(false);
@@ -308,6 +356,7 @@ function UserProfilingPage() {
 
   const handleQuestionNext = async () => {
     if (isSubmitting) return;
+    stopAllIntroAudios();
     const currentValue = form[currentQuestion.key];
     if (!isQuestionAnswered(currentQuestion, currentValue)) {
       setError('Please select an answer before proceeding.');
@@ -329,7 +378,7 @@ function UserProfilingPage() {
         window.localStorage.setItem(INTRO_MUTE_KEY, next ? '1' : '0');
       }
       if (next) {
-        [introAudioRef.current, stepTwoAudioRef.current, readyAudioRef.current].forEach((audio) => {
+        [introAudioRef.current, stepTwoAudioRef.current, readyAudioRef.current, outroAudioRef.current].forEach((audio) => {
           if (!audio) return;
           audio.pause();
           audio.currentTime = 0;
@@ -339,7 +388,16 @@ function UserProfilingPage() {
     });
   };
 
+  const stopAllIntroAudios = () => {
+    [introAudioRef.current, stepTwoAudioRef.current, readyAudioRef.current, outroAudioRef.current].forEach((audio) => {
+      if (!audio) return;
+      audio.pause();
+      audio.currentTime = 0;
+    });
+  };
+
   const handleIntroContinue = () => {
+    stopAllIntroAudios();
     if (introStep === 0) {
       setIntroStep(1);
       return;
@@ -355,12 +413,26 @@ function UserProfilingPage() {
   };
 
   const handleBackToIntro = () => {
+    stopAllIntroAudios();
     setIntroStep(0);
     setTypedIntroText('');
     setIsIntroTypingDone(false);
     setTypedReadyText('');
     setIsReadyTypingDone(false);
+    setTypedOutroFirstText('');
+    setTypedOutroMissionText('');
+    setIsOutroTypingDone(false);
     setScreen('intro');
+  };
+
+  const renderReadyMessage = () => {
+    if (!isReadyTypingDone) return typedReadyText;
+    return (
+      <>
+        Awesome! Since you&apos;re ready, let&apos;s jump right into your 9 profiling questions! And don&apos;t worry, you can answer
+        every single one with a simple <strong>Yes</strong>, <strong>Sometimes</strong>, or <strong>No</strong>.
+      </>
+    );
   };
 
   if (isAdminAuthenticated) return null;
@@ -374,7 +446,10 @@ function UserProfilingPage() {
             aria-label="Welcome message"
           >
             {introStep === 0 ? (
-              <p>{introFirstMessage}</p>
+              <p>
+                Hello! I&apos;m <strong>B-01</strong>, your personal guide on this exciting journey to master public
+                speaking.
+              </p>
             ) : (
               <p>{typedIntroText}</p>
             )}
@@ -421,7 +496,7 @@ function UserProfilingPage() {
             <p className="profiling-ready-text">
               <strong>B-01:</strong>
               <br />
-              {typedReadyText}
+              {renderReadyMessage()}
             </p>
             <div className="profiling-intro-actions profiling-intro-actions--split">
               <button
@@ -434,7 +509,10 @@ function UserProfilingPage() {
               <button
                 type="button"
                 className="profiling-ready-btn profiling-ready-btn--next"
-                onClick={() => setScreen('questions')}
+                onClick={() => {
+                  stopAllIntroAudios();
+                  setScreen('questions');
+                }}
                 disabled={!isReadyTypingDone}
               >
                 Next
@@ -549,21 +627,23 @@ function UserProfilingPage() {
 
       {screen === 'outro' && (
         <section className="profiling-intro profiling-intro--pretest profiling-gate--pop">
-          <article className="profiling-intro-bubble profiling-intro-bubble--pretest" aria-label="Before pre-testing message">
+          <article
+            className="profiling-intro-bubble profiling-intro-bubble--pretest profiling-intro-bubble--outro-typing"
+            aria-label="Before pre-testing message"
+          >
             <p className="profiling-pretest-text">
               <strong>B-01:</strong>
               <br />
-              You&apos;ve made it to the final step! To wrap things up, let&apos;s try a quick Free Speech Pre-test.
+              {typedOutroFirstText}
             </p>
             <p className="profiling-pretest-text profiling-pretest-text--mission">
               <strong>Your mission:</strong>
               <br />
-              Speak for at least <strong>30 seconds</strong> on the topic, <strong>&apos;Tell me about yourself.&apos;</strong> Don&apos;t
-              overthink it-just be you and let your voice lead the way!
+              {typedOutroMissionText}
             </p>
             <div className="profiling-intro-actions profiling-intro-actions--end">
               <div className="profiling-submit-btn">
-                <button type="button" onClick={continueToPretest}>
+                <button type="button" onClick={continueToPretest} disabled={!isOutroTypingDone}>
                   Continue
                 </button>
               </div>

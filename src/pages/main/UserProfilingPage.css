@@ -105,6 +105,10 @@
   top: 10rem;
 }
 
+.profiling-intro-bubble--outro-typing {
+  min-height: 18.125rem;
+}
+
 .profiling-intro--pretest {
   width: 100%;
   max-width: min(100%, 72rem);

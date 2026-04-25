@@ -20,6 +20,7 @@ import {
 } from '../../utils/speakerPointsHistory';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
 import { useVisualAnalysis } from '../../hooks/useVisualAnalysis';
+import robotTutorialImage from '../../assets/Sprites/Robot/0008-noBulb.png';
 import './TrainingPage.css';
 
 /* ─── Helpers ──────────────────────────────────────────────────────────────── */
@@ -166,7 +167,7 @@ function TrainingPage() {
   const location = useLocation();
   const { state } = location;
   const { analyseAndSave } = useSessionContext();
-  const { user, updateUserMetadata } = useAuthContext();
+  const { user, updateUserMetadata, logout } = useAuthContext();
   const activityScopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
 
   const script = state?.script || null;
@@ -246,6 +247,7 @@ function TrainingPage() {
   const [hintContent, setHintContent] = useState('');
   const [showMicWarning, setShowMicWarning] = useState(false);
   const [isFreeCompactLayout, setIsFreeCompactLayout] = useState(false);
+  const [showPretestTutorial, setShowPretestTutorial] = useState(false);
   const { startAnalysis, stopAnalysis, liveScores } = useVisualAnalysis();
 
   const bumpElapsedSec = useCallback(() => {
@@ -311,6 +313,10 @@ function TrainingPage() {
 
     observer.observe(root);
     return () => observer.disconnect();
+  }, [isFreePretestSession]);
+
+  useEffect(() => {
+    setShowPretestTutorial(Boolean(isFreePretestSession));
   }, [isFreePretestSession]);
 
   const scriptSentences = useMemo(() => {
@@ -1027,6 +1033,7 @@ function TrainingPage() {
   const isRecording = status === 'recording';
   const isPaused = status === 'paused';
   const isActive = isRecording || isPaused;
+  const isStartBlockedByTutorial = isFreePretestSession && showPretestTutorial && !isActive && status !== 'countdown';
 
   const minDurationProgressPct = Math.min(100, (elapsedSec / MIN_RECORDING_SECONDS) * 100);
   const isMinDurationMet = elapsedSec >= MIN_RECORDING_SECONDS;
@@ -1039,6 +1046,11 @@ function TrainingPage() {
     }
     navigate(-1);
   }, [isActive, navigate]);
+
+  const handleTemporaryLogout = useCallback(async () => {
+    await logout();
+    navigate(ROUTES.HOME, { replace: true });
+  }, [logout, navigate]);
 
   useEffect(() => {
     if (!isActive) return undefined;
@@ -1111,6 +1123,15 @@ function TrainingPage() {
         {focus === 'scripted' && !isFreePretestSession ? (
           <button className="tp-settings-btn" onClick={() => setShowSettings(true)} aria-label="Settings">
             <SettingsGearIcon />
+          </button>
+        ) : isFreePretestSession ? (
+          <button
+            type="button"
+            className="tp-free-pretest-logout-btn"
+            onClick={handleTemporaryLogout}
+            aria-label="Log out"
+          >
+            Logout
           </button>
         ) : (
           !isFreePretestSession && <div className="tp-header-spacer" />
@@ -1201,6 +1222,28 @@ function TrainingPage() {
             </>
           </div>
 
+          {isFreePretestSession && showPretestTutorial && (
+            <section className="tp-pretest-tutorial" aria-label="Pre-test tutorial">
+              <article className="tp-pretest-tutorial-card">
+                <p className="tp-pretest-tutorial-text">
+                  <strong>B-01:</strong>
+                  <br />
+                  Before we jump in, let&apos;s do a quick walkthrough of how this works! Ready to get started?
+                </p>
+                <div className="tp-pretest-tutorial-actions">
+                  <button
+                    type="button"
+                    className="tp-pretest-tutorial-continue"
+                    onClick={() => setShowPretestTutorial(false)}
+                  >
+                    Continue
+                  </button>
+                </div>
+              </article>
+              <img src={robotTutorialImage} alt="" className="tp-pretest-tutorial-robot" aria-hidden="true" />
+            </section>
+          )}
+
           {/* Waveform history — 50 bars */}
           <div className={`tp-waveform${isFreePretestSession ? ' tp-waveform--free-pretest' : ''}`}>
             {waveformBars.map((lvl, i) => (
@@ -1264,6 +1307,7 @@ function TrainingPage() {
                 className={`tp-record-btn${isActive ? ' tp-record-btn--active' : ''}${status === 'idle' ? ' tp-record-btn--hint tp-record-btn--start' : ''}`}
                 onClick={isActive ? stopRecording : startCountdown}
                 aria-label={isActive ? 'Stop and analyse' : 'Start recording'}
+                disabled={isStartBlockedByTutorial}
               >
                 {isActive ? (
                   <div className="tp-record-inner">

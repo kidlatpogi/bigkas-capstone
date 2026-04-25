@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import { useAuthContext } from '../../context/useAuthContext';
@@ -7,7 +7,10 @@ import questionsData from '../../assets/data/profiling_questions.json';
 import waveWebm from '../../assets/Sprites/Robot Animated/Wave-webm.webm';
 import waveMp4 from '../../assets/Sprites/Robot Animated/Wave-mp4.mp4';
 import robotReadyImage from '../../assets/Sprites/Robot/0015.webp';
-import robotQuestionImage from '../../assets/Sprites/Robot/0020.webp';
+import robotQuestionImage from '../../assets/Sprites/Robot/0012.webp';
+import introVoice1 from '../../assets/Voices/Introductions/Intro 1.mp3';
+import introVoice2 from '../../assets/Voices/Introductions/Intro 2.mp3';
+import introVoice3 from '../../assets/Voices/Introductions/Intro 3.mp3';
 import './UserProfilingPage.css';
 
 const QUESTIONS = questionsData;
@@ -18,12 +21,6 @@ const INITIAL_FORM = QUESTIONS.reduce((acc, question) => {
 }, {});
 
 const INTRO_MUTE_KEY = 'bigkas_profiling_intro_muted';
-const INTRO_VOICE_KEY = 'bigkas_profiling_intro_voice';
-const INTRO_TTS = {
-  pitch: 1.9,
-  rate: 1.15,
-  volume: 1.0,
-};
 
 function getSpeakerLevelNumber(score) {
   if (score >= 85) return 5;
@@ -74,7 +71,18 @@ function isQuestionAnswered(question, value) {
 function UserProfilingPage() {
   const navigate = useNavigate();
   const { updateUserMetadata, isAdminAuthenticated } = useAuthContext();
+  const introFirstMessage =
+    "Hello! I'm B-01, your personal guide on this exciting journey to master public speaking.";
+  const introSecondMessage =
+    'Before we begin, we need to assess your current speaking level. This includes 9 short profiling questions and one small speaking pre-test. These tests ensure I can customize your experience and guide you smoothly throughout your entire journey!';
+  const readyMessage =
+    "Awesome! Since you're ready, let's jump right into your 9 profiling questions! And don't worry, you can answer every single one with a simple Yes, Sometimes, or No.";
   const [screen, setScreen] = useState('intro');
+  const [introStep, setIntroStep] = useState(0);
+  const [typedIntroText, setTypedIntroText] = useState('');
+  const [isIntroTypingDone, setIsIntroTypingDone] = useState(false);
+  const [typedReadyText, setTypedReadyText] = useState('');
+  const [isReadyTypingDone, setIsReadyTypingDone] = useState(false);
   const [form, setForm] = useState(INITIAL_FORM);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -83,6 +91,9 @@ function UserProfilingPage() {
     if (typeof window === 'undefined') return false;
     return window.localStorage.getItem(INTRO_MUTE_KEY) === '1';
   });
+  const introAudioRef = useRef(null);
+  const stepTwoAudioRef = useRef(null);
+  const readyAudioRef = useRef(null);
 
   const totalSteps = QUESTIONS.length;
   const currentQuestion = QUESTIONS[currentIndex];
@@ -90,28 +101,6 @@ function UserProfilingPage() {
 
   const baselineScore = useMemo(() => computeBaselineScore(form), [form]);
   const baselineLevelNumber = useMemo(() => getSpeakerLevelNumber(baselineScore), [baselineScore]);
-  const introSpeech = useMemo(
-    () => [
-      "Hello! I'm B-01, your personal guide on this exciting journey to master public speaking with Bigkas.",
-      'Before we begin, we need to assess your current speaking level. This includes 9 short profiling questions and one small speaking pre-test. These tests ensure I can customize your experience and guide you smoothly throughout your entire Bigkas journey!',
-    ],
-    []
-  );
-  const readySpeech = useMemo(
-    () => [
-      "Awesome! Since you're ready, let's jump right into your 9 profiling questions!",
-      "And don't worry, you can answer every single one with a simple Yes, Sometimes, or No.",
-    ],
-    []
-  );
-  const outroSpeech = useMemo(
-    () => [
-      "You've made it to the final step! To wrap things up, let's try a quick Free Speech Pre-test.",
-      "Your mission: Speak for at least 30 seconds on the topic, Tell me about yourself. Don't overthink it - just be you and let your voice lead the way!",
-    ],
-    []
-  );
-
   useEffect(() => {
     if (isAdminAuthenticated) {
       navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
@@ -119,75 +108,109 @@ function UserProfilingPage() {
   }, [isAdminAuthenticated, navigate]);
 
   useEffect(() => {
-    if (isMuted || typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    if (screen !== 'intro' || introStep !== 1) {
       return undefined;
     }
 
-    const screenSpeechMap = {
-      intro: introSpeech,
-      ready: readySpeech,
-      outro: outroSpeech,
-    };
-    const linesToSpeak = screenSpeechMap[screen];
-    if (!Array.isArray(linesToSpeak) || linesToSpeak.length === 0) {
-      return undefined;
-    }
+    setTypedIntroText('');
+    setIsIntroTypingDone(false);
 
-    const pickFriendlyVoice = () => {
-      const voices = window.speechSynthesis.getVoices();
-      if (!voices?.length) return null;
-
-      const normalized = voices.map((voice) => ({
-        voice,
-        id: `${voice.name} ${voice.lang}`.toLowerCase(),
-      }));
-
-      const storedVoiceName = window.localStorage.getItem(INTRO_VOICE_KEY);
-      if (storedVoiceName) {
-        const stored = voices.find((voice) => voice.name === storedVoiceName);
-        if (stored) return stored;
+    let charIndex = 0;
+    const typingInterval = window.setInterval(() => {
+      charIndex += 1;
+      setTypedIntroText(introSecondMessage.slice(0, charIndex));
+      if (charIndex >= introSecondMessage.length) {
+        window.clearInterval(typingInterval);
+        setIsIntroTypingDone(true);
       }
-
-      const exactPriority = ['google us english', 'samantha', 'microsoft zira'];
-      for (const target of exactPriority) {
-        const match = normalized.find(({ id }) => id.includes(target));
-        if (match) {
-          window.localStorage.setItem(INTRO_VOICE_KEY, match.voice.name);
-          return match.voice;
-        }
-      }
-
-      const englishFallback = normalized.find(({ id }) => id.includes('english') || id.includes('en-us'));
-      const resolved = englishFallback?.voice || voices[0];
-      window.localStorage.setItem(INTRO_VOICE_KEY, resolved.name);
-      return resolved;
-    };
-
-    const speakCurrentScreen = () => {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(linesToSpeak.join(' '));
-      utterance.voice = pickFriendlyVoice();
-      utterance.rate = INTRO_TTS.rate;
-      utterance.pitch = INTRO_TTS.pitch;
-      utterance.volume = INTRO_TTS.volume;
-      window.speechSynthesis.speak(utterance);
-    };
-
-    speakCurrentScreen();
-
-    const handleVoicesChanged = () => {
-      // Re-speak once voices are fully available in browsers that load them lazily.
-      if (!window.speechSynthesis.speaking && !isMuted) {
-        speakCurrentScreen();
-      }
-    };
-    window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
+    }, 12);
 
     return () => {
-      window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
-      window.speechSynthesis.cancel();
+      window.clearInterval(typingInterval);
     };
-  }, [introSpeech, isMuted, outroSpeech, readySpeech, screen]);
+  }, [introSecondMessage, introStep, screen]);
+
+  useEffect(() => {
+    if (screen !== 'ready') {
+      return undefined;
+    }
+
+    setTypedReadyText('');
+    setIsReadyTypingDone(false);
+
+    let charIndex = 0;
+    const typingInterval = window.setInterval(() => {
+      charIndex += 1;
+      setTypedReadyText(readyMessage.slice(0, charIndex));
+      if (charIndex >= readyMessage.length) {
+        window.clearInterval(typingInterval);
+        setIsReadyTypingDone(true);
+      }
+    }, 12);
+
+    return () => {
+      window.clearInterval(typingInterval);
+    };
+  }, [readyMessage, screen]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    introAudioRef.current = new Audio(introVoice1);
+    stepTwoAudioRef.current = new Audio(introVoice2);
+    readyAudioRef.current = new Audio(introVoice3);
+
+    const refs = [introAudioRef.current, stepTwoAudioRef.current, readyAudioRef.current];
+    refs.forEach((audio) => {
+      audio.preload = 'auto';
+      audio.muted = false;
+    });
+
+    return () => {
+      refs.forEach((audio) => {
+        audio.pause();
+        audio.currentTime = 0;
+      });
+      introAudioRef.current = null;
+      stepTwoAudioRef.current = null;
+      readyAudioRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const refs = [introAudioRef.current, stepTwoAudioRef.current, readyAudioRef.current];
+    refs.forEach((audio) => {
+      if (!audio) return;
+      audio.muted = isMuted;
+      if (isMuted) {
+        audio.pause();
+      }
+    });
+  }, [isMuted]);
+
+  useEffect(() => {
+    if (isMuted) return;
+
+    const playClip = (audioRef) => {
+      if (!audioRef?.current) return;
+      [introAudioRef.current, stepTwoAudioRef.current, readyAudioRef.current].forEach((audio) => {
+        if (audio && audio !== audioRef.current) {
+          audio.pause();
+          audio.currentTime = 0;
+        }
+      });
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(() => {});
+    };
+
+    if (screen === 'intro' && introStep === 0) {
+      playClip(introAudioRef);
+    } else if (screen === 'intro' && introStep === 1) {
+      playClip(stepTwoAudioRef);
+    } else if (screen === 'ready') {
+      playClip(readyAudioRef);
+    }
+  }, [introStep, isMuted, screen]);
 
   const updateField = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -213,9 +236,17 @@ function UserProfilingPage() {
     setCurrentIndex((prev) => Math.min(totalSteps - 1, prev + 1));
   };
 
-  const selectSingleAnswer = (questionKey, option) => {
+  const handleSingleAnswerAndAdvance = async (questionKey, option) => {
     if (isSubmitting) return;
-    updateField(questionKey, option);
+    const nextForm = { ...form, [questionKey]: option };
+    setForm(nextForm);
+    if (error) setError('');
+
+    if (currentIndex >= totalSteps - 1) {
+      await handleSubmit({ nextForm });
+      return;
+    }
+    goToNextQuestion();
   };
 
   const handleSubmit = async ({ nextForm = null } = {}) => {
@@ -297,11 +328,39 @@ function UserProfilingPage() {
       if (typeof window !== 'undefined') {
         window.localStorage.setItem(INTRO_MUTE_KEY, next ? '1' : '0');
       }
-      if (next && typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
+      if (next) {
+        [introAudioRef.current, stepTwoAudioRef.current, readyAudioRef.current].forEach((audio) => {
+          if (!audio) return;
+          audio.pause();
+          audio.currentTime = 0;
+        });
       }
       return next;
     });
+  };
+
+  const handleIntroContinue = () => {
+    if (introStep === 0) {
+      setIntroStep(1);
+      return;
+    }
+
+    if (!isIntroTypingDone) {
+      setTypedIntroText(introSecondMessage);
+      setIsIntroTypingDone(true);
+      return;
+    }
+
+    setScreen('ready');
+  };
+
+  const handleBackToIntro = () => {
+    setIntroStep(0);
+    setTypedIntroText('');
+    setIsIntroTypingDone(false);
+    setTypedReadyText('');
+    setIsReadyTypingDone(false);
+    setScreen('intro');
   };
 
   if (isAdminAuthenticated) return null;
@@ -310,19 +369,22 @@ function UserProfilingPage() {
     <div className={`user-profiling-page ${screen !== 'questions' ? 'is-gate-screen' : ''}`}>
       {screen === 'intro' && (
         <section className="profiling-intro profiling-gate--pop">
-          <article className="profiling-intro-bubble" aria-label="Welcome message">
-            <p>
-              Hello! I&apos;m <strong>B-01</strong>, your personal guide on this exciting journey to master public
-              speaking with Bigkas.
-            </p>
-            <p>
-              Before we begin, we need to assess your current speaking level. This includes 9 short profiling
-              questions and one small speaking pre-test. These tests ensure I can customize your experience and guide
-              you smoothly throughout your entire Bigkas journey!
-            </p>
+          <article
+            className={`profiling-intro-bubble ${introStep === 1 ? 'profiling-intro-bubble--intro-typing' : ''}`}
+            aria-label="Welcome message"
+          >
+            {introStep === 0 ? (
+              <p>{introFirstMessage}</p>
+            ) : (
+              <p>{typedIntroText}</p>
+            )}
             <div className="profiling-intro-actions">
               <div className="profiling-submit-btn">
-                <button type="button" onClick={() => setScreen('ready')}>
+                <button
+                  type="button"
+                  onClick={handleIntroContinue}
+                  disabled={introStep === 1 && !isIntroTypingDone}
+                >
                   Continue
                 </button>
               </div>
@@ -352,19 +414,20 @@ function UserProfilingPage() {
 
       {screen === 'ready' && (
         <section className="profiling-intro profiling-gate--pop">
-          <article className="profiling-intro-bubble profiling-intro-bubble--ready" aria-label="Ready message">
+          <article
+            className="profiling-intro-bubble profiling-intro-bubble--ready profiling-intro-bubble--ready-typing"
+            aria-label="Ready message"
+          >
             <p className="profiling-ready-text">
               <strong>B-01:</strong>
               <br />
-              Awesome! Since you&apos;re ready, let&apos;s jump right into your 9 profiling questions! And don&apos;t worry,
-              you can answer every single one with a simple <strong>Yes</strong>, <strong>Sometimes</strong>, or
-              <strong> No</strong>.
+              {typedReadyText}
             </p>
             <div className="profiling-intro-actions profiling-intro-actions--split">
               <button
                 type="button"
                 className="profiling-ready-btn profiling-ready-btn--back"
-                onClick={() => setScreen('intro')}
+                onClick={handleBackToIntro}
               >
                 Back
               </button>
@@ -372,6 +435,7 @@ function UserProfilingPage() {
                 type="button"
                 className="profiling-ready-btn profiling-ready-btn--next"
                 onClick={() => setScreen('questions')}
+                disabled={!isReadyTypingDone}
               >
                 Next
               </button>
@@ -410,7 +474,7 @@ function UserProfilingPage() {
             </p>
             <div className="profiling-intro-actions profiling-intro-actions--split">
               <button type="button" className="profiling-ready-btn profiling-ready-btn--back" onClick={handleQuestionBack}>
-                Back
+                Previous
               </button>
               <button
                 type="button"
@@ -438,7 +502,7 @@ function UserProfilingPage() {
                         key={option}
                         type="button"
                         className={`profiling-question-option ${isActive ? 'is-active' : ''}`}
-                        onClick={() => selectSingleAnswer(currentQuestion.key, option)}
+                        onClick={() => handleSingleAnswerAndAdvance(currentQuestion.key, option)}
                       >
                         {option}
                       </button>

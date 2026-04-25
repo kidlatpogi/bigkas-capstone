@@ -114,6 +114,13 @@ body.training-page-active {
   padding-inline: clamp(0.65rem, 1.5vw, 1rem);
 }
 
+.tp-free-pretest-header-actions {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.45rem, 0.9vw, 0.7rem);
+}
+
+.tp-free-pretest-back-btn,
 .tp-free-pretest-logout-btn {
   border: 0;
   border-radius: 999px;
@@ -130,10 +137,12 @@ body.training-page-active {
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
 }
 
+.tp-free-pretest-back-btn:hover,
 .tp-free-pretest-logout-btn:hover {
   transform: translateY(1px);
 }
 
+.tp-free-pretest-back-btn:active,
 .tp-free-pretest-logout-btn:active {
   transform: translateY(2px);
 }
@@ -612,6 +621,18 @@ body.training-page-active {
   pointer-events: none;
 }
 
+.tp-pretest-tutorial-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.36);
+  backdrop-filter: blur(1.8px);
+  z-index: 0;
+}
+
+.tp-content--tutorial-active > .tp-left > :not(.tp-pretest-tutorial) {
+  opacity: 0.34;
+}
+
 .tp-pretest-tutorial-card {
   width: min(100%, 46rem);
   background: #ffffff;
@@ -620,6 +641,8 @@ body.training-page-active {
   border: 1px solid rgba(15, 23, 42, 0.06);
   padding: clamp(1.05rem, 1.65vw, 1.35rem) clamp(1.1rem, 2vw, 1.45rem);
   pointer-events: auto;
+  position: relative;
+  z-index: 2;
 }
 
 .tp-pretest-tutorial-text {
@@ -640,6 +663,8 @@ body.training-page-active {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
+  align-items: center;
+  gap: clamp(0.5rem, 0.9vw, 0.75rem);
 }
 
 .tp-pretest-tutorial-continue {
@@ -659,12 +684,55 @@ body.training-page-active {
 
 .tp-pretest-tutorial-robot {
   position: absolute;
-  right: clamp(-7.6rem, -10.5vw, -5.2rem);
-  bottom: clamp(-15.25rem, -18vw, -13.5rem);
-  width: clamp(13rem, 18.8vw, 17.5rem);
+  right: clamp(-13.4rem, -16.5vw, -8.3rem);
+  bottom: clamp(-21.8rem, -26vw, -18.2rem);
+  width: clamp(33rem, 41vw, 41rem);
   height: auto;
   max-width: 100%;
   pointer-events: none;
+  position: absolute;
+  z-index: 3;
+  filter: drop-shadow(0 10px 12px rgba(15, 23, 42, 0.25));
+}
+
+.tp-pretest-tutorial-audio-action {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  position: absolute;
+  left: 0;
+  bottom: clamp(-4.85rem, -5.6vw, -4.2rem);
+  z-index: 4;
+  pointer-events: auto;
+}
+
+.tp-pretest-tutorial-mute {
+  min-height: 44px;
+  min-width: 44px;
+  width: clamp(2.75rem, 3.8vw, 3rem);
+  height: clamp(2.75rem, 3.8vw, 3rem);
+  border: 0;
+  border-radius: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.tp-pretest-tutorial-mute.is-unmuted {
+  background: #10B981;
+  box-shadow: #047857 0 4px 0 0;
+}
+
+.tp-pretest-tutorial-mute.is-muted {
+  background: #EF4444;
+  box-shadow: #B91C1C 0 4px 0 0;
+}
+
+.tp-pretest-tutorial-mute svg {
+  width: clamp(1.05rem, 1.5vw, 1.2rem);
+  height: clamp(1.05rem, 1.5vw, 1.2rem);
 }
 
 .tp-ctrl-label {
@@ -1565,9 +1633,13 @@ body.training-page-active {
   }
 
   .tp-pretest-tutorial-robot {
-    right: clamp(-5.7rem, -19vw, -3.8rem);
-    bottom: clamp(-13.6rem, -34vw, -11.2rem);
-    width: clamp(10.25rem, 34vw, 12.25rem);
+    right: clamp(-6.1rem, -21vw, -4.4rem);
+    bottom: clamp(-14.4rem, -36vw, -11.8rem);
+    width: clamp(12.5rem, 42vw, 15.5rem);
+  }
+
+  .tp-pretest-tutorial-audio-action {
+    bottom: clamp(-4.4rem, -11vw, -3.55rem);
   }
 }
 
@@ -1652,9 +1724,13 @@ body.training-page-active {
   }
 
   .tp-pretest-tutorial-robot {
-    right: clamp(-5rem, -20vw, -3.4rem);
-    bottom: clamp(-13rem, -38vw, -10.5rem);
-    width: clamp(9.7rem, 40vw, 11.2rem);
+    right: clamp(-5.2rem, -21vw, -3.6rem);
+    bottom: clamp(-13.25rem, -39vw, -10.8rem);
+    width: clamp(11.8rem, 44vw, 14.2rem);
+  }
+
+  .tp-pretest-tutorial-audio-action {
+    bottom: clamp(-4.15rem, -13vw, -3.4rem);
   }
 
   .tp-modal-slider {

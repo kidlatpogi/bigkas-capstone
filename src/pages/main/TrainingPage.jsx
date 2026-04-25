@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LuRotateCcw } from 'react-icons/lu';
+import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import { useSessionContext } from '../../context/useSessionContext';
 import { useAuthContext } from '../../context/useAuthContext';
 import { buildRoute, ROUTES } from '../../utils/constants';
@@ -106,6 +107,7 @@ const MIC_LOW_PICKUP_TRIGGER_MS = 2500;
 const TRAINING_FONT_SIZE_KEY = 'training_settings_font_size';
 const TRAINING_WPM_KEY = 'training_settings_wpm';
 const ACTIVITY_CELEBRATION_STORAGE_KEY = 'bigkas_pending_activity_celebration_v1';
+const PRETEST_TUTORIAL_MUTE_KEY = 'bigkas_pretest_tutorial_muted';
 
 function readNumericSetting(key, fallback, min, max) {
   if (typeof window === 'undefined') return fallback;
@@ -248,6 +250,10 @@ function TrainingPage() {
   const [showMicWarning, setShowMicWarning] = useState(false);
   const [isFreeCompactLayout, setIsFreeCompactLayout] = useState(false);
   const [pretestTutorialStep, setPretestTutorialStep] = useState(-1);
+  const [isTutorialMuted, setIsTutorialMuted] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(PRETEST_TUTORIAL_MUTE_KEY) === '1';
+  });
   const { startAnalysis, stopAnalysis, liveScores } = useVisualAnalysis();
 
   const pretestTutorialSteps = useMemo(
@@ -1044,6 +1050,76 @@ function TrainingPage() {
   const hasActivePretestTutorial = isFreePretestSession && pretestTutorialStep >= 0;
   const isStartBlockedByTutorial = hasActivePretestTutorial && !isActive && status !== 'countdown';
 
+  const handleToggleTutorialMute = useCallback(() => {
+    setIsTutorialMuted((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(PRETEST_TUTORIAL_MUTE_KEY, next ? '1' : '0');
+      }
+      if (next && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (
+      !hasActivePretestTutorial ||
+      isTutorialMuted ||
+      typeof window === 'undefined' ||
+      !('speechSynthesis' in window)
+    ) {
+      return undefined;
+    }
+
+    const currentLine = pretestTutorialSteps[pretestTutorialStep];
+    if (!currentLine) return undefined;
+
+    const pickFriendlyVoice = () => {
+      const voices = window.speechSynthesis.getVoices();
+      if (!voices?.length) return null;
+
+      const normalized = voices.map((voice) => ({
+        voice,
+        id: `${voice.name} ${voice.lang}`.toLowerCase(),
+      }));
+
+      const exactPriority = ['google us english', 'samantha', 'microsoft zira'];
+      for (const target of exactPriority) {
+        const match = normalized.find(({ id }) => id.includes(target));
+        if (match) return match.voice;
+      }
+
+      const englishFallback = normalized.find(({ id }) => id.includes('english') || id.includes('en-us'));
+      return englishFallback?.voice || voices[0];
+    };
+
+    const speakTutorialLine = () => {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(currentLine);
+      utterance.voice = pickFriendlyVoice();
+      utterance.rate = 1.08;
+      utterance.pitch = 1.1;
+      utterance.volume = 1;
+      window.speechSynthesis.speak(utterance);
+    };
+
+    speakTutorialLine();
+
+    const handleVoicesChanged = () => {
+      if (!window.speechSynthesis.speaking && !isTutorialMuted) {
+        speakTutorialLine();
+      }
+    };
+    window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
+
+    return () => {
+      window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
+      window.speechSynthesis.cancel();
+    };
+  }, [hasActivePretestTutorial, isTutorialMuted, pretestTutorialStep, pretestTutorialSteps]);
+
   const minDurationProgressPct = Math.min(100, (elapsedSec / MIN_RECORDING_SECONDS) * 100);
   const isMinDurationMet = elapsedSec >= MIN_RECORDING_SECONDS;
   const secondsUntilMinValid = Math.max(0, MIN_RECORDING_SECONDS - elapsedSec);
@@ -1055,6 +1131,23 @@ function TrainingPage() {
     }
     navigate(-1);
   }, [isActive, navigate]);
+
+  const handleFreePretestBack = useCallback(() => {
+    const goBackToMission = async () => {
+      if (isActive) {
+        handleRestart();
+      }
+
+      // Route guard only allows /onboarding/profiling when onboarding_stage is profiling.
+      const result = await updateUserMetadata({ onboarding_stage: 'profiling' });
+      if (!result?.success) {
+        return;
+      }
+      navigate(ROUTES.USER_PROFILING, { replace: true });
+    };
+
+    void goBackToMission();
+  }, [handleRestart, isActive, navigate, updateUserMetadata]);
 
   const handleTemporaryLogout = useCallback(async () => {
     await logout();
@@ -1134,21 +1227,33 @@ function TrainingPage() {
             <SettingsGearIcon />
           </button>
         ) : isFreePretestSession ? (
-          <button
-            type="button"
-            className="tp-free-pretest-logout-btn"
-            onClick={handleTemporaryLogout}
-            aria-label="Log out"
-          >
-            Logout
-          </button>
+          <div className="tp-free-pretest-header-actions">
+            <button
+              type="button"
+              className="tp-free-pretest-back-btn"
+              onClick={handleFreePretestBack}
+              aria-label="Go back"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              className="tp-free-pretest-logout-btn"
+              onClick={handleTemporaryLogout}
+              aria-label="Log out"
+            >
+              Logout
+            </button>
+          </div>
         ) : (
           !isFreePretestSession && <div className="tp-header-spacer" />
         )}
       </div>
 
       {/* ── Main Content ── */}
-      <div className={`tp-content${focus === 'scripted' ? ' tp-content--split' : ''}`}>
+      <div
+        className={`tp-content${focus === 'scripted' ? ' tp-content--split' : ''}${hasActivePretestTutorial ? ' tp-content--tutorial-active' : ''}`}
+      >
 
         {/* ── Left / Main Column ── */}
         <div
@@ -1233,6 +1338,7 @@ function TrainingPage() {
 
           {hasActivePretestTutorial && (
             <section className="tp-pretest-tutorial" aria-label="Pre-test tutorial">
+              <div className="tp-pretest-tutorial-backdrop" aria-hidden="true" />
               <article className="tp-pretest-tutorial-card">
                 <p className="tp-pretest-tutorial-text">
                   <strong>B-01:</strong>
@@ -1255,6 +1361,17 @@ function TrainingPage() {
                 </div>
               </article>
               <img src={robotTutorialImage} alt="" className="tp-pretest-tutorial-robot" aria-hidden="true" />
+              <div className="tp-pretest-tutorial-audio-action">
+                <button
+                  type="button"
+                  className={`tp-pretest-tutorial-mute ${isTutorialMuted ? 'is-muted' : 'is-unmuted'}`}
+                  onClick={handleToggleTutorialMute}
+                  aria-label={isTutorialMuted ? 'Unmute tutorial voice' : 'Mute tutorial voice'}
+                  title={isTutorialMuted ? 'Unmute tutorial voice' : 'Mute tutorial voice'}
+                >
+                  {isTutorialMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+                </button>
+              </div>
             </section>
           )}
 

@@ -68,6 +68,10 @@
   line-height: 1.5;
 }
 
+.tutorial-bubble-text strong {
+  font-weight: 800;
+}
+
 .tutorial-bubble-btn {
   background: #059669;
   color: white;

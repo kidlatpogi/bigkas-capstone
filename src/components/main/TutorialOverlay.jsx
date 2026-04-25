@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import robotImage from '../../assets/Sprites/Robot/0008-noBulb-inverted.png';
+import tutorialVoice1 from '../../assets/Voices/Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 1.mp3';
+import tutorialVoice2 from '../../assets/Voices/Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 2.mp3';
+import tutorialVoice3 from '../../assets/Voices/Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 3.mp3';
+import tutorialVoice4 from '../../assets/Voices/Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 4.mp3';
+import tutorialVoice5 from '../../assets/Voices/Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 5.mp3';
+import { useInteraction } from '../../hooks/useInteraction';
 import './TutorialOverlay.css';
 
 function TutorialOverlay({ isOpen, onClose }) {
@@ -44,12 +50,48 @@ function TutorialOverlay({ isOpen, onClose }) {
     []
   );
   const [currentStep, setCurrentStep] = useState(0);
+  const [typedText, setTypedText] = useState('');
+  const [isTypingDone, setIsTypingDone] = useState(false);
   const activeSpotlightRef = useRef(null);
+  const stepAudioRefs = useRef([]);
+  const typingIntervalRef = useRef(null);
+  const { playClick } = useInteraction();
+
+  const stopAllAudios = () => {
+    stepAudioRefs.current.forEach((audio) => {
+      if (!audio) return;
+      audio.pause();
+      audio.currentTime = 0;
+    });
+  };
+
+  useEffect(() => {
+    stepAudioRefs.current = [
+      new Audio(tutorialVoice1),
+      new Audio(tutorialVoice2),
+      new Audio(tutorialVoice3),
+      new Audio(tutorialVoice4),
+      new Audio(tutorialVoice5),
+    ];
+    stepAudioRefs.current.forEach((audio) => {
+      audio.preload = 'auto';
+    });
+
+    return () => {
+      stopAllAudios();
+      stepAudioRefs.current = [];
+    };
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
       setCurrentStep(0);
       return;
+    }
+    stopAllAudios();
+    if (typingIntervalRef.current) {
+      window.clearInterval(typingIntervalRef.current);
+      typingIntervalRef.current = null;
     }
     if (activeSpotlightRef.current) {
       activeSpotlightRef.current.classList.remove('tutorial-spotlight-active');
@@ -83,12 +125,102 @@ function TutorialOverlay({ isOpen, onClose }) {
     };
   }, [currentStep, isOpen, tutorialSteps]);
 
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const activeStep = tutorialSteps[currentStep];
+    if (!activeStep) return undefined;
+
+    setTypedText('');
+    setIsTypingDone(false);
+    if (typingIntervalRef.current) {
+      window.clearInterval(typingIntervalRef.current);
+      typingIntervalRef.current = null;
+    }
+
+    let charIndex = 0;
+    typingIntervalRef.current = window.setInterval(() => {
+      charIndex += 1;
+      setTypedText(activeStep.text.slice(0, charIndex));
+      if (charIndex >= activeStep.text.length) {
+        if (typingIntervalRef.current) {
+          window.clearInterval(typingIntervalRef.current);
+          typingIntervalRef.current = null;
+        }
+        setIsTypingDone(true);
+      }
+    }, 12);
+
+    stopAllAudios();
+    const stepAudio = stepAudioRefs.current[currentStep];
+    if (stepAudio) {
+      stepAudio.currentTime = 0;
+      stepAudio.play().catch(() => {});
+    }
+
+    return () => {
+      if (typingIntervalRef.current) {
+        window.clearInterval(typingIntervalRef.current);
+        typingIntervalRef.current = null;
+      }
+      stopAllAudios();
+    };
+  }, [currentStep, isOpen, tutorialSteps]);
+
   if (!isOpen) return null;
 
   const activeStep = tutorialSteps[currentStep];
   if (!activeStep) return null;
 
-  const handleNext = () => {
+  const renderTypedText = () => {
+    if (!isTypingDone) return typedText;
+    if (activeStep.id === 'step-topic') {
+      return (
+        <>
+          <strong>'The Topic'</strong> This is your prompt! Focus on the subject shown here to keep your speech on track.
+        </>
+      );
+    }
+    if (activeStep.id === 'step-camera') {
+      return (
+        <>
+          <strong>'The Camera View'</strong>, Check your posture and expression in this frame—confidence starts with how you carry
+          yourself!
+        </>
+      );
+    }
+    if (activeStep.id === 'step-soundbar') {
+      return (
+        <>
+          <strong>'Voice and Time'</strong>, Watch the soundbar dance as you speak and keep an eye on the timer to hit your goal.
+        </>
+      );
+    }
+    if (activeStep.id === 'step-controls') {
+      return (
+        <>
+          <strong>'The Controls'</strong>, Use Start to begin, Pause if you need a breather, or Restart to try the topic again from
+          the top!
+        </>
+      );
+    }
+    return typedText;
+  };
+
+  const handleNext = async () => {
+    await playClick();
+    stopAllAudios();
+
+    if (!isTypingDone) {
+      const currentText = tutorialSteps[currentStep]?.text || '';
+      setTypedText(currentText);
+      setIsTypingDone(true);
+      if (typingIntervalRef.current) {
+        window.clearInterval(typingIntervalRef.current);
+        typingIntervalRef.current = null;
+      }
+      return;
+    }
+
     const isLast = currentStep >= tutorialSteps.length - 1;
     if (isLast) {
       if (activeSpotlightRef.current) {
@@ -111,8 +243,8 @@ function TutorialOverlay({ isOpen, onClose }) {
         <img src={robotImage} alt="" className="tutorial-robot-img" aria-hidden="true" />
         <article className="tutorial-speech-bubble">
           <div className="tutorial-bubble-title">{activeStep.title}</div>
-          <p className="tutorial-bubble-text">{activeStep.text}</p>
-          <button type="button" className="tutorial-bubble-btn" onClick={handleNext}>
+          <p className="tutorial-bubble-text">{renderTypedText()}</p>
+          <button type="button" className="tutorial-bubble-btn" onClick={handleNext} disabled={!isTypingDone}>
             {activeStep.button}
           </button>
         </article>

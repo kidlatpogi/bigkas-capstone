@@ -425,16 +425,6 @@ function UserProfilingPage() {
     setScreen('intro');
   };
 
-  const renderReadyMessage = () => {
-    if (!isReadyTypingDone) return typedReadyText;
-    return (
-      <>
-        Awesome! Since you&apos;re ready, let&apos;s jump right into your 9 profiling questions! And don&apos;t worry, you can answer
-        every single one with a simple <strong>Yes</strong>, <strong>Sometimes</strong>, or <strong>No</strong>.
-      </>
-    );
-  };
-
   if (isAdminAuthenticated) return null;
 
   return (
@@ -496,7 +486,17 @@ function UserProfilingPage() {
             <p className="profiling-ready-text">
               <strong>B-01:</strong>
               <br />
-              {renderReadyMessage()}
+              {isReadyTypingDone ? (
+                <>
+                  Awesome! Since you&apos;re ready, let&apos;s jump right into your 9 profiling questions! And
+                  don&apos;t worry, you can answer every single one with a simple{' '}
+                  <strong className="profiling-answer-yes">Yes</strong>,{' '}
+                  <strong className="profiling-answer-sometimes">Sometimes</strong>, or{' '}
+                  <strong className="profiling-answer-no">No</strong>.
+                </>
+              ) : (
+                typedReadyText
+              )}
             </p>
             <div className="profiling-intro-actions profiling-intro-actions--split">
               <button

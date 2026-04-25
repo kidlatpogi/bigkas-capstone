@@ -128,13 +128,16 @@
   bottom: auto;
   transform: translateX(-50%);
   width: min(100%, 46rem);
-  display: grid;
-  justify-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: clamp(0.35rem, 0.9vw, 0.6rem);
 }
 
 .tutorial-overlay-wrapper.is-final-step .tutorial-speech-bubble {
   max-width: min(100%, 34rem);
+  order: 1;
+  transform: translateY(8rem);
 }
 
 .tutorial-overlay-wrapper.is-final-step .tutorial-speech-bubble::before {
@@ -150,6 +153,7 @@
 .tutorial-overlay-wrapper.is-final-step .tutorial-robot-img {
   width: min(40.9375rem, 82vw);
   max-width: none;
+  order: 2;
 }
 
 @keyframes tutorial-spotlight-pulse {
@@ -174,6 +178,11 @@
   .tutorial-overlay-wrapper.is-final-step .tutorial-companion-container {
     top: clamp(5.5rem, 11vh, 7rem);
     width: min(100%, 22rem);
+  }
+
+  .tutorial-overlay-wrapper.is-final-step .tutorial-speech-bubble {
+    /* Keep final bubble in the same visual zone across small screens */
+    transform: translateY(clamp(8rem, 16vh, 12rem));
   }
 
   .tutorial-overlay-wrapper.is-final-step .tutorial-robot-img {

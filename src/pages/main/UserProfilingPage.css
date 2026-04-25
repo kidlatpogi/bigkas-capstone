@@ -98,6 +98,21 @@
   line-height: 1.42;
 }
 
+.profiling-ready-text .profiling-answer-yes {
+  color: #059669;
+  font-weight: 800;
+}
+
+.profiling-ready-text .profiling-answer-sometimes {
+  color: #F97316;
+  font-weight: 800;
+}
+
+.profiling-ready-text .profiling-answer-no {
+  color: #EF4444;
+  font-weight: 800;
+}
+
 .profiling-intro-bubble--pretest {
   width: min(100%, 34rem);
   z-index: 50;

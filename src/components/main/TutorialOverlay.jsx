@@ -102,7 +102,10 @@ function TutorialOverlay({ isOpen, onClose }) {
   };
 
   return (
-    <section className="tutorial-overlay-wrapper" aria-label="Training tutorial overlay">
+    <section
+      className={`tutorial-overlay-wrapper${activeStep.id === 'step-controls' ? ' is-controls-step' : ''}`}
+      aria-label="Training tutorial overlay"
+    >
       <div className="tutorial-dark-bg" aria-hidden="true" />
       <div className="tutorial-companion-container">
         <img src={robotImage} alt="" className="tutorial-robot-img" aria-hidden="true" />

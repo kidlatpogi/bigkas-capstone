@@ -82,14 +82,34 @@
 .tutorial-spotlight-active {
   position: relative !important;
   z-index: 950 !important;
-  box-shadow: 0 0 0 4px #34D399, 0 0 30px rgba(52, 211, 153, 0.6) !important;
+  box-shadow: 0 0 0 5px #34D399, 0 0 42px rgba(52, 211, 153, 0.9) !important;
   border-radius: inherit;
   transition: all 0.3s ease;
   background-color: white;
+  animation: tutorial-spotlight-pulse 1.2s ease-in-out infinite;
+}
+
+.tutorial-overlay-wrapper.is-controls-step .tutorial-companion-container {
+  top: clamp(1rem, 7vh, 4.5rem);
+  bottom: auto;
+}
+
+@keyframes tutorial-spotlight-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 5px #34D399, 0 0 26px rgba(52, 211, 153, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 6px #6EE7B7, 0 0 50px rgba(52, 211, 153, 1);
+  }
 }
 
 @media (max-width: 768px) {
   .tutorial-companion-container {
     right: 12px;
+  }
+
+  .tutorial-overlay-wrapper.is-controls-step .tutorial-companion-container {
+    top: clamp(0.75rem, 5vh, 2.5rem);
   }
 }

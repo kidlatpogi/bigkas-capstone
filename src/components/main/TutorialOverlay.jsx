@@ -5,7 +5,8 @@ import tutorialVoice2 from '../../assets/Voices/Profiling and Pre-Testing/Pre-Te
 import tutorialVoice3 from '../../assets/Voices/Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 3.mp3';
 import tutorialVoice4 from '../../assets/Voices/Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 4.mp3';
 import tutorialVoice5 from '../../assets/Voices/Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 5.mp3';
-import { useInteraction } from '../../hooks/useInteraction';
+import tutorialVoiceFinal from '../../assets/Voices/Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial FINAL.mp3';
+import finalRobotImage from '../../assets/Sprites/Robot/0002.webp';
 import './TutorialOverlay.css';
 
 function TutorialOverlay({ isOpen, onClose }) {
@@ -24,6 +25,7 @@ function TutorialOverlay({ isOpen, onClose }) {
         text: "'The Topic' This is your prompt! Focus on the subject shown here to keep your speech on track.",
         button: 'Continue',
         targetElementId: 'tutorial-target-topic',
+        emphasis: "'The Topic'",
       },
       {
         id: 'step-camera',
@@ -31,6 +33,7 @@ function TutorialOverlay({ isOpen, onClose }) {
         text: "'The Camera View', Check your posture and expression in this frame—confidence starts with how you carry yourself!",
         button: 'Next',
         targetElementId: 'tutorial-target-camera',
+        emphasis: "'The Camera View'",
       },
       {
         id: 'step-soundbar',
@@ -38,6 +41,7 @@ function TutorialOverlay({ isOpen, onClose }) {
         text: "'Voice and Time', Watch the soundbar dance as you speak and keep an eye on the timer to hit your goal.",
         button: 'Next',
         targetElementId: 'tutorial-target-soundbar',
+        emphasis: "'Voice and Time'",
       },
       {
         id: 'step-controls',
@@ -45,6 +49,14 @@ function TutorialOverlay({ isOpen, onClose }) {
         text: "'The Controls', Use Start to begin, Pause if you need a breather, or Restart to try the topic again from the top!",
         button: 'Next',
         targetElementId: 'tutorial-target-controls',
+        emphasis: "'The Controls'",
+      },
+      {
+        id: 'step-final',
+        title: 'B-01:',
+        text: "Controls mastered! Yay! Whenever you're ready, click Start so I can hear what you've got. I'm so excited to listen!",
+        button: 'BEGIN!',
+        targetElementId: null,
       },
     ],
     []
@@ -55,7 +67,6 @@ function TutorialOverlay({ isOpen, onClose }) {
   const activeSpotlightRef = useRef(null);
   const stepAudioRefs = useRef([]);
   const typingIntervalRef = useRef(null);
-  const { playClick } = useInteraction();
 
   const stopAllAudios = () => {
     stepAudioRefs.current.forEach((audio) => {
@@ -72,8 +83,10 @@ function TutorialOverlay({ isOpen, onClose }) {
       new Audio(tutorialVoice3),
       new Audio(tutorialVoice4),
       new Audio(tutorialVoice5),
+      new Audio(tutorialVoiceFinal),
     ];
     stepAudioRefs.current.forEach((audio) => {
+      if (!audio) return;
       audio.preload = 'auto';
     });
 
@@ -171,43 +184,7 @@ function TutorialOverlay({ isOpen, onClose }) {
   const activeStep = tutorialSteps[currentStep];
   if (!activeStep) return null;
 
-  const renderTypedText = () => {
-    if (!isTypingDone) return typedText;
-    if (activeStep.id === 'step-topic') {
-      return (
-        <>
-          <strong>'The Topic'</strong> This is your prompt! Focus on the subject shown here to keep your speech on track.
-        </>
-      );
-    }
-    if (activeStep.id === 'step-camera') {
-      return (
-        <>
-          <strong>'The Camera View'</strong>, Check your posture and expression in this frame—confidence starts with how you carry
-          yourself!
-        </>
-      );
-    }
-    if (activeStep.id === 'step-soundbar') {
-      return (
-        <>
-          <strong>'Voice and Time'</strong>, Watch the soundbar dance as you speak and keep an eye on the timer to hit your goal.
-        </>
-      );
-    }
-    if (activeStep.id === 'step-controls') {
-      return (
-        <>
-          <strong>'The Controls'</strong>, Use Start to begin, Pause if you need a breather, or Restart to try the topic again from
-          the top!
-        </>
-      );
-    }
-    return typedText;
-  };
-
-  const handleNext = async () => {
-    await playClick();
+  const handleNext = () => {
     stopAllAudios();
 
     if (!isTypingDone) {
@@ -233,17 +210,41 @@ function TutorialOverlay({ isOpen, onClose }) {
     setCurrentStep((prev) => prev + 1);
   };
 
+  const renderBubbleText = () => {
+    if (!isTypingDone) return typedText;
+
+    const emphasis = activeStep?.emphasis;
+    if (!emphasis) return typedText;
+    const idx = typedText.indexOf(emphasis);
+    if (idx < 0) return typedText;
+
+    const before = typedText.slice(0, idx);
+    const after = typedText.slice(idx + emphasis.length);
+    return (
+      <>
+        {before}
+        <strong className="tutorial-bubble-emphasis">{emphasis}</strong>
+        {after}
+      </>
+    );
+  };
+
   return (
     <section
-      className={`tutorial-overlay-wrapper${activeStep.id === 'step-controls' ? ' is-controls-step' : ''}`}
+      className={`tutorial-overlay-wrapper${activeStep.id === 'step-controls' ? ' is-controls-step' : ''}${activeStep.id === 'step-final' ? ' is-final-step' : ''}`}
       aria-label="Training tutorial overlay"
     >
       <div className="tutorial-dark-bg" aria-hidden="true" />
       <div className="tutorial-companion-container">
-        <img src={robotImage} alt="" className="tutorial-robot-img" aria-hidden="true" />
+        <img
+          src={activeStep.id === 'step-final' ? finalRobotImage : robotImage}
+          alt=""
+          className="tutorial-robot-img"
+          aria-hidden="true"
+        />
         <article className="tutorial-speech-bubble">
           <div className="tutorial-bubble-title">{activeStep.title}</div>
-          <p className="tutorial-bubble-text">{renderTypedText()}</p>
+          <p className="tutorial-bubble-text">{renderBubbleText()}</p>
           <button type="button" className="tutorial-bubble-btn" onClick={handleNext} disabled={!isTypingDone}>
             {activeStep.button}
           </button>

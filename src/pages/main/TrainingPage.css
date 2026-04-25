@@ -614,23 +614,25 @@ body.training-page-active {
 .tp-pretest-tutorial {
   position: absolute;
   left: 50%;
-  top: clamp(17.75rem, 31vw, 21.5rem);
+  top: clamp(16.8rem, 29vw, 20.5rem);
   width: min(100%, 46rem);
   transform: translateX(-50%);
   z-index: 12;
   pointer-events: none;
+  display: grid;
+  justify-items: center;
+  gap: clamp(0.6rem, 1vw, 0.95rem);
 }
 
 .tp-pretest-tutorial-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.36);
-  backdrop-filter: blur(1.8px);
+  background: rgba(15, 23, 42, 0.24);
   z-index: 0;
 }
 
 .tp-content--tutorial-active > .tp-left > :not(.tp-pretest-tutorial) {
-  opacity: 0.34;
+  opacity: 0.3;
 }
 
 .tp-pretest-tutorial-card {
@@ -683,14 +685,13 @@ body.training-page-active {
 }
 
 .tp-pretest-tutorial-robot {
-  position: absolute;
-  right: clamp(-13.4rem, -16.5vw, -8.3rem);
-  bottom: clamp(-21.8rem, -26vw, -18.2rem);
-  width: clamp(33rem, 41vw, 41rem);
+  position: relative;
+  right: auto;
+  bottom: auto;
+  width: clamp(12.25rem, 16.5vw, 15.5rem);
   height: auto;
   max-width: 100%;
   pointer-events: none;
-  position: absolute;
   z-index: 3;
   filter: drop-shadow(0 10px 12px rgba(15, 23, 42, 0.25));
 }
@@ -699,9 +700,9 @@ body.training-page-active {
   display: flex;
   justify-content: center;
   width: 100%;
-  position: absolute;
-  left: 0;
-  bottom: clamp(-4.85rem, -5.6vw, -4.2rem);
+  position: relative;
+  left: auto;
+  bottom: auto;
   z-index: 4;
   pointer-events: auto;
 }
@@ -1618,7 +1619,7 @@ body.training-page-active {
   }
 
   .tp-pretest-tutorial {
-    top: clamp(16.5rem, 50vw, 20.25rem);
+    top: clamp(16.3rem, 49vw, 19.8rem);
     width: min(100%, 23.25rem);
   }
 
@@ -1633,13 +1634,11 @@ body.training-page-active {
   }
 
   .tp-pretest-tutorial-robot {
-    right: clamp(-6.1rem, -21vw, -4.4rem);
-    bottom: clamp(-14.4rem, -36vw, -11.8rem);
-    width: clamp(12.5rem, 42vw, 15.5rem);
+    width: clamp(9.8rem, 33vw, 11.4rem);
   }
 
   .tp-pretest-tutorial-audio-action {
-    bottom: clamp(-4.4rem, -11vw, -3.55rem);
+    margin-top: clamp(0.1rem, 1vw, 0.4rem);
   }
 }
 
@@ -1711,7 +1710,7 @@ body.training-page-active {
   }
 
   .tp-pretest-tutorial {
-    top: clamp(16.75rem, 56vw, 20.5rem);
+    top: clamp(16.4rem, 55vw, 20.2rem);
     width: min(100%, 22.6rem);
   }
 
@@ -1724,13 +1723,11 @@ body.training-page-active {
   }
 
   .tp-pretest-tutorial-robot {
-    right: clamp(-5.2rem, -21vw, -3.6rem);
-    bottom: clamp(-13.25rem, -39vw, -10.8rem);
-    width: clamp(11.8rem, 44vw, 14.2rem);
+    width: clamp(9.2rem, 40vw, 10.6rem);
   }
 
   .tp-pretest-tutorial-audio-action {
-    bottom: clamp(-4.15rem, -13vw, -3.4rem);
+    margin-top: 0.05rem;
   }
 
   .tp-modal-slider {

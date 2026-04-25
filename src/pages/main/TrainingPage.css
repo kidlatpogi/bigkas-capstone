@@ -627,12 +627,12 @@ body.training-page-active {
 .tp-pretest-tutorial-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.24);
+  background: rgba(15, 23, 42, 0.12);
   z-index: 0;
 }
 
 .tp-content--tutorial-active > .tp-left > :not(.tp-pretest-tutorial) {
-  opacity: 0.3;
+  opacity: 0.72;
 }
 
 .tp-pretest-tutorial-card {
@@ -688,7 +688,7 @@ body.training-page-active {
   position: relative;
   right: auto;
   bottom: auto;
-  width: clamp(12.25rem, 16.5vw, 15.5rem);
+  width: clamp(33rem, 40.5vw, 41rem);
   height: auto;
   max-width: 100%;
   pointer-events: none;
@@ -1634,7 +1634,7 @@ body.training-page-active {
   }
 
   .tp-pretest-tutorial-robot {
-    width: clamp(9.8rem, 33vw, 11.4rem);
+    width: clamp(22rem, 60vw, 30rem);
   }
 
   .tp-pretest-tutorial-audio-action {
@@ -1723,7 +1723,7 @@ body.training-page-active {
   }
 
   .tp-pretest-tutorial-robot {
-    width: clamp(9.2rem, 40vw, 10.6rem);
+    width: clamp(16rem, 74vw, 22rem);
   }
 
   .tp-pretest-tutorial-audio-action {

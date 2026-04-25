@@ -91,6 +91,13 @@ function formatTime(sec) {
   return `${h}:${m}:${s}`;
 }
 
+function formatMinuteSecond(sec) {
+  const safe = Math.max(0, Number(sec) || 0);
+  const m = Math.floor(safe / 60).toString();
+  const s = (safe % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
+
 /* ─── Silence Detection ─────────────────────────────────────────────────────── */
 const SILENCE_TRIGGER_MS = 5000; // ms of silence before showing hint
 const MIC_SENSITIVITY_KEY = 'pref_mic_sensitivity';
@@ -169,6 +176,7 @@ function TrainingPage() {
   const objectiveText = (state?.objective || state?.step?.objective || '').trim();
   const isPreTestSession = String(sessionType || '').toLowerCase().includes('pre-test') || String(sessionType || '').toLowerCase().includes('pretest');
   const hidePermissionRetry = isPreTestSession && focus === 'scripted';
+  const isFreePretestSession = isPreTestSession && focus === 'free';
 
   const MIN_RECORDING_SECONDS = useMemo(() => {
     const match = objectiveText.match(/(\d+)\s+Seconds/i) || objectiveText.match(/for\s+(\d+)\s+s/i);
@@ -231,11 +239,13 @@ function TrainingPage() {
   const micWarningVisibleRef = useRef(false);
   const isMountedRef = useRef(true);
   const visualScoresRef = useRef(null);
+  const freeLayoutObserverRef = useRef(null);
 
   /* Hint toast state */
   const [showHint, setShowHint] = useState(false);
   const [hintContent, setHintContent] = useState('');
   const [showMicWarning, setShowMicWarning] = useState(false);
+  const [isFreeCompactLayout, setIsFreeCompactLayout] = useState(false);
   const { startAnalysis, stopAnalysis, liveScores } = useVisualAnalysis();
 
   const bumpElapsedSec = useCallback(() => {
@@ -288,6 +298,20 @@ function TrainingPage() {
     if (focus !== 'scripted' || !script?.content) return [];
     return script.content.split(/\s+/).filter(Boolean);
   }, [focus, script]);
+
+  useEffect(() => {
+    if (!isFreePretestSession || typeof window === 'undefined') return undefined;
+    const root = freeLayoutObserverRef.current;
+    if (!root) return undefined;
+
+    const observer = new window.ResizeObserver((entries) => {
+      const nextWidth = entries[0]?.contentRect?.width || 0;
+      setIsFreeCompactLayout(nextWidth > 0 && nextWidth <= 540);
+    });
+
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, [isFreePretestSession]);
 
   const scriptSentences = useMemo(() => {
     if (focus !== 'scripted' || scriptWords.length === 0) return [];
@@ -1079,17 +1103,17 @@ function TrainingPage() {
   }, [isRecording, startAnalysis]);
 
   return (
-    <div className="tp-page">
+    <div className={`tp-page${isFreePretestSession ? ' tp-page--free-pretest' : ''}`}>
       {/* ── Dark Header ── */}
-      <div className="tp-header">
-        <BackButton className="tp-back-btn" onClick={handleBackPress} aria-label="Go Back" />
-        <span className="tp-header-title">{title}</span>
-        {focus === 'scripted' ? (
+      <div className={`tp-header${isFreePretestSession ? ' tp-header--free-pretest' : ''}`}>
+        {!isFreePretestSession && <BackButton className="tp-back-btn" onClick={handleBackPress} aria-label="Go Back" />}
+        {!isFreePretestSession && <span className="tp-header-title">{title}</span>}
+        {focus === 'scripted' && !isFreePretestSession ? (
           <button className="tp-settings-btn" onClick={() => setShowSettings(true)} aria-label="Settings">
             <SettingsGearIcon />
           </button>
         ) : (
-          <div className="tp-header-spacer" />
+          !isFreePretestSession && <div className="tp-header-spacer" />
         )}
       </div>
 
@@ -1097,24 +1121,37 @@ function TrainingPage() {
       <div className={`tp-content${focus === 'scripted' ? ' tp-content--split' : ''}`}>
 
         {/* ── Left / Main Column ── */}
-        <div className="tp-left">
+        <div
+          ref={isFreePretestSession ? freeLayoutObserverRef : null}
+          className={`tp-left${isFreePretestSession ? ' tp-left--free-pretest' : ''}`}
+        >
           {focus === 'free' && (
-            <section className="tp-topic-card" aria-label="Topic">
-              <p className="tp-topic-label">TOPIC</p>
-              <h2 className="tp-topic-title">{objectiveText || freeTopic}</h2>
+            <section className={`tp-topic-card${isFreePretestSession ? ' tp-topic-card--free-pretest' : ''}`} aria-label="Topic">
+              {isFreePretestSession ? (
+                <p className="tp-topic-title tp-topic-title--inline">
+                  <strong>Topic:</strong> {objectiveText || freeTopic}.
+                </p>
+              ) : (
+                <>
+                  <p className="tp-topic-label">TOPIC</p>
+                  <h2 className="tp-topic-title">{objectiveText || freeTopic}</h2>
+                </>
+              )}
             </section>
           )}
 
           {/* Mode label + REC badge */}
-          <div className="tp-cam-header">
-            <span className="tp-mode-label">{modeLabel}</span>
-            {isActive && (
-              <span className="tp-rec-badge">
-                <span className="tp-rec-dot" />
-                REC {formatTime(elapsedSec)}
-              </span>
-            )}
-          </div>
+          {!isFreePretestSession && (
+            <div className="tp-cam-header">
+              <span className="tp-mode-label">{modeLabel}</span>
+              {isActive && (
+                <span className="tp-rec-badge">
+                  <span className="tp-rec-dot" />
+                  REC {formatTime(elapsedSec)}
+                </span>
+              )}
+            </div>
+          )}
 
           {isActive && (
             <div
@@ -1165,7 +1202,7 @@ function TrainingPage() {
           </div>
 
           {/* Waveform history — 50 bars */}
-          <div className="tp-waveform">
+          <div className={`tp-waveform${isFreePretestSession ? ' tp-waveform--free-pretest' : ''}`}>
             {waveformBars.map((lvl, i) => (
               <div
                 key={i}
@@ -1173,6 +1210,11 @@ function TrainingPage() {
                 style={{ height: `${Math.max(4, lvl * 64)}px` }}
               />
             ))}
+            {isFreePretestSession && (
+              <span className="tp-free-pretest-timer" aria-live="polite">
+                {formatMinuteSecond(elapsedSec)}
+              </span>
+            )}
           </div>
 
           {/* Status label */}
@@ -1196,22 +1238,28 @@ function TrainingPage() {
           )}
 
           {/* Controls */}
-          <div className="tp-controls">
+          <div className={`tp-controls${isFreePretestSession ? ' tp-controls--free-pretest' : ''}`}>
             {/* Pause / Resume */}
-            <div className="tp-ctrl-col">
+            <div
+              className={`tp-ctrl-col${isFreePretestSession && isFreeCompactLayout ? ' tp-ctrl-col--mobile-bottom' : ''}`}
+            >
               <button
                 className="tp-ctrl-btn"
                 onClick={handlePause}
                 disabled={!isActive}
                 aria-label={isPaused ? 'Resume' : 'Pause'}
               >
-                {isPaused ? <PlayIcon /> : <PauseIcon />}
+                {isFreePretestSession ? (isPaused ? 'Resume' : 'Pause') : (isPaused ? <PlayIcon /> : <PauseIcon />)}
               </button>
-              <span className="tp-ctrl-label">{isPaused ? 'Resume' : 'Pause'}</span>
+              <span className={`tp-ctrl-label${isFreePretestSession ? ' tp-ctrl-label--free-pretest' : ''}`}>
+                {isPaused ? 'Resume' : 'Pause'}
+              </span>
             </div>
 
             {/* Record / Stop */}
-            <div className="tp-ctrl-col">
+            <div
+              className={`tp-ctrl-col${isFreePretestSession && isFreeCompactLayout ? ' tp-ctrl-col--mobile-main' : ''}`}
+            >
               <button
                 className={`tp-record-btn${isActive ? ' tp-record-btn--active' : ''}${status === 'idle' ? ' tp-record-btn--hint tp-record-btn--start' : ''}`}
                 onClick={isActive ? stopRecording : startCountdown}
@@ -1222,7 +1270,7 @@ function TrainingPage() {
                     <div className="tp-record-dot tp-record-dot--active" />
                   </div>
                 ) : (
-                  <span className="tp-start-text">START</span>
+                  <span className="tp-start-text">{isFreePretestSession ? 'Start' : 'START'}</span>
                 )}
               </button>
               {status === 'idle' && (
@@ -1230,20 +1278,24 @@ function TrainingPage() {
                   Tap START to begin a 3-second countdown
                 </div>
               )}
-              <span className="tp-ctrl-label">{isActive ? 'Stop' : (status === 'countdown' ? 'Starting...' : 'Start')}</span>
+              <span className={`tp-ctrl-label${isFreePretestSession ? ' tp-ctrl-label--free-pretest' : ''}`}>
+                {isActive ? 'Stop' : (status === 'countdown' ? 'Starting...' : 'Start')}
+              </span>
             </div>
 
             {/* Restart */}
-            <div className="tp-ctrl-col">
+            <div
+              className={`tp-ctrl-col${isFreePretestSession && isFreeCompactLayout ? ' tp-ctrl-col--mobile-bottom' : ''}`}
+            >
               <button
                 className="tp-ctrl-btn"
                 onClick={() => setShowRestartConfirm(true)}
                 disabled={status === 'idle' || status === 'countdown'}
                 aria-label="Restart"
               >
-                <RestartIcon />
+                {isFreePretestSession ? 'Restart' : <RestartIcon />}
               </button>
-              <span className="tp-ctrl-label">Restart</span>
+              <span className={`tp-ctrl-label${isFreePretestSession ? ' tp-ctrl-label--free-pretest' : ''}`}>Restart</span>
             </div>
           </div>
         </div>

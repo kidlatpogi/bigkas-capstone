@@ -1,5 +1,5 @@
 .user-profiling-page {
-  min-height: 100vh;
+  min-height: 100dvh;
   width: 100vw;
   display: flex;
   align-items: flex-start;
@@ -14,6 +14,9 @@
   right: 50%;
   margin-left: -50vw;
   margin-right: -50vw;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  container-type: inline-size;
+  container-name: user-profiling;
 }
 
 .user-profiling-page.is-gate-screen {
@@ -29,6 +32,7 @@
   align-content: center;
   padding: clamp(1rem, 2.2vw, 2rem);
   gap: clamp(0.2rem, 1vw, 0.6rem);
+  container-type: inline-size;
 }
 
 .profiling-intro-bubble {
@@ -80,6 +84,14 @@
   z-index: 60;
 }
 
+.profiling-intro-bubble--intro-typing {
+  min-height: 12.5rem;
+}
+
+.profiling-intro-bubble--ready-typing {
+  min-height: 12.5rem;
+}
+
 .profiling-ready-text {
   font-family: 'Nunito', sans-serif;
   font-size: clamp(1rem, 0.95rem + 0.22vw, 1.06rem);
@@ -90,32 +102,37 @@
   width: min(100%, 34rem);
   z-index: 50;
   position: relative;
-  top: 8rem;
+  top: 10rem;
 }
 
 .profiling-intro--pretest {
   width: 100%;
   max-width: min(100%, 72rem);
   min-height: 100dvh;
+  height: 100dvh;
   align-content: center;
   justify-items: center;
+  gap: clamp(0.2rem, 1vw, 0.6rem);
   padding-top: clamp(1rem, 2.2vw, 2rem);
   padding-bottom: clamp(1rem, 2.2vw, 2rem);
+  overflow: hidden;
 }
 
 .profiling-intro--pretest .profiling-intro-bubble--pretest {
-  top: clamp(5.4rem, 8vw, 8rem);
+  top: 10rem;
 }
 
 .profiling-intro--pretest .profiling-intro-robot {
   width: min(100%, 31rem);
   max-width: 31rem;
+  transform: translateY(-24px);
 }
 
 .profiling-intro--pretest .profiling-ready-image {
   width: 132%;
   max-width: none;
-  margin-left: -16%;
+  margin-left: 0;
+  transform: none;
 }
 
 .profiling-pretest-text {
@@ -145,7 +162,7 @@
 }
 
 .profiling-intro-actions--end {
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 .profiling-ready-btn {
@@ -256,6 +273,8 @@
 .profiling-intro-robot-media {
   width: 100%;
   overflow: hidden;
+  display: flex;
+  justify-content: center;
 }
 
 .profiling-intro-robot-media--ready {
@@ -263,6 +282,8 @@
   overflow: hidden;
   position: relative;
   z-index: 8;
+  display: flex;
+  justify-content: center;
 }
 
 .profiling-intro-video {
@@ -271,7 +292,8 @@
   height: auto;
   display: block;
   object-fit: contain;
-  margin-left: -16%;
+  margin-left: 0;
+  transform: none;
 }
 
 .profiling-ready-image {
@@ -280,7 +302,8 @@
   height: auto;
   object-fit: contain;
   display: block;
-  margin-left: -16%;
+  margin-left: 0;
+  transform: none;
   position: relative;
   z-index: 8;
 }
@@ -411,7 +434,7 @@
 
 .profiling-shell {
   width: 100%;
-  min-height: 100vh;
+  min-height: 100dvh;
   margin: 0 auto;
   display: grid;
   gap: 0;
@@ -598,6 +621,20 @@
   background: #ffffff;
   color: #3c4952;
   font-family: inherit;
+  min-height: 44px;
+}
+
+.user-profiling-page img:not(.profiling-ready-image):not(.profiling-question-robot-image),
+.user-profiling-page video:not(.profiling-intro-video),
+.user-profiling-page svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.user-profiling-page button,
+.user-profiling-page input,
+.user-profiling-page a {
+  min-height: 44px;
 }
 
 .profiling-input:focus {
@@ -997,7 +1034,7 @@
   }
 
   .profiling-intro-bubble--ready {
-    top: 4rem;
+    top: 6rem;
     z-index: 60;
   }
 
@@ -1032,7 +1069,10 @@
 
   .profiling-intro-video {
     width: 124%;
-    margin-left: -12%;
+  }
+
+  .profiling-ready-image {
+    width: 124%;
   }
 
   .profiling-intro-robot-media--ready {
@@ -1041,7 +1081,7 @@
 
   .profiling-intro-bubble--pretest {
     width: min(100%, 22rem);
-    top: 6rem;
+    top: 4rem;
   }
 
   .profiling-intro--pretest {
@@ -1051,12 +1091,13 @@
   }
 
   .profiling-intro--pretest .profiling-intro-bubble--pretest {
-    top: clamp(3.6rem, 10vw, 4.8rem);
+    top: 4rem;
   }
 
   .profiling-intro--pretest .profiling-intro-robot {
     width: min(100%, 19.25rem);
     max-width: 19.25rem;
+    transform: none;
   }
 
   .profiling-pretest-text {
@@ -1141,5 +1182,16 @@
 
   .profiling-options.is-two-column {
     grid-template-columns: 1fr;
+  }
+}
+
+@container user-profiling (max-width: 48rem) {
+  .profiling-intro {
+    padding: clamp(0.9rem, 3.2cqi, 1.25rem);
+  }
+
+  .profiling-intro-bubble,
+  .profiling-question-bubble {
+    width: min(100%, 24rem);
   }
 }

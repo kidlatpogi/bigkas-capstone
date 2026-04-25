@@ -247,8 +247,16 @@ function TrainingPage() {
   const [hintContent, setHintContent] = useState('');
   const [showMicWarning, setShowMicWarning] = useState(false);
   const [isFreeCompactLayout, setIsFreeCompactLayout] = useState(false);
-  const [showPretestTutorial, setShowPretestTutorial] = useState(false);
+  const [pretestTutorialStep, setPretestTutorialStep] = useState(-1);
   const { startAnalysis, stopAnalysis, liveScores } = useVisualAnalysis();
+
+  const pretestTutorialSteps = useMemo(
+    () => [
+      "Before we jump in, let's do a quick walkthrough of how this works! Ready to get started?",
+      "'The Topic' This is your prompt! Focus on the subject shown here to keep your speech on track.",
+    ],
+    []
+  );
 
   const bumpElapsedSec = useCallback(() => {
     setElapsedSec((s) => {
@@ -316,7 +324,7 @@ function TrainingPage() {
   }, [isFreePretestSession]);
 
   useEffect(() => {
-    setShowPretestTutorial(Boolean(isFreePretestSession));
+    setPretestTutorialStep(isFreePretestSession ? 0 : -1);
   }, [isFreePretestSession]);
 
   const scriptSentences = useMemo(() => {
@@ -1033,7 +1041,8 @@ function TrainingPage() {
   const isRecording = status === 'recording';
   const isPaused = status === 'paused';
   const isActive = isRecording || isPaused;
-  const isStartBlockedByTutorial = isFreePretestSession && showPretestTutorial && !isActive && status !== 'countdown';
+  const hasActivePretestTutorial = isFreePretestSession && pretestTutorialStep >= 0;
+  const isStartBlockedByTutorial = hasActivePretestTutorial && !isActive && status !== 'countdown';
 
   const minDurationProgressPct = Math.min(100, (elapsedSec / MIN_RECORDING_SECONDS) * 100);
   const isMinDurationMet = elapsedSec >= MIN_RECORDING_SECONDS;
@@ -1222,19 +1231,24 @@ function TrainingPage() {
             </>
           </div>
 
-          {isFreePretestSession && showPretestTutorial && (
+          {hasActivePretestTutorial && (
             <section className="tp-pretest-tutorial" aria-label="Pre-test tutorial">
               <article className="tp-pretest-tutorial-card">
                 <p className="tp-pretest-tutorial-text">
                   <strong>B-01:</strong>
                   <br />
-                  Before we jump in, let&apos;s do a quick walkthrough of how this works! Ready to get started?
+                  {pretestTutorialSteps[pretestTutorialStep] || ''}
                 </p>
                 <div className="tp-pretest-tutorial-actions">
                   <button
                     type="button"
                     className="tp-pretest-tutorial-continue"
-                    onClick={() => setShowPretestTutorial(false)}
+                    onClick={() => {
+                      setPretestTutorialStep((prev) => {
+                        const next = prev + 1;
+                        return next >= pretestTutorialSteps.length ? -1 : next;
+                      });
+                    }}
                   >
                     Continue
                   </button>

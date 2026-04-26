@@ -23,6 +23,7 @@ import {
 } from './journeyConstants';
 import { BIGKAS_LEVELS } from '../../utils/activityProgress';
 import SkywardJourneyNodeButton from './SkywardJourneyNodeButton';
+import safetyBarrierImage from '../../assets/Sprites/common/safety-barrier.png';
 import './SkywardJourney.css';
 
 const MAP_SCALE = 1;
@@ -73,14 +74,18 @@ function clampMapState(state, viewportEl, contentEl, scale) {
     }
   }
 
-  const boundedHeight = (contentBottom - contentTop) * scale;
+  // Provide breathing room so users can pan to both extremes
+  // without clipping the first/last section against viewport edges.
+  const verticalTopBuffer = 16;
+  const verticalBottomBuffer = 16;
+  const boundedHeight = ((contentBottom + verticalBottomBuffer) - (contentTop - verticalTopBuffer)) * scale;
   let minY;
   let maxY;
   if (boundedHeight > H) {
-    minY = H - (contentBottom * scale);
-    maxY = -(contentTop * scale);
+    minY = H - ((contentBottom + verticalBottomBuffer) * scale);
+    maxY = -((contentTop - verticalTopBuffer) * scale);
   } else {
-    const boundedMid = ((contentTop + contentBottom) / 2) * scale;
+    const boundedMid = (((contentTop - verticalTopBuffer) + (contentBottom + verticalBottomBuffer)) / 2) * scale;
     const centeredY = (H / 2) - boundedMid;
     minY = centeredY;
     maxY = centeredY;
@@ -173,21 +178,21 @@ function getLevelSubtitle(level) {
  */
 
 const MapHeaderCard = styled.div`
-  width: min(100%, 560px);
+  width: min(100%, 520px);
   margin: 0 auto;
   box-sizing: border-box;
-  padding: clamp(6px, 0.7vw, 8px);
-  background: rgba(255, 255, 255, 0.92);
+  padding: clamp(5px, 0.65vw, 7px);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.96) 100%);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-radius: 12px;
+  border-radius: 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   text-align: center;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  border: 2px solid #f18f01;
+  box-shadow: 0 8px 22px rgba(11, 57, 84, 0.1);
+  border: 1.5px solid rgba(241, 143, 1, 0.9);
   position: sticky;
   top: max(14px, env(safe-area-inset-top, 0px));
   z-index: 1400;
@@ -201,29 +206,30 @@ const MapHeaderCard = styled.div`
 `;
 
 const HeaderTitle = styled.h1`
-  font-size: clamp(0.88rem, 0.82rem + 0.2vw, 1rem);
+  font-size: clamp(0.78rem, 0.74rem + 0.18vw, 0.9rem);
   font-weight: 800;
   color: #f18f01;
   margin: 0;
   text-transform: uppercase;
+  letter-spacing: 0.04em;
 `;
 
 const HeaderDescription = styled.p`
-  font-size: clamp(0.7rem, 0.66rem + 0.1vw, 0.78rem);
-  font-weight: 600;
+  font-size: clamp(0.64rem, 0.61rem + 0.1vw, 0.72rem);
+  font-weight: 700;
   color: rgba(11, 57, 84, 0.6);
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.3;
 `;
 
 const HeaderProgressWrap = styled.div`
-  width: min(100%, 280px);
+  width: min(100%, 240px);
   margin-top: 0;
 `;
 
 const HeaderProgressTrack = styled.div`
   width: 100%;
-  height: 8px;
+  height: 7px;
   border-radius: 999px;
   background: rgba(11, 57, 84, 0.12);
   overflow: hidden;
@@ -237,11 +243,11 @@ const HeaderProgressFill = styled.div`
 `;
 
 const HeaderProgressText = styled.p`
-  margin: 4px 0 0;
+  margin: 3px 0 0;
   color: #0b3954;
-  font-size: clamp(0.6rem, 0.58rem + 0.06vw, 0.66rem);
+  font-size: clamp(0.56rem, 0.54rem + 0.05vw, 0.62rem);
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   text-align: center;
 `;
 
@@ -1202,7 +1208,7 @@ export default function SkywardJourney({
           </div>
           {!isMobile || !isHeaderCollapsed ? (
             <>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', justifyContent: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', width: '100%', justifyContent: 'center' }}>
                 <button
                   onClick={(event) => {
                     event.stopPropagation();
@@ -1210,9 +1216,9 @@ export default function SkywardJourney({
                   }}
                   disabled={currentLevel <= 1}
                   style={{
-                    height: '44px',
-                    minHeight: '44px',
-                    padding: isMobile ? '0 14px' : '0 18px',
+                    height: '40px',
+                    minHeight: '40px',
+                    padding: isMobile ? '0 12px' : '0 14px',
                     borderRadius: '999px',
                     border: 'none',
                     background: currentLevel <= 1 ? '#e5e5e5' : '#059669',
@@ -1220,7 +1226,7 @@ export default function SkywardJourney({
                     cursor: currentLevel <= 1 ? 'not-allowed' : 'pointer',
                     fontFamily: 'Fredoka, sans-serif',
                     fontWeight: 500,
-                    fontSize: isMobile ? '0.82rem' : '0.9rem',
+                    fontSize: isMobile ? '0.74rem' : '0.8rem',
                     boxShadow: currentLevel <= 1 ? 'none' : '#047857 0 5px 0 0',
                     flexShrink: 0,
                     transition: 'transform 0.2s ease, box-shadow 0.2s ease',
@@ -1228,7 +1234,7 @@ export default function SkywardJourney({
                 >
                   Prev
                 </button>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, background: 'rgba(11, 57, 84, 0.06)', borderRadius: '10px', padding: '6px 10px' }}>
                   <HeaderDescription>{getLevelSubtitle(currentLevel)}</HeaderDescription>
                 </div>
                 <button
@@ -1238,9 +1244,9 @@ export default function SkywardJourney({
                   }}
                   disabled={currentLevel >= 5}
                   style={{
-                    height: '44px',
-                    minHeight: '44px',
-                    padding: isMobile ? '0 14px' : '0 18px',
+                    height: '40px',
+                    minHeight: '40px',
+                    padding: isMobile ? '0 12px' : '0 14px',
                     borderRadius: '999px',
                     border: 'none',
                     background: currentLevel >= 5 ? '#e5e5e5' : '#059669',
@@ -1248,7 +1254,7 @@ export default function SkywardJourney({
                     cursor: currentLevel >= 5 ? 'not-allowed' : 'pointer',
                     fontFamily: 'Fredoka, sans-serif',
                     fontWeight: 500,
-                    fontSize: isMobile ? '0.82rem' : '0.9rem',
+                    fontSize: isMobile ? '0.74rem' : '0.8rem',
                     boxShadow: currentLevel >= 5 ? 'none' : '#047857 0 5px 0 0',
                     flexShrink: 0,
                     transition: 'transform 0.2s ease, box-shadow 0.2s ease',
@@ -1348,9 +1354,13 @@ export default function SkywardJourney({
                   ) : null}
                   {steps.length === 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '100%', textAlign: 'center', zIndex: 10, position: 'absolute', inset: 0 }}>
-                      <div style={{ fontSize: '4rem', marginBottom: '1rem', filter: 'grayscale(100%)', opacity: 0.5 }}>🚧</div>
+                      <img
+                        src={safetyBarrierImage}
+                        alt=""
+                        style={{ width: 'clamp(110px, 18vw, 170px)', height: 'auto', marginBottom: '0.9rem', filter: 'drop-shadow(0 6px 12px rgba(11,57,84,0.2))' }}
+                      />
                       <h2 style={{ color: '#0b3954', fontSize: '1.8rem', fontWeight: 800, marginBottom: '0.5rem' }}>Level {currentLevel} is locked</h2>
-                      <p style={{ color: '#64748b', fontSize: '1.1rem', fontWeight: 600, maxWidth: '400px' }}>Our engineers are currently building this area. Please complete previous levels first!</p>
+                      <p style={{ color: '#64748b', fontSize: '1.1rem', fontWeight: 600, maxWidth: '400px' }}>Please complete previous levels first!</p>
                     </div>
                   ) : (
                     sections

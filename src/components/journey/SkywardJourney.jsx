@@ -81,8 +81,10 @@ function clampMapState(state, viewportEl, contentEl, scale) {
 
   // Provide breathing room so users can pan to both extremes
   // without clipping the first/last section against viewport edges.
-  const verticalTopBuffer = 16;
-  const verticalBottomBuffer = 16;
+  // Larger travel buffers prevent the first/last nodes from being clipped
+  // at viewport edges after panning.
+  const verticalTopBuffer = 28;
+  const verticalBottomBuffer = 92;
   const boundedHeight = ((contentBottom + verticalBottomBuffer) - (contentTop - verticalTopBuffer)) * scale;
   let minY;
   let maxY;

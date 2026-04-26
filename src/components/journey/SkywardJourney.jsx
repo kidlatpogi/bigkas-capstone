@@ -237,6 +237,23 @@ const HeaderTitle = styled.h1`
   letter-spacing: 0.04em;
 `;
 
+const HeaderRankBadge = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  background: rgba(11, 57, 84, 0.08);
+  border: 1px solid rgba(11, 57, 84, 0.14);
+  padding: 4px 8px 4px 5px;
+`;
+
+const HeaderRankSprite = styled.img`
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(11, 57, 84, 0.2));
+`;
+
 const HeaderDescription = styled.p`
   font-size: clamp(0.64rem, 0.61rem + 0.1vw, 0.72rem);
   font-weight: 700;
@@ -1223,6 +1240,11 @@ export default function SkywardJourney({
         >
           <div className="skyward-journey-header-title-row">
             <HeaderTitle>{steps.length > 0 ? currentPillarText : `Level ${currentLevel}`}</HeaderTitle>
+            {steps.length === 0 ? (
+              <HeaderRankBadge aria-label={`Rank ${rank.name}`}>
+                <HeaderRankSprite src={rank.image} alt="" />
+              </HeaderRankBadge>
+            ) : null}
             {isMobile ? (
               <IoChevronDown
                 aria-hidden="true"
@@ -1383,9 +1405,8 @@ export default function SkywardJourney({
                         alt=""
                         style={{ width: 'clamp(110px, 18vw, 170px)', height: 'auto', marginBottom: '0.9rem', filter: 'drop-shadow(0 6px 12px rgba(11,57,84,0.2))' }}
                       />
-                      <h2 style={{ color: '#0b3954', fontSize: '1.35rem', fontWeight: 800, marginBottom: '0.2rem' }}>Level {currentLevel}</h2>
-                      <p style={{ color: '#64748b', fontSize: '1.02rem', fontWeight: 700, maxWidth: '400px', margin: 0 }}>Rank {rank.name}</p>
-                      <p style={{ color: '#94a3b8', fontSize: '1.02rem', fontWeight: 700, maxWidth: '400px', margin: '0.2rem 0 0' }}>...</p>
+                      <h2 style={{ color: '#0b3954', fontSize: '1.8rem', fontWeight: 800, marginBottom: '0.5rem' }}>Level {currentLevel} is locked</h2>
+                      <p style={{ color: '#64748b', fontSize: '1.1rem', fontWeight: 600, maxWidth: '400px' }}>Please complete previous levels first!</p>
                     </div>
                   ) : (
                     sections

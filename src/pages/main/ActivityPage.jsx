@@ -63,6 +63,7 @@ const FREE_SPEECH_TUTORIAL_STEPS = [
     id: 'step-companion',
     title: 'B-01:',
     robot: tutorialRobotStep2,
+    robotClassName: 'is-activity-home-step-2',
     button: 'Next',
     targetElementId: 'tutorial-target-home-banner',
     text: "Your AI Companion, hey that's me! See my panel right at the top? I will be checking in with you from time to time. Depending on your progress, I'll drop by with daily greetings, personalized tips, and a little extra encouragement to keep your momentum going.",

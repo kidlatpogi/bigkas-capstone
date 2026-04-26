@@ -124,32 +124,52 @@ export function useVisualAnalysis() {
   }, []);
 
   const init = useCallback(async () => {
-    if (faceLandmarkerRef.current && gestureRecognizerRef.current) {
+    if (faceLandmarkerRef.current || gestureRecognizerRef.current) {
       setIsReady(true);
       return;
     }
 
     const vision = await FilesetResolver.forVisionTasks(VISION_WASM_PATH);
+    const initErrors: string[] = [];
 
-    faceLandmarkerRef.current = await FaceLandmarker.createFromOptions(vision, {
-      baseOptions: {
-        modelAssetPath: FACE_MODEL_PATH,
-      },
-      runningMode: "VIDEO",
-      numFaces: 1,
-      outputFaceBlendshapes: false,
-      outputFacialTransformationMatrixes: false,
-    });
+    try {
+      faceLandmarkerRef.current = await FaceLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: FACE_MODEL_PATH,
+        },
+        runningMode: "VIDEO",
+        numFaces: 1,
+        outputFaceBlendshapes: false,
+        outputFacialTransformationMatrixes: false,
+      });
+    } catch (err) {
+      initErrors.push(`Face tracker failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+      faceLandmarkerRef.current = null;
+    }
 
-    gestureRecognizerRef.current = await GestureRecognizer.createFromOptions(vision, {
-      baseOptions: {
-        modelAssetPath: GESTURE_MODEL_PATH,
-      },
-      runningMode: "VIDEO",
-      numHands: 2,
-    });
+    try {
+      gestureRecognizerRef.current = await GestureRecognizer.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: GESTURE_MODEL_PATH,
+        },
+        runningMode: "VIDEO",
+        numHands: 2,
+      });
+    } catch (err) {
+      initErrors.push(`Gesture tracker failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+      gestureRecognizerRef.current = null;
+    }
 
-    setIsReady(true);
+    const hasAtLeastOneTracker = Boolean(faceLandmarkerRef.current || gestureRecognizerRef.current);
+    setIsReady(hasAtLeastOneTracker);
+
+    if (!hasAtLeastOneTracker) {
+      throw new Error(initErrors.join(" | ") || "MediaPipe visual analysis failed to initialize.");
+    }
+
+    if (initErrors.length > 0) {
+      setError(initErrors.join(" | "));
+    }
   }, []);
 
   const stopLoop = useCallback(() => {
@@ -166,7 +186,7 @@ export function useVisualAnalysis() {
     const faceLandmarker = faceLandmarkerRef.current;
     const gestureRecognizer = gestureRecognizerRef.current;
 
-    if (!videoElement || !faceLandmarker || !gestureRecognizer) {
+    if (!videoElement || (!faceLandmarker && !gestureRecognizer)) {
       stopLoop();
       return;
     }
@@ -177,8 +197,12 @@ export function useVisualAnalysis() {
     }
 
     const nowMs = performance.now();
-    const faceResult = faceLandmarker.detectForVideo(videoElement, nowMs);
-    const gestureResult = gestureRecognizer.recognizeForVideo(videoElement, nowMs);
+    const faceResult = faceLandmarker
+      ? faceLandmarker.detectForVideo(videoElement, nowMs)
+      : null;
+    const gestureResult = gestureRecognizer
+      ? gestureRecognizer.recognizeForVideo(videoElement, nowMs)
+      : null;
 
     let eyeContactFrameScore = 0;
     let gestureFrameScore = 0;

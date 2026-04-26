@@ -188,6 +188,32 @@
   filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.18));
 }
 
+.tutorial-overlay-wrapper.is-activity-home-step-2 .tutorial-companion-container {
+  left: clamp(14px, 3vw, 34px);
+  bottom: calc(clamp(10px, 3vh, 30px) + env(safe-area-inset-bottom, 0px));
+  width: min(100%, 52rem);
+  align-items: flex-end;
+}
+
+.tutorial-overlay-wrapper.is-activity-home-step-2 .tutorial-robot-img {
+  width: clamp(190px, 20vw, 280px);
+  filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.2));
+}
+
+.tutorial-overlay-wrapper.is-activity-home-step-1 ~ .activity-page-grid .skyward-journey-header-card {
+  z-index: 1 !important;
+}
+
+.tutorial-overlay-wrapper.is-activity-home-step-1 ~ .activity-page-grid .tutorial-spotlight-active {
+  z-index: 1 !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+
+.tutorial-overlay-wrapper.is-activity-home-step-2 ~ .activity-page-grid .tutorial-spotlight-active {
+  z-index: 950 !important;
+}
+
 @keyframes tutorial-spotlight-pulse {
   0%,
   100% {

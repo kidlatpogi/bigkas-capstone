@@ -8,21 +8,23 @@
   --skyward-path-rim: #e4e4e7;
   position: relative;
   width: 100%;
-  padding: 8px 0 32px;
+  padding: 0;
   min-height: 200px;
 }
 
 .skyward-journey-wrap {
   width: 100%;
-  height: 100%;
+  height: var(--journey-map-shell-height, 100%);
   display: flex;
   justify-content: center;
 }
 
 .skyward-journey-wrap .skyward-journey {
   width: 100%;
-  max-width: 980px;
+  max-width: 100%;
   margin-inline: auto;
+  padding-inline: 0;
+  box-sizing: border-box;
 }
 
 .skyward-journey-header-card {
@@ -147,7 +149,8 @@
 }
 
 .skyward-journey-container {
-  height: 100%;
+  height: var(--journey-map-shell-height, 100%);
+  max-height: 100%;
   min-height: 0;
   overflow: hidden;
   margin-inline: auto;
@@ -157,7 +160,8 @@
   position: relative;
   width: 100%;
   max-width: 100%;
-  height: 100%;
+  height: var(--journey-map-shell-height, 100%);
+  max-height: 100%;
   overflow: hidden;
 }
 
@@ -166,11 +170,11 @@
   position: relative;
   width: 100%;
   max-width: 100%;
-  height: 100%;
+  height: var(--journey-map-shell-height, 100%);
+  max-height: 100%;
   min-height: 0;
-  max-height: none;
   -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
+  touch-action: none;
   cursor: grab;
 }
 
@@ -199,7 +203,7 @@
 .skyward-journey-map-content {
   position: relative;
   width: 100%;
-  min-height: max(220px, 100%);
+  min-height: max(220px, var(--journey-map-shell-height, 100%));
 }
 
 .skyward-journey-svg {
@@ -256,8 +260,12 @@
   flex-direction: column;
   gap: 20px;
   width: 100%;
-  max-width: 900px;
+  max-width: 100%;
   margin-inline: auto;
+}
+
+.skyward-journey-section:last-child {
+  padding-top: 1rem;
 }
 
 .skyward-journey-section-rows {
@@ -265,7 +273,10 @@
   flex-direction: column-reverse;
   gap: 32px;
   width: 100%;
-  max-width: 880px;
+  max-width: 100%;
+  min-height: 0;
+  height: auto;
+  max-height: none;
   margin-inline: auto;
 }
 
@@ -314,6 +325,10 @@
   display: flex;
   justify-content: center;
   width: 100%;
+}
+
+.skyward-journey-section:first-child .skyward-journey-track {
+  padding-bottom: 1rem;
 }
 
 .skyward-journey-node-shell {
@@ -414,6 +429,13 @@
   width: 32px;
   height: 32px;
   color: #b8941f;
+}
+
+.skyward-journey-node-icon--trophy-chest {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 6px rgba(11, 57, 84, 0.22));
 }
 
 .skyward-journey-node--active {
@@ -1119,8 +1141,9 @@
   }
 
   .skyward-journey-map-viewport {
-    min-height: calc(100dvh - 160px);
-    height: calc(100dvh - 160px);
+    min-height: 0;
+    height: var(--journey-map-shell-height, 100%);
+    max-height: var(--journey-map-shell-height, 100%);
     overflow: hidden;
     overscroll-behavior: none;
     touch-action: none;

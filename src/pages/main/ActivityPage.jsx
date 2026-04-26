@@ -22,6 +22,9 @@ import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks
 import { useJourneyRemoteState } from '../../hooks/useJourneyRemoteState';
 import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../services/journeyProgressService';
 import iconFire from '../../assets/icons/Icon-Fire.svg';
+import robotMorningImage from '../../assets/Sprites/Robot/0018.webp';
+import robotNoonImage from '../../assets/Sprites/Robot/0001.webp';
+import robotNightImage from '../../assets/Sprites/Robot/0013.webp';
 import './InnerPages.css';
 import './ActivityPage.css';
 import './DashboardPage.css';
@@ -94,6 +97,19 @@ function getWeekdayPills(activeDayKeys = new Set()) {
     d.setDate(start.getDate() + i);
     return { label: ['M', 'T', 'W', 'Th', 'F', 'S', 'S'][i], active: activeDayKeys.has(getLocalDateKey(d)) };
   });
+}
+
+function getTimeOfDay(date = new Date()) {
+  const hour = date.getHours();
+  if (hour < 12) return 'morning';
+  if (hour < 18) return 'noon';
+  return 'night';
+}
+
+function getGreetingLabel(timeOfDay) {
+  if (timeOfDay === 'morning') return 'Good morning';
+  if (timeOfDay === 'noon') return 'Good afternoon';
+  return 'Good evening';
 }
 
 function ActivityPage() {
@@ -209,6 +225,17 @@ function ActivityPage() {
 
   const streakStats = useMemo(() => buildStreakStats(sessions, activityHistory), [sessions, activityHistory]);
   const weekPills = useMemo(() => getWeekdayPills(activeDayKeys), [activeDayKeys]);
+  const timeOfDay = useMemo(() => getTimeOfDay(), []);
+  const greetingLabel = useMemo(() => getGreetingLabel(timeOfDay), [timeOfDay]);
+  const displayName = useMemo(
+    () => user?.name || user?.nickname || user?.firstName || 'Speaker',
+    [user?.firstName, user?.name, user?.nickname],
+  );
+  const heroRobotImage = useMemo(() => {
+    if (timeOfDay === 'morning') return robotMorningImage;
+    if (timeOfDay === 'noon') return robotNoonImage;
+    return robotNightImage;
+  }, [timeOfDay]);
 
   useEffect(() => {
     if (!user?.id || activitiesLoading) return undefined;
@@ -560,6 +587,19 @@ function ActivityPage() {
       <div className="activity-two-col">
         <div className="activity-col-main">
           <div className="activity-content-wrap activity-content-wrap--journey-scroll">
+            <section className="activity-home-hero dashboard-anim-top dashboard-anim-delay-2">
+              <h1 className="activity-home-greeting">{greetingLabel}, {displayName}!</h1>
+              <div className="activity-home-hero-card">
+                <img src={heroRobotImage} alt="" className="activity-home-hero-robot" />
+                <article className="activity-home-hero-bubble" aria-label="Coach message">
+                  <p className="activity-home-hero-kicker">B-01:</p>
+                  <p className="activity-home-hero-copy">
+                    You&apos;re on a roll. Keep doing your activities and improve your speaking.
+                  </p>
+                  <button type="button" className="activity-home-hero-link">Ask Lito</button>
+                </article>
+              </div>
+            </section>
             <div className="activity-task-list activity-task-list--journey">
               <SkywardJourney
                 steps={journeySteps}
@@ -582,63 +622,52 @@ function ActivityPage() {
 
         {showDesktopSidebar ? (
         <aside className="activity-col-sidebar no-scrollbar">
-          <section className="dashboard-card dashboard-consistency-card dashboard-anim-right dashboard-anim-delay-3">
-            <p className="dashboard-consistency-kicker">Daily Consistency</p>
-            <div className="dashboard-consistency-value">
-              {streakStats.currentStreak} <img src={iconFire} alt="Streak" className="dashboard-consistency-fire" />
+          <section className="dashboard-card activity-day-card dashboard-anim-right dashboard-anim-delay-3">
+            <div className="activity-day-value">
+              {streakStats.currentStreak}
             </div>
-            <p className="dashboard-consistency-copy">Day Streak Active</p>
-            <div className="dashboard-week-pills" style={{ display: 'flex', gap: '8px' }}>
-              {weekPills.map((pill, idx) => (
-                <div key={idx} className={`dashboard-week-pill ${pill.active ? 'is-active' : ''}`}>
-                  {pill.label}
-                </div>
-              ))}
-            </div>
+            <p className="activity-day-label">days</p>
+            <p className="activity-day-copy">
+              Build a daily speaking habit to keep stacking your streak.
+            </p>
           </section>
 
-          <section className="dashboard-card dashboard-level-card dashboard-anim-left dashboard-anim-delay-2">
-            <div className="dashboard-level-decoration" />
-            <div className="dashboard-section-kicker">Rank Progression</div>
-            <h2 className="dashboard-section-title--xl">{levelProgress.levelName}</h2>
-            <p className="dashboard-activity-summary">
+          <section className="dashboard-card activity-journey-card dashboard-anim-left dashboard-anim-delay-2">
+            <div className="activity-journey-title">Journey Progression</div>
+            <p className="activity-journey-rank-label">RANK:</p>
+            <h2 className="activity-journey-rank">{levelProgress.levelName}</h2>
+            <p className="activity-journey-summary">
               {activitiesLoading
                 ? 'Loading journey…'
                 : `Activity Journey: ${completedTaskCount}/${Math.max(tasks.length, 1)} Task Complete`}
             </p>
-            <div className="dashboard-level-track">
-              <div className="dashboard-level-fill" style={{ width: `${sidebarProgressPct}%` }} />
+            <div className="activity-journey-track">
+              <div className="activity-journey-fill" style={{ width: `${sidebarProgressPct}%` }} />
             </div>
-            <p className="dashboard-activity-xp">{earnedTaskXp}/{totalTaskXp} TASK</p>
+            <p className="activity-journey-task-total">{completedTaskCount}/{Math.max(tasks.length, 1)} Task Complete</p>
           </section>
 
-          <section className="dashboard-card dashboard-mode-card dashboard-mode-card--training activity-practice-hub dashboard-anim-bottom dashboard-anim-delay-4">
-            <h3 className="dashboard-mode-title">Practice Hub</h3>
-            <div className="activity-practice-options">
-              <article className="activity-practice-option-card">
-                <p className="activity-practice-option-kicker">Randomizer</p>
-                <p className="activity-practice-option-copy">Get a random topic and practice speaking about it.</p>
-                <Button
-                  variant="practice"
-                  className="dashboard-mode-button"
-                  onClick={() => navigate(ROUTES.PRACTICE)}
-                  icon={IoArrowForward}
-                >
-                  Open Randomizer
-                </Button>
-              </article>
-              <article className="activity-practice-option-card">
-                <p className="activity-practice-option-kicker">Free Speech</p>
-                <p className="activity-practice-option-copy">Impromptu speaking mode focused on flow, tone, and pacing with AI evaluation.</p>
-                <Button
-                  variant="training"
-                  className="dashboard-mode-button"
-                  onClick={() => navigate(ROUTES.TRAINING_SETUP)}
-                  icon={IoArrowForward}
-                >
-                  Open Free Speech
-                </Button>
-              </article>
+          <section className="dashboard-card activity-practice-card dashboard-anim-bottom dashboard-anim-delay-4">
+            <h3 className="activity-practice-title">Practice</h3>
+            <div className="activity-practice-row">
+              <p className="activity-practice-row-label">Randomizer</p>
+              <Button
+                variant="practice"
+                className="activity-practice-cta activity-practice-cta--randomizer"
+                onClick={() => navigate(ROUTES.PRACTICE)}
+              >
+                Randomizer
+              </Button>
+            </div>
+            <div className="activity-practice-row">
+              <p className="activity-practice-row-label">Free Speech</p>
+              <Button
+                variant="training"
+                className="activity-practice-cta activity-practice-cta--speech"
+                onClick={() => navigate(ROUTES.TRAINING_SETUP)}
+              >
+                Free Speech
+              </Button>
             </div>
           </section>
         </aside>

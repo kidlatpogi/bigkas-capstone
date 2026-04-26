@@ -149,18 +149,18 @@ function getLevelSubtitle(level) {
  */
 
 const MapHeaderCard = styled.div`
-  width: min(100%, 882px);
+  width: min(100%, 760px);
   margin: 0 auto;
   box-sizing: border-box;
-  padding: clamp(14px, 2.2vw, 24px);
+  padding: clamp(10px, 1.6vw, 16px);
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-radius: 24px;
+  border-radius: 18px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   text-align: center;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   border: 2px solid #f18f01;
@@ -177,7 +177,7 @@ const MapHeaderCard = styled.div`
 `;
 
 const HeaderTitle = styled.h1`
-  font-size: 1.4rem;
+  font-size: clamp(1.02rem, 0.95rem + 0.3vw, 1.18rem);
   font-weight: 800;
   color: #f18f01;
   margin: 0;
@@ -185,7 +185,7 @@ const HeaderTitle = styled.h1`
 `;
 
 const HeaderDescription = styled.p`
-  font-size: 14px;
+  font-size: clamp(0.78rem, 0.74rem + 0.12vw, 0.88rem);
   font-weight: 600;
   color: rgba(11, 57, 84, 0.6);
   margin: 0;
@@ -195,12 +195,12 @@ const HeaderDescription = styled.p`
 const HeaderStatBadge = styled.div`
   background: rgba(11, 57, 84, 0.06);
   color: #0b3954;
-  padding: 6px 16px;
+  padding: 5px 12px;
   border-radius: 999px;
-  font-size: 13px;
+  font-size: clamp(0.72rem, 0.69rem + 0.08vw, 0.78rem);
   font-weight: 700;
   letter-spacing: 0.05em;
-  margin-top: 4px;
+  margin-top: 2px;
 `;
 
 const HeaderSkipNotice = styled.div`
@@ -1167,7 +1167,7 @@ export default function SkywardJourney({
                     onLevelChange && onLevelChange(Math.max(1, currentLevel - 1));
                   }}
                   disabled={currentLevel <= 1}
-                  style={{ padding: isMobile ? '8px 12px' : '8px 16px', borderRadius: '12px', border: 'none', background: currentLevel <= 1 ? '#e5e5e5' : '#f18f01', color: currentLevel <= 1 ? '#a1a1aa' : '#fff', cursor: currentLevel <= 1 ? 'not-allowed' : 'pointer', fontWeight: 'bold', flexShrink: 0 }}
+                  style={{ padding: isMobile ? '7px 10px' : '7px 12px', borderRadius: '10px', border: 'none', background: currentLevel <= 1 ? '#e5e5e5' : '#f18f01', color: currentLevel <= 1 ? '#a1a1aa' : '#fff', cursor: currentLevel <= 1 ? 'not-allowed' : 'pointer', fontWeight: 'bold', fontSize: isMobile ? '0.78rem' : '0.82rem', flexShrink: 0 }}
                 >
                   &#8592; {isMobile ? '' : 'Prev'}
                 </button>
@@ -1180,7 +1180,7 @@ export default function SkywardJourney({
                     onLevelChange && onLevelChange(Math.min(5, currentLevel + 1));
                   }}
                   disabled={currentLevel >= 5}
-                  style={{ padding: isMobile ? '8px 12px' : '8px 16px', borderRadius: '12px', border: 'none', background: currentLevel >= 5 ? '#e5e5e5' : '#f18f01', color: currentLevel >= 5 ? '#a1a1aa' : '#fff', cursor: currentLevel >= 5 ? 'not-allowed' : 'pointer', fontWeight: 'bold', flexShrink: 0 }}
+                  style={{ padding: isMobile ? '7px 10px' : '7px 12px', borderRadius: '10px', border: 'none', background: currentLevel >= 5 ? '#e5e5e5' : '#f18f01', color: currentLevel >= 5 ? '#a1a1aa' : '#fff', cursor: currentLevel >= 5 ? 'not-allowed' : 'pointer', fontWeight: 'bold', fontSize: isMobile ? '0.78rem' : '0.82rem', flexShrink: 0 }}
                 >
                   {isMobile ? '' : 'Next'} &#8594;
                 </button>

@@ -185,13 +185,16 @@ function TutorialOverlay({
 
     const step = tutorialSteps[currentStep];
     const targetId = step?.targetElementId;
+    const isCustomTutorial = Array.isArray(steps) && steps.length > 0;
+    const spotlightZIndex =
+      isCustomTutorial && targetId === 'tutorial-target-home-journey' ? '1280' : '950';
     let retryTimer = null;
     if (targetId) {
       const applySpotlight = (attempt = 0) => {
         const nextEl = document.getElementById(targetId);
         if (nextEl) {
           nextEl.classList.add('tutorial-spotlight-active');
-          nextEl.style.setProperty('z-index', '950', 'important');
+          nextEl.style.setProperty('z-index', spotlightZIndex, 'important');
           activeSpotlightRef.current = nextEl;
           return;
         }
@@ -212,7 +215,7 @@ function TutorialOverlay({
         activeSpotlightRef.current = null;
       }
     };
-  }, [currentStep, isOpen, tutorialSteps]);
+  }, [currentStep, isOpen, steps, tutorialSteps]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -371,40 +374,42 @@ function TutorialOverlay({
   };
 
   return (
-    <section
-      className={`tutorial-overlay-wrapper${Array.isArray(steps) && steps.length > 0 ? ' is-custom-tutorial' : ' is-default-tutorial'}${activeStep.id === 'step-controls' ? ' is-controls-step' : ''}${activeStep.id === 'step-soundbar' ? ' is-soundbar-step' : ''}${activeStep.id === 'step-final' ? ' is-final-step' : ''}${activeStep.robotClassName ? ` ${activeStep.robotClassName}` : ''}`}
-      aria-label="Training tutorial overlay"
-    >
+    <>
       <div className="tutorial-dark-bg" aria-hidden="true" />
-      <div className="tutorial-companion-container" ref={companionContainerRef} style={anchoredCompanionStyle ?? undefined}>
-        <img
-          src={activeStep.robot || (activeStep.id === 'step-final' ? finalRobotImage : robotImage)}
-          alt=""
-          className="tutorial-robot-img"
-          aria-hidden="true"
-        />
-        <article className="tutorial-speech-bubble">
-          <div className="tutorial-bubble-title">{activeStep.title}</div>
-          <p className="tutorial-bubble-text">{renderBubbleText()}</p>
-          <button type="button" className="tutorial-bubble-btn" onClick={handleNext} disabled={!isTypingDone}>
-            {activeStep.button}
-          </button>
-        </article>
-      </div>
-      {showAudioToggle ? (
-        <div className="tutorial-audio-action">
-          <button
-            type="button"
-            onClick={handleToggleMute}
-            aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-            title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-            className={`tutorial-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
-          >
-            {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-          </button>
+      <section
+        className={`tutorial-overlay-wrapper${Array.isArray(steps) && steps.length > 0 ? ' is-custom-tutorial' : ' is-default-tutorial'}${activeStep.id === 'step-controls' ? ' is-controls-step' : ''}${activeStep.id === 'step-soundbar' ? ' is-soundbar-step' : ''}${activeStep.id === 'step-final' ? ' is-final-step' : ''}${activeStep.robotClassName ? ` ${activeStep.robotClassName}` : ''}`}
+        aria-label="Training tutorial overlay"
+      >
+        <div className="tutorial-companion-container" ref={companionContainerRef} style={anchoredCompanionStyle ?? undefined}>
+          <img
+            src={activeStep.robot || (activeStep.id === 'step-final' ? finalRobotImage : robotImage)}
+            alt=""
+            className="tutorial-robot-img"
+            aria-hidden="true"
+          />
+          <article className="tutorial-speech-bubble">
+            <div className="tutorial-bubble-title">{activeStep.title}</div>
+            <p className="tutorial-bubble-text">{renderBubbleText()}</p>
+            <button type="button" className="tutorial-bubble-btn" onClick={handleNext} disabled={!isTypingDone}>
+              {activeStep.button}
+            </button>
+          </article>
         </div>
-      ) : null}
-    </section>
+        {showAudioToggle ? (
+          <div className="tutorial-audio-action">
+            <button
+              type="button"
+              onClick={handleToggleMute}
+              aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+              title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+              className={`tutorial-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
+            >
+              {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+            </button>
+          </div>
+        ) : null}
+      </section>
+    </>
   );
 }
 

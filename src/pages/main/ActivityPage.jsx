@@ -559,8 +559,7 @@ function ActivityPage() {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(FREE_SPEECH_TUTORIAL_SEEN_KEY, '1');
     }
-    launchFreeSpeechSession();
-  }, [launchFreeSpeechSession]);
+  }, []);
 
   const journeySteps = useMemo(
     () =>

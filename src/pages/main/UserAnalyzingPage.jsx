@@ -14,6 +14,7 @@ import robotImage0004 from '../../assets/Sprites/Robot/0004.webp';
 import robotImage0005 from '../../assets/Sprites/Robot/0005.webp';
 import robotImage0012 from '../../assets/Sprites/Robot/0012.webp';
 import robotImage0015 from '../../assets/Sprites/Robot/0015.webp';
+import analyzingProgressVoice from '../../assets/Voices/Profiling and Pre-Testing/Analyzing/Analyzing your level....mp3';
 import analyzingLevel1Voice from '../../assets/Voices/Profiling and Pre-Testing/Analyzing/Analyzing Level 1.mp3';
 import analyzingLevel2Voice from '../../assets/Voices/Profiling and Pre-Testing/Analyzing/Analyzing Level 2.mp3';
 import analyzingLevel3Voice from '../../assets/Voices/Profiling and Pre-Testing/Analyzing/Analyzing Level 3.mp3';
@@ -116,6 +117,7 @@ function UserAnalyzingPage() {
   const userSpeakerPoints = Math.max(0, Math.floor(Number(user?.speakerPoints ?? 0) || 0));
   const userPretestFreeScore = clampScore(user?.pretestFreeScore ?? 0);
   const userPretestFreeSessionId = user?.pretestFreeSessionId || null;
+  const analyzingAudioRef = useRef(null);
   const revealAudioRef = useRef(null);
 
   const levelContent = useMemo(
@@ -295,6 +297,11 @@ function UserAnalyzingPage() {
       setIsPersisted(true);
     }
 
+    if (analyzingAudioRef.current) {
+      analyzingAudioRef.current.pause();
+      analyzingAudioRef.current.currentTime = 0;
+    }
+
     setShowLevelReveal(true);
   }, [
     analysis.finalScore,
@@ -314,6 +321,19 @@ function UserAnalyzingPage() {
   ]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const audio = new Audio(analyzingProgressVoice);
+    audio.preload = 'auto';
+    analyzingAudioRef.current = audio;
+
+    return () => {
+      audio.pause();
+      audio.currentTime = 0;
+      analyzingAudioRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
     if (showLevelReveal) return undefined;
     const timer = window.setInterval(() => {
       setLoaderPct((prev) => {
@@ -330,6 +350,28 @@ function UserAnalyzingPage() {
     if (typeof window === 'undefined') return;
     window.localStorage.setItem(ANALYZING_MUTE_KEY, isMuted ? '1' : '0');
   }, [isMuted]);
+
+  useEffect(() => {
+    [analyzingAudioRef.current, revealAudioRef.current].forEach((audio) => {
+      if (!audio) return;
+      audio.muted = isMuted;
+      if (isMuted) {
+        audio.pause();
+      }
+    });
+  }, [isMuted]);
+
+  useEffect(() => {
+    if (showLevelReveal || isMuted) return;
+    if (revealAudioRef.current) {
+      revealAudioRef.current.pause();
+      revealAudioRef.current.currentTime = 0;
+    }
+    const audio = analyzingAudioRef.current;
+    if (!audio) return;
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  }, [isMuted, showLevelReveal]);
 
   useEffect(() => {
     if (!showLevelReveal) {
@@ -376,14 +418,18 @@ function UserAnalyzingPage() {
   const handleToggleMute = () => {
     setIsMuted((prev) => {
       const next = !prev;
-      if (revealAudioRef.current) {
-        revealAudioRef.current.muted = next;
-        if (next) {
-          revealAudioRef.current.pause();
-        } else {
-          revealAudioRef.current.currentTime = 0;
-          revealAudioRef.current.play().catch(() => {});
-        }
+      if (next) {
+        [analyzingAudioRef.current, revealAudioRef.current].forEach((audio) => {
+          if (!audio) return;
+          audio.pause();
+          audio.currentTime = 0;
+        });
+      } else if (showLevelReveal && revealAudioRef.current) {
+        revealAudioRef.current.currentTime = 0;
+        revealAudioRef.current.play().catch(() => {});
+      } else if (!showLevelReveal && analyzingAudioRef.current) {
+        analyzingAudioRef.current.currentTime = 0;
+        analyzingAudioRef.current.play().catch(() => {});
       }
       return next;
     });

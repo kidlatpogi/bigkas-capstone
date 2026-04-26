@@ -1,16 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import robotImage from '../../assets/Sprites/Robot/0008-noBulb-inverted.png';
+import defaultRobotImage from '../../assets/Sprites/Robot/0008-noBulb-inverted.png';
 import tutorialVoice1 from '../../assets/Voices/Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 1.mp3';
 import tutorialVoice2 from '../../assets/Voices/Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 2.mp3';
 import tutorialVoice3 from '../../assets/Voices/Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 3.mp3';
 import tutorialVoice4 from '../../assets/Voices/Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 4.mp3';
 import tutorialVoice5 from '../../assets/Voices/Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 5.mp3';
 import tutorialVoiceFinal from '../../assets/Voices/Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial FINAL.mp3';
-import finalRobotImage from '../../assets/Sprites/Robot/0002.webp';
+import defaultFinalRobotImage from '../../assets/Sprites/Robot/0002.webp';
 import './TutorialOverlay.css';
 
-function TutorialOverlay({ isOpen, onClose }) {
-  const tutorialSteps = useMemo(
+function TutorialOverlay({
+  isOpen,
+  onClose,
+  onFinish,
+  steps = null,
+  robotImage = defaultRobotImage,
+  finalRobotImage = defaultFinalRobotImage,
+}) {
+  const defaultSteps = useMemo(
     () => [
       {
         id: 'step-intro',
@@ -61,6 +68,14 @@ function TutorialOverlay({ isOpen, onClose }) {
     ],
     []
   );
+  const tutorialSteps = useMemo(
+    () => (Array.isArray(steps) && steps.length > 0 ? steps : defaultSteps),
+    [defaultSteps, steps],
+  );
+  const shouldUseAudio = useMemo(
+    () => !(Array.isArray(steps) && steps.length > 0),
+    [steps],
+  );
   const [currentStep, setCurrentStep] = useState(0);
   const [typedText, setTypedText] = useState('');
   const [isTypingDone, setIsTypingDone] = useState(false);
@@ -77,6 +92,10 @@ function TutorialOverlay({ isOpen, onClose }) {
   };
 
   useEffect(() => {
+    if (!shouldUseAudio) {
+      stepAudioRefs.current = [];
+      return undefined;
+    }
     stepAudioRefs.current = [
       new Audio(tutorialVoice1),
       new Audio(tutorialVoice2),
@@ -94,7 +113,7 @@ function TutorialOverlay({ isOpen, onClose }) {
       stopAllAudios();
       stepAudioRefs.current = [];
     };
-  }, []);
+  }, [shouldUseAudio]);
 
   useEffect(() => {
     if (isOpen) {
@@ -163,11 +182,13 @@ function TutorialOverlay({ isOpen, onClose }) {
       }
     }, 12);
 
-    stopAllAudios();
-    const stepAudio = stepAudioRefs.current[currentStep];
-    if (stepAudio) {
-      stepAudio.currentTime = 0;
-      stepAudio.play().catch(() => {});
+    if (shouldUseAudio) {
+      stopAllAudios();
+      const stepAudio = stepAudioRefs.current[currentStep];
+      if (stepAudio) {
+        stepAudio.currentTime = 0;
+        stepAudio.play().catch(() => {});
+      }
     }
 
     return () => {
@@ -175,9 +196,11 @@ function TutorialOverlay({ isOpen, onClose }) {
         window.clearInterval(typingIntervalRef.current);
         typingIntervalRef.current = null;
       }
-      stopAllAudios();
+      if (shouldUseAudio) {
+        stopAllAudios();
+      }
     };
-  }, [currentStep, isOpen, tutorialSteps]);
+  }, [currentStep, isOpen, shouldUseAudio, tutorialSteps]);
 
   if (!isOpen) return null;
 
@@ -204,6 +227,7 @@ function TutorialOverlay({ isOpen, onClose }) {
         activeSpotlightRef.current.classList.remove('tutorial-spotlight-active');
         activeSpotlightRef.current = null;
       }
+      onFinish?.();
       onClose?.();
       return;
     }
@@ -231,13 +255,13 @@ function TutorialOverlay({ isOpen, onClose }) {
 
   return (
     <section
-      className={`tutorial-overlay-wrapper${activeStep.id === 'step-controls' ? ' is-controls-step' : ''}${activeStep.id === 'step-final' ? ' is-final-step' : ''}`}
+      className={`tutorial-overlay-wrapper${activeStep.id === 'step-controls' ? ' is-controls-step' : ''}${activeStep.id === 'step-final' ? ' is-final-step' : ''}${activeStep.robotClassName ? ` ${activeStep.robotClassName}` : ''}`}
       aria-label="Training tutorial overlay"
     >
       <div className="tutorial-dark-bg" aria-hidden="true" />
       <div className="tutorial-companion-container">
         <img
-          src={activeStep.id === 'step-final' ? finalRobotImage : robotImage}
+          src={activeStep.robot || (activeStep.id === 'step-final' ? finalRobotImage : robotImage)}
           alt=""
           className="tutorial-robot-img"
           aria-hidden="true"

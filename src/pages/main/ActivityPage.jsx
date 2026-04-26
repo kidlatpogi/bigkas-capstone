@@ -542,7 +542,7 @@ function ActivityPage() {
   }
 
   return (
-    <div className="inner-page activity-page activity-page--skyward-entrance">
+    <div className="activity-page-root activity-page--skyward-entrance">
       {showCompletionCelebration && (
         <Confetti
           width={viewportSize.width}
@@ -573,98 +573,93 @@ function ActivityPage() {
           </div>
         </div>
       )}
-      <div className="activity-two-col">
-        <div className="activity-col-main">
-          <div className="activity-content-wrap activity-content-wrap--journey-scroll">
-            <div className="activity-main-layout">
-              <section className="activity-home-hero dashboard-anim-top dashboard-anim-delay-2">
-                <div className="activity-home-hero-card">
-                  <img src={heroRobotImage} alt="" className="activity-home-hero-robot" />
-                  <div className="activity-home-hero-main">
-                    <article className="activity-home-hero-bubble" aria-label="Coach message">
-                      <p className="activity-home-hero-kicker">B-01:</p>
-                      <p className="activity-home-hero-copy">
-                        You&apos;re on a roll. Keep doing your activities and improve your speaking.
-                      </p>
-                    </article>
-                    <div className="activity-home-hero-streak" aria-label="Daily streak">
-                      <div className="activity-home-hero-streak-value">{streakStats.currentStreak}</div>
-                      <p className="activity-home-hero-streak-label">days</p>
-                      <p className="activity-home-hero-streak-copy">
-                        Build a daily speaking habit to keep stacking your streak.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </section>
 
-              <div className="activity-second-row">
-                <div className="activity-journey-shell">
-                  <div className="activity-task-list activity-task-list--journey">
-                    <SkywardJourney
-                      steps={journeySteps}
-                      groupedTasks={groupedTasks}
-                      currentLevel={selectedLevel}
-                      recommendedLevel={recommendedLevel}
-                      onLevelChange={setSelectedLevel}
-                      entranceFromNav={entranceFromNav}
-                      scrollToStepIndex={scrollToStepIndex}
-                      renderStepContent={(step, meta) =>
-                        renderTaskCard({
-                          task: step.task,
-                          animationClass: `dashboard-anim-bottom dashboard-anim-delay-${Math.min(meta.stepIndex + 2, 9)}`,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-
-                {showDesktopSidebar ? (
-                <div className="activity-secondary-column no-scrollbar">
-                  <section className="dashboard-card activity-journey-card dashboard-anim-left dashboard-anim-delay-2">
-                    <div className="activity-journey-title">Journey Progression</div>
-                    <p className="activity-journey-rank-label">RANK:</p>
-                    <h2 className="activity-journey-rank">{levelProgress.levelName}</h2>
-                    <p className="activity-journey-summary">
-                      {activitiesLoading
-                        ? 'Loading journey…'
-                        : `Activity Journey: ${completedTaskCount}/${Math.max(tasks.length, 1)} Task Complete`}
-                    </p>
-                    <div className="activity-journey-track">
-                      <div className="activity-journey-fill" style={{ width: `${sidebarProgressPct}%` }} />
-                    </div>
-                    <p className="activity-journey-task-total">{completedTaskCount}/{Math.max(tasks.length, 1)} Task Complete</p>
-                  </section>
-
-                  <section className="dashboard-card activity-practice-card dashboard-anim-bottom dashboard-anim-delay-4">
-                    <h3 className="activity-practice-title">Practice</h3>
-                    <div className="activity-practice-row">
-                      <p className="activity-practice-row-label">Randomizer</p>
-                      <Button
-                        variant="practice"
-                        className="activity-practice-cta activity-practice-cta--randomizer"
-                        onClick={() => navigate(ROUTES.PRACTICE)}
-                      >
-                        Randomizer
-                      </Button>
-                    </div>
-                    <div className="activity-practice-row">
-                      <p className="activity-practice-row-label">Free Speech</p>
-                      <Button
-                        variant="training"
-                        className="activity-practice-cta activity-practice-cta--speech"
-                        onClick={() => navigate(ROUTES.TRAINING_SETUP)}
-                      >
-                        Free Speech
-                      </Button>
-                    </div>
-                  </section>
-                </div>
-                ) : null}
+      <div className="activity-page-grid">
+        {/* Banner */}
+        <section className="new-banner dashboard-anim-top dashboard-anim-delay-2">
+           <div className="new-banner-left">
+              <img src={heroRobotImage} alt="" className="new-banner-robot" />
+              <div className="new-banner-bubble" aria-label="Coach message">
+                <p className="new-banner-kicker">B-01:</p>
+                <p className="new-banner-copy">You're on a roll. Keep doing your activities and improve your speaking.</p>
               </div>
-            </div>
+           </div>
+           <div className="new-banner-right">
+              <div className="new-banner-streak" aria-label="Daily streak">
+                 <div className="new-streak-value">{streakStats.currentStreak}</div>
+                 <p className="new-streak-label">days</p>
+                 <p className="new-streak-copy">Build a daily speaking habit to keep stacking your streak.</p>
+              </div>
+           </div>
+        </section>
+
+        {/* Left Column (Journey Shell) */}
+        <div className="new-left-col">
+          <div className="new-left-col-inner">
+             <SkywardJourney
+               steps={journeySteps}
+               groupedTasks={groupedTasks}
+               currentLevel={selectedLevel}
+               recommendedLevel={recommendedLevel}
+               onLevelChange={setSelectedLevel}
+               entranceFromNav={entranceFromNav}
+               scrollToStepIndex={scrollToStepIndex}
+               renderStepContent={(step, meta) =>
+                 renderTaskCard({
+                   task: step.task,
+                   animationClass: `dashboard-anim-bottom dashboard-anim-delay-${Math.min(meta.stepIndex + 2, 9)}`,
+                 })
+               }
+             />
           </div>
         </div>
+
+        {/* Right Column (Widgets) */}
+        {showDesktopSidebar ? (
+          <div className="new-right-col no-scrollbar">
+            <section className="new-widget dashboard-anim-left dashboard-anim-delay-2">
+              <h2 className="new-widget-title">Journey Progression</h2>
+              <p className="new-widget-kicker">RANK:</p>
+              <p className="new-widget-value">{levelProgress.levelName}</p>
+              <p className="new-widget-sub">
+                {activitiesLoading ? 'Loading journey…' : `Activity Journey: ${completedTaskCount}/${Math.max(tasks.length, 1)} Task Complete`}
+              </p>
+              <div className="new-widget-track">
+                <div className="new-widget-fill" style={{ width: `${sidebarProgressPct}%` }} />
+              </div>
+              <p className="new-widget-caption">{completedTaskCount}/{Math.max(tasks.length, 1)} Task Complete</p>
+            </section>
+
+            <section className="new-widget dashboard-anim-bottom dashboard-anim-delay-4">
+              <h2 className="new-widget-title">Practice</h2>
+              
+              <div className="new-btn-group">
+                <div className="new-btn-row">
+                  <p className="new-btn-label">Randomizer</p>
+                  <Button
+                    variant="practice"
+                    className="activity-practice-cta activity-practice-cta--randomizer"
+                    onClick={() => navigate(ROUTES.PRACTICE)}
+                  >
+                    Randomizer
+                  </Button>
+                </div>
+                
+                <div className="new-btn-row">
+                  <p className="new-btn-label">Free Speech</p>
+                  <Button
+                    variant="training"
+                    className="activity-practice-cta activity-practice-cta--speech"
+                    onClick={() => navigate(ROUTES.TRAINING_SETUP)}
+                  >
+                    Free Speech
+                  </Button>
+                </div>
+              </div>
+            </section>
+          </div>
+        ) : null}
+
       </div>
     </div>
   );

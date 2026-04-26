@@ -173,18 +173,18 @@ function getLevelSubtitle(level) {
  */
 
 const MapHeaderCard = styled.div`
-  width: min(100%, 620px);
+  width: min(100%, 560px);
   margin: 0 auto;
   box-sizing: border-box;
-  padding: clamp(7px, 1vw, 10px);
+  padding: clamp(6px, 0.7vw, 8px);
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-radius: 14px;
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   text-align: center;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   border: 2px solid #f18f01;
@@ -217,13 +217,13 @@ const HeaderDescription = styled.p`
 `;
 
 const HeaderProgressWrap = styled.div`
-  width: min(100%, 320px);
-  margin-top: 2px;
+  width: min(100%, 280px);
+  margin-top: 0;
 `;
 
 const HeaderProgressTrack = styled.div`
   width: 100%;
-  height: 10px;
+  height: 8px;
   border-radius: 999px;
   background: rgba(11, 57, 84, 0.12);
   overflow: hidden;
@@ -237,9 +237,9 @@ const HeaderProgressFill = styled.div`
 `;
 
 const HeaderProgressText = styled.p`
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   color: #0b3954;
-  font-size: clamp(0.64rem, 0.61rem + 0.06vw, 0.7rem);
+  font-size: clamp(0.6rem, 0.58rem + 0.06vw, 0.66rem);
   font-weight: 700;
   letter-spacing: 0.05em;
   text-align: center;
@@ -1202,7 +1202,7 @@ export default function SkywardJourney({
           </div>
           {!isMobile || !isHeaderCollapsed ? (
             <>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '100%', justifyContent: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', justifyContent: 'center' }}>
                 <button
                   onClick={(event) => {
                     event.stopPropagation();
@@ -1210,9 +1210,9 @@ export default function SkywardJourney({
                   }}
                   disabled={currentLevel <= 1}
                   style={{
-                    height: '54px',
-                    minHeight: '54px',
-                    padding: isMobile ? '0 18px' : '0 24px',
+                    height: '44px',
+                    minHeight: '44px',
+                    padding: isMobile ? '0 14px' : '0 18px',
                     borderRadius: '999px',
                     border: 'none',
                     background: currentLevel <= 1 ? '#e5e5e5' : '#059669',
@@ -1220,7 +1220,7 @@ export default function SkywardJourney({
                     cursor: currentLevel <= 1 ? 'not-allowed' : 'pointer',
                     fontFamily: 'Fredoka, sans-serif',
                     fontWeight: 500,
-                    fontSize: isMobile ? '0.9rem' : '1rem',
+                    fontSize: isMobile ? '0.82rem' : '0.9rem',
                     boxShadow: currentLevel <= 1 ? 'none' : '#047857 0 5px 0 0',
                     flexShrink: 0,
                     transition: 'transform 0.2s ease, box-shadow 0.2s ease',
@@ -1238,9 +1238,9 @@ export default function SkywardJourney({
                   }}
                   disabled={currentLevel >= 5}
                   style={{
-                    height: '54px',
-                    minHeight: '54px',
-                    padding: isMobile ? '0 18px' : '0 24px',
+                    height: '44px',
+                    minHeight: '44px',
+                    padding: isMobile ? '0 14px' : '0 18px',
                     borderRadius: '999px',
                     border: 'none',
                     background: currentLevel >= 5 ? '#e5e5e5' : '#059669',
@@ -1248,7 +1248,7 @@ export default function SkywardJourney({
                     cursor: currentLevel >= 5 ? 'not-allowed' : 'pointer',
                     fontFamily: 'Fredoka, sans-serif',
                     fontWeight: 500,
-                    fontSize: isMobile ? '0.9rem' : '1rem',
+                    fontSize: isMobile ? '0.82rem' : '0.9rem',
                     boxShadow: currentLevel >= 5 ? 'none' : '#047857 0 5px 0 0',
                     flexShrink: 0,
                     transition: 'transform 0.2s ease, box-shadow 0.2s ease',

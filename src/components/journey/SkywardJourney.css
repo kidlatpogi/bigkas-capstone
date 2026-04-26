@@ -154,6 +154,7 @@
   min-height: 0;
   overflow: hidden;
   margin-inline: auto;
+  border-radius: 24px;
 }
 
 .skyward-journey-map {

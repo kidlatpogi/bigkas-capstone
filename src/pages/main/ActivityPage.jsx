@@ -661,7 +661,7 @@ function ActivityPage() {
 
   if (activitiesLoading) {
     return (
-      <div className="inner-page activity-page">
+      <div className="activity-page-root">
         <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
           <p className="section-label">Loading journey…</p>
         </div>
@@ -671,7 +671,7 @@ function ActivityPage() {
 
   if (activitiesError) {
     return (
-      <div className="inner-page activity-page">
+      <div className="activity-page-root">
         <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
           <p className="activity-task-lock-note">Could not load activities: {activitiesError}</p>
           <p className="activity-task-detail">Ensure the `activities` table exists and RLS allows read for authenticated users.</p>

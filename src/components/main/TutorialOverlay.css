@@ -250,6 +250,17 @@
   filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.18));
 }
 
+.tutorial-overlay-wrapper.is-activity-home-step-1 .tutorial-audio-action {
+  position: static;
+  left: auto;
+  bottom: auto;
+  order: 3;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: clamp(0.2rem, 0.7vw, 0.45rem);
+}
+
 .tutorial-overlay-wrapper.is-activity-home-step-2 .tutorial-companion-container {
   left: clamp(154px, 15vw, 238px);
   bottom: calc(clamp(10px, 3vh, 30px) + env(safe-area-inset-bottom, 0px));

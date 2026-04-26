@@ -685,6 +685,7 @@ function ActivityPage() {
       <TutorialOverlay
         isOpen={showFreeSpeechTutorial}
         steps={FREE_SPEECH_TUTORIAL_STEPS}
+        showAudioToggle
         onClose={() => setShowFreeSpeechTutorial(false)}
         onFinish={handleTutorialFinish}
       />

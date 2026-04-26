@@ -20,6 +20,9 @@ import analyzingLevel2Voice from '../../assets/Voices/Profiling and Pre-Testing/
 import analyzingLevel3Voice from '../../assets/Voices/Profiling and Pre-Testing/Analyzing/Analyzing Level 3.mp3';
 import analyzingLevel4Voice from '../../assets/Voices/Profiling and Pre-Testing/Analyzing/Analyzing Level 4.mp3';
 import analyzingLevel5Voice from '../../assets/Voices/Profiling and Pre-Testing/Analyzing/Analyzing Level 5.mp3';
+import scoreBreakdownVoice1 from '../../assets/Voices/Profiling and Pre-Testing/Score Breakdown/Score Breakdown 1.mp3';
+import scoreBreakdownVoice2 from '../../assets/Voices/Profiling and Pre-Testing/Score Breakdown/Score Breakdown 2.mp3';
+import scoreBreakdownVoice3 from '../../assets/Voices/Profiling and Pre-Testing/Score Breakdown/Score Breakdown 3.mp3';
 import './UserAnalyzingPage.css';
 
 function clampScore(value) {
@@ -63,6 +66,20 @@ const RESULT_ROBOT_POOL = [
   robotImage0005,
   robotImage0012,
   robotImage0015,
+];
+const SCORE_BREAKDOWN_VARIANTS = [
+  {
+    text: "Alright, the calculations are complete! Let's take a look at your score breakdown!",
+    voice: scoreBreakdownVoice1,
+  },
+  {
+    text: 'The numbers are in! Here is how you did across the board. Take a look!',
+    voice: scoreBreakdownVoice2,
+  },
+  {
+    text: 'Data processed! Check out your Triple-V stats below!',
+    voice: scoreBreakdownVoice3,
+  },
 ];
 
 const LEVEL_CONTENT = {
@@ -119,6 +136,7 @@ function UserAnalyzingPage() {
   const userPretestFreeSessionId = user?.pretestFreeSessionId || null;
   const analyzingAudioRef = useRef(null);
   const revealAudioRef = useRef(null);
+  const scoreBreakdownAudioRef = useRef(null);
 
   const levelContent = useMemo(
     () => LEVEL_CONTENT[analysis.levelNumber] || LEVEL_CONTENT[1],
@@ -128,6 +146,18 @@ function UserAnalyzingPage() {
     const randomIdx = Math.floor(Math.random() * RESULT_ROBOT_POOL.length);
     return RESULT_ROBOT_POOL[randomIdx] || resultRobotImage;
   }, []);
+  const scoreBreakdownContent = useMemo(() => {
+    const randomIdx = Math.floor(Math.random() * SCORE_BREAKDOWN_VARIANTS.length);
+    return SCORE_BREAKDOWN_VARIANTS[randomIdx] || SCORE_BREAKDOWN_VARIANTS[0];
+  }, []);
+  const profilingEntryScore = useMemo(() => {
+    const rawProfileScore = clampScore(user?.speakerProfile?.baseline_score ?? 0);
+    return mapPercentToEntryScore(rawProfileScore).toFixed(1);
+  }, [user?.speakerProfile?.baseline_score]);
+  const pretestEntryScore = useMemo(
+    () => formatEntryScale(analysis.freePretestScore),
+    [analysis.freePretestScore],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -362,6 +392,15 @@ function UserAnalyzingPage() {
   }, [isMuted]);
 
   useEffect(() => {
+    const audio = scoreBreakdownAudioRef.current;
+    if (!audio) return;
+    audio.muted = isMuted;
+    if (isMuted) {
+      audio.pause();
+    }
+  }, [isMuted]);
+
+  useEffect(() => {
     if (showLevelReveal || isMuted) return;
     if (revealAudioRef.current) {
       revealAudioRef.current.pause();
@@ -415,15 +454,42 @@ function UserAnalyzingPage() {
     };
   }, [isMuted, levelContent.voice, showLevelReveal]);
 
+  useEffect(() => {
+    if (!showScoreBreakdown) return undefined;
+    const audio = new Audio(scoreBreakdownContent.voice);
+    audio.preload = 'auto';
+    audio.muted = isMuted;
+    scoreBreakdownAudioRef.current = audio;
+
+    if (revealAudioRef.current) {
+      revealAudioRef.current.pause();
+      revealAudioRef.current.currentTime = 0;
+    }
+
+    if (!isMuted) {
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+    }
+
+    return () => {
+      audio.pause();
+      audio.currentTime = 0;
+      scoreBreakdownAudioRef.current = null;
+    };
+  }, [isMuted, scoreBreakdownContent.voice, showScoreBreakdown]);
+
   const handleToggleMute = () => {
     setIsMuted((prev) => {
       const next = !prev;
       if (next) {
-        [analyzingAudioRef.current, revealAudioRef.current].forEach((audio) => {
+        [analyzingAudioRef.current, revealAudioRef.current, scoreBreakdownAudioRef.current].forEach((audio) => {
           if (!audio) return;
           audio.pause();
           audio.currentTime = 0;
         });
+      } else if (showScoreBreakdown && scoreBreakdownAudioRef.current) {
+        scoreBreakdownAudioRef.current.currentTime = 0;
+        scoreBreakdownAudioRef.current.play().catch(() => {});
       } else if (showLevelReveal && revealAudioRef.current) {
         revealAudioRef.current.currentTime = 0;
         revealAudioRef.current.play().catch(() => {});
@@ -486,6 +552,54 @@ function UserAnalyzingPage() {
             </div>
           </div>
         </section>
+      ) : showScoreBreakdown ? (
+        <section className="analyzing-intro">
+          <article className="analyzing-bubble analyzing-bubble--result" aria-label="Score breakdown">
+            <p className="analyzing-bubble-kicker">B-01:</p>
+            <p className="analyzing-result-text">{scoreBreakdownContent.text}</p>
+
+            <div className="analyzing-breakdown-score-page">
+              <p>
+                Profiling ({profilingEntryScore}/5.0): Your personal comfort and confidence levels.
+              </p>
+              <p>
+                AI Pre-test ({pretestEntryScore}/5.0): An objective look at your Triple V:
+              </p>
+              <ul className="analyzing-breakdown-list">
+                <li>Visual (55%): Eye contact and gestures.</li>
+                <li>Vocal (38%): Projection and expression.</li>
+                <li>Verbal (7%): Vocabulary and filler use.</li>
+              </ul>
+            </div>
+
+            <div className="analyzing-actions">
+              <button
+                type="button"
+                className="analyzing-action-btn analyzing-action-btn--primary"
+                onClick={handleGoToDashboard}
+              >
+                Next
+              </button>
+            </div>
+          </article>
+
+          <div className="analyzing-robot-wrap">
+            <div className="analyzing-robot-media analyzing-robot-media--result" aria-hidden="true">
+              <img src={robotImage0015} alt="" className="analyzing-robot-image" />
+            </div>
+            <div className="analyzing-audio-action">
+              <button
+                type="button"
+                onClick={handleToggleMute}
+                aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                className={`analyzing-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
+              >
+                {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+              </button>
+            </div>
+          </div>
+        </section>
       ) : (
         <section className="analyzing-intro">
           <article className="analyzing-bubble analyzing-bubble--result" aria-label="Your level result">
@@ -496,9 +610,9 @@ function UserAnalyzingPage() {
               <button
                 type="button"
                 className="analyzing-action-btn analyzing-action-btn--secondary"
-                onClick={() => setShowScoreBreakdown((prev) => !prev)}
+                onClick={() => setShowScoreBreakdown(true)}
               >
-                {showScoreBreakdown ? 'Hide Breakdown' : 'Score Breakdown'}
+                Score Breakdown
               </button>
               <button
                 type="button"
@@ -510,17 +624,6 @@ function UserAnalyzingPage() {
               </button>
             </div>
 
-            {showScoreBreakdown && (
-              <div className="analyzing-breakdown">
-                <p className="analyzing-breakdown-scale">Bigkas entry scale (1.0-5.0) computed from your 0-100 metrics</p>
-                <p>Verbal Score (7%): {formatEntryScale(analysis.verbalScore)}</p>
-                <p>Vocal Score (38%): {formatEntryScale(analysis.vocalScore)}</p>
-                <p>Visual Score (55%): {formatEntryScale(analysis.visualScore)}</p>
-                <p>Free Speech Pre-Test: {formatEntryScale(analysis.freePretestScore)}</p>
-                <p>Final weighted score: {formatEntryScale(analysis.finalScore)}</p>
-                <p>Starting level: Level {analysis.levelNumber} ({analysis.levelName})</p>
-              </div>
-            )}
           </article>
 
           <div className="analyzing-robot-wrap">

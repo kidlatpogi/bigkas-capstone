@@ -34,7 +34,8 @@
   padding: clamp(0.95rem, 1.8vw, 1.2rem) clamp(1rem, 2vw, 1.3rem);
   color: #111827;
   position: relative;
-  z-index: 3;
+  z-index: 20;
+  transform: translateY(clamp(2.5rem, 7vh, 6rem));
 }
 
 .analyzing-bubble::after {
@@ -217,6 +218,36 @@
   line-height: 1.45 !important;
 }
 
+.analyzing-breakdown-score-page {
+  margin-top: 0.85rem;
+  border-radius: 14px;
+  padding: 0.75rem 0.85rem;
+  background: #F9FAFB;
+  border: 1px solid rgba(11, 57, 84, 0.14);
+}
+
+.analyzing-breakdown-score-page p {
+  margin: 0;
+  font-size: 0.92rem;
+  color: rgba(17, 24, 39, 0.9);
+  line-height: 1.5;
+}
+
+.analyzing-breakdown-score-page p + p {
+  margin-top: 0.55rem;
+}
+
+.analyzing-breakdown-list {
+  margin: 0.25rem 0 0;
+  padding-left: 1.15rem;
+}
+
+.analyzing-breakdown-list li {
+  font-size: 0.92rem;
+  color: rgba(17, 24, 39, 0.9);
+  line-height: 1.45;
+}
+
 .analyzing-error {
   margin-top: 0.6rem;
   color: #EF4444;
@@ -229,6 +260,8 @@
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
+  position: relative;
+  z-index: 21;
 }
 
 .analyzing-action-btn {
@@ -241,13 +274,17 @@
   font-size: clamp(0.9rem, 0.86rem + 0.2vw, 0.98rem);
   font-weight: 500;
   color: #ffffff;
+  white-space: nowrap;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  z-index: 22;
 }
 
 .analyzing-action-btn--secondary {
   background: #059669;
   box-shadow: #047857 0 5px 0 0;
+  width: clamp(10.75rem, 24vw, 12.5rem);
 }
 
 .analyzing-action-btn--primary {
@@ -321,7 +358,17 @@
   border-color: rgba(148, 163, 184, 0.24);
 }
 
+[data-theme='dark'] .analyzing-breakdown-score-page {
+  background: rgba(17, 24, 39, 0.86);
+  border-color: rgba(148, 163, 184, 0.24);
+}
+
 [data-theme='dark'] .analyzing-breakdown p {
+  color: rgba(243, 244, 246, 0.88);
+}
+
+[data-theme='dark'] .analyzing-breakdown-score-page p,
+[data-theme='dark'] .analyzing-breakdown-list li {
   color: rgba(243, 244, 246, 0.88);
 }
 
@@ -330,6 +377,10 @@
 }
 
 @media (max-width: 520px) {
+  .analyzing-bubble {
+    transform: translateY(clamp(1.5rem, 4vh, 3.25rem));
+  }
+
   .analyzing-actions {
     justify-content: center;
   }

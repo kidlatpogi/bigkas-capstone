@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { IoArrowForward } from 'react-icons/io5';
 import Confetti from 'react-confetti';
 import { useAuthContext } from '../../context/useAuthContext';
 import { useSessions } from '../../hooks/useSessions';
@@ -25,6 +24,13 @@ import iconFire from '../../assets/icons/Icon-Fire.svg';
 import robotMorningImage from '../../assets/Sprites/Robot/0018.webp';
 import robotNoonImage from '../../assets/Sprites/Robot/0001.webp';
 import robotNightImage from '../../assets/Sprites/Robot/0013.webp';
+import rankBronzeImage from '../../assets/Sprites/Rank/rank-bronze.png';
+import rankSilverImage from '../../assets/Sprites/Rank/rank-silver.png';
+import rankGoldImage from '../../assets/Sprites/Rank/rank-gold.png';
+import rankMythrilImage from '../../assets/Sprites/Rank/rank-mythril.png';
+import rankLegendaryImage from '../../assets/Sprites/Rank/rank-legendary.png';
+import crystalBallImage from '../../assets/Sprites/common/crystal-ball.png';
+import crownImage from '../../assets/Sprites/common/crown.png';
 import './InnerPages.css';
 import './ActivityPage.css';
 import './DashboardPage.css';
@@ -104,6 +110,23 @@ function getTimeOfDay(date = new Date()) {
   if (hour < 12) return 'morning';
   if (hour < 18) return 'noon';
   return 'night';
+}
+
+function getRankSprite(levelNumber, levelName = '') {
+  const numeric = Number(levelNumber);
+  if (numeric === 1) return rankBronzeImage;
+  if (numeric === 2) return rankSilverImage;
+  if (numeric === 3) return rankGoldImage;
+  if (numeric === 4) return rankMythrilImage;
+  if (numeric >= 5) return rankLegendaryImage;
+
+  const normalized = String(levelName).toLowerCase();
+  if (normalized.includes('bronze')) return rankBronzeImage;
+  if (normalized.includes('silver')) return rankSilverImage;
+  if (normalized.includes('gold')) return rankGoldImage;
+  if (normalized.includes('mythril')) return rankMythrilImage;
+  if (normalized.includes('legend')) return rankLegendaryImage;
+  return rankBronzeImage;
 }
 
 function ActivityPage() {
@@ -225,6 +248,10 @@ function ActivityPage() {
     if (timeOfDay === 'noon') return robotNoonImage;
     return robotNightImage;
   }, [timeOfDay]);
+  const rankSpriteImage = useMemo(
+    () => getRankSprite(levelProgress?.levelNumber, levelProgress?.levelName),
+    [levelProgress?.levelNumber, levelProgress?.levelName],
+  );
 
   useEffect(() => {
     if (!user?.id || activitiesLoading) return undefined;
@@ -618,18 +645,41 @@ function ActivityPage() {
         {showDesktopSidebar ? (
           <div className="new-right-col no-scrollbar">
             <section className="new-widget dashboard-anim-left dashboard-anim-delay-2">
-              <h2 className="new-widget-title">Journey Progression</h2>
-              <p className="new-widget-kicker">RANK:</p>
-              <p className="new-widget-value">{levelProgress.levelName}</p>
-              <p className="new-widget-caption">{completedTaskCount}/{Math.max(tasks.length, 1)} Task Complete</p>
+              <div className="new-widget-head">
+                <h2 className="new-widget-title">Journey Progression</h2>
+                <span className="new-widget-chip">Rank</span>
+              </div>
+              <div className="new-widget-rank-card">
+                <img src={rankSpriteImage} alt="" className="new-widget-rank-sprite" />
+                <div className="new-widget-rank-content">
+                  <p className="new-widget-kicker">Current Rank</p>
+                  <p className="new-widget-value">{levelProgress.levelName}</p>
+                </div>
+              </div>
+              <p className="new-widget-caption">
+                {completedTaskCount}/{Math.max(tasks.length, 1)} Tasks Complete
+                <span className="new-widget-caption-sep"> - </span>
+                {sidebarProgressPct}% Cleared
+              </p>
             </section>
 
-            <section className="new-widget dashboard-anim-bottom dashboard-anim-delay-4">
-              <h2 className="new-widget-title">Practice</h2>
-              
+            <section className="new-widget new-widget--practice dashboard-anim-bottom dashboard-anim-delay-4">
+              <div className="new-widget-head">
+                <h2 className="new-widget-title">Practice</h2>
+              </div>
+              <p className="new-practice-subtitle">Choose a mode and jump straight into speaking.</p>
+
               <div className="new-btn-group">
-                <div className="new-btn-row">
-                  <p className="new-btn-label">Randomizer</p>
+                <div className="new-btn-row new-btn-row--card">
+                  <div className="new-btn-visual new-btn-visual--randomizer">
+                    <img src={crystalBallImage} alt="" className="new-btn-visual-img new-btn-visual-img--randomizer" />
+                  </div>
+                  <div className="new-btn-meta">
+                    <p className="new-btn-label">
+                      Randomizer
+                    </p>
+                    <p className="new-btn-hint">Instant prompt to warm up your delivery.</p>
+                  </div>
                   <Button
                     variant="practice"
                     className="activity-practice-cta activity-practice-cta--randomizer"
@@ -639,8 +689,16 @@ function ActivityPage() {
                   </Button>
                 </div>
                 
-                <div className="new-btn-row">
-                  <p className="new-btn-label">Free Speech</p>
+                <div className="new-btn-row new-btn-row--card">
+                  <div className="new-btn-visual new-btn-visual--speech">
+                    <img src={crownImage} alt="" className="new-btn-visual-img" />
+                  </div>
+                  <div className="new-btn-meta">
+                    <p className="new-btn-label">
+                      Free Speech
+                    </p>
+                    <p className="new-btn-hint">Open topic mode for confidence building.</p>
+                  </div>
                   <Button
                     variant="training"
                     className="activity-practice-cta activity-practice-cta--speech"

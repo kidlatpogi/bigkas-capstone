@@ -248,6 +248,11 @@
   line-height: 1.45;
 }
 
+.analyzing-score-value {
+  font-weight: 800;
+  color: #059669;
+}
+
 .analyzing-error {
   margin-top: 0.6rem;
   color: #EF4444;
@@ -370,6 +375,10 @@
 [data-theme='dark'] .analyzing-breakdown-score-page p,
 [data-theme='dark'] .analyzing-breakdown-list li {
   color: rgba(243, 244, 246, 0.88);
+}
+
+[data-theme='dark'] .analyzing-score-value {
+  color: #34D399;
 }
 
 [data-theme='dark'] .analyzing-breakdown-scale {

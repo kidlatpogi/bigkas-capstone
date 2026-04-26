@@ -40,6 +40,8 @@
   .side-nav-links .side-nav-link:nth-child(3) { animation-delay: 0.44s; }
   .side-nav-links .side-nav-link:nth-child(4) { animation-delay: 0.49s; }
   .side-nav-links .side-nav-link:nth-child(5) { animation-delay: 0.54s; }
+  .side-nav-links .side-nav-sublink:nth-child(1) { animation-delay: 0.57s; }
+  .side-nav-links .side-nav-sublink:nth-child(2) { animation-delay: 0.6s; }
   .side-nav-utilities .side-nav-link { animation-delay: 0.59s; }
   .side-nav-utilities .notification-center-bell--rail { animation-delay: 0.64s; }
   .side-nav-logout { animation-delay: 0.69s; }
@@ -131,6 +133,77 @@
   letter-spacing: 0.02em;
   line-height: 1;
   transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.side-nav-dropdown-trigger {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.side-nav-dropdown-chevron {
+  margin-left: auto;
+  width: 18px;
+  height: 18px;
+  transition: transform 0.2s ease;
+}
+
+.side-nav-dropdown-chevron.is-open {
+  transform: rotate(180deg);
+}
+
+.side-nav-submenu {
+  margin: 4px 0 2px 38px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.side-nav-sublink {
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  color: rgba(247, 251, 255, 0.82);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.side-nav-sublink:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #F18F01;
+}
+
+.side-nav-sublink.active {
+  background: rgba(255, 159, 28, 0.22);
+  color: #ffffff;
+}
+
+.side-nav-link-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.side-nav-link-badge {
+  min-width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f97316;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .side-nav-icon {

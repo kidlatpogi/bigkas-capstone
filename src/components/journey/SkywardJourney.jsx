@@ -28,6 +28,8 @@ import rankSilverImage from '../../assets/Sprites/Rank/rank-silver.png';
 import rankGoldImage from '../../assets/Sprites/Rank/rank-gold.png';
 import rankMythrilImage from '../../assets/Sprites/Rank/rank-mythril.png';
 import rankLegendaryImage from '../../assets/Sprites/Rank/rank-legendary.png';
+import chestClosedImage from '../../assets/Sprites/common/treasure-chest.png';
+import chestOpenImage from '../../assets/Sprites/common/treasure-chest-open.png';
 import './SkywardJourney.css';
 
 const MAP_SCALE = 1;
@@ -1022,6 +1024,17 @@ export default function SkywardJourney({
           Number.isFinite(stageTotal) && stageTotal > 0 ? stageTotal : totalStageCount;
         const safeStageNum =
           Number.isFinite(stageNum) && stageNum > 0 ? stageNum : i + 1;
+        const chestButtonStyle = isSectionTrophy
+          ? {
+              backgroundImage: `url(${isDone ? chestOpenImage : chestClosedImage})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              backgroundColor: 'transparent',
+              boxShadow: 'none',
+              border: 'none',
+            }
+          : undefined;
 
         return (
           <div
@@ -1084,6 +1097,7 @@ export default function SkywardJourney({
                       isDone ? 'Completed' : isLocked ? 'Locked' : 'Current step'
                     }. Open quest details.`}
                     onClick={() => handleNodeClick(step, i)}
+                    style={chestButtonStyle}
                   >
                     {isUltimateBoss ? (
                       <FaGhost
@@ -1096,12 +1110,7 @@ export default function SkywardJourney({
                         aria-hidden
                       />
                     ) : isSectionTrophy ? (
-                      <img
-                        src={isDone ? chestOpenImage : chestClosedImage}
-                        className="skyward-journey-node-icon skyward-journey-node-icon--trophy skyward-journey-node-icon--trophy-chest"
-                        alt=""
-                        aria-hidden
-                      />
+                      null
                     ) : startStage ? (
                       <IoStar
                         className="skyward-journey-node-icon"

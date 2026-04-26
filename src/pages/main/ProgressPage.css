@@ -84,6 +84,89 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   min-height: 600px; /* Minimum height before it scrolls */
 }
 
+.progress-achievement-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(11, 57, 84, 0.08);
+}
+
+.progress-achievement-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.progress-achievement-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0B3954;
+}
+
+.progress-achievement-claim-all {
+  border: 0;
+  border-radius: 999px;
+  min-height: 34px;
+  padding: 0 14px;
+  background: #059669;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.progress-achievement-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progress-achievement-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid rgba(11, 57, 84, 0.08);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fff;
+}
+
+.progress-achievement-copy {
+  min-width: 0;
+}
+
+.progress-achievement-name {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #0B3954;
+}
+
+.progress-achievement-meta {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  color: #64748B;
+  font-weight: 600;
+}
+
+.progress-achievement-claim-btn {
+  border: 0;
+  border-radius: 999px;
+  min-height: 34px;
+  padding: 0 14px;
+  background: #F18F01;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 /* Graph Card */
 .progress-trend-card {
   background: rgba(255, 255, 255, 0.95);

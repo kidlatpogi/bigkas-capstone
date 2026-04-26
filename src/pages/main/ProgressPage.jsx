@@ -39,6 +39,12 @@ import {
   createSpeakerPointsHistoryEntry,
 } from '../../utils/speakerPointsHistory';
 import { sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
+import {
+  ACHIEVEMENTS_UPDATED_EVENT,
+  claimAchievement,
+  claimAllAchievements,
+  getClaimableAchievements,
+} from '../../utils/achievementClaims';
 import './ProgressPage.css';
 
 const TIME_RANGES = ['daily', 'Weekly', 'Monthly', 'Yearly'];
@@ -185,6 +191,18 @@ function ProgressPage() {
   const [historyPageSize, setHistoryPageSize] = useState(() =>
     getResponsiveHistoryPageSize(typeof window !== 'undefined' ? window.innerHeight : 1080),
   );
+  const [claimableAchievements, setClaimableAchievements] = useState(() => getClaimableAchievements());
+
+  useEffect(() => {
+    const syncClaimables = () => setClaimableAchievements(getClaimableAchievements());
+    syncClaimables();
+    window.addEventListener('storage', syncClaimables);
+    window.addEventListener(ACHIEVEMENTS_UPDATED_EVENT, syncClaimables);
+    return () => {
+      window.removeEventListener('storage', syncClaimables);
+      window.removeEventListener(ACHIEVEMENTS_UPDATED_EVENT, syncClaimables);
+    };
+  }, []);
 
   const userSessions = useMemo(() => {
     const userId = String(user?.id || '').trim();
@@ -241,6 +259,17 @@ function ProgressPage() {
 
     syncProgressVisitReward();
   }, [activityScopeKey, location.state, updateUserMetadata, user?.id, user?.speakerPoints, user?.speakerPointsHistory]);
+
+  useEffect(() => {
+    if (location.state?.focusAchievements !== true) return;
+    const t = window.setTimeout(() => {
+      const target = document.querySelector('.progress-achievement-card');
+      if (target && typeof target.scrollIntoView === 'function') {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 120);
+    return () => window.clearTimeout(t);
+  }, [location.state?.focusAchievements]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -487,6 +516,44 @@ function ProgressPage() {
     <div className="progress-page-bg no-scrollbar" style={{ height: '100dvh', overflowY: 'auto' }}>
       <div className="progress-main-layout">
         <div className="progress-left-content">
+          {claimableAchievements.length > 0 ? (
+            <div className="progress-achievement-card dashboard-anim-bottom">
+              <div className="progress-achievement-head">
+                <h3 className="progress-achievement-title">Claimable Achievements</h3>
+                <button
+                  type="button"
+                  className="progress-achievement-claim-all"
+                  onClick={() => {
+                    claimAllAchievements();
+                    setClaimableAchievements(getClaimableAchievements());
+                  }}
+                >
+                  Claim All
+                </button>
+              </div>
+              <div className="progress-achievement-list">
+                {claimableAchievements.slice(0, 4).map((achievement) => (
+                  <div key={achievement.id} className="progress-achievement-item">
+                    <div className="progress-achievement-copy">
+                      <p className="progress-achievement-name">{achievement.title}</p>
+                      <p className="progress-achievement-meta">Ready to claim</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="progress-achievement-claim-btn"
+                      onClick={() => {
+                        claimAchievement(achievement.id);
+                        setClaimableAchievements(getClaimableAchievements());
+                      }}
+                    >
+                      Claim
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           {/* Graph Card */}
           <div className="progress-trend-card dashboard-anim-bottom">
             <div className="progress-chart-header">

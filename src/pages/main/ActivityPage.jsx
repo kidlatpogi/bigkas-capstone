@@ -15,6 +15,7 @@ import {
   getTaskXp,
   isActivityTaskCompleted,
 } from '../../utils/activityProgress';
+import { addClaimableAchievement } from '../../utils/achievementClaims';
 import SkywardJourney from '../../components/journey/SkywardJourney';
 import { getActiveTaskId, getNodeStateForTask } from '../../components/journey/journeyConstants';
 import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
@@ -31,6 +32,7 @@ import rankMythrilImage from '../../assets/Sprites/Rank/rank-mythril.png';
 import rankLegendaryImage from '../../assets/Sprites/Rank/rank-legendary.png';
 import crystalBallImage from '../../assets/Sprites/common/crystal-ball.png';
 import crownImage from '../../assets/Sprites/common/crown.png';
+import campfireImage from '../../assets/Sprites/common/campfire.png';
 import './InnerPages.css';
 import './ActivityPage.css';
 import './DashboardPage.css';
@@ -93,15 +95,19 @@ function buildStreakStats(sessions = [], historyEntries = []) {
 }
 
 function getWeekdayPills(activeDayKeys = new Set()) {
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const start = new Date(today);
   const day = start.getDay();
-  const diff = start.getDate() - day + (day === 0 ? -6 : 1);
-  start.setDate(diff);
+  start.setDate(start.getDate() - day); // Sunday-first week
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(start);
     d.setDate(start.getDate() + i);
-    return { label: ['M', 'T', 'W', 'Th', 'F', 'S', 'S'][i], active: activeDayKeys.has(getLocalDateKey(d)) };
+    return {
+      label: ['S', 'M', 'T', 'W', 'T', 'F', 'S'][i],
+      active: activeDayKeys.has(getLocalDateKey(d)),
+      isToday: getLocalDateKey(d) === getLocalDateKey(today),
+    };
   });
 }
 
@@ -370,6 +376,12 @@ function ActivityPage() {
     if (!newlyCompletedTask) return;
 
     setRecentStampedTaskId(newlyCompletedTask.id);
+    addClaimableAchievement({
+      id: newlyCompletedTask.id,
+      title: newlyCompletedTask.title || 'Activity achievement',
+      source: 'activity-task',
+      createdAt: Date.now(),
+    });
 
     if (stampResetTimeoutRef.current) {
       window.clearTimeout(stampResetTimeoutRef.current);
@@ -613,8 +625,23 @@ function ActivityPage() {
            </div>
            <div className="new-banner-right">
               <div className="new-banner-streak" aria-label="Daily streak">
-                 <div className="new-streak-value">{streakStats.currentStreak}</div>
-                 <p className="new-streak-label">days</p>
+                 <div className="new-streak-top">
+                   <img src={campfireImage} alt="" className="new-streak-fire" />
+                   <div className="new-streak-headline">
+                     <div className="new-streak-value">{streakStats.currentStreak}</div>
+                     <p className="new-streak-label">day streak</p>
+                   </div>
+                 </div>
+                 <div className="new-streak-week" aria-label="This week streak activity">
+                   {weekPills.map((pill, idx) => (
+                     <span
+                       key={`${pill.label}-${idx}`}
+                       className={`new-streak-pill${pill.active ? ' is-active' : ''}${pill.isToday ? ' is-today' : ''}`}
+                     >
+                       {pill.label}
+                     </span>
+                   ))}
+                 </div>
                  <p className="new-streak-copy">Build a daily speaking habit to keep stacking your streak.</p>
               </div>
            </div>

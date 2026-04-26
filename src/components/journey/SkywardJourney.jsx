@@ -1097,6 +1097,8 @@ export default function SkywardJourney({
                       isDone ? 'Completed' : isLocked ? 'Locked' : 'Current step'
                     }. Open quest details.`}
                     onClick={() => handleNodeClick(step, i)}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onTouchStart={(event) => event.stopPropagation()}
                     style={chestButtonStyle}
                   >
                     {isUltimateBoss ? (

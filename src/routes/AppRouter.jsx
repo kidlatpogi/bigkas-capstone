@@ -17,6 +17,7 @@ import ForgotPasswordPage from '../pages/auth/ForgotPasswordPage';
 import DashboardPage from '../pages/main/DashboardPage';
 import AdminDashboardPage from '../pages/main/AdminDashboardPage';
 import ProgressPage from '../pages/main/ProgressPage';
+import AchievementsPage from '../pages/main/AchievementsPage';
 import SettingsProfilePage from '../pages/main/SettingsProfilePage';
 import SettingsPage from '../pages/main/SettingsPage';
 import ChangePasswordPage from '../pages/main/ChangePasswordPage';
@@ -265,6 +266,7 @@ function AppRouter() {
 
         {/* Progress / Activity */}
         <Route path={ROUTES.PROGRESS} element={<ProgressPage />} />
+        <Route path={ROUTES.ACHIEVEMENTS} element={<AchievementsPage />} />
         <Route path={ROUTES.ACTIVITY} element={<ActivityPage />} />
 
         {/* Profile */}

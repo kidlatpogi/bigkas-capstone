@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Global styles for Bigkas Web
  */
 
@@ -232,8 +232,10 @@ img {
   flex-grow: 1;
   padding-left: var(--app-sidebar-width);
   padding-bottom: 0;
-  background: #FFFFFF;
+  background: #F8F9FA;
   overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .main-content--full {
@@ -354,11 +356,12 @@ section[id] {
 
 /* Activity page layout refinements */
 .activity-content-wrap {
-  width: 70%;
+  width: 70vw;
+  max-width: 1400px; /* Cap for ultra-wide screens */
   margin-inline: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1.5rem;
   min-height: 0;
   height: 100%;
 }

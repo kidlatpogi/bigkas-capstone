@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import defaultRobotImage from '../../assets/Sprites/Robot/0008-noBulb-inverted.png';
 import tutorialVoice1 from '../../assets/Voices/Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 1.mp3';
 import tutorialVoice2 from '../../assets/Voices/Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 2.mp3';
@@ -17,6 +18,7 @@ function TutorialOverlay({
   robotImage = defaultRobotImage,
   finalRobotImage = defaultFinalRobotImage,
 }) {
+  const TUTORIAL_MUTE_KEY = 'bigkas_tutorial_overlay_muted_v1';
   const defaultSteps = useMemo(
     () => [
       {
@@ -79,6 +81,10 @@ function TutorialOverlay({
   const [currentStep, setCurrentStep] = useState(0);
   const [typedText, setTypedText] = useState('');
   const [isTypingDone, setIsTypingDone] = useState(false);
+  const [isMuted, setIsMuted] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(TUTORIAL_MUTE_KEY) === '1';
+  });
   const activeSpotlightRef = useRef(null);
   const stepAudioRefs = useRef([]);
   const typingIntervalRef = useRef(null);
@@ -95,6 +101,19 @@ function TutorialOverlay({
       if (!audio) return;
       audio.pause();
       audio.currentTime = 0;
+    });
+  };
+
+  const handleToggleMute = () => {
+    setIsMuted((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(TUTORIAL_MUTE_KEY, next ? '1' : '0');
+      }
+      if (next) {
+        stopAllAudios();
+      }
+      return next;
     });
   };
 
@@ -121,6 +140,18 @@ function TutorialOverlay({
       stepAudioRefs.current = [];
     };
   }, [shouldUseAudio]);
+
+  useEffect(() => {
+    if (!shouldUseAudio) return;
+    stepAudioRefs.current.forEach((audio) => {
+      if (!audio) return;
+      audio.muted = isMuted;
+      if (isMuted) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+    });
+  }, [isMuted, shouldUseAudio]);
 
   useEffect(() => {
     if (isOpen) {
@@ -157,6 +188,7 @@ function TutorialOverlay({
         const nextEl = document.getElementById(targetId);
         if (nextEl) {
           nextEl.classList.add('tutorial-spotlight-active');
+          nextEl.style.setProperty('z-index', '950', 'important');
           activeSpotlightRef.current = nextEl;
           return;
         }
@@ -173,6 +205,7 @@ function TutorialOverlay({
       clearAllSpotlights();
       if (activeSpotlightRef.current) {
         activeSpotlightRef.current.classList.remove('tutorial-spotlight-active');
+        activeSpotlightRef.current.style.removeProperty('z-index');
         activeSpotlightRef.current = null;
       }
     };
@@ -203,7 +236,7 @@ function TutorialOverlay({
       }
     }, 12);
 
-    if (shouldUseAudio) {
+    if (shouldUseAudio && !isMuted) {
       stopAllAudios();
       const stepAudio = stepAudioRefs.current[currentStep];
       if (stepAudio) {
@@ -221,7 +254,7 @@ function TutorialOverlay({
         stopAllAudios();
       }
     };
-  }, [currentStep, isOpen, shouldUseAudio, tutorialSteps]);
+  }, [currentStep, isMuted, isOpen, shouldUseAudio, tutorialSteps]);
 
   if (!isOpen) return null;
 
@@ -287,6 +320,17 @@ function TutorialOverlay({
           className="tutorial-robot-img"
           aria-hidden="true"
         />
+        <div className="tutorial-audio-action">
+          <button
+            type="button"
+            onClick={handleToggleMute}
+            aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+            title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+            className={`tutorial-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
+          >
+            {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+          </button>
+        </div>
         <article className="tutorial-speech-bubble">
           <div className="tutorial-bubble-title">{activeStep.title}</div>
           <p className="tutorial-bubble-text">{renderBubbleText()}</p>

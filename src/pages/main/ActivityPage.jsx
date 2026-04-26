@@ -621,12 +621,6 @@ function ActivityPage() {
               <h2 className="new-widget-title">Journey Progression</h2>
               <p className="new-widget-kicker">RANK:</p>
               <p className="new-widget-value">{levelProgress.levelName}</p>
-              <p className="new-widget-sub">
-                {activitiesLoading ? 'Loading journey…' : `Activity Journey: ${completedTaskCount}/${Math.max(tasks.length, 1)} Task Complete`}
-              </p>
-              <div className="new-widget-track">
-                <div className="new-widget-fill" style={{ width: `${sidebarProgressPct}%` }} />
-              </div>
               <p className="new-widget-caption">{completedTaskCount}/{Math.max(tasks.length, 1)} Task Complete</p>
             </section>
 

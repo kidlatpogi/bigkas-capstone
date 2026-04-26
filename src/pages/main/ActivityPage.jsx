@@ -6,6 +6,7 @@ import { useSessions } from '../../hooks/useSessions';
 import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import PushButton from '../../components/common/PushButton';
+import TutorialOverlay from '../../components/main/TutorialOverlay';
 import {
   GLOBAL_ACTIVITY_SCOPE,
   getActivityTaskProgress,
@@ -25,6 +26,12 @@ import iconFire from '../../assets/icons/Icon-Fire.svg';
 import robotMorningImage from '../../assets/Sprites/Robot/0018.webp';
 import robotNoonImage from '../../assets/Sprites/Robot/0001.webp';
 import robotNightImage from '../../assets/Sprites/Robot/0013.webp';
+import tutorialRobotStep1 from '../../assets/Sprites/Robot/0001.webp';
+import tutorialRobotStep2 from '../../assets/Sprites/Robot/0010.webp';
+import tutorialRobotStep3 from '../../assets/Sprites/Robot/0018.webp';
+import tutorialRobotStep4 from '../../assets/Sprites/Robot/0001.webp';
+import tutorialRobotStep5 from '../../assets/Sprites/Robot/0002.webp';
+import tutorialRobotStep6 from '../../assets/Sprites/Robot/0004.webp';
 import rankBronzeImage from '../../assets/Sprites/Rank/rank-bronze.png';
 import rankSilverImage from '../../assets/Sprites/Rank/rank-silver.png';
 import rankGoldImage from '../../assets/Sprites/Rank/rank-gold.png';
@@ -40,6 +47,59 @@ import './DashboardPage.css';
 const DAY_MS = 86_400_000;
 const ACTIVITY_CELEBRATION_STORAGE_KEY = 'bigkas_pending_activity_celebration_v1';
 const LAST_SHOWN_COMPLETION_EVENT_KEY = 'bigkas_last_completion_event_v1';
+const FREE_SPEECH_TUTORIAL_SEEN_KEY = 'bigkas_free_speech_tutorial_seen_v1';
+
+const FREE_SPEECH_TUTORIAL_STEPS = [
+  {
+    id: 'step-intro',
+    title: 'B-01:',
+    robot: tutorialRobotStep1,
+    robotClassName: 'is-activity-home-step-1',
+    button: 'Next',
+    targetElementId: null,
+    text: 'Welcome aboard! You made it, and I know you are going to do great things here. Let me give you a quick, guided tour of your Home screen so you know exactly where everything is.',
+  },
+  {
+    id: 'step-companion',
+    title: 'B-01:',
+    robot: tutorialRobotStep2,
+    button: 'Next',
+    targetElementId: 'tutorial-target-home-banner',
+    text: "Your AI Companion, hey that's me! See my panel right at the top? I will be checking in with you from time to time. Depending on your progress, I'll drop by with daily greetings, personalized tips, and a little extra encouragement to keep your momentum going.",
+  },
+  {
+    id: 'step-streak',
+    title: 'B-01:',
+    robot: tutorialRobotStep3,
+    button: 'Next',
+    targetElementId: 'tutorial-target-home-streak',
+    text: 'Up in the top right is your Streak counter. Consistency is the true secret to mastering public speaking! Log in and complete a daily activity to keep the fire burning and watch that number grow.',
+  },
+  {
+    id: 'step-rank',
+    title: 'B-01:',
+    robot: tutorialRobotStep4,
+    button: 'Next',
+    targetElementId: 'tutorial-target-home-rank',
+    text: 'To keep an eye on the big picture, check out the Journey Progression card on the right! This handy panel lets you quickly track your current speaking Rank and see exactly how many tasks you have conquered so far.',
+  },
+  {
+    id: 'step-roadmap',
+    title: 'B-01:',
+    robot: tutorialRobotStep5,
+    button: 'Next',
+    targetElementId: 'tutorial-target-home-journey',
+    text: 'This path is your customized learning roadmap! You will start at your first stage and unlock the next ones as you move forward. The activities gradually become more challenging, and once you complete all tasks on your path, you unlock a final Post-test challenge to advance.',
+  },
+  {
+    id: 'step-practice',
+    title: 'B-01:',
+    robot: tutorialRobotStep6,
+    button: 'Finish!',
+    targetElementId: 'tutorial-target-home-practice',
+    text: 'Need extra training? The Practice card gives you two ways to sharpen your skills anytime: Randomizer for surprise prompts, and Free Speech for open-topic confidence building. Ready? Let us start your Free Speech session now!',
+  },
+];
 
 function getLocalDateKey(date = new Date()) {
   const year = date.getFullYear();
@@ -160,6 +220,7 @@ function ActivityPage() {
     width: typeof window !== 'undefined' ? window.innerWidth : 0,
     height: typeof window !== 'undefined' ? window.innerHeight : 0,
   }));
+  const [showFreeSpeechTutorial, setShowFreeSpeechTutorial] = useState(false);
   const { sessions, fetchAllSessions } = useSessions();
   const activityMetrics = useMemo(
     () => getActivityMetrics(scopeKey),
@@ -461,6 +522,44 @@ function ActivityPage() {
     return () => window.clearTimeout(t);
   }, [location.pathname, location.state?.focusCurrentStage, navigate]);
 
+  useEffect(() => {
+    if (location.state?.launchFreeSpeechTutorial !== true) return;
+    setShowFreeSpeechTutorial(true);
+    navigate(location.pathname, {
+      replace: true,
+      state: { ...(location.state || {}), launchFreeSpeechTutorial: false },
+    });
+  }, [location.pathname, location.state, navigate]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    if (showFreeSpeechTutorial) {
+      document.body.classList.add('activity-tutorial-open');
+    } else {
+      document.body.classList.remove('activity-tutorial-open');
+    }
+    return () => document.body.classList.remove('activity-tutorial-open');
+  }, [showFreeSpeechTutorial]);
+
+  const launchFreeSpeechSession = useCallback(() => {
+    navigate(ROUTES.TRAINING_SETUP);
+  }, [navigate]);
+
+  const handleFreeSpeechClick = useCallback(() => {
+    if (typeof window !== 'undefined' && window.localStorage.getItem(FREE_SPEECH_TUTORIAL_SEEN_KEY) === '1') {
+      launchFreeSpeechSession();
+      return;
+    }
+    setShowFreeSpeechTutorial(true);
+  }, [launchFreeSpeechSession]);
+
+  const handleTutorialFinish = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(FREE_SPEECH_TUTORIAL_SEEN_KEY, '1');
+    }
+    launchFreeSpeechSession();
+  }, [launchFreeSpeechSession]);
+
   const journeySteps = useMemo(
     () =>
       tasks.map((task) => ({
@@ -582,6 +681,12 @@ function ActivityPage() {
 
   return (
     <div className="activity-page-root activity-page--skyward-entrance">
+      <TutorialOverlay
+        isOpen={showFreeSpeechTutorial}
+        steps={FREE_SPEECH_TUTORIAL_STEPS}
+        onClose={() => setShowFreeSpeechTutorial(false)}
+        onFinish={handleTutorialFinish}
+      />
       {showCompletionCelebration && (
         <Confetti
           width={viewportSize.width}
@@ -616,7 +721,7 @@ function ActivityPage() {
       <div className="activity-page-grid">
         {/* Banner */}
         <section className="new-banner dashboard-anim-top dashboard-anim-delay-2">
-           <div className="new-banner-left">
+           <div className="new-banner-left" id="tutorial-target-home-banner">
               <img src={heroRobotImage} alt="" className="new-banner-robot" />
               <div className="new-banner-bubble" aria-label="Coach message">
                 <p className="new-banner-kicker">B-01:</p>
@@ -624,7 +729,7 @@ function ActivityPage() {
               </div>
            </div>
            <div className="new-banner-right">
-              <div className="new-banner-streak" aria-label="Daily streak">
+              <div className="new-banner-streak" id="tutorial-target-home-streak" aria-label="Daily streak">
                  <div className="new-streak-top">
                    <img src={campfireImage} alt="" className="new-streak-fire" />
                    <div className="new-streak-headline">
@@ -648,7 +753,7 @@ function ActivityPage() {
         </section>
 
         {/* Left Column (Journey Shell) */}
-        <div className="new-left-col">
+        <div className="new-left-col" id="tutorial-target-home-journey">
           <div className="new-left-col-inner">
              <SkywardJourney
                steps={journeySteps}
@@ -671,7 +776,7 @@ function ActivityPage() {
         {/* Right Column (Widgets) */}
         {showDesktopSidebar ? (
           <div className="new-right-col no-scrollbar">
-            <section className="new-widget dashboard-anim-left dashboard-anim-delay-2">
+            <section className="new-widget dashboard-anim-left dashboard-anim-delay-2" id="tutorial-target-home-rank">
               <div className="new-widget-head">
                 <h2 className="new-widget-title">Journey Progression</h2>
                 <span className="new-widget-chip">Rank</span>
@@ -690,7 +795,7 @@ function ActivityPage() {
               </p>
             </section>
 
-            <section className="new-widget new-widget--practice dashboard-anim-bottom dashboard-anim-delay-4">
+            <section className="new-widget new-widget--practice dashboard-anim-bottom dashboard-anim-delay-4" id="tutorial-target-home-practice">
               <div className="new-widget-head">
                 <h2 className="new-widget-title">Practice</h2>
               </div>
@@ -729,7 +834,7 @@ function ActivityPage() {
                   <Button
                     variant="training"
                     className="activity-practice-cta activity-practice-cta--speech"
-                    onClick={() => navigate(ROUTES.TRAINING_SETUP)}
+                    onClick={handleFreeSpeechClick}
                   >
                     Free Speech
                   </Button>

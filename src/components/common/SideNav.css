@@ -17,6 +17,11 @@
   -webkit-backdrop-filter: blur(12px) saturate(140%);
 }
 
+body.activity-tutorial-open .side-nav {
+  pointer-events: none;
+  opacity: 0.45;
+}
+
 @media (min-width: 1025px) {
   .side-nav {
     opacity: 0;
@@ -222,6 +227,21 @@
   background: #ff9f1c;
   color: #ffffff;
   box-shadow: 0 10px 18px rgba(0, 0, 0, 0.14);
+}
+
+.side-nav-link--tutorial-launch {
+  margin-top: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.36);
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  cursor: pointer;
+  justify-content: center;
+}
+
+.side-nav-link--tutorial-launch:hover {
+  background: rgba(255, 159, 28, 0.24);
+  color: #ffffff;
+  transform: translateX(0);
 }
 
 .side-nav-logout {

@@ -25,7 +25,7 @@
 }
 
 .tutorial-robot-img {
-  width: clamp(140px, 22vw, 360px);
+  width: clamp(70px, 12vw, 140px);
   height: auto;
   flex-shrink: 0;
 }
@@ -34,7 +34,7 @@
   width: 100%;
   background: #FDFDF9;
   border-radius: 1rem;
-  max-width: clamp(260px, 40vw, 480px);
+  max-width: clamp(260px, 40vw, 400px);
   padding: clamp(1rem, 2.5vw, 1.5rem);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   position: relative;
@@ -156,6 +156,38 @@
   order: 2;
 }
 
+.tutorial-overlay-wrapper.is-activity-home-step-1 .tutorial-companion-container {
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(clamp(10px, 3vh, 30px) + env(safe-area-inset-bottom, 0px));
+  width: min(100%, 52rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.2rem, 0.9vw, 0.5rem);
+}
+
+.tutorial-overlay-wrapper.is-activity-home-step-1 .tutorial-speech-bubble {
+  max-width: min(100%, 48rem);
+  order: 1;
+}
+
+.tutorial-overlay-wrapper.is-activity-home-step-1 .tutorial-speech-bubble::before {
+  left: 50%;
+  bottom: -12px;
+  border-top: 12px solid #FDFDF9;
+  border-bottom: 0;
+  border-right: 12px solid transparent;
+  border-left: 12px solid transparent;
+  transform: translateX(-50%);
+}
+
+.tutorial-overlay-wrapper.is-activity-home-step-1 .tutorial-robot-img {
+  width: clamp(280px, 34vw, 410px);
+  order: 2;
+  filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.18));
+}
+
 @keyframes tutorial-spotlight-pulse {
   0%,
   100% {
@@ -166,26 +198,3 @@
   }
 }
 
-@media (max-width: 768px) {
-  .tutorial-companion-container {
-    right: 12px;
-  }
-
-  .tutorial-overlay-wrapper.is-controls-step .tutorial-companion-container {
-    top: clamp(0.75rem, 5vh, 2.5rem);
-  }
-
-  .tutorial-overlay-wrapper.is-final-step .tutorial-companion-container {
-    top: clamp(5.5rem, 11vh, 7rem);
-    width: min(100%, 22rem);
-  }
-
-  .tutorial-overlay-wrapper.is-final-step .tutorial-speech-bubble {
-    /* Keep final bubble in the same visual zone across small screens */
-    transform: translateY(clamp(8rem, 16vh, 12rem));
-  }
-
-  .tutorial-overlay-wrapper.is-final-step .tutorial-robot-img {
-    width: min(40.9375rem, 172vw);
-  }
-}

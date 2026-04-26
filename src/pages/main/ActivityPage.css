@@ -23,6 +23,125 @@ body, html {
   padding: var(--activity-page-vpad) var(--activity-page-hpad);
 }
 
+.activity-fs-tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  padding: clamp(12px, 2.4vw, 28px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(3, 7, 18, 0.18);
+  backdrop-filter: blur(1px);
+}
+
+.activity-fs-tutorial-card {
+  width: min(100%, 760px);
+  min-height: clamp(160px, 22vh, 220px);
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1px solid rgba(11, 57, 84, 0.08);
+  box-shadow: 0 20px 42px rgba(2, 6, 23, 0.22);
+  padding: clamp(16px, 1.9vw, 24px);
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.activity-fs-tutorial-kicker {
+  margin: 0;
+  color: #059669;
+  font-weight: 800;
+  font-size: clamp(1.1rem, 1.02rem + 0.3vw, 1.25rem);
+}
+
+.activity-fs-tutorial-copy {
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(1rem, 0.95rem + 0.2vw, 1.1rem);
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.activity-fs-tutorial-actions {
+  margin-top: auto;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.activity-fs-tutorial-next {
+  min-height: 44px;
+  min-width: 98px;
+  border: 0;
+  border-radius: 999px;
+  background: #059669;
+  color: #ffffff;
+  font-family: 'Fredoka', sans-serif;
+  font-size: clamp(0.9rem, 0.84rem + 0.12vw, 0.98rem);
+  font-weight: 600;
+  padding: 0 22px;
+  cursor: pointer;
+  box-shadow: #047857 0 4px 0 0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.activity-fs-tutorial-next:hover {
+  transform: translateY(2px);
+  box-shadow: #047857 0 2px 0 0;
+}
+
+.activity-fs-tutorial-next:active {
+  transform: translateY(4px);
+  box-shadow: #047857 0 0 0 0;
+}
+
+.activity-fs-tutorial-robot-wrap {
+  position: fixed;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.activity-fs-tutorial-robot {
+  width: clamp(200px, 21vw, 320px);
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 14px 24px rgba(2, 6, 23, 0.24));
+}
+
+.activity-fs-tutorial-robot-wrap.is-step-1 {
+  left: clamp(32px, 8vw, 170px);
+  bottom: clamp(8px, 3vh, 34px);
+}
+
+.activity-fs-tutorial-robot-wrap.is-step-2 {
+  left: clamp(28px, 8vw, 160px);
+  bottom: clamp(8px, 3vh, 34px);
+}
+
+.activity-fs-tutorial-robot-wrap.is-step-3 {
+  left: 50%;
+  top: clamp(124px, 18vh, 200px);
+  transform: translateX(-50%);
+}
+
+.activity-fs-tutorial-robot-wrap.is-step-4 {
+  right: clamp(32px, 7vw, 160px);
+  top: clamp(100px, 15vh, 175px);
+}
+
+.activity-fs-tutorial-robot-wrap.is-step-5 {
+  right: clamp(28px, 7vw, 155px);
+  top: clamp(106px, 15vh, 180px);
+}
+
+.activity-fs-tutorial-robot-wrap.is-step-6 {
+  left: clamp(28px, 7vw, 140px);
+  bottom: clamp(8px, 3vh, 30px);
+}
+
 .activity-page-grid {
   width: min(100%, 1424px);
   max-width: 1424px;
@@ -549,5 +668,43 @@ body, html {
     height: 56px;
     border-radius: 12px;
     padding: 7px;
+  }
+
+  .activity-fs-tutorial-overlay {
+    padding: clamp(10px, 4vw, 16px);
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: calc(clamp(10px, 4vw, 16px) + env(safe-area-inset-top));
+  }
+
+  .activity-fs-tutorial-card {
+    width: min(100%, 96vw);
+    border-radius: 18px;
+    padding: 14px;
+  }
+
+  .activity-fs-tutorial-copy {
+    font-size: clamp(0.92rem, 0.88rem + 0.3vw, 1rem);
+  }
+
+  .activity-fs-tutorial-robot-wrap {
+    position: absolute;
+  }
+
+  .activity-fs-tutorial-robot {
+    width: clamp(128px, 32vw, 185px);
+  }
+
+  .activity-fs-tutorial-robot-wrap.is-step-1,
+  .activity-fs-tutorial-robot-wrap.is-step-2,
+  .activity-fs-tutorial-robot-wrap.is-step-3,
+  .activity-fs-tutorial-robot-wrap.is-step-4,
+  .activity-fs-tutorial-robot-wrap.is-step-5,
+  .activity-fs-tutorial-robot-wrap.is-step-6 {
+    left: 12px;
+    right: auto;
+    top: auto;
+    bottom: clamp(14px, 2vh, 22px);
+    transform: none;
   }
 }

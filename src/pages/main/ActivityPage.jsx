@@ -72,6 +72,7 @@ const FREE_SPEECH_TUTORIAL_STEPS = [
     id: 'step-streak',
     title: 'B-01:',
     robot: tutorialRobotStep3,
+    robotClassName: 'is-activity-home-step-3',
     button: 'Next',
     targetElementId: 'tutorial-target-home-streak',
     text: 'Up in the top right is your Streak counter. Consistency is the true secret to mastering public speaking! Log in and complete a daily activity to keep the fire burning and watch that number grow.',

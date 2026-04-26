@@ -10,24 +10,32 @@ body, html {
 }
 
 .activity-page-root {
+  --activity-page-vpad: clamp(12px, 2vh, 24px);
+  --activity-page-hpad: clamp(12px, 2vw, 24px);
   width: 100%;
-  height: 100%;
-  overflow-y: auto;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
   box-sizing: border-box;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
-  padding-bottom: 10vh;
+  align-items: center;
+  padding: var(--activity-page-vpad) var(--activity-page-hpad);
 }
 
 .activity-page-grid {
-  width: min(80vw, 1600px);
-  max-width: 100%;
-  margin-top: clamp(1.5rem, 4vh, 3rem);
+  width: min(100%, 1424px);
+  max-width: 1424px;
+  margin-top: 0;
+  margin-inline: auto;
   display: grid;
   grid-template-columns: 2.2fr 1fr;
   grid-template-rows: auto 1fr;
   gap: 16px;
+  height: calc(100dvh - (var(--activity-page-vpad) * 2));
+  min-height: 0;
+  justify-content: center;
+  align-content: center;
 }
 
 /* -------------------------------------------------------------------------
@@ -165,16 +173,62 @@ body, html {
   padding: 24px 24px;
   display: flex;
   flex-direction: column;
+  gap: 10px;
   min-height: 0;
   overflow: visible;
+}
+
+.new-widget-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.new-widget-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 58px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(5, 150, 105, 0.12);
+  color: #047857;
+  font-size: clamp(0.78rem, 0.74rem + 0.15vw, 0.86rem);
+  font-weight: 800;
+  letter-spacing: 0.01em;
 }
 
 .new-widget-title {
   font-size: clamp(1.25rem, 1.1rem + 0.5vw, 1.5rem);
   font-weight: 800;
   color: #1f2937;
-  margin: 0 0 8px 0;
+  margin: 0;
   line-height: 1.2;
+}
+
+.new-widget-rank-card {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(11, 57, 84, 0.08);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.new-widget-rank-sprite {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 10px rgba(11, 57, 84, 0.18));
+}
+
+.new-widget-rank-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .new-widget-kicker {
@@ -182,7 +236,7 @@ body, html {
   font-weight: 800;
   font-size: clamp(0.72rem, 0.68rem + 0.2vw, 0.82rem);
   text-transform: uppercase;
-  margin: 16px 0 4px 0;
+  margin: 0;
   letter-spacing: 0.08em;
 }
 
@@ -198,9 +252,14 @@ body, html {
   font-size: clamp(0.82rem, 0.78rem + 0.2vw, 0.92rem);
   color: #4b5563;
   font-weight: 700;
-  text-align: right;
-  margin-top: 12px;
+  text-align: left;
+  margin-top: 2px;
   line-height: 1.35;
+}
+
+.new-widget-caption-sep {
+  color: #9ca3af;
+  margin: 0 2px;
 }
 
 /* Action Buttons */
@@ -208,7 +267,7 @@ body, html {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 .new-btn-row {
@@ -217,12 +276,84 @@ body, html {
   gap: 6px;
 }
 
+.new-widget--practice {
+  gap: 8px;
+}
+
+.new-practice-subtitle {
+  margin: 0;
+  font-size: clamp(0.82rem, 0.78rem + 0.2vw, 0.92rem);
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.new-btn-row--card {
+  padding: 10px 12px 12px;
+  border: 1px solid rgba(11, 57, 84, 0.08);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.new-btn-row--card .activity-practice-cta {
+  grid-column: 1 / -1;
+  margin-top: 2px;
+}
+
+.new-btn-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.new-btn-visual {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border: 1px solid rgba(11, 57, 84, 0.06);
+}
+
+.new-btn-visual--randomizer {
+  background: radial-gradient(circle at 30% 20%, #f3e8ff 0%, #e9d5ff 58%, #ddd6fe 100%);
+  border-color: rgba(124, 58, 237, 0.18);
+}
+
+.new-btn-visual--speech {
+  background: radial-gradient(circle at 30% 20%, #fff7ed 0%, #ffedd5 100%);
+}
+
+.new-btn-visual-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(11, 57, 84, 0.2));
+}
+
+.new-btn-visual-img--randomizer {
+  transform: scale(1.08);
+}
+
 .new-btn-label {
   font-size: clamp(0.9rem, 0.86rem + 0.2vw, 1rem);
   font-weight: 700;
   color: #1f2937;
   margin: 0;
   line-height: 1.25;
+}
+
+.new-btn-hint {
+  margin: 0;
+  font-size: clamp(0.76rem, 0.72rem + 0.18vw, 0.84rem);
+  color: #6b7280;
+  line-height: 1.35;
+  margin-bottom: 4px;
 }
 
 /* Practice buttons match auth submit feel */
@@ -239,6 +370,10 @@ body, html {
   font-weight: 500 !important;
   box-shadow: #047857 0 5px 0 0 !important;
   transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
 }
 
 .new-btn-row .activity-practice-cta:hover:not(:disabled) {
@@ -289,5 +424,17 @@ body, html {
   }
   .new-banner-streak {
     width: 100%;
+  }
+
+  .new-btn-row--card {
+    grid-template-columns: 56px 1fr;
+    gap: 8px;
+  }
+
+  .new-btn-visual {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    padding: 7px;
   }
 }

@@ -238,20 +238,28 @@ const HeaderTitle = styled.h1`
 `;
 
 const HeaderRankBadge = styled.div`
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  border-radius: 999px;
-  background: rgba(11, 57, 84, 0.08);
-  border: 1px solid rgba(11, 57, 84, 0.14);
-  padding: 4px 8px 4px 5px;
+  justify-content: center;
+  gap: 2px;
+  margin-top: 2px;
 `;
 
 const HeaderRankSprite = styled.img`
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
   object-fit: contain;
   filter: drop-shadow(0 2px 4px rgba(11, 57, 84, 0.2));
+`;
+
+const HeaderRankWord = styled.span`
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #475569;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1;
 `;
 
 const HeaderDescription = styled.p`
@@ -1240,11 +1248,6 @@ export default function SkywardJourney({
         >
           <div className="skyward-journey-header-title-row">
             <HeaderTitle>{steps.length > 0 ? currentPillarText : `Level ${currentLevel}`}</HeaderTitle>
-            {steps.length === 0 ? (
-              <HeaderRankBadge aria-label={`Rank ${rank.name}`}>
-                <HeaderRankSprite src={rank.image} alt="" />
-              </HeaderRankBadge>
-            ) : null}
             {isMobile ? (
               <IoChevronDown
                 aria-hidden="true"
@@ -1252,10 +1255,17 @@ export default function SkywardJourney({
               />
             ) : null}
           </div>
+          {steps.length === 0 ? (
+            <HeaderRankBadge aria-label={`Rank ${rank.name}`}>
+              <HeaderRankSprite src={rank.image} alt="" />
+              <HeaderRankWord>{rank.name}</HeaderRankWord>
+            </HeaderRankBadge>
+          ) : null}
           {!isMobile || !isHeaderCollapsed ? (
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', width: '100%', justifyContent: 'center' }}>
                 <button
+                  type="button"
                   onClick={(event) => {
                     event.stopPropagation();
                     onLevelChange && onLevelChange(Math.max(1, currentLevel - 1));
@@ -1284,6 +1294,7 @@ export default function SkywardJourney({
                   <HeaderDescription>{getLevelSubtitle(currentLevel)}</HeaderDescription>
                 </div>
                 <button
+                  type="button"
                   onClick={(event) => {
                     event.stopPropagation();
                     onLevelChange && onLevelChange(Math.min(5, currentLevel + 1));

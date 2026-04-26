@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   IoChevronDown,
   IoBookOutline,
@@ -27,6 +27,7 @@ const PRIMARY_NAV_ITEMS = [
 
 export default function SideNav() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuthContext();
   const displayName = user?.name || user?.nickname || user?.firstName || 'Speaker';
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -66,6 +67,15 @@ export default function SideNav() {
   const handleConfirmLogout = () => {
     setShowLogoutConfirm(false);
     logout();
+  };
+
+  const handleLaunchTutorial = () => {
+    navigate(ROUTES.ACTIVITY, {
+      state: {
+        skywardEntrance: true,
+        launchFreeSpeechTutorial: true,
+      },
+    });
   };
 
   const logoutModal = showLogoutConfirm && typeof document !== 'undefined'
@@ -151,6 +161,10 @@ export default function SideNav() {
           </div>
         ) : null}
       </nav>
+
+      <button type="button" className="side-nav-link side-nav-link--tutorial-launch" onClick={handleLaunchTutorial}>
+        <span className="side-nav-link-label">Launch Tutorial (Temp)</span>
+      </button>
 
       <button type="button" className="side-nav-logout" onClick={handleLogoutClick}>
         <IoLogOutOutline aria-hidden="true" />

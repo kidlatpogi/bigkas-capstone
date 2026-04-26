@@ -1,10 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Confetti from 'react-confetti';
+import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import { useAuthContext } from '../../context/useAuthContext';
 import { supabase } from '../../lib/supabase';
 import { ROUTES } from '../../utils/constants';
 import { getBigkasLevelFromScore, mapPercentToEntryScore } from '../../utils/activityProgress';
+import analyzingRobotImage from '../../assets/Sprites/Robot/0010.webp';
+import resultRobotImage from '../../assets/Sprites/Robot/0013.webp';
+import analyzingLevel1Voice from '../../assets/Voices/Profiling and Pre-Testing/Analyzing/Analyzing Level 1.mp3';
+import analyzingLevel2Voice from '../../assets/Voices/Profiling and Pre-Testing/Analyzing/Analyzing Level 2.mp3';
+import analyzingLevel3Voice from '../../assets/Voices/Profiling and Pre-Testing/Analyzing/Analyzing Level 3.mp3';
+import analyzingLevel4Voice from '../../assets/Voices/Profiling and Pre-Testing/Analyzing/Analyzing Level 4.mp3';
+import analyzingLevel5Voice from '../../assets/Voices/Profiling and Pre-Testing/Analyzing/Analyzing Level 5.mp3';
 import './UserAnalyzingPage.css';
 
 function clampScore(value) {
@@ -39,16 +46,47 @@ function formatEntryScale(percent0to100) {
   return mapPercentToEntryScore(percent0to100).toFixed(1);
 }
 
+const ANALYZING_MUTE_KEY = 'bigkas_analyzing_muted';
+
+const LEVEL_CONTENT = {
+  1: {
+    text: "Yay, you made that look so easy! All the setup is done. Your journey begins right here at LEVEL 1. Don't sweat the small stuff-every great speaker you've ever seen started exactly where you are right now! We're going to build your confidence brick by brick. Get ready to transform that 'stage fright' into 'stage might'!",
+    voice: analyzingLevel1Voice,
+  },
+  2: {
+    text: "Beep! That was great! Setup is officially complete. You're skipping the basics to start right at LEVEL 2. You've already got some great skills to work with! Remember, every pro started as a beginner. Let's build on this foundation and transform that 'stage fright' into 'stage might'!",
+    voice: analyzingLevel2Voice,
+  },
+  3: {
+    text: "Whoa, nice job! Setup is completely done. My sensors picked up some seriously good speaking habits, so you're diving right in at LEVEL 3! We're halfway to the top already-let's keep this momentum going!",
+    voice: analyzingLevel3Voice,
+  },
+  4: {
+    text: 'Wowzers! Setup is clear! Your speech was so smooth it almost blew my circuits! You are starting way up at LEVEL 4. You\'re practically a pro already. Let\'s polish those skills to absolute perfection!',
+    voice: analyzingLevel4Voice,
+  },
+  5: {
+    text: 'Mind... blown! Setup is completely done. Your speaking skills are off the charts! You are starting at the very top-LEVEL 5! We are going straight into masterclass mode. I might need to take notes from you!',
+    voice: analyzingLevel5Voice,
+  },
+};
+
 function UserAnalyzingPage() {
   const navigate = useNavigate();
   const { user, updateUserMetadata } = useAuthContext();
-  const [phase, setPhase] = useState(0);
   const [error, setError] = useState('');
   const [isReady, setIsReady] = useState(false);
   const [isPersisting, setIsPersisting] = useState(false);
   const [isPersisted, setIsPersisted] = useState(false);
-  const [showLevelPopup, setShowLevelPopup] = useState(false);
-  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
+  const [showLevelReveal, setShowLevelReveal] = useState(false);
+  const [showScoreBreakdown, setShowScoreBreakdown] = useState(false);
+  const [loaderPct, setLoaderPct] = useState(1);
+  const [typedResultText, setTypedResultText] = useState('');
+  const [isTypingDone, setIsTypingDone] = useState(false);
+  const [isMuted, setIsMuted] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(ANALYZING_MUTE_KEY) === '1';
+  });
   const [analysis, setAnalysis] = useState({
     verbalScore: 0,
     vocalScore: 0,
@@ -62,34 +100,17 @@ function UserAnalyzingPage() {
   const userSpeakerPoints = Math.max(0, Math.floor(Number(user?.speakerPoints ?? 0) || 0));
   const userPretestFreeScore = clampScore(user?.pretestFreeScore ?? 0);
   const userPretestFreeSessionId = user?.pretestFreeSessionId || null;
+  const revealAudioRef = useRef(null);
 
-  useEffect(() => {
-    const syncWindowSize = () => {
-      setWindowSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-    };
-
-    syncWindowSize();
-    window.addEventListener('resize', syncWindowSize);
-
-    return () => {
-      window.removeEventListener('resize', syncWindowSize);
-    };
-  }, []);
+  const levelContent = useMemo(
+    () => LEVEL_CONTENT[analysis.levelNumber] || LEVEL_CONTENT[1],
+    [analysis.levelNumber],
+  );
 
   useEffect(() => {
     let cancelled = false;
 
     const run = async () => {
-      const delays = [700, 1300, 1800];
-      for (let i = 0; i < delays.length; i += 1) {
-        await new Promise((resolve) => setTimeout(resolve, delays[i]));
-        if (cancelled) return;
-        setPhase(i + 1);
-      }
-
       let freePretestScore = 0;
       let verbalScore = 0;
       let vocalScore = 0;
@@ -205,10 +226,9 @@ function UserAnalyzingPage() {
     };
   }, [user?.id, userPretestFreeScore, userPretestFreeSessionId]);
 
-  const progress = Math.min(100, 20 + phase * 25);
-
-  const handleProceed = async () => {
+  const persistAndReveal = useCallback(async () => {
     if (!isReady || isPersisting) return;
+    if (showLevelReveal) return;
 
     if (!isPersisted) {
       setIsPersisting(true);
@@ -234,7 +254,7 @@ function UserAnalyzingPage() {
       });
 
       // Update the profiles table with the new current_level
-      if (result?.success) {
+      if (result?.success && user?.id) {
         const { error: profileError } = await supabase
           .from('profiles')
           .update({ current_level: analysis.levelNumber })
@@ -255,7 +275,103 @@ function UserAnalyzingPage() {
       setIsPersisted(true);
     }
 
-    setShowLevelPopup(true);
+    setShowLevelReveal(true);
+  }, [
+    analysis.finalScore,
+    analysis.freePretestScore,
+    analysis.levelName,
+    analysis.levelNumber,
+    analysis.verbalScore,
+    analysis.visualScore,
+    analysis.vocalScore,
+    isPersisted,
+    isPersisting,
+    isReady,
+    showLevelReveal,
+    updateUserMetadata,
+    user?.id,
+    userSpeakerPoints,
+  ]);
+
+  useEffect(() => {
+    if (showLevelReveal) return undefined;
+    const timer = window.setInterval(() => {
+      setLoaderPct((prev) => {
+        if (!isReady) {
+          return Math.min(94, prev + 1);
+        }
+        return Math.min(100, prev + 2);
+      });
+    }, 90);
+    return () => window.clearInterval(timer);
+  }, [isReady, showLevelReveal]);
+
+  useEffect(() => {
+    if (!isReady || showLevelReveal || loaderPct < 100 || error) return;
+    void persistAndReveal();
+  }, [error, isReady, loaderPct, persistAndReveal, showLevelReveal]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(ANALYZING_MUTE_KEY, isMuted ? '1' : '0');
+  }, [isMuted]);
+
+  useEffect(() => {
+    if (!showLevelReveal) {
+      setTypedResultText('');
+      setIsTypingDone(false);
+      return undefined;
+    }
+
+    setTypedResultText('');
+    setIsTypingDone(false);
+    let index = 0;
+    const typingTimer = window.setInterval(() => {
+      index += 1;
+      setTypedResultText(levelContent.text.slice(0, index));
+      if (index >= levelContent.text.length) {
+        window.clearInterval(typingTimer);
+        setIsTypingDone(true);
+      }
+    }, 12);
+
+    return () => {
+      window.clearInterval(typingTimer);
+    };
+  }, [levelContent.text, showLevelReveal]);
+
+  useEffect(() => {
+    if (!showLevelReveal) return undefined;
+    const audio = new Audio(levelContent.voice);
+    audio.preload = 'auto';
+    audio.muted = isMuted;
+    revealAudioRef.current = audio;
+    if (!isMuted) {
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+    }
+
+    return () => {
+      audio.pause();
+      audio.currentTime = 0;
+      revealAudioRef.current = null;
+    };
+  }, [isMuted, levelContent.voice, showLevelReveal]);
+
+  const handleToggleMute = () => {
+    setIsMuted((prev) => {
+      const next = !prev;
+      if (revealAudioRef.current) {
+        revealAudioRef.current.muted = next;
+        if (next) {
+          revealAudioRef.current.pause();
+        } else {
+          revealAudioRef.current.currentTime = 0;
+          revealAudioRef.current.play().catch(() => {});
+        }
+      }
+      return next;
+    });
   };
 
   const handleGoToDashboard = () => {
@@ -264,71 +380,94 @@ function UserAnalyzingPage() {
 
   return (
     <div className="user-analyzing-page">
-      {showLevelPopup && (
-        <>
-          <Confetti
-            width={windowSize.width}
-            height={windowSize.height}
-            recycle={false}
-            numberOfPieces={320}
-            gravity={0.28}
-          />
-          <div className="analyzing-popup-backdrop">
-            <div className="analyzing-popup" role="dialog" aria-modal="true" aria-label="Your Level Result">
-              <p className="analyzing-popup-kicker">Level Unlocked</p>
-              <h2>You are now Level {analysis.levelNumber}: {analysis.levelName}!</h2>
-              <p className="analyzing-popup-text">
-                Great work finishing your profiling and pre-tests. Your training journey is now personalized for your current level.
-              </p>
-              <button type="button" className="analyzing-proceed" onClick={handleGoToDashboard}>
-                Go to Dashboard
+      {!showLevelReveal ? (
+        <section className="analyzing-intro">
+          <article className="analyzing-bubble" aria-label="Analyzing onboarding level">
+            <p className="analyzing-bubble-kicker">B-01:</p>
+            <p className="analyzing-bubble-title">Analyzing your level...</p>
+            <p className="analyzing-bubble-copy">
+              Hold tight while I process your Triple V metrics and calibrate your starting level.
+            </p>
+
+            <div className="analyzing-loader" role="progressbar" aria-valuemin={1} aria-valuemax={100} aria-valuenow={loaderPct}>
+              <span className="analyzing-loader-fill" style={{ width: `${loaderPct}%` }} />
+            </div>
+            <p className="analyzing-loader-text">{loaderPct}%</p>
+            {error && <p className="analyzing-error">{error}</p>}
+          </article>
+
+          <div className="analyzing-robot-wrap">
+            <div className="analyzing-robot-media" aria-hidden="true">
+              <img src={analyzingRobotImage} alt="" className="analyzing-robot-image" />
+            </div>
+            <div className="analyzing-audio-action">
+              <button
+                type="button"
+                onClick={handleToggleMute}
+                aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                className={`analyzing-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
+              >
+                {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
               </button>
             </div>
           </div>
-        </>
-      )}
+        </section>
+      ) : (
+        <section className="analyzing-intro">
+          <article className="analyzing-bubble analyzing-bubble--result" aria-label="Your level result">
+            <p className="analyzing-bubble-kicker">B-01:</p>
+            <p className="analyzing-result-text">{typedResultText}</p>
 
-      <div className="analyzing-card">
-        <p className="analyzing-kicker">Finalizing onboarding</p>
-        <h1>Analyzing your Level</h1>
-        <p className="analyzing-subtitle">
-          We are using Triple V scores (Verbal, Vocal, Visual) and Mehrabian weighting to calibrate your starting level.
-        </p>
+            <div className="analyzing-actions">
+              <button
+                type="button"
+                className="analyzing-action-btn analyzing-action-btn--secondary"
+                onClick={() => setShowScoreBreakdown((prev) => !prev)}
+              >
+                {showScoreBreakdown ? 'Hide Breakdown' : 'Score Breakdown'}
+              </button>
+              <button
+                type="button"
+                className="analyzing-action-btn analyzing-action-btn--primary"
+                onClick={handleGoToDashboard}
+                disabled={!isTypingDone}
+              >
+                Next
+              </button>
+            </div>
 
-        <div className="analyzing-meter" aria-hidden="true">
-          <span style={{ width: `${progress}%` }} />
-        </div>
+            {showScoreBreakdown && (
+              <div className="analyzing-breakdown">
+                <p className="analyzing-breakdown-scale">Bigkas entry scale (1.0-5.0) computed from your 0-100 metrics</p>
+                <p>Verbal Score (7%): {formatEntryScale(analysis.verbalScore)}</p>
+                <p>Vocal Score (38%): {formatEntryScale(analysis.vocalScore)}</p>
+                <p>Visual Score (55%): {formatEntryScale(analysis.visualScore)}</p>
+                <p>Free Speech Pre-Test: {formatEntryScale(analysis.freePretestScore)}</p>
+                <p>Final weighted score: {formatEntryScale(analysis.finalScore)}</p>
+                <p>Starting level: Level {analysis.levelNumber} ({analysis.levelName})</p>
+              </div>
+            )}
+          </article>
 
-        <ul className="analyzing-checklist">
-          <li className={phase >= 1 ? 'done' : ''}>Collecting your Triple V pre-test metrics</li>
-          <li className={phase >= 2 ? 'done' : ''}>Applying Mehrabian 7-38-55 weighting</li>
-          <li className={phase >= 3 ? 'done' : ''}>Setting your starting speaker level</li>
-        </ul>
-
-        <div className="analyzing-estimate">
-          <span>Estimated Starting Level</span>
-          <strong>Level {analysis.levelNumber}: {analysis.levelName}</strong>
-        </div>
-
-        <div className="analyzing-breakdown">
-          <p className="analyzing-breakdown-scale">Scores below use the Bigkas 1.0–5.0 entry scale (from your 0–100 metrics).</p>
-          <p>Verbal Score (7%): {formatEntryScale(analysis.verbalScore)}</p>
-          <p>Vocal Score (38%): {formatEntryScale(analysis.vocalScore)}</p>
-          <p>Visual Score (55%): {formatEntryScale(analysis.visualScore)}</p>
-          <p>Free Speech Pre-Test: {formatEntryScale(analysis.freePretestScore)}</p>
-          <p>Final weighted score: {formatEntryScale(analysis.finalScore)}</p>
-        </div>
-
-        {isReady && !error && (
-          <div className="analyzing-actions">
-            <button type="button" className="analyzing-proceed" onClick={handleProceed} disabled={isPersisting}>
-              {isPersisting ? 'Saving...' : 'Proceed'}
-            </button>
+          <div className="analyzing-robot-wrap">
+            <div className="analyzing-robot-media analyzing-robot-media--result" aria-hidden="true">
+              <img src={resultRobotImage} alt="" className="analyzing-robot-image" />
+            </div>
+            <div className="analyzing-audio-action">
+              <button
+                type="button"
+                onClick={handleToggleMute}
+                aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                className={`analyzing-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
+              >
+                {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+              </button>
+            </div>
           </div>
-        )}
-
-        {error && <p className="analyzing-error">{error}</p>}
-      </div>
+        </section>
+      )}
     </div>
   );
 }

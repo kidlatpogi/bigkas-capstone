@@ -321,19 +321,6 @@ function TutorialOverlay({
           className="tutorial-robot-img"
           aria-hidden="true"
         />
-        {showAudioToggle ? (
-          <div className="tutorial-audio-action">
-            <button
-              type="button"
-              onClick={handleToggleMute}
-              aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-              title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-              className={`tutorial-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
-            >
-              {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-            </button>
-          </div>
-        ) : null}
         <article className="tutorial-speech-bubble">
           <div className="tutorial-bubble-title">{activeStep.title}</div>
           <p className="tutorial-bubble-text">{renderBubbleText()}</p>
@@ -342,6 +329,19 @@ function TutorialOverlay({
           </button>
         </article>
       </div>
+      {showAudioToggle ? (
+        <div className="tutorial-audio-action">
+          <button
+            type="button"
+            onClick={handleToggleMute}
+            aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+            title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+            className={`tutorial-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
+          >
+            {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }

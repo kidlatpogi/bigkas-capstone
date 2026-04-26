@@ -1429,6 +1429,7 @@ function TrainingPage() {
 
       <TutorialOverlay
         isOpen={hasActivePretestTutorial}
+        showAudioToggle={hasActivePretestTutorial}
         onClose={() => setIsTutorialOverlayOpen(false)}
       />
 

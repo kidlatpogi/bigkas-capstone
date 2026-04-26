@@ -642,6 +642,17 @@ function UserProfilingPage() {
           <div className="profiling-question-lower">
             <div className="profiling-question-robot-wrap" aria-hidden="true">
               <img src={robotQuestionImage} alt="" className="profiling-question-robot-image" />
+              <div className="profiling-intro-audio-action profiling-intro-audio-action--questions">
+                <button
+                  type="button"
+                  onClick={handleToggleMute}
+                  aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                  title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                  className={`profiling-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
+                >
+                  {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+                </button>
+              </div>
             </div>
 
             <div className="profiling-question-options-wrap">

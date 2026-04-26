@@ -106,12 +106,6 @@ function getTimeOfDay(date = new Date()) {
   return 'night';
 }
 
-function getGreetingLabel(timeOfDay) {
-  if (timeOfDay === 'morning') return 'Good morning';
-  if (timeOfDay === 'noon') return 'Good afternoon';
-  return 'Good evening';
-}
-
 function ActivityPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -226,11 +220,6 @@ function ActivityPage() {
   const streakStats = useMemo(() => buildStreakStats(sessions, activityHistory), [sessions, activityHistory]);
   const weekPills = useMemo(() => getWeekdayPills(activeDayKeys), [activeDayKeys]);
   const timeOfDay = useMemo(() => getTimeOfDay(), []);
-  const greetingLabel = useMemo(() => getGreetingLabel(timeOfDay), [timeOfDay]);
-  const displayName = useMemo(
-    () => user?.name || user?.nickname || user?.firstName || 'Speaker',
-    [user?.firstName, user?.name, user?.nickname],
-  );
   const heroRobotImage = useMemo(() => {
     if (timeOfDay === 'morning') return robotMorningImage;
     if (timeOfDay === 'noon') return robotNoonImage;
@@ -587,92 +576,95 @@ function ActivityPage() {
       <div className="activity-two-col">
         <div className="activity-col-main">
           <div className="activity-content-wrap activity-content-wrap--journey-scroll">
-            <section className="activity-home-hero dashboard-anim-top dashboard-anim-delay-2">
-              <h1 className="activity-home-greeting">{greetingLabel}, {displayName}!</h1>
-              <div className="activity-home-hero-card">
-                <img src={heroRobotImage} alt="" className="activity-home-hero-robot" />
-                <article className="activity-home-hero-bubble" aria-label="Coach message">
-                  <p className="activity-home-hero-kicker">B-01:</p>
-                  <p className="activity-home-hero-copy">
-                    You&apos;re on a roll. Keep doing your activities and improve your speaking.
-                  </p>
-                </article>
-              </div>
-            </section>
-            <div className="activity-journey-shell">
-              <div className="activity-task-list activity-task-list--journey">
-                <SkywardJourney
-                  steps={journeySteps}
-                  groupedTasks={groupedTasks}
-                  currentLevel={selectedLevel}
-                  recommendedLevel={recommendedLevel}
-                  onLevelChange={setSelectedLevel}
-                  entranceFromNav={entranceFromNav}
-                  scrollToStepIndex={scrollToStepIndex}
-                  renderStepContent={(step, meta) =>
-                    renderTaskCard({
-                      task: step.task,
-                      animationClass: `dashboard-anim-bottom dashboard-anim-delay-${Math.min(meta.stepIndex + 2, 9)}`,
-                    })
-                  }
-                />
+            <div className="activity-main-layout">
+              <section className="activity-home-hero dashboard-anim-top dashboard-anim-delay-2">
+                <div className="activity-home-hero-card">
+                  <img src={heroRobotImage} alt="" className="activity-home-hero-robot" />
+                  <div className="activity-home-hero-main">
+                    <article className="activity-home-hero-bubble" aria-label="Coach message">
+                      <p className="activity-home-hero-kicker">B-01:</p>
+                      <p className="activity-home-hero-copy">
+                        You&apos;re on a roll. Keep doing your activities and improve your speaking.
+                      </p>
+                    </article>
+                    <div className="activity-home-hero-streak" aria-label="Daily streak">
+                      <div className="activity-home-hero-streak-value">{streakStats.currentStreak}</div>
+                      <p className="activity-home-hero-streak-label">days</p>
+                      <p className="activity-home-hero-streak-copy">
+                        Build a daily speaking habit to keep stacking your streak.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <div className="activity-second-row">
+                <div className="activity-journey-shell">
+                  <div className="activity-task-list activity-task-list--journey">
+                    <SkywardJourney
+                      steps={journeySteps}
+                      groupedTasks={groupedTasks}
+                      currentLevel={selectedLevel}
+                      recommendedLevel={recommendedLevel}
+                      onLevelChange={setSelectedLevel}
+                      entranceFromNav={entranceFromNav}
+                      scrollToStepIndex={scrollToStepIndex}
+                      renderStepContent={(step, meta) =>
+                        renderTaskCard({
+                          task: step.task,
+                          animationClass: `dashboard-anim-bottom dashboard-anim-delay-${Math.min(meta.stepIndex + 2, 9)}`,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                {showDesktopSidebar ? (
+                <div className="activity-secondary-column no-scrollbar">
+                  <section className="dashboard-card activity-journey-card dashboard-anim-left dashboard-anim-delay-2">
+                    <div className="activity-journey-title">Journey Progression</div>
+                    <p className="activity-journey-rank-label">RANK:</p>
+                    <h2 className="activity-journey-rank">{levelProgress.levelName}</h2>
+                    <p className="activity-journey-summary">
+                      {activitiesLoading
+                        ? 'Loading journey…'
+                        : `Activity Journey: ${completedTaskCount}/${Math.max(tasks.length, 1)} Task Complete`}
+                    </p>
+                    <div className="activity-journey-track">
+                      <div className="activity-journey-fill" style={{ width: `${sidebarProgressPct}%` }} />
+                    </div>
+                    <p className="activity-journey-task-total">{completedTaskCount}/{Math.max(tasks.length, 1)} Task Complete</p>
+                  </section>
+
+                  <section className="dashboard-card activity-practice-card dashboard-anim-bottom dashboard-anim-delay-4">
+                    <h3 className="activity-practice-title">Practice</h3>
+                    <div className="activity-practice-row">
+                      <p className="activity-practice-row-label">Randomizer</p>
+                      <Button
+                        variant="practice"
+                        className="activity-practice-cta activity-practice-cta--randomizer"
+                        onClick={() => navigate(ROUTES.PRACTICE)}
+                      >
+                        Randomizer
+                      </Button>
+                    </div>
+                    <div className="activity-practice-row">
+                      <p className="activity-practice-row-label">Free Speech</p>
+                      <Button
+                        variant="training"
+                        className="activity-practice-cta activity-practice-cta--speech"
+                        onClick={() => navigate(ROUTES.TRAINING_SETUP)}
+                      >
+                        Free Speech
+                      </Button>
+                    </div>
+                  </section>
+                </div>
+                ) : null}
               </div>
             </div>
           </div>
         </div>
-
-        {showDesktopSidebar ? (
-        <aside className="activity-col-sidebar no-scrollbar">
-          <section className="dashboard-card activity-day-card dashboard-anim-right dashboard-anim-delay-3">
-            <div className="activity-day-value">
-              {streakStats.currentStreak}
-            </div>
-            <p className="activity-day-label">days</p>
-            <p className="activity-day-copy">
-              Build a daily speaking habit to keep stacking your streak.
-            </p>
-          </section>
-
-          <section className="dashboard-card activity-journey-card dashboard-anim-left dashboard-anim-delay-2">
-            <div className="activity-journey-title">Journey Progression</div>
-            <p className="activity-journey-rank-label">RANK:</p>
-            <h2 className="activity-journey-rank">{levelProgress.levelName}</h2>
-            <p className="activity-journey-summary">
-              {activitiesLoading
-                ? 'Loading journey…'
-                : `Activity Journey: ${completedTaskCount}/${Math.max(tasks.length, 1)} Task Complete`}
-            </p>
-            <div className="activity-journey-track">
-              <div className="activity-journey-fill" style={{ width: `${sidebarProgressPct}%` }} />
-            </div>
-            <p className="activity-journey-task-total">{completedTaskCount}/{Math.max(tasks.length, 1)} Task Complete</p>
-          </section>
-
-          <section className="dashboard-card activity-practice-card dashboard-anim-bottom dashboard-anim-delay-4">
-            <h3 className="activity-practice-title">Practice</h3>
-            <div className="activity-practice-row">
-              <p className="activity-practice-row-label">Randomizer</p>
-              <Button
-                variant="practice"
-                className="activity-practice-cta activity-practice-cta--randomizer"
-                onClick={() => navigate(ROUTES.PRACTICE)}
-              >
-                Randomizer
-              </Button>
-            </div>
-            <div className="activity-practice-row">
-              <p className="activity-practice-row-label">Free Speech</p>
-              <Button
-                variant="training"
-                className="activity-practice-cta activity-practice-cta--speech"
-                onClick={() => navigate(ROUTES.TRAINING_SETUP)}
-              >
-                Free Speech
-              </Button>
-            </div>
-          </section>
-        </aside>
-        ) : null}
       </div>
     </div>
   );

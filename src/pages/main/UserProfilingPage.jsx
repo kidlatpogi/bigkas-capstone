@@ -536,17 +536,6 @@ function UserProfilingPage() {
                 <source src={waveMp4} type="video/mp4" />
               </video>
             </div>
-            <div className="profiling-intro-audio-action">
-              <button
-                type="button"
-                onClick={handleToggleMute}
-                aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                className={`profiling-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
-              >
-                {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-              </button>
-            </div>
           </div>
         </section>
       )}
@@ -596,18 +585,10 @@ function UserProfilingPage() {
 
           <div className="profiling-intro-robot">
             <div className="profiling-intro-robot-media profiling-intro-robot-media--ready" aria-hidden="true">
-              <img src={robotReadyImage} alt="" className="profiling-ready-image" />
-            </div>
-            <div className="profiling-intro-audio-action">
-              <button
-                type="button"
-                onClick={handleToggleMute}
-                aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                className={`profiling-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
-              >
-                {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-              </button>
+              <video className="profiling-intro-video" autoPlay loop muted playsInline>
+                <source src={waveWebm} type="video/webm" />
+                <source src={waveMp4} type="video/mp4" />
+              </video>
             </div>
           </div>
         </section>
@@ -642,17 +623,6 @@ function UserProfilingPage() {
           <div className="profiling-question-lower">
             <div className="profiling-question-robot-wrap" aria-hidden="true">
               <img src={robotQuestionImage} alt="" className="profiling-question-robot-image" />
-              <div className="profiling-intro-audio-action profiling-intro-audio-action--questions">
-                <button
-                  type="button"
-                  onClick={handleToggleMute}
-                  aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                  title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                  className={`profiling-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
-                >
-                  {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-                </button>
-              </div>
             </div>
 
             <div className="profiling-question-options-wrap">
@@ -737,22 +707,25 @@ function UserProfilingPage() {
 
           <div className="profiling-intro-robot">
             <div className="profiling-intro-robot-media profiling-intro-robot-media--ready" aria-hidden="true">
-              <img src={robotReadyImage} alt="" className="profiling-ready-image" />
-            </div>
-            <div className="profiling-intro-audio-action">
-              <button
-                type="button"
-                onClick={handleToggleMute}
-                aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                className={`profiling-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
-              >
-                {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-              </button>
+              <video className="profiling-intro-video" autoPlay loop muted playsInline>
+                <source src={waveWebm} type="video/webm" />
+                <source src={waveMp4} type="video/mp4" />
+              </video>
             </div>
           </div>
         </section>
       )}
+      <div className="profiling-intro-audio-action">
+        <button
+          type="button"
+          onClick={handleToggleMute}
+          aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+          title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+          className={`profiling-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
+        >
+          {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+        </button>
+      </div>
     </div>
   );
 }

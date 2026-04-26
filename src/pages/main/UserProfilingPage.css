@@ -20,7 +20,7 @@
 }
 
 .user-profiling-page.is-gate-screen {
-  align-items: center;
+  align-items: end;
 }
 
 .profiling-intro {
@@ -29,7 +29,7 @@
   min-height: 100dvh;
   display: grid;
   justify-items: center;
-  align-content: center;
+  align-content: end;
   padding: clamp(1rem, 2.2vw, 2rem);
   gap: clamp(0.2rem, 1vw, 0.6rem);
   container-type: inline-size;
@@ -45,6 +45,7 @@
   padding: clamp(0.95rem, 1.8vw, 1.2rem) clamp(1rem, 2vw, 1.3rem);
   color: #111827;
   position: relative;
+  top: 10rem;
   z-index: 3;
 }
 
@@ -306,11 +307,13 @@
 }
 
 .profiling-intro-video {
-  width: 132%;
+  width: 170%;
   max-width: none;
+  aspect-ratio: 1 / 1;
   height: auto;
   display: block;
   object-fit: contain;
+  object-position: center;
   margin-left: 0;
   transform: none;
 }

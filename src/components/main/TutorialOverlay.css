@@ -252,6 +252,14 @@
   transform: none;
 }
 
+.tutorial-overlay-wrapper.is-default-tutorial.is-final-step .tutorial-companion-container {
+  top: clamp(8rem, 16vh, 11rem);
+}
+
+.tutorial-overlay-wrapper.is-default-tutorial.is-final-step .tutorial-robot-img {
+  width: clamp(520px, 40vw, 655px);
+}
+
 .tutorial-overlay-wrapper.is-activity-home-step-1 .tutorial-companion-container {
   left: 50%;
   transform: translateX(-50%);

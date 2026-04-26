@@ -316,6 +316,25 @@
   filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.2));
 }
 
+.tutorial-overlay-wrapper.is-custom-tutorial:not(.is-activity-home-step-1) .tutorial-companion-container {
+  left: clamp(154px, 15vw, 238px);
+  bottom: calc(clamp(10px, 3vh, 30px) + env(safe-area-inset-bottom, 0px));
+  width: min(100% - clamp(10px, 3vw, 30px), 52rem);
+  align-items: flex-end;
+  z-index: 1300;
+  pointer-events: auto;
+}
+
+.tutorial-overlay-wrapper.is-custom-tutorial:not(.is-activity-home-step-1) .tutorial-robot-img {
+  width: clamp(260px, 24vw, 360px);
+  filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.2));
+}
+
+.tutorial-overlay-wrapper.is-custom-tutorial:not(.is-activity-home-step-1) .tutorial-speech-bubble {
+  z-index: 1301;
+  pointer-events: auto;
+}
+
 .tutorial-overlay-wrapper.is-activity-home-step-3 .tutorial-companion-container {
   left: clamp(154px, 15vw, 238px);
   bottom: calc(clamp(10px, 3vh, 30px) + env(safe-area-inset-bottom, 0px));
@@ -329,6 +348,10 @@
 }
 
 .tutorial-overlay-wrapper.is-activity-home-step-1 ~ .activity-page-grid .skyward-journey-header-card {
+  z-index: 1 !important;
+}
+
+.tutorial-overlay-wrapper.is-custom-tutorial ~ .activity-page-grid .skyward-journey-header-card {
   z-index: 1 !important;
 }
 
@@ -387,12 +410,28 @@
   box-shadow: 0 0 0 5px #34D399, 0 0 42px rgba(52, 211, 153, 0.9) !important;
 }
 
+.tutorial-overlay-wrapper.is-activity-home-step-3 ~ .activity-page-grid .new-banner {
+  position: relative;
+  z-index: 1000;
+}
+
+.tutorial-overlay-wrapper.is-activity-home-step-3 ~ .activity-page-grid .new-banner-right {
+  position: relative;
+  z-index: 1100;
+  opacity: 1 !important;
+  filter: none !important;
+}
+
 .tutorial-overlay-wrapper.is-activity-home-step-3 ~ .activity-page-grid .new-banner-left {
   opacity: 0.45;
 }
 
 .tutorial-overlay-wrapper.is-activity-home-step-3 ~ .activity-page-grid .skyward-journey-header-card {
   z-index: 1 !important;
+}
+
+.tutorial-overlay-wrapper.is-custom-tutorial ~ .activity-page-grid #tutorial-target-home-journey.tutorial-spotlight-active {
+  z-index: 880 !important;
 }
 
 .tutorial-overlay-wrapper.is-activity-home-step-2 ~ .activity-page-grid .skyward-journey-header-card {

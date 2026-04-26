@@ -4,7 +4,6 @@ import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   IoChevronDown,
-  IoTrophy,
   IoChatbubbleEllipses,
   IoCheckmarkCircle,
   IoClose,
@@ -81,10 +80,10 @@ function clampMapState(state, viewportEl, contentEl, scale) {
 
   // Provide breathing room so users can pan to both extremes
   // without clipping the first/last section against viewport edges.
-  // Larger travel buffers prevent the first/last nodes from being clipped
-  // at viewport edges after panning.
-  const verticalTopBuffer = 28;
-  const verticalBottomBuffer = 92;
+  // Adaptive travel buffers keep first/last nodes fully visible across
+  // different container heights and prevent edge clipping.
+  const verticalTopBuffer = Math.max(80, Math.round(H * 0.16));
+  const verticalBottomBuffer = Math.max(110, Math.round(H * 0.2));
   const boundedHeight = ((contentBottom + verticalBottomBuffer) - (contentTop - verticalTopBuffer)) * scale;
   let minY;
   let maxY;
@@ -1097,8 +1096,10 @@ export default function SkywardJourney({
                         aria-hidden
                       />
                     ) : isSectionTrophy ? (
-                      <IoTrophy
-                        className="skyward-journey-node-icon skyward-journey-node-icon--trophy"
+                      <img
+                        src={isDone ? chestOpenImage : chestClosedImage}
+                        className="skyward-journey-node-icon skyward-journey-node-icon--trophy skyward-journey-node-icon--trophy-chest"
+                        alt=""
                         aria-hidden
                       />
                     ) : startStage ? (

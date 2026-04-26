@@ -342,6 +342,15 @@
     bottom: calc(clamp(104px, 18vh, 148px) + env(safe-area-inset-bottom, 0px));
   }
 
+  .tutorial-overlay-wrapper.is-default-tutorial.is-controls-step .tutorial-companion-container {
+    top: calc(clamp(52px, 8vh, 74px) + env(safe-area-inset-top, 0px));
+    bottom: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(calc(100vw - clamp(16px, 6vw, 32px)), 54rem);
+    align-items: flex-start;
+  }
+
   .tutorial-audio-action,
   .tutorial-overlay-wrapper.is-default-tutorial .tutorial-audio-action,
   .tutorial-overlay-wrapper.is-default-tutorial.is-final-step .tutorial-audio-action,

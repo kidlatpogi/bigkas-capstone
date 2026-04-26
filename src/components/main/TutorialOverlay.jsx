@@ -83,6 +83,13 @@ function TutorialOverlay({
   const stepAudioRefs = useRef([]);
   const typingIntervalRef = useRef(null);
 
+  const clearAllSpotlights = () => {
+    if (typeof document === 'undefined') return;
+    document.querySelectorAll('.tutorial-spotlight-active').forEach((el) => {
+      el.classList.remove('tutorial-spotlight-active');
+    });
+  };
+
   const stopAllAudios = () => {
     stepAudioRefs.current.forEach((audio) => {
       if (!audio) return;
@@ -117,9 +124,11 @@ function TutorialOverlay({
 
   useEffect(() => {
     if (isOpen) {
+      clearAllSpotlights();
       setCurrentStep(0);
       return;
     }
+    clearAllSpotlights();
     stopAllAudios();
     if (typingIntervalRef.current) {
       window.clearInterval(typingIntervalRef.current);
@@ -134,6 +143,7 @@ function TutorialOverlay({
   useEffect(() => {
     if (!isOpen) return undefined;
 
+    clearAllSpotlights();
     if (activeSpotlightRef.current) {
       activeSpotlightRef.current.classList.remove('tutorial-spotlight-active');
       activeSpotlightRef.current = null;
@@ -150,6 +160,7 @@ function TutorialOverlay({
     }
 
     return () => {
+      clearAllSpotlights();
       if (activeSpotlightRef.current) {
         activeSpotlightRef.current.classList.remove('tutorial-spotlight-active');
         activeSpotlightRef.current = null;

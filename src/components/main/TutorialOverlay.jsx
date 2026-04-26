@@ -87,8 +87,10 @@ function TutorialOverlay({
     return window.localStorage.getItem(TUTORIAL_MUTE_KEY) === '1';
   });
   const activeSpotlightRef = useRef(null);
+  const companionContainerRef = useRef(null);
   const stepAudioRefs = useRef([]);
   const typingIntervalRef = useRef(null);
+  const [anchoredCompanionStyle, setAnchoredCompanionStyle] = useState(null);
 
   const clearAllSpotlights = () => {
     if (typeof document === 'undefined') return;
@@ -213,6 +215,66 @@ function TutorialOverlay({
   }, [currentStep, isOpen, tutorialSteps]);
 
   useEffect(() => {
+    if (!isOpen) {
+      setAnchoredCompanionStyle(null);
+      return undefined;
+    }
+
+    const step = tutorialSteps[currentStep];
+    const shouldAnchorToTarget = step?.id === 'step-controls' || step?.id === 'step-soundbar';
+    if (!shouldAnchorToTarget) {
+      setAnchoredCompanionStyle(null);
+      return undefined;
+    }
+
+    let frameId = 0;
+    let retryTimer = 0;
+
+    const updateAnchoredPosition = () => {
+      const targetEl = step?.targetElementId ? document.getElementById(step.targetElementId) : null;
+      const companionEl = companionContainerRef.current;
+      if (!targetEl || !companionEl) return false;
+
+      const targetRect = targetEl.getBoundingClientRect();
+      const companionRect = companionEl.getBoundingClientRect();
+      const top = Math.max(8, targetRect.top - companionRect.height - 4);
+
+      setAnchoredCompanionStyle({
+        top: `${top}px`,
+        bottom: 'auto',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 1100,
+      });
+      return true;
+    };
+
+    const scheduleUpdate = () => {
+      frameId = window.requestAnimationFrame(() => {
+        const positioned = updateAnchoredPosition();
+        if (!positioned) {
+          retryTimer = window.setTimeout(scheduleUpdate, 60);
+        }
+      });
+    };
+
+    scheduleUpdate();
+    window.addEventListener('resize', scheduleUpdate);
+    window.addEventListener('orientationchange', scheduleUpdate);
+
+    return () => {
+      if (frameId) {
+        window.cancelAnimationFrame(frameId);
+      }
+      if (retryTimer) {
+        window.clearTimeout(retryTimer);
+      }
+      window.removeEventListener('resize', scheduleUpdate);
+      window.removeEventListener('orientationchange', scheduleUpdate);
+    };
+  }, [currentStep, isOpen, tutorialSteps]);
+
+  useEffect(() => {
     if (!isOpen) return undefined;
     const activeStep = tutorialSteps[currentStep];
     if (!activeStep) return undefined;
@@ -314,7 +376,7 @@ function TutorialOverlay({
       aria-label="Training tutorial overlay"
     >
       <div className="tutorial-dark-bg" aria-hidden="true" />
-      <div className="tutorial-companion-container">
+      <div className="tutorial-companion-container" ref={companionContainerRef} style={anchoredCompanionStyle ?? undefined}>
         <img
           src={activeStep.robot || (activeStep.id === 'step-final' ? finalRobotImage : robotImage)}
           alt=""

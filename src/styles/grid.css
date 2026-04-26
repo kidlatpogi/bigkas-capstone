@@ -1,0 +1,69 @@
+/* Global 12-column layout system for Bigkas */
+:root {
+  --grid-columns: 12;
+  --grid-gutter: 24px;
+  --grid-margin: 32px;
+  --max-layout-width: 1440px;
+}
+
+/* Main grid wrapper */
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-columns), minmax(0, 1fr));
+  column-gap: var(--grid-gutter);
+  row-gap: var(--grid-gutter);
+  padding-inline: var(--grid-margin);
+  width: 100%;
+  max-width: var(--max-layout-width);
+  margin: 0 auto;
+  box-sizing: border-box;
+  font-family: 'SF Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+/* Column span helpers (desktop/tablet) */
+.col-span-12 { grid-column: span 12; }
+.col-span-11 { grid-column: span 11; }
+.col-span-10 { grid-column: span 10; }
+.col-span-9 { grid-column: span 9; }
+.col-span-8 { grid-column: span 8; }
+.col-span-7 { grid-column: span 7; }
+.col-span-6 { grid-column: span 6; }
+.col-span-5 { grid-column: span 5; }
+.col-span-4 { grid-column: span 4; }
+.col-span-3 { grid-column: span 3; }
+.col-span-2 { grid-column: span 2; }
+.col-span-1 { grid-column: span 1; }
+.col-full { grid-column: 1 / -1; }
+
+/*
+  Mobile / Capacitor major layout shift.
+  Per responsive guidelines, reduce columns/gutters/margins at 768px and below.
+*/
+@media (max-width: 768px) {
+  :root {
+    --grid-columns: 4;
+    --grid-margin: 16px;
+    --grid-gutter: 12px;
+  }
+
+  /*
+    Default behavior: spans become full-width (4 columns) on mobile.
+    If a component needs different mobile spans, define explicit overrides
+    in page/component CSS after importing this file.
+  */
+  .col-span-12,
+  .col-span-11,
+  .col-span-10,
+  .col-span-9,
+  .col-span-8,
+  .col-span-7,
+  .col-span-6,
+  .col-span-5,
+  .col-span-4,
+  .col-span-3,
+  .col-span-2,
+  .col-span-1,
+  .col-full {
+    grid-column: span 4;
+  }
+}

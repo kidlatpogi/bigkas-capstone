@@ -21,6 +21,7 @@ export const ROUTES = {
   TRAINING_SETUP: '/training/setup',
   TRAINING: '/training',
   PROGRESS: '/progress',
+  ACHIEVEMENTS: '/achievements',
   ACTIVITY: '/activity',
   PROFILE: '/profile',
   SETTINGS: '/settings',

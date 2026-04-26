@@ -237,13 +237,13 @@ function TutorialOverlay({
 
       const targetRect = targetEl.getBoundingClientRect();
       const companionRect = companionEl.getBoundingClientRect();
-      const top = Math.max(8, targetRect.top - companionRect.height - 4);
+      const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
+      const gapPx = rootFontSize * 2;
+      const top = Math.max(8, targetRect.top - companionRect.height - gapPx);
 
       setAnchoredCompanionStyle({
         top: `${top}px`,
         bottom: 'auto',
-        left: '50%',
-        transform: 'translateX(-50%)',
         zIndex: 1100,
       });
       return true;

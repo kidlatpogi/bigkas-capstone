@@ -364,6 +364,21 @@
     z-index: 1100;
   }
 
+  .tutorial-overlay-wrapper.is-default-tutorial.is-final-step .tutorial-companion-container {
+    top: calc(clamp(8rem, 16vh, 11rem) - 5rem);
+  }
+
+  .tutorial-overlay-wrapper.is-default-tutorial:not(.is-final-step) .tutorial-speech-bubble::before {
+    top: 50%;
+    bottom: auto;
+    left: -12px;
+    border-top: 12px solid transparent;
+    border-bottom: 12px solid transparent;
+    border-right: 12px solid #FDFDF9;
+    border-left: 0;
+    transform: translateY(-50%);
+  }
+
   .tutorial-audio-action,
   .tutorial-overlay-wrapper.is-default-tutorial .tutorial-audio-action,
   .tutorial-overlay-wrapper.is-default-tutorial.is-final-step .tutorial-audio-action,

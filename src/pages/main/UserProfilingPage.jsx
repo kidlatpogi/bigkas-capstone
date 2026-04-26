@@ -12,6 +12,15 @@ import introVoice1 from '../../assets/Voices/Introductions/Intro 1.mp3';
 import introVoice2 from '../../assets/Voices/Introductions/Intro 2.mp3';
 import introVoice3 from '../../assets/Voices/Introductions/Intro 3.mp3';
 import beforePretestingVoice from '../../assets/Voices/Profiling and Pre-Testing/Before pre-testing.mp3';
+import profilingQuestion1Voice from '../../assets/Voices/Profiling and Pre-Testing/Profiling Questions/Profiling Question 1.mp3';
+import profilingQuestion2Voice from '../../assets/Voices/Profiling and Pre-Testing/Profiling Questions/Profiling Question 2.mp3';
+import profilingQuestion3Voice from '../../assets/Voices/Profiling and Pre-Testing/Profiling Questions/Profiling Question 3.mp3';
+import profilingQuestion4Voice from '../../assets/Voices/Profiling and Pre-Testing/Profiling Questions/Profiling Question 4.mp3';
+import profilingQuestion5Voice from '../../assets/Voices/Profiling and Pre-Testing/Profiling Questions/Profiling Question 5.mp3';
+import profilingQuestion6Voice from '../../assets/Voices/Profiling and Pre-Testing/Profiling Questions/Profiling Question 6.mp3';
+import profilingQuestion7Voice from '../../assets/Voices/Profiling and Pre-Testing/Profiling Questions/Profiling Question 7.mp3';
+import profilingQuestion8Voice from '../../assets/Voices/Profiling and Pre-Testing/Profiling Questions/Profiling Question 8.mp3';
+import profilingQuestion9Voice from '../../assets/Voices/Profiling and Pre-Testing/Profiling Questions/Profiling Question 9.mp3';
 import './UserProfilingPage.css';
 
 const QUESTIONS = questionsData;
@@ -22,6 +31,17 @@ const INITIAL_FORM = QUESTIONS.reduce((acc, question) => {
 }, {});
 
 const INTRO_MUTE_KEY = 'bigkas_profiling_intro_muted';
+const QUESTION_VOICE_SOURCES = [
+  profilingQuestion1Voice,
+  profilingQuestion2Voice,
+  profilingQuestion3Voice,
+  profilingQuestion4Voice,
+  profilingQuestion5Voice,
+  profilingQuestion6Voice,
+  profilingQuestion7Voice,
+  profilingQuestion8Voice,
+  profilingQuestion9Voice,
+];
 
 function getSpeakerLevelNumber(score) {
   if (score >= 85) return 5;
@@ -102,6 +122,7 @@ function UserProfilingPage() {
   const stepTwoAudioRef = useRef(null);
   const readyAudioRef = useRef(null);
   const outroAudioRef = useRef(null);
+  const questionAudioRefs = useRef([]);
 
   const totalSteps = QUESTIONS.length;
   const currentQuestion = QUESTIONS[currentIndex];
@@ -203,8 +224,15 @@ function UserProfilingPage() {
     stepTwoAudioRef.current = new Audio(introVoice2);
     readyAudioRef.current = new Audio(introVoice3);
     outroAudioRef.current = new Audio(beforePretestingVoice);
+    questionAudioRefs.current = QUESTION_VOICE_SOURCES.map((src) => new Audio(src));
 
-    const refs = [introAudioRef.current, stepTwoAudioRef.current, readyAudioRef.current, outroAudioRef.current];
+    const refs = [
+      introAudioRef.current,
+      stepTwoAudioRef.current,
+      readyAudioRef.current,
+      outroAudioRef.current,
+      ...questionAudioRefs.current,
+    ];
     refs.forEach((audio) => {
       audio.preload = 'auto';
       audio.muted = false;
@@ -219,11 +247,18 @@ function UserProfilingPage() {
       stepTwoAudioRef.current = null;
       readyAudioRef.current = null;
       outroAudioRef.current = null;
+      questionAudioRefs.current = [];
     };
   }, [beforePretestingVoice]);
 
   useEffect(() => {
-    const refs = [introAudioRef.current, stepTwoAudioRef.current, readyAudioRef.current, outroAudioRef.current];
+    const refs = [
+      introAudioRef.current,
+      stepTwoAudioRef.current,
+      readyAudioRef.current,
+      outroAudioRef.current,
+      ...questionAudioRefs.current,
+    ];
     refs.forEach((audio) => {
       if (!audio) return;
       audio.muted = isMuted;
@@ -238,7 +273,13 @@ function UserProfilingPage() {
 
     const playClip = (audioRef) => {
       if (!audioRef?.current) return;
-      [introAudioRef.current, stepTwoAudioRef.current, readyAudioRef.current, outroAudioRef.current].forEach((audio) => {
+      [
+        introAudioRef.current,
+        stepTwoAudioRef.current,
+        readyAudioRef.current,
+        outroAudioRef.current,
+        ...questionAudioRefs.current,
+      ].forEach((audio) => {
         if (audio && audio !== audioRef.current) {
           audio.pause();
           audio.currentTime = 0;
@@ -258,6 +299,28 @@ function UserProfilingPage() {
       playClip(outroAudioRef);
     }
   }, [introStep, isMuted, screen]);
+
+  useEffect(() => {
+    if (screen !== 'questions' || isMuted) return;
+    const currentQuestionAudio = questionAudioRefs.current[currentIndex];
+    if (!currentQuestionAudio) return;
+
+    [
+      introAudioRef.current,
+      stepTwoAudioRef.current,
+      readyAudioRef.current,
+      outroAudioRef.current,
+      ...questionAudioRefs.current,
+    ].forEach((audio) => {
+      if (audio && audio !== currentQuestionAudio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+    });
+
+    currentQuestionAudio.currentTime = 0;
+    currentQuestionAudio.play().catch(() => {});
+  }, [currentIndex, isMuted, screen]);
 
   const updateField = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -383,13 +446,24 @@ function UserProfilingPage() {
           audio.pause();
           audio.currentTime = 0;
         });
+        questionAudioRefs.current.forEach((audio) => {
+          if (!audio) return;
+          audio.pause();
+          audio.currentTime = 0;
+        });
       }
       return next;
     });
   };
 
   const stopAllIntroAudios = () => {
-    [introAudioRef.current, stepTwoAudioRef.current, readyAudioRef.current, outroAudioRef.current].forEach((audio) => {
+    [
+      introAudioRef.current,
+      stepTwoAudioRef.current,
+      readyAudioRef.current,
+      outroAudioRef.current,
+      ...questionAudioRefs.current,
+    ].forEach((audio) => {
       if (!audio) return;
       audio.pause();
       audio.currentTime = 0;

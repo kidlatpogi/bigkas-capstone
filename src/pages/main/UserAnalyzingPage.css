@@ -232,15 +232,17 @@
 }
 
 .analyzing-action-btn {
+  height: 44px;
+  width: clamp(9rem, 18vw, 10.6rem);
   border-radius: 999px;
-  padding: 0.58rem 1.15rem;
+  padding: 0 2rem;
   border: 0;
   font-family: 'Fredoka', sans-serif;
-  font-size: 0.88rem;
+  font-size: clamp(0.9rem, 0.86rem + 0.2vw, 0.98rem);
   font-weight: 500;
   color: #ffffff;
   cursor: pointer;
-  transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .analyzing-action-btn--secondary {
@@ -249,14 +251,12 @@
 }
 
 .analyzing-action-btn--primary {
-  background: #10B981;
+  background: #059669;
   box-shadow: #047857 0 5px 0 0;
 }
 
 .analyzing-action-btn:disabled {
-  background: #94A3B8;
-  box-shadow: #64748B 0 5px 0 0;
-  color: #E2E8F0;
+  opacity: 0.7;
   cursor: not-allowed;
 }
 

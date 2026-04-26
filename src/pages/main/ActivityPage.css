@@ -241,7 +241,7 @@
   justify-items: center;
   align-content: center;
   text-align: center;
-  background: linear-gradient(145deg, #fff7ed 0%, #ffedd5 100%);
+  background: #ffffff;
   min-height: 10rem;
 }
 
@@ -267,7 +267,7 @@
 
 .activity-journey-card {
   padding: clamp(1rem, 1.8vw, 1.2rem);
-  background: linear-gradient(145deg, #ecfdf5 0%, #d1fae5 100%);
+  background: #ffffff;
 }
 
 .activity-journey-title {
@@ -320,7 +320,7 @@
 
 .activity-practice-card {
   padding: clamp(1rem, 1.8vw, 1.2rem);
-  background: linear-gradient(145deg, #f8fafc 0%, #d1fae5 100%);
+  background: #ffffff;
   color: #111827;
   gap: 0.75rem;
 }
@@ -344,12 +344,43 @@
 
 .activity-practice-cta {
   width: 100%;
-  min-height: 44px;
+  min-height: 52px;
+  border-radius: 999px !important;
+  font-family: 'Fredoka', sans-serif !important;
+  font-size: clamp(0.92rem, 0.88rem + 0.2vw, 1rem) !important;
+  font-weight: 500 !important;
+  border: 0 !important;
+  box-shadow: #047857 0 5px 0 0 !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
 }
 
 .activity-practice-cta--speech {
   background: #f97316 !important;
-  border-color: #f97316 !important;
+  box-shadow: #c2410c 0 5px 0 0 !important;
+}
+
+.activity-practice-cta--randomizer {
+  background: #059669 !important;
+}
+
+.activity-practice-cta--randomizer:hover {
+  box-shadow: #047857 0 4px 0 0 !important;
+  transform: translateY(2px);
+}
+
+.activity-practice-cta--speech:hover {
+  box-shadow: #c2410c 0 4px 0 0 !important;
+  transform: translateY(2px);
+}
+
+.activity-practice-cta--randomizer:active {
+  box-shadow: #047857 0 0 0 0 !important;
+  transform: translateY(6px);
+}
+
+.activity-practice-cta--speech:active {
+  box-shadow: #c2410c 0 0 0 0 !important;
+  transform: translateY(6px);
 }
 
 @media (min-width: 1800px) {

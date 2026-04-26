@@ -50,14 +50,38 @@ function clampMapState(state, viewportEl, contentEl, scale) {
   /** Keep the map from being panned completely off-screen. */
   const minX = Math.min(0, W - w) - horizontalPadding;
   const maxX = Math.max(0, W - w) + horizontalPadding;
-  const verticalPadding = W <= 768 ? 92 : 24;
+
+  // Clamp vertical movement by real section bounds (not decorative map padding),
+  // so the first section can't disappear and the last section remains reachable.
+  let contentTop = 0;
+  let contentBottom = ch;
+  const sectionEls = contentEl.querySelectorAll('.skyward-journey-section');
+  if (sectionEls.length > 0) {
+    let minTop = Number.POSITIVE_INFINITY;
+    let maxBottom = Number.NEGATIVE_INFINITY;
+    sectionEls.forEach((el) => {
+      const t = el.offsetTop;
+      const b = t + el.offsetHeight;
+      if (Number.isFinite(t) && Number.isFinite(b)) {
+        if (t < minTop) minTop = t;
+        if (b > maxBottom) maxBottom = b;
+      }
+    });
+    if (Number.isFinite(minTop) && Number.isFinite(maxBottom) && maxBottom > minTop) {
+      contentTop = minTop;
+      contentBottom = maxBottom;
+    }
+  }
+
+  const boundedHeight = (contentBottom - contentTop) * scale;
   let minY;
   let maxY;
-  if (h > H) {
-    minY = H - h - verticalPadding;
-    maxY = verticalPadding;
+  if (boundedHeight > H) {
+    minY = H - (contentBottom * scale);
+    maxY = -(contentTop * scale);
   } else {
-    const centeredY = (H - h) / 2;
+    const boundedMid = ((contentTop + contentBottom) / 2) * scale;
+    const centeredY = (H / 2) - boundedMid;
     minY = centeredY;
     maxY = centeredY;
   }
@@ -149,18 +173,18 @@ function getLevelSubtitle(level) {
  */
 
 const MapHeaderCard = styled.div`
-  width: min(100%, 760px);
+  width: min(100%, 620px);
   margin: 0 auto;
   box-sizing: border-box;
-  padding: clamp(10px, 1.6vw, 16px);
+  padding: clamp(7px, 1vw, 10px);
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-radius: 18px;
+  border-radius: 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 5px;
   text-align: center;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   border: 2px solid #f18f01;
@@ -177,7 +201,7 @@ const MapHeaderCard = styled.div`
 `;
 
 const HeaderTitle = styled.h1`
-  font-size: clamp(1.02rem, 0.95rem + 0.3vw, 1.18rem);
+  font-size: clamp(0.88rem, 0.82rem + 0.2vw, 1rem);
   font-weight: 800;
   color: #f18f01;
   margin: 0;
@@ -185,7 +209,7 @@ const HeaderTitle = styled.h1`
 `;
 
 const HeaderDescription = styled.p`
-  font-size: clamp(0.78rem, 0.74rem + 0.12vw, 0.88rem);
+  font-size: clamp(0.7rem, 0.66rem + 0.1vw, 0.78rem);
   font-weight: 600;
   color: rgba(11, 57, 84, 0.6);
   margin: 0;
@@ -195,12 +219,12 @@ const HeaderDescription = styled.p`
 const HeaderStatBadge = styled.div`
   background: rgba(11, 57, 84, 0.06);
   color: #0b3954;
-  padding: 5px 12px;
+  padding: 4px 10px;
   border-radius: 999px;
-  font-size: clamp(0.72rem, 0.69rem + 0.08vw, 0.78rem);
+  font-size: clamp(0.64rem, 0.61rem + 0.06vw, 0.7rem);
   font-weight: 700;
   letter-spacing: 0.05em;
-  margin-top: 2px;
+  margin-top: 1px;
 `;
 
 const HeaderSkipNotice = styled.div`
@@ -1138,7 +1162,7 @@ export default function SkywardJourney({
   }
 
   return (
-    <div className="skyward-journey-wrap" style={{ position: 'relative', width: '100%', height: '100%' }}>
+    <div className="skyward-journey-wrap" style={{ position: 'relative', width: '100%' }}>
       <div className="skyward-journey skyward-journey-container no-scrollbar" ref={rootRef}>
         <MapHeaderCard
           className={`skyward-journey-anim-header${isMobile ? ' skyward-journey-header-card skyward-journey-header-card--interactive' : ' skyward-journey-header-card'}${isMobile && isHeaderCollapsed ? ' skyward-journey-header-card--collapsed' : ''}`}
@@ -1167,9 +1191,24 @@ export default function SkywardJourney({
                     onLevelChange && onLevelChange(Math.max(1, currentLevel - 1));
                   }}
                   disabled={currentLevel <= 1}
-                  style={{ padding: isMobile ? '7px 10px' : '7px 12px', borderRadius: '10px', border: 'none', background: currentLevel <= 1 ? '#e5e5e5' : '#f18f01', color: currentLevel <= 1 ? '#a1a1aa' : '#fff', cursor: currentLevel <= 1 ? 'not-allowed' : 'pointer', fontWeight: 'bold', fontSize: isMobile ? '0.78rem' : '0.82rem', flexShrink: 0 }}
+                  style={{
+                    height: '54px',
+                    minHeight: '54px',
+                    padding: isMobile ? '0 18px' : '0 24px',
+                    borderRadius: '999px',
+                    border: 'none',
+                    background: currentLevel <= 1 ? '#e5e5e5' : '#F97316',
+                    color: currentLevel <= 1 ? '#a1a1aa' : '#fff',
+                    cursor: currentLevel <= 1 ? 'not-allowed' : 'pointer',
+                    fontFamily: 'Fredoka, sans-serif',
+                    fontWeight: 500,
+                    fontSize: isMobile ? '0.9rem' : '1rem',
+                    boxShadow: currentLevel <= 1 ? 'none' : '#C85E14 0 5px 0 0',
+                    flexShrink: 0,
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                  }}
                 >
-                  &#8592; {isMobile ? '' : 'Prev'}
+                  Prev
                 </button>
                 <div style={{ flex: 1 }}>
                   <HeaderDescription>{getLevelSubtitle(currentLevel)}</HeaderDescription>
@@ -1180,9 +1219,24 @@ export default function SkywardJourney({
                     onLevelChange && onLevelChange(Math.min(5, currentLevel + 1));
                   }}
                   disabled={currentLevel >= 5}
-                  style={{ padding: isMobile ? '7px 10px' : '7px 12px', borderRadius: '10px', border: 'none', background: currentLevel >= 5 ? '#e5e5e5' : '#f18f01', color: currentLevel >= 5 ? '#a1a1aa' : '#fff', cursor: currentLevel >= 5 ? 'not-allowed' : 'pointer', fontWeight: 'bold', fontSize: isMobile ? '0.78rem' : '0.82rem', flexShrink: 0 }}
+                  style={{
+                    height: '54px',
+                    minHeight: '54px',
+                    padding: isMobile ? '0 18px' : '0 24px',
+                    borderRadius: '999px',
+                    border: 'none',
+                    background: currentLevel >= 5 ? '#e5e5e5' : '#F97316',
+                    color: currentLevel >= 5 ? '#a1a1aa' : '#fff',
+                    cursor: currentLevel >= 5 ? 'not-allowed' : 'pointer',
+                    fontFamily: 'Fredoka, sans-serif',
+                    fontWeight: 500,
+                    fontSize: isMobile ? '0.9rem' : '1rem',
+                    boxShadow: currentLevel >= 5 ? 'none' : '#C85E14 0 5px 0 0',
+                    flexShrink: 0,
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                  }}
                 >
-                  {isMobile ? '' : 'Next'} &#8594;
+                  Next
                 </button>
               </div>
               {Number(currentLevel) > 1 && Number(currentLevel) === Number(recommendedLevel) ? (
@@ -1264,7 +1318,7 @@ export default function SkywardJourney({
                     </svg>
                   ) : null}
                   {steps.length === 0 ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', textAlign: 'center', zIndex: 10, position: 'relative' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '100%', textAlign: 'center', zIndex: 10, position: 'absolute', inset: 0 }}>
                       <div style={{ fontSize: '4rem', marginBottom: '1rem', filter: 'grayscale(100%)', opacity: 0.5 }}>🚧</div>
                       <h2 style={{ color: '#0b3954', fontSize: '1.8rem', fontWeight: 800, marginBottom: '0.5rem' }}>Level {currentLevel} is locked</h2>
                       <p style={{ color: '#64748b', fontSize: '1.1rem', fontWeight: 600, maxWidth: '400px' }}>Our engineers are currently building this area. Please complete previous levels first!</p>

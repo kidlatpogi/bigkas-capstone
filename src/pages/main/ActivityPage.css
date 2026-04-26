@@ -35,7 +35,7 @@ body, html {
    ------------------------------------------------------------------------- */
 .new-banner {
   grid-column: 1 / -1;
-  background: linear-gradient(180deg, #34D399 0%, #10B981 100%);
+  background: linear-gradient(180deg, #34D399 0%, #059669 100%);
   border-radius: 42px;
   min-height: 160px;
   box-shadow: 0 20px 40px -10px rgba(5, 150, 105, 0.25);
@@ -161,9 +161,10 @@ body, html {
   border-radius: 42px;
   box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
   border: 1px solid rgba(11, 57, 84, 0.05);
-  padding: 42px 36px;
+  padding: 24px 24px;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .new-widget-title {
@@ -221,8 +222,8 @@ body, html {
 .new-btn-group {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-top: 16px;
+  gap: 12px;
+  margin-top: 12px;
 }
 
 .new-btn-row {
@@ -236,6 +237,32 @@ body, html {
   font-weight: 700;
   color: #1f2937;
   margin: 0;
+}
+
+/* Practice buttons match auth submit feel */
+.new-btn-row .activity-practice-cta {
+  height: 54px !important;
+  min-height: 54px !important;
+  width: 100%;
+  border: 0 !important;
+  background: #F97316 !important;
+  color: #ffffff !important;
+  font-family: 'Fredoka', sans-serif !important;
+  border-radius: 999px !important;
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  box-shadow: #C85E14 0 5px 0 0 !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.new-btn-row .activity-practice-cta:hover:not(:disabled) {
+  box-shadow: #C85E14 0 4px 0 0 !important;
+  transform: translateY(2px);
+}
+
+.new-btn-row .activity-practice-cta:active:not(:disabled) {
+  box-shadow: #C85E14 0 0 0 0 !important;
+  transform: translateY(6px);
 }
 
 /* Modals / Entrance */

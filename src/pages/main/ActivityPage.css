@@ -146,11 +146,210 @@
   width: 100%;
   max-width: 1100px;
   margin-inline: auto;
-  padding-inline: clamp(0.25rem, 1vw, 1rem);
+  padding-inline: clamp(0.5rem, 1vw, 1rem);
   box-sizing: border-box;
   border-top-right-radius: 20px;
   border-bottom-right-radius: 20px;
   overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: clamp(0.5rem, 1.4vw, 0.9rem);
+}
+
+.activity-home-hero {
+  width: 100%;
+  display: grid;
+  gap: clamp(0.35rem, 1.2vw, 0.6rem);
+}
+
+.activity-home-greeting {
+  margin: 0;
+  font-size: clamp(1.45rem, 1.1rem + 1vw, 2rem);
+  font-weight: 700;
+  color: #1f2937;
+  padding-inline: clamp(0.5rem, 1vw, 0.8rem);
+}
+
+.activity-home-hero-card {
+  width: 100%;
+  border-radius: clamp(1rem, 1.5vw, 1.4rem);
+  background: linear-gradient(90deg, #34D399 0%, #059669 100%);
+  min-height: clamp(6rem, 11vw, 7.5rem);
+  padding: clamp(0.6rem, 1.4vw, 0.9rem);
+  display: grid;
+  grid-template-columns: minmax(92px, 120px) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(0.5rem, 1.2vw, 0.8rem);
+}
+
+.activity-home-hero-robot {
+  width: clamp(5.2rem, 9vw, 6.4rem);
+  max-width: 100%;
+  height: auto;
+  justify-self: center;
+}
+
+.activity-home-hero-bubble {
+  background: #ffffff;
+  border-radius: 1.5rem;
+  padding: clamp(0.7rem, 1.2vw, 0.95rem) clamp(0.85rem, 1.5vw, 1.1rem);
+  min-height: 44px;
+  position: relative;
+}
+
+.activity-home-hero-bubble::after {
+  content: '';
+  position: absolute;
+  left: -0.42rem;
+  top: 50%;
+  width: 0.84rem;
+  height: 0.84rem;
+  background: #ffffff;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.activity-home-hero-kicker {
+  margin: 0;
+  font-family: 'Nunito', sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #059669;
+}
+
+.activity-home-hero-copy {
+  margin: 0.2rem 0 0;
+  font-size: clamp(0.9rem, 0.82rem + 0.16vw, 0.98rem);
+  line-height: 1.35;
+  color: #1f2937;
+}
+
+.activity-home-hero-link {
+  margin-top: 0.35rem;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #0f766e;
+  text-decoration: underline;
+  font-size: 0.76rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.activity-day-card {
+  padding: clamp(1rem, 1.8vw, 1.2rem);
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  text-align: center;
+  background: linear-gradient(145deg, #fff7ed 0%, #ffedd5 100%);
+  min-height: 10rem;
+}
+
+.activity-day-value {
+  font-size: clamp(2.2rem, 2rem + 1.1vw, 3.25rem);
+  color: #f97316;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.activity-day-label {
+  margin: 0.15rem 0 0;
+  font-size: 0.82rem;
+  color: rgba(17, 24, 39, 0.66);
+}
+
+.activity-day-copy {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: rgba(17, 24, 39, 0.58);
+}
+
+.activity-journey-card {
+  padding: clamp(1rem, 1.8vw, 1.2rem);
+  background: linear-gradient(145deg, #ecfdf5 0%, #d1fae5 100%);
+}
+
+.activity-journey-title {
+  font-size: clamp(1.25rem, 1rem + 0.6vw, 1.6rem);
+  font-weight: 800;
+  color: #1f2937;
+}
+
+.activity-journey-rank-label {
+  margin: 0.55rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #059669;
+}
+
+.activity-journey-rank {
+  margin: 0.2rem 0 0;
+  font-size: clamp(1.1rem, 0.92rem + 0.55vw, 1.45rem);
+  color: #111827;
+}
+
+.activity-journey-summary {
+  margin: 0.7rem 0 0;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: rgba(17, 24, 39, 0.7);
+}
+
+.activity-journey-track {
+  margin-top: 0.6rem;
+  width: 100%;
+  height: 0.7rem;
+  border-radius: 999px;
+  background: rgba(17, 24, 39, 0.12);
+  overflow: hidden;
+}
+
+.activity-journey-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f97316 0%, #fb923c 100%);
+}
+
+.activity-journey-task-total {
+  margin: 0.45rem 0 0;
+  text-align: right;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.activity-practice-card {
+  padding: clamp(1rem, 1.8vw, 1.2rem);
+  background: linear-gradient(145deg, #f8fafc 0%, #d1fae5 100%);
+  color: #111827;
+  gap: 0.75rem;
+}
+
+.activity-practice-title {
+  margin: 0;
+  font-size: clamp(1.35rem, 1.1rem + 0.6vw, 1.6rem);
+  font-weight: 800;
+}
+
+.activity-practice-row {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.activity-practice-row-label {
+  margin: 0;
+  font-size: 0.94rem;
+  font-weight: 700;
+}
+
+.activity-practice-cta {
+  width: 100%;
+  min-height: 44px;
+}
+
+.activity-practice-cta--speech {
+  background: #f97316 !important;
+  border-color: #f97316 !important;
 }
 
 @media (min-width: 1800px) {
@@ -375,6 +574,7 @@
     padding-inline: 0;
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
+    gap: 0.7rem;
   }
 
   .activity-col-sidebar {
@@ -383,6 +583,22 @@
 }
 
 @media (max-width: 768px) {
+  .activity-home-hero-card {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .activity-home-hero-bubble::after {
+    left: 50%;
+    top: -0.42rem;
+    transform: translateX(-50%) rotate(45deg);
+  }
+
+  .activity-home-hero-link {
+    justify-self: center;
+  }
+
   .activity-col-main {
     height: 100vh;
     height: 100dvh;

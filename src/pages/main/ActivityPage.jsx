@@ -596,26 +596,27 @@ function ActivityPage() {
                   <p className="activity-home-hero-copy">
                     You&apos;re on a roll. Keep doing your activities and improve your speaking.
                   </p>
-                  <button type="button" className="activity-home-hero-link">Ask Lito</button>
                 </article>
               </div>
             </section>
-            <div className="activity-task-list activity-task-list--journey">
-              <SkywardJourney
-                steps={journeySteps}
-                groupedTasks={groupedTasks}
-                currentLevel={selectedLevel}
-                recommendedLevel={recommendedLevel}
-                onLevelChange={setSelectedLevel}
-                entranceFromNav={entranceFromNav}
-                scrollToStepIndex={scrollToStepIndex}
-                renderStepContent={(step, meta) =>
-                  renderTaskCard({
-                    task: step.task,
-                    animationClass: `dashboard-anim-bottom dashboard-anim-delay-${Math.min(meta.stepIndex + 2, 9)}`,
-                  })
-                }
-              />
+            <div className="activity-journey-shell">
+              <div className="activity-task-list activity-task-list--journey">
+                <SkywardJourney
+                  steps={journeySteps}
+                  groupedTasks={groupedTasks}
+                  currentLevel={selectedLevel}
+                  recommendedLevel={recommendedLevel}
+                  onLevelChange={setSelectedLevel}
+                  entranceFromNav={entranceFromNav}
+                  scrollToStepIndex={scrollToStepIndex}
+                  renderStepContent={(step, meta) =>
+                    renderTaskCard({
+                      task: step.task,
+                      animationClass: `dashboard-anim-bottom dashboard-anim-delay-${Math.min(meta.stepIndex + 2, 9)}`,
+                    })
+                  }
+                />
+              </div>
             </div>
           </div>
         </div>

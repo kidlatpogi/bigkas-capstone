@@ -72,7 +72,7 @@
 
 .activity-col-sidebar {
   width: 100%;
-  padding: 1rem;
+  padding: clamp(2.6rem, 4.5vh, 3rem) 1rem 1rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -173,17 +173,17 @@
 .activity-home-hero-card {
   width: 100%;
   border-radius: clamp(1rem, 1.5vw, 1.4rem);
-  background: linear-gradient(90deg, #34D399 0%, #059669 100%);
+  background: linear-gradient(180deg, #34D399 0%, #059669 100%);
   min-height: clamp(6rem, 11vw, 7.5rem);
   padding: clamp(0.6rem, 1.4vw, 0.9rem);
   display: grid;
-  grid-template-columns: minmax(92px, 120px) minmax(0, 1fr);
+  grid-template-columns: minmax(108px, 140px) minmax(0, 1fr);
   align-items: center;
   gap: clamp(0.5rem, 1.2vw, 0.8rem);
 }
 
 .activity-home-hero-robot {
-  width: clamp(5.2rem, 9vw, 6.4rem);
+  width: clamp(6.7rem, 11vw, 8.2rem);
   max-width: 100%;
   height: auto;
   justify-self: center;
@@ -223,18 +223,6 @@
   color: #1f2937;
 }
 
-.activity-home-hero-link {
-  margin-top: 0.35rem;
-  border: 0;
-  padding: 0;
-  background: transparent;
-  color: #0f766e;
-  text-decoration: underline;
-  font-size: 0.76rem;
-  min-height: 44px;
-  cursor: pointer;
-}
-
 .activity-day-card {
   padding: clamp(1rem, 1.8vw, 1.2rem);
   display: grid;
@@ -246,7 +234,7 @@
 }
 
 .activity-day-value {
-  font-size: clamp(2.2rem, 2rem + 1.1vw, 3.25rem);
+  font-size: clamp(2.4rem, 2.2rem + 1vw, 3.1rem);
   color: #f97316;
   font-weight: 800;
   line-height: 1;
@@ -254,14 +242,14 @@
 
 .activity-day-label {
   margin: 0.15rem 0 0;
-  font-size: 0.82rem;
+  font-size: clamp(0.82rem, 0.78rem + 0.14vw, 0.9rem);
   color: rgba(17, 24, 39, 0.66);
 }
 
 .activity-day-copy {
   margin: 0.35rem 0 0;
-  font-size: 0.75rem;
-  line-height: 1.35;
+  font-size: clamp(0.78rem, 0.74rem + 0.12vw, 0.86rem);
+  line-height: 1.4;
   color: rgba(17, 24, 39, 0.58);
 }
 
@@ -271,27 +259,27 @@
 }
 
 .activity-journey-title {
-  font-size: clamp(1.25rem, 1rem + 0.6vw, 1.6rem);
+  font-size: clamp(1.4rem, 1.2rem + 0.55vw, 1.7rem);
   font-weight: 800;
   color: #1f2937;
 }
 
 .activity-journey-rank-label {
   margin: 0.55rem 0 0;
-  font-size: 0.72rem;
+  font-size: clamp(0.72rem, 0.68rem + 0.1vw, 0.78rem);
   font-weight: 800;
   color: #059669;
 }
 
 .activity-journey-rank {
   margin: 0.2rem 0 0;
-  font-size: clamp(1.1rem, 0.92rem + 0.55vw, 1.45rem);
+  font-size: clamp(1.18rem, 1rem + 0.45vw, 1.42rem);
   color: #111827;
 }
 
 .activity-journey-summary {
   margin: 0.7rem 0 0;
-  font-size: 0.84rem;
+  font-size: clamp(0.82rem, 0.79rem + 0.1vw, 0.9rem);
   font-weight: 700;
   color: rgba(17, 24, 39, 0.7);
 }
@@ -314,7 +302,7 @@
 .activity-journey-task-total {
   margin: 0.45rem 0 0;
   text-align: right;
-  font-size: 0.82rem;
+  font-size: clamp(0.8rem, 0.76rem + 0.1vw, 0.88rem);
   font-weight: 700;
 }
 
@@ -327,7 +315,7 @@
 
 .activity-practice-title {
   margin: 0;
-  font-size: clamp(1.35rem, 1.1rem + 0.6vw, 1.6rem);
+  font-size: clamp(1.4rem, 1.2rem + 0.55vw, 1.7rem);
   font-weight: 800;
 }
 
@@ -338,8 +326,17 @@
 
 .activity-practice-row-label {
   margin: 0;
-  font-size: 0.94rem;
+  font-size: clamp(0.86rem, 0.82rem + 0.14vw, 0.96rem);
   font-weight: 700;
+}
+
+.activity-journey-shell {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(11, 57, 84, 0.08);
+  box-shadow: 0 10px 24px rgba(11, 57, 84, 0.08);
+  overflow: hidden;
 }
 
 .activity-practice-cta {
@@ -609,6 +606,10 @@
   }
 
   .activity-col-sidebar {
+    padding-top: 1rem;
+  }
+
+  .activity-col-sidebar {
     display: none !important;
   }
 }
@@ -624,10 +625,6 @@
     left: 50%;
     top: -0.42rem;
     transform: translateX(-50%) rotate(45deg);
-  }
-
-  .activity-home-hero-link {
-    justify-self: center;
   }
 
   .activity-col-main {

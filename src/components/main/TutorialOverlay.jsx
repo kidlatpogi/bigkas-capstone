@@ -151,15 +151,25 @@ function TutorialOverlay({
 
     const step = tutorialSteps[currentStep];
     const targetId = step?.targetElementId;
+    let retryTimer = null;
     if (targetId) {
-      const nextEl = document.getElementById(targetId);
-      if (nextEl) {
-        nextEl.classList.add('tutorial-spotlight-active');
-        activeSpotlightRef.current = nextEl;
-      }
+      const applySpotlight = (attempt = 0) => {
+        const nextEl = document.getElementById(targetId);
+        if (nextEl) {
+          nextEl.classList.add('tutorial-spotlight-active');
+          activeSpotlightRef.current = nextEl;
+          return;
+        }
+        if (attempt >= 4) return;
+        retryTimer = window.setTimeout(() => applySpotlight(attempt + 1), 60);
+      };
+      applySpotlight(0);
     }
 
     return () => {
+      if (retryTimer) {
+        window.clearTimeout(retryTimer);
+      }
       clearAllSpotlights();
       if (activeSpotlightRef.current) {
         activeSpotlightRef.current.classList.remove('tutorial-spotlight-active');

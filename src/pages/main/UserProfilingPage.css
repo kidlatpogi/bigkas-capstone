@@ -221,6 +221,14 @@
   transform: none;
 }
 
+.profiling-ready-btn--back:disabled {
+  background: #94A3B8;
+  box-shadow: #64748B 0 5px 0 0;
+  color: #E2E8F0;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .profiling-ready-btn:hover:not(:disabled) {
   transform: translateY(2px);
 }

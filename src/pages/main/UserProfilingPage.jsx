@@ -561,25 +561,19 @@ function UserProfilingPage() {
                 typedReadyText
               )}
             </p>
-            <div className="profiling-intro-actions profiling-intro-actions--split">
-              <button
-                type="button"
-                className="profiling-ready-btn profiling-ready-btn--back"
-                onClick={handleBackToIntro}
-              >
-                Back
-              </button>
-              <button
-                type="button"
-                className="profiling-ready-btn profiling-ready-btn--next"
-                onClick={() => {
-                  stopAllIntroAudios();
-                  setScreen('questions');
-                }}
-                disabled={!isReadyTypingDone}
-              >
-                Next
-              </button>
+            <div className="profiling-intro-actions">
+              <div className="profiling-submit-btn">
+                <button
+                  type="button"
+                  onClick={() => {
+                    stopAllIntroAudios();
+                    setScreen('questions');
+                  }}
+                  disabled={!isReadyTypingDone}
+                >
+                  Continue
+                </button>
+              </div>
             </div>
           </article>
 
@@ -606,7 +600,12 @@ function UserProfilingPage() {
               {currentQuestion.label}
             </p>
             <div className="profiling-intro-actions profiling-intro-actions--split">
-              <button type="button" className="profiling-ready-btn profiling-ready-btn--back" onClick={handleQuestionBack}>
+              <button
+                type="button"
+                className="profiling-ready-btn profiling-ready-btn--back"
+                onClick={handleQuestionBack}
+                disabled={currentIndex === 0}
+              >
                 Previous
               </button>
               <button

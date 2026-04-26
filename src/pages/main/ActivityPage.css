@@ -21,13 +21,13 @@ body, html {
 }
 
 .activity-page-grid {
-  width: 70vw;
-  max-width: 1400px;
-  margin-top: 10vh; /* 10% margin at the top */
+  width: min(80vw, 1600px);
+  max-width: 100%;
+  margin-top: clamp(1.5rem, 4vh, 3rem);
   display: grid;
   grid-template-columns: 2.2fr 1fr;
   grid-template-rows: auto 1fr;
-  gap: 24px;
+  gap: 16px;
 }
 
 /* -------------------------------------------------------------------------
@@ -144,16 +144,17 @@ body, html {
   flex: 1;
   overflow: hidden;
   position: relative;
-  padding-bottom: 24px;
+  padding-bottom: 0;
 }
 
 /* -------------------------------------------------------------------------
    RIGHT COLUMN (Tracker / Practice Widgets)
    ------------------------------------------------------------------------- */
 .new-right-col {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: 16px;
+  align-content: start;
 }
 
 .new-widget {
@@ -165,6 +166,7 @@ body, html {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: visible;
 }
 
 .new-widget-title {
@@ -189,33 +191,12 @@ body, html {
   margin: 0;
 }
 
-.new-widget-sub {
-  color: #6b7280;
-  font-size: 0.9rem;
-  font-weight: 600;
-  margin: 16px 0 8px 0;
-}
-
-.new-widget-track {
-  width: 100%;
-  height: 12px;
-  background: #f3f4f6;
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.new-widget-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #f97316 0%, #fb923c 100%);
-  border-radius: 999px;
-}
-
 .new-widget-caption {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   color: #4b5563;
   font-weight: 700;
   text-align: right;
-  margin-top: 8px;
+  margin-top: 12px;
 }
 
 /* Action Buttons */
@@ -245,23 +226,23 @@ body, html {
   min-height: 54px !important;
   width: 100%;
   border: 0 !important;
-  background: #F97316 !important;
+  background: #059669 !important;
   color: #ffffff !important;
   font-family: 'Fredoka', sans-serif !important;
   border-radius: 999px !important;
   font-size: 1rem !important;
   font-weight: 500 !important;
-  box-shadow: #C85E14 0 5px 0 0 !important;
+  box-shadow: #047857 0 5px 0 0 !important;
   transition: transform 0.2s ease, box-shadow 0.2s ease !important;
 }
 
 .new-btn-row .activity-practice-cta:hover:not(:disabled) {
-  box-shadow: #C85E14 0 4px 0 0 !important;
+  box-shadow: #047857 0 4px 0 0 !important;
   transform: translateY(2px);
 }
 
 .new-btn-row .activity-practice-cta:active:not(:disabled) {
-  box-shadow: #C85E14 0 0 0 0 !important;
+  box-shadow: #047857 0 0 0 0 !important;
   transform: translateY(6px);
 }
 

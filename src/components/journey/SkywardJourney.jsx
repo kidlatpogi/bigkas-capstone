@@ -216,15 +216,33 @@ const HeaderDescription = styled.p`
   line-height: 1.4;
 `;
 
-const HeaderStatBadge = styled.div`
-  background: rgba(11, 57, 84, 0.06);
-  color: #0b3954;
-  padding: 4px 10px;
+const HeaderProgressWrap = styled.div`
+  width: min(100%, 320px);
+  margin-top: 2px;
+`;
+
+const HeaderProgressTrack = styled.div`
+  width: 100%;
+  height: 10px;
   border-radius: 999px;
+  background: rgba(11, 57, 84, 0.12);
+  overflow: hidden;
+`;
+
+const HeaderProgressFill = styled.div`
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f97316 0%, #fb923c 100%);
+  transition: width 0.25s ease;
+`;
+
+const HeaderProgressText = styled.p`
+  margin: 6px 0 0;
+  color: #0b3954;
   font-size: clamp(0.64rem, 0.61rem + 0.06vw, 0.7rem);
   font-weight: 700;
   letter-spacing: 0.05em;
-  margin-top: 1px;
+  text-align: center;
 `;
 
 const HeaderSkipNotice = styled.div`
@@ -1197,13 +1215,13 @@ export default function SkywardJourney({
                     padding: isMobile ? '0 18px' : '0 24px',
                     borderRadius: '999px',
                     border: 'none',
-                    background: currentLevel <= 1 ? '#e5e5e5' : '#F97316',
+                    background: currentLevel <= 1 ? '#e5e5e5' : '#059669',
                     color: currentLevel <= 1 ? '#a1a1aa' : '#fff',
                     cursor: currentLevel <= 1 ? 'not-allowed' : 'pointer',
                     fontFamily: 'Fredoka, sans-serif',
                     fontWeight: 500,
                     fontSize: isMobile ? '0.9rem' : '1rem',
-                    boxShadow: currentLevel <= 1 ? 'none' : '#C85E14 0 5px 0 0',
+                    boxShadow: currentLevel <= 1 ? 'none' : '#047857 0 5px 0 0',
                     flexShrink: 0,
                     transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                   }}
@@ -1225,13 +1243,13 @@ export default function SkywardJourney({
                     padding: isMobile ? '0 18px' : '0 24px',
                     borderRadius: '999px',
                     border: 'none',
-                    background: currentLevel >= 5 ? '#e5e5e5' : '#F97316',
+                    background: currentLevel >= 5 ? '#e5e5e5' : '#059669',
                     color: currentLevel >= 5 ? '#a1a1aa' : '#fff',
                     cursor: currentLevel >= 5 ? 'not-allowed' : 'pointer',
                     fontFamily: 'Fredoka, sans-serif',
                     fontWeight: 500,
                     fontSize: isMobile ? '0.9rem' : '1rem',
-                    boxShadow: currentLevel >= 5 ? 'none' : '#C85E14 0 5px 0 0',
+                    boxShadow: currentLevel >= 5 ? 'none' : '#047857 0 5px 0 0',
                     flexShrink: 0,
                     transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                   }}
@@ -1244,7 +1262,18 @@ export default function SkywardJourney({
                   We assessed your speaking level as <strong>Level {currentLevel}</strong>, so we fast-tracked earlier lessons and placed you where your growth is most meaningful.
                 </HeaderSkipNotice>
               ) : null}
-              {steps.length > 0 && <HeaderStatBadge>{completedCount} / {steps.length} Stages Completed</HeaderStatBadge>}
+              {steps.length > 0 ? (
+                <HeaderProgressWrap>
+                  <HeaderProgressTrack>
+                    <HeaderProgressFill
+                      style={{
+                        width: `${Math.max(0, Math.min(100, (completedCount / Math.max(steps.length, 1)) * 100))}%`,
+                      }}
+                    />
+                  </HeaderProgressTrack>
+                  <HeaderProgressText>{completedCount} / {steps.length} Stages Completed</HeaderProgressText>
+                </HeaderProgressWrap>
+              ) : null}
             </>
           ) : null}
         </MapHeaderCard>

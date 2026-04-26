@@ -338,13 +338,6 @@
   filter: none !important;
 }
 
-.tutorial-overlay-wrapper.is-activity-home-step-2 ~ .activity-page-grid .new-banner {
-  position: relative;
-  z-index: 1199;
-  opacity: 1 !important;
-  filter: none !important;
-}
-
 .tutorial-overlay-wrapper.is-activity-home-step-2 ~ .activity-page-grid .skyward-journey-header-card {
   z-index: 1 !important;
 }

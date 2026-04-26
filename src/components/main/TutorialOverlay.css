@@ -339,6 +339,9 @@
 @media (max-width: 768px) {
   .tutorial-overlay-wrapper.is-default-tutorial .tutorial-companion-container,
   .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-companion-container {
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(calc(100vw - clamp(16px, 6vw, 32px)), 54rem);
     bottom: calc(clamp(104px, 18vh, 148px) + env(safe-area-inset-bottom, 0px));
   }
 

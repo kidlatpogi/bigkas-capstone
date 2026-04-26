@@ -1146,15 +1146,15 @@
 
   .profiling-question-stage {
     align-content: start;
-    padding-top: clamp(1rem, 4.8vw, 1.6rem);
-    row-gap: 1rem;
+    padding-top: clamp(0.5rem, 3.2vw, 1rem);
+    row-gap: clamp(0.5rem, 2.4vw, 0.85rem);
   }
 
   .profiling-question-bubble {
     width: min(100%, 22rem);
     border-radius: 1.2rem;
     padding: 0.95rem 0.9rem;
-    top: 8rem;
+    top: clamp(5.4rem, 12vw, 6.6rem);
   }
 
   .profiling-question-count {
@@ -1173,7 +1173,8 @@
     display: grid;
     grid-template-columns: 1fr;
     justify-items: center;
-    gap: 0.65rem;
+    gap: clamp(0.3rem, 1.5vw, 0.55rem);
+    margin-top: clamp(-0.45rem, -1.8vw, -0.2rem);
   }
 
   .profiling-question-robot-wrap {

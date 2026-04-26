@@ -24,6 +24,11 @@ import {
 import { BIGKAS_LEVELS } from '../../utils/activityProgress';
 import SkywardJourneyNodeButton from './SkywardJourneyNodeButton';
 import safetyBarrierImage from '../../assets/Sprites/common/safety-barrier.png';
+import rankBronzeImage from '../../assets/Sprites/Rank/rank-bronze.png';
+import rankSilverImage from '../../assets/Sprites/Rank/rank-silver.png';
+import rankGoldImage from '../../assets/Sprites/Rank/rank-gold.png';
+import rankMythrilImage from '../../assets/Sprites/Rank/rank-mythril.png';
+import rankLegendaryImage from '../../assets/Sprites/Rank/rank-legendary.png';
 import './SkywardJourney.css';
 
 const MAP_SCALE = 1;
@@ -168,6 +173,24 @@ function getLevelSubtitle(level) {
   const parsed = Number(level);
   const found = BIGKAS_LEVELS.find((entry) => Number(entry.number) === parsed);
   return found?.name || 'Master your speaking fundamentals';
+}
+
+function getRankForLevel(level) {
+  const parsed = Number(level);
+  switch (parsed) {
+    case 1:
+      return { name: 'Bronze', image: rankBronzeImage };
+    case 2:
+      return { name: 'Silver', image: rankSilverImage };
+    case 3:
+      return { name: 'Gold', image: rankGoldImage };
+    case 4:
+      return { name: 'Mythril', image: rankMythrilImage };
+    case 5:
+      return { name: 'Legendary', image: rankLegendaryImage };
+    default:
+      return { name: 'Bronze', image: rankBronzeImage };
+  }
 }
 
 /**
@@ -548,6 +571,7 @@ export default function SkywardJourney({
   recommendedLevel = 1,
   onLevelChange,
 }) {
+  const rank = useMemo(() => getRankForLevel(currentLevel), [currentLevel]);
   const gradId = useId().replace(/:/g, '');
   const rootRef = useRef(null);
   const viewportRef = useRef(null);
@@ -1359,8 +1383,9 @@ export default function SkywardJourney({
                         alt=""
                         style={{ width: 'clamp(110px, 18vw, 170px)', height: 'auto', marginBottom: '0.9rem', filter: 'drop-shadow(0 6px 12px rgba(11,57,84,0.2))' }}
                       />
-                      <h2 style={{ color: '#0b3954', fontSize: '1.8rem', fontWeight: 800, marginBottom: '0.5rem' }}>Level {currentLevel} is locked</h2>
-                      <p style={{ color: '#64748b', fontSize: '1.1rem', fontWeight: 600, maxWidth: '400px' }}>Please complete previous levels first!</p>
+                      <h2 style={{ color: '#0b3954', fontSize: '1.35rem', fontWeight: 800, marginBottom: '0.2rem' }}>Level {currentLevel}</h2>
+                      <p style={{ color: '#64748b', fontSize: '1.02rem', fontWeight: 700, maxWidth: '400px', margin: 0 }}>Rank {rank.name}</p>
+                      <p style={{ color: '#94a3b8', fontSize: '1.02rem', fontWeight: 700, maxWidth: '400px', margin: '0.2rem 0 0' }}>...</p>
                     </div>
                   ) : (
                     sections

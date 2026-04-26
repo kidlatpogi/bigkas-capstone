@@ -169,7 +169,7 @@ body, html {
 .new-banner {
   grid-column: 1 / -1;
   background: linear-gradient(180deg, #34D399 0%, #059669 100%);
-  border-radius: 42px;
+  border-radius: 24px;
   min-height: 190px;
   box-shadow: 0 20px 40px -10px rgba(5, 150, 105, 0.25);
   display: grid;
@@ -363,7 +363,7 @@ body, html {
    ------------------------------------------------------------------------- */
 .new-left-col {
   background: #ffffff;
-  border-radius: 42px;
+  border-radius: 24px;
   box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
   border: 1px solid rgba(11, 57, 84, 0.05);
   display: flex;
@@ -391,7 +391,7 @@ body, html {
 
 .new-widget {
   background: #ffffff;
-  border-radius: 42px;
+  border-radius: 24px;
   box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
   border: 1px solid rgba(11, 57, 84, 0.05);
   padding: 24px 24px;
@@ -490,8 +490,8 @@ body, html {
 .new-btn-group {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 8px;
+  gap: 8px;
+  margin-top: 4px;
 }
 
 .new-btn-row {
@@ -512,12 +512,12 @@ body, html {
 }
 
 .new-btn-row--card {
-  padding: 10px 12px 12px;
+  padding: 8px 12px 10px;
   border: 1px solid rgba(11, 57, 84, 0.08);
   border-radius: 16px;
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   display: grid;
-  grid-template-columns: 64px 1fr;
+  grid-template-columns: 54px 1fr;
   gap: 10px;
   align-items: center;
 }
@@ -534,9 +534,9 @@ body, html {
 }
 
 .new-btn-visual {
-  width: 64px;
-  height: 64px;
-  border-radius: 14px;
+  width: 54px;
+  height: 54px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -582,8 +582,8 @@ body, html {
 
 /* Practice buttons match auth submit feel */
 .new-btn-row .activity-practice-cta {
-  height: 54px !important;
-  min-height: 54px !important;
+  height: 46px !important;
+  min-height: 46px !important;
   width: 100%;
   border: 0 !important;
   background: #059669 !important;

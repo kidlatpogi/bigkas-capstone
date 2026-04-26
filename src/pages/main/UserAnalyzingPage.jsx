@@ -7,6 +7,13 @@ import { ROUTES } from '../../utils/constants';
 import { getBigkasLevelFromScore, mapPercentToEntryScore } from '../../utils/activityProgress';
 import analyzingRobotImage from '../../assets/Sprites/Robot/0010.webp';
 import resultRobotImage from '../../assets/Sprites/Robot/0013.webp';
+import robotImage0001 from '../../assets/Sprites/Robot/0001.webp';
+import robotImage0002 from '../../assets/Sprites/Robot/0002.webp';
+import robotImage0003 from '../../assets/Sprites/Robot/0003.webp';
+import robotImage0004 from '../../assets/Sprites/Robot/0004.webp';
+import robotImage0005 from '../../assets/Sprites/Robot/0005.webp';
+import robotImage0012 from '../../assets/Sprites/Robot/0012.webp';
+import robotImage0015 from '../../assets/Sprites/Robot/0015.webp';
 import analyzingLevel1Voice from '../../assets/Voices/Profiling and Pre-Testing/Analyzing/Analyzing Level 1.mp3';
 import analyzingLevel2Voice from '../../assets/Voices/Profiling and Pre-Testing/Analyzing/Analyzing Level 2.mp3';
 import analyzingLevel3Voice from '../../assets/Voices/Profiling and Pre-Testing/Analyzing/Analyzing Level 3.mp3';
@@ -47,6 +54,15 @@ function formatEntryScale(percent0to100) {
 }
 
 const ANALYZING_MUTE_KEY = 'bigkas_analyzing_muted';
+const RESULT_ROBOT_POOL = [
+  robotImage0001,
+  robotImage0002,
+  robotImage0003,
+  robotImage0004,
+  robotImage0005,
+  robotImage0012,
+  robotImage0015,
+];
 
 const LEVEL_CONTENT = {
   1: {
@@ -106,6 +122,10 @@ function UserAnalyzingPage() {
     () => LEVEL_CONTENT[analysis.levelNumber] || LEVEL_CONTENT[1],
     [analysis.levelNumber],
   );
+  const staticRandomResultRobot = useMemo(() => {
+    const randomIdx = Math.floor(Math.random() * RESULT_ROBOT_POOL.length);
+    return RESULT_ROBOT_POOL[randomIdx] || resultRobotImage;
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -307,11 +327,6 @@ function UserAnalyzingPage() {
   }, [isReady, showLevelReveal]);
 
   useEffect(() => {
-    if (!isReady || showLevelReveal || loaderPct < 100 || error) return;
-    void persistAndReveal();
-  }, [error, isReady, loaderPct, persistAndReveal, showLevelReveal]);
-
-  useEffect(() => {
     if (typeof window === 'undefined') return;
     window.localStorage.setItem(ANALYZING_MUTE_KEY, isMuted ? '1' : '0');
   }, [isMuted]);
@@ -393,6 +408,18 @@ function UserAnalyzingPage() {
               <span className="analyzing-loader-fill" style={{ width: `${loaderPct}%` }} />
             </div>
             <p className="analyzing-loader-text">{loaderPct}%</p>
+            {!error && (
+              <div className="analyzing-actions">
+                <button
+                  type="button"
+                  className="analyzing-action-btn analyzing-action-btn--primary"
+                  onClick={() => void persistAndReveal()}
+                  disabled={loaderPct < 100 || !isReady || isPersisting}
+                >
+                  {isPersisting ? 'Saving...' : 'Continue'}
+                </button>
+              </div>
+            )}
             {error && <p className="analyzing-error">{error}</p>}
           </article>
 
@@ -452,7 +479,7 @@ function UserAnalyzingPage() {
 
           <div className="analyzing-robot-wrap">
             <div className="analyzing-robot-media analyzing-robot-media--result" aria-hidden="true">
-              <img src={resultRobotImage} alt="" className="analyzing-robot-image" />
+              <img src={staticRandomResultRobot} alt="" className="analyzing-robot-image" />
             </div>
             <div className="analyzing-audio-action">
               <button

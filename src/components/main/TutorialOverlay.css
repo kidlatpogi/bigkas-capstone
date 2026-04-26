@@ -316,6 +316,18 @@
   filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.2));
 }
 
+.tutorial-overlay-wrapper.is-activity-home-step-3 .tutorial-companion-container {
+  left: clamp(154px, 15vw, 238px);
+  bottom: calc(clamp(10px, 3vh, 30px) + env(safe-area-inset-bottom, 0px));
+  width: min(100% - clamp(10px, 3vw, 30px), 52rem);
+  align-items: flex-end;
+}
+
+.tutorial-overlay-wrapper.is-activity-home-step-3 .tutorial-robot-img {
+  width: clamp(260px, 24vw, 360px);
+  filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.2));
+}
+
 .tutorial-overlay-wrapper.is-activity-home-step-1 ~ .activity-page-grid .skyward-journey-header-card {
   z-index: 1 !important;
 }
@@ -336,6 +348,51 @@
   box-shadow: 0 0 0 5px #34D399, 0 0 42px rgba(52, 211, 153, 0.9) !important;
   opacity: 1 !important;
   filter: none !important;
+  padding: 14px 16px 14px 190px !important;
+}
+
+.tutorial-overlay-wrapper.is-activity-home-step-2 ~ .activity-page-grid .new-banner {
+  position: relative;
+  z-index: 1000;
+}
+
+.tutorial-overlay-wrapper.is-activity-home-step-2 ~ .activity-page-grid #tutorial-target-home-banner {
+  position: relative;
+  z-index: 1200;
+  opacity: 1 !important;
+}
+
+.tutorial-overlay-wrapper.is-activity-home-step-2 ~ .activity-page-grid #tutorial-target-home-banner .new-banner-bubble {
+  position: relative;
+  z-index: 5;
+}
+
+.tutorial-overlay-wrapper.is-activity-home-step-2 ~ .activity-page-grid #tutorial-target-home-banner .new-banner-robot {
+  z-index: 4;
+}
+
+.tutorial-overlay-wrapper.is-activity-home-step-2 ~ .activity-page-grid .new-banner-right {
+  opacity: 0.45;
+}
+
+.tutorial-overlay-wrapper.is-activity-home-step-3 ~ .activity-page-grid .tutorial-spotlight-active {
+  z-index: 950 !important;
+}
+
+.tutorial-overlay-wrapper.is-activity-home-step-3 ~ .activity-page-grid #tutorial-target-home-streak.tutorial-spotlight-active {
+  z-index: 1200 !important;
+  position: relative !important;
+  opacity: 1 !important;
+  filter: none !important;
+  box-shadow: 0 0 0 5px #34D399, 0 0 42px rgba(52, 211, 153, 0.9) !important;
+}
+
+.tutorial-overlay-wrapper.is-activity-home-step-3 ~ .activity-page-grid .new-banner-left {
+  opacity: 0.45;
+}
+
+.tutorial-overlay-wrapper.is-activity-home-step-3 ~ .activity-page-grid .skyward-journey-header-card {
+  z-index: 1 !important;
 }
 
 .tutorial-overlay-wrapper.is-activity-home-step-2 ~ .activity-page-grid .skyward-journey-header-card {

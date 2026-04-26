@@ -17,6 +17,7 @@ function TutorialOverlay({
   steps = null,
   robotImage = defaultRobotImage,
   finalRobotImage = defaultFinalRobotImage,
+  showAudioToggle = false,
 }) {
   const TUTORIAL_MUTE_KEY = 'bigkas_tutorial_overlay_muted_v1';
   const defaultSteps = useMemo(
@@ -309,7 +310,7 @@ function TutorialOverlay({
 
   return (
     <section
-      className={`tutorial-overlay-wrapper${activeStep.id === 'step-controls' ? ' is-controls-step' : ''}${activeStep.id === 'step-final' ? ' is-final-step' : ''}${activeStep.robotClassName ? ` ${activeStep.robotClassName}` : ''}`}
+      className={`tutorial-overlay-wrapper${Array.isArray(steps) && steps.length > 0 ? ' is-custom-tutorial' : ' is-default-tutorial'}${activeStep.id === 'step-controls' ? ' is-controls-step' : ''}${activeStep.id === 'step-final' ? ' is-final-step' : ''}${activeStep.robotClassName ? ` ${activeStep.robotClassName}` : ''}`}
       aria-label="Training tutorial overlay"
     >
       <div className="tutorial-dark-bg" aria-hidden="true" />
@@ -320,17 +321,19 @@ function TutorialOverlay({
           className="tutorial-robot-img"
           aria-hidden="true"
         />
-        <div className="tutorial-audio-action">
-          <button
-            type="button"
-            onClick={handleToggleMute}
-            aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-            title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-            className={`tutorial-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
-          >
-            {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-          </button>
-        </div>
+        {showAudioToggle ? (
+          <div className="tutorial-audio-action">
+            <button
+              type="button"
+              onClick={handleToggleMute}
+              aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+              title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+              className={`tutorial-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
+            >
+              {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+            </button>
+          </div>
+        ) : null}
         <article className="tutorial-speech-bubble">
           <div className="tutorial-bubble-title">{activeStep.title}</div>
           <p className="tutorial-bubble-text">{renderBubbleText()}</p>

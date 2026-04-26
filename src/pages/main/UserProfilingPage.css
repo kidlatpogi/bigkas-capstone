@@ -328,11 +328,17 @@
 }
 
 .profiling-intro-audio-action {
+  position: fixed;
+  right: clamp(16px, 2.2vw, 28px);
+  bottom: calc(clamp(16px, 2.8vh, 30px) + env(safe-area-inset-bottom, 0px));
+  width: auto;
   display: flex;
   justify-content: center;
-  width: 100%;
-  position: relative;
-  z-index: 9;
+  z-index: 120;
+}
+
+.profiling-intro-audio-action--questions {
+  margin-top: 0;
 }
 
 .profiling-audio-toggle {
@@ -1174,6 +1180,14 @@
     width: 3.25rem;
     height: 3.25rem;
     border-radius: 0.95rem;
+  }
+
+  .profiling-intro-audio-action,
+  .profiling-intro-audio-action--questions {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(clamp(14px, 4vh, 24px) + env(safe-area-inset-bottom, 0px));
   }
 
   .profiling-card {

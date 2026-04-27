@@ -715,6 +715,13 @@ function ActivityPageMobile() {
         <p className="activity-mobile-journey-phase">
           {(mobileJourneyMeta.currentPillarText || `Level ${mobileJourneyLevel}`).toUpperCase()}
         </p>
+        <div className="activity-mobile-journey-rank-row" aria-label="Current rank">
+          <img src={rankSpriteImage} alt="" className="activity-mobile-journey-rank-sprite" />
+          <div className="activity-mobile-journey-rank-copy">
+            <span className="activity-mobile-journey-rank-kicker">Current Rank</span>
+            <span className="activity-mobile-journey-rank-name">{levelProgress.levelName || 'Bronze'}</span>
+          </div>
+        </div>
         <div className="activity-mobile-journey-level-row">
           <button
             type="button"

@@ -239,17 +239,20 @@ img {
 }
 
 .main-content--full {
+  --app-sidebar-width: 0px;
   padding-left: 0;
 }
 
 @media (max-width: 480px) {
   .main-content {
+    --app-sidebar-width: 0px;
     padding-left: 0;
   }
 }
 
 @media (max-width: 1024px) {
   .main-content {
+    --app-sidebar-width: 0px;
     padding-left: 0;
   }
 }
@@ -357,7 +360,8 @@ section[id] {
 /* Activity page layout refinements */
 .activity-content-wrap {
   width: 70vw;
-  max-width: 1400px; /* Cap for ultra-wide screens */
+  max-width: 1400px;
+  /* Cap for ultra-wide screens */
   margin-inline: auto;
   display: flex;
   flex-direction: column;
@@ -396,6 +400,7 @@ section[id] {
 }
 
 @media (min-width: 1025px) {
+
   .activity-content-wrap .dashboard-anim-top,
   .activity-content-wrap .dashboard-anim-left,
   .activity-content-wrap .dashboard-anim-right,
@@ -437,17 +442,50 @@ section[id] {
 }
 
 /* 8px spacing utilities */
-.p-8 { padding: 8px; }
-.p-16 { padding: 16px; }
-.p-24 { padding: 24px; }
-.p-32 { padding: 32px; }
+.p-8 {
+  padding: 8px;
+}
 
-.m-8 { margin: 8px; }
-.m-16 { margin: 16px; }
-.m-24 { margin: 24px; }
-.m-32 { margin: 32px; }
+.p-16 {
+  padding: 16px;
+}
 
-.gap-8 { gap: 8px; }
-.gap-16 { gap: 16px; }
-.gap-24 { gap: 24px; }
-.gap-32 { gap: 32px; }
+.p-24 {
+  padding: 24px;
+}
+
+.p-32 {
+  padding: 32px;
+}
+
+.m-8 {
+  margin: 8px;
+}
+
+.m-16 {
+  margin: 16px;
+}
+
+.m-24 {
+  margin: 24px;
+}
+
+.m-32 {
+  margin: 32px;
+}
+
+.gap-8 {
+  gap: 8px;
+}
+
+.gap-16 {
+  gap: 16px;
+}
+
+.gap-24 {
+  gap: 24px;
+}
+
+.gap-32 {
+  gap: 32px;
+}

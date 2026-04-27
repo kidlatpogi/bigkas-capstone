@@ -179,9 +179,22 @@ function ProgressPage() {
   const hasLoggedActivityTaskRef = useRef(false);
   const activityScopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
 
-  const [range, setRange] = useState('Weekly');
+  const [chartRange, setChartRange] = useState('Weekly');
   const [pillarRange, setPillarRange] = useState('Weekly');
-  const [historyFilter, setHistoryFilter] = useState('All');
+  const [range, setRange] = useState('daily');
+  const graphRef = useRef(null);
+  const [graphWidth, setGraphWidth] = useState(0);
+
+  useEffect(() => {
+    if (!graphRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        setGraphWidth(entry.contentRect.width);
+      }
+    });
+    observer.observe(graphRef.current);
+    return () => observer.disconnect();
+  }, []);
   const [historyStartDate, setHistoryStartDate] = useState('');
   const [historyEndDate, setHistoryEndDate] = useState('');
   const [historyPage, setHistoryPage] = useState(0);
@@ -593,10 +606,55 @@ function ProgressPage() {
           </section>
 
           {/* Graph Section */}
-          <div className="progress-graph-container dashboard-anim-bottom dashboard-anim-delay-3">
-             <div className="progress-graph-placeholder">
-               GRAPH HERE/ SA CODE KO NA LALAGAY
-             </div>
+          <div 
+            className="progress-graph-container dashboard-anim-bottom dashboard-anim-delay-3"
+            ref={graphRef}
+          >
+            <div className="progress-chart-header">
+              <div className="progress-range-labels">
+                {TIME_RANGES.map(r => (
+                  <button
+                    type="button"
+                    key={r} 
+                    className={`progress-range-chip ${range === r ? 'active' : ''}`}
+                    onClick={() => setRange(r)}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="progress-chart-container">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="label" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 12, fill: '#888' }}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 12, fill: '#888' }}
+                    ticks={[1, 2, 3, 4, 5]}
+                    tickFormatter={(value) => Number(value).toFixed(1)}
+                    domain={[1, 5]}
+                  />
+                  <Tooltip 
+                    cursor={{ fill: '#f8f8f8' }}
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    formatter={(value) => [`${Number(value).toFixed(1)} / 5.0`, 'Score']}
+                  />
+                  <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={range === 'daily' ? 10 : 26} minPointSize={4}>
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={Number.isFinite(entry.value) ? '#059669' : '#f0f0f0'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
           {/* Pillars Grid */}

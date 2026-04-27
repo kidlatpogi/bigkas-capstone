@@ -55,16 +55,32 @@
 }
 
 .profile-modal-close-btn {
-  background: none;
-  border: none;
-  color: #64748b;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.08);
+  color: #334155;
+  font-size: 1.1rem;
+  line-height: 1;
   cursor: pointer;
-  padding: 4px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
   transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.profile-modal-close-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.profile-modal-close-btn:active {
+  transform: scale(0.9);
 }
 
 .profile-modal-user-section {

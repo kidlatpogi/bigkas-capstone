@@ -45,6 +45,7 @@ import {
   claimAllAchievements,
   getClaimableAchievements,
 } from '../../utils/achievementClaims';
+import heroRobotImage from '../../assets/Sprites/Robot/0018.webp';
 import './ProgressPage.css';
 
 const TIME_RANGES = ['daily', 'Weekly', 'Monthly', 'Yearly'];
@@ -554,123 +555,81 @@ function ProgressPage() {
             </div>
           ) : null}
 
-          {/* Graph Card */}
-          <div className="progress-trend-card dashboard-anim-bottom">
-            <div className="progress-chart-header">
-              <div className="progress-range-labels">
-                {TIME_RANGES.map(r => (
-                  <button
-                    type="button"
-                    key={r} 
-                    className={`progress-range-chip ${range === r ? 'active' : ''}`}
-                    onClick={() => setRange(r)}
-                  >
-                    {r}
-                  </button>
-                ))}
+          {/* Banner Section */}
+          <section className="progress-banner-wrap dashboard-anim-top dashboard-anim-delay-2">
+            <div className="progress-banner-left">
+              <img src={heroRobotImage} alt="" className="progress-banner-robot" />
+              <div className="progress-banner-bubble">
+                <p className="progress-banner-kicker">B-01:</p>
+                <p className="progress-banner-copy">
+                  These are your weekly report. You're improving fast, keep up the good work
+                  <span className="progress-banner-signature">Ask Lito</span>
+                </p>
               </div>
             </div>
-            <div className="progress-chart-container">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                  <XAxis 
-                    dataKey="label" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 12, fill: '#888' }}
-                  />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 12, fill: '#888' }}
-                    ticks={[1, 2, 3, 4, 5]}
-                    tickFormatter={(value) => Number(value).toFixed(1)}
-                    domain={[1, 5]}
-                  />
-                  <Tooltip 
-                    cursor={{ fill: '#f8f8f8' }}
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                    formatter={(value) => [`${Number(value).toFixed(1)} / 5.0`, 'Score']}
-                  />
-                  <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={range === 'daily' ? 10 : 26} minPointSize={4}>
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={Number.isFinite(entry.value) ? '#F18F01' : '#f0f0f0'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
 
-          {/* Stats Row */}
-          <div className="progress-stats-row">
-            <div className="stat-block dashboard-anim-bottom dashboard-anim-delay-1">
-              <div className="stat-icon-wrap">
-                <IoCalendarOutline />
+            <div className="progress-banner-stats">
+              <div className="progress-stat-card progress-stat-card--sessions">
+                <p className="progress-stat-label">Session this Week</p>
+                <div className="progress-stat-value-wrap">
+                  <p className="progress-stat-value">{stats.sessionsThisWeek}</p>
+                </div>
               </div>
-              <p className="stat-title">Sessions This Week</p>
-              <p className={`stat-num ${stats.sessionsThisWeek > 0 ? 'glow-text' : ''}`}>{stats.sessionsThisWeek}</p>
-              <p className="stat-desc">Attempts</p>
-            </div>
-            <div className="stat-block dashboard-anim-bottom dashboard-anim-delay-2">
-              <div className="stat-icon-wrap">
-                <IoTrophyOutline />
+              <div className="progress-stat-card progress-stat-card--score">
+                <p className="progress-stat-label">Average Score</p>
+                <div className="progress-stat-value-wrap">
+                  <p className="progress-stat-value">{stats.averageScoreLabel}</p>
+                </div>
               </div>
-              <p className="stat-title">Average Score</p>
-              <p className={`stat-num ${stats.averageScoreRaw > 0 ? 'glow-text' : ''}`}>{stats.averageScoreLabel}</p>
-              <p className="stat-desc">/5.0</p>
-            </div>
-            <div className="stat-block dashboard-anim-bottom dashboard-anim-delay-3">
-              <div className="stat-icon-wrap">
-                <IoTimeOutline />
+              <div className="progress-stat-card progress-stat-card--time">
+                <p className="progress-stat-label">Total Speaking</p>
+                <div className="progress-stat-value-wrap">
+                  <p className="progress-stat-value">{stats.totalSpeakingTime}</p>
+                </div>
               </div>
-              <p className="stat-title">Total Speaking Time</p>
-              <p className={`stat-num ${stats.totalSpeakingTime > 0 ? 'glow-text' : ''}`}>{stats.totalSpeakingTime}</p>
-              <p className="stat-desc">Minutes</p>
             </div>
+          </section>
+
+          {/* Graph Section */}
+          <div className="progress-graph-container dashboard-anim-bottom dashboard-anim-delay-3">
+             <div className="progress-graph-placeholder">
+               GRAPH HERE/ SA CODE KO NA LALAGAY
+             </div>
           </div>
 
           {/* Pillars Grid */}
-          <div className="progress-pillars-header dashboard-anim-bottom dashboard-anim-delay-4">
+          <div className="progress-pillars-section dashboard-anim-bottom dashboard-anim-delay-4">
             <h3 className="progress-pillars-title">Pillar Trends</h3>
-            <div className="progress-range-labels">
-              {TIME_RANGES.map((r) => (
-                <button
-                  type="button"
-                  key={`pillar-${r}`}
-                  className={`progress-range-chip ${pillarRange === r ? 'active' : ''}`}
-                  onClick={() => setPillarRange(r)}
-                >
-                  {r}
-                </button>
-              ))}
+            <div className="progress-pillars-grid">
+              {pillarStats.map((pillar, index) => {
+                const tier = getScoreTier15(pillar.score);
+                return (
+                  <div key={pillar.key} className="pillar-card">
+                    <div className="progress-pillar-header">
+                      <span className="progress-pillar-label">{pillar.label}</span>
+                      <span className="progress-pillar-tier" style={{ color: tier.color }}>{tier.label}</span>
+                    </div>
+                    <p className="progress-pillar-score">{pillar.score.toFixed(1)}</p>
+                    <div className="progress-pillar-track">
+                      <div
+                        className="progress-pillar-track-fill"
+                        style={{ width: `${pillar.value}%`, background: tier.color }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
-          <div className="progress-pillars-grid">
-            {pillarStats.map((pillar, index) => (
-              <div key={pillar.key} className={`pillar-card dashboard-anim-bottom dashboard-anim-delay-${5 + index}`}>
-                {(() => {
-                  const tier = getScoreTier15(pillar.score);
-                  return (
-                    <>
-                      <div className="progress-pillar-header">
-                        <span className="progress-pillar-label">{pillar.label}</span>
-                        <span className="progress-pillar-tier" style={{ color: tier.color }}>{tier.label}</span>
-                      </div>
-                      <p className="progress-pillar-score">{pillar.score.toFixed(1)}<span>/5.0</span></p>
-                      <p className="progress-pillar-desc">{pillar.desc}</p>
-                      <div className="progress-pillar-track">
-                        <div
-                          className="progress-pillar-track-fill"
-                          style={{ width: `${pillar.value}%`, background: tier.color }}
-                        />
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-            ))}
+
+          <div className="progress-footer-actions dashboard-anim-bottom dashboard-anim-delay-5">
+            <button
+              type="button"
+              className="progress-show-history-btn"
+              onClick={() => setShowMobileHistory(true)}
+            >
+              Show History
+            </button>
           </div>
           <div className="progress-mobile-history-toggle-wrap">
             <button

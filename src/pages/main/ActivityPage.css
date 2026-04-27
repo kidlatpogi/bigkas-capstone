@@ -636,13 +636,13 @@ html {
 }
 
 .new-btn-row .activity-practice-cta--randomizer:hover:not(:disabled) {
-  box-shadow: #047857 0 4px 0 0 !important;
+  box-shadow: #047857 0 3px 0 0 !important;
   transform: translateY(2px);
 }
 
 .new-btn-row .activity-practice-cta--randomizer:active:not(:disabled) {
   box-shadow: #047857 0 0 0 0 !important;
-  transform: translateY(6px);
+  transform: translateY(5px);
 }
 
 /* Free Speech Color (Orange) */
@@ -652,13 +652,13 @@ html {
 }
 
 .new-btn-row .activity-practice-cta--speech:hover:not(:disabled) {
-  box-shadow: #c2410c 0 4px 0 0 !important;
+  box-shadow: #c2410c 0 3px 0 0 !important;
   transform: translateY(2px);
 }
 
 .new-btn-row .activity-practice-cta--speech:active:not(:disabled) {
   box-shadow: #c2410c 0 0 0 0 !important;
-  transform: translateY(6px);
+  transform: translateY(5px);
 }
 
 /* Modals / Entrance */
@@ -955,13 +955,13 @@ html {
 }
 
 .randomizer-overlay-start-btn.bigkas-btn:hover:not(:disabled) {
-  box-shadow: #047857 0 4px 0 0 !important;
+  box-shadow: #047857 0 3px 0 0 !important;
   transform: translateY(2px);
 }
 
 .randomizer-overlay-start-btn.bigkas-btn:active:not(:disabled) {
   box-shadow: #047857 0 0 0 0 !important;
-  transform: translateY(6px);
+  transform: translateY(5px);
 }
 
 .randomizer-overlay-randomize-btn.bigkas-btn:hover:not(:disabled) {

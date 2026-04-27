@@ -98,13 +98,13 @@
 }
 
 .tutorial-bubble-btn:hover:not(:disabled) {
-  box-shadow: #047857 0 4px 0 0;
+  box-shadow: #047857 0 3px 0 0;
   transform: translateY(2px);
 }
 
 .tutorial-bubble-btn:active:not(:disabled) {
   box-shadow: #047857 0 0 0 0;
-  transform: translateY(6px);
+  transform: translateY(5px);
 }
 
 .tutorial-bubble-btn:disabled {

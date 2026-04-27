@@ -747,16 +747,8 @@ function ProgressPage() {
           <div className="history-container">
             <div className="history-sticky-header dashboard-anim-top dashboard-anim-delay-1">
               <div className="history-header-row">
-                <h2 className="history-title">History</h2>
-                <button
-                  type="button"
-                  className="history-close-btn"
-                  aria-label="Close history"
-                  onClick={() => setShowMobileHistory(false)}
-                >
-                  <IoClose aria-hidden="true" />
-                </button>
-              </div>
+            <div className="history-header-row">
+              <h2 className="history-title">History</h2>
               <div className="history-filters">
                 {HISTORY_FILTERS.map(f => (
                   <button 
@@ -771,53 +763,18 @@ function ProgressPage() {
                   </button>
                 ))}
               </div>
-              <div className={`history-date-range${isHistoryDateRangeExpanded ? ' is-expanded' : ''}`}>
-                <button
-                  type="button"
-                  className="history-date-range-toggle"
-                  aria-expanded={isHistoryDateRangeExpanded}
-                  aria-controls="history-date-range-content"
-                  onClick={() => setIsHistoryDateRangeExpanded((current) => !current)}
-                >
-                  <span className="history-sort-label">Date range</span>
-                  <IoChevronDown
-                    aria-hidden="true"
-                    className={`history-date-range-chevron${isHistoryDateRangeExpanded ? ' is-expanded' : ''}`}
-                  />
-                </button>
-                {isHistoryDateRangeExpanded ? (
-                  <div id="history-date-range-content" className="history-date-grid">
-                    <label className="history-date-field">
-                      <span>Start date</span>
-                      <input
-                        type="date"
-                        value={historyStartDate}
-                        onChange={(event) => {
-                          setHistoryStartDate(event.target.value);
-                          setHistoryPage(0);
-                        }}
-                      />
-                    </label>
-                    <label className="history-date-field">
-                      <span>End date</span>
-                      <input
-                        type="date"
-                        value={historyEndDate}
-                        onChange={(event) => {
-                          setHistoryEndDate(event.target.value);
-                          setHistoryPage(0);
-                        }}
-                      />
-                    </label>
-                  </div>
-                ) : null}
-              </div>
             </div>
 
             <div className="history-list">
               {paginatedHistorySessions.map((s, index) => {
                 const mode = getSessionMode(s);
+                const score = toFivePointScore(s.confidence_score);
+                const tier = getScoreTier15(score);
                 const delay = Math.min(index + 2, 9);
+                const dateObj = new Date(s.created_at);
+                const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                const formattedTime = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+
                 return (
                   <div 
                     key={s.id} 
@@ -826,41 +783,38 @@ function ProgressPage() {
                       setShowMobileHistory(false);
                       navigate(buildRoute.sessionResult(s.id), { state: { ...s, source: 'progress' } });
                     }}
-                    style={{ cursor: 'pointer' }}
+                    style={{ '--tier-color': tier.color }}
                   >
-                    <div className="history-item-top">
-                      <h3 className="history-item-title">{buildSessionTitleOrTopic(s)}</h3>
-                      <span className={`history-item-tag ${mode.toLowerCase().replace(' ', '-')}`}>
-                        {mode}
-                      </span>
-                    </div>
-                    <div className="history-item-meta">
-                      <div className="history-item-meta-row">
-                        <IoCalendarOutline /> {formatDate(s.created_at)}
+                    <div className="history-item-content">
+                      <div className="history-item-left">
+                        <p className="history-item-date">{formattedDate} • {formattedTime}</p>
+                        <h3 className="history-item-main-title">{buildSessionTitleOrTopic(s)}</h3>
                       </div>
-                      <div className="history-item-meta-row">
-                        <IoTimeOutline /> {new Date(s.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                    </div>
-                    <div className="history-item-meta">
-                      <div className="history-item-meta-row">
-                        <IoTimeOutline /> {formatDuration(s.duration_sec || s.duration || 0)}
+                      <div className="history-item-right">
+                        <div className="history-item-stat">
+                          <span className="history-item-comparison">Better than last session</span>
+                          <span className="history-item-tier" style={{ color: tier.color }}>{tier.label}</span>
+                        </div>
+                        <div className="history-item-score-wrapper">
+                          <div className="history-item-score-ring" style={{ '--score-color': tier.color }}>
+                            {score.toFixed(1)}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div className="history-item-bottom">
-                      <span className="history-item-score-label">Score:</span>
-                      <span className="history-item-score">{formatFivePointScore(s.confidence_score)} / 5.0</span>
-                    </div>
+                    <div className="history-item-glow" style={{ background: `radial-gradient(circle at bottom, ${tier.color}30 0%, transparent 70%)` }} />
                   </div>
                 );
               })}
+              
               {isLoading && historySessions.length === 0 && (
-                <p style={{ textAlign: 'center', color: '#888', marginTop: 20 }}>Loading history...</p>
+                <p style={{ textAlign: 'center', color: '#888', padding: '40px 0' }}>Loading history...</p>
               )}
               {!isLoading && historySessions.length === 0 && (
-                <p style={{ textAlign: 'center', color: '#888', marginTop: 20 }}>No sessions found.</p>
+                <p style={{ textAlign: 'center', color: '#888', padding: '40px 0' }}>No sessions found.</p>
               )}
             </div>
+
             {!isLoading && historyPageCount > 1 && (
               <div className="history-pagination-shell">
                 <ul className="history-pagination" aria-label="History pagination">
@@ -870,21 +824,15 @@ function ProgressPage() {
                       className="history-pagination-link"
                       onClick={() => setHistoryPage((current) => Math.max(0, current - 1))}
                       disabled={safeHistoryPage <= 0}
-                      aria-label="Previous history page"
                     >
-                      <IoChevronBack aria-hidden="true" />
+                      <IoChevronBack />
                     </button>
                   </li>
 
                   {adaptiveHistoryPages.map((entry, idx) => {
                     if (entry === 'start-ellipsis' || entry === 'end-ellipsis') {
-                      return (
-                        <li key={`${entry}-${idx}`} className="history-pagination-break" aria-hidden="true">
-                          ...
-                        </li>
-                      );
+                      return <li key={`${entry}-${idx}`} className="history-pagination-break">...</li>;
                     }
-
                     const isActive = entry === safeHistoryPage;
                     return (
                       <li key={`page-${entry}`} className={`history-pagination-page ${isActive ? 'active' : ''}`}>
@@ -892,8 +840,6 @@ function ProgressPage() {
                           type="button"
                           className="history-pagination-link"
                           onClick={() => setHistoryPage(entry)}
-                          aria-label={`Go to history page ${entry + 1}`}
-                          aria-current={isActive ? 'page' : undefined}
                         >
                           {entry + 1}
                         </button>
@@ -907,14 +853,22 @@ function ProgressPage() {
                       className="history-pagination-link"
                       onClick={() => setHistoryPage((current) => Math.min(historyPageCount - 1, current + 1))}
                       disabled={safeHistoryPage >= historyPageCount - 1}
-                      aria-label="Next history page"
                     >
-                      <IoChevronForward aria-hidden="true" />
+                      <IoChevronForward />
                     </button>
                   </li>
                 </ul>
               </div>
             )}
+
+            <div className="history-footer">
+              <button 
+                className="progress-show-history-btn" 
+                onClick={() => setShowMobileHistory(false)}
+              >
+                Back
+              </button>
+            </div>
           </div>
         </div>
       </div>

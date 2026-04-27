@@ -219,7 +219,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   font-family: 'Fredoka', sans-serif;
   font-size: clamp(10px, 0.9vw, 12px);
   font-weight: 700;
-  color: #F97316;
+  color: #F97316 !important;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   text-align: center;
@@ -311,7 +311,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   font-family: 'Fredoka', sans-serif;
   font-size: 28px;
   font-weight: 800;
-  color: #F97316;
+  color: #F97316 !important;
 }
 
 .progress-pillars-grid {
@@ -341,7 +341,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   font-family: 'Fredoka', sans-serif;
   font-size: 18px;
   font-weight: 800;
-  color: #F97316;
+  color: #F97316 !important;
 }
 
 .progress-pillar-tier {
@@ -942,19 +942,20 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
 [data-theme='dark'] .history-title,
 [data-theme='dark'] .pillar-label,
-[data-theme='dark'] .progress-pillar-label,
 [data-theme='dark'] .progress-pillar-score,
 [data-theme='dark'] .history-item-title {
   color: #FFFFFF;
 }
 
+[data-theme='dark'] .new-widget-kicker,
+[data-theme='dark'] .progress-pillars-title,
+[data-theme='dark'] .progress-pillar-label {
+  color: #F97316 !important;
+}
+
 [data-theme='dark'] .progress-pillar-score span,
 [data-theme='dark'] .progress-pillar-desc {
   color: rgba(255, 255, 255, 0.5);
-}
-
-[data-theme='dark'] .progress-pillars-title {
-  color: #f3f4f6;
 }
 
 [data-theme='dark'] .history-sort-label {

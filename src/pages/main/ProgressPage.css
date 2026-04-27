@@ -90,10 +90,11 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 .progress-main-layout {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: clamp(16px, 2.5vh, 24px);
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
+  z-index: 1;
 }
 
 .progress-left-content {

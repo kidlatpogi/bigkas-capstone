@@ -14,7 +14,6 @@ import VerifyEmailPage from '../pages/auth/VerifyEmailPage';
 import ForgotPasswordPage from '../pages/auth/ForgotPasswordPage';
 
 // Main Pages
-import DashboardPage from '../pages/main/DashboardPage';
 import AdminDashboardPage from '../pages/main/AdminDashboardPage';
 import ProgressPage from '../pages/main/ProgressPage';
 import AchievementsPage from '../pages/main/AchievementsPage';
@@ -30,6 +29,7 @@ import UserProfilingPage from '../pages/main/UserProfilingPage';
 import UserPretestPage from '../pages/main/UserPretestPage';
 import UserAnalyzingPage from '../pages/main/UserAnalyzingPage';
 import ActivityPage from '../pages/main/ActivityPage';
+import ActivityPageMobile from '../pages/main/ActivityPageMobile';
 
 // Session Pages
 import SessionDetailPage from '../pages/session/SessionDetailPage';
@@ -44,6 +44,31 @@ import SideNav from '../components/common/SideNav';
 import MobileTopBar from '../components/common/MobileTopBar';
 import BottomNav from '../components/common/BottomNav';
 import bigkasLogo from '../assets/Temporary Logo.png';
+
+/**
+ * ActivityPageWrapper - Conditionally renders desktop or mobile version
+ * based on viewport size
+ */
+function ActivityPageWrapper() {
+  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 768);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const handleViewportChange = (event) => setIsMobileViewport(event.matches);
+
+    setIsMobileViewport(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleViewportChange);
+      return () => mediaQuery.removeEventListener('change', handleViewportChange);
+    }
+
+    mediaQuery.addListener(handleViewportChange);
+    return () => mediaQuery.removeListener(handleViewportChange);
+  }, []);
+
+  return isMobileViewport ? <ActivityPageMobile /> : <ActivityPage />;
+}
 
 function getAuthenticatedRedirect(user, isAdminAuthenticated) {
   if (isAdminAuthenticated) return ROUTES.ADMIN_DASHBOARD;
@@ -251,8 +276,7 @@ function AppRouter() {
         <Route path={ROUTES.USER_PRETEST} element={<UserPretestPage />} />
         <Route path={ROUTES.USER_ANALYZING} element={<UserAnalyzingPage />} />
 
-        {/* Dashboard */}
-        <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
+
 
         {/* Practice */}
         <Route path={ROUTES.PRACTICE} element={<PracticePage />} />
@@ -267,7 +291,7 @@ function AppRouter() {
         {/* Progress / Activity */}
         <Route path={ROUTES.PROGRESS} element={<ProgressPage />} />
         <Route path={ROUTES.ACHIEVEMENTS} element={<AchievementsPage />} />
-        <Route path={ROUTES.ACTIVITY} element={<ActivityPage />} />
+        <Route path={ROUTES.ACTIVITY} element={<ActivityPageWrapper />} />
 
         {/* Profile */}
         <Route path={ROUTES.PROFILE} element={<SettingsProfilePage />} />

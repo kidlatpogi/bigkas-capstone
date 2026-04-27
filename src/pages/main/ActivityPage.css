@@ -691,84 +691,94 @@ html {
   }
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
   .activity-page-grid {
-    width: 90vw;
-    grid-template-columns: 1fr;
+    width: 100vw !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 12px !important;
+    gap: 20px !important;
+    margin: 0 !important;
+    grid-template-columns: 1fr !important;
   }
 
   .new-banner {
-    grid-template-columns: 1fr;
-    padding: 14px;
-    gap: 10px;
-  }
-
-  .new-banner-right {
-    width: 100%;
-  }
-
-  .new-banner-streak {
-    width: 100%;
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
+    padding: 16px !important;
+    gap: 16px !important;
+    border-radius: 16px !important;
   }
 
   .new-banner-left {
-    padding: 14px 14px 14px 136px;
+    padding: 12px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
   }
 
   .new-banner-robot {
-    width: clamp(140px, 22vw, 188px);
-    left: clamp(-18px, -1.5vw, -8px);
-    bottom: -14px;
+    position: static !important;
+    width: 140px !important;
+    margin-bottom: 12px !important;
+    left: auto !important;
+    transform: none !important;
+  }
+
+  .new-banner-bubble {
+    width: 100% !important;
+    padding: 12px !important;
+  }
+
+  .new-banner-bubble::before {
+    display: none !important;
+  }
+
+  .new-banner-right {
+    width: 100% !important;
+  }
+
+  .new-left-col {
+    width: 100% !important;
+    min-height: auto !important;
+    order: 2 !important;
+  }
+
+  .new-right-col {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+    overflow: visible !important;
+    order: 3 !important;
+  }
+
+  .new-widget {
+    width: 100% !important;
+    padding: 16px !important;
   }
 
   .new-btn-row--card {
-    grid-template-columns: 56px 1fr;
-    gap: 8px;
+    grid-template-columns: 1fr !important;
+    padding: 16px !important;
+    text-align: center !important;
+    gap: 12px !important;
   }
 
   .new-btn-visual {
-    width: 56px;
-    height: 56px;
-    border-radius: 12px;
-    padding: 7px;
+    margin: 0 auto 12px !important;
+    width: 64px !important;
+    height: 64px !important;
   }
 
-  .activity-fs-tutorial-overlay {
-    padding: clamp(10px, 4vw, 16px);
-    align-items: flex-start;
-    justify-content: center;
-    padding-top: calc(clamp(10px, 4vw, 16px) + env(safe-area-inset-top));
+  .new-btn-meta {
+    margin-bottom: 12px !important;
   }
 
-  .activity-fs-tutorial-card {
-    width: min(100%, 96vw);
-    border-radius: 18px;
-    padding: 14px;
-  }
-
-  .activity-fs-tutorial-copy {
-    font-size: clamp(0.92rem, 0.88rem + 0.3vw, 1rem);
-  }
-
-  .activity-fs-tutorial-robot-wrap {
-    position: absolute;
-  }
-
-  .activity-fs-tutorial-robot {
-    width: clamp(128px, 32vw, 185px);
-  }
-
-  .activity-fs-tutorial-robot-wrap.is-step-1,
-  .activity-fs-tutorial-robot-wrap.is-step-2,
-  .activity-fs-tutorial-robot-wrap.is-step-3,
-  .activity-fs-tutorial-robot-wrap.is-step-4,
-  .activity-fs-tutorial-robot-wrap.is-step-5,
-  .activity-fs-tutorial-robot-wrap.is-step-6 {
-    left: 12px;
-    right: auto;
-    top: auto;
-    bottom: clamp(14px, 2vh, 22px);
-    transform: none;
+  .activity-practice-cta {
+    width: 100% !important;
+    margin: 0 !important;
   }
 }
 

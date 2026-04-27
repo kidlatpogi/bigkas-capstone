@@ -687,18 +687,16 @@ function ActivityPageMobile() {
         </section>
       )}
 
-      <div className="activity-page-mobile-container">
-        {/* Journey Shell */}
-        <div className="activity-mobile-journey-wrapper" id="tutorial-target-home-journey">
-          <SkywardJourneyShell
-            initialLevel={recommendedLevel}
-            recommendedLevel={recommendedLevel}
-            entranceFromNav={entranceFromNav}
-            scrollToStepIndex={null}
-            renderTaskCard={renderTaskCardForShell}
-            onActiveTaskIdChange={handleActiveTaskIdChange}
-          />
-        </div>
+      {/* Journey Shell - Mobile Layout */}
+      <div className="activity-mobile-journey-container" id="tutorial-target-home-journey">
+        <SkywardJourneyShell
+          initialLevel={recommendedLevel}
+          recommendedLevel={recommendedLevel}
+          entranceFromNav={entranceFromNav}
+          scrollToStepIndex={null}
+          renderTaskCard={renderTaskCardForShell}
+          onActiveTaskIdChange={handleActiveTaskIdChange}
+        />
       </div>
 
       <StreakCalendarModal

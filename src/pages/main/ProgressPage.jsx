@@ -12,12 +12,7 @@ import {
 } from 'recharts';
 import { 
   IoChevronBack, 
-  IoChevronDown,
   IoChevronForward, 
-  IoClose,
-  IoTimeOutline, 
-  IoCalendarOutline,
-  IoTrophyOutline,
 } from 'react-icons/io5';
 import { useSessionContext } from '../../context/useSessionContext';
 import { useAuthContext } from '../../context/useAuthContext';
@@ -200,12 +195,7 @@ function ProgressPage() {
     observer.observe(graphRef.current);
     return () => observer.disconnect();
   }, []);
-  const [historyStartDate, setHistoryStartDate] = useState('');
-  const [historyEndDate, setHistoryEndDate] = useState('');
   const [historyPage, setHistoryPage] = useState(0);
-  const [isHistoryDateRangeExpanded, setIsHistoryDateRangeExpanded] = useState(() =>
-    typeof window === 'undefined' ? true : window.innerWidth > 768,
-  );
   const [historyPageSize, setHistoryPageSize] = useState(() =>
     getResponsiveHistoryPageSize(typeof window !== 'undefined' ? window.innerHeight : 1080),
   );
@@ -487,13 +477,8 @@ function ProgressPage() {
   }, [pillarRange, userSessions]);
 
   const historySessions = useMemo(() => {
-    const startDate = historyStartDate ? new Date(`${historyStartDate}T00:00:00`) : null;
-    const endDate = historyEndDate ? new Date(`${historyEndDate}T23:59:59.999`) : null;
-
     const filtered = userSessions.filter(s => {
       const d = new Date(s.created_at);
-      if (startDate && d < startDate) return false;
-      if (endDate && d > endDate) return false;
       if (historyFilter === 'Today') {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -514,7 +499,7 @@ function ProgressPage() {
     });
 
     return filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  }, [historyEndDate, historyFilter, historyStartDate, userSessions]);
+  }, [historyFilter, userSessions]);
 
   const historyPageCount = useMemo(
     () => Math.ceil(historySessions.length / historyPageSize),
@@ -762,39 +747,6 @@ function ProgressPage() {
                     </button>
                   ))}
                 </div>
-              </div>
-
-              <div className={`history-date-range${isHistoryDateRangeExpanded ? ' is-expanded' : ''}`}>
-                <button
-                  type="button"
-                  className="history-date-range-toggle"
-                  onClick={() => setIsHistoryDateRangeExpanded((current) => !current)}
-                >
-                  <span className="history-sort-label">Date range</span>
-                  <IoChevronDown
-                    className={`history-date-range-chevron${isHistoryDateRangeExpanded ? ' is-expanded' : ''}`}
-                  />
-                </button>
-                {isHistoryDateRangeExpanded && (
-                  <div className="history-date-grid">
-                    <label className="history-date-field">
-                      <span>Start date</span>
-                      <input
-                        type="date"
-                        value={historyStartDate}
-                        onChange={(e) => { setHistoryStartDate(e.target.value); setHistoryPage(0); }}
-                      />
-                    </label>
-                    <label className="history-date-field">
-                      <span>End date</span>
-                      <input
-                        type="date"
-                        value={historyEndDate}
-                        onChange={(e) => { setHistoryEndDate(e.target.value); setHistoryPage(0); }}
-                      />
-                    </label>
-                  </div>
-                )}
               </div>
             </div>
 

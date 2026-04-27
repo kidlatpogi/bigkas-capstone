@@ -718,36 +718,42 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
 .history-filters {
   display: flex;
-  gap: 20px;
+  gap: 8px;
+  background: #f1f5f9;
+  padding: 6px;
+  border-radius: 999px;
+  width: fit-content;
 }
 
 .history-filter-btn {
-  padding: 0;
   border: none;
   background: transparent;
+  padding: 6px 16px;
+  border-radius: 999px;
   font-family: 'Fredoka', sans-serif;
-  font-size: 18px;
-  font-weight: 500;
-  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .history-filter-btn:hover {
   color: #111827;
+  background: rgba(255, 255, 255, 0.5);
 }
 
 .history-filter-btn.active {
-  color: #111827;
-  font-weight: 800;
+  background: #059669;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
 }
 
 .history-date-range {
-  margin-top: 16px;
-  background: rgba(255, 255, 255, 0.4);
-  border: 1px solid rgba(11, 57, 84, 0.05);
-  border-radius: 24px;
-  padding: 12px 20px;
+  margin-top: 12px;
+  background: transparent;
+  border: none;
+  padding: 0 32px;
 }
 
 .history-date-range-toggle {

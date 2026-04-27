@@ -660,7 +660,21 @@ function ProgressPage() {
 
           {/* Pillars Grid */}
           <div className="progress-pillars-section dashboard-anim-bottom dashboard-anim-delay-4">
-            <h3 className="progress-pillars-title">Pillar Trends</h3>
+            <div className="progress-pillars-header">
+              <h3 className="progress-pillars-title">Pillar Trends ({pillarRange === 'daily' ? 'Today' : pillarRange})</h3>
+              <div className="progress-range-labels">
+                {TIME_RANGES.map(r => (
+                  <button
+                    type="button"
+                    key={r} 
+                    className={`progress-range-chip ${pillarRange === r ? 'active' : ''}`}
+                    onClick={() => setPillarRange(r)}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="progress-pillars-grid">
               {pillarStats.map((pillar, index) => {
                 const tier = getScoreTier15(pillar.score);

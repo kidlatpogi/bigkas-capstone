@@ -506,8 +506,8 @@ html {
 .new-btn-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 4px;
+  gap: 12px;
+  margin-top: 8px;
   flex: 1;
 }
 
@@ -529,16 +529,22 @@ html {
 }
 
 .new-btn-row--card {
-  padding: 12px 14px;
+  padding: 16px 20px;
   border: 1px solid rgba(11, 57, 84, 0.08);
-  border-radius: 16px;
+  border-radius: 20px;
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   display: grid;
-  grid-template-columns: 54px 1fr;
+  grid-template-columns: 72px 1fr;
   grid-template-rows: 1fr auto;
-  gap: 12px 10px;
+  gap: 16px 16px;
   align-items: center;
   flex: 1;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.new-btn-row--card:hover {
+  box-shadow: 0 12px 24px -8px rgba(11, 57, 84, 0.15);
+  transform: translateY(-2px);
 }
 
 .new-btn-row--card .activity-practice-cta {
@@ -549,18 +555,19 @@ html {
 .new-btn-meta {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 5px;
 }
 
 .new-btn-visual {
-  width: 54px;
-  height: 54px;
-  border-radius: 12px;
+  width: 72px;
+  height: 72px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px;
+  padding: 10px;
   border: 1px solid rgba(11, 57, 84, 0.06);
+  flex-shrink: 0;
 }
 
 .new-btn-visual--randomizer {
@@ -584,19 +591,19 @@ html {
 }
 
 .new-btn-label {
-  font-size: clamp(0.9rem, 0.86rem + 0.2vw, 1rem);
-  font-weight: 700;
-  color: #1f2937;
+  font-size: clamp(1.1rem, 1rem + 0.3vw, 1.25rem);
+  font-weight: 800;
+  color: #111827;
   margin: 0;
-  line-height: 1.25;
+  line-height: 1.2;
 }
 
 .new-btn-hint {
   margin: 0;
-  font-size: clamp(0.76rem, 0.72rem + 0.18vw, 0.84rem);
-  color: #6b7280;
-  line-height: 1.35;
-  margin-bottom: 4px;
+  font-size: clamp(0.84rem, 0.8rem + 0.1vw, 0.92rem);
+  color: #4b5563;
+  line-height: 1.4;
+  margin-bottom: 0;
 }
 
 /* Practice buttons match Start button from scratch */

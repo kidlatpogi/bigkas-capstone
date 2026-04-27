@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Confetti from 'react-confetti';
-import Lottie from 'lottie-react';
+
 import { useAuthContext } from '../../context/useAuthContext';
 import { useSessions } from '../../hooks/useSessions';
 import { ROUTES } from '../../utils/constants';
@@ -25,7 +25,7 @@ import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks
 import { useJourneyRemoteState } from '../../hooks/useJourneyRemoteState';
 import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../services/journeyProgressService';
 import { RANDOM_TOPICS } from '../../utils/practiceData';
-import iconFire from '../../assets/icons/Icon-Fire.svg';
+
 import robotMorningImage from '../../assets/Sprites/Robot/0018.webp';
 import robotNoonImage from '../../assets/Sprites/Robot/0001.webp';
 import robotNightImage from '../../assets/Sprites/Robot/0013.webp';
@@ -43,7 +43,7 @@ import rankMythrilImage from '../../assets/Sprites/Rank/rank-mythril.png';
 import rankLegendaryImage from '../../assets/Sprites/Rank/rank-legendary.png';
 import crystalBallImage from '../../assets/Sprites/common/crystal-ball.png';
 import crownImage from '../../assets/Sprites/common/crown.png';
-import fireAnimationData from '../../assets/Sprites/common/fire.json';
+
 import './InnerPages.css';
 import './ActivityPage.css';
 import './DashboardPage.css';
@@ -954,9 +954,7 @@ function ActivityPage() {
                 onClick={() => setIsStreakModalOpen(true)}
               >
                  <div className="new-streak-top">
-                   <div className="new-streak-fire">
-                     <Lottie animationData={fireAnimationData} loop={true} />
-                   </div>
+
                    <div className="new-streak-headline">
                      <div className="new-streak-value">{streakStats.currentStreak}</div>
                      <p className="new-streak-label">day streak</p>

@@ -369,7 +369,7 @@
   height: 72px;
   min-width: 60px;
   min-height: 60px;
-  border-radius: 16px;
+  border-radius: 50%;
   border: 3px solid rgba(15, 68, 98, 0.35);
   background: linear-gradient(160deg, #ffffff 0%, #f4f7f5 100%);
   box-shadow: 0 6px 0px 0px rgba(0, 0, 0, 0.15), 0 8px 20px rgba(11, 57, 84, 0.12);

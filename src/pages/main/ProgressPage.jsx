@@ -98,6 +98,12 @@ function score100to15(value) {
   return 1 + (bounded / 100) * 4;
 }
 
+function getResponsiveHistoryPageSize(height) {
+  if (height < 600) return 5;
+  if (height < 900) return 8;
+  return 12;
+}
+
 function score15ToPercent(score15) {
   const clamped = clamp15(score15);
   if (!Number.isFinite(clamped)) return 0;

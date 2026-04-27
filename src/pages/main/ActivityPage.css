@@ -26,24 +26,24 @@ html {
   background-color: #ffffff;
   background-image: 
     /* Subtle dot grid */
-    radial-gradient(rgba(11, 57, 84, 0.05) 1px, transparent 0),
+    radial-gradient(rgba(11, 57, 84, 0.1) 1px, transparent 0),
     /* Large, sweeping sound wave arcs */
     repeating-radial-gradient(
       circle at 100% 100%, 
       transparent 0, 
       transparent 300px, 
-      rgba(5, 150, 105, 0.04) 300px, 
-      rgba(5, 150, 105, 0.04) 301px, 
-      transparent 301px, 
+      rgba(5, 150, 105, 0.08) 300px, 
+      rgba(5, 150, 105, 0.08) 302px, 
+      transparent 302px, 
       transparent 600px
     ),
     repeating-radial-gradient(
       circle at 0% 0%, 
       transparent 0, 
       transparent 400px, 
-      rgba(241, 143, 1, 0.03) 400px, 
-      rgba(241, 143, 1, 0.03) 401px, 
-      transparent 401px, 
+      rgba(241, 143, 1, 0.07) 400px, 
+      rgba(241, 143, 1, 0.07) 402px, 
+      transparent 402px, 
       transparent 800px
     );
   background-size: 40px 40px, 100% 100%, 100% 100%;

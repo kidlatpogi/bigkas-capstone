@@ -702,6 +702,10 @@ function ProgressPage() {
                         <p className="new-widget-value">{pillar.score.toFixed(1)} / 5.0</p>
                       </div>
                     </div>
+                    <div className="progress-pillar-track-header">
+                      <span className="progress-pillar-track-label">Consistency Progress</span>
+                      <span className="progress-pillar-track-percent">{Math.round(pillar.value)}%</span>
+                    </div>
                     <div className="progress-pillar-track">
                       <div
                         className="progress-pillar-track-fill"

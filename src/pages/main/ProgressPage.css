@@ -405,17 +405,41 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   gap: 4px;
 }
 
+.progress-pillar-track-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  margin-bottom: 6px;
+}
+
+.progress-pillar-track-label {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #4b5563;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.progress-pillar-track-percent {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  color: #059669;
+}
+
 .progress-pillar-track {
-  height: 12px;
+  height: 10px;
   background: rgba(15, 23, 42, 0.05);
   border-radius: 999px;
   overflow: hidden;
-  margin-top: 8px;
 }
 
 .progress-pillar-track-fill {
   height: 100%;
   border-radius: 999px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* =========================================================================

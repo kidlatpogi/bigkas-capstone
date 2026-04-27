@@ -26,25 +26,28 @@ html {
   background-color: #F0F4F8; /* Subtle tint of primary #0B3954 */
   background-image: 
     repeating-radial-gradient(
-      circle at 10% 50%,
+      circle at 0% 50%,
       transparent 0,
-      transparent 60px,
-      rgba(11, 57, 84, 0.04) 60px, /* Dark Blue */
-      rgba(11, 57, 84, 0.04) 62px
+      transparent 76px,
+      rgba(11, 57, 84, 0.08) 79px, /* Dark Blue */
+      rgba(11, 57, 84, 0.08) 81px,
+      transparent 84px
     ),
     repeating-radial-gradient(
-      circle at 90% 20%,
+      circle at 100% 10%,
       transparent 0,
-      transparent 80px,
-      rgba(5, 150, 105, 0.03) 80px, /* Emerald Green */
-      rgba(5, 150, 105, 0.03) 82px
+      transparent 116px,
+      rgba(5, 150, 105, 0.07) 119px, /* Emerald Green */
+      rgba(5, 150, 105, 0.07) 121px,
+      transparent 124px
     ),
     repeating-radial-gradient(
-      circle at 50% 110%,
+      circle at 50% 100%,
       transparent 0,
-      transparent 100px,
-      rgba(241, 143, 1, 0.03) 100px, /* Orange */
-      rgba(241, 143, 1, 0.03) 102px
+      transparent 146px,
+      rgba(241, 143, 1, 0.06) 149px, /* Orange */
+      rgba(241, 143, 1, 0.06) 151px,
+      transparent 154px
     );
   background-attachment: fixed;
 }

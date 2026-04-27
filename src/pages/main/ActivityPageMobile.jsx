@@ -687,117 +687,17 @@ function ActivityPageMobile() {
         </section>
       )}
 
-      <div className="activity-page-mobile-stack">
-        {/* Banner */}
-        <section className="new-banner-mobile dashboard-anim-top dashboard-anim-delay-2">
-          <div className="new-banner-left-mobile" id="tutorial-target-home-banner">
-            <img src={heroRobotImage} alt="" className="new-banner-robot-mobile" />
-            <div className="new-banner-bubble-mobile" aria-label="Coach message">
-              <p className="new-banner-kicker-mobile">B-01:</p>
-              <p className="new-banner-copy-mobile">You're on a roll. Keep doing your activities and improve your speaking.</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Streak Card */}
-        <section className="new-widget-mobile dashboard-anim-left dashboard-anim-delay-2" id="tutorial-target-home-streak">
-          <div className="new-widget-head-mobile">
-            <h2 className="new-widget-title-mobile">Streak</h2>
-          </div>
-          <div
-            className="new-widget-streak-card-mobile"
-            onClick={() => setIsStreakModalOpen(true)}
-          >
-            <div className="new-streak-top-mobile">
-              <div className="new-streak-fire-mobile">
-                <Lottie animationData={fireAnimationData} loop={true} />
-              </div>
-              <div className="new-streak-headline-mobile">
-                <div className="new-streak-value-mobile">{streakStats.currentStreak}</div>
-                <p className="new-streak-label-mobile">day streak</p>
-              </div>
-            </div>
-            <div className="new-streak-week-mobile" aria-label="This week streak activity">
-              {weekPills.map((pill, idx) => (
-                <span
-                  key={`${pill.label}-${idx}`}
-                  className={`new-streak-pill-mobile${pill.active ? ' is-active' : ''}${pill.isToday ? ' is-today' : ''}`}
-                >
-                  {pill.label}
-                </span>
-              ))}
-            </div>
-            <p className="new-streak-copy-mobile">Build a daily speaking habit to keep stacking your streak.</p>
-          </div>
-        </section>
-
-        {/* Rank Card */}
-        <section className="new-widget-mobile dashboard-anim-bottom dashboard-anim-delay-3" id="tutorial-target-home-rank">
-          <div className="new-widget-head-mobile">
-            <h2 className="new-widget-title-mobile">Rank</h2>
-          </div>
-          <div
-            className="new-widget-rank-card-mobile"
-            onClick={() => setIsRankModalOpen(true)}
-          >
-            <img src={rankSpriteImage} alt="" className="new-widget-rank-sprite-mobile" />
-            <div className="new-widget-rank-content-mobile">
-              <p className="new-widget-kicker-mobile">Current Rank</p>
-              <p className="new-widget-value-mobile">{levelProgress.levelName}</p>
-            </div>
-          </div>
-          <p className="new-widget-caption-mobile">
-            {completedTaskCount}/{Math.max(tasks.length, 1)} Tasks Complete
-            <span className="new-widget-caption-sep-mobile"> - </span>
-            {sidebarProgressPct}% Cleared
-          </p>
-        </section>
-
-        {/* Practice Section */}
-        <section className="new-widget-mobile new-widget--practice-mobile dashboard-anim-bottom dashboard-anim-delay-4" id="tutorial-target-home-practice">
-          <div className="new-widget-head-mobile">
-            <h2 className="new-widget-title-mobile">Practice</h2>
-          </div>
-          <p className="new-practice-subtitle-mobile">Choose a mode and jump straight into speaking.</p>
-
-          <div className="new-btn-group-mobile">
-            <button
-              type="button"
-              className="practice-btn-mobile practice-btn-randomizer-mobile"
-              onClick={handleRandomizerClick}
-            >
-              <img src={crystalBallImage} alt="" className="practice-btn-icon-mobile" />
-              <div className="practice-btn-text-mobile">
-                <p className="practice-btn-label-mobile">Randomizer</p>
-                <p className="practice-btn-hint-mobile">Instant prompt</p>
-              </div>
-            </button>
-            <button
-              type="button"
-              className="practice-btn-mobile practice-btn-speech-mobile"
-              onClick={handleFreeSpeechClick}
-            >
-              <img src={crownImage} alt="" className="practice-btn-icon-mobile" />
-              <div className="practice-btn-text-mobile">
-                <p className="practice-btn-label-mobile">Free Speech</p>
-                <p className="practice-btn-hint-mobile">Open topic mode</p>
-              </div>
-            </button>
-          </div>
-        </section>
-
+      <div className="activity-page-mobile-container">
         {/* Journey Shell */}
-        <div className="new-left-col-mobile" id="tutorial-target-home-journey">
-          <div className="new-left-col-inner-mobile">
-            <SkywardJourneyShell
-              initialLevel={recommendedLevel}
-              recommendedLevel={recommendedLevel}
-              entranceFromNav={entranceFromNav}
-              scrollToStepIndex={null}
-              renderTaskCard={renderTaskCardForShell}
-              onActiveTaskIdChange={handleActiveTaskIdChange}
-            />
-          </div>
+        <div className="activity-mobile-journey-wrapper" id="tutorial-target-home-journey">
+          <SkywardJourneyShell
+            initialLevel={recommendedLevel}
+            recommendedLevel={recommendedLevel}
+            entranceFromNav={entranceFromNav}
+            scrollToStepIndex={null}
+            renderTaskCard={renderTaskCardForShell}
+            onActiveTaskIdChange={handleActiveTaskIdChange}
+          />
         </div>
       </div>
 

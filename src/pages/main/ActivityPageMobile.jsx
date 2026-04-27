@@ -229,6 +229,7 @@ function ActivityPageMobile() {
   const [recentStampedTaskId, setRecentStampedTaskId] = useState(null);
   const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
   const [isRankModalOpen, setIsRankModalOpen] = useState(false);
+  const [showDashboardOverlay, setShowDashboardOverlay] = useState(false);
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const [entranceFromNav, setEntranceFromNav] = useState(false);
   const stampResetTimeoutRef = useRef(null);
@@ -375,6 +376,21 @@ function ActivityPageMobile() {
     return acc;
   }, {}), [tasks]);
 
+  // Automatic Tutorial Trigger
+  useEffect(() => {
+    if (!user?.id || activitiesLoading) return;
+    
+    // Condition: finished profiling AND pre-testing
+    const isReadyForTutorial = user.profilingCompleted && user.pretestCompleted;
+    
+    if (isReadyForTutorial) {
+      const seen = window.localStorage.getItem(FREE_SPEECH_TUTORIAL_SEEN_KEY);
+      if (seen !== '1') {
+        setShowFreeSpeechTutorial(true);
+      }
+    }
+  }, [user?.id, user?.profilingCompleted, user?.pretestCompleted, activitiesLoading]);
+
   const handleActiveTaskIdChange = useCallback((id) => {
     setActiveTaskId(id);
     if (user?.id) {
@@ -473,6 +489,16 @@ function ActivityPageMobile() {
     }
     return () => document.body.classList.remove('activity-tutorial-open');
   }, [showFreeSpeechTutorial]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    if (showDashboardOverlay) {
+      document.body.classList.add('dashboard-overlay-open');
+    } else {
+      document.body.classList.remove('dashboard-overlay-open');
+    }
+    return () => document.body.classList.remove('dashboard-overlay-open');
+  }, [showDashboardOverlay]);
 
   const handleTutorialFinish = useCallback(() => {
     if (typeof window !== 'undefined') {
@@ -709,7 +735,146 @@ function ActivityPageMobile() {
           renderTaskCard={renderTaskCardForShell}
           onActiveTaskIdChange={handleActiveTaskIdChange}
         />
+        
+        <div className="activity-mobile-dashboard-section">
+          <Button 
+            variant="practice" 
+            className="activity-mobile-dashboard-btn"
+            onClick={() => setShowDashboardOverlay(true)}
+          >
+            Dashboard
+          </Button>
+        </div>
       </div>
+
+      {showDashboardOverlay && (
+        <section className="dashboard-overlay-wrapper" aria-label="Dashboard overlay">
+          <div className="dashboard-overlay-backdrop" aria-hidden="true" onClick={() => setShowDashboardOverlay(false)} />
+          <div className="dashboard-overlay-content no-scrollbar">
+            <div className="dashboard-overlay-header">
+              <h2 className="dashboard-overlay-title">Dashboard</h2>
+              <button
+                type="button"
+                className="dashboard-overlay-close-btn"
+                onClick={() => setShowDashboardOverlay(false)}
+                aria-label="Close dashboard"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="dashboard-overlay-scroll-content">
+              {/* Streak Widget */}
+              <div 
+                className="new-banner-streak" 
+                id="tutorial-target-home-streak" 
+                aria-label="Daily streak"
+                onClick={() => {
+                  setShowDashboardOverlay(false);
+                  setIsStreakModalOpen(true);
+                }}
+              >
+                <div className="new-streak-top">
+                  <div className="new-streak-fire">
+                    <Lottie animationData={fireAnimationData} loop={true} />
+                  </div>
+                  <div className="new-streak-headline">
+                    <div className="new-streak-value">{streakStats.currentStreak}</div>
+                    <p className="new-streak-label">day streak</p>
+                  </div>
+                </div>
+                <div className="new-streak-week" aria-label="This week streak activity">
+                  {weekPills.map((pill, idx) => (
+                    <span
+                      key={`${pill.label}-${idx}`}
+                      className={`new-streak-pill${pill.active ? ' is-active' : ''}${pill.isToday ? ' is-today' : ''}`}
+                    >
+                      {pill.label}
+                    </span>
+                  ))}
+                </div>
+                <p className="new-streak-copy">Build a daily speaking habit to keep stacking your streak.</p>
+              </div>
+
+              {/* Rank Widget */}
+              <section className="new-widget" id="tutorial-target-home-rank">
+                <div className="new-widget-head">
+                  <h2 className="new-widget-title">Journey Progression</h2>
+                  <span className="new-widget-chip">Rank</span>
+                </div>
+                <div 
+                  className="new-widget-rank-card"
+                  onClick={() => {
+                    setShowDashboardOverlay(false);
+                    setIsRankModalOpen(true);
+                  }}
+                >
+                  <img src={rankSpriteImage} alt="" className="new-widget-rank-sprite" />
+                  <div className="new-widget-rank-content">
+                    <p className="new-widget-kicker">Current Rank</p>
+                    <p className="new-widget-value">{levelProgress.levelName}</p>
+                  </div>
+                </div>
+                <p className="new-widget-caption">
+                  {completedTaskCount}/{Math.max(tasks.length, 1)} Tasks Complete
+                  <span className="new-widget-caption-sep"> - </span>
+                  {sidebarProgressPct}% Cleared
+                </p>
+              </section>
+
+              {/* Practice Widget */}
+              <section className="new-widget new-widget--practice" id="tutorial-target-home-practice">
+                <div className="new-widget-head">
+                  <h2 className="new-widget-title">Practice</h2>
+                </div>
+                <p className="new-practice-subtitle">Choose a mode and jump straight into speaking.</p>
+
+                <div className="new-btn-group">
+                  <div className="new-btn-row new-btn-row--card">
+                    <div className="new-btn-visual new-btn-visual--randomizer">
+                      <img src={crystalBallImage} alt="" className="new-btn-visual-img new-btn-visual-img--randomizer" />
+                    </div>
+                    <div className="new-btn-meta">
+                      <p className="new-btn-label">Randomizer</p>
+                      <p className="new-btn-hint">Instant prompt to warm up your delivery.</p>
+                    </div>
+                    <Button
+                      variant="practice"
+                      className="activity-practice-cta activity-practice-cta--randomizer"
+                      onClick={() => {
+                        setShowDashboardOverlay(false);
+                        handleRandomizerClick();
+                      }}
+                    >
+                      Randomizer
+                    </Button>
+                  </div>
+                  
+                  <div className="new-btn-row new-btn-row--card">
+                    <div className="new-btn-visual new-btn-visual--speech">
+                      <img src={crownImage} alt="" className="new-btn-visual-img" />
+                    </div>
+                    <div className="new-btn-meta">
+                      <p className="new-btn-label">Free Speech</p>
+                      <p className="new-btn-hint">Open topic mode for confidence building.</p>
+                    </div>
+                    <Button
+                      variant="training"
+                      className="activity-practice-cta activity-practice-cta--speech"
+                      onClick={() => {
+                        setShowDashboardOverlay(false);
+                        handleFreeSpeechClick();
+                      }}
+                    >
+                      Free Speech
+                    </Button>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </section>
+      )}
 
       <StreakCalendarModal
         isOpen={isStreakModalOpen}

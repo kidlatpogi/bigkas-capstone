@@ -304,7 +304,7 @@
   z-index: 1;
   padding-inline: 4px;
   padding-top: 56px;
-  padding-bottom: 140px;
+  padding-bottom: 0;
 }
 
 .skyward-journey-section {
@@ -1234,7 +1234,7 @@
 
   .skyward-journey-column {
     padding-top: 72px;
-    padding-bottom: 92px;
+    padding-bottom: 0;
   }
 }
 
@@ -1263,7 +1263,7 @@
   .skyward-journey-column {
     gap: 26px;
     padding-top: 58px;
-    padding-bottom: 76px;
+    padding-bottom: 0;
   }
 
   .skyward-journey-section {

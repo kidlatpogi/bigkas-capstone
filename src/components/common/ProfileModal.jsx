@@ -96,7 +96,7 @@ export default function ProfileModal({ isOpen, onClose }) {
               <div className="profile-modal-menu-icon">
                 <IoPersonOutline size={22} />
               </div>
-              <span className="profile-modal-menu-text">Account Settings</span>
+              <span className="profile-modal-menu-text">Profile</span>
             </button>
             <button
               type="button"
@@ -106,21 +106,7 @@ export default function ProfileModal({ isOpen, onClose }) {
               <div className="profile-modal-menu-icon">
                 <IoSettingsOutline size={22} />
               </div>
-              <span className="profile-modal-menu-text">Settings</span>
-            </button>
-
-            {/* Divider within menu */}
-            <div className="profile-modal-menu-divider" />
-
-            <button
-              type="button"
-              className="profile-modal-menu-item profile-modal-menu-item--logout"
-              onClick={handleLogoutClick}
-            >
-              <div className="profile-modal-menu-icon">
-                <IoLogOutOutline size={22} />
-              </div>
-              <span className="profile-modal-menu-text">Log Out</span>
+              <span className="profile-modal-menu-text">Preferences</span>
             </button>
           </nav>
         </div>

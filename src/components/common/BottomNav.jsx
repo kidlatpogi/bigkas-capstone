@@ -5,6 +5,7 @@ import {
   IoMedalOutline,
   IoHomeOutline,
   IoSettingsOutline,
+  IoStatsChartOutline,
 } from 'react-icons/io5';
 import { ROUTES } from '../../utils/constants';
 import ProfileModal from './ProfileModal';
@@ -13,6 +14,7 @@ import './BottomNav.css';
 const NAV_ITEMS = [
   { label: 'Home', to: ROUTES.ACTIVITY, icon: IoHomeOutline, type: 'link' },
   { label: 'Learn', to: ROUTES.FRAMEWORKS, icon: IoBookOutline, type: 'link' },
+  { label: 'Progress', to: ROUTES.PROGRESS, icon: IoStatsChartOutline, type: 'link' },
   { label: 'Achievement', to: ROUTES.ACHIEVEMENTS, icon: IoMedalOutline, type: 'link' },
   { label: 'Settings', to: null, icon: IoSettingsOutline, type: 'modal' },
 ];
@@ -22,7 +24,7 @@ function BottomNav() {
 
   const handleProfileClick = (e) => {
     e.preventDefault();
-    setIsProfileModalOpen(true);
+    setIsProfileModalOpen((prev) => !prev);
   };
 
   return (
@@ -38,10 +40,12 @@ function BottomNav() {
                 aria-label={label}
                 onClick={handleProfileClick}
               >
-                <div className="bottom-nav__icon-wrapper">
-                  <Icon aria-hidden="true" />
+                <div className="bottom-nav__pill">
+                  <div className="bottom-nav__icon-wrapper">
+                    <Icon aria-hidden="true" />
+                  </div>
+                  <span>{label}</span>
                 </div>
-                <span>{label}</span>
               </button>
             );
           }
@@ -50,13 +54,18 @@ function BottomNav() {
             <NavLink
               key={to}
               to={to}
-              className={({ isActive }) => `bottom-nav__item${isActive ? ' active active-nav-item' : ''}`}
+              className={({ isActive }) => 
+                `bottom-nav__item${(isActive && !isProfileModalOpen) ? ' active active-nav-item' : ''}`
+              }
               aria-label={label}
+              onClick={() => setIsProfileModalOpen(false)}
             >
-              <div className="bottom-nav__icon-wrapper">
-                <Icon aria-hidden="true" />
+              <div className="bottom-nav__pill">
+                <div className="bottom-nav__icon-wrapper">
+                  <Icon aria-hidden="true" />
+                </div>
+                <span>{label}</span>
               </div>
-              <span>{label}</span>
             </NavLink>
           );
         })}

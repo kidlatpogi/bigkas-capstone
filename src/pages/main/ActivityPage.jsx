@@ -390,6 +390,21 @@ function ActivityPage() {
     return acc;
   }, {}), [tasks]);
 
+  // Automatic Tutorial Trigger
+  useEffect(() => {
+    if (!user?.id || activitiesLoading) return;
+    
+    // Condition: finished profiling AND pre-testing
+    const isReadyForTutorial = user.profilingCompleted && user.pretestCompleted;
+    
+    if (isReadyForTutorial) {
+      const seen = window.localStorage.getItem(FREE_SPEECH_TUTORIAL_SEEN_KEY);
+      if (seen !== '1') {
+        setShowFreeSpeechTutorial(true);
+      }
+    }
+  }, [user?.id, user?.profilingCompleted, user?.pretestCompleted, activitiesLoading]);
+
   const handleActiveTaskIdChange = useCallback((id) => {
     setActiveTaskId(id);
     if (user?.id) {

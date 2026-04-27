@@ -725,7 +725,6 @@ function ActivityPageMobile() {
         </div>
       </div>
 
-      {/* Journey Shell - Mobile Layout */}
       <div className="activity-mobile-journey-container" id="tutorial-target-home-journey">
         <SkywardJourneyShell
           initialLevel={recommendedLevel}
@@ -735,16 +734,16 @@ function ActivityPageMobile() {
           renderTaskCard={renderTaskCardForShell}
           onActiveTaskIdChange={handleActiveTaskIdChange}
         />
-        
-        <div className="activity-mobile-dashboard-section">
-          <Button 
-            variant="practice" 
-            className="activity-mobile-dashboard-btn"
-            onClick={() => setShowDashboardOverlay(true)}
-          >
-            Dashboard
-          </Button>
-        </div>
+      </div>
+
+      <div className="activity-mobile-dashboard-section">
+        <Button 
+          variant="practice" 
+          className="activity-mobile-dashboard-btn"
+          onClick={() => setShowDashboardOverlay(true)}
+        >
+          Dashboard
+        </Button>
       </div>
 
       {showDashboardOverlay && (

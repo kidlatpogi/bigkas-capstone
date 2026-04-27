@@ -600,59 +600,56 @@ html {
   margin-bottom: 0;
 }
 
-/* Practice buttons match Start button from scratch */
-.new-btn-row .activity-practice-cta {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 8px !important;
-  width: 100% !important;
+/* Practice buttons match Start button exactly */
+.activity-practice-cta.bigkas-btn {
   height: 44px !important;
   min-height: 44px !important;
+  width: 100% !important;
   padding: 0 2rem !important;
-  border: 0 !important;
   border-radius: 999px !important;
-  
   font-family: 'Fredoka', 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif !important;
   font-size: clamp(0.9rem, 0.86rem + 0.2vw, 0.98rem) !important;
   font-weight: 500 !important;
   letter-spacing: 0 !important;
   color: #ffffff !important;
-  
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  cursor: pointer !important;
+  border: none !important;
 }
 
-/* Randomizer Color (Green) */
-.new-btn-row .activity-practice-cta--randomizer {
+/* Randomizer (Emerald) */
+.activity-practice-cta--randomizer.bigkas-btn {
   background: #059669 !important;
   box-shadow: #047857 0 5px 0 0 !important;
 }
 
-.new-btn-row .activity-practice-cta--randomizer:hover:not(:disabled) {
+.activity-practice-cta--randomizer.bigkas-btn:hover:not(:disabled) {
   box-shadow: #047857 0 3px 0 0 !important;
-  transform: translateY(2px);
+  transform: translateY(2px) !important;
 }
 
-.new-btn-row .activity-practice-cta--randomizer:active:not(:disabled) {
+.activity-practice-cta--randomizer.bigkas-btn:active:not(:disabled) {
   box-shadow: #047857 0 0 0 0 !important;
-  transform: translateY(5px);
+  transform: translateY(5px) !important;
 }
 
-/* Free Speech Color (Orange) */
-.new-btn-row .activity-practice-cta--speech {
+/* Free Speech (Orange) */
+.activity-practice-cta--speech.bigkas-btn {
   background: #f97316 !important;
   box-shadow: #c2410c 0 5px 0 0 !important;
 }
 
-.new-btn-row .activity-practice-cta--speech:hover:not(:disabled) {
+.activity-practice-cta--speech.bigkas-btn:hover:not(:disabled) {
   box-shadow: #c2410c 0 3px 0 0 !important;
-  transform: translateY(2px);
+  transform: translateY(2px) !important;
 }
 
-.new-btn-row .activity-practice-cta--speech:active:not(:disabled) {
+.activity-practice-cta--speech.bigkas-btn:active:not(:disabled) {
   box-shadow: #c2410c 0 0 0 0 !important;
-  transform: translateY(5px);
+  transform: translateY(5px) !important;
 }
 
 /* Modals / Entrance */

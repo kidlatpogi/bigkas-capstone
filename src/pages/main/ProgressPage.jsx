@@ -747,21 +747,54 @@ function ProgressPage() {
           <div className="history-container">
             <div className="history-sticky-header dashboard-anim-top dashboard-anim-delay-1">
               <div className="history-header-row">
-            <div className="history-header-row">
-              <h2 className="history-title">History</h2>
-              <div className="history-filters">
-                {HISTORY_FILTERS.map(f => (
-                  <button 
-                    key={f}
-                    className={`history-filter-btn ${historyFilter === f ? 'active' : ''}`}
-                    onClick={() => {
-                      setHistoryFilter(f);
-                      setHistoryPage(0);
-                    }}
-                  >
-                    {f}
-                  </button>
-                ))}
+                <h2 className="history-title">History</h2>
+                <div className="history-filters">
+                  {HISTORY_FILTERS.map(f => (
+                    <button 
+                      key={f}
+                      className={`history-filter-btn ${historyFilter === f ? 'active' : ''}`}
+                      onClick={() => {
+                        setHistoryFilter(f);
+                        setHistoryPage(0);
+                      }}
+                    >
+                      {f}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className={`history-date-range${isHistoryDateRangeExpanded ? ' is-expanded' : ''}`}>
+                <button
+                  type="button"
+                  className="history-date-range-toggle"
+                  onClick={() => setIsHistoryDateRangeExpanded((current) => !current)}
+                >
+                  <span className="history-sort-label">Date range</span>
+                  <IoChevronDown
+                    className={`history-date-range-chevron${isHistoryDateRangeExpanded ? ' is-expanded' : ''}`}
+                  />
+                </button>
+                {isHistoryDateRangeExpanded && (
+                  <div className="history-date-grid">
+                    <label className="history-date-field">
+                      <span>Start date</span>
+                      <input
+                        type="date"
+                        value={historyStartDate}
+                        onChange={(e) => { setHistoryStartDate(e.target.value); setHistoryPage(0); }}
+                      />
+                    </label>
+                    <label className="history-date-field">
+                      <span>End date</span>
+                      <input
+                        type="date"
+                        value={historyEndDate}
+                        onChange={(e) => { setHistoryEndDate(e.target.value); setHistoryPage(0); }}
+                      />
+                    </label>
+                  </div>
+                )}
               </div>
             </div>
 

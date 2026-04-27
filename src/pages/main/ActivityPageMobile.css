@@ -443,14 +443,33 @@
 }
 
 .activity-mobile-dashboard-btn {
-  width: min(320px, 100%) !important;
-  height: 52px !important;
-  font-size: 16px !important;
-  font-weight: 800 !important;
-  border-radius: 16px !important;
-  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.2) !important;
-  background: linear-gradient(180deg, #34D399 0%, #059669 100%) !important;
-  color: white !important;
+  height: 44px !important;
+  width: min(315px, 100%) !important;
+  padding: 0 2rem !important;
+  border-radius: 999px !important;
+  background: #059669 !important;
+  box-shadow: #047857 0 5px 0 0 !important;
+  color: #ffffff !important;
+  font-family: 'Fredoka', 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif !important;
+  font-size: 0.98rem !important;
+  font-weight: 600 !important;
+  border: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+  outline: none !important;
+}
+
+.activity-mobile-dashboard-btn:hover:not(:disabled) {
+  box-shadow: #047857 0 3px 0 0 !important;
+  transform: translateY(2px) !important;
+}
+
+.activity-mobile-dashboard-btn:active:not(:disabled) {
+  box-shadow: #047857 0 0 0 0 !important;
+  transform: translateY(5px) !important;
 }
 
 .dashboard-overlay-wrapper {

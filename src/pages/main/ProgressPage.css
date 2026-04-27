@@ -659,17 +659,17 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   top: 50%;
   left: calc(280px + (100vw - 280px) / 2);
   transform: translate(-50%, -50%) scale(0.95);
-  width: min(95vw, 1200px);
-  max-height: 90dvh;
+  width: min(92vw, 1100px);
+  max-height: 92dvh;
   background: #f8fafc;
-  border-radius: 40px;
+  border-radius: 32px;
   z-index: 1200;
   display: none;
   flex-direction: column;
-  box-shadow: 0 40px 100px rgba(11, 57, 84, 0.25);
+  box-shadow: 0 40px 100px rgba(11, 57, 84, 0.2);
   overflow: hidden;
   opacity: 0;
-  transition: all 0.4s cubic-bezier(0.2, 0.9, 0.2, 1);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: none;
 }
 
@@ -681,10 +681,9 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 }
 
 .history-container {
-  padding: clamp(24px, 4vw, 48px);
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 32px;
   height: 100%;
   overflow-y: auto;
   scrollbar-width: none;
@@ -698,52 +697,49 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: #f8fafc;
-  padding-bottom: 16px;
-  margin-top: -8px;
+  background: #ffffff;
+  padding: 24px 32px;
+  border-bottom: 1px solid rgba(11, 57, 84, 0.08);
 }
 
 .history-header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
 }
 
 .history-title {
   font-family: 'Fredoka', sans-serif;
-  font-size: clamp(32px, 4vw, 48px);
+  font-size: 28px;
   font-weight: 800;
-  color: #1E293B;
+  color: #111827;
   margin: 0;
 }
 
 .history-filters {
   display: flex;
-  gap: 12px;
+  gap: 20px;
 }
 
 .history-filter-btn {
-  padding: 8px 20px;
-  border-radius: 999px;
+  padding: 0;
   border: none;
   background: transparent;
   font-family: 'Fredoka', sans-serif;
-  font-size: 16px;
-  font-weight: 600;
-  color: #64748b;
+  font-size: 18px;
+  font-weight: 500;
+  color: #475569;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .history-filter-btn:hover {
-  color: #1E293B;
+  color: #111827;
 }
 
 .history-filter-btn.active {
-  background: rgba(255, 255, 255, 0.8);
-  color: #1E293B;
-  box-shadow: 0 4px 12px rgba(11, 57, 84, 0.05);
+  color: #111827;
+  font-weight: 800;
 }
 
 .history-date-range {
@@ -818,17 +814,19 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  padding: 32px;
 }
 
 .history-item {
   background: #ffffff;
-  border-radius: 40px;
+  border-radius: 24px;
   padding: 32px 40px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(11, 57, 84, 0.05);
+  box-shadow: 0 8px 24px rgba(11, 57, 84, 0.06);
+  border: 1px solid rgba(11, 57, 84, 0.05);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .history-item:hover {
@@ -971,8 +969,8 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 .progress-history-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(11, 57, 84, 0.4);
-  backdrop-filter: blur(8px);
+  background: rgba(3, 7, 18, 0.4);
+  backdrop-filter: blur(2px);
   z-index: 1100;
   display: none;
   opacity: 0;

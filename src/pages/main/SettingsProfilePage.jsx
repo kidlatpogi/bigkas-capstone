@@ -115,7 +115,6 @@ function SettingsProfilePage() {
   const userInitials = useMemo(() => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || '?';
   }, [firstName, lastName]);
-
   return (
     <div className="settings-profile-page dashboard-page-new">
       <div className="settings-profile-shell">
@@ -244,6 +243,9 @@ function SettingsProfilePage() {
                 <button type="button" className="sp-link-row">
                   <span>Privacy Policy</span>
                   <IoChevronForward className="sp-link-chevron" />
+                </button>
+                <button type="button" className="sp-link-row sp-link-row--logout" onClick={handleLogout}>
+                  <span>Log Out</span>
                 </button>
               </div>
             </section>

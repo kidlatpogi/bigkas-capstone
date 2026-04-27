@@ -991,7 +991,8 @@ function ActivityPage() {
         </div>
 
         {/* Right Column (Widgets) */}
-        <div className="new-right-col no-scrollbar">
+        {showDesktopSidebar ? (
+          <div className="new-right-col no-scrollbar">
             <section className="new-widget dashboard-anim-left dashboard-anim-delay-2" id="tutorial-target-home-rank">
               <div className="new-widget-head">
                 <h2 className="new-widget-title">Journey Progression</h2>
@@ -1061,7 +1062,7 @@ function ActivityPage() {
               </div>
             </section>
           </div>
-
+        ) : null}
 
       </div>
       <StreakCalendarModal 

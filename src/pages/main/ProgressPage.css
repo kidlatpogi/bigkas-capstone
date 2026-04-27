@@ -166,16 +166,19 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
 /* Stats Card (Based on new-widget-rank-card) */
 .progress-stat-card.new-widget-rank-card {
-  display: grid;
-  grid-template-columns: 40px 1fr;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 6px 8px;
-  border-radius: 16px;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: rgba(255, 255, 255, 0.95);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease;
+  height: 154px;
+  box-sizing: border-box;
 }
 
 .progress-stat-card.new-widget-rank-card:hover {
@@ -183,47 +186,31 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   background: #ffffff;
 }
 
-.new-btn-visual {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  border: 1px solid rgba(11, 57, 84, 0.06);
-}
-
-.new-btn-visual--sessions { background: #ecfdf5; color: #059669; }
-.new-btn-visual--score { background: #fff7ed; color: #f97316; }
-.new-btn-visual--time { background: #f0f9ff; color: #0284c7; }
-
 .new-widget-rank-content {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  align-items: center;
+  gap: 6px;
 }
 
 .new-widget-kicker {
   margin: 0;
   font-family: 'Fredoka', sans-serif;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   color: #64748b;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  letter-spacing: 0.08em;
+  text-align: center;
 }
 
 .new-widget-value {
   margin: 0;
   font-family: 'Fredoka', sans-serif;
-  font-size: 16px;
+  font-size: 32px;
   font-weight: 800;
-  color: #1e293b;
-  line-height: 1.1;
+  color: #f97316;
+  line-height: 1;
 }
 
 /* =========================================================================

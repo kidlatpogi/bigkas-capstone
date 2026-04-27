@@ -229,7 +229,7 @@
    OVERLAY ADJUSTMENTS FOR MOBILE
    ========================================================================= */
 
-.randomizer-overlay-wrapper {
+.activity-page-mobile-root .randomizer-overlay-wrapper {
   position: fixed;
   inset: 0;
   z-index: 3000;
@@ -239,14 +239,14 @@
   padding: 16px;
 }
 
-.randomizer-overlay-backdrop {
+.activity-page-mobile-root .randomizer-overlay-backdrop {
   position: absolute;
   inset: 0;
   background: rgba(3, 7, 18, 0.4);
   backdrop-filter: blur(2px);
 }
 
-.randomizer-overlay-content {
+.activity-page-mobile-root .randomizer-overlay-content {
   position: relative;
   z-index: 1;
   width: min(100%, 420px);
@@ -257,7 +257,7 @@
   padding: 0 16px;
 }
 
-.randomizer-overlay-card {
+.activity-page-mobile-root .randomizer-overlay-card {
   position: relative;
   width: 100%;
   padding: 1.5rem;
@@ -273,7 +273,7 @@
   margin-top: -10px; /* Slight overlap with robot */
 }
 
-.randomizer-overlay-card::before {
+.activity-page-mobile-root .randomizer-overlay-card::before {
   content: '';
   position: absolute;
   top: -12px;
@@ -288,14 +288,14 @@
   filter: drop-shadow(0 -2px 2px rgba(0,0,0,0.05));
 }
 
-.randomizer-overlay-card-top {
+.activity-page-mobile-root .randomizer-overlay-card-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
 }
 
-.randomizer-overlay-title {
+.activity-page-mobile-root .randomizer-overlay-title {
   font-family: 'Fredoka', sans-serif;
   margin: 0;
   font-size: 1.15rem;
@@ -303,7 +303,7 @@
   color: #059669;
 }
 
-.randomizer-overlay-close-btn {
+.activity-page-mobile-root .randomizer-overlay-close-btn {
   background: rgba(15, 23, 42, 0.06);
   border: none;
   font-size: 24px;
@@ -319,11 +319,11 @@
   transition: all 0.2s ease;
 }
 
-.randomizer-overlay-close-btn:active {
+.activity-page-mobile-root .randomizer-overlay-close-btn:active {
   color: #059669;
 }
 
-.randomizer-overlay-copy {
+.activity-page-mobile-root .randomizer-overlay-copy {
   margin: 0;
   font-size: 0.9rem;
   color: #1e293b;
@@ -332,7 +332,7 @@
   font-family: 'Nunito', sans-serif;
 }
 
-.randomizer-overlay-robot-wrap {
+.activity-page-mobile-root .randomizer-overlay-robot-wrap {
   display: block;
   flex-shrink: 0;
   width: 160px;
@@ -341,14 +341,14 @@
   margin-bottom: -15px; /* Pull card closer */
 }
 
-.randomizer-overlay-copy-kicker {
+.activity-page-mobile-root .randomizer-overlay-copy-kicker {
   color: #059669;
   font-weight: 800;
   display: block;
   margin-bottom: 2px;
 }
 
-.randomizer-overlay-topic {
+.activity-page-mobile-root .randomizer-overlay-topic {
   margin: 8px 0 0;
   padding: 12px 14px;
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
@@ -360,19 +360,19 @@
   font-family: 'Nunito', sans-serif;
 }
 
-.randomizer-overlay-topic-label {
+.activity-page-mobile-root .randomizer-overlay-topic-label {
   color: #f18f01;
   font-weight: 800;
 }
 
-.randomizer-overlay-actions {
+.activity-page-mobile-root .randomizer-overlay-actions {
   display: flex;
   gap: 8px;
   width: 100%;
 }
 
-.randomizer-overlay-randomize-btn.bigkas-btn,
-.randomizer-overlay-start-btn.bigkas-btn {
+.activity-page-mobile-root .randomizer-overlay-randomize-btn.bigkas-btn,
+.activity-page-mobile-root .randomizer-overlay-start-btn.bigkas-btn {
   flex: 1;
   height: 44px !important;
   border-radius: 999px !important;
@@ -386,42 +386,40 @@
   transition: all 0.2s ease !important;
 }
 
-.randomizer-overlay-randomize-btn.bigkas-btn:hover:not(:disabled),
-.randomizer-overlay-start-btn.bigkas-btn:hover:not(:disabled) {
+.activity-page-mobile-root .randomizer-overlay-randomize-btn.bigkas-btn:hover:not(:disabled),
+.activity-page-mobile-root .randomizer-overlay-start-btn.bigkas-btn:hover:not(:disabled) {
   box-shadow: #047857 0 3px 0 0 !important;
   transform: translateY(2px) !important;
 }
 
-.randomizer-overlay-randomize-btn.bigkas-btn:active:not(:disabled),
-.randomizer-overlay-start-btn.bigkas-btn:active:not(:disabled) {
+.activity-page-mobile-root .randomizer-overlay-randomize-btn.bigkas-btn:active:not(:disabled),
+.activity-page-mobile-root .randomizer-overlay-start-btn.bigkas-btn:active:not(:disabled) {
   box-shadow: #047857 0 0 0 0 !important;
   transform: translateY(5px) !important;
 }
 
-.randomizer-overlay-randomize-btn.bigkas-btn:disabled,
-.randomizer-overlay-start-btn.bigkas-btn:disabled {
+.activity-page-mobile-root .randomizer-overlay-randomize-btn.bigkas-btn:disabled,
+.activity-page-mobile-root .randomizer-overlay-start-btn.bigkas-btn:disabled {
   background: #cbd5e1 !important;
   box-shadow: #94a3b8 0 5px 0 0 !important;
   opacity: 0.7 !important;
   transform: none !important;
 }
 
-
-
-.randomizer-overlay-robot {
+.activity-page-mobile-root .randomizer-overlay-robot {
   width: 100%;
   height: auto;
   object-fit: contain;
   filter: drop-shadow(0 8px 16px rgba(0,0,0,0.12));
 }
 
-.free-speech-overlay-topic-input-wrap {
+.activity-page-mobile-root .free-speech-overlay-topic-input-wrap {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.free-speech-overlay-topic-input {
+.activity-page-mobile-root .free-speech-overlay-topic-input {
   width: 100%;
   padding: 12px;
   border: 1px solid rgba(11, 57, 84, 0.1);
@@ -435,17 +433,17 @@
   transition: border-color 0.2s ease;
 }
 
-.free-speech-overlay-topic-input:focus {
+.activity-page-mobile-root .free-speech-overlay-topic-input:focus {
   border-color: #059669;
   outline: none;
 }
 
-.free-speech-overlay-actions {
+.activity-page-mobile-root .free-speech-overlay-actions {
   display: flex;
   justify-content: flex-end;
 }
 
-.free-speech-overlay-start-btn {
+.activity-page-mobile-root .free-speech-overlay-start-btn {
   width: 100%;
 }
 

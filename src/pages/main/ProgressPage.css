@@ -1628,6 +1628,10 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
     animation-name: progressSpringUpFadeIn;
   }
 
+  .dashboard-anim-top {
+    animation-name: dashboardPopFromTop;
+  }
+
   .progress-trend-card {
     animation-delay: 0.14s;
   }

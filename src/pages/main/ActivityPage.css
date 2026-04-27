@@ -609,7 +609,7 @@ html {
   font-weight: 500 !important;
   padding: 0 2rem !important;
   box-shadow: #047857 0 5px 0 0 !important;
-  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;

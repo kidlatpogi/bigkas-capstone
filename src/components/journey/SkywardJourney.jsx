@@ -221,13 +221,13 @@ const MapHeaderCard = styled.div`
   border: 1.5px solid rgba(241, 143, 1, 0.9);
   position: sticky;
   top: max(14px, env(safe-area-inset-top, 0px));
-  z-index: 1400;
+  z-index: 10;
   flex-shrink: 0;
 
   @media (max-width: 768px) {
     margin-top: -2rem;
     top: calc(64px + -2rem + env(safe-area-inset-top, 0px));
-    z-index: 1600;
+    z-index: 11;
   }
 `;
 

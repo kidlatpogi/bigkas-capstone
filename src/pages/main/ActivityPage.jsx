@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import Confetti from 'react-confetti';
 import { useAuthContext } from '../../context/useAuthContext';
 import { useSessions } from '../../hooks/useSessions';
@@ -22,6 +23,7 @@ import { getActiveTaskId, getNodeStateForTask } from '../../components/journey/j
 import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 import { useJourneyRemoteState } from '../../hooks/useJourneyRemoteState';
 import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../services/journeyProgressService';
+import { RANDOM_TOPICS } from '../../utils/practiceData';
 import iconFire from '../../assets/icons/Icon-Fire.svg';
 import robotMorningImage from '../../assets/Sprites/Robot/0018.webp';
 import robotNoonImage from '../../assets/Sprites/Robot/0001.webp';
@@ -32,6 +34,7 @@ import tutorialRobotStep3 from '../../assets/Sprites/Robot/0018.webp';
 import tutorialRobotStep4 from '../../assets/Sprites/Robot/0001.webp';
 import tutorialRobotStep5 from '../../assets/Sprites/Robot/0002.webp';
 import tutorialRobotStep6 from '../../assets/Sprites/Robot/0004.webp';
+import randomizerRobotImage from '../../assets/Sprites/Robot/0005.webp';
 import rankBronzeImage from '../../assets/Sprites/Rank/rank-bronze.png';
 import rankSilverImage from '../../assets/Sprites/Rank/rank-silver.png';
 import rankGoldImage from '../../assets/Sprites/Rank/rank-gold.png';
@@ -102,6 +105,8 @@ const FREE_SPEECH_TUTORIAL_STEPS = [
     text: 'Need extra training? The Practice card gives you two ways to sharpen your skills anytime: Randomizer for surprise prompts, and Free Speech for open-topic confidence building. Ready? Let us start your Free Speech session now!',
   },
 ];
+
+const RANDOMIZER_DEFAULT_TOPIC = 'How does artificial intelligence impact our everyday lives?';
 
 function getLocalDateKey(date = new Date()) {
   const year = date.getFullYear();
@@ -223,6 +228,15 @@ function ActivityPage() {
     height: typeof window !== 'undefined' ? window.innerHeight : 0,
   }));
   const [showFreeSpeechTutorial, setShowFreeSpeechTutorial] = useState(false);
+  const [showRandomizerOverlay, setShowRandomizerOverlay] = useState(false);
+  const [isRandomizerMuted, setIsRandomizerMuted] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem('bigkas_randomizer_muted_v1') === '1';
+  });
+  const [randomizerTopic, setRandomizerTopic] = useState(() => {
+    const defaultTopic = RANDOM_TOPICS.find((entry) => entry.title === RANDOMIZER_DEFAULT_TOPIC);
+    return defaultTopic || { title: RANDOMIZER_DEFAULT_TOPIC, body: '' };
+  });
   const { sessions, fetchAllSessions } = useSessions();
   const activityMetrics = useMemo(
     () => getActivityMetrics(scopeKey),
@@ -561,6 +575,60 @@ function ActivityPage() {
     }
   }, []);
 
+  const handleRandomizerClick = useCallback(() => {
+    setShowRandomizerOverlay(true);
+  }, []);
+
+  const handleCloseRandomizerOverlay = useCallback(() => {
+    setShowRandomizerOverlay(false);
+  }, []);
+
+  const handleToggleRandomizerMute = useCallback(() => {
+    setIsRandomizerMuted((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('bigkas_randomizer_muted_v1', next ? '1' : '0');
+      }
+      return next;
+    });
+  }, []);
+
+  const handleRandomizeTopic = useCallback(() => {
+    if (!RANDOM_TOPICS.length) return;
+    setRandomizerTopic((current) => {
+      if (RANDOM_TOPICS.length === 1) return RANDOM_TOPICS[0];
+      let next = current;
+      while (next?.title === current?.title) {
+        next = RANDOM_TOPICS[Math.floor(Math.random() * RANDOM_TOPICS.length)];
+      }
+      return next;
+    });
+  }, []);
+
+  const handleStartRandomizerTopic = useCallback(() => {
+    if (!randomizerTopic?.title) return;
+    navigate(`${ROUTES.TRAINING}?autostart=1`, {
+      state: {
+        freeTopic: randomizerTopic.title,
+        freeSpeechContext: randomizerTopic.body || '',
+        focus: 'free',
+        sessionType: 'practice',
+        entryPoint: 'practice',
+        autoStartCountdown: true,
+      },
+    });
+  }, [navigate, randomizerTopic]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    if (showRandomizerOverlay) {
+      document.body.classList.add('randomizer-overlay-open');
+    } else {
+      document.body.classList.remove('randomizer-overlay-open');
+    }
+    return () => document.body.classList.remove('randomizer-overlay-open');
+  }, [showRandomizerOverlay]);
+
   const journeySteps = useMemo(
     () =>
       tasks.map((task) => ({
@@ -720,6 +788,61 @@ function ActivityPage() {
         </div>
       )}
 
+      {showRandomizerOverlay && (
+        <section className="randomizer-overlay-wrapper" aria-label="Randomizer overlay">
+          <div className="randomizer-overlay-backdrop" aria-hidden="true" onClick={handleCloseRandomizerOverlay} />
+          <div className="randomizer-overlay-content">
+            <div className="randomizer-overlay-card">
+              <h2 className="randomizer-overlay-title">Randomizer</h2>
+              <p className="randomizer-overlay-copy">
+                <span className="randomizer-overlay-copy-kicker">B-01:</span>
+                Ready to put your skills to the test? Click the 'Generate' button for a random topic, and whenever you're ready, hit 'Start' to begin your speaking practice!
+              </p>
+              <p className="randomizer-overlay-topic">
+                <span className="randomizer-overlay-topic-label">Topic:</span>
+                {' '}
+                {randomizerTopic?.title || RANDOMIZER_DEFAULT_TOPIC}
+              </p>
+              <div className="randomizer-overlay-actions">
+                <Button
+                  variant="practice"
+                  className="randomizer-overlay-randomize-btn"
+                  onClick={handleRandomizeTopic}
+                >
+                  Randomize Topic
+                </Button>
+                <Button
+                  variant="practice"
+                  className="randomizer-overlay-start-btn"
+                  onClick={handleStartRandomizerTopic}
+                >
+                  Start
+                </Button>
+              </div>
+            </div>
+            <div className="randomizer-overlay-robot-wrap">
+              <img
+                src={randomizerRobotImage}
+                alt=""
+                className="randomizer-overlay-robot"
+                aria-hidden="true"
+              />
+            </div>
+            <div className="randomizer-overlay-audio-action">
+              <button
+                type="button"
+                onClick={handleToggleRandomizerMute}
+                aria-label={isRandomizerMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                title={isRandomizerMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                className={`randomizer-audio-toggle ${isRandomizerMuted ? 'is-muted' : 'is-unmuted'}`}
+              >
+                {isRandomizerMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
       <div className="activity-page-grid">
         {/* Banner */}
         <section className="new-banner dashboard-anim-top dashboard-anim-delay-2">
@@ -817,7 +940,7 @@ function ActivityPage() {
                   <Button
                     variant="practice"
                     className="activity-practice-cta activity-practice-cta--randomizer"
-                    onClick={() => navigate(ROUTES.PRACTICE)}
+                    onClick={handleRandomizerClick}
                   >
                     Randomizer
                   </Button>

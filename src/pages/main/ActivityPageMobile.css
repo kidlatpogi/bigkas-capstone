@@ -13,21 +13,44 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  background-color: #efefef;
-  padding: 10px 14px 0;
+  
+  /* Industry standard subtle brand background */
+  background-color: #f8fafc;
+  background-image: 
+    radial-gradient(rgba(11, 57, 84, 0.05) 1px, transparent 0),
+    radial-gradient(circle at 100% 0%, rgba(52, 211, 153, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 0% 100%, rgba(241, 143, 1, 0.05) 0%, transparent 40%);
+  background-size: 32px 32px, 100% 100%, 100% 100%;
+  
+  padding: 12px 16px 0;
 }
 
 .activity-mobile-top-strip {
   width: 100%;
-  min-height: 108px;
-  border-radius: 24px;
-  background: linear-gradient(180deg, #34D399 0%, #059669 100%);
-  box-shadow: 0 14px 26px rgba(2, 6, 23, 0.12);
+  min-height: 116px;
+  border-radius: 28px;
+  background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+  box-shadow: 
+    0 10px 25px -5px rgba(5, 150, 105, 0.3),
+    0 8px 10px -6px rgba(5, 150, 105, 0.3);
   flex-shrink: 0;
-  margin-bottom: 10px;
-  padding: 10px;
+  margin-bottom: 14px;
+  padding: 12px;
   display: flex;
   align-items: stretch;
+  position: relative;
+  overflow: hidden;
+}
+
+.activity-mobile-top-strip::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 .activity-mobile-banner-left {
@@ -91,10 +114,10 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  padding: 0 0 calc(76px + env(safe-area-inset-bottom, 0px));
-  gap: 10px;
+  padding: 0 0 calc(84px + env(safe-area-inset-bottom, 0px));
+  gap: 16px;
   background: transparent;
-  border-radius: 24px;
+  border-radius: 28px;
 }
 
 .activity-mobile-journey-container .skyward-journey-wrap {

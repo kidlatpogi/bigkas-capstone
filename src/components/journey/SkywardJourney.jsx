@@ -315,12 +315,12 @@ const HeaderSkipNotice = styled.div`
 `;
 
 const TooltipBox = styled.div`
-  background: ${(props) => (props.$nodeState === 'locked' ? '#ffffff' : '#2d5a27')};
+  background: ${(props) => (props.$nodeState === 'locked' ? '#ffffff' : '#059669')};
   color: ${(props) => (props.$nodeState === 'locked' ? '#333333' : '#ffffff')};
   padding: 20px;
   border-radius: 16px;
-  border: ${(props) => (props.$nodeState === 'locked' ? '2px solid #e5e5e5' : '2px solid #1a3b16')};
-  border-bottom: ${(props) => (props.$nodeState === 'locked' ? '4px solid #e5e5e5' : '4px solid #1a3b16')};
+  border: ${(props) => (props.$nodeState === 'locked' ? '2px solid #e5e5e5' : '2px solid #047857')};
+  border-bottom: ${(props) => (props.$nodeState === 'locked' ? '4px solid #e5e5e5' : '4px solid #047857')};
   width: min(380px, calc(100vw - 32px));
   box-sizing: border-box;
   max-height: min(70vh, 420px);
@@ -355,11 +355,11 @@ const TooltipBox = styled.div`
       props.$placement === 'bottom'
         ? `
       top: -12px;
-      border-bottom: 12px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#2d5a27'};
+      border-bottom: 12px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#059669'};
     `
         : `
       bottom: -12px;
-      border-top: 12px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#2d5a27'};
+      border-top: 12px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#059669'};
     `}
   }
 
@@ -376,8 +376,8 @@ const TooltipBox = styled.div`
     z-index: 1;
     ${(props) =>
       props.$placement === 'bottom'
-        ? `top: -15px; border-bottom: 15px solid ${props.$nodeState === 'locked' ? '#e5e5e5' : '#1a3b16'};`
-        : `bottom: -15px; border-top: 15px solid ${props.$nodeState === 'locked' ? '#e5e5e5' : '#1a3b16'};`
+        ? `top: -15px; border-bottom: 15px solid ${props.$nodeState === 'locked' ? '#e5e5e5' : '#047857'};`
+        : `bottom: -15px; border-top: 15px solid ${props.$nodeState === 'locked' ? '#e5e5e5' : '#047857'};`
     }
   }
 `;

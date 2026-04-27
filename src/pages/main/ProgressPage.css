@@ -260,8 +260,32 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
 .progress-chart-header {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: flex-start;
   margin-bottom: 24px;
+}
+
+.progress-chart-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.progress-chart-title {
+  margin: 0;
+  font-family: 'Fredoka', sans-serif;
+  font-size: clamp(1.1rem, 1.2vw, 1.3rem);
+  font-weight: 800;
+  color: #0B3954;
+  line-height: 1.2;
+}
+
+.progress-chart-explanation {
+  margin: 0;
+  font-family: 'Fredoka', sans-serif;
+  font-size: clamp(0.72rem, 0.78vw, 0.82rem);
+  font-weight: 500;
+  color: #64748b;
 }
 
 .progress-range-labels {

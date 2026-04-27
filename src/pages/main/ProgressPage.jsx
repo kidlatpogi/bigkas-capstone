@@ -618,6 +618,10 @@ function ProgressPage() {
             ref={graphRef}
           >
             <div className="progress-chart-header">
+              <div className="progress-chart-title-group">
+                <h3 className="progress-chart-title">Speaking Performance</h3>
+                <p className="progress-chart-explanation">Track your average delivery scores across different time intervals.</p>
+              </div>
               <div className="progress-range-labels">
                 {TIME_RANGES.map(r => (
                   <button

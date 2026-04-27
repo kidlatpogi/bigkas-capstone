@@ -2,7 +2,8 @@
    NEW ACTIVITY PAGE LAYOUT (Exact proportions as Screenshot 2 wireframe)
    ========================================================================= */
 
-body, html {
+body,
+html {
   background-color: #F8F9FA;
   margin: 0;
   padding: 0;
@@ -280,10 +281,17 @@ body, html {
   text-align: left;
   min-width: 0;
   width: 100%;
-  box-shadow: 0 12px 24px rgba(11,57,84,0.12);
+  box-shadow: 0 12px 24px rgba(11, 57, 84, 0.12);
   display: flex;
   flex-direction: column;
   gap: 9px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.new-banner-streak:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px rgba(11, 57, 84, 0.15);
 }
 
 .new-streak-top {
@@ -294,8 +302,7 @@ body, html {
 
 .new-streak-fire {
   width: clamp(34px, 3vw, 44px);
-  height: auto;
-  object-fit: contain;
+  aspect-ratio: 1;
   filter: drop-shadow(0 4px 8px rgba(249, 115, 22, 0.28));
 }
 
@@ -440,6 +447,14 @@ body, html {
   border-radius: 16px;
   border: 1px solid rgba(11, 57, 84, 0.08);
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.new-widget-rank-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(11, 57, 84, 0.12);
+  border-color: rgba(5, 150, 105, 0.2);
 }
 
 .new-widget-rank-sprite {
@@ -630,7 +645,9 @@ body, html {
 }
 
 @keyframes newEntrance {
-  to { opacity: 1; }
+  to {
+    opacity: 1;
+  }
 }
 
 @media (max-width: 1024px) {
@@ -638,20 +655,25 @@ body, html {
     width: 90vw;
     grid-template-columns: 1fr;
   }
+
   .new-banner {
     grid-template-columns: 1fr;
     padding: 14px;
     gap: 10px;
   }
+
   .new-banner-right {
     width: 100%;
   }
+
   .new-banner-streak {
     width: 100%;
   }
+
   .new-banner-left {
     padding: 14px 14px 14px 136px;
   }
+
   .new-banner-robot {
     width: clamp(140px, 22vw, 188px);
     left: clamp(-18px, -1.5vw, -8px);
@@ -744,6 +766,7 @@ body, html {
   gap: clamp(0.5rem, 2vw, 1.5rem);
   width: min(100% - clamp(10px, 3vw, 30px), 62rem);
   pointer-events: auto;
+  transition: all 0.5s ease-in-out;
 }
 
 .randomizer-overlay-card {
@@ -752,7 +775,6 @@ body, html {
   width: min(100%, 608px);
   background: #FDFDF9;
   border-radius: 1rem;
-  border: 1px solid rgba(11, 57, 84, 0.08);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   padding: clamp(1rem, 2.5vw, 1.5rem);
   display: flex;
@@ -774,35 +796,30 @@ body, html {
 }
 
 .randomizer-overlay-card-top {
-  position: relative;
-  display: block;
-  margin-bottom: 0.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
 }
 
 .randomizer-overlay-title {
   font-family: 'Fredoka', sans-serif;
-  font-size: clamp(1.85rem, 1.6rem + 0.8vw, 2.3rem);
-  font-weight: 500;
-  color: #111827;
+  color: #059669;
+  font-weight: bold;
+  font-size: clamp(1rem, 2vw, 1.25rem);
   margin: 0;
   line-height: 1.2;
-  text-align: center;
 }
 
 .randomizer-overlay-close-btn {
-  position: absolute;
-  right: 0;
-  top: 0;
-  box-sizing: border-box;
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  min-height: 40px;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
   padding: 0;
-  aspect-ratio: 1 / 1;
   border: 0;
   border-radius: 50%;
-  background: rgba(15, 23, 42, 0.1);
+  background: rgba(15, 23, 42, 0.08);
   color: #334155;
   font-size: 1.1rem;
   line-height: 1;
@@ -811,6 +828,7 @@ body, html {
   align-items: center;
   justify-content: center;
   transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  flex-shrink: 0;
 }
 
 .randomizer-overlay-close-btn:hover {
@@ -825,10 +843,10 @@ body, html {
 
 .randomizer-overlay-copy {
   font-family: 'Nunito', sans-serif;
-  font-size: clamp(1.03rem, 0.96rem + 0.2vw, 1.12rem);
-  color: #1f2937;
-  margin: 0;
-  line-height: 1.35;
+  color: #1E293B;
+  font-size: clamp(0.875rem, 1.5vw, 1rem);
+  margin: 0 0 0.5rem;
+  line-height: 1.5;
 }
 
 .randomizer-overlay-copy-kicker {
@@ -865,7 +883,7 @@ body, html {
   width: 100%;
   min-height: 88px;
   resize: vertical;
-  border: 1px solid rgba(11, 57, 84, 0.14);
+  border: 1px solid rgba(11, 57, 84, 0.10);
   border-radius: 12px;
   padding: 10px 12px;
   font-family: 'Nunito', sans-serif;
@@ -881,25 +899,26 @@ body, html {
 }
 
 .randomizer-overlay-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 4px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 0.5rem;
 }
 
 .free-speech-overlay-actions {
-  grid-template-columns: 1fr;
+  justify-content: flex-end;
 }
 
 .randomizer-overlay-randomize-btn,
 .randomizer-overlay-start-btn {
-  height: 48px;
-  min-height: 48px;
+  height: 44px;
+  min-height: 44px;
   border-radius: 999px;
-  font-family: 'Fredoka', sans-serif;
-  font-size: clamp(0.95rem, 0.9rem + 0.2vw, 1.05rem);
+  font-family: 'Fredoka', 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+  font-size: clamp(0.9rem, 0.86rem + 0.2vw, 0.98rem);
   font-weight: 500;
   letter-spacing: 0;
+  padding: 0 2rem;
 }
 
 .randomizer-overlay-randomize-btn.bigkas-btn {
@@ -1047,7 +1066,7 @@ body, html {
   .randomizer-overlay-card::before {
     left: 50%;
     bottom: -12px;
-    border-top: 12px solid #ffffff;
+    border-top: 12px solid #FDFDF9;
     border-bottom: 0;
     border-right: 12px solid transparent;
     border-left: 12px solid transparent;
@@ -1055,7 +1074,7 @@ body, html {
   }
 
   .randomizer-overlay-actions {
-    grid-template-columns: 1fr;
+    flex-direction: column;
     gap: 10px;
   }
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import Confetti from 'react-confetti';
+import Lottie from 'lottie-react';
 import { useAuthContext } from '../../context/useAuthContext';
 import { useSessions } from '../../hooks/useSessions';
 import { ROUTES } from '../../utils/constants';
@@ -19,6 +19,8 @@ import {
 } from '../../utils/activityProgress';
 import { addClaimableAchievement } from '../../utils/achievementClaims';
 import SkywardJourney from '../../components/journey/SkywardJourney';
+import StreakCalendarModal from '../../components/main/StreakCalendarModal';
+import RankListModal from '../../components/main/RankListModal';
 import { getActiveTaskId, getNodeStateForTask } from '../../components/journey/journeyConstants';
 import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 import { useJourneyRemoteState } from '../../hooks/useJourneyRemoteState';
@@ -43,6 +45,7 @@ import rankLegendaryImage from '../../assets/Sprites/Rank/rank-legendary.png';
 import crystalBallImage from '../../assets/Sprites/common/crystal-ball.png';
 import crownImage from '../../assets/Sprites/common/crown.png';
 import campfireImage from '../../assets/Sprites/common/campfire.png';
+import fireAnimationData from '../../assets/Sprites/common/fire.json';
 import './InnerPages.css';
 import './ActivityPage.css';
 import './DashboardPage.css';
@@ -229,12 +232,10 @@ function ActivityPage() {
   }));
   const [showFreeSpeechTutorial, setShowFreeSpeechTutorial] = useState(false);
   const [showFreeSpeechOverlay, setShowFreeSpeechOverlay] = useState(false);
+  const [isRankModalOpen, setIsRankModalOpen] = useState(false);
   const [freeSpeechDraftTopic, setFreeSpeechDraftTopic] = useState('');
   const [showRandomizerOverlay, setShowRandomizerOverlay] = useState(false);
-  const [isRandomizerMuted, setIsRandomizerMuted] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem('bigkas_randomizer_muted_v1') === '1';
-  });
+  const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
   const [randomizerTopic, setRandomizerTopic] = useState(() => {
     const defaultTopic = RANDOM_TOPICS.find((entry) => entry.title === RANDOMIZER_DEFAULT_TOPIC);
     return defaultTopic || { title: RANDOMIZER_DEFAULT_TOPIC, body: '' };
@@ -274,6 +275,19 @@ function ActivityPage() {
     onResize();
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  useEffect(() => {
+    const preloadLink = document.createElement('link');
+    preloadLink.rel = 'preload';
+    preloadLink.as = 'image';
+    preloadLink.href = randomizerRobotImage;
+    document.head.appendChild(preloadLink);
+    return () => {
+      if (document.head.contains(preloadLink)) {
+        document.head.removeChild(preloadLink);
+      }
+    };
   }, []);
 
   const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
@@ -600,16 +614,6 @@ function ActivityPage() {
     setShowRandomizerOverlay(false);
   }, []);
 
-  const handleToggleRandomizerMute = useCallback(() => {
-    setIsRandomizerMuted((prev) => {
-      const next = !prev;
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem('bigkas_randomizer_muted_v1', next ? '1' : '0');
-      }
-      return next;
-    });
-  }, []);
-
   const handleRandomizeTopic = useCallback(() => {
     if (!RANDOM_TOPICS.length) return;
     setRandomizerTopic((current) => {
@@ -853,18 +857,9 @@ function ActivityPage() {
                 alt=""
                 className="randomizer-overlay-robot"
                 aria-hidden="true"
+                loading="eager"
+                fetchPriority="high"
               />
-            </div>
-            <div className="randomizer-overlay-audio-action">
-              <button
-                type="button"
-                onClick={handleToggleRandomizerMute}
-                aria-label={isRandomizerMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                title={isRandomizerMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                className={`randomizer-audio-toggle ${isRandomizerMuted ? 'is-muted' : 'is-unmuted'}`}
-              >
-                {isRandomizerMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-              </button>
             </div>
           </div>
         </section>
@@ -886,7 +881,7 @@ function ActivityPage() {
                 </button>
               </div>
               <p className="randomizer-overlay-copy">
-                <span className="randomizer-overlay-copy-kicker">Lito:</span>
+                <span className="randomizer-overlay-copy-kicker">B-01:</span>
                 In this mode, you have the freedom to speak about any topic of your choice. When you're ready, just hit the 'Start' button and let your words flow!
               </p>
               <label className="randomizer-overlay-topic free-speech-overlay-topic-input-wrap">
@@ -916,6 +911,8 @@ function ActivityPage() {
                 alt=""
                 className="randomizer-overlay-robot"
                 aria-hidden="true"
+                loading="eager"
+                fetchPriority="high"
               />
             </div>
           </div>
@@ -933,9 +930,16 @@ function ActivityPage() {
               </div>
            </div>
            <div className="new-banner-right">
-              <div className="new-banner-streak" id="tutorial-target-home-streak" aria-label="Daily streak">
+              <div 
+                className="new-banner-streak" 
+                id="tutorial-target-home-streak" 
+                aria-label="Daily streak"
+                onClick={() => setIsStreakModalOpen(true)}
+              >
                  <div className="new-streak-top">
-                   <img src={campfireImage} alt="" className="new-streak-fire" />
+                   <div className="new-streak-fire">
+                     <Lottie animationData={fireAnimationData} loop={true} />
+                   </div>
                    <div className="new-streak-headline">
                      <div className="new-streak-value">{streakStats.currentStreak}</div>
                      <p className="new-streak-label">day streak</p>
@@ -985,7 +989,10 @@ function ActivityPage() {
                 <h2 className="new-widget-title">Journey Progression</h2>
                 <span className="new-widget-chip">Rank</span>
               </div>
-              <div className="new-widget-rank-card">
+              <div 
+                className="new-widget-rank-card"
+                onClick={() => setIsRankModalOpen(true)}
+              >
                 <img src={rankSpriteImage} alt="" className="new-widget-rank-sprite" />
                 <div className="new-widget-rank-content">
                   <p className="new-widget-kicker">Current Rank</p>
@@ -1018,7 +1025,7 @@ function ActivityPage() {
                   </div>
                   <Button
                     variant="practice"
-                    className="activity-practice-cta activity-practice-cta--randomizer"
+                    className="activity-practice-cta activity-practice-cta--randomizer dashboard-anim-bottom dashboard-anim-delay-5"
                     onClick={handleRandomizerClick}
                   >
                     Randomizer
@@ -1037,7 +1044,7 @@ function ActivityPage() {
                   </div>
                   <Button
                     variant="training"
-                    className="activity-practice-cta activity-practice-cta--speech"
+                    className="activity-practice-cta activity-practice-cta--speech dashboard-anim-bottom dashboard-anim-delay-6"
                     onClick={handleFreeSpeechClick}
                   >
                     Free Speech
@@ -1049,6 +1056,18 @@ function ActivityPage() {
         ) : null}
 
       </div>
+      <StreakCalendarModal 
+        isOpen={isStreakModalOpen} 
+        onClose={() => setIsStreakModalOpen(false)} 
+        activeDayKeys={activeDayKeys} 
+        streakStats={streakStats}
+      />
+
+      <RankListModal
+        isOpen={isRankModalOpen}
+        onClose={() => setIsRankModalOpen(false)}
+        currentLevelNumber={levelProgress.levelNumber}
+      />
     </div>
   );
 }

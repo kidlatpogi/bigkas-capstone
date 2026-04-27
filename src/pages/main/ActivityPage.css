@@ -171,7 +171,7 @@ html {
   background: linear-gradient(180deg, #34D399 0%, #059669 100%);
   border-radius: 24px;
   min-height: 190px;
-  box-shadow: 0 20px 40px -10px rgba(5, 150, 105, 0.25);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
   display: grid;
   grid-template-columns: 1.2fr minmax(320px, 0.8fr);
   align-items: stretch;
@@ -626,7 +626,10 @@ html {
   box-shadow: #047857 0 5px 0 0 !important;
 }
 
-
+.activity-practice-cta--randomizer.bigkas-btn:hover:not(:disabled) {
+  box-shadow: #047857 0 3px 0 0 !important;
+  transform: translateY(2px) !important;
+}
 
 .activity-practice-cta--randomizer.bigkas-btn:active:not(:disabled) {
   box-shadow: #047857 0 0 0 0 !important;
@@ -639,7 +642,10 @@ html {
   box-shadow: #c2410c 0 5px 0 0 !important;
 }
 
-
+.activity-practice-cta--speech.bigkas-btn:hover:not(:disabled) {
+  box-shadow: #c2410c 0 3px 0 0 !important;
+  transform: translateY(2px) !important;
+}
 
 .activity-practice-cta--speech.bigkas-btn:active:not(:disabled) {
   box-shadow: #c2410c 0 0 0 0 !important;

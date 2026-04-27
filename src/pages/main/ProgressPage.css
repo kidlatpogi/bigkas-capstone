@@ -659,14 +659,14 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   top: 50%;
   left: calc(280px + (100vw - 280px) / 2);
   transform: translate(-50%, -50%) scale(0.95);
-  width: min(92vw, 1100px);
+  width: min(90vw, 1100px);
   max-height: 92dvh;
-  background: #f8fafc;
-  border-radius: 32px;
+  background: #ffffff;
+  border-radius: 64px;
   z-index: 1200;
   display: none;
   flex-direction: column;
-  box-shadow: 0 40px 100px rgba(11, 57, 84, 0.2);
+  box-shadow: 0 60px 120px rgba(11, 57, 84, 0.2);
   overflow: hidden;
   opacity: 0;
   transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
@@ -698,19 +698,19 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   top: 0;
   z-index: 10;
   background: #ffffff;
-  padding: 24px 32px;
-  border-bottom: 1px solid rgba(11, 57, 84, 0.08);
+  padding: 60px 80px 20px;
 }
 
 .history-header-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: baseline;
+  margin-bottom: 0;
 }
 
 .history-title {
   font-family: 'Fredoka', sans-serif;
-  font-size: 28px;
+  font-size: 48px;
   font-weight: 800;
   color: #111827;
   margin: 0;
@@ -718,35 +718,28 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
 .history-filters {
   display: flex;
-  gap: 8px;
-  background: #f1f5f9;
-  padding: 6px;
-  border-radius: 999px;
-  width: fit-content;
+  gap: 24px;
 }
 
 .history-filter-btn {
+  padding: 0;
   border: none;
   background: transparent;
-  padding: 6px 16px;
-  border-radius: 999px;
   font-family: 'Fredoka', sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-  color: #64748b;
+  font-size: 20px;
+  font-weight: 500;
+  color: #475569;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .history-filter-btn:hover {
   color: #111827;
-  background: rgba(255, 255, 255, 0.5);
 }
 
 .history-filter-btn.active {
-  background: #059669;
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
+  color: #111827;
+  font-weight: 800;
 }
 
 .history-date-range {
@@ -819,20 +812,20 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 .history-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 32px;
+  gap: 32px;
+  padding: 0 80px 40px;
 }
 
 .history-item {
   background: #ffffff;
-  border-radius: 24px;
-  padding: 32px 40px;
+  border-radius: 64px;
+  padding: 48px 60px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(11, 57, 84, 0.06);
-  border: 1px solid rgba(11, 57, 84, 0.05);
+  box-shadow: 0 15px 45px rgba(11, 57, 84, 0.08);
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  border: none;
 }
 
 .history-item:hover {
@@ -899,26 +892,27 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 }
 
 .history-item-score-ring {
-  width: 80px;
-  height: 80px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
-  border: 6px solid #f1f5f9;
+  border: 10px solid #f1f5f9;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: 'Fredoka', sans-serif;
-  font-size: 28px;
+  font-size: 36px;
   font-weight: 800;
-  color: #1E293B;
+  color: #111827;
   position: relative;
+  box-sizing: border-box;
 }
 
 .history-item-score-ring::after {
   content: '';
   position: absolute;
-  inset: -6px;
+  inset: -10px;
   border-radius: 50%;
-  border: 6px solid var(--score-color);
+  border: 10px solid var(--score-color);
   border-bottom-color: transparent;
   border-left-color: transparent;
   transform: rotate(45deg);
@@ -926,8 +920,16 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
 .history-item-glow {
   position: absolute;
-  inset: 0;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, var(--tier-color) 0%, transparent 70%);
+  opacity: 0.15;
+  filter: blur(40px);
   z-index: 1;
+  pointer-events: none;
 }
 
 .history-pagination-shell {
@@ -945,31 +947,46 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 }
 
 .history-pagination-link {
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   border: none;
   background: transparent;
   font-family: 'Fredoka', sans-serif;
-  font-size: 18px;
-  font-weight: 700;
-  color: #64748b;
+  font-size: 24px;
+  font-weight: 600;
+  color: #94a3b8;
   cursor: pointer;
-  border-radius: 12px;
   transition: all 0.2s ease;
+  padding: 0 10px;
+}
+
+.history-pagination-link:hover {
+  color: #111827;
 }
 
 .history-pagination-page.active .history-pagination-link {
-  color: #1E293B;
-  background: rgba(11, 57, 84, 0.05);
+  color: #111827;
+  font-weight: 800;
 }
 
 .history-footer {
   display: flex;
   justify-content: center;
-  padding-top: 24px;
+  padding: 40px 0 20px;
+}
+
+.history-footer .progress-show-history-btn {
+  width: 500px !important;
+  height: 80px !important;
+  border-radius: 999px !important;
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  background: #059669 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.history-footer .progress-show-history-btn:hover {
+  transform: scale(1.02) !important;
+  background: #047857 !important;
 }
 
 .progress-history-overlay {

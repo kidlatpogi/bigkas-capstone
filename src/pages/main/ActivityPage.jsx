@@ -793,7 +793,17 @@ function ActivityPage() {
           <div className="randomizer-overlay-backdrop" aria-hidden="true" onClick={handleCloseRandomizerOverlay} />
           <div className="randomizer-overlay-content">
             <div className="randomizer-overlay-card">
-              <h2 className="randomizer-overlay-title">Randomizer</h2>
+              <div className="randomizer-overlay-card-top">
+                <h2 className="randomizer-overlay-title">Randomizer</h2>
+                <button
+                  type="button"
+                  className="randomizer-overlay-close-btn"
+                  onClick={handleCloseRandomizerOverlay}
+                  aria-label="Close randomizer overlay"
+                >
+                  ×
+                </button>
+              </div>
               <p className="randomizer-overlay-copy">
                 <span className="randomizer-overlay-copy-kicker">B-01:</span>
                 Ready to put your skills to the test? Click the 'Generate' button for a random topic, and whenever you're ready, hit 'Start' to begin your speaking practice!

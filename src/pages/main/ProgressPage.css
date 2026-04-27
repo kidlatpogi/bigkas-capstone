@@ -7,38 +7,19 @@
 
 .progress-page-bg {
   width: 100%;
-  min-height: 100vh;
+  min-height: 100dvh;
   background-color: #ffffff;
   background-image: 
-    /* Subtle dot grid */
-    radial-gradient(rgba(11, 57, 84, 0.1) 1px, transparent 0),
-    /* Large, sweeping sound wave arcs */
-    repeating-radial-gradient(
-      circle at 100% 100%, 
-      transparent 0, 
-      transparent 300px, 
-      rgba(5, 150, 105, 0.08) 300px, 
-      rgba(5, 150, 105, 0.08) 302px, 
-      transparent 302px, 
-      transparent 600px
-    ),
-    repeating-radial-gradient(
-      circle at 0% 0%, 
-      transparent 0, 
-      transparent 400px, 
-      rgba(241, 143, 1, 0.07) 400px, 
-      rgba(241, 143, 1, 0.07) 402px, 
-      transparent 402px, 
-      transparent 800px
-    );
-  background-size: 40px 40px, 100% 100%, 100% 100%;
+    radial-gradient(rgba(11, 57, 84, 0.1) 1px, transparent 0);
+  background-size: 40px 40px;
   background-attachment: fixed;
   max-width: 100%;
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  padding: 40px;
+  padding: clamp(16px, 4vw, 40px);
   align-items: center;
+  box-sizing: border-box;
 }
 
 .progress-page-bg {
@@ -117,14 +98,15 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   border-radius: 24px;
   min-height: 190px;
   box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
-  display: grid;
-  grid-template-columns: 1.2fr minmax(320px, 0.8fr);
+  display: flex;
+  flex-wrap: wrap;
   align-items: stretch;
-  gap: 14px;
-  padding: 18px 20px;
+  gap: 20px;
+  padding: clamp(16px, 3vw, 24px);
   position: relative;
   overflow: hidden;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .new-banner-left {
@@ -133,11 +115,12 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   gap: 0;
   position: relative;
   z-index: 2;
-  min-width: 0;
+  flex: 1 1 500px;
+  min-width: 300px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 28px;
-  padding: 14px 16px 14px 190px;
+  padding: 14px 16px 14px clamp(140px, 15vw, 190px);
   backdrop-filter: blur(1px);
   overflow: visible;
 }
@@ -183,10 +166,11 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
 .progress-banner-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 12px;
   width: 100%;
   align-items: center;
+  flex: 1 1 400px;
 }
 
 /* Stats Card (Based on new-widget-rank-card) */
@@ -260,7 +244,9 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 .progress-chart-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
   margin-bottom: 24px;
 }
 
@@ -275,7 +261,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   font-family: 'Fredoka', sans-serif;
   font-size: clamp(1.1rem, 1.2vw, 1.3rem);
   font-weight: 800;
-  color: #0B3954;
+  color: #1E293B;
   line-height: 1.2;
 }
 
@@ -310,7 +296,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 }
 
 .progress-range-chip:hover {
-  color: #0b3954;
+  color: #1E293B;
   background: rgba(255, 255, 255, 0.5);
 }
 
@@ -348,12 +334,12 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   font-family: 'Fredoka', sans-serif;
   font-size: clamp(20px, 2.5vw, 28px);
   font-weight: 800;
-  color: #0B3954 !important;
+  color: #1E293B !important;
 }
 
 .progress-pillars-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
   gap: 24px;
 }
 
@@ -391,7 +377,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   font-family: 'Fredoka', sans-serif;
   font-size: clamp(1.1rem, 1vw, 1.25rem);
   font-weight: 800;
-  color: #1f2937;
+  color: #1E293B;
   margin: 0;
   line-height: 1.2;
 }
@@ -729,7 +715,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 .history-title {
   font-size: 28px;
   font-weight: 800;
-  color: #0b3954;
+  color: #1E293B;
   margin: 0 0 0.5rem;
   letter-spacing: -0.02em;
 }
@@ -750,7 +736,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   min-height: 40px;
   border-radius: 999px;
   background: rgba(11, 57, 84, 0.08);
-  color: #0b3954;
+  color: #1E293B;
   border: none;
   cursor: pointer;
 }
@@ -804,7 +790,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 .history-date-range-chevron {
   width: 18px;
   height: 18px;
-  color: #0B3954;
+  color: #1E293B;
   transition: transform 0.2s ease;
   flex-shrink: 0;
 }
@@ -820,7 +806,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 .history-sort-label {
   font-size: 12px;
   font-weight: 700;
-  color: #0B3954;
+  color: #1E293B;
   margin-bottom: 8px;
 }
 
@@ -836,7 +822,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   gap: 6px;
   font-size: 11px;
   font-weight: 700;
-  color: #0B3954;
+  color: #1E293B;
 }
 
 .history-date-field input {
@@ -845,7 +831,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   border: 1px solid rgba(11, 57, 84, 0.12);
   border-radius: 12px;
   background: #FFFFFF;
-  color: #010101;
+  color: #1E293B;
   padding: 9px 12px;
   font: inherit;
   font-weight: 600;
@@ -867,7 +853,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   border-radius: 999px;
   border: 0;
   background: #FFFFFF;
-  color: #010101;
+  color: #1E293B;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -918,7 +904,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.55);
   background: #FFFFFF;
-  color: #010101;
+  color: #1E293B;
   font-size: 11px;
   font-weight: 700;
   display: inline-flex;
@@ -934,7 +920,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   padding: 0;
   font-size: 0;
   background: #ffffff;
-  color: #010101;
+  color: #1E293B;
 }
 
 .history-pagination-nav .history-pagination-link svg {
@@ -955,7 +941,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
 .history-pagination-break {
   list-style: none;
-  color: #0B3954;
+  color: #1E293B;
   font-weight: 700;
 }
 
@@ -985,7 +971,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 .history-item-title {
   font-size: 15px;
   font-weight: 700;
-  color: #0B3954;
+  color: #1E293B;
   margin: 0;
 }
 
@@ -998,7 +984,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 }
 
 .history-item-tag.training { background: #F18F01; color: #FFFFFF; }
-.history-item-tag.practice { background: #d3dcc5; color: #010101; }
+.history-item-tag.practice { background: #d3dcc5; color: #1E293B; }
 
 .history-item-meta {
   display: flex;

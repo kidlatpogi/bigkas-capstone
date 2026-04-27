@@ -12,6 +12,18 @@ export async function fetchActivities(currentLevel = 1) {
     .order('activity_order', { ascending: true });
 
   if (error) {
+    if (error.message?.includes('JWT expired')) {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData?.session) {
+        const retry = await supabase
+          .from('activities')
+          .select('id, target_level, activity_order, title, phase_name, objective, weight_vis, weight_voc, weight_ver, created_at')
+          .eq('target_level', currentLevel)
+          .order('activity_order', { ascending: true });
+        if (!retry.error) return Array.isArray(retry.data) ? retry.data : [];
+      }
+      await supabase.auth.signOut();
+    }
     throw new Error(error.message || 'Failed to load activities');
   }
   return Array.isArray(data) ? data : [];

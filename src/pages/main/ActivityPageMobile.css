@@ -77,143 +77,6 @@
   line-height: 1.25;
 }
 
-.activity-mobile-journey-header-card {
-  width: 100%;
-  border-radius: 16px;
-  border: 1px solid rgba(241, 143, 1, 0.9);
-  background: #fdfdf9;
-  box-shadow: 0 8px 18px rgba(11, 57, 84, 0.1);
-  padding: 10px 10px 12px;
-  margin-bottom: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.activity-mobile-journey-phase {
-  margin: 0;
-  text-align: center;
-  color: #f18f01;
-  font-family: 'Fredoka', sans-serif;
-  font-size: 1.05rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.activity-mobile-journey-rank-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 8px;
-  border: 1px solid rgba(11, 57, 84, 0.08);
-  border-radius: 12px;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-}
-
-.activity-mobile-journey-rank-sprite {
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-  filter: drop-shadow(0 3px 6px rgba(11, 57, 84, 0.18));
-}
-
-.activity-mobile-journey-rank-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.activity-mobile-journey-rank-kicker {
-  color: #059669;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.activity-mobile-journey-rank-name {
-  color: #1f2937;
-  font-size: 0.88rem;
-  font-weight: 700;
-}
-
-.activity-mobile-journey-level-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.activity-mobile-journey-level-btn {
-  height: 40px;
-  min-height: 40px;
-  border: none;
-  border-radius: 999px;
-  padding: 0 14px;
-  font-family: 'Fredoka', sans-serif;
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: #ffffff;
-  background: #059669;
-  box-shadow: #047857 0 5px 0 0;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.activity-mobile-journey-level-btn:hover:not(:disabled) {
-  box-shadow: #047857 0 3px 0 0;
-  transform: translateY(2px);
-}
-
-.activity-mobile-journey-level-btn:active:not(:disabled) {
-  box-shadow: #047857 0 0 0 0;
-  transform: translateY(5px);
-}
-
-.activity-mobile-journey-level-btn:disabled {
-  background: #e5e5e5;
-  color: #a1a1aa;
-  box-shadow: none;
-  cursor: not-allowed;
-}
-
-.activity-mobile-journey-level-pill {
-  flex: 1;
-  background: rgba(11, 57, 84, 0.06);
-  border-radius: 10px;
-  padding: 8px 10px;
-  text-align: center;
-  color: #5b7690;
-  font-size: 0.82rem;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.activity-mobile-journey-progress-track {
-  width: 100%;
-  height: 8px;
-  background: #e2e8f0;
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.activity-mobile-journey-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #34d399 0%, #059669 100%);
-  border-radius: inherit;
-  width: 0;
-  transition: width 0.25s ease;
-}
-
-.activity-mobile-journey-progress-text {
-  margin: 0;
-  text-align: center;
-  color: #334155;
-  font-size: 0.82rem;
-  font-weight: 700;
-}
-
 /* =========================================================================
    JOURNEY CONTAINER (Mobile)
    ========================================================================= */
@@ -228,8 +91,8 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  padding: 0 0 calc(84px + env(safe-area-inset-bottom, 0px));
-  gap: 0;
+  padding: 0 0 calc(76px + env(safe-area-inset-bottom, 0px));
+  gap: 10px;
   background: transparent;
   border-radius: 24px;
 }
@@ -250,15 +113,6 @@
   background: #ffffff;
   border: 1px solid rgba(11, 57, 84, 0.08);
   box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
-}
-
-.activity-mobile-journey-container .skyward-journey-map-viewport {
-  height: 100%;
-  min-height: 0;
-}
-
-.activity-mobile-journey-container .skyward-journey-map-content {
-  min-height: 100%;
 }
 
 /* =========================================================================
@@ -292,14 +146,16 @@
     min-height: 112px;
   }
 
-  /* Keep header card outside map viewport flow on mobile */
   .activity-mobile-journey-container .skyward-journey-anim-header.skyward-journey-header-card {
-    position: static !important;
-    top: auto !important;
-    z-index: 30 !important;
-    margin: 0 0 10px !important;
-    width: 100% !important;
+    position: sticky !important;
+    top: 2px !important;
+    z-index: 20 !important;
+    margin-top: 0 !important;
+    flex-shrink: 0;
+    width: min(520px, 100%) !important;
+    margin-inline: auto !important;
     border-radius: 18px !important;
+    padding: 12px !important;
   }
 
   /* Ensure journey viewport is scrollable */
@@ -308,16 +164,15 @@
     height: 100%;
   }
 
-  .activity-mobile-journey-container .skyward-journey-map-viewport {
+  .skyward-journey-map-viewport {
     width: 100%;
     height: 100%;
-    min-height: 0;
   }
 
   .skyward-journey-container {
     width: 100%;
     height: auto;
-    min-height: calc(100% - 84px - env(safe-area-inset-bottom, 0px));
+    min-height: calc(100% - 76px - env(safe-area-inset-bottom, 0px));
     border-radius: 24px !important;
   }
 }
@@ -359,7 +214,7 @@
   align-items: flex-end;
   justify-content: center;
   padding: 16px;
-  padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
 }
 
 .randomizer-overlay-backdrop {
@@ -538,36 +393,18 @@
   background: rgba(11, 57, 84, 0.4);
 }
 
-/* Scrollbar styling for journey container */
-.activity-mobile-journey-container::-webkit-scrollbar {
-  width: 6px;
-}
-
-.activity-mobile-journey-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.activity-mobile-journey-container::-webkit-scrollbar-thumb {
-  background: rgba(11, 57, 84, 0.2);
-  border-radius: 3px;
-}
-
-.activity-mobile-journey-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(11, 57, 84, 0.4);
-}
-
 /* =========================================================================
    RESPONSIVE - Ensure mobile doesn't break above 768px
    ========================================================================= */
 
 @media (max-width: 767px) {
-  /* Ensure header doesn't collapse on mobile */
-  [class*="skyward-journey"] [class*="header-card"] {
+  .activity-mobile-journey-container .skyward-journey-header-card {
     flex-shrink: 0 !important;
+    width: min(520px, 100%) !important;
+    margin-inline: auto !important;
   }
 
-  /* Keep journey viewport scrolling within its container */
-  [class*="skyward-journey-wrap"] {
+  .activity-mobile-journey-container .skyward-journey-wrap {
     width: 100%;
     height: 100%;
     min-height: 0;
@@ -575,12 +412,16 @@
     flex-direction: column;
   }
 
-  /* Ensure journey content scrolls properly */
-  [class*="skyward-journey"][class*="no-scrollbar"] {
+  .activity-mobile-journey-container .skyward-journey.skyward-journey-container.no-scrollbar {
     width: 100%;
+    max-width: 420px;
+    margin-inline: auto;
     min-height: 0;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
+    padding-top: 12px;
+    padding-inline: 12px;
+    box-sizing: border-box;
   }
 }
 

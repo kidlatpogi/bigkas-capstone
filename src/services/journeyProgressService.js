@@ -24,6 +24,22 @@ export async function fetchUserJourneyProgress(userId) {
     .maybeSingle();
 
   if (profileError) {
+    if (profileError.message?.includes('JWT expired')) {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData?.session) {
+        const retry = await supabase
+          .from('profiles')
+          .select('journey_started_at, journey_current_activity_id')
+          .eq('id', uid)
+          .maybeSingle();
+        if (!retry.error) return {
+          journeyStartedAt: retry.data?.journey_started_at ?? null,
+          journeyCurrentActivityId: retry.data?.journey_current_activity_id ?? null,
+          completedActivityIds: [], // Will be filled by next query if it succeeds
+        };
+      }
+      await supabase.auth.signOut();
+    }
     throw new Error(profileError.message);
   }
 
@@ -33,6 +49,9 @@ export async function fetchUserJourneyProgress(userId) {
     .eq('user_id', uid);
 
   if (completionsError) {
+    if (completionsError.message?.includes('JWT expired')) {
+      await supabase.auth.signOut();
+    }
     throw new Error(completionsError.message);
   }
 
@@ -77,6 +96,9 @@ export async function ensureJourneyStarted(userId) {
     .maybeSingle();
 
   if (error) {
+    if (error.message?.includes('JWT expired')) {
+      await supabase.auth.signOut();
+    }
     throw new Error(error.message);
   }
 
@@ -95,6 +117,9 @@ export async function updateJourneyCurrentActivity(userId, activityId) {
     .eq('id', uid);
 
   if (error) {
+    if (error.message?.includes('JWT expired')) {
+      await supabase.auth.signOut();
+    }
     throw new Error(error.message);
   }
 }

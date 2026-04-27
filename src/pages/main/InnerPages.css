@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Shared styles for all inner (authenticated) pages
  * Import this alongside any page-specific CSS
  */
@@ -17,7 +17,7 @@
 
   max-width: 960px;
   margin: 0 auto;
-  padding: 32px 24px calc(80px + env(safe-area-inset-bottom, 0px));
+  padding: 32px 24px calc(72px + env(safe-area-inset-bottom, 0px));
 }
 
 /* ── Page header ── */
@@ -658,7 +658,7 @@
 
 @media (max-width: 600px) {
   .inner-page {
-    padding: 20px 16px calc(80px + env(safe-area-inset-bottom, 0px));
+    padding: 20px 16px calc(72px + env(safe-area-inset-bottom, 0px));
   }
 
   .form-row {

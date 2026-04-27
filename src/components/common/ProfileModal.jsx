@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { IoCloseOutline, IoLogOutOutline } from 'react-icons/io5';
+import { IoCloseOutline, IoLogOutOutline, IoPersonOutline, IoSettingsOutline } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import './ProfileModal.css';
@@ -64,7 +64,7 @@ export default function ProfileModal({ isOpen, onClose }) {
         <div className="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
           {/* Header */}
           <div className="profile-modal-header">
-            <h2 id="profile-modal-title" className="profile-modal-title">Profile</h2>
+            <h2 id="profile-modal-title" className="profile-modal-title">Settings</h2>
             <button
               type="button"
               className="profile-modal-close-btn"
@@ -93,33 +93,36 @@ export default function ProfileModal({ isOpen, onClose }) {
               className="profile-modal-menu-item"
               onClick={handleNavigateToProfile}
             >
-              <span>Account Settings</span>
-              <span className="profile-modal-menu-arrow">›</span>
+              <div className="profile-modal-menu-icon">
+                <IoPersonOutline size={22} />
+              </div>
+              <span className="profile-modal-menu-text">Account Settings</span>
             </button>
             <button
               type="button"
               className="profile-modal-menu-item"
               onClick={handleNavigateToSettings}
             >
-              <span>Settings</span>
-              <span className="profile-modal-menu-arrow">›</span>
+              <div className="profile-modal-menu-icon">
+                <IoSettingsOutline size={22} />
+              </div>
+              <span className="profile-modal-menu-text">Settings</span>
             </button>
-          </nav>
 
-          {/* Divider */}
-          <div className="profile-modal-divider" />
+            {/* Divider within menu */}
+            <div className="profile-modal-menu-divider" />
 
-          {/* Logout Button */}
-          <div className="profile-modal-footer">
             <button
               type="button"
-              className="profile-modal-logout-btn"
+              className="profile-modal-menu-item profile-modal-menu-item--logout"
               onClick={handleLogoutClick}
             >
-              <IoLogOutOutline size={18} />
-              <span>Log Out</span>
+              <div className="profile-modal-menu-icon">
+                <IoLogOutOutline size={22} />
+              </div>
+              <span className="profile-modal-menu-text">Log Out</span>
             </button>
-          </div>
+          </nav>
         </div>
       </div>
 

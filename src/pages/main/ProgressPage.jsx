@@ -182,6 +182,7 @@ function ProgressPage() {
   const [chartRange, setChartRange] = useState('Weekly');
   const [pillarRange, setPillarRange] = useState('Weekly');
   const [range, setRange] = useState('daily');
+  const [historyFilter, setHistoryFilter] = useState('All');
   const graphRef = useRef(null);
   const [graphWidth, setGraphWidth] = useState(0);
 

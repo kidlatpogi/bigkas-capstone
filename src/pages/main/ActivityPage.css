@@ -793,13 +793,18 @@ body, html {
   position: absolute;
   right: 0;
   top: 0;
-  width: 30px;
-  height: 30px;
+  box-sizing: border-box;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+  aspect-ratio: 1 / 1;
   border: 0;
   border-radius: 50%;
   background: rgba(15, 23, 42, 0.1);
   color: #334155;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   line-height: 1;
   cursor: pointer;
   display: inline-flex;
@@ -850,11 +855,40 @@ body, html {
   font-weight: 800;
 }
 
+.free-speech-overlay-topic-input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.free-speech-overlay-topic-input {
+  width: 100%;
+  min-height: 88px;
+  resize: vertical;
+  border: 1px solid rgba(11, 57, 84, 0.14);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.98rem;
+  line-height: 1.4;
+  color: #1f2937;
+  background: #ffffff;
+}
+
+.free-speech-overlay-topic-input:focus {
+  outline: 2px solid rgba(5, 150, 105, 0.22);
+  border-color: #059669;
+}
+
 .randomizer-overlay-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   margin-top: 4px;
+}
+
+.free-speech-overlay-actions {
+  grid-template-columns: 1fr;
 }
 
 .randomizer-overlay-randomize-btn,

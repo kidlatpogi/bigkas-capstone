@@ -22,14 +22,31 @@ html {
   align-items: center;
   padding: var(--activity-page-pad);
   
-  /* Dark theme with sweeping abstract shapes (Reference-based) */
-  background-color: #0c0e14; 
+  /* Clean, white background with subtle brand-colored patterns (Inspired by 2nd photo) */
+  background-color: #ffffff;
   background-image: 
-    radial-gradient(circle at 0% 0%, rgba(5, 150, 105, 0.05) 0%, transparent 50%),
-    radial-gradient(circle at 100% 100%, rgba(11, 57, 84, 0.08) 0%, transparent 60%),
-    url("data:image/svg+xml,%3Csvg width='1440' height='1080' viewBox='0 0 1440 1080' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M-100,1080 C200,800 400,1100 700,800 C1000,500 1200,900 1540,600 L1540,1080 Z' fill='%230B3954' fill-opacity='0.03'/%3E%3Cpath d='M1540,0 C1200,300 1000,-100 700,200 C400,500 200,100 -100,400 L-100,0 Z' fill='%23059669' fill-opacity='0.02'/%3E%3Cpath d='M-100,600 C300,400 500,800 800,500 C1100,200 1300,600 1540,300 L1540,800 C1300,900 1100,700 800,900 C500,1100 300,800 -100,1000 Z' fill='%230B3954' fill-opacity='0.02'/%3E%3C/svg%3E");
-  background-size: cover;
-  background-position: center;
+    /* Subtle dot grid */
+    radial-gradient(rgba(11, 57, 84, 0.05) 1px, transparent 0),
+    /* Large, sweeping sound wave arcs */
+    repeating-radial-gradient(
+      circle at 100% 100%, 
+      transparent 0, 
+      transparent 300px, 
+      rgba(5, 150, 105, 0.04) 300px, 
+      rgba(5, 150, 105, 0.04) 301px, 
+      transparent 301px, 
+      transparent 600px
+    ),
+    repeating-radial-gradient(
+      circle at 0% 0%, 
+      transparent 0, 
+      transparent 400px, 
+      rgba(241, 143, 1, 0.03) 400px, 
+      rgba(241, 143, 1, 0.03) 401px, 
+      transparent 401px, 
+      transparent 800px
+    );
+  background-size: 40px 40px, 100% 100%, 100% 100%;
   background-attachment: fixed;
 }
 

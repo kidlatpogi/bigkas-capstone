@@ -249,44 +249,43 @@
 .randomizer-overlay-content {
   position: relative;
   z-index: 1;
-  width: 100%;
-  max-width: 100%;
+  width: min(100%, 420px);
   display: flex;
-  flex-direction: row;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 8px;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding: 0 16px;
 }
 
 .randomizer-overlay-card {
   position: relative;
-  order: 2;
-  flex: 1;
-  min-width: 0;
-  padding: 1.25rem;
+  width: 100%;
+  padding: 1.5rem;
   background: #FDFDF9;
-  border-radius: 1.25rem;
+  border-radius: 1.5rem;
   border: 1px solid rgba(11, 57, 84, 0.05);
   box-shadow: 0 12px 32px rgba(2, 6, 23, 0.18);
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  max-height: 75vh;
+  gap: 14px;
+  max-height: 70vh;
   overflow-y: auto;
+  margin-top: -10px; /* Slight overlap with robot */
 }
 
 .randomizer-overlay-card::before {
   content: '';
   position: absolute;
-  left: -12px;
-  bottom: 22px;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-top: 12px solid transparent;
-  border-bottom: 12px solid transparent;
-  border-right: 12px solid #FDFDF9;
-  filter: drop-shadow(-2px 0 2px rgba(0,0,0,0.05));
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-bottom: 12px solid #FDFDF9;
+  border-top: none;
+  filter: drop-shadow(0 -2px 2px rgba(0,0,0,0.05));
 }
 
 .randomizer-overlay-card-top {
@@ -400,10 +399,11 @@
 
 .randomizer-overlay-robot-wrap {
   display: block;
-  order: 1;
   flex-shrink: 0;
-  width: 72px;
-  margin-bottom: 8px;
+  width: 100px;
+  z-index: 2;
+  position: relative;
+  margin-bottom: -4px; /* Pull card closer */
 }
 
 .randomizer-overlay-robot {

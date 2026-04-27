@@ -27,7 +27,7 @@ const StyledWrapper = styled.div`
     position: relative;
     padding: 0;
     border: 0;
-    border-radius: 16px;
+    border-radius: 50%;
     background-color: ${(props) => props.$theme.bg};
     color: ${(props) => props.$theme.text};
     cursor: pointer;

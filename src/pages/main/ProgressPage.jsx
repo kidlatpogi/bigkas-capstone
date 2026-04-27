@@ -569,9 +569,6 @@ function ProgressPage() {
             <div className="new-banner-right">
               <div className="progress-banner-stats">
                 <div className="new-widget-rank-card progress-stat-card">
-                  <div className="new-btn-visual new-btn-visual--sessions">
-                    <IoCalendarOutline />
-                  </div>
                   <div className="new-widget-rank-content">
                     <p className="new-widget-kicker">Sessions</p>
                     <p className="new-widget-value">{stats.sessionsThisWeek}</p>
@@ -579,9 +576,6 @@ function ProgressPage() {
                 </div>
 
                 <div className="new-widget-rank-card progress-stat-card">
-                  <div className="new-btn-visual new-btn-visual--score">
-                    <IoTrophyOutline />
-                  </div>
                   <div className="new-widget-rank-content">
                     <p className="new-widget-kicker">Average Score</p>
                     <p className="new-widget-value">{stats.averageScoreLabel}</p>
@@ -589,9 +583,6 @@ function ProgressPage() {
                 </div>
 
                 <div className="new-widget-rank-card progress-stat-card">
-                  <div className="new-btn-visual new-btn-visual--time">
-                    <IoTimeOutline />
-                  </div>
                   <div className="new-widget-rank-content">
                     <p className="new-widget-kicker">Total Speaking</p>
                     <p className="new-widget-value">{stats.totalSpeakingTime}m</p>

@@ -830,44 +830,38 @@ function ActivityPageMobile() {
                 <p className="new-practice-subtitle">Choose a mode and jump straight into speaking.</p>
 
                 <div className="new-btn-group">
-                  <div className="new-btn-row new-btn-row--card">
+                  <div 
+                    className="new-btn-row--card"
+                    onClick={() => {
+                      setShowDashboardOverlay(false);
+                      handleRandomizerClick();
+                    }}
+                  >
                     <div className="new-btn-visual new-btn-visual--randomizer">
                       <img src={crystalBallImage} alt="" className="new-btn-visual-img new-btn-visual-img--randomizer" />
                     </div>
                     <div className="new-btn-meta">
+                      <p className="new-btn-kicker" style={{ color: '#7c3aed' }}>Mode</p>
                       <p className="new-btn-label">Randomizer</p>
-                      <p className="new-btn-hint">Instant prompt to warm up your delivery.</p>
+                      <p className="new-btn-hint">Instant prompt to warm up.</p>
                     </div>
-                    <Button
-                      variant="practice"
-                      className="activity-practice-cta activity-practice-cta--randomizer"
-                      onClick={() => {
-                        setShowDashboardOverlay(false);
-                        handleRandomizerClick();
-                      }}
-                    >
-                      Randomizer
-                    </Button>
                   </div>
                   
-                  <div className="new-btn-row new-btn-row--card">
+                  <div 
+                    className="new-btn-row--card"
+                    onClick={() => {
+                      setShowDashboardOverlay(false);
+                      handleFreeSpeechClick();
+                    }}
+                  >
                     <div className="new-btn-visual new-btn-visual--speech">
                       <img src={crownImage} alt="" className="new-btn-visual-img" />
                     </div>
                     <div className="new-btn-meta">
+                      <p className="new-btn-kicker" style={{ color: '#f59e0b' }}>Mode</p>
                       <p className="new-btn-label">Free Speech</p>
-                      <p className="new-btn-hint">Open topic mode for confidence building.</p>
+                      <p className="new-btn-hint">Open topic confidence building.</p>
                     </div>
-                    <Button
-                      variant="training"
-                      className="activity-practice-cta activity-practice-cta--speech"
-                      onClick={() => {
-                        setShowDashboardOverlay(false);
-                        handleFreeSpeechClick();
-                      }}
-                    >
-                      Free Speech
-                    </Button>
                   </div>
                 </div>
               </section>

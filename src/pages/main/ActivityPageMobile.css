@@ -681,28 +681,44 @@
 }
 
 .dashboard-overlay-content .new-btn-row--card {
-  display: grid;
-  grid-template-columns: 68px 1fr;
-  grid-template-rows: auto auto;
+  display: flex;
+  align-items: center;
   gap: 16px;
-  padding: 18px;
-  background: #ffffff;
-  border-radius: 20px;
+  padding: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+  border-radius: 18px;
   border: 1px solid rgba(11, 57, 84, 0.08);
   width: 100%;
   box-sizing: border-box;
-  box-shadow: 0 4px 12px rgba(11, 57, 84, 0.03);
+  box-shadow: 0 2px 8px rgba(11, 57, 84, 0.04);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.dashboard-overlay-content .new-btn-row--card:active {
+  transform: scale(0.98);
+  background: #f1f5f9;
+}
+
+.dashboard-overlay-content .new-btn-kicker {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin: 0;
+  letter-spacing: 0.08em;
 }
 
 .dashboard-overlay-content .new-btn-visual {
-  width: 60px;
-  height: 60px;
+  width: 56px;
+  height: 56px;
   background: white;
-  border-radius: 12px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 8px;
+  border: 1px solid rgba(11, 57, 84, 0.05);
+  flex-shrink: 0;
 }
 
 .dashboard-overlay-content .new-btn-visual-img {

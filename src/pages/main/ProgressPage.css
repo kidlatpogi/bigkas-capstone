@@ -238,6 +238,39 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   margin-bottom: 24px;
 }
 
+.progress-range-labels {
+  display: flex;
+  gap: 8px;
+  background: #f1f5f9;
+  padding: 6px;
+  border-radius: 999px;
+  width: fit-content;
+}
+
+.progress-range-chip {
+  border: none;
+  background: transparent;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.progress-range-chip:hover {
+  color: #0b3954;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.progress-range-chip.active {
+  background: #ffffff;
+  color: #34d399;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
 .progress-chart-container {
   flex: 1;
   width: 100%;

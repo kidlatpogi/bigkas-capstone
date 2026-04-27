@@ -22,32 +22,21 @@ html {
   align-items: center;
   padding: var(--activity-page-pad);
   
-  /* Sound Wave / Ripple Background using brand colors */
-  background-color: #F0F4F8; /* Subtle tint of primary #0B3954 */
+  /* Clean, single-origin sound waves (Sonar effect) */
+  background-color: #F2F6F9; /* Elegant light tint of primary blue */
   background-image: 
     repeating-radial-gradient(
-      circle at 0% 50%,
+      circle at 50% 100%, /* Radiates from bottom center */
       transparent 0,
-      transparent 76px,
-      rgba(11, 57, 84, 0.08) 79px, /* Dark Blue */
-      rgba(11, 57, 84, 0.08) 81px,
-      transparent 84px
-    ),
-    repeating-radial-gradient(
-      circle at 100% 10%,
-      transparent 0,
-      transparent 116px,
-      rgba(5, 150, 105, 0.07) 119px, /* Emerald Green */
-      rgba(5, 150, 105, 0.07) 121px,
-      transparent 124px
-    ),
-    repeating-radial-gradient(
-      circle at 50% 100%,
-      transparent 0,
-      transparent 146px,
-      rgba(241, 143, 1, 0.06) 149px, /* Orange */
-      rgba(241, 143, 1, 0.06) 151px,
-      transparent 154px
+      transparent 80px,
+      rgba(11, 57, 84, 0.05) 80px, /* Primary Blue */
+      rgba(11, 57, 84, 0.05) 81px,
+      transparent 81px,
+      transparent 92px,
+      rgba(5, 150, 105, 0.04) 92px, /* Emerald Green */
+      rgba(5, 150, 105, 0.04) 93px,
+      transparent 93px,
+      transparent 150px
     );
   background-attachment: fixed;
 }

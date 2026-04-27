@@ -6,8 +6,7 @@
 .activity-page-mobile-root {
   --activity-page-pad: clamp(12px, 2vw, 16px);
   width: 100%;
-  height: auto;
-  min-height: 100%;
+  min-height: 100dvh;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;

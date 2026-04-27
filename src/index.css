@@ -45,6 +45,23 @@ body {
   background-color: #ECF3E9;
 }
 
+/* Allow scrolling on mobile viewports */
+@media (max-width: 767px) {
+  html {
+    overflow: auto;
+  }
+  
+  body {
+    overflow: auto;
+  }
+  
+  #root {
+    overflow: auto;
+    height: auto;
+    min-height: 100dvh;
+  }
+}
+
 /* 2. NO-SCROLLBAR UTILITY */
 /* Apply this class to your .progress-page-bg in ProgressPage.jsx */
 .no-scrollbar {

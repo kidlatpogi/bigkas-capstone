@@ -39,16 +39,25 @@
   padding: 0;
 }
 
+.bottom-nav__pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 6px;
+  border-radius: 14px;
+  border: 2px solid transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 58px;
+}
+
 .bottom-nav__icon-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 32px;
-  border-radius: 10px;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 2px solid transparent;
-  margin-bottom: 2px;
+  width: 24px;
+  height: 24px;
 }
 
 .bottom-nav__item svg {
@@ -66,7 +75,7 @@
   color: #F97316;
 }
 
-.bottom-nav__item.active .bottom-nav__icon-wrapper {
+.bottom-nav__item.active .bottom-nav__pill {
   background: rgba(249, 115, 22, 0.12);
   border-color: #F97316;
 }

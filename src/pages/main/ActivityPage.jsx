@@ -18,10 +18,9 @@ import {
   isActivityTaskCompleted,
 } from '../../utils/activityProgress';
 import { addClaimableAchievement } from '../../utils/achievementClaims';
-import SkywardJourney from '../../components/journey/SkywardJourney';
+import SkywardJourneyShell from '../../components/journey/SkywardJourneyShell';
 import StreakCalendarModal from '../../components/main/StreakCalendarModal';
 import RankListModal from '../../components/main/RankListModal';
-import { getActiveTaskId, getNodeStateForTask } from '../../components/journey/journeyConstants';
 import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 import { useJourneyRemoteState } from '../../hooks/useJourneyRemoteState';
 import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../services/journeyProgressService';
@@ -209,14 +208,13 @@ function ActivityPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuthContext();
-  const [selectedLevel, setSelectedLevel] = useState(1);
   const [showDesktopSidebar, setShowDesktopSidebar] = useState(
     typeof window === 'undefined' ? true : window.matchMedia('(min-width: 1025px)').matches,
   );
   const [entranceFromNav] = useState(() => location.state?.skywardEntrance === true);
   const scopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
   /** Activities are filtered by `target_level` = Bigkas rank (same as dashboard `levelProgress.levelName`). */
-  const { tasks, loading: activitiesLoading, error: activitiesError } = useActivitiesJourneyTasks(selectedLevel);
+  const { tasks, loading: activitiesLoading, error: activitiesError } = useActivitiesJourneyTasks(1);
   const { metricsSyncKey, refreshJourney } = useJourneyRemoteState(user);
   const stampResetTimeoutRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -299,10 +297,7 @@ function ActivityPage() {
 
   useEffect(() => {
     if (!user?.id) return;
-    setSelectedLevel((prev) => {
-      if (prev === 1 && recommendedLevel > 1) return recommendedLevel;
-      return prev;
-    });
+    // No longer sets selectedLevel here — shell handles it
   }, [recommendedLevel, user?.id]);
 
   const completedTaskCount = useMemo(
@@ -396,18 +391,13 @@ function ActivityPage() {
     return acc;
   }, {}), [tasks]);
 
-  const activeTaskId = useMemo(
-    () => getActiveTaskId(tasks, taskState, taskUnlockState),
-    [tasks, taskState, taskUnlockState],
-  );
-
-  useEffect(() => {
-    if (!user?.id) return undefined;
-    const t = window.setTimeout(() => {
-      updateJourneyCurrentActivity(user.id, activeTaskId ?? null).catch(() => {});
-    }, 450);
-    return () => window.clearTimeout(t);
-  }, [user?.id, activeTaskId]);
+  const activeTaskIdRef = useRef(null);
+  const handleActiveTaskIdChange = useCallback((id) => {
+    activeTaskIdRef.current = id;
+    if (user?.id) {
+      updateJourneyCurrentActivity(user.id, id ?? null).catch(() => {});
+    }
+  }, [user?.id]);
 
   const playCompletionSound = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -539,9 +529,10 @@ function ActivityPage() {
 
   const scrollToStepIndex = useMemo(() => {
     if (location.state?.focusCurrentStage !== true || !totalStages) return null;
-    const idx = tasks.findIndex((t) => t.id === activeTaskId);
+    const activeId = activeTaskIdRef.current;
+    const idx = tasks.findIndex((t) => t.id === activeId);
     return idx >= 0 ? idx : 0;
-  }, [location.state?.focusCurrentStage, tasks, activeTaskId, totalStages]);
+  }, [location.state?.focusCurrentStage, tasks, totalStages]);
 
   useEffect(() => {
     if (location.state?.focusCurrentStage !== true) return undefined;
@@ -650,35 +641,62 @@ function ActivityPage() {
     return () => document.body.classList.remove('randomizer-overlay-open');
   }, [showRandomizerOverlay, showFreeSpeechOverlay]);
 
-  const journeySteps = useMemo(
-    () =>
-      tasks.map((task) => ({
-        id: task.id,
-        task,
-        title: task.title,
-        pillarName: task.phase_name,
-        stageNumber: task.activity_order,
-        totalStages,
-        isRankUp: task.activity_order === 31,
-        nodeState: getNodeStateForTask(task.id, taskState, taskUnlockState, activeTaskId),
-        onActivate: () => handleTaskAction(task),
-      })),
-    [tasks, taskState, taskUnlockState, activeTaskId, handleTaskAction, totalStages],
-  );
+  const renderTaskCardForShell = useCallback(({ task, animationClass = '' }) => {
+    const done = taskState[task.id] === true;
+    const isUnlocked = taskUnlockState[task.id] === true;
+    const isLocked = !done && !isUnlocked;
+    const shouldAnimateStamp = done && recentStampedTaskId === task.id;
+    const progress = taskProgress[task.id] || { current: 0, target: 1 };
+    const canShowProgress = !isLocked && progress.target > 1;
+    const progressPctForTask = Math.max(0, Math.min(100, Math.round((progress.current / progress.target) * 100)));
+    const clampedProgressCurrent = Math.min(progress.current, progress.target);
+    const ctaLabel = done
+      ? 'Completed'
+      : isLocked
+        ? 'Locked'
+        : progress.current > 0
+          ? `Continue ${clampedProgressCurrent}/${progress.target}`
+          : 'Start';
+    const w = task.weights || {};
+    const weightsLine = [w.vis, w.voc, w.ver].some((n) => Number.isFinite(n))
+      ? `VVV weights — Visual ${Math.round(Number(w.vis) * 100)}% · Vocal ${Math.round(Number(w.voc) * 100)}% · Verbal ${Math.round(Number(w.ver) * 100)}%`
+      : null;
 
-  const groupedTasks = useMemo(() => {
-    if (!journeySteps.length) return [];
-    return journeySteps.reduce((acc, step) => {
-      const phaseName = step.pillarName || "Training";
-      const existingPhase = acc.find(p => p.phaseName === phaseName);
-      if (existingPhase) {
-        existingPhase.tasks.push(step);
-      } else {
-        acc.push({ phaseName, tasks: [step] });
-      }
-      return acc;
-    }, []);
-  }, [journeySteps]);
+    return (
+      <div key={task.id} className={`page-card activity-task-card${done ? ' done' : ''}${isLocked ? ' locked' : ''} ${animationClass}`.trim()}>
+        <div className="activity-task-top">
+          <div className="activity-task-heading">
+            <span className={`activity-task-name${done ? ' done' : ''}`}>{task.title}</span>
+            {done ? (
+              <span className={`activity-task-done-stamp${shouldAnimateStamp ? ' popping' : ''}`}>DONE</span>
+            ) : null}
+          </div>
+          <span className="activity-task-xp">+ {getTaskXp(task.id)} EXP</span>
+        </div>
+
+        <p className="activity-task-detail">{task.objective || task.detail}</p>
+        {weightsLine ? <p className="activity-task-detail" style={{ opacity: 0.85, fontSize: '0.9em' }}>{weightsLine}</p> : null}
+
+        {isLocked ? (
+          <p className="activity-task-lock-note">Finish previous activities first to unlock this step.</p>
+        ) : null}
+
+        <div className="activity-task-actions">
+          <button
+            type="button"
+            className={`activity-action-btn${isLocked ? ' is-locked' : ''}${canShowProgress ? ' with-progress' : ''}`}
+            onClick={() => handleTaskAction(task)}
+            disabled={isLocked || done}
+          >
+            {canShowProgress ? (
+              <span className="activity-action-progress-fill" style={{ width: `${progressPctForTask}%` }} />
+            ) : null}
+            <span className="activity-action-btn-text">{ctaLabel}</span>
+          </button>
+        </div>
+      </div>
+    );
+  }, [taskState, taskUnlockState, taskProgress, recentStampedTaskId, handleTaskAction]);
 
   const renderTaskCard = ({ task, historyEntry = null, animationClass = '' }) => {
     const done = taskState[task.id] === true;
@@ -963,20 +981,13 @@ function ActivityPage() {
         {/* Left Column (Journey Shell) */}
         <div className="new-left-col" id="tutorial-target-home-journey">
           <div className="new-left-col-inner">
-             <SkywardJourney
-               steps={journeySteps}
-               groupedTasks={groupedTasks}
-               currentLevel={selectedLevel}
+             <SkywardJourneyShell
+               initialLevel={recommendedLevel}
                recommendedLevel={recommendedLevel}
-               onLevelChange={setSelectedLevel}
                entranceFromNav={entranceFromNav}
                scrollToStepIndex={scrollToStepIndex}
-               renderStepContent={(step, meta) =>
-                 renderTaskCard({
-                   task: step.task,
-                   animationClass: `dashboard-anim-bottom dashboard-anim-delay-${Math.min(meta.stepIndex + 2, 9)}`,
-                 })
-               }
+               renderTaskCard={renderTaskCardForShell}
+               onActiveTaskIdChange={handleActiveTaskIdChange}
              />
           </div>
         </div>

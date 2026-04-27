@@ -207,7 +207,7 @@ const MapHeaderCard = styled.div`
   width: min(100%, 520px);
   margin: 0 auto;
   box-sizing: border-box;
-  padding: clamp(5px, 0.65vw, 7px);
+  padding: clamp(6px, 1.2vw, 8px);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.96) 100%);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);

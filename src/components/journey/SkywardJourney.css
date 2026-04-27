@@ -28,6 +28,7 @@
 }
 
 .skyward-journey-header-card {
+  padding: clamp(6px, 1.2vw, 8px);
   transition: padding 0.22s ease, box-shadow 0.22s ease;
 }
 
@@ -1148,11 +1149,11 @@
   }
 
   .skyward-journey-header-card--interactive {
-    padding: 14px 16px;
+    padding: clamp(6px, 1.5vw, 8px);
   }
 
   .skyward-journey-header-card--collapsed {
-    padding: 12px 16px;
+    padding: clamp(6px, 1.2vw, 8px);
   }
 
   .skyward-journey-map-viewport {

@@ -101,6 +101,43 @@
   text-transform: uppercase;
 }
 
+.activity-mobile-journey-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border: 1px solid rgba(11, 57, 84, 0.08);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.activity-mobile-journey-rank-sprite {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 6px rgba(11, 57, 84, 0.18));
+}
+
+.activity-mobile-journey-rank-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.activity-mobile-journey-rank-kicker {
+  color: #059669;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.activity-mobile-journey-rank-name {
+  color: #1f2937;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
 .activity-mobile-journey-level-row {
   display: flex;
   align-items: center;
@@ -121,6 +158,17 @@
   box-shadow: #047857 0 5px 0 0;
   cursor: pointer;
   flex-shrink: 0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.activity-mobile-journey-level-btn:hover:not(:disabled) {
+  box-shadow: #047857 0 3px 0 0;
+  transform: translateY(2px);
+}
+
+.activity-mobile-journey-level-btn:active:not(:disabled) {
+  box-shadow: #047857 0 0 0 0;
+  transform: translateY(5px);
 }
 
 .activity-mobile-journey-level-btn:disabled {
@@ -204,6 +252,15 @@
   box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
 }
 
+.activity-mobile-journey-container .skyward-journey-map-viewport {
+  height: 100%;
+  min-height: 0;
+}
+
+.activity-mobile-journey-container .skyward-journey-map-content {
+  min-height: 100%;
+}
+
 /* =========================================================================
    BANNER (Mobile) - NOT USED
    ========================================================================= */
@@ -253,7 +310,7 @@
 
   .activity-mobile-journey-container .skyward-journey-map-viewport {
     width: 100%;
-    height: auto;
+    height: 100%;
     min-height: 0;
   }
 

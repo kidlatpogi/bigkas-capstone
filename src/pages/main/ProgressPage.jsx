@@ -660,7 +660,7 @@ function ProgressPage() {
 
           {/* Pillars Grid */}
           <div className="progress-pillars-section dashboard-anim-bottom dashboard-anim-delay-4">
-            <div className="progress-pillars-header">
+            <div className="progress-pillars-header dashboard-anim-bottom dashboard-anim-delay-4">
               <h3 className="progress-pillars-title">Pillar Trends ({pillarRange === 'daily' ? 'Today' : pillarRange})</h3>
               <div className="progress-range-labels">
                 {TIME_RANGES.map(r => (

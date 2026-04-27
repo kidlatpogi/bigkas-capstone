@@ -665,7 +665,10 @@ function ProgressPage() {
               {pillarStats.map((pillar, index) => {
                 const tier = getScoreTier15(pillar.score);
                 return (
-                  <div key={pillar.key} className="pillar-card">
+                  <div 
+                    key={pillar.key} 
+                    className={`pillar-card dashboard-anim-bottom dashboard-anim-delay-${5 + index}`}
+                  >
                     <div className="progress-pillar-header">
                       <span className="progress-pillar-label">{pillar.label}</span>
                       <span className="progress-pillar-tier" style={{ color: tier.color }}>{tier.label}</span>

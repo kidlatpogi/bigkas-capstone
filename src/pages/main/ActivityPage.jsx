@@ -43,7 +43,6 @@ import rankMythrilImage from '../../assets/Sprites/Rank/rank-mythril.png';
 import rankLegendaryImage from '../../assets/Sprites/Rank/rank-legendary.png';
 import crystalBallImage from '../../assets/Sprites/common/crystal-ball.png';
 import crownImage from '../../assets/Sprites/common/crown.png';
-import campfireImage from '../../assets/Sprites/common/campfire.png';
 import fireAnimationData from '../../assets/Sprites/common/fire.json';
 import './InnerPages.css';
 import './ActivityPage.css';

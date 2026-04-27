@@ -197,12 +197,21 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   justify-content: center;
   gap: 8px;
   padding: clamp(12px, 2vh, 20px);
-  border-radius: 24px;
-  border: 1px solid rgba(11, 57, 84, 0.1);
-  background: #ffffff;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  border-radius: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(11, 57, 84, 0.06);
   height: clamp(140px, 18vh, 160px);
   box-sizing: border-box;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progress-stat-card.new-widget-rank-card:hover {
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 16px 48px rgba(11, 57, 84, 0.12);
 }
 
 .new-widget-rank-content {

@@ -11,8 +11,7 @@ html {
 }
 
 .activity-page-root {
-  --activity-page-vpad: clamp(12px, 2vh, 24px);
-  --activity-page-hpad: clamp(12px, 2vw, 24px);
+  --activity-page-pad: clamp(16px, 3vh, 32px);
   width: 100%;
   height: 100dvh;
   min-height: 100dvh;
@@ -21,7 +20,7 @@ html {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: var(--activity-page-vpad) var(--activity-page-hpad);
+  padding: var(--activity-page-pad);
 }
 
 .activity-fs-tutorial-overlay {
@@ -152,10 +151,10 @@ html {
   grid-template-columns: 2.2fr 1fr;
   grid-template-rows: auto 1fr;
   gap: 16px;
-  height: calc(100dvh - (var(--activity-page-vpad) * 2));
+  height: calc(100dvh - (var(--activity-page-pad) * 2));
   min-height: 0;
-  justify-content: center;
-  align-content: center;
+  justify-content: stretch;
+  align-content: stretch;
 }
 
 .activity-page .section-label {
@@ -376,7 +375,8 @@ html {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  height: clamp(600px, 60vh, 1000px);
+  height: 100%;
+  min-height: 0;
 }
 
 .new-left-col-inner {
@@ -391,9 +391,10 @@ html {
    ------------------------------------------------------------------------- */
 .new-right-col {
   display: grid;
-  grid-template-rows: auto auto;
+  grid-template-rows: auto 1fr;
   gap: 16px;
-  align-content: start;
+  height: 100%;
+  min-height: 0;
 }
 
 .new-widget {

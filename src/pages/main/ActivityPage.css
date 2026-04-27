@@ -21,6 +21,32 @@ html {
   justify-content: center;
   align-items: center;
   padding: var(--activity-page-pad);
+  
+  /* Sound Wave / Ripple Background using brand colors */
+  background-color: #F0F4F8; /* Subtle tint of primary #0B3954 */
+  background-image: 
+    repeating-radial-gradient(
+      circle at 10% 50%,
+      transparent 0,
+      transparent 60px,
+      rgba(11, 57, 84, 0.04) 60px, /* Dark Blue */
+      rgba(11, 57, 84, 0.04) 62px
+    ),
+    repeating-radial-gradient(
+      circle at 90% 20%,
+      transparent 0,
+      transparent 80px,
+      rgba(5, 150, 105, 0.03) 80px, /* Emerald Green */
+      rgba(5, 150, 105, 0.03) 82px
+    ),
+    repeating-radial-gradient(
+      circle at 50% 110%,
+      transparent 0,
+      transparent 100px,
+      rgba(241, 143, 1, 0.03) 100px, /* Orange */
+      rgba(241, 143, 1, 0.03) 102px
+    );
+  background-attachment: fixed;
 }
 
 .activity-fs-tutorial-overlay {

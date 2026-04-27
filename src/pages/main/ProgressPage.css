@@ -157,20 +157,20 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 }
 
 .progress-banner-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
   width: 100%;
-  justify-content: center;
+  align-items: center;
 }
 
 /* Stats Card (Based on new-widget-rank-card) */
 .progress-stat-card.new-widget-rank-card {
   display: grid;
-  grid-template-columns: 52px 1fr;
+  grid-template-columns: 40px 1fr;
   align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
+  gap: 10px;
+  padding: 6px 8px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: rgba(255, 255, 255, 0.95);
@@ -184,13 +184,13 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 }
 
 .new-btn-visual {
-  width: 52px;
-  height: 52px;
-  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 18px;
   border: 1px solid rgba(11, 57, 84, 0.06);
 }
 
@@ -207,20 +207,23 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 .new-widget-kicker {
   margin: 0;
   font-family: 'Fredoka', sans-serif;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .new-widget-value {
   margin: 0;
   font-family: 'Fredoka', sans-serif;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 800;
   color: #1e293b;
-  line-height: 1.2;
+  line-height: 1.1;
 }
 
 /* =========================================================================

@@ -688,18 +688,20 @@ function ProgressPage() {
                   <div 
                     key={pillar.key} 
                     className={`pillar-card dashboard-anim-bottom dashboard-anim-delay-${5 + index}`}
-                    style={{ '--tier-color': tier.color }}
                   >
-                    <div className="progress-pillar-header">
-                      <div className="progress-pillar-info">
-                        <div className="progress-pillar-icon-wrap">
-                          <img src={pillar.image} alt="" className="progress-pillar-icon" />
-                        </div>
-                        <span className="progress-pillar-label">{pillar.label}</span>
-                      </div>
-                      <span className="progress-pillar-tier" style={{ color: tier.color }}>{tier.label}</span>
+                    <div className="new-widget-head">
+                      <h2 className="new-widget-title">{pillar.label}</h2>
+                      <span className="new-widget-chip" style={{ background: `${tier.color}20`, color: tier.color }}>
+                        {tier.label}
+                      </span>
                     </div>
-                    <p className="progress-pillar-score">{pillar.score.toFixed(1)}</p>
+                    <div className="new-widget-rank-card">
+                      <img src={pillar.image} alt="" className="new-widget-rank-sprite" />
+                      <div className="new-widget-rank-content">
+                        <p className="new-widget-kicker">Score</p>
+                        <p className="new-widget-value">{pillar.score.toFixed(1)} / 5.0</p>
+                      </div>
+                    </div>
                     <div className="progress-pillar-track">
                       <div
                         className="progress-pillar-track-fill"

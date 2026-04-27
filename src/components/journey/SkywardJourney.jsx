@@ -1129,7 +1129,11 @@ export default function SkywardJourney({
                       <JourneyTooltip
                         key={step.id}
                         step={step}
-                        onStart={(s) => s.onActivate ? s.onActivate() : setPanelOpenId(s.id)}
+                        onStart={(s) => {
+                          setTooltipNodeId(null);
+                          if (s.onActivate) s.onActivate();
+                          else setPanelOpenId(s.id);
+                        }}
                         onClose={() => setTooltipNodeId(null)}
                         nodeRef={{ get current() { return nodeRefs.current[i]; } }}
                         forceBottom={i >= steps.length - 2}
@@ -1464,8 +1468,13 @@ export default function SkywardJourney({
                     <h2 id="skyward-journey-drawer-title" className="skyward-journey-drawer-title">
                       Quest details
                     </h2>
-                    <button type="button" className="skyward-journey-drawer-close" onClick={closePanel}>
-                      Close
+                    <button
+                      type="button"
+                      className="skyward-journey-drawer-close"
+                      onClick={closePanel}
+                      aria-label="Close"
+                    >
+                      ×
                     </button>
                   </div>
                   <div className="skyward-journey-drawer-body">

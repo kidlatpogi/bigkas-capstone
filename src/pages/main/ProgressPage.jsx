@@ -688,10 +688,13 @@ function ProgressPage() {
                   <div 
                     key={pillar.key} 
                     className={`pillar-card dashboard-anim-bottom dashboard-anim-delay-${5 + index}`}
+                    style={{ '--tier-color': tier.color }}
                   >
                     <div className="progress-pillar-header">
                       <div className="progress-pillar-info">
-                        <img src={pillar.image} alt="" className="progress-pillar-icon" />
+                        <div className="progress-pillar-icon-wrap">
+                          <img src={pillar.image} alt="" className="progress-pillar-icon" />
+                        </div>
                         <span className="progress-pillar-label">{pillar.label}</span>
                       </div>
                       <span className="progress-pillar-tier" style={{ color: tier.color }}>{tier.label}</span>

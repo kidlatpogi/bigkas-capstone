@@ -650,7 +650,7 @@ function ProgressPage() {
                   />
                   <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={range === 'daily' ? 10 : 26} minPointSize={4}>
                     {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={Number.isFinite(entry.value) ? '#059669' : '#f0f0f0'} />
+                      <Cell key={`cell-${index}`} fill={Number.isFinite(entry.value) ? '#34D399' : '#f0f0f0'} />
                     ))}
                   </Bar>
                 </BarChart>

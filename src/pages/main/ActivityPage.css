@@ -626,10 +626,7 @@ html {
   box-shadow: #047857 0 5px 0 0 !important;
 }
 
-.activity-practice-cta--randomizer.bigkas-btn:hover:not(:disabled) {
-  box-shadow: #047857 0 3px 0 0 !important;
-  transform: translateY(2px) !important;
-}
+
 
 .activity-practice-cta--randomizer.bigkas-btn:active:not(:disabled) {
   box-shadow: #047857 0 0 0 0 !important;
@@ -642,10 +639,7 @@ html {
   box-shadow: #c2410c 0 5px 0 0 !important;
 }
 
-.activity-practice-cta--speech.bigkas-btn:hover:not(:disabled) {
-  box-shadow: #c2410c 0 3px 0 0 !important;
-  transform: translateY(2px) !important;
-}
+
 
 .activity-practice-cta--speech.bigkas-btn:active:not(:disabled) {
   box-shadow: #c2410c 0 0 0 0 !important;

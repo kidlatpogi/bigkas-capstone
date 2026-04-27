@@ -508,6 +508,7 @@ html {
   flex-direction: column;
   gap: 8px;
   margin-top: 4px;
+  flex: 1;
 }
 
 .new-btn-row {
@@ -528,19 +529,21 @@ html {
 }
 
 .new-btn-row--card {
-  padding: 8px 12px 10px;
+  padding: 12px 14px;
   border: 1px solid rgba(11, 57, 84, 0.08);
   border-radius: 16px;
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   display: grid;
   grid-template-columns: 54px 1fr;
-  gap: 10px;
+  grid-template-rows: 1fr auto;
+  gap: 12px 10px;
   align-items: center;
+  flex: 1;
 }
 
 .new-btn-row--card .activity-practice-cta {
   grid-column: 1 / -1;
-  margin-top: 2px;
+  align-self: end;
 }
 
 .new-btn-meta {

@@ -229,6 +229,14 @@ function ActivityPageMobile() {
   const [recentStampedTaskId, setRecentStampedTaskId] = useState(null);
   const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
   const [isRankModalOpen, setIsRankModalOpen] = useState(false);
+  const [mobileJourneyLevel, setMobileJourneyLevel] = useState(1);
+  const [mobileJourneyMeta, setMobileJourneyMeta] = useState(() => ({
+    currentPillarText: 'Phase 1',
+    currentLevelSubtitle: 'Mastering Fundamentals',
+    completedCount: 0,
+    totalStages: 31,
+    currentLevel: 1,
+  }));
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const [entranceFromNav, setEntranceFromNav] = useState(false);
   const stampResetTimeoutRef = useRef(null);
@@ -279,6 +287,10 @@ function ActivityPageMobile() {
     if (!Number.isFinite(level)) return 1;
     return Math.max(1, Math.min(5, Math.round(level)));
   }, [levelProgress?.levelNumber]);
+
+  useEffect(() => {
+    setMobileJourneyLevel((prev) => (prev === 1 ? recommendedLevel : prev));
+  }, [recommendedLevel]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -687,11 +699,70 @@ function ActivityPageMobile() {
         </section>
       )}
 
+      <div className="activity-mobile-top-strip">
+        <div className="activity-mobile-banner-left" id="tutorial-target-home-banner" aria-label="Coach message">
+          <img src={heroRobotImage} alt="" className="activity-mobile-banner-robot" />
+          <div className="activity-mobile-banner-bubble">
+            <p className="activity-mobile-banner-kicker">B-01:</p>
+            <p className="activity-mobile-banner-copy">
+              You're on a roll. Keep doing your activities and improve your speaking.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="activity-mobile-journey-header-card" aria-label="Journey header controls">
+        <p className="activity-mobile-journey-phase">
+          {(mobileJourneyMeta.currentPillarText || `Level ${mobileJourneyLevel}`).toUpperCase()}
+        </p>
+        <div className="activity-mobile-journey-level-row">
+          <button
+            type="button"
+            className="activity-mobile-journey-level-btn"
+            onClick={() => setMobileJourneyLevel((current) => Math.max(1, current - 1))}
+            disabled={mobileJourneyLevel <= 1}
+          >
+            Prev
+          </button>
+          <div className="activity-mobile-journey-level-pill">
+            {mobileJourneyMeta.currentLevelSubtitle || 'Mastering Fundamentals'}
+          </div>
+          <button
+            type="button"
+            className="activity-mobile-journey-level-btn"
+            onClick={() => setMobileJourneyLevel((current) => Math.min(5, current + 1))}
+            disabled={mobileJourneyLevel >= 5}
+          >
+            Next
+          </button>
+        </div>
+        <div className="activity-mobile-journey-progress-track">
+          <div
+            className="activity-mobile-journey-progress-fill"
+            style={{
+              width: `${Math.max(
+                0,
+                Math.min(
+                  100,
+                  ((mobileJourneyMeta.completedCount || 0) / Math.max(mobileJourneyMeta.totalStages || 1, 1)) * 100,
+                ),
+              )}%`,
+            }}
+          />
+        </div>
+        <p className="activity-mobile-journey-progress-text">
+          {mobileJourneyMeta.completedCount || 0} / {mobileJourneyMeta.totalStages || 0} Stages Completed
+        </p>
+      </div>
+
       {/* Journey Shell - Mobile Layout */}
       <div className="activity-mobile-journey-container" id="tutorial-target-home-journey">
         <SkywardJourneyShell
-          initialLevel={recommendedLevel}
+          initialLevel={mobileJourneyLevel}
           recommendedLevel={recommendedLevel}
+          currentLevel={mobileJourneyLevel}
+          onLevelChange={setMobileJourneyLevel}
+          onLevelMetaChange={setMobileJourneyMeta}
           entranceFromNav={entranceFromNav}
           scrollToStepIndex={null}
           renderTaskCard={renderTaskCardForShell}

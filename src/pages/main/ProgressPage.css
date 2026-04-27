@@ -203,14 +203,8 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), inset 0 0 0 1px rgba(255, 255, 255, 0.4);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   height: clamp(140px, 18vh, 160px);
   box-sizing: border-box;
-}
-
-.progress-stat-card.new-widget-rank-card:hover {
-  background: rgba(255, 255, 255, 1);
-  box-shadow: 0 12px 32px rgba(5, 150, 105, 0.12), inset 0 0 0 2px rgba(16, 185, 129, 0.1);
 }
 
 .new-widget-rank-content {
@@ -225,7 +219,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   font-family: 'Fredoka', sans-serif;
   font-size: clamp(10px, 0.9vw, 12px);
   font-weight: 700;
-  color: #64748b;
+  color: #F97316;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   text-align: center;
@@ -317,7 +311,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   font-family: 'Fredoka', sans-serif;
   font-size: 28px;
   font-weight: 800;
-  color: #0b3954;
+  color: #F97316;
 }
 
 .progress-pillars-grid {
@@ -347,7 +341,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   font-family: 'Fredoka', sans-serif;
   font-size: 18px;
   font-weight: 800;
-  color: #0b3954;
+  color: #F97316;
 }
 
 .progress-pillar-tier {

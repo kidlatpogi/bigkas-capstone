@@ -304,6 +304,13 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   gap: 20px;
 }
 
+.progress-pillars-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
 .progress-pillars-title {
   margin: 0;
   font-family: 'Fredoka', sans-serif;

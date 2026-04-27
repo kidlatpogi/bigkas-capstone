@@ -3,8 +3,8 @@ import styled from 'styled-components';
 
 const STATE_THEME = {
   active: {
-    bg: '#2d5a27',
-    shadow: '#1a3b16',
+    bg: '#10b981',
+    shadow: '#059669',
     text: '#ffffff',
   },
   locked: {

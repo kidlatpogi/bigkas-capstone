@@ -657,7 +657,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 .progress-history-sidebar {
   position: fixed;
   top: 50%;
-  left: 50%;
+  left: calc(280px + (100vw - 280px) / 2);
   transform: translate(-50%, -50%) scale(0.95);
   width: min(95vw, 1200px);
   max-height: 90dvh;
@@ -692,6 +692,15 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
 .history-container::-webkit-scrollbar {
   display: none;
+}
+
+.history-sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #f8fafc;
+  padding-bottom: 16px;
+  margin-top: -8px;
 }
 
 .history-header-row {
@@ -735,6 +744,74 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.8);
   color: #1E293B;
   box-shadow: 0 4px 12px rgba(11, 57, 84, 0.05);
+}
+
+.history-date-range {
+  margin-top: 16px;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(11, 57, 84, 0.05);
+  border-radius: 24px;
+  padding: 12px 20px;
+}
+
+.history-date-range-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 4px 0;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.history-date-range-chevron {
+  transition: transform 0.3s ease;
+}
+
+.history-date-range-chevron.is-expanded {
+  transform: rotate(180deg);
+}
+
+.history-date-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 16px;
+  padding-bottom: 8px;
+}
+
+.history-date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.history-date-field input {
+  padding: 12px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(11, 57, 84, 0.1);
+  background: white;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1E293B;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.history-date-field input:focus {
+  border-color: #059669;
 }
 
 .history-list {

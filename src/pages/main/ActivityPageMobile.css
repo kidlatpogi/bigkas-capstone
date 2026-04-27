@@ -332,6 +332,15 @@
   font-family: 'Nunito', sans-serif;
 }
 
+.randomizer-overlay-robot-wrap {
+  display: block;
+  flex-shrink: 0;
+  width: 160px;
+  z-index: 2;
+  position: relative;
+  margin-bottom: -15px; /* Pull card closer */
+}
+
 .randomizer-overlay-copy-kicker {
   color: #059669;
   font-weight: 800;
@@ -397,14 +406,7 @@
   transform: none !important;
 }
 
-.randomizer-overlay-robot-wrap {
-  display: block;
-  flex-shrink: 0;
-  width: 100px;
-  z-index: 2;
-  position: relative;
-  margin-bottom: -4px; /* Pull card closer */
-}
+
 
 .randomizer-overlay-robot {
   width: 100%;

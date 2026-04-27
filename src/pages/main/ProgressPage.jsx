@@ -200,7 +200,6 @@ function ProgressPage() {
   const [historyStartDate, setHistoryStartDate] = useState('');
   const [historyEndDate, setHistoryEndDate] = useState('');
   const [historyPage, setHistoryPage] = useState(0);
-  const [showMobileHistory, setShowMobileHistory] = useState(false);
   const [isHistoryDateRangeExpanded, setIsHistoryDateRangeExpanded] = useState(() =>
     typeof window === 'undefined' ? true : window.innerWidth > 768,
   );

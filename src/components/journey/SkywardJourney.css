@@ -982,9 +982,9 @@
   inset: 0;
   z-index: 10050;
   display: flex;
-  align-items: flex-end;
+  align-items: center; /* Center vertically on desktop */
   justify-content: center;
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .skyward-journey-backdrop {
@@ -1014,21 +1014,21 @@
 .skyward-journey-drawer {
   position: relative;
   z-index: 1;
-  width: 100%;
+  width: min(512px, 92vw);
   max-width: 32rem;
   max-height: min(88vh, 720px);
   margin: 0 auto;
-  padding: 0 16px 16px;
+  padding: 0;
   background: #ffffff;
-  border-radius: 24px 24px 0 0;
+  border-radius: 24px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   opacity: 0;
   visibility: hidden;
-  transform: scale(0.96);
-  transform-origin: 50% 100%;
+  transform: scale(0.95) translateY(20px);
+  transform-origin: center;
   transition:
     opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1),
     visibility 0.28s cubic-bezier(0.4, 0, 0.2, 1),
@@ -1038,7 +1038,7 @@
 .skyward-journey-drawer--open {
   opacity: 1;
   visibility: visible;
-  transform: scale(1);
+  transform: scale(1) translateY(0);
   pointer-events: auto;
 }
 
@@ -1074,19 +1074,33 @@
 }
 
 .skyward-journey-drawer-close {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
   border: 0;
-  background: rgba(11, 57, 84, 0.06);
-  color: #0b3954;
-  font-size: 14px;
-  font-weight: 700;
-  padding: 8px 14px;
-  border-radius: 999px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.08);
+  color: #334155;
+  font-size: 1.1rem;
+  line-height: 1;
   cursor: pointer;
-  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  flex-shrink: 0;
 }
 
 .skyward-journey-drawer-close:hover {
-  background: rgba(11, 57, 84, 0.1);
+  background: #ef4444;
+  color: #ffffff;
+  transform: scale(1.03);
+}
+
+.skyward-journey-drawer-close:active {
+  transform: scale(0.97);
 }
 
 .skyward-journey-drawer-body {

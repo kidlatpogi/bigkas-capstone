@@ -340,9 +340,23 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 4px;
+}
+
+.progress-pillar-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-pillar-icon {
+  width: clamp(28px, 2.5vw, 36px);
+  height: clamp(28px, 2.5vw, 36px);
+  object-fit: contain;
 }
 
 .progress-pillar-label {
+  margin: 0;
   font-family: 'Fredoka', sans-serif;
   font-size: clamp(14px, 1.8vw, 18px);
   font-weight: 800;
@@ -351,8 +365,10 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
 .progress-pillar-tier {
   font-family: 'Nunito', sans-serif;
-  font-size: 13px;
+  font-size: clamp(10px, 0.8vw, 12px);
   font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .progress-pillar-score {

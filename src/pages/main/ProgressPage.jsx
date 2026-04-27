@@ -46,6 +46,9 @@ import {
   getClaimableAchievements,
 } from '../../utils/achievementClaims';
 import heroRobotImage from '../../assets/Sprites/Robot/0018.webp';
+import visualSprite from '../../assets/Sprites/common/Visual.png';
+import verbalSprite from '../../assets/Sprites/common/Verbal.png';
+import vocalSprite from '../../assets/Sprites/common/Vocal.png';
 import './ProgressPage.css';
 
 const TIME_RANGES = ['daily', 'Weekly', 'Monthly', 'Yearly'];
@@ -446,18 +449,21 @@ function ProgressPage() {
       {
         key: 'visual',
         label: 'Visual',
+        image: visualSprite,
         desc: 'Eye contact & gestures',
         resolver: (session) => resolveTripleVForProgress(session).visual,
       },
       {
         key: 'verbal',
         label: 'Verbal',
+        image: verbalSprite,
         desc: 'Pronunciation & clarity',
         resolver: (session) => resolveTripleVForProgress(session).verbal,
       },
       {
         key: 'vocal',
         label: 'Vocal',
+        image: vocalSprite,
         desc: 'Voice quality & stability',
         resolver: (session) => resolveTripleVForProgress(session).vocal,
       }
@@ -684,7 +690,10 @@ function ProgressPage() {
                     className={`pillar-card dashboard-anim-bottom dashboard-anim-delay-${5 + index}`}
                   >
                     <div className="progress-pillar-header">
-                      <span className="progress-pillar-label">{pillar.label}</span>
+                      <div className="progress-pillar-info">
+                        <img src={pillar.image} alt="" className="progress-pillar-icon" />
+                        <span className="progress-pillar-label">{pillar.label}</span>
+                      </div>
                       <span className="progress-pillar-tier" style={{ color: tier.color }}>{tier.label}</span>
                     </div>
                     <p className="progress-pillar-score">{pillar.score.toFixed(1)}</p>

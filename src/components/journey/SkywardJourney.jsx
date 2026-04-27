@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  IoChevronDown,
   IoChatbubbleEllipses,
   IoCheckmarkCircle,
   IoClose,
@@ -207,7 +206,7 @@ const MapHeaderCard = styled.div`
   width: min(100%, 520px);
   margin: 0 auto;
   box-sizing: border-box;
-  padding: clamp(6px, 1.2vw, 8px);
+  padding: 12px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.96) 100%);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -444,6 +443,8 @@ const TooltipStartButton = styled.button`
 
 const TOOLTIP_VIEW_MARGIN = 12;
 const TOOLTIP_GAP = 14;
+const TOOLTIP_MAX_WIDTH = 380;
+const MOBILE_TOOLTIP_CENTER_BREAKPOINT = 768;
 /** Conservative height for first layout; keeps bubble inside the viewport. */
 const TOOLTIP_EST_HEIGHT = 280;
 
@@ -451,16 +452,29 @@ function computeTooltipLayout(nodeEl, forceBottom = false) {
   if (!nodeEl) return { left: 0, top: 0, transform: 'translate(-50%, -100%)', placement: 'top' };
   const rect = nodeEl.getBoundingClientRect();
   const cx = rect.left + rect.width / 2;
+  const viewportWidth = Math.max(window.innerWidth || 0, document.documentElement?.clientWidth || 0);
+  const isMobileViewport = viewportWidth <= MOBILE_TOOLTIP_CENTER_BREAKPOINT;
 
   // Use window height for 25% calculation as requested
   const isTopArea = rect.top < window.innerHeight * 0.25;
 
   const placement = (isTopArea || forceBottom) ? 'bottom' : 'top';
 
-  const top = placement === 'bottom' ? rect.bottom + TOOLTIP_GAP : rect.top - TOOLTIP_GAP;
+  let top = placement === 'bottom' ? rect.bottom + TOOLTIP_GAP : rect.top - TOOLTIP_GAP;
+  const minTop = TOOLTIP_VIEW_MARGIN;
+  const maxTop = Math.max(minTop, window.innerHeight - TOOLTIP_EST_HEIGHT - TOOLTIP_VIEW_MARGIN);
+  top = Math.max(minTop, Math.min(maxTop, top));
+
+  const tooltipWidth = Math.min(TOOLTIP_MAX_WIDTH, Math.max(0, viewportWidth - (TOOLTIP_VIEW_MARGIN * 2)));
+  const halfTooltipWidth = tooltipWidth / 2;
+  const preferredLeft = isMobileViewport ? (viewportWidth / 2) : cx;
+  const minLeft = TOOLTIP_VIEW_MARGIN + halfTooltipWidth;
+  const maxLeft = Math.max(minLeft, viewportWidth - TOOLTIP_VIEW_MARGIN - halfTooltipWidth);
+  const left = Math.max(minLeft, Math.min(maxLeft, preferredLeft));
+
   const transform = placement === 'bottom' ? 'translateX(-50%)' : 'translate(-50%, -100%)';
 
-  return { left: cx, top, transform, placement };
+  return { left, top, transform, placement };
 }
 
 export const JourneyTooltip = ({ step, onStart, onClose, nodeRef, forceBottom = false }) => {
@@ -506,7 +520,7 @@ export const JourneyTooltip = ({ step, onStart, onClose, nodeRef, forceBottom = 
         initial={{ opacity: 0, scale: 0 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0 }}
-        transition={{ type: 'spring', damping: 22, stiffness: 320 }}
+        transition={{ duration: 0.22, ease: 'easeInOut' }}
         style={{
           maxWidth: 'min(30rem, calc(100vw - 24px))',
           width: '100%',
@@ -532,13 +546,7 @@ export const JourneyTooltip = ({ step, onStart, onClose, nodeRef, forceBottom = 
           <TooltipDescription $nodeState={step.nodeState}>
             {isLocked
               ? 'Finish previous stages to unlock!'
-              : (() => {
-                  const n = Number(step.stageNumber);
-                  const total = Number(step.totalStages);
-                  const safeTotal = Number.isFinite(total) && total > 0 ? total : 1;
-                  const safeN = Number.isFinite(n) && n > 0 ? n : 1;
-                  return `Stage ${safeN} of ${safeTotal}`;
-                })()}
+              : ''}
           </TooltipDescription>
           <TooltipStartButton
             type="button"
@@ -614,7 +622,6 @@ export default function SkywardJourney({
   const pinchRef = useRef(null);
 
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
-  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -623,14 +630,11 @@ export default function SkywardJourney({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  useEffect(() => {
-    setIsHeaderCollapsed(isMobile);
-  }, [isMobile]);
-
   const activeIndex = useMemo(
     () => steps.findIndex((s) => s.nodeState === NODE_STATE.ACTIVE),
     [steps],
   );
+  const isLockedLevel = steps.length === 0;
   
   const completedCount = useMemo(() => steps.filter(s => s.nodeState === NODE_STATE.COMPLETED).length, [steps]);
 
@@ -647,6 +651,15 @@ export default function SkywardJourney({
   useLayoutEffect(() => {
     mapRef.current = map;
   }, [map]);
+
+  useEffect(() => {
+    if (!isLockedLevel) return;
+    const neutralMap = { tx: 0, ty: 0 };
+    pointerPanRef.current = null;
+    pinchRef.current = null;
+    mapRef.current = neutralMap;
+    setMap(neutralMap);
+  }, [isLockedLevel, currentLevel]);
 
   const requestClosePanel = useCallback(() => {
     panelClosePendingRef.current = true;
@@ -785,7 +798,7 @@ export default function SkywardJourney({
     if (!vp || !content) return undefined;
 
     const onWheel = (e) => {
-      if (panelOpenId) return;
+      if (panelOpenId || isLockedLevel) return;
       const dominantDelta = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
       if (Math.abs(dominantDelta) < 0.5) return;
       const panStep = dominantDelta * 0.8;
@@ -801,11 +814,11 @@ export default function SkywardJourney({
     return () => {
       vp.removeEventListener('wheel', onWheel);
     };
-  }, [panelOpenId]);
+  }, [panelOpenId, isLockedLevel]);
 
   const onPointerDownViewport = useCallback(
     (e) => {
-      if (panelOpenId) return;
+      if (panelOpenId || isLockedLevel) return;
       if (pinchRef.current) return;
       if (tooltipNodeId) setTooltipNodeId(null);
       if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -820,10 +833,11 @@ export default function SkywardJourney({
       };
       e.currentTarget.setPointerCapture(e.pointerId);
     },
-    [panelOpenId, tooltipNodeId],
+    [panelOpenId, tooltipNodeId, isLockedLevel],
   );
 
   const onPointerMoveViewport = useCallback((e) => {
+    if (isLockedLevel) return;
     const p = pointerPanRef.current;
     if (!p || p.pid !== e.pointerId) return;
     const dy = e.clientY - p.sy;
@@ -833,7 +847,7 @@ export default function SkywardJourney({
     setMap((m) =>
       clampMapState({ ...m, ty: p.ty + dy }, vp, content, MAP_SCALE),
     );
-  }, []);
+  }, [isLockedLevel]);
 
   const onPointerUpViewport = useCallback((e) => {
     const p = pointerPanRef.current;
@@ -847,11 +861,12 @@ export default function SkywardJourney({
   }, []);
 
   const onTouchStartPinch = useCallback((e) => {
+    if (isLockedLevel) return;
     if (e.touches.length === 2) {
       pointerPanRef.current = null;
       pinchRef.current = { active: true };
     }
-  }, []);
+  }, [isLockedLevel]);
 
   const onTouchMovePinch = useCallback(
     (e) => {
@@ -940,6 +955,10 @@ export default function SkywardJourney({
         setJiggleIndex(index);
         window.setTimeout(() => setJiggleIndex(null), 520);
       }
+      if (tooltipNodeId === step.id) {
+        setTooltipNodeId(null);
+        return;
+      }
       if (step.nodeState === NODE_STATE.ACTIVE) {
         tapDismissedRef.current = true;
       }
@@ -954,7 +973,7 @@ export default function SkywardJourney({
       }
       setTooltipNodeId(step.id);
     },
-    [panelOpenId, panelVisible, requestClosePanel],
+    [panelOpenId, panelVisible, requestClosePanel, tooltipNodeId],
   );
 
   const selectedStep = useMemo(
@@ -1018,12 +1037,6 @@ export default function SkywardJourney({
         } else {
           labelSide = i % 2 === 0 ? 'right' : 'left';
         }
-        const stageNum = Number(step.stageNumber);
-        const stageTotal = Number(step.totalStages);
-        const safeStageTotal =
-          Number.isFinite(stageTotal) && stageTotal > 0 ? stageTotal : totalStageCount;
-        const safeStageNum =
-          Number.isFinite(stageNum) && stageNum > 0 ? stageNum : i + 1;
         const chestButtonStyle = isSectionTrophy
           ? {
               backgroundImage: `url(${isDone ? chestOpenImage : chestClosedImage})`,
@@ -1147,11 +1160,6 @@ export default function SkywardJourney({
                     <span className="level-label__title">
                       {isUltimateBoss ? 'Summit' : title}
                     </span>
-                    <span className="level-label__stage">
-                      {isUltimateBoss
-                        ? `Boss · Stage ${safeStageNum} of ${safeStageTotal}`
-                        : `Stage ${safeStageNum} of ${safeStageTotal}`}
-                    </span>
                   </div>
                 </div>
               </div>
@@ -1254,24 +1262,16 @@ export default function SkywardJourney({
 
   return (
     <div className="skyward-journey-wrap" style={{ position: 'relative', width: '100%' }}>
-      <div className="skyward-journey skyward-journey-container no-scrollbar" ref={rootRef}>
+      <div
+        className={`skyward-journey skyward-journey-container no-scrollbar${steps.length === 0 ? ' skyward-journey-container--locked' : ''}`}
+        ref={rootRef}
+      >
         <MapHeaderCard
-          className={`skyward-journey-anim-header${isMobile ? ' skyward-journey-header-card skyward-journey-header-card--interactive' : ' skyward-journey-header-card'}${isMobile && isHeaderCollapsed ? ' skyward-journey-header-card--collapsed' : ''}`}
-          onClick={() => {
-            if (isMobile) {
-              setIsHeaderCollapsed((current) => !current);
-            }
-          }}
-          style={{ cursor: isMobile ? 'pointer' : 'default' }}
+          className="skyward-journey-anim-header skyward-journey-header-card"
+          style={{ cursor: 'default' }}
         >
           <div className="skyward-journey-header-title-row">
             <HeaderTitle>{steps.length > 0 ? currentPillarText : `Level ${currentLevel}`}</HeaderTitle>
-            {isMobile ? (
-              <IoChevronDown
-                aria-hidden="true"
-                className={`skyward-journey-header-chevron${isHeaderCollapsed ? '' : ' is-expanded'}`}
-              />
-            ) : null}
           </div>
           {steps.length === 0 ? (
             <HeaderRankBadge aria-label={`Rank ${rank.name}`}>
@@ -1279,83 +1279,79 @@ export default function SkywardJourney({
               <HeaderRankWord>{rank.name}</HeaderRankWord>
             </HeaderRankBadge>
           ) : null}
-          {!isMobile || !isHeaderCollapsed ? (
-            <>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', width: '100%', justifyContent: 'center' }}>
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onLevelChange && onLevelChange(Math.max(1, currentLevel - 1));
-                  }}
-                  disabled={currentLevel <= 1}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', width: '100%', justifyContent: 'center' }}>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onLevelChange && onLevelChange(Math.max(1, currentLevel - 1));
+              }}
+              disabled={currentLevel <= 1}
+              style={{
+                height: '40px',
+                minHeight: '40px',
+                padding: isMobile ? '0 12px' : '0 14px',
+                borderRadius: '999px',
+                border: 'none',
+                background: currentLevel <= 1 ? '#e5e5e5' : '#059669',
+                color: currentLevel <= 1 ? '#a1a1aa' : '#fff',
+                cursor: currentLevel <= 1 ? 'not-allowed' : 'pointer',
+                fontFamily: 'Fredoka, sans-serif',
+                fontWeight: 500,
+                fontSize: isMobile ? '0.74rem' : '0.8rem',
+                boxShadow: currentLevel <= 1 ? 'none' : '#047857 0 5px 0 0',
+                flexShrink: 0,
+                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+              }}
+            >
+              Prev
+            </button>
+            <div style={{ flex: 1, background: 'rgba(11, 57, 84, 0.06)', borderRadius: '10px', padding: '6px 10px' }}>
+              <HeaderDescription>{getLevelSubtitle(currentLevel)}</HeaderDescription>
+            </div>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onLevelChange && onLevelChange(Math.min(5, currentLevel + 1));
+              }}
+              disabled={currentLevel >= 5}
+              style={{
+                height: '40px',
+                minHeight: '40px',
+                padding: isMobile ? '0 12px' : '0 14px',
+                borderRadius: '999px',
+                border: 'none',
+                background: currentLevel >= 5 ? '#e5e5e5' : '#059669',
+                color: currentLevel >= 5 ? '#a1a1aa' : '#fff',
+                cursor: currentLevel >= 5 ? 'not-allowed' : 'pointer',
+                fontFamily: 'Fredoka, sans-serif',
+                fontWeight: 500,
+                fontSize: isMobile ? '0.74rem' : '0.8rem',
+                boxShadow: currentLevel >= 5 ? 'none' : '#047857 0 5px 0 0',
+                flexShrink: 0,
+                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+              }}
+            >
+              Next
+            </button>
+          </div>
+          {Number(currentLevel) > 1 && Number(currentLevel) === Number(recommendedLevel) ? (
+            <HeaderSkipNotice>
+              We assessed your speaking level as <strong>Level {currentLevel}</strong>, so we fast-tracked earlier lessons and placed you where your growth is most meaningful.
+            </HeaderSkipNotice>
+          ) : null}
+          {steps.length > 0 ? (
+            <HeaderProgressWrap>
+              <HeaderProgressTrack>
+                <HeaderProgressFill
                   style={{
-                    height: '40px',
-                    minHeight: '40px',
-                    padding: isMobile ? '0 12px' : '0 14px',
-                    borderRadius: '999px',
-                    border: 'none',
-                    background: currentLevel <= 1 ? '#e5e5e5' : '#059669',
-                    color: currentLevel <= 1 ? '#a1a1aa' : '#fff',
-                    cursor: currentLevel <= 1 ? 'not-allowed' : 'pointer',
-                    fontFamily: 'Fredoka, sans-serif',
-                    fontWeight: 500,
-                    fontSize: isMobile ? '0.74rem' : '0.8rem',
-                    boxShadow: currentLevel <= 1 ? 'none' : '#047857 0 5px 0 0',
-                    flexShrink: 0,
-                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                    width: `${Math.max(0, Math.min(100, (completedCount / Math.max(steps.length, 1)) * 100))}%`,
                   }}
-                >
-                  Prev
-                </button>
-                <div style={{ flex: 1, background: 'rgba(11, 57, 84, 0.06)', borderRadius: '10px', padding: '6px 10px' }}>
-                  <HeaderDescription>{getLevelSubtitle(currentLevel)}</HeaderDescription>
-                </div>
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onLevelChange && onLevelChange(Math.min(5, currentLevel + 1));
-                  }}
-                  disabled={currentLevel >= 5}
-                  style={{
-                    height: '40px',
-                    minHeight: '40px',
-                    padding: isMobile ? '0 12px' : '0 14px',
-                    borderRadius: '999px',
-                    border: 'none',
-                    background: currentLevel >= 5 ? '#e5e5e5' : '#059669',
-                    color: currentLevel >= 5 ? '#a1a1aa' : '#fff',
-                    cursor: currentLevel >= 5 ? 'not-allowed' : 'pointer',
-                    fontFamily: 'Fredoka, sans-serif',
-                    fontWeight: 500,
-                    fontSize: isMobile ? '0.74rem' : '0.8rem',
-                    boxShadow: currentLevel >= 5 ? 'none' : '#047857 0 5px 0 0',
-                    flexShrink: 0,
-                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                  }}
-                >
-                  Next
-                </button>
-              </div>
-              {Number(currentLevel) > 1 && Number(currentLevel) === Number(recommendedLevel) ? (
-                <HeaderSkipNotice>
-                  We assessed your speaking level as <strong>Level {currentLevel}</strong>, so we fast-tracked earlier lessons and placed you where your growth is most meaningful.
-                </HeaderSkipNotice>
-              ) : null}
-              {steps.length > 0 ? (
-                <HeaderProgressWrap>
-                  <HeaderProgressTrack>
-                    <HeaderProgressFill
-                      style={{
-                        width: `${Math.max(0, Math.min(100, (completedCount / Math.max(steps.length, 1)) * 100))}%`,
-                      }}
-                    />
-                  </HeaderProgressTrack>
-                  <HeaderProgressText>{completedCount} / {steps.length} Stages Completed</HeaderProgressText>
-                </HeaderProgressWrap>
-              ) : null}
-            </>
+                />
+              </HeaderProgressTrack>
+              <HeaderProgressText>{completedCount} / {steps.length} Stages Completed</HeaderProgressText>
+            </HeaderProgressWrap>
           ) : null}
         </MapHeaderCard>
         <div className="skyward-journey-anim-root skyward-journey-map skyward-journey-anim-map">
@@ -1376,7 +1372,9 @@ export default function SkywardJourney({
               className="skyward-journey-map-layer"
               ref={mapLayerRef}
               style={{
-                transform: `translate(${map.tx}px, ${map.ty}px) scale(${MAP_SCALE})`,
+                transform: isLockedLevel
+                  ? `translate(0px, 0px) scale(${MAP_SCALE})`
+                  : `translate(${map.tx}px, ${map.ty}px) scale(${MAP_SCALE})`,
               }}
             >
               <div className="skyward-journey-map-content">
@@ -1428,14 +1426,14 @@ export default function SkywardJourney({
                     </svg>
                   ) : null}
                   {steps.length === 0 ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '100%', textAlign: 'center', zIndex: 10, position: 'absolute', inset: 0 }}>
+                    <div className="skyward-journey-locked-state">
                       <img
                         src={safetyBarrierImage}
                         alt=""
-                        style={{ width: 'clamp(110px, 18vw, 170px)', height: 'auto', marginBottom: '0.9rem', filter: 'drop-shadow(0 6px 12px rgba(11,57,84,0.2))' }}
+                        className="skyward-journey-locked-image"
                       />
-                      <h2 style={{ color: '#0b3954', fontSize: '1.8rem', fontWeight: 800, marginBottom: '0.5rem' }}>Level {currentLevel} is locked</h2>
-                      <p style={{ color: '#64748b', fontSize: '1.1rem', fontWeight: 600, maxWidth: '400px' }}>Please complete previous levels first!</p>
+                      <h2 className="skyward-journey-locked-title">Level {currentLevel} is locked</h2>
+                      <p className="skyward-journey-locked-copy">Please complete previous levels first!</p>
                     </div>
                   ) : (
                     sections

@@ -14,7 +14,7 @@ const NAV_ITEMS = [
   { label: 'Home', to: ROUTES.ACTIVITY, icon: IoHomeOutline, type: 'link' },
   { label: 'Learn', to: ROUTES.FRAMEWORKS, icon: IoBookOutline, type: 'link' },
   { label: 'Achievement', to: ROUTES.ACHIEVEMENTS, icon: IoMedalOutline, type: 'link' },
-  { label: 'Profile', to: null, icon: IoSettingsOutline, type: 'modal' },
+  { label: 'Settings', to: null, icon: IoSettingsOutline, type: 'modal' },
 ];
 
 function BottomNav() {
@@ -38,7 +38,9 @@ function BottomNav() {
                 aria-label={label}
                 onClick={handleProfileClick}
               >
-                <Icon aria-hidden="true" />
+                <div className="bottom-nav__icon-wrapper">
+                  <Icon aria-hidden="true" />
+                </div>
                 <span>{label}</span>
               </button>
             );
@@ -51,7 +53,9 @@ function BottomNav() {
               className={({ isActive }) => `bottom-nav__item${isActive ? ' active active-nav-item' : ''}`}
               aria-label={label}
             >
-              <Icon aria-hidden="true" />
+              <div className="bottom-nav__icon-wrapper">
+                <Icon aria-hidden="true" />
+              </div>
               <span>{label}</span>
             </NavLink>
           );

@@ -7,7 +7,6 @@ import {
   getTaskXp,
   isActivityTaskCompleted,
   GLOBAL_ACTIVITY_SCOPE,
-  BIGKAS_LEVELS,
 } from '../../utils/activityProgress';
 import { getActiveTaskId, getNodeStateForTask } from './journeyConstants';
 import { useAuthContext } from '../../context/useAuthContext';
@@ -23,9 +22,6 @@ import { useJourneyRemoteState } from '../../hooks/useJourneyRemoteState';
 function SkywardJourneyShell({
   initialLevel,
   recommendedLevel,
-  currentLevel,
-  onLevelChange,
-  onLevelMetaChange,
   entranceFromNav,
   scrollToStepIndex,
   renderTaskCard,
@@ -36,31 +32,24 @@ function SkywardJourneyShell({
   const { metricsSyncKey } = useJourneyRemoteState(user);
 
   /* ── Level state lives here, not in ActivityPage ── */
-  const [internalSelectedLevel, setInternalSelectedLevel] = useState(initialLevel);
-  const isLevelControlled = Number.isFinite(Number(currentLevel));
-  const selectedLevel = isLevelControlled ? Number(currentLevel) : internalSelectedLevel;
+  const [selectedLevel, setSelectedLevel] = useState(initialLevel);
   const [isPending, startTransition] = useTransition();
 
   // If the parent's recommended level changes (e.g. on first mount),
   // adopt it only when we're still at the default.
   const initializedRef = useRef(false);
   useEffect(() => {
-    if (isLevelControlled) return;
     if (!initializedRef.current && recommendedLevel > 1 && selectedLevel === 1) {
-      setInternalSelectedLevel(recommendedLevel);
+      setSelectedLevel(recommendedLevel);
     }
     initializedRef.current = true;
-  }, [isLevelControlled, recommendedLevel, selectedLevel]);
+  }, [recommendedLevel, selectedLevel]);
 
   const handleLevelChange = useCallback((nextLevel) => {
     startTransition(() => {
-      if (isLevelControlled) {
-        onLevelChange?.(nextLevel);
-        return;
-      }
-      setInternalSelectedLevel(nextLevel);
+      setSelectedLevel(nextLevel);
     });
-  }, [isLevelControlled, onLevelChange]);
+  }, []);
 
   /* ── Data fetching scoped to this component ── */
   const { tasks, loading, error } = useActivitiesJourneyTasks(selectedLevel);
@@ -127,37 +116,6 @@ function SkywardJourneyShell({
       return acc;
     }, []);
   }, [journeySteps]);
-
-  const completedCount = useMemo(
-    () => journeySteps.filter((step) => step.nodeState === 'completed').length,
-    [journeySteps],
-  );
-
-  const currentPillarText = useMemo(() => {
-    const activeStep = journeySteps.find((step) => step.nodeState === 'active');
-    if (activeStep?.pillarName) return activeStep.pillarName;
-    for (let i = journeySteps.length - 1; i >= 0; i -= 1) {
-      if (journeySteps[i]?.nodeState === 'completed' && journeySteps[i]?.pillarName) {
-        return journeySteps[i].pillarName;
-      }
-    }
-    return `Level ${selectedLevel}`;
-  }, [journeySteps, selectedLevel]);
-
-  const currentLevelSubtitle = useMemo(() => {
-    const found = BIGKAS_LEVELS.find((entry) => Number(entry.number) === Number(selectedLevel));
-    return found?.name || 'Master your speaking fundamentals';
-  }, [selectedLevel]);
-
-  useEffect(() => {
-    onLevelMetaChange?.({
-      currentPillarText,
-      currentLevelSubtitle,
-      completedCount,
-      totalStages,
-      currentLevel: selectedLevel,
-    });
-  }, [onLevelMetaChange, currentPillarText, currentLevelSubtitle, completedCount, totalStages, selectedLevel]);
 
   const renderStepContent = useCallback(
     (step, meta) =>

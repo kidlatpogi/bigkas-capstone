@@ -41,7 +41,6 @@ import PracticePage from '../pages/main/PracticePage';
 
 // Components
 import SideNav from '../components/common/SideNav';
-import MobileTopBar from '../components/common/MobileTopBar';
 import BottomNav from '../components/common/BottomNav';
 import bigkasLogo from '../assets/Temporary Logo.png';
 
@@ -153,11 +152,10 @@ function ProtectedRoute() {
 
   return (
     <>
-      {!hideMainNav && isMobileViewport && <MobileTopBar />}
       {!hideMainNav && isMobileViewport && <BottomNav />}
       {!hideMainNav && !isMobileViewport && <SideNav />}
       <main
-        className={`main-content${hideMainNav ? ' main-content--full' : ''}${!hideMainNav && isMobileViewport ? ' main-content--with-mobile-nav' : ''}`}
+        className={`main-content${hideMainNav ? ' main-content--full' : ''}`}
       >
         <Outlet />
       </main>

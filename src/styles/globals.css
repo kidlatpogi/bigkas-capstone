@@ -274,7 +274,7 @@ img {
 
   .main-content.main-content--with-mobile-nav {
     padding-top: 64px;
-    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
   }
 }
 

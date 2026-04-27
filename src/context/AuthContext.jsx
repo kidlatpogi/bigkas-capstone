@@ -141,7 +141,9 @@ function isJwtVerificationError(error) {
   return (
     message.includes('jwt failed verification') ||
     message.includes('invalid jwt') ||
+    message.includes('jwt expired') ||
     details.includes('jwt failed verification') ||
+    details.includes('jwt expired') ||
     hint.includes('jwt')
   );
 }

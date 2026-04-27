@@ -1,9 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-import Lottie from 'lottie-react';
-import iconFire from '../../assets/icons/Icon-Fire.svg';
-import fireAnimationData from '../../assets/Sprites/common/fire.json';
+
 import './StreakCalendarModal.css';
 
 export default function StreakCalendarModal({ isOpen, onClose, activeDayKeys, streakStats }) {
@@ -88,9 +86,7 @@ export default function StreakCalendarModal({ isOpen, onClose, activeDayKeys, st
 
         {streakStats && (
           <div className="streak-calendar-streak-card">
-            <div className="new-streak-fire">
-              <Lottie animationData={fireAnimationData} loop={true} />
-            </div>
+
             <div className="new-streak-headline">
               <div className="new-streak-value">{streakStats.currentStreak}</div>
               <p className="new-streak-label">day streak</p>

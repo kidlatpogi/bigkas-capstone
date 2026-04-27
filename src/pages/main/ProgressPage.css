@@ -391,8 +391,10 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 }
 
 .new-widget-rank-sprite {
-  width: clamp(56px, 6vw, 72px);
-  height: clamp(56px, 6vw, 72px);
+  width: 72px !important;
+  height: 72px !important;
+  min-width: 72px !important;
+  min-height: 72px !important;
   object-fit: contain;
   filter: drop-shadow(0 6px 10px rgba(11, 57, 84, 0.18));
 }
@@ -607,19 +609,26 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
 /* History Sidebar */
 .progress-history-sidebar {
-  display: flex;
+  display: none;
   flex-direction: column;
   gap: 0;
-  height: calc(100vh - calc(var(--responsive-page-padding) * 2));
+  height: 100dvh;
   min-height: 600px;
   overflow-y: auto;
-  padding-right: 0;
-  align-self: start;
-  min-width: 0;
-  justify-self: end;
-  width: 100%;
+  padding: 0;
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: min(100%, 400px);
+  background: #ffffff;
+  z-index: 1000;
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
   scrollbar-width: none;
   -ms-overflow-style: none;
+}
+
+.progress-history-sidebar.history-visible {
+  display: flex;
 }
 
 .progress-mobile-history-toggle-wrap {
@@ -639,6 +648,17 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
 .progress-history-overlay {
   display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 57, 84, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  border: none;
+  cursor: pointer;
+}
+
+.progress-history-overlay.is-visible {
+  display: block;
 }
 
 .history-container {
@@ -666,13 +686,17 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 }
 
 .history-close-btn {
-  display: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 40px;
   min-width: 40px;
   min-height: 40px;
   border-radius: 999px;
   background: rgba(11, 57, 84, 0.08);
   color: #0b3954;
+  border: none;
+  cursor: pointer;
 }
 
 .history-close-btn svg {
@@ -1109,8 +1133,6 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   }
 
   .progress-history-sidebar {
-    position: static;
-    top: auto;
     justify-self: stretch;
   }
 

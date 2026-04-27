@@ -617,13 +617,13 @@ html {
 }
 
 .new-btn-row .activity-practice-cta:hover:not(:disabled) {
-  box-shadow: #047857 0 3px 0 0 !important;
+  box-shadow: #047857 0 4px 0 0 !important;
   transform: translateY(2px);
 }
 
 .new-btn-row .activity-practice-cta:active:not(:disabled) {
-  box-shadow: none !important;
-  transform: translateY(5px);
+  box-shadow: #047857 0 0 0 0 !important;
+  transform: translateY(6px);
 }
 
 .new-btn-row .activity-practice-cta--speech {
@@ -632,11 +632,11 @@ html {
 }
 
 .new-btn-row .activity-practice-cta--speech:hover:not(:disabled) {
-  box-shadow: #c2410c 0 3px 0 0 !important;
+  box-shadow: #c2410c 0 4px 0 0 !important;
 }
 
 .new-btn-row .activity-practice-cta--speech:active:not(:disabled) {
-  box-shadow: none !important;
+  box-shadow: #c2410c 0 0 0 0 !important;
 }
 
 /* Modals / Entrance */

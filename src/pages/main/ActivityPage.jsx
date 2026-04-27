@@ -228,6 +228,8 @@ function ActivityPage() {
     height: typeof window !== 'undefined' ? window.innerHeight : 0,
   }));
   const [showFreeSpeechTutorial, setShowFreeSpeechTutorial] = useState(false);
+  const [showFreeSpeechOverlay, setShowFreeSpeechOverlay] = useState(false);
+  const [freeSpeechDraftTopic, setFreeSpeechDraftTopic] = useState('');
   const [showRandomizerOverlay, setShowRandomizerOverlay] = useState(false);
   const [isRandomizerMuted, setIsRandomizerMuted] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -562,18 +564,33 @@ function ActivityPage() {
   }, [navigate]);
 
   const handleFreeSpeechClick = useCallback(() => {
-    if (typeof window !== 'undefined' && window.localStorage.getItem(FREE_SPEECH_TUTORIAL_SEEN_KEY) === '1') {
-      launchFreeSpeechSession();
-      return;
-    }
-    setShowFreeSpeechTutorial(true);
-  }, [launchFreeSpeechSession]);
+    setShowFreeSpeechOverlay(true);
+  }, []);
 
   const handleTutorialFinish = useCallback(() => {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(FREE_SPEECH_TUTORIAL_SEEN_KEY, '1');
     }
   }, []);
+
+  const handleCloseFreeSpeechOverlay = useCallback(() => {
+    setShowFreeSpeechOverlay(false);
+    setFreeSpeechDraftTopic('');
+  }, []);
+
+  const handleStartFreeSpeechOverlay = useCallback(() => {
+    const topic = freeSpeechDraftTopic.trim();
+    if (!topic) return;
+    navigate(`${ROUTES.TRAINING}?autostart=1`, {
+      state: {
+        focus: 'free',
+        freeTopic: topic,
+        sessionType: 'practice',
+        entryPoint: 'practice',
+        autoStartCountdown: true,
+      },
+    });
+  }, [freeSpeechDraftTopic, navigate]);
 
   const handleRandomizerClick = useCallback(() => {
     setShowRandomizerOverlay(true);
@@ -621,13 +638,13 @@ function ActivityPage() {
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
-    if (showRandomizerOverlay) {
+    if (showRandomizerOverlay || showFreeSpeechOverlay) {
       document.body.classList.add('randomizer-overlay-open');
     } else {
       document.body.classList.remove('randomizer-overlay-open');
     }
     return () => document.body.classList.remove('randomizer-overlay-open');
-  }, [showRandomizerOverlay]);
+  }, [showRandomizerOverlay, showFreeSpeechOverlay]);
 
   const journeySteps = useMemo(
     () =>
@@ -848,6 +865,58 @@ function ActivityPage() {
               >
                 {isRandomizerMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
               </button>
+            </div>
+          </div>
+        </section>
+      )}
+      {showFreeSpeechOverlay && (
+        <section className="randomizer-overlay-wrapper" aria-label="Free speech overlay">
+          <div className="randomizer-overlay-backdrop" aria-hidden="true" onClick={handleCloseFreeSpeechOverlay} />
+          <div className="randomizer-overlay-content">
+            <div className="randomizer-overlay-card free-speech-overlay-card">
+              <div className="randomizer-overlay-card-top">
+                <h2 className="randomizer-overlay-title">Free Speech</h2>
+                <button
+                  type="button"
+                  className="randomizer-overlay-close-btn"
+                  onClick={handleCloseFreeSpeechOverlay}
+                  aria-label="Close free speech overlay"
+                >
+                  ×
+                </button>
+              </div>
+              <p className="randomizer-overlay-copy">
+                <span className="randomizer-overlay-copy-kicker">Lito:</span>
+                In this mode, you have the freedom to speak about any topic of your choice. When you're ready, just hit the 'Start' button and let your words flow!
+              </p>
+              <label className="randomizer-overlay-topic free-speech-overlay-topic-input-wrap">
+                <span className="randomizer-overlay-topic-label">Your Topic:</span>
+                <textarea
+                  className="free-speech-overlay-topic-input"
+                  rows={3}
+                  placeholder="Type what you will be speaking about..."
+                  value={freeSpeechDraftTopic}
+                  onChange={(event) => setFreeSpeechDraftTopic(event.target.value)}
+                />
+              </label>
+              <div className="randomizer-overlay-actions free-speech-overlay-actions">
+                <Button
+                  variant="practice"
+                  className="randomizer-overlay-start-btn free-speech-overlay-start-btn"
+                  onClick={handleStartFreeSpeechOverlay}
+                  disabled={!freeSpeechDraftTopic.trim()}
+                >
+                  Start
+                </Button>
+              </div>
+            </div>
+            <div className="randomizer-overlay-robot-wrap">
+              <img
+                src={randomizerRobotImage}
+                alt=""
+                className="randomizer-overlay-robot"
+                aria-hidden="true"
+              />
             </div>
           </div>
         </section>

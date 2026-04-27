@@ -3,54 +3,95 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 50;
+  z-index: 1000;
   width: 100%;
   display: flex;
   justify-content: space-around;
   align-items: center;
-  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
-  background: linear-gradient(
-    160deg,
-    rgba(90, 120, 99, 0.96) 0%,
-    rgba(74, 103, 84, 0.94) 100%
-  );
-  box-shadow: 0 -4px 20px rgba(1, 18, 33, 0.15);
+  padding: 10px 6px calc(10px + env(safe-area-inset-bottom));
+  background: #064E3B;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
 }
 
 .bottom-nav__item {
-  min-width: 56px;
-  min-height: 48px;
-  padding: 4px;
-  display: inline-flex;
+  flex: 1;
+  min-height: 52px;
+  display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  color: rgba(247, 251, 255, 0.7);
-  font-size: 0.72rem;
+  color: rgba(247, 251, 255, 0.65);
+  text-decoration: none;
+  font-size: 0.68rem;
   font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .bottom-nav__item svg {
-  width: 20px;
-  height: 20px;
-  transition: transform 150ms ease, color 150ms ease;
+  width: 24px;
+  height: 24px;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.bottom-nav__item.active,
-.bottom-nav__item.active-nav-item {
-  color: #ff9f1c;
+.bottom-nav__item span {
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
 }
 
-.bottom-nav__item.active-nav-item svg {
-  transform: scale(1.08);
+.bottom-nav__item.active {
+  color: #ffffff;
 }
 
-[data-theme='dark'] .bottom-nav__item {
-  color: rgba(247, 251, 255, 0.7);
+.bottom-nav__item.active svg {
+  transform: translateY(-2px) scale(1.1);
+  color: #F97316;
 }
 
-[data-theme='dark'] .bottom-nav__item.active,
-[data-theme='dark'] .bottom-nav__item.active-nav-item {
-  color: #ff9f1c;
+.bottom-nav__item.active span {
+  opacity: 1;
+  font-weight: 800;
+}
+
+.bottom-nav__item--modal {
+  padding: 0;
+}
+
+.bottom-nav__item--modal svg {
+  width: 24px;
+  height: 24px;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.bottom-nav__item--modal span {
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+/* Hover effect for desktop-sized windows that are narrow */
+@media (hover: hover) {
+  .bottom-nav__item:hover:not(.active) {
+    color: #F18F01;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+  }
+}
+
+/* Ensure content doesn't get hidden behind the nav */
+body {
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 768px) {
+  .bottom-nav {
+    display: none;
+  }
 }

@@ -341,16 +341,27 @@
 }
 
 .sp-link-row--logout {
-  margin-top: 8px;
-  color: #c62828;
+  margin-top: 24px;
+  background: rgba(220, 38, 38, 0.08);
+  color: #dc2626;
   font-weight: 700;
   justify-content: center;
-  border-top: 1px solid rgba(211, 227, 188, 0.5);
+  border: 1.5px solid rgba(220, 38, 38, 0.2);
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.2s ease;
 }
 
 .sp-link-row--logout:hover {
-  color: #a81f1f;
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
 }
+
+
+
 
 .sp-link-chevron {
   color: rgba(11, 57, 84, 0.3);

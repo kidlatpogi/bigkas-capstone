@@ -1,263 +1,241 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
+import { 
+  IoChevronForward, 
+  IoNotificationsOutline, 
+  IoLockClosedOutline,
   IoShieldCheckmarkOutline,
-  IoMicOutline,
-  IoCameraOutline,
-  IoHardwareChipOutline,
-  IoChevronForward,
-  IoTrashOutline,
-  IoWarningOutline,
+  IoPersonCircleOutline,
+  IoLogOutOutline,
+  IoAlertCircleOutline
 } from 'react-icons/io5';
-import { useSessionContext } from '../../context/useSessionContext';
+import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import LegalModal from '../../components/Legal/LegalModal';
 import { TERMS_AND_CONDITIONS } from '../../constants/legal/terms';
 import { PRIVACY_POLICY } from '../../constants/legal/privacy';
-import './DashboardPage.css';
 import './SettingsPage.css';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
 
 const MIC_SENSITIVITY_KEY = 'pref_mic_sensitivity';
+const AUTO_NEXT_KEY = 'pref_auto_next';
 
 function SettingsPage() {
   const navigate = useNavigate();
-  const { clearSessionMedia } = useSessionContext();
+  const { user, logout } = useAuthContext();
+  
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [micSensitivity, setMicSensitivity] = useState(() => {
+    return localStorage.getItem(MIC_SENSITIVITY_KEY) || '80';
+  });
+  const [autoNext, setAutoNext] = useState(() => {
+    return localStorage.getItem(AUTO_NEXT_KEY) === 'true';
+  });
 
-  const [legalModal, setLegalModal] = useState({ isOpen: false, title: '', content: '' });
-  const showTerms = () => setLegalModal({ isOpen: true, title: 'Terms & Conditions', content: TERMS_AND_CONDITIONS });
-  const showPrivacy = () => setLegalModal({ isOpen: true, title: 'Privacy Policy', content: PRIVACY_POLICY });
-  const closeLegal = () => setLegalModal((prev) => ({ ...prev, isOpen: false }));
-
-  const [microphones, setMicrophones] = useState([]);
-  const [cameras, setCameras] = useState([]);
-  const [mic, setMic] = useState(() => localStorage.getItem('pref_mic') || '');
-  const [cam, setCam] = useState(() => localStorage.getItem('pref_cam') || '');
-  const [micSensitivity, setMicSensitivity] = useState(
-    () => localStorage.getItem(MIC_SENSITIVITY_KEY) || 'high'
-  );
-  const [showClearMediaModal, setShowClearMediaModal] = useState(false);
-  const [isClearingMedia, setIsClearingMedia] = useState(false);
-  const [clearMediaMessage, setClearMediaMessage] = useState('');
-  const [clearMediaStatus, setClearMediaStatus] = useState('');
+  const [legalModal, setLegalModal] = useState({ isOpen: false, type: '', title: '', content: '' });
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
-    const enumerate = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-        stream.getTracks().forEach(t => t.stop());
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const mics = devices.filter(d => d.kind === 'audioinput');
-        const cams = devices.filter(d => d.kind === 'videoinput');
-        setMicrophones(mics);
-        setCameras(cams);
-        if (!mic && mics.length) { setMic(mics[0].deviceId); localStorage.setItem('pref_mic', mics[0].deviceId); }
-        if (!cam && cams.length) { setCam(cams[0].deviceId); localStorage.setItem('pref_cam', cams[0].deviceId); }
-      } catch {
-        setMicrophones([{ deviceId: 'default', label: 'Default Microphone' }]);
-        setCameras([{ deviceId: 'default', label: 'Default Camera' }]);
-      }
-    };
-    enumerate();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    localStorage.setItem(MIC_SENSITIVITY_KEY, micSensitivity);
+  }, [micSensitivity]);
 
-  const handleMicChange = (e) => { setMic(e.target.value); localStorage.setItem('pref_mic', e.target.value); };
-  const handleCamChange = (e) => { setCam(e.target.value); localStorage.setItem('pref_cam', e.target.value); };
-  const handleMicSensitivityChange = (e) => {
-    setMicSensitivity(e.target.value);
-    localStorage.setItem(MIC_SENSITIVITY_KEY, e.target.value);
+  useEffect(() => {
+    localStorage.setItem(AUTO_NEXT_KEY, autoNext.toString());
+  }, [autoNext]);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate(ROUTES.LOGIN);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
-  const handleClearMedia = async () => {
-    setIsClearingMedia(true);
-    setClearMediaMessage('');
-    setClearMediaStatus('');
-    const result = await clearSessionMedia();
-    setIsClearingMedia(false);
-    if (result?.success) {
-      setShowClearMediaModal(false);
-      const clearedCount = Number(result?.clearedFiles || 0);
-      setClearMediaMessage(
-        clearedCount > 0
-          ? `Successfully cleared ${clearedCount} recording${clearedCount > 1 ? 's' : ''}.`
-          : 'Successfully cleared recordings.'
-      );
-      setClearMediaStatus('success');
-      return;
+  const openLegal = (type) => {
+    if (type === 'terms') {
+      setLegalModal({
+        isOpen: true,
+        type: 'terms',
+        title: 'Terms of Service',
+        content: TERMS_AND_CONDITIONS
+      });
+    } else {
+      setLegalModal({
+        isOpen: true,
+        type: 'privacy',
+        title: 'Privacy Policy',
+        content: PRIVACY_POLICY
+      });
     }
-    setClearMediaMessage(result?.error || 'Failed to clear recordings. Please try again.');
-    setClearMediaStatus('error');
   };
 
   return (
-    <div className="dashboard-page-new stg-page">
-      <div className="stg-shell">
-        <header className="stg-hero dashboard-anim-top">
-          <h1 className="stg-hero-title">Settings</h1>
-          <p className="stg-hero-sub">Manage security, hardware, legal, and destructive actions in one place.</p>
+    <div className="settings-page-new">
+      <div className="settings-container">
+        <header className="settings-header">
+          <h1 className="settings-title">Preferences</h1>
+          <p className="settings-subtitle">Customize your experience and manage your account.</p>
         </header>
 
-        <div className="stg-grid">
-          {/* Hardware */}
-          <section className="dashboard-card stg-card-section dashboard-anim-right dashboard-anim-delay-2">
-            <h2 className="stg-section-title">Hardware</h2>
-            <div className="stg-rows">
-              <div className="stg-row stg-row--select">
-                <span className="stg-row-icon">
-                  <IoMicOutline size={20} />
-                </span>
-                <div className="stg-row-body">
-                  <span className="stg-row-title">Microphone</span>
-                  <div className="stg-select-wrap">
-                    <select className="stg-select" value={mic} onChange={handleMicChange}>
-                      {microphones.map(d => (
-                        <option key={d.deviceId} value={d.deviceId}>
-                          {d.label || `Microphone ${d.deviceId.slice(0, 6)}`}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+        <div className="settings-grid">
+          {/* Account Section */}
+          <section className="settings-section">
+            <h2 className="settings-section-title">Account</h2>
+            <div className="settings-card">
+              <button 
+                className="settings-item" 
+                onClick={() => navigate(ROUTES.PROFILE)}
+              >
+                <div className="settings-item-icon account">
+                  <IoPersonCircleOutline />
                 </div>
-              </div>
-
-              <div className="stg-row-divider" />
-
-              <div className="stg-row stg-row--select">
-                <span className="stg-row-icon">
-                  <IoMicOutline size={20} />
-                </span>
-                <div className="stg-row-body">
-                  <span className="stg-row-title">Mic Sensitivity</span>
-                  <span className="stg-row-sub">Increase if your voice isn&apos;t picked up clearly</span>
-                  <div className="stg-select-wrap">
-                    <select className="stg-select" value={micSensitivity} onChange={handleMicSensitivityChange}>
-                      <option value="low">Low</option>
-                      <option value="normal">Normal</option>
-                      <option value="high">High (Recommended)</option>
-                    </select>
-                  </div>
+                <div className="settings-item-content">
+                  <span className="settings-item-label">Profile Information</span>
+                  <span className="settings-item-hint">Name, email, and avatar</span>
                 </div>
-              </div>
+                <IoChevronForward className="settings-item-chevron" />
+              </button>
 
-              <div className="stg-row-divider" />
-
-              <div className="stg-row stg-row--select">
-                <span className="stg-row-icon">
-                  <IoCameraOutline size={20} />
-                </span>
-                <div className="stg-row-body">
-                  <span className="stg-row-title">Camera</span>
-                  <div className="stg-select-wrap">
-                    <select className="stg-select" value={cam} onChange={handleCamChange}>
-                      {cameras.map(d => (
-                        <option key={d.deviceId} value={d.deviceId}>
-                          {d.label || `Camera ${d.deviceId.slice(0, 6)}`}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+              <button 
+                className="settings-item"
+                onClick={() => navigate(ROUTES.CHANGE_PASSWORD)}
+              >
+                <div className="settings-item-icon security">
+                  <IoLockClosedOutline />
                 </div>
-              </div>
-
-              <div className="stg-row-divider" />
-
-              <button className="stg-row" onClick={() => navigate(ROUTES.AUDIO_TEST)}>
-                <span className="stg-row-icon">
-                  <IoHardwareChipOutline size={20} />
-                </span>
-                <div className="stg-row-body">
-                  <span className="stg-row-title">Test Audio / Video</span>
-                  <span className="stg-row-sub">Check your mic and camera work correctly</span>
+                <div className="settings-item-content">
+                  <span className="settings-item-label">Password & Security</span>
+                  <span className="settings-item-hint">Update your login credentials</span>
                 </div>
-                <IoChevronForward size={16} className="stg-chevron" />
+                <IoChevronForward className="settings-item-chevron" />
               </button>
             </div>
           </section>
 
-          {/* Legal */}
-          <section className="dashboard-card stg-card-section dashboard-anim-left dashboard-anim-delay-1">
-            <h2 className="stg-section-title">Legal</h2>
-            <div className="stg-rows">
-              <button type="button" className="stg-row" onClick={showTerms}>
-                <span className="stg-row-icon">
-                  <IoShieldCheckmarkOutline size={20} />
-                </span>
-                <div className="stg-row-body">
-                  <span className="stg-row-title">Terms &amp; Conditions</span>
-                  <span className="stg-row-sub">Review platform usage terms and responsibilities</span>
+          {/* App Preferences */}
+          <section className="settings-section">
+            <h2 className="settings-section-title">App Settings</h2>
+            <div className="settings-card">
+              <div className="settings-item no-click">
+                <div className="settings-item-icon notifications">
+                  <IoNotificationsOutline />
                 </div>
-                <IoChevronForward size={16} className="stg-chevron" />
-              </button>
-
-              <div className="stg-row-divider" />
-
-              <button type="button" className="stg-row" onClick={showPrivacy}>
-                <span className="stg-row-icon">
-                  <IoShieldCheckmarkOutline size={20} />
-                </span>
-                <div className="stg-row-body">
-                  <span className="stg-row-title">Privacy Policy</span>
-                  <span className="stg-row-sub">Learn how your account and recording data are handled</span>
+                <div className="settings-item-content">
+                  <span className="settings-item-label">Push Notifications</span>
+                  <span className="settings-item-hint">Get alerts for streak and updates</span>
                 </div>
-                <IoChevronForward size={16} className="stg-chevron" />
-              </button>
+                <label className="settings-switch">
+                  <input 
+                    type="checkbox" 
+                    checked={notificationsEnabled}
+                    onChange={(e) => setNotificationsEnabled(e.target.checked)}
+                  />
+                  <span className="settings-switch-slider"></span>
+                </label>
+              </div>
+
+              <div className="settings-item no-click">
+                <div className="settings-item-icon voice">
+                  <IoAlertCircleOutline />
+                </div>
+                <div className="settings-item-content">
+                  <span className="settings-item-label">Microphone Sensitivity</span>
+                  <span className="settings-item-hint">Current: {micSensitivity}%</span>
+                  <input 
+                    type="range" 
+                    min="10" 
+                    max="100" 
+                    value={micSensitivity}
+                    onChange={(e) => setMicSensitivity(e.target.value)}
+                    className="settings-range"
+                  />
+                </div>
+              </div>
+
+              <div className="settings-item no-click">
+                <div className="settings-item-icon flow">
+                  <IoShieldCheckmarkOutline />
+                </div>
+                <div className="settings-item-content">
+                  <span className="settings-item-label">Auto-advance Tasks</span>
+                  <span className="settings-item-hint">Move to next step automatically</span>
+                </div>
+                <label className="settings-switch">
+                  <input 
+                    type="checkbox" 
+                    checked={autoNext}
+                    onChange={(e) => setAutoNext(e.target.checked)}
+                  />
+                  <span className="settings-switch-slider"></span>
+                </label>
+              </div>
             </div>
           </section>
 
-          {/* ── Danger Zone ── */}
-          <section className="dashboard-card stg-danger-zone dashboard-anim-bottom dashboard-anim-delay-3">
-            <div className="stg-danger-header">
-              <IoWarningOutline size={22} className="stg-danger-icon" />
-              <h2 className="stg-danger-title">Danger Zone</h2>
-            </div>
-            <p className="stg-danger-desc">
-              Actions in this section are destructive and cannot be undone. Proceed with caution.
-            </p>
-
-            <div className="stg-danger-actions">
-              <div className="stg-danger-action-row">
-                <div className="stg-danger-action-info">
-                  <IoTrashOutline size={18} className="stg-danger-action-icon" />
-                  <div>
-                    <span className="stg-danger-action-label">Clear Recordings</span>
-                    <span className="stg-danger-action-sub">Remove all saved audio/video files from cloud storage</span>
-                  </div>
+          {/* Legal & About */}
+          <section className="settings-section">
+            <h2 className="settings-section-title">About</h2>
+            <div className="settings-card">
+              <button className="settings-item" onClick={() => openLegal('terms')}>
+                <div className="settings-item-content">
+                  <span className="settings-item-label">Terms of Service</span>
                 </div>
-                <button
-                  type="button"
-                  className="stg-danger-btn"
-                  onClick={() => setShowClearMediaModal(true)}
-                >
-                  Clear Data
-                </button>
-              </div>
+                <IoChevronForward className="settings-item-chevron" />
+              </button>
+              
+              <button className="settings-item" onClick={() => openLegal('privacy')}>
+                <div className="settings-item-content">
+                  <span className="settings-item-label">Privacy Policy</span>
+                </div>
+                <IoChevronForward className="settings-item-chevron" />
+              </button>
 
-              {clearMediaMessage && (
-                <p
-                  className={`stg-danger-message ${clearMediaStatus === 'success' ? 'stg-danger-message--success' : ''} ${clearMediaStatus === 'error' ? 'stg-danger-message--error' : ''}`.trim()}
-                  role="status"
-                  aria-live="polite"
-                >
-                  {clearMediaMessage}
-                </p>
-              )}
+              <div className="settings-item no-click">
+                <div className="settings-item-content">
+                  <span className="settings-item-label">App Version</span>
+                  <span className="settings-item-hint">1.0.4 (Build 2024.01)</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Danger Zone */}
+          <section className="settings-section">
+            <div className="settings-card danger">
+              <button 
+                className="settings-item logout" 
+                onClick={() => setShowLogoutConfirm(true)}
+              >
+                <div className="settings-item-icon logout">
+                  <IoLogOutOutline />
+                </div>
+                <div className="settings-item-content">
+                  <span className="settings-item-label">Log Out</span>
+                </div>
+              </button>
             </div>
           </section>
         </div>
       </div>
 
-      <ConfirmationModal
-        isOpen={showClearMediaModal}
-        title="Clear recordings?"
-        message="This will permanently delete all your stored audio/video recordings from cloud storage. Session scores and text feedback will remain."
-        confirmLabel={isClearingMedia ? 'Clearing...' : 'Clear'}
-        cancelLabel="Cancel"
-        type="danger"
-        onCancel={() => { if (!isClearingMedia) setShowClearMediaModal(false); }}
-        onConfirm={() => { if (!isClearingMedia) handleClearMedia(); }}
+      <LegalModal
+        isOpen={legalModal.isOpen}
+        onClose={() => setLegalModal({ ...legalModal, isOpen: false })}
+        title={legalModal.title}
+        content={legalModal.content}
       />
 
-      <LegalModal isOpen={legalModal.isOpen} onClose={closeLegal} title={legalModal.title} content={legalModal.content} />
+      <ConfirmationModal
+        isOpen={showLogoutConfirm}
+        title="Log Out"
+        message="Are you sure you want to log out of Bigkas?"
+        confirmLabel="Log Out"
+        cancelLabel="Cancel"
+        onConfirm={handleLogout}
+        onCancel={() => setShowLogoutConfirm(false)}
+        variant="danger"
+      />
     </div>
   );
 }

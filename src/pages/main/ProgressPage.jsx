@@ -555,36 +555,47 @@ function ProgressPage() {
             </div>
           ) : null}
 
-          {/* Banner Section */}
-          <section className="progress-banner-wrap dashboard-anim-top dashboard-anim-delay-2">
-            <div className="progress-banner-left">
-              <img src={heroRobotImage} alt="" className="progress-banner-robot" />
-              <div className="progress-banner-bubble">
-                <p className="progress-banner-kicker">B-01:</p>
-                <p className="progress-banner-copy">
-                  These are your weekly report. You're improving fast, keep up the good work
-                  <span className="progress-banner-signature">Ask Lito</span>
-                </p>
+          {/* Banner Section (1:1 with Activity Page) */}
+          <section className="new-banner dashboard-anim-top dashboard-anim-delay-2">
+            <div className="new-banner-left" id="tutorial-target-home-banner">
+              <img src={heroRobotImage} alt="" className="new-banner-robot" />
+              <div className="new-banner-bubble" aria-label="Coach message">
+                <p className="new-banner-kicker">B-01:</p>
+                <p className="new-banner-copy">These are your weekly report. You're improving fast, keep up the good work</p>
+                <span className="progress-banner-signature">Ask Lito</span>
               </div>
             </div>
 
-            <div className="progress-banner-stats">
-              <div className="progress-stat-card progress-stat-card--sessions">
-                <p className="progress-stat-label">Session this Week</p>
-                <div className="progress-stat-value-wrap">
-                  <p className="progress-stat-value">{stats.sessionsThisWeek}</p>
+            <div className="new-banner-right">
+              <div className="progress-banner-stats">
+                <div className="new-widget-rank-card progress-stat-card">
+                  <div className="new-btn-visual new-btn-visual--sessions">
+                    <IoCalendarOutline />
+                  </div>
+                  <div className="new-widget-rank-content">
+                    <p className="new-widget-kicker">Sessions</p>
+                    <p className="new-widget-value">{stats.sessionsThisWeek}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="progress-stat-card progress-stat-card--score">
-                <p className="progress-stat-label">Average Score</p>
-                <div className="progress-stat-value-wrap">
-                  <p className="progress-stat-value">{stats.averageScoreLabel}</p>
+
+                <div className="new-widget-rank-card progress-stat-card">
+                  <div className="new-btn-visual new-btn-visual--score">
+                    <IoTrophyOutline />
+                  </div>
+                  <div className="new-widget-rank-content">
+                    <p className="new-widget-kicker">Average Score</p>
+                    <p className="new-widget-value">{stats.averageScoreLabel}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="progress-stat-card progress-stat-card--time">
-                <p className="progress-stat-label">Total Speaking</p>
-                <div className="progress-stat-value-wrap">
-                  <p className="progress-stat-value">{stats.totalSpeakingTime}</p>
+
+                <div className="new-widget-rank-card progress-stat-card">
+                  <div className="new-btn-visual new-btn-visual--time">
+                    <IoTimeOutline />
+                  </div>
+                  <div className="new-widget-rank-content">
+                    <p className="new-widget-kicker">Total Speaking</p>
+                    <p className="new-widget-value">{stats.totalSpeakingTime}m</p>
+                  </div>
                 </div>
               </div>
             </div>

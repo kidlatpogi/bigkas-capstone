@@ -50,8 +50,7 @@
 }
 
 .history-header-row {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 0;
@@ -72,7 +71,7 @@
   padding: 6px;
   border-radius: 999px;
   width: fit-content;
-  justify-self: center;
+  margin-left: auto;
 }
 
 .history-score-sort {
@@ -80,7 +79,12 @@
   flex-direction: column;
   gap: 4px;
   align-items: flex-end;
-  justify-self: end;
+}
+
+.history-sort-row {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .history-score-sort-label {
@@ -157,7 +161,7 @@
   padding: 14px 18px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   border: 1px solid rgba(11, 57, 84, 0.08);
@@ -169,7 +173,7 @@
 
 .history-item:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
   border-color: rgba(11, 57, 84, 0.12);
 }
 

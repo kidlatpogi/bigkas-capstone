@@ -52,7 +52,9 @@
 .history-header-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
   margin-bottom: 0;
 }
 
@@ -71,6 +73,40 @@
   padding: 6px;
   border-radius: 999px;
   width: fit-content;
+}
+
+.history-score-sort {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.history-score-sort-label {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.history-score-sort-select {
+  border: 1px solid rgba(11, 57, 84, 0.15);
+  border-radius: 10px;
+  padding: 6px 10px;
+  min-width: 90px;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  background: #ffffff;
+  outline: none;
+}
+
+.history-score-sort-select:focus {
+  border-color: #059669;
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.15);
 }
 
 .history-filter-btn {
@@ -240,27 +276,30 @@
   color: #0f172a;
 }
 
-.history-item-pillar-chip--visual {
+.history-item-pillar-chip--critical {
   border-color: rgba(255, 0, 0, 0.45);
+  background: rgba(255, 0, 0, 0.06);
 }
 
-.history-item-pillar-chip--verbal {
-  border-color: rgba(249, 115, 22, 0.5);
-}
-
-.history-item-pillar-chip--vocal {
-  border-color: rgba(5, 150, 105, 0.5);
-}
-
-.history-item-pillar-chip--visual .history-item-pillar-score {
+.history-item-pillar-chip--critical .history-item-pillar-score {
   color: #FF0000;
 }
 
-.history-item-pillar-chip--verbal .history-item-pillar-score {
+.history-item-pillar-chip--warning {
+  border-color: rgba(249, 115, 22, 0.45);
+  background: rgba(249, 115, 22, 0.08);
+}
+
+.history-item-pillar-chip--warning .history-item-pillar-score {
   color: #F97316;
 }
 
-.history-item-pillar-chip--vocal .history-item-pillar-score {
+.history-item-pillar-chip--healthy {
+  border-color: rgba(5, 150, 105, 0.45);
+  background: rgba(5, 150, 105, 0.08);
+}
+
+.history-item-pillar-chip--healthy .history-item-pillar-score {
   color: #059669;
 }
 

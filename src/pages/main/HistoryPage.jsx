@@ -4,6 +4,9 @@ import { IoChevronBack, IoChevronForward } from 'react-icons/io5';
 import { buildRoute } from '../../utils/constants';
 import { getSessionMode } from '../../utils/sessionFormatting';
 import { sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
+import verbalSprite from '../../assets/Sprites/common/Verbal.png';
+import visualSprite from '../../assets/Sprites/common/Visual.png';
+import vocalSprite from '../../assets/Sprites/common/Vocal.png';
 import './HistoryPage.css';
 
 const HISTORY_FILTERS = ['All', 'Today', 'This Week', 'This Month'];
@@ -21,6 +24,38 @@ function getScoreTier15(score) {
   if (score >= 3.0) return { label: 'Good', color: '#90AB8B' };
   if (score >= 2.0) return { label: 'Fair', color: '#F18F01' };
   return { label: 'Needs Work', color: '#D94F3B' };
+}
+
+function clamp15(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return null;
+  return Math.max(1, Math.min(5, numeric));
+}
+
+function score100to15(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return null;
+  return 1 + (Math.max(0, Math.min(100, numeric)) / 100) * 4;
+}
+
+function resolveSessionPillars(session) {
+  const visual = clamp15(session?.visual_avg) ?? score100to15(session?.visual_score) ?? 1;
+  const verbal = clamp15(session?.verbal_avg) ?? score100to15(session?.context_score) ?? 1;
+  const vocal = clamp15(session?.vocal_avg) ?? score100to15(session?.acoustic_score) ?? 1;
+
+  return [
+    { key: 'visual', label: 'Visual', sprite: visualSprite, score: visual, lackHint: 'eye contact & gestures' },
+    { key: 'verbal', label: 'Verbal', sprite: verbalSprite, score: verbal, lackHint: 'wording & clarity' },
+    { key: 'vocal', label: 'Vocal', sprite: vocalSprite, score: vocal, lackHint: 'pace & voice control' },
+  ];
+}
+
+function buildLacksSummary(pillars) {
+  const sorted = [...pillars].sort((a, b) => a.score - b.score);
+  const weakest = sorted.filter((pillar) => pillar.score <= 2.5);
+  const shortlist = (weakest.length ? weakest : sorted.slice(0, 1)).slice(0, 2);
+  const text = shortlist.map((pillar) => pillar.lackHint).join(' • ');
+  return `Lacks: ${text}`;
 }
 
 function buildSessionTitleOrTopic(session) {
@@ -143,6 +178,8 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
               const mode = getSessionMode(s);
               const score = toFivePointScore(s.confidence_score);
               const tier = getScoreTier15(score);
+              const pillars = resolveSessionPillars(s);
+              const lacksSummary = buildLacksSummary(pillars);
               const delay = Math.min(index + 2, 9);
               const dateObj = new Date(s.created_at);
               const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -158,30 +195,52 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                   }}
                   style={{ '--tier-color': tier.color }}
                 >
-                  <div className="history-item-content">
-                    <div className="history-item-left">
-                      <p className="history-item-date">{formattedDate} • {formattedTime}</p>
+                  <div className="history-item-row-left">
+                    <div className="history-item-title-section">
                       <h3 className="history-item-main-title">{buildSessionTitleOrTopic(s)}</h3>
+                      <p className="history-item-session-type">{mode}</p>
                     </div>
-                    <div className="history-item-right">
-                      <div className="history-item-stat">
-                        <span className="history-item-comparison">10% better than last session</span>
-                        <span className="history-item-tier" style={{ color: tier.color }}>{tier.label}</span>
-                      </div>
-                      <div className="history-item-score-wrapper">
-                        <div
-                          className="history-item-score-ring"
-                          style={{
-                            background: `conic-gradient(${tier.color} ${(score / 5) * 100}%, #f1f5f9 0)`
-                          }}
-                        >
-                          <div className="history-item-score-ring-inner">
-                            {score.toFixed(1)}
+                  </div>
+
+                  <div className="history-item-row-center">
+                    <div className="history-item-info-compact">
+                      <p className="history-item-info-line">{formattedDate} • {formattedTime}</p>
+                      <p className="history-item-lacks-line">{lacksSummary}</p>
+                      <div className="history-item-pillars">
+                        {pillars.map((pillar) => (
+                          <div key={pillar.key} className={`history-item-pillar-chip history-item-pillar-chip--${pillar.key}`}>
+                            <img src={pillar.sprite} alt={pillar.label} className="history-item-pillar-sprite" />
+                            <span className="history-item-pillar-label">{pillar.label}</span>
+                            <span className="history-item-pillar-score">{pillar.score.toFixed(1)}</span>
                           </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="history-item-row-right">
+                    <div className="history-item-performance-section">
+                      <span className="history-item-badge" style={{ borderColor: tier.color, backgroundColor: `${tier.color}15` }}>
+                        <span className="history-item-badge-dot" style={{ backgroundColor: tier.color }} />
+                        {tier.label}
+                      </span>
+                    </div>
+
+                    <div className="history-item-score-compact">
+                      <div className="history-item-score-label-compact">Confidence</div>
+                      <div
+                        className="history-item-score-ring-compact"
+                        style={{
+                          background: `conic-gradient(${tier.color} ${(score / 5) * 100}%, #f1f5f9 0)`
+                        }}
+                      >
+                        <div className="history-item-score-ring-inner-compact">
+                          {score.toFixed(1)}
                         </div>
                       </div>
                     </div>
                   </div>
+
                   <div className="history-item-glow" style={{ background: `radial-gradient(circle at bottom, ${tier.color} 0%, transparent 70%)` }} />
                 </div>
               );

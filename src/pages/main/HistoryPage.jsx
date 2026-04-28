@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IoChevronBack, IoChevronForward } from 'react-icons/io5';
 import { buildRoute } from '../../utils/constants';
@@ -11,6 +11,7 @@ import './HistoryPage.css';
 
 const HISTORY_FILTERS = ['All', 'Today', 'This Week', 'This Month'];
 const HISTORY_SCORE_SORT_OPTIONS = [5, 4, 3, 2, 1];
+const HISTORY_SCORE_SORT_NONE = '';
 
 function toFivePointScore(rawScore) {
   const numeric = Number(rawScore);
@@ -62,17 +63,27 @@ function buildLacksSummary(pillars) {
 function sortSessionsByTargetScore(sessions, scoreTarget) {
   const target = Number(scoreTarget);
   if (!Number.isFinite(target)) return sessions;
+  const { min, max } = getScoreBandBounds(scoreTarget);
   return [...sessions].sort((a, b) => {
     const scoreA = toFivePointScore(a?.confidence_score);
     const scoreB = toFivePointScore(b?.confidence_score);
-    const deltaA = Math.abs(scoreA - target);
-    const deltaB = Math.abs(scoreB - target);
-    if (deltaA !== deltaB) return deltaA - deltaB;
-    if (scoreA !== scoreB) {
-      return target <= 2.5 ? scoreA - scoreB : scoreB - scoreA;
-    }
+    const inBandA = scoreA >= min && scoreA <= max;
+    const inBandB = scoreB >= min && scoreB <= max;
+    if (inBandA !== inBandB) return inBandA ? -1 : 1;
+    const distanceA = Math.abs(scoreA - target);
+    const distanceB = Math.abs(scoreB - target);
+    if (distanceA !== distanceB) return distanceA - distanceB;
+    if (scoreA !== scoreB) return target <= 2.5 ? scoreA - scoreB : scoreB - scoreA;
     return new Date(b.created_at) - new Date(a.created_at);
   });
+}
+
+function getScoreBandBounds(scoreTarget) {
+  const target = Number(scoreTarget);
+  if (!Number.isFinite(target)) return { min: 1, max: 1.9 };
+  const clamped = Math.max(1, Math.min(5, target));
+  if (clamped >= 5) return { min: 5, max: 5 };
+  return { min: clamped, max: Math.min(5, clamped + 0.9) };
 }
 
 function buildSessionTitleOrTopic(session) {
@@ -116,12 +127,10 @@ function getAdaptiveHistoryPages(pageCount, activePage) {
   return [0, 'start-ellipsis', ...trailingWindow];
 }
 
-export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoading }) {
+export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoading, isMobile = false }) {
   const navigate = useNavigate();
-  const scoreMenuRef = useRef(null);
   const [historyFilter, setHistoryFilter] = useState('All');
-  const [scoreSortTarget, setScoreSortTarget] = useState('5.0');
-  const [scoreMenuOpen, setScoreMenuOpen] = useState(false);
+  const [scoreSortTarget, setScoreSortTarget] = useState(HISTORY_SCORE_SORT_NONE);
   const [historyPage, setHistoryPage] = useState(0);
   const [historyPageSize, setHistoryPageSize] = useState(() =>
     getResponsiveHistoryPageSize(typeof window !== 'undefined' ? window.innerHeight : 1080)
@@ -134,17 +143,7 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
     return () => window.removeEventListener('resize', syncHistoryPageSize);
   }, []);
 
-  useEffect(() => {
-    const closeOnOutsideClick = (event) => {
-      if (!scoreMenuRef.current?.contains(event.target)) {
-        setScoreMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', closeOnOutsideClick);
-    return () => document.removeEventListener('mousedown', closeOnOutsideClick);
-  }, []);
-
-  const historySessions = useMemo(() => {
+  const dateFilteredHistorySessions = useMemo(() => {
     const filtered = userSessions.filter((s) => {
       const d = new Date(s.created_at);
       if (historyFilter === 'Today') {
@@ -165,16 +164,28 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
       }
       return true;
     });
-    return sortSessionsByTargetScore(filtered, scoreSortTarget);
-  }, [historyFilter, scoreSortTarget, userSessions]);
+    return filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }, [historyFilter, userSessions]);
 
-  const historyPageCount = useMemo(() => Math.ceil(historySessions.length / historyPageSize), [historySessions.length, historyPageSize]);
+  const historySessions = useMemo(() => {
+    if (scoreSortTarget === HISTORY_SCORE_SORT_NONE) return dateFilteredHistorySessions;
+    const { min, max } = getScoreBandBounds(scoreSortTarget);
+    const scoreBandMatches = dateFilteredHistorySessions.filter((session) => {
+      const score = toFivePointScore(session?.confidence_score);
+      return score >= min && score <= max;
+    });
+    return sortSessionsByTargetScore(scoreBandMatches, scoreSortTarget);
+  }, [dateFilteredHistorySessions, scoreSortTarget]);
+
+  const sessionsForDisplay = historySessions;
+
+  const historyPageCount = useMemo(() => Math.ceil(sessionsForDisplay.length / historyPageSize), [sessionsForDisplay.length, historyPageSize]);
   const safeHistoryPage = Math.min(historyPage, Math.max(0, historyPageCount - 1));
   const paginationPageCount = Math.max(1, historyPageCount);
   const paginatedHistorySessions = useMemo(() => {
     const start = safeHistoryPage * historyPageSize;
-    return historySessions.slice(start, start + historyPageSize);
-  }, [safeHistoryPage, historySessions, historyPageSize]);
+    return sessionsForDisplay.slice(start, start + historyPageSize);
+  }, [safeHistoryPage, sessionsForDisplay, historyPageSize]);
   const adaptiveHistoryPages = useMemo(
     () => getAdaptiveHistoryPages(paginationPageCount, safeHistoryPage),
     [paginationPageCount, safeHistoryPage]
@@ -185,7 +196,10 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
   return (
     <>
       <div className="bigkas-modal-scrim" onClick={onClose} style={{ '--scrim-z': 1100 }} aria-hidden="true" />
-      <div id="progress-history-sidebar" className="progress-history-sidebar history-visible">
+      <div
+        id="progress-history-sidebar"
+        className={`progress-history-sidebar history-visible${isMobile ? ' progress-history-sidebar--mobile' : ''}`}
+      >
         <div className="history-container">
           <div className="history-sticky-header dashboard-anim-top dashboard-anim-delay-1">
             <div className="history-header-row">
@@ -206,41 +220,24 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
               </div>
             </div>
             <div className="history-sort-row">
-              <div className="history-score-sort" ref={scoreMenuRef}>
+              <div className="history-score-sort">
                 <span className="history-score-sort-label">Sort score</span>
-                <button
-                  type="button"
-                  className={`history-score-sort-trigger ${scoreMenuOpen ? 'open' : ''}`}
-                  onClick={() => setScoreMenuOpen((current) => !current)}
-                  aria-haspopup="menu"
-                  aria-expanded={scoreMenuOpen}
+                <select
+                  className="history-score-sort-select"
+                  value={scoreSortTarget}
+                  onChange={(event) => {
+                    setScoreSortTarget(event.target.value);
+                    setHistoryPage(0);
+                  }}
+                  aria-label="Sort history by score target"
                 >
-                  {scoreSortTarget}
-                </button>
-                {scoreMenuOpen && (
-                  <div className="history-score-sort-menu" role="menu" aria-label="Sort score options">
-                    {HISTORY_SCORE_SORT_OPTIONS.map((scoreOption) => {
-                      const optionValue = scoreOption.toFixed(1);
-                      const isActive = scoreSortTarget === optionValue;
-                      return (
-                        <button
-                          key={`score-sort-${optionValue}`}
-                          type="button"
-                          role="menuitemradio"
-                          aria-checked={isActive}
-                          className={`history-score-sort-option ${isActive ? 'active' : ''}`}
-                          onClick={() => {
-                            setScoreSortTarget(optionValue);
-                            setHistoryPage(0);
-                            setScoreMenuOpen(false);
-                          }}
-                        >
-                          {optionValue}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+                  <option value={HISTORY_SCORE_SORT_NONE}>---</option>
+                  {HISTORY_SCORE_SORT_OPTIONS.map((scoreOption) => (
+                    <option key={`score-sort-${scoreOption.toFixed(1)}`} value={scoreOption.toFixed(1)}>
+                      {scoreOption.toFixed(1)}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
@@ -331,10 +328,10 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
               );
             })}
 
-            {isLoading && historySessions.length === 0 && (
+            {isLoading && sessionsForDisplay.length === 0 && (
               <p style={{ textAlign: 'center', color: '#888', padding: '40px 0' }}>Loading history...</p>
             )}
-            {!isLoading && historySessions.length === 0 && (
+            {!isLoading && sessionsForDisplay.length === 0 && (
               <p style={{ textAlign: 'center', color: '#888', padding: '40px 0' }}>No sessions found.</p>
             )}
           </div>

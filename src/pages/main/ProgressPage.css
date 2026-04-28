@@ -87,6 +87,79 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   width: 100%;
 }
 
+.progress-mobile-top-strip {
+  width: 100%;
+  min-height: 112px;
+  border-radius: 28px;
+  background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+  box-shadow:
+    0 10px 25px -5px rgba(5, 150, 105, 0.3),
+    0 8px 10px -6px rgba(5, 150, 105, 0.3);
+  flex-shrink: 0;
+  padding: 12px;
+  display: flex;
+  align-items: stretch;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-mobile-top-strip::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.progress-mobile-banner-left {
+  width: 100%;
+  border-radius: 16px;
+  position: relative;
+  padding: 10px 10px 10px 100px;
+  display: flex;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.progress-mobile-banner-robot {
+  position: absolute;
+  left: -2px;
+  bottom: -10px;
+  width: 104px;
+  height: auto;
+  pointer-events: none;
+}
+
+.progress-mobile-banner-bubble {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.progress-mobile-banner-kicker {
+  margin: 0;
+  color: #059669;
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.progress-mobile-banner-copy {
+  margin: 0;
+  color: #1f2937;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
 /* =========================================================================
    PROGRESS BANNER
    ========================================================================= */
@@ -834,6 +907,18 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
   .progress-page-mobile-root .progress-left-content {
     gap: 20px;
+  }
+
+  .progress-page-mobile-root .progress-pillars-section {
+    gap: 20px;
+  }
+
+  .progress-page-mobile-root .progress-pillars-header {
+    margin-bottom: 0;
+  }
+
+  .progress-page-mobile-root .progress-footer-actions {
+    margin-top: 0;
   }
 
   .progress-page-bg--mobile {

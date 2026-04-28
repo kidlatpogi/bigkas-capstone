@@ -16,6 +16,7 @@ import ForgotPasswordPage from '../pages/auth/ForgotPasswordPage';
 // Main Pages
 import AdminDashboardPage from '../pages/main/AdminDashboardPage';
 import ProgressPage from '../pages/main/ProgressPage';
+import ProgressPageMobile from '../pages/main/ProgressPageMobile';
 import AchievementsPage from '../pages/main/AchievementsPage';
 import SettingsProfilePage from '../pages/main/SettingsProfilePage';
 import SettingsPage from '../pages/main/SettingsPage';
@@ -67,6 +68,27 @@ function ActivityPageWrapper() {
   }, []);
 
   return isMobileViewport ? <ActivityPageMobile /> : <ActivityPage />;
+}
+
+function ProgressPageWrapper() {
+  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 768);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const handleViewportChange = (event) => setIsMobileViewport(event.matches);
+
+    setIsMobileViewport(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleViewportChange);
+      return () => mediaQuery.removeEventListener('change', handleViewportChange);
+    }
+
+    mediaQuery.addListener(handleViewportChange);
+    return () => mediaQuery.removeListener(handleViewportChange);
+  }, []);
+
+  return isMobileViewport ? <ProgressPageMobile /> : <ProgressPage />;
 }
 
 function getAuthenticatedRedirect(user, isAdminAuthenticated) {
@@ -287,7 +309,7 @@ function AppRouter() {
         <Route path={ROUTES.FRAMEWORKS} element={<FrameworksPage />} />
 
         {/* Progress / Activity */}
-        <Route path={ROUTES.PROGRESS} element={<ProgressPage />} />
+        <Route path={ROUTES.PROGRESS} element={<ProgressPageWrapper />} />
         <Route path={ROUTES.ACHIEVEMENTS} element={<AchievementsPage />} />
         <Route path={ROUTES.ACTIVITY} element={<ActivityPageWrapper />} />
 

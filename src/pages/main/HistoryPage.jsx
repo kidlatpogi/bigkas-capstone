@@ -8,6 +8,7 @@ import verbalSprite from '../../assets/Sprites/common/Verbal.png';
 import visualSprite from '../../assets/Sprites/common/Visual.png';
 import vocalSprite from '../../assets/Sprites/common/Vocal.png';
 import './HistoryPage.css';
+import SessionResultPage from '../session/SessionResultPage'; // Import SessionResultPage
 
 const HISTORY_FILTERS = ['All', 'Today', 'This Week', 'This Month'];
 const HISTORY_SCORE_SORT_OPTIONS = [5, 4, 3, 2, 1];
@@ -132,6 +133,7 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
   const [historyFilter, setHistoryFilter] = useState('All');
   const [scoreSortTarget, setScoreSortTarget] = useState(HISTORY_SCORE_SORT_NONE);
   const [historyPage, setHistoryPage] = useState(0);
+  const [selectedSessionId, setSelectedSessionId] = useState(null); // State for selected session ID
   const [historyPageSize, setHistoryPageSize] = useState(() =>
     getResponsiveHistoryPageSize(typeof window !== 'undefined' ? window.innerHeight : 1080)
   );
@@ -193,68 +195,116 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
 
   if (!isOpen) return null;
 
+  const historyControls = (
+    <div className="history-controls">
+      <div className="history-sort-row">
+        <div className="history-score-sort">
+          <select
+            className="history-score-sort-select"
+            value={scoreSortTarget}
+            onChange={(event) => {
+              setScoreSortTarget(event.target.value);
+              setHistoryPage(0);
+            }}
+            aria-label="Sort history by score target"
+          >
+            <option value={HISTORY_SCORE_SORT_NONE}>---</option>
+            {HISTORY_SCORE_SORT_OPTIONS.map((scoreOption) => (
+              <option key={`score-sort-${scoreOption.toFixed(1)}`} value={scoreOption.toFixed(1)}>
+                {scoreOption.toFixed(1)}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div className="history-filters">
+        {HISTORY_FILTERS.map((f) => (
+          <button
+            key={f}
+            className={`history-filter-btn ${historyFilter === f ? 'active' : ''}`}
+            onClick={() => {
+              setHistoryFilter(f);
+              setHistoryPage(0);
+            }}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const handleClose = () => {
+    if (selectedSessionId) {
+      setSelectedSessionId(null);
+    } else {
+      onClose();
+    }
+  };
+
   return (
     <>
-      <div className="bigkas-modal-scrim" onClick={onClose} style={{ '--scrim-z': 1100 }} aria-hidden="true" />
+      <div className="bigkas-modal-scrim" onClick={handleClose} style={{ '--scrim-z': 1100 }} aria-hidden="true" />
       <div
         id="progress-history-sidebar"
-        className={`progress-history-sidebar history-visible${isMobile ? ' progress-history-sidebar--mobile' : ''}`}
+        className={`progress-history-sidebar history-visible${isMobile ? ' progress-history-sidebar--mobile' : ''} ${selectedSessionId ? 'history-viewing-session' : ''}`}
       >
-        <div className="history-container">
-          <div className="history-overlay-header dashboard-anim-top dashboard-anim-delay-1">
+        <div className={`history-container ${selectedSessionId ? 'slide-out-left' : 'slide-in-right'}`}>
+          <div className={`${isMobile ? 'history-overlay-header' : 'history-sticky-header'} dashboard-anim-top dashboard-anim-delay-1`}>
             <div className="history-header-row">
-              <div className="history-title-row">
-                <h2 className="history-title">History</h2>
-                {isMobile ? (
+              {isMobile ? (
+                <div className="history-title-row">
+                  <h2 className="history-title">History</h2>
                   <button
                     type="button"
                     className="history-mobile-close-btn"
-                    onClick={onClose}
+                    onClick={handleClose}
                     aria-label="Close history"
                   >
                     ×
                   </button>
-                ) : null}
-              </div>
+                </div>
+              ) : (
+                <>
+                  <h2 className="history-title">History</h2>
+                  <div className="history-score-sort history-score-sort--inline">
+                    <span className="history-score-sort-label">Sort score</span>
+                    <select
+                      className="history-score-sort-select"
+                      value={scoreSortTarget}
+                      onChange={(event) => {
+                        setScoreSortTarget(event.target.value);
+                        setHistoryPage(0);
+                      }}
+                      aria-label="Sort history by score target"
+                    >
+                      <option value={HISTORY_SCORE_SORT_NONE}>---</option>
+                      {HISTORY_SCORE_SORT_OPTIONS.map((scoreOption) => (
+                        <option key={`score-sort-${scoreOption.toFixed(1)}`} value={scoreOption.toFixed(1)}>
+                          {scoreOption.toFixed(1)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="history-filters">
+                    {HISTORY_FILTERS.map((f) => (
+                      <button
+                        key={f}
+                        className={`history-filter-btn ${historyFilter === f ? 'active' : ''}`}
+                        onClick={() => {
+                          setHistoryFilter(f);
+                          setHistoryPage(0);
+                        }}
+                      >
+                        {f}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </div>
-          <div className="history-controls">
-            <div className="history-filters">
-              {HISTORY_FILTERS.map((f) => (
-                <button
-                  key={f}
-                  className={`history-filter-btn ${historyFilter === f ? 'active' : ''}`}
-                  onClick={() => {
-                    setHistoryFilter(f);
-                    setHistoryPage(0);
-                  }}
-                >
-                  {f}
-                </button>
-              ))}
-            </div>
-            <div className="history-sort-row">
-              <div className="history-score-sort">
-                <span className="history-score-sort-label">Sort score</span>
-                <select
-                  className="history-score-sort-select"
-                  value={scoreSortTarget}
-                  onChange={(event) => {
-                    setScoreSortTarget(event.target.value);
-                    setHistoryPage(0);
-                  }}
-                  aria-label="Sort history by score target"
-                >
-                  <option value={HISTORY_SCORE_SORT_NONE}>---</option>
-                  {HISTORY_SCORE_SORT_OPTIONS.map((scoreOption) => (
-                    <option key={`score-sort-${scoreOption.toFixed(1)}`} value={scoreOption.toFixed(1)}>
-                      {scoreOption.toFixed(1)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
+          {isMobile ? historyControls : null}
 
           <div className="history-overlay-scroll-content">
             <div className="history-list">
@@ -274,8 +324,7 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                     key={s.id}
                     className={`history-item dashboard-anim-bottom dashboard-anim-delay-${delay}`}
                     onClick={() => {
-                      onClose();
-                      navigate(buildRoute.sessionResult(s.id), { state: { ...s, source: 'progress' } });
+                      setSelectedSessionId(s.id); // Set selected session ID instead of navigating
                     }}
                     style={{
                       '--tier-color': tier.color,
@@ -407,6 +456,25 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
             </div>
           </div>
         </div>
+
+        {selectedSessionId && (
+          <div className="history-session-view slide-in-right">
+             <div className="history-session-view-header">
+                <button
+                  type="button"
+                  className="history-back-to-list-btn"
+                  onClick={() => setSelectedSessionId(null)}
+                >
+                   <IoChevronBack /> Back to History
+                </button>
+             </div>
+             <div className="history-session-view-content">
+                {/* Render SessionResultPage inside the container, passed as a prop or loaded here */}
+                 {/* For now we just load it. If SessionResultPage expects URL params, might need an inner version or prop passing. Assuming it can take a session prop or id via some context or we can just render the component and let it use its hooks if we're not strict on routing */}
+                <SessionResultPage sessionIdProp={selectedSessionId} isInnerView={true} onCloseInner={() => setSelectedSessionId(null)} />
+             </div>
+          </div>
+        )}
       </div>
     </>
   );

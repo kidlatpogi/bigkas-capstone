@@ -146,7 +146,7 @@ function buildSessionTitleOrTopic(session) {
 
 /* history page size functions removed */
 
-function ProgressPage({ isMobile = false }) {
+function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { sessions, fetchAllSessions, isLoading } = useSessionContext();
@@ -449,11 +449,11 @@ function ProgressPage({ isMobile = false }) {
 
   return (
     <div
-      className={`progress-page-bg no-scrollbar${isMobile ? ' progress-page-bg--mobile' : ''}`}
+      className={`progress-page-bg no-scrollbar${isMobile ? ' progress-page-bg--mobile progress-page-mobile-root' : ''}`}
+      data-progress-variant={renderVariant}
       style={{
         height: '100dvh',
         overflowY: 'auto',
-        paddingBottom: isMobile ? 'calc(72px + env(safe-area-inset-bottom))' : 'env(safe-area-inset-bottom)',
       }}
     >
       <div className="progress-main-layout">

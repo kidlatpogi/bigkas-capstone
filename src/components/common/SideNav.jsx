@@ -116,7 +116,6 @@ export default function SideNav() {
           <NavLink
             key={to}
             to={to}
-            state={label === 'Home' ? { skywardEntrance: true } : undefined}
             end={to === ROUTES.ACTIVITY}
             className={({ isActive }) => `side-nav-link${isActive ? ' active' : ''}`}
             aria-label={label}

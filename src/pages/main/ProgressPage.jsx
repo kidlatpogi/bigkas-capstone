@@ -458,6 +458,20 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
     >
       <div className="progress-main-layout">
         <div className="progress-left-content">
+          {isMobile ? (
+            <div className="progress-mobile-top-strip">
+              <div className="progress-mobile-banner-left" aria-label="Coach message">
+                <img src={heroRobotImage} alt="" className="progress-mobile-banner-robot" />
+                <div className="progress-mobile-banner-bubble">
+                  <p className="progress-mobile-banner-kicker">B-01:</p>
+                  <p className="progress-mobile-banner-copy">
+                    You&apos;re on a roll. Keep doing your activities and improve your speaking.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
           {claimableAchievements.length > 0 ? (
             <div className="progress-achievement-card dashboard-anim-bottom">
               <div className="progress-achievement-head">

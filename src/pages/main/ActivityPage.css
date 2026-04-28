@@ -58,8 +58,6 @@ html {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(3, 7, 18, 0.18);
-  backdrop-filter: blur(1px);
 }
 
 .activity-fs-tutorial-card {
@@ -767,13 +765,7 @@ html {
   pointer-events: auto;
 }
 
-.randomizer-overlay-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(2px);
-  z-index: 1;
-}
+/* .randomizer-overlay-backdrop removed */
 
 .randomizer-overlay-content {
   position: fixed;

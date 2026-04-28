@@ -842,7 +842,7 @@ function ActivityPage() {
 
       {showRandomizerOverlay && (
         <section className="randomizer-overlay-wrapper" aria-label="Randomizer overlay">
-          <div className="randomizer-overlay-backdrop" aria-hidden="true" onClick={handleCloseRandomizerOverlay} />
+          <div className="bigkas-modal-scrim" style={{ '--scrim-z': 1 }} aria-hidden="true" onClick={handleCloseRandomizerOverlay} />
           <div className="randomizer-overlay-content">
             <div className="randomizer-overlay-card">
               <div className="randomizer-overlay-card-top">
@@ -897,7 +897,7 @@ function ActivityPage() {
       )}
       {showFreeSpeechOverlay && (
         <section className="randomizer-overlay-wrapper" aria-label="Free speech overlay">
-          <div className="randomizer-overlay-backdrop" aria-hidden="true" onClick={handleCloseFreeSpeechOverlay} />
+          <div className="bigkas-modal-scrim" style={{ '--scrim-z': 1 }} aria-hidden="true" onClick={handleCloseFreeSpeechOverlay} />
           <div className="randomizer-overlay-content">
             <div className="randomizer-overlay-card free-speech-overlay-card">
               <div className="randomizer-overlay-card-top">

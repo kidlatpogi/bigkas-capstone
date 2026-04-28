@@ -55,7 +55,7 @@
 
 .history-title {
   font-family: 'Fredoka', sans-serif;
-  font-size: 48px;
+  font-size: 32px;
   font-weight: 800;
   color: #111827;
   margin: 0;
@@ -63,16 +63,21 @@
 
 .history-filters {
   display: flex;
-  gap: 24px;
+  gap: 8px;
+  background: #f1f5f9;
+  padding: 6px;
+  border-radius: 999px;
+  width: fit-content;
 }
 
 .history-filter-btn {
-  padding: 0;
   border: none;
   background: transparent !important;
+  padding: 6px 16px;
+  border-radius: 999px;
   font-family: 'Fredoka', sans-serif;
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 700;
   color: #64748b;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -80,14 +85,14 @@
 }
 
 .history-filter-btn:hover {
-  color: #111827;
+  color: #1E293B;
+  background: rgba(255, 255, 255, 0.5) !important;
 }
 
 .history-filter-btn.active {
-  color: #111827 !important;
-  font-weight: 800;
-  background: transparent !important;
-  box-shadow: none !important;
+  background: #059669 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2) !important;
 }
 
 .history-list {
@@ -103,7 +108,7 @@
   padding: 24px 32px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   border: none;
@@ -260,22 +265,33 @@
 }
 
 .history-back-btn {
-  width: 100%;
-  max-width: 800px;
-  height: 64px;
+  height: 44px;
+  min-height: 44px;
+  width: min(100%, 348px);
+  padding: 0 2rem;
   border-radius: 999px;
-  font-size: 24px;
-  font-weight: 800;
-  background: #059669;
+  font-family: 'Fredoka', 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+  font-size: clamp(0.9rem, 0.86rem + 0.2vw, 0.98rem);
+  font-weight: 500;
   color: #ffffff;
-  box-shadow: none;
-  transform: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  background: #059669;
+  box-shadow: #047857 0 5px 0 0;
 }
 
 .history-back-btn:hover {
-  transform: scale(1.02);
-  background: #047857;
+  box-shadow: #047857 0 3px 0 0;
+  transform: translateY(2px);
+  background: #059669;
+}
+
+.history-back-btn:active {
+  box-shadow: #047857 0 0 0 0;
+  transform: translateY(5px);
 }

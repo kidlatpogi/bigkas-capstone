@@ -779,16 +779,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
     display: block;
   }
 
-  .progress-history-sidebar {
-    display: none;
-    max-height: none;
-    top: 0;
-    justify-self: stretch;
-  }
 
-  .progress-history-sidebar.history-visible {
-    display: flex;
-  }
 
   .history-container {
     max-height: none;
@@ -805,9 +796,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
     gap: 18px;
   }
 
-  .progress-history-sidebar {
-    justify-self: stretch;
-  }
+
 
   .history-sticky-header {
     position: static;
@@ -836,22 +825,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
     animation: none;
   }
 
-  .progress-history-overlay {
-    display: block;
-    position: fixed;
-    inset: 0;
-    border: 0;
-    background: rgba(15, 23, 42, 0.42);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease;
-    z-index: 119;
-  }
 
-  .progress-history-overlay.is-visible {
-    opacity: 1;
-    pointer-events: auto;
-  }
 
   .progress-left-content,
   .progress-stats-row,
@@ -913,25 +887,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
     justify-content: center;
   }
 
-  .progress-history-sidebar.history-visible {
-    display: flex;
-    flex-direction: column;
-    position: fixed;
-    left: calc(var(--mobile-px) + 8px);
-    right: calc(var(--mobile-px) + 8px);
-    top: calc(64px + var(--mobile-px) + 8px);
-    bottom: calc(80px + env(safe-area-inset-bottom) + 8px);
-    z-index: 120;
-    height: auto;
-    max-height: calc(100dvh - 64px - 80px - env(safe-area-inset-bottom) - (var(--mobile-px) * 2) - 16px);
-    min-height: 0;
-    padding: 0;
-    overflow: hidden;
-    touch-action: pan-y;
-    border-radius: 20px;
-    background: #ffffff;
-    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
-  }
+
 
   .history-container {
     flex: 1 1 auto;

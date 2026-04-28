@@ -434,7 +434,7 @@
     width: min(452px, calc(100vw - 48px));
     height: min(70dvh, 762px);
     max-height: min(70dvh, 762px);
-    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    bottom: env(safe-area-inset-bottom, 0px);
     transform: translate(-50%, calc(100% + 16px));
     border-radius: 36px;
     padding: clamp(16px, 3vw, 20px);
@@ -550,7 +550,7 @@
   }
 
   .history-footer {
-    padding: 14px 0 2px;
+    padding: 14px 0 calc(72px + env(safe-area-inset-bottom, 0px));
     background: #FDFDF9;
   }
 

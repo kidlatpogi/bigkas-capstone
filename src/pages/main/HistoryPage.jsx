@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IoChevronBack, IoChevronForward } from 'react-icons/io5';
 import { buildRoute } from '../../utils/constants';
@@ -68,7 +68,9 @@ function sortSessionsByTargetScore(sessions, scoreTarget) {
     const deltaA = Math.abs(scoreA - target);
     const deltaB = Math.abs(scoreB - target);
     if (deltaA !== deltaB) return deltaA - deltaB;
-    if (scoreA !== scoreB) return scoreB - scoreA;
+    if (scoreA !== scoreB) {
+      return target <= 2.5 ? scoreA - scoreB : scoreB - scoreA;
+    }
     return new Date(b.created_at) - new Date(a.created_at);
   });
 }
@@ -116,8 +118,10 @@ function getAdaptiveHistoryPages(pageCount, activePage) {
 
 export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoading }) {
   const navigate = useNavigate();
+  const scoreMenuRef = useRef(null);
   const [historyFilter, setHistoryFilter] = useState('All');
   const [scoreSortTarget, setScoreSortTarget] = useState('5.0');
+  const [scoreMenuOpen, setScoreMenuOpen] = useState(false);
   const [historyPage, setHistoryPage] = useState(0);
   const [historyPageSize, setHistoryPageSize] = useState(() =>
     getResponsiveHistoryPageSize(typeof window !== 'undefined' ? window.innerHeight : 1080)
@@ -128,6 +132,16 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
     const syncHistoryPageSize = () => setHistoryPageSize(getResponsiveHistoryPageSize(window.innerHeight));
     window.addEventListener('resize', syncHistoryPageSize);
     return () => window.removeEventListener('resize', syncHistoryPageSize);
+  }, []);
+
+  useEffect(() => {
+    const closeOnOutsideClick = (event) => {
+      if (!scoreMenuRef.current?.contains(event.target)) {
+        setScoreMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    return () => document.removeEventListener('mousedown', closeOnOutsideClick);
   }, []);
 
   const historySessions = useMemo(() => {
@@ -192,23 +206,41 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
               </div>
             </div>
             <div className="history-sort-row">
-              <div className="history-score-sort">
-                <label className="history-score-sort-label" htmlFor="history-score-sort-select">Sort score</label>
-                <select
-                  id="history-score-sort-select"
-                  className="history-score-sort-select"
-                  value={scoreSortTarget}
-                  onChange={(event) => {
-                    setScoreSortTarget(event.target.value);
-                    setHistoryPage(0);
-                  }}
+              <div className="history-score-sort" ref={scoreMenuRef}>
+                <span className="history-score-sort-label">Sort score</span>
+                <button
+                  type="button"
+                  className={`history-score-sort-trigger ${scoreMenuOpen ? 'open' : ''}`}
+                  onClick={() => setScoreMenuOpen((current) => !current)}
+                  aria-haspopup="menu"
+                  aria-expanded={scoreMenuOpen}
                 >
-                  {HISTORY_SCORE_SORT_OPTIONS.map((scoreOption) => (
-                    <option key={`score-sort-${scoreOption.toFixed(1)}`} value={scoreOption.toFixed(1)}>
-                      {scoreOption.toFixed(1)}
-                    </option>
-                  ))}
-                </select>
+                  {scoreSortTarget}
+                </button>
+                {scoreMenuOpen && (
+                  <div className="history-score-sort-menu" role="menu" aria-label="Sort score options">
+                    {HISTORY_SCORE_SORT_OPTIONS.map((scoreOption) => {
+                      const optionValue = scoreOption.toFixed(1);
+                      const isActive = scoreSortTarget === optionValue;
+                      return (
+                        <button
+                          key={`score-sort-${optionValue}`}
+                          type="button"
+                          role="menuitemradio"
+                          aria-checked={isActive}
+                          className={`history-score-sort-option ${isActive ? 'active' : ''}`}
+                          onClick={() => {
+                            setScoreSortTarget(optionValue);
+                            setHistoryPage(0);
+                            setScoreMenuOpen(false);
+                          }}
+                        >
+                          {optionValue}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -233,7 +265,11 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                     onClose();
                     navigate(buildRoute.sessionResult(s.id), { state: { ...s, source: 'progress' } });
                   }}
-                  style={{ '--tier-color': tier.color }}
+                  style={{
+                    '--tier-color': tier.color,
+                    '--tier-border': `${tier.color}2e`,
+                    '--tier-border-hover': `${tier.color}5a`,
+                  }}
                 >
                   <div className="history-item-row-left">
                     <div className="history-item-title-section">

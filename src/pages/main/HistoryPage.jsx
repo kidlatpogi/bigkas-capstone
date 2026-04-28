@@ -10,6 +10,7 @@ import vocalSprite from '../../assets/Sprites/common/Vocal.png';
 import './HistoryPage.css';
 
 const HISTORY_FILTERS = ['All', 'Today', 'This Week', 'This Month'];
+const HISTORY_SCORE_SORT_OPTIONS = [5, 4, 3, 2, 1];
 
 function toFivePointScore(rawScore) {
   const numeric = Number(rawScore);
@@ -58,6 +59,20 @@ function buildLacksSummary(pillars) {
   return `Lacks: ${text}`;
 }
 
+function sortSessionsByTargetScore(sessions, scoreTarget) {
+  const target = Number(scoreTarget);
+  if (!Number.isFinite(target)) return sessions;
+  return [...sessions].sort((a, b) => {
+    const scoreA = toFivePointScore(a?.confidence_score);
+    const scoreB = toFivePointScore(b?.confidence_score);
+    const deltaA = Math.abs(scoreA - target);
+    const deltaB = Math.abs(scoreB - target);
+    if (deltaA !== deltaB) return deltaA - deltaB;
+    if (scoreA !== scoreB) return scoreB - scoreA;
+    return new Date(b.created_at) - new Date(a.created_at);
+  });
+}
+
 function buildSessionTitleOrTopic(session) {
   const candidates = [
     session?.activity_title,
@@ -102,6 +117,7 @@ function getAdaptiveHistoryPages(pageCount, activePage) {
 export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoading }) {
   const navigate = useNavigate();
   const [historyFilter, setHistoryFilter] = useState('All');
+  const [scoreSortTarget, setScoreSortTarget] = useState('5.0');
   const [historyPage, setHistoryPage] = useState(0);
   const [historyPageSize, setHistoryPageSize] = useState(() =>
     getResponsiveHistoryPageSize(typeof window !== 'undefined' ? window.innerHeight : 1080)
@@ -135,8 +151,8 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
       }
       return true;
     });
-    return filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  }, [historyFilter, userSessions]);
+    return sortSessionsByTargetScore(filtered, scoreSortTarget);
+  }, [historyFilter, scoreSortTarget, userSessions]);
 
   const historyPageCount = useMemo(() => Math.ceil(historySessions.length / historyPageSize), [historySessions.length, historyPageSize]);
   const safeHistoryPage = Math.min(historyPage, Math.max(0, historyPageCount - 1));
@@ -169,6 +185,24 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                     {f}
                   </button>
                 ))}
+              </div>
+              <div className="history-score-sort">
+                <label className="history-score-sort-label" htmlFor="history-score-sort-select">Sort score</label>
+                <select
+                  id="history-score-sort-select"
+                  className="history-score-sort-select"
+                  value={scoreSortTarget}
+                  onChange={(event) => {
+                    setScoreSortTarget(event.target.value);
+                    setHistoryPage(0);
+                  }}
+                >
+                  {HISTORY_SCORE_SORT_OPTIONS.map((scoreOption) => (
+                    <option key={`score-sort-${scoreOption.toFixed(1)}`} value={scoreOption.toFixed(1)}>
+                      {scoreOption.toFixed(1)}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
@@ -208,7 +242,16 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                       <p className="history-item-lacks-line">{lacksSummary}</p>
                       <div className="history-item-pillars">
                         {pillars.map((pillar) => (
-                          <div key={pillar.key} className={`history-item-pillar-chip history-item-pillar-chip--${pillar.key}`}>
+                          <div
+                            key={pillar.key}
+                            className={`history-item-pillar-chip ${
+                              pillar.score <= 2.0
+                                ? 'history-item-pillar-chip--critical'
+                                : pillar.score <= 3.0
+                                  ? 'history-item-pillar-chip--warning'
+                                  : 'history-item-pillar-chip--healthy'
+                            }`}
+                          >
                             <img src={pillar.sprite} alt={pillar.label} className="history-item-pillar-sprite" />
                             <span className="history-item-pillar-label">{pillar.label}</span>
                             <span className="history-item-pillar-score">{pillar.score.toFixed(1)}</span>
@@ -305,7 +348,7 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
               className="history-back-btn"
               onClick={onClose}
             >
-              Back
+              Close History
             </button>
           </div>
         </div>

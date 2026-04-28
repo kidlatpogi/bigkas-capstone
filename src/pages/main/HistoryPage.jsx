@@ -203,7 +203,19 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
         <div className="history-container">
           <div className="history-sticky-header dashboard-anim-top dashboard-anim-delay-1">
             <div className="history-header-row">
-              <h2 className="history-title">History</h2>
+              <div className="history-title-row">
+                <h2 className="history-title">History</h2>
+                {isMobile ? (
+                  <button
+                    type="button"
+                    className="history-mobile-close-btn"
+                    onClick={onClose}
+                    aria-label="Close history"
+                  >
+                    ×
+                  </button>
+                ) : null}
+              </div>
               <div className="history-filters">
                 {HISTORY_FILTERS.map((f) => (
                   <button

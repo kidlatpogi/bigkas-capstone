@@ -96,9 +96,10 @@ function buildReplayAction(session, navigate) {
   };
 }
 
-function SessionResultPage() {
+function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner, onViewDetailed }) {
   const navigate = useNavigate();
-  const { sessionId } = useParams();
+  const { sessionId: paramSessionId } = useParams();
+  const activeSessionId = sessionIdProp || paramSessionId;
   const { state } = useLocation();
   const { currentSession, fetchSessionById, isLoading } = useSessionContext();
   const { user } = useAuthContext();
@@ -109,16 +110,16 @@ function SessionResultPage() {
 
   const hasCompleteState = useMemo(() => {
     if (!state || typeof state !== 'object') return false;
-    const sameSession = String(state?.id || '') === String(sessionId || '');
+    const sameSession = String(state?.id || '') === String(activeSessionId || '');
     if (!sameSession) return false;
     return Number.isFinite(Number(state?.confidence_score));
-  }, [sessionId, state]);
+  }, [activeSessionId, state]);
 
   useEffect(() => {
     if (hasCompleteState) return;
-    if (String(currentSession?.id || '') === String(sessionId || '')) return;
-    fetchSessionById(sessionId);
-  }, [currentSession, fetchSessionById, hasCompleteState, sessionId]);
+    if (String(currentSession?.id || '') === String(activeSessionId || '')) return;
+    fetchSessionById(activeSessionId);
+  }, [currentSession, fetchSessionById, hasCompleteState, activeSessionId]);
 
   useEffect(() => {
     const updateSize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
@@ -129,9 +130,9 @@ function SessionResultPage() {
 
   const result = useMemo(() => {
     if (hasCompleteState) return state;
-    if (String(currentSession?.id || '') === String(sessionId || '')) return currentSession;
+    if (String(currentSession?.id || '') === String(activeSessionId || '')) return currentSession;
     return null;
-  }, [currentSession, hasCompleteState, sessionId, state]);
+  }, [currentSession, hasCompleteState, activeSessionId, state]);
 
   if (!result && isLoading) {
     return (
@@ -169,6 +170,14 @@ function SessionResultPage() {
     breadcrumbParent = 'Dashboard';
     breadcrumbRoute = state?.backTo || ROUTES.DASHBOARD;
   }
+  
+  const handleBackNavigation = () => {
+    if (isInnerView && onCloseInner) {
+      onCloseInner();
+    } else {
+      navigate(breadcrumbRoute, { replace: true });
+    }
+  };
 
   const recommendations = sanitizeRecommendationLines(
     Array.isArray(result.recommendations) ? result.recommendations : [],
@@ -197,8 +206,8 @@ function SessionResultPage() {
   const onboardingLabel = user?.onboardingStage === 'analyzing' ? 'Analyze Level' : 'Continue Onboarding';
 
   return (
-    <div className="sr-page">
-      {shouldCelebrateScore(result) && (
+    <div className={`sr-page ${isInnerView ? 'sr-page--inner' : ''}`}>
+      {shouldCelebrateScore(result) && !isInnerView && (
         <Confetti
           width={windowSize.width}
           height={windowSize.height}
@@ -210,19 +219,21 @@ function SessionResultPage() {
       )}
 
       {/* Breadcrumb */}
-      <nav className="sr-breadcrumb">
-        <button
-          type="button"
-          className="sr-breadcrumb-link"
-          onClick={() => navigate(breadcrumbRoute, { replace: true })}
-        >
-          {breadcrumbParent}
-        </button>
-        <IoChevronForward className="sr-breadcrumb-sep" />
-        <span className="sr-breadcrumb-current">
-          {sessionTitle} Analysis Result
-        </span>
-      </nav>
+      {!isInnerView && (
+        <nav className="sr-breadcrumb">
+          <button
+            type="button"
+            className="sr-breadcrumb-link"
+            onClick={handleBackNavigation}
+          >
+            {breadcrumbParent}
+          </button>
+          <IoChevronForward className="sr-breadcrumb-sep" />
+          <span className="sr-breadcrumb-current">
+            {sessionTitle} Analysis Result
+          </span>
+        </nav>
+      )}
 
       {/* Overall Score Hero */}
       <section className="sr-hero">
@@ -315,13 +326,19 @@ function SessionResultPage() {
       <button
         type="button"
         className="sr-detail-link"
-        onClick={() => navigate(buildRoute.detailedFeedback(sessionId), {
-          state: {
-            ...result,
-            source: state?.source,
-            backTo: state?.backTo,
-          },
-        })}
+        onClick={() => {
+          if (isInnerView && onViewDetailed) {
+            onViewDetailed();
+          } else {
+            navigate(ROUTES.DETAILED_FEEDBACK.replace(':sessionId', activeSessionId), {
+              state: {
+                ...result,
+                source: state?.source,
+                backTo: state?.backTo,
+              },
+            });
+          }
+        }}
       >
         <span>View Detailed Feedback</span>
         <IoChevronForward />
@@ -331,9 +348,9 @@ function SessionResultPage() {
       <div className="sr-actions">
         <button
           className="sr-btn sr-btn-secondary"
-          onClick={() => navigate(isOnboarding ? onboardingRoute : ROUTES.DASHBOARD)}
+          onClick={handleBackNavigation}
         >
-          {isOnboarding ? onboardingLabel : 'Back to Dashboard'}
+          {isInnerView ? 'Back to History' : (isOnboarding ? onboardingLabel : 'Back to Dashboard')}
         </button>
         <button className="sr-btn sr-btn-primary" onClick={replayAction.onClick}>
           {replayAction.label}

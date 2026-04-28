@@ -202,9 +202,10 @@ function buildReplayAction(session, navigate, isFree) {
   };
 }
 
-function DetailedFeedbackPage() {
+function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
   const navigate = useNavigate();
-  const { sessionId } = useParams();
+  const { sessionId: paramSessionId } = useParams();
+  const sessionId = sessionIdProp || paramSessionId;
   const { state: locationState } = useLocation();
   const { currentSession, fetchSessionById, isLoading } = useSessionContext();
   const [isRecordingsOpen, setIsRecordingsOpen] = useState(true);
@@ -466,9 +467,10 @@ function DetailedFeedbackPage() {
   })();
 
   return (
-    <div className="df-page">
+    <div className={`df-page ${isInnerView ? 'df-page--inner' : ''}`}>
       {/* Breadcrumb */}
-      <nav className="df-breadcrumb">
+      {!isInnerView && (
+        <nav className="df-breadcrumb">
         <button
           type="button"
           className="df-breadcrumb-link"
@@ -493,6 +495,7 @@ function DetailedFeedbackPage() {
         <IoChevronForward className="df-breadcrumb-sep" />
         <span className="df-breadcrumb-current">Detailed Feedback</span>
       </nav>
+      )}
 
       {/* Overall Score Hero */}
       <section className="df-hero">
@@ -701,9 +704,17 @@ function DetailedFeedbackPage() {
         )}
       </div>
 
-      {/* Actions */}
       <div className="df-actions">
-        <button className="df-btn df-btn-secondary" onClick={() => navigate(-1)}>
+        <button 
+          className="df-btn df-btn-secondary" 
+          onClick={() => {
+            if (isInnerView && onCloseInner) {
+              onCloseInner();
+            } else {
+              navigate(-1);
+            }
+          }}
+        >
           Back
         </button>
         <button className="df-btn df-btn-primary" onClick={replayAction.onClick}>

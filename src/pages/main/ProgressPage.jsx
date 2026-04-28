@@ -44,10 +44,11 @@ import heroRobotImage from '../../assets/Sprites/Robot/0018.webp';
 import visualSprite from '../../assets/Sprites/common/Visual.png';
 import verbalSprite from '../../assets/Sprites/common/Verbal.png';
 import vocalSprite from '../../assets/Sprites/common/Vocal.png';
+import HistoryPage from './HistoryPage';
+import HistoryPageMobile from './HistoryPageMobile';
 import './ProgressPage.css';
 
 const TIME_RANGES = ['daily', 'Weekly', 'Monthly', 'Yearly'];
-const HISTORY_FILTERS = ['All', 'Today', 'This Week', 'This Month'];
 
 function toFivePointScore(rawScore) {
   const numeric = Number(rawScore);
@@ -144,30 +145,9 @@ function buildSessionTitleOrTopic(session) {
   return 'Training Session';
 }
 
-function getResponsiveHistoryPageSize(viewportHeight = 0) {
-  if (viewportHeight >= 1300) return 5; // 2K+ displays
-  if (viewportHeight >= 900) return 4; // 1080p and similar
-  return 3; // smaller heights
-}
+/* history page size functions removed */
 
-function getAdaptiveHistoryPages(pageCount, activePage) {
-  if (pageCount <= 6) {
-    return Array.from({ length: pageCount }, (_, index) => index);
-  }
-
-  const leadingWindow = [0, 1, 2, 3].filter((index) => index < pageCount - 1);
-  const trailingWindow = [pageCount - 4, pageCount - 3, pageCount - 2, pageCount - 1]
-    .filter((index) => index > 0);
-
-  // Keep ellipsis on one side only: end when browsing early pages, start when browsing later pages.
-  if (activePage < Math.ceil(pageCount / 2)) {
-    return [...leadingWindow, 'end-ellipsis', pageCount - 1];
-  }
-
-  return [0, 'start-ellipsis', ...trailingWindow];
-}
-
-function ProgressPage() {
+function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { sessions, fetchAllSessions, isLoading } = useSessionContext();
@@ -181,7 +161,6 @@ function ProgressPage() {
   const [pillarRange, setPillarRange] = useState('Weekly');
   const [range, setRange] = useState('daily');
   const [showMobileHistory, setShowMobileHistory] = useState(false);
-  const [historyFilter, setHistoryFilter] = useState('All');
   const graphRef = useRef(null);
   const [graphWidth, setGraphWidth] = useState(0);
 
@@ -195,10 +174,7 @@ function ProgressPage() {
     observer.observe(graphRef.current);
     return () => observer.disconnect();
   }, []);
-  const [historyPage, setHistoryPage] = useState(0);
-  const [historyPageSize, setHistoryPageSize] = useState(() =>
-    getResponsiveHistoryPageSize(typeof window !== 'undefined' ? window.innerHeight : 1080),
-  );
+/* history page state removed */
   const [claimableAchievements, setClaimableAchievements] = useState(() => getClaimableAchievements());
 
   useEffect(() => {
@@ -294,13 +270,7 @@ function ProgressPage() {
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
 
-    const syncHistoryPageSize = () => {
-      setHistoryPageSize(getResponsiveHistoryPageSize(window.innerHeight));
-    };
-
-    syncHistoryPageSize();
-    window.addEventListener('resize', syncHistoryPageSize);
-    return () => window.removeEventListener('resize', syncHistoryPageSize);
+/* sync history page size removed */
   }, []);
 
   useEffect(() => {
@@ -476,52 +446,33 @@ function ProgressPage() {
     });
   }, [pillarRange, userSessions]);
 
-  const historySessions = useMemo(() => {
-    const filtered = userSessions.filter(s => {
-      const d = new Date(s.created_at);
-      if (historyFilter === 'Today') {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        return d >= today;
-      }
-      if (historyFilter === 'This Week') {
-        const week = new Date();
-        week.setDate(week.getDate() - 7);
-        return d >= week;
-      }
-      if (historyFilter === 'This Month') {
-        const monthStart = new Date();
-        monthStart.setDate(1);
-        monthStart.setHours(0, 0, 0, 0);
-        return d >= monthStart;
-      }
-      return true;
-    });
-
-    return filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  }, [historyFilter, userSessions]);
-
-  const historyPageCount = useMemo(
-    () => Math.ceil(historySessions.length / historyPageSize),
-    [historySessions.length, historyPageSize],
-  );
-
-  const safeHistoryPage = Math.min(historyPage, Math.max(0, historyPageCount - 1));
-
-  const paginatedHistorySessions = useMemo(() => {
-    const start = safeHistoryPage * historyPageSize;
-    return historySessions.slice(start, start + historyPageSize);
-  }, [safeHistoryPage, historySessions, historyPageSize]);
-
-  const adaptiveHistoryPages = useMemo(
-    () => getAdaptiveHistoryPages(historyPageCount, safeHistoryPage),
-    [historyPageCount, safeHistoryPage],
-  );
+/* history session logic removed */
 
   return (
-    <div className="progress-page-bg no-scrollbar" style={{ height: '100dvh', overflowY: 'auto' }}>
+    <div
+      className={`progress-page-bg no-scrollbar${isMobile ? ' progress-page-bg--mobile progress-page-mobile-root' : ''}`}
+      data-progress-variant={renderVariant}
+      style={{
+        height: '100dvh',
+        overflowY: 'auto',
+      }}
+    >
       <div className="progress-main-layout">
         <div className="progress-left-content">
+          {isMobile ? (
+            <div className="progress-mobile-top-strip">
+              <div className="progress-mobile-banner-left" aria-label="Coach message">
+                <img src={heroRobotImage} alt="" className="progress-mobile-banner-robot" />
+                <div className="progress-mobile-banner-bubble">
+                  <p className="progress-mobile-banner-kicker">B-01:</p>
+                  <p className="progress-mobile-banner-copy">
+                    You&apos;re on a roll. Keep doing your activities and improve your speaking.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
           {claimableAchievements.length > 0 ? (
             <div className="progress-achievement-card dashboard-anim-bottom">
               <div className="progress-achievement-head">
@@ -719,143 +670,21 @@ function ProgressPage() {
         </div>
 
         {/* History Sidebar Overlay */}
-        <button
-          type="button"
-          className={`progress-history-overlay${showMobileHistory ? ' is-visible' : ''}`}
-          aria-label="Close history overlay"
-          onClick={() => setShowMobileHistory(false)}
-        />
-        <div
-          id="progress-history-sidebar"
-          className={`progress-history-sidebar${showMobileHistory ? ' history-visible' : ''}`}
-        >
-          <div className="history-container">
-            <div className="history-sticky-header dashboard-anim-top dashboard-anim-delay-1">
-              <div className="history-header-row">
-                <h2 className="history-title">History</h2>
-                <div className="history-filters">
-                  {HISTORY_FILTERS.map(f => (
-                    <button 
-                      key={f}
-                      className={`history-filter-btn ${historyFilter === f ? 'active' : ''}`}
-                      onClick={() => {
-                        setHistoryFilter(f);
-                        setHistoryPage(0);
-                      }}
-                    >
-                      {f}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="history-list">
-              {paginatedHistorySessions.map((s, index) => {
-                const mode = getSessionMode(s);
-                const score = toFivePointScore(s.confidence_score);
-                const tier = getScoreTier15(score);
-                const delay = Math.min(index + 2, 9);
-                const dateObj = new Date(s.created_at);
-                const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-                const formattedTime = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-
-                return (
-                  <div 
-                    key={s.id} 
-                    className={`history-item dashboard-anim-bottom dashboard-anim-delay-${delay}`}
-                    onClick={() => {
-                      setShowMobileHistory(false);
-                      navigate(buildRoute.sessionResult(s.id), { state: { ...s, source: 'progress' } });
-                    }}
-                    style={{ '--tier-color': tier.color }}
-                  >
-                    <div className="history-item-content">
-                      <div className="history-item-left">
-                        <p className="history-item-date">{formattedDate} • {formattedTime}</p>
-                        <h3 className="history-item-main-title">{buildSessionTitleOrTopic(s)}</h3>
-                      </div>
-                      <div className="history-item-right">
-                        <div className="history-item-stat">
-                          <span className="history-item-comparison">Better than last session</span>
-                          <span className="history-item-tier" style={{ color: tier.color }}>{tier.label}</span>
-                        </div>
-                        <div className="history-item-score-wrapper">
-                          <div className="history-item-score-ring" style={{ '--score-color': tier.color }}>
-                            {score.toFixed(1)}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="history-item-glow" style={{ background: `radial-gradient(circle at bottom, ${tier.color}30 0%, transparent 70%)` }} />
-                  </div>
-                );
-              })}
-              
-              {isLoading && historySessions.length === 0 && (
-                <p style={{ textAlign: 'center', color: '#888', padding: '40px 0' }}>Loading history...</p>
-              )}
-              {!isLoading && historySessions.length === 0 && (
-                <p style={{ textAlign: 'center', color: '#888', padding: '40px 0' }}>No sessions found.</p>
-              )}
-            </div>
-
-            {!isLoading && historyPageCount > 1 && (
-              <div className="history-pagination-shell">
-                <ul className="history-pagination" aria-label="History pagination">
-                  <li className={`history-pagination-page history-pagination-nav ${safeHistoryPage <= 0 ? 'disabled' : ''}`}>
-                    <button
-                      type="button"
-                      className="history-pagination-link"
-                      onClick={() => setHistoryPage((current) => Math.max(0, current - 1))}
-                      disabled={safeHistoryPage <= 0}
-                    >
-                      <IoChevronBack />
-                    </button>
-                  </li>
-
-                  {adaptiveHistoryPages.map((entry, idx) => {
-                    if (entry === 'start-ellipsis' || entry === 'end-ellipsis') {
-                      return <li key={`${entry}-${idx}`} className="history-pagination-break">...</li>;
-                    }
-                    const isActive = entry === safeHistoryPage;
-                    return (
-                      <li key={`page-${entry}`} className={`history-pagination-page ${isActive ? 'active' : ''}`}>
-                        <button
-                          type="button"
-                          className="history-pagination-link"
-                          onClick={() => setHistoryPage(entry)}
-                        >
-                          {entry + 1}
-                        </button>
-                      </li>
-                    );
-                  })}
-
-                  <li className={`history-pagination-page history-pagination-nav ${safeHistoryPage >= historyPageCount - 1 ? 'disabled' : ''}`}>
-                    <button
-                      type="button"
-                      className="history-pagination-link"
-                      onClick={() => setHistoryPage((current) => Math.min(historyPageCount - 1, current + 1))}
-                      disabled={safeHistoryPage >= historyPageCount - 1}
-                    >
-                      <IoChevronForward />
-                    </button>
-                  </li>
-                </ul>
-              </div>
-            )}
-
-            <div className="history-footer">
-              <button 
-                className="progress-show-history-btn" 
-                onClick={() => setShowMobileHistory(false)}
-              >
-                Back
-              </button>
-            </div>
-          </div>
-        </div>
+        {isMobile ? (
+          <HistoryPageMobile
+            isOpen={showMobileHistory}
+            onClose={() => setShowMobileHistory(false)}
+            userSessions={userSessions}
+            isLoading={isLoading}
+          />
+        ) : (
+          <HistoryPage
+            isOpen={showMobileHistory}
+            onClose={() => setShowMobileHistory(false)}
+            userSessions={userSessions}
+            isLoading={isLoading}
+          />
+        )}
       </div>
     </div>
   );

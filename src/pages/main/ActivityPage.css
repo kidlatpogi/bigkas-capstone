@@ -4,7 +4,7 @@
 
 body,
 html {
-  background-color: #F8F9FA;
+  background-color: #FDFDF9;
   margin: 0;
   padding: 0;
   height: 100%;
@@ -23,7 +23,7 @@ html {
   padding: var(--activity-page-pad);
   
   /* Clean, white background with subtle brand-colored patterns (Inspired by 2nd photo) */
-  background-color: #ffffff;
+  background-color: #FDFDF9;
   background-image: 
     /* Subtle dot grid */
     radial-gradient(rgba(11, 57, 84, 0.1) 1px, transparent 0),
@@ -58,8 +58,6 @@ html {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(3, 7, 18, 0.18);
-  backdrop-filter: blur(1px);
 }
 
 .activity-fs-tutorial-card {
@@ -767,13 +765,7 @@ html {
   pointer-events: auto;
 }
 
-.randomizer-overlay-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(2px);
-  z-index: 1;
-}
+/* .randomizer-overlay-backdrop removed */
 
 .randomizer-overlay-content {
   position: fixed;

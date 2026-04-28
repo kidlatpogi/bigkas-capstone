@@ -814,6 +814,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   .progress-page-mobile-root.progress-page-bg {
     --progress-page-pad: 0px;
     width: calc(100% + var(--mobile-px, 16px) + var(--mobile-px, 16px));
+    max-width: none;
     margin-left: calc(0px - var(--mobile-px, 16px));
     margin-right: calc(0px - var(--mobile-px, 16px));
     min-height: 100dvh;
@@ -837,6 +838,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
   .progress-page-bg--mobile {
     width: calc(100% + var(--mobile-px, 16px) + var(--mobile-px, 16px));
+    max-width: none;
     margin-left: calc(0px - var(--mobile-px, 16px));
     margin-right: calc(0px - var(--mobile-px, 16px));
     padding-left: 16px;

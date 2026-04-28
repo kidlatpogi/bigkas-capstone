@@ -90,6 +90,8 @@
 .history-controls {
   display: flex;
   flex-direction: column;
+  gap: 8px;
+  padding: 0 0.5rem;
 }
 
 .history-filters {
@@ -494,8 +496,15 @@
   }
 
   .history-controls {
-    margin-top: 12px;
+    margin-top: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: nowrap;
     gap: 8px;
+    padding: 12px 24px 10px;
+    border-bottom: 0;
+    background: #FDFDF9;
   }
 
   .history-title {
@@ -533,7 +542,9 @@
   }
 
   .history-filters {
-    width: 100%;
+    width: auto;
+    flex: 1 1 auto;
+    max-width: 332px;
     margin-left: 0;
     padding: 5px;
     gap: 4px;
@@ -550,14 +561,15 @@
   }
 
   .history-sort-row {
-    justify-content: flex-start;
+    justify-content: flex-end;
     margin-top: 0;
     padding-left: 0;
     padding-right: 0;
+    flex: 0 0 auto;
   }
 
   .history-score-sort {
-    align-items: flex-start;
+    align-items: flex-end;
   }
 
   .history-overlay-scroll-content {

@@ -260,8 +260,9 @@ function ActivityPage() {
 
   useEffect(() => {
     if (!user?.id) return;
+    if (Array.isArray(sessions) && sessions.length > 0) return;
     fetchAllSessions?.();
-  }, [fetchAllSessions, user?.id]);
+  }, [fetchAllSessions, sessions, user?.id]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;

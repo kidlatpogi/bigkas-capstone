@@ -217,41 +217,41 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                 ) : null}
               </div>
             </div>
-            <div className="history-controls">
-              <div className="history-filters">
-                {HISTORY_FILTERS.map((f) => (
-                  <button
-                    key={f}
-                    className={`history-filter-btn ${historyFilter === f ? 'active' : ''}`}
-                    onClick={() => {
-                      setHistoryFilter(f);
-                      setHistoryPage(0);
-                    }}
-                  >
-                    {f}
-                  </button>
-                ))}
-              </div>
-              <div className="history-sort-row">
-                <div className="history-score-sort">
-                  <span className="history-score-sort-label">Sort score</span>
-                  <select
-                    className="history-score-sort-select"
-                    value={scoreSortTarget}
-                    onChange={(event) => {
-                      setScoreSortTarget(event.target.value);
-                      setHistoryPage(0);
-                    }}
-                    aria-label="Sort history by score target"
-                  >
-                    <option value={HISTORY_SCORE_SORT_NONE}>---</option>
-                    {HISTORY_SCORE_SORT_OPTIONS.map((scoreOption) => (
-                      <option key={`score-sort-${scoreOption.toFixed(1)}`} value={scoreOption.toFixed(1)}>
-                        {scoreOption.toFixed(1)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+          </div>
+          <div className="history-controls">
+            <div className="history-filters">
+              {HISTORY_FILTERS.map((f) => (
+                <button
+                  key={f}
+                  className={`history-filter-btn ${historyFilter === f ? 'active' : ''}`}
+                  onClick={() => {
+                    setHistoryFilter(f);
+                    setHistoryPage(0);
+                  }}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+            <div className="history-sort-row">
+              <div className="history-score-sort">
+                <span className="history-score-sort-label">Sort score</span>
+                <select
+                  className="history-score-sort-select"
+                  value={scoreSortTarget}
+                  onChange={(event) => {
+                    setScoreSortTarget(event.target.value);
+                    setHistoryPage(0);
+                  }}
+                  aria-label="Sort history by score target"
+                >
+                  <option value={HISTORY_SCORE_SORT_NONE}>---</option>
+                  {HISTORY_SCORE_SORT_OPTIONS.map((scoreOption) => (
+                    <option key={`score-sort-${scoreOption.toFixed(1)}`} value={scoreOption.toFixed(1)}>
+                      {scoreOption.toFixed(1)}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>

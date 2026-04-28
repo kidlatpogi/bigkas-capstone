@@ -141,3 +141,13 @@ ul, ol { list-style: none; }
 
 [data-theme="dark"] .loading-screen { background: #0B0B0D; }
 [data-theme="dark"] .loading-logo { color: #F5F5F5; }
+
+/* 8. GLOBAL MODAL SCRIM */
+.bigkas-modal-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: var(--scrim-z, 1000);
+}

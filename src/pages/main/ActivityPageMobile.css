@@ -240,12 +240,7 @@
   padding: 16px;
 }
 
-.activity-page-mobile-root .randomizer-overlay-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(3, 7, 18, 0.4);
-  backdrop-filter: blur(2px);
-}
+/* randomizer-overlay-backdrop removed */
 
 .activity-page-mobile-root .randomizer-overlay-content {
   position: relative;
@@ -602,12 +597,7 @@
   justify-content: center;
 }
 
-.dashboard-overlay-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(3, 7, 18, 0.5);
-  backdrop-filter: blur(8px);
-}
+/* dashboard-overlay-backdrop removed */
 
 .dashboard-overlay-content {
   position: relative;

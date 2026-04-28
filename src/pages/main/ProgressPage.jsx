@@ -45,6 +45,7 @@ import visualSprite from '../../assets/Sprites/common/Visual.png';
 import verbalSprite from '../../assets/Sprites/common/Verbal.png';
 import vocalSprite from '../../assets/Sprites/common/Vocal.png';
 import HistoryPage from './HistoryPage';
+import HistoryPageMobile from './HistoryPageMobile';
 import './ProgressPage.css';
 
 const TIME_RANGES = ['daily', 'Weekly', 'Monthly', 'Yearly'];
@@ -669,12 +670,21 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
         </div>
 
         {/* History Sidebar Overlay */}
-        <HistoryPage 
-          isOpen={showMobileHistory} 
-          onClose={() => setShowMobileHistory(false)} 
-          userSessions={userSessions} 
-          isLoading={isLoading} 
-        />
+        {isMobile ? (
+          <HistoryPageMobile
+            isOpen={showMobileHistory}
+            onClose={() => setShowMobileHistory(false)}
+            userSessions={userSessions}
+            isLoading={isLoading}
+          />
+        ) : (
+          <HistoryPage
+            isOpen={showMobileHistory}
+            onClose={() => setShowMobileHistory(false)}
+            userSessions={userSessions}
+            isLoading={isLoading}
+          />
+        )}
       </div>
     </div>
   );

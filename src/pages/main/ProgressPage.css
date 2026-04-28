@@ -76,6 +76,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   max-width: 1400px;
   margin: 0 auto;
   z-index: 1;
+  position: relative;
 }
 
 .progress-left-content {

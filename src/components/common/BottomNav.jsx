@@ -13,8 +13,8 @@ import './BottomNav.css';
 
 const NAV_ITEMS = [
   { label: 'Home', to: ROUTES.ACTIVITY, icon: IoHomeOutline, type: 'link' },
-  { label: 'Learn', to: ROUTES.FRAMEWORKS, icon: IoBookOutline, type: 'link' },
   { label: 'Progress', to: ROUTES.PROGRESS, icon: IoStatsChartOutline, type: 'link' },
+  { label: 'Learn', to: ROUTES.FRAMEWORKS, icon: IoBookOutline, type: 'link' },
   { label: 'Achievement', to: ROUTES.ACHIEVEMENTS, icon: IoMedalOutline, type: 'link' },
   { label: 'Settings', to: null, icon: IoSettingsOutline, type: 'modal' },
 ];

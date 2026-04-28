@@ -146,7 +146,7 @@ function buildSessionTitleOrTopic(session) {
 
 /* history page size functions removed */
 
-function ProgressPage() {
+function ProgressPage({ isMobile = false }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { sessions, fetchAllSessions, isLoading } = useSessionContext();
@@ -448,7 +448,14 @@ function ProgressPage() {
 /* history session logic removed */
 
   return (
-    <div className="progress-page-bg no-scrollbar" style={{ height: '100dvh', overflowY: 'auto' }}>
+    <div
+      className={`progress-page-bg no-scrollbar${isMobile ? ' progress-page-bg--mobile' : ''}`}
+      style={{
+        height: '100dvh',
+        overflowY: 'auto',
+        paddingBottom: isMobile ? 'calc(72px + env(safe-area-inset-bottom))' : 'env(safe-area-inset-bottom)',
+      }}
+    >
       <div className="progress-main-layout">
         <div className="progress-left-content">
           {claimableAchievements.length > 0 ? (

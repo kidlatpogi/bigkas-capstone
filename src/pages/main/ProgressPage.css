@@ -6,9 +6,10 @@
 }
 
 .progress-page-bg {
+  --progress-page-pad: clamp(16px, 3vh, 32px);
   width: 100%;
   min-height: 100dvh;
-  background-color: #ffffff;
+  background-color: #FDFDF9;
   background-image: 
     radial-gradient(rgba(11, 57, 84, 0.1) 1px, transparent 0);
   background-size: 40px 40px;
@@ -17,7 +18,7 @@
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  padding: clamp(16px, 4vw, 40px);
+  padding: var(--progress-page-pad);
   align-items: center;
   box-sizing: border-box;
 }
@@ -34,7 +35,7 @@
 html.progress-page-active,
 body.progress-page-active,
 body.progress-page-active #root {
-  background: #FFFFFF;
+  background: #FDFDF9;
 }
 
 html.progress-page-active {
@@ -73,7 +74,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   flex-direction: column;
   gap: clamp(16px, 2.5vh, 24px);
   width: 100%;
-  max-width: 1400px;
+  max-width: 1424px;
   margin: 0 auto;
   z-index: 1;
   position: relative;
@@ -810,8 +811,17 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 }
 
 @media (max-width: 768px) {
+  .progress-page-bg--mobile {
+    width: calc(100% + (var(--mobile-px) * 2));
+    margin-left: calc(var(--mobile-px) * -1);
+    margin-right: calc(var(--mobile-px) * -1);
+    padding-left: clamp(12px, 2.8vw, 16px);
+    padding-right: clamp(12px, 2.8vw, 16px);
+  }
+
   .progress-main-layout {
     gap: 1.5rem;
+    max-width: 100%;
   }
 
   .progress-trend-card,

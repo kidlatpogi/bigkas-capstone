@@ -156,11 +156,15 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
 
   const historyPageCount = useMemo(() => Math.ceil(historySessions.length / historyPageSize), [historySessions.length, historyPageSize]);
   const safeHistoryPage = Math.min(historyPage, Math.max(0, historyPageCount - 1));
+  const paginationPageCount = Math.max(1, historyPageCount);
   const paginatedHistorySessions = useMemo(() => {
     const start = safeHistoryPage * historyPageSize;
     return historySessions.slice(start, start + historyPageSize);
   }, [safeHistoryPage, historySessions, historyPageSize]);
-  const adaptiveHistoryPages = useMemo(() => getAdaptiveHistoryPages(historyPageCount, safeHistoryPage), [historyPageCount, safeHistoryPage]);
+  const adaptiveHistoryPages = useMemo(
+    () => getAdaptiveHistoryPages(paginationPageCount, safeHistoryPage),
+    [paginationPageCount, safeHistoryPage]
+  );
 
   if (!isOpen) return null;
 
@@ -297,7 +301,7 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
             )}
           </div>
 
-          {!isLoading && historyPageCount > 1 && (
+          {!isLoading && (
             <div className="history-pagination-shell">
               <ul className="history-pagination" aria-label="History pagination">
                 <li className={`history-pagination-page history-pagination-nav ${safeHistoryPage <= 0 ? 'disabled' : ''}`}>
@@ -305,7 +309,7 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                     type="button"
                     className="history-pagination-link"
                     onClick={() => setHistoryPage((current) => Math.max(0, current - 1))}
-                    disabled={safeHistoryPage <= 0}
+                    disabled={safeHistoryPage <= 0 || paginationPageCount <= 1}
                   >
                     <IoChevronBack />
                   </button>
@@ -329,12 +333,12 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                   );
                 })}
 
-                <li className={`history-pagination-page history-pagination-nav ${safeHistoryPage >= historyPageCount - 1 ? 'disabled' : ''}`}>
+                <li className={`history-pagination-page history-pagination-nav ${safeHistoryPage >= paginationPageCount - 1 ? 'disabled' : ''}`}>
                   <button
                     type="button"
                     className="history-pagination-link"
-                    onClick={() => setHistoryPage((current) => Math.min(historyPageCount - 1, current + 1))}
-                    disabled={safeHistoryPage >= historyPageCount - 1}
+                    onClick={() => setHistoryPage((current) => Math.min(paginationPageCount - 1, current + 1))}
+                    disabled={safeHistoryPage >= paginationPageCount - 1 || paginationPageCount <= 1}
                   >
                     <IoChevronForward />
                   </button>

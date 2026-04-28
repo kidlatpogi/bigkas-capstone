@@ -139,12 +139,13 @@
 }
 
 /* Specific inner view overrides so it stretches and drops padding constraints */
-.history-session-view-content .sr-page--inner {
-  padding: 16px;
+.history-session-view-content .sr-page--inner,
+.history-session-view-content .df-page--inner {
+  padding: 16px 24px 60px;
   background: transparent;
   min-height: auto;
   margin: 0;
-  max-width: auto;
+  max-width: none;
 }
 
 .history-session-view-content .sr-hero {

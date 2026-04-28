@@ -96,7 +96,7 @@ function buildReplayAction(session, navigate) {
   };
 }
 
-function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner }) {
+function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner, onViewDetailed }) {
   const navigate = useNavigate();
   const { sessionId: paramSessionId } = useParams();
   const activeSessionId = sessionIdProp || paramSessionId;
@@ -326,13 +326,19 @@ function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner }) {
       <button
         type="button"
         className="sr-detail-link"
-        onClick={() => navigate(buildRoute.detailedFeedback(sessionId), {
-          state: {
-            ...result,
-            source: state?.source,
-            backTo: state?.backTo,
-          },
-        })}
+        onClick={() => {
+          if (isInnerView && onViewDetailed) {
+            onViewDetailed();
+          } else {
+            navigate(ROUTES.DETAILED_FEEDBACK.replace(':sessionId', activeSessionId), {
+              state: {
+                ...result,
+                source: state?.source,
+                backTo: state?.backTo,
+              },
+            });
+          }
+        }}
       >
         <span>View Detailed Feedback</span>
         <IoChevronForward />
@@ -342,9 +348,9 @@ function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner }) {
       <div className="sr-actions">
         <button
           className="sr-btn sr-btn-secondary"
-          onClick={() => navigate(isOnboarding ? onboardingRoute : ROUTES.DASHBOARD)}
+          onClick={handleBackNavigation}
         >
-          {isOnboarding ? onboardingLabel : 'Back to Dashboard'}
+          {isInnerView ? 'Back to History' : (isOnboarding ? onboardingLabel : 'Back to Dashboard')}
         </button>
         <button className="sr-btn sr-btn-primary" onClick={replayAction.onClick}>
           {replayAction.label}

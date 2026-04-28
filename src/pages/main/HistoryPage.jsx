@@ -8,7 +8,8 @@ import verbalSprite from '../../assets/Sprites/common/Verbal.png';
 import visualSprite from '../../assets/Sprites/common/Visual.png';
 import vocalSprite from '../../assets/Sprites/common/Vocal.png';
 import './HistoryPage.css';
-import SessionResultPage from '../session/SessionResultPage'; // Import SessionResultPage
+import SessionResultPage from '../session/SessionResultPage';
+import DetailedFeedbackPage from '../session/DetailedFeedbackPage';
 
 const HISTORY_FILTERS = ['All', 'Today', 'This Week', 'This Month'];
 const HISTORY_SCORE_SORT_OPTIONS = [5, 4, 3, 2, 1];
@@ -134,6 +135,14 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
   const [scoreSortTarget, setScoreSortTarget] = useState(HISTORY_SCORE_SORT_NONE);
   const [historyPage, setHistoryPage] = useState(0);
   const [selectedSessionId, setSelectedSessionId] = useState(null); // State for selected session ID
+  const [innerViewMode, setInnerViewMode] = useState('results'); // 'results' or 'detailed'
+
+  // Reset inner view mode to results when opening a new session
+  useEffect(() => {
+    if (selectedSessionId) {
+      setInnerViewMode('results');
+    }
+  }, [selectedSessionId]);
   const [historyPageSize, setHistoryPageSize] = useState(() =>
     getResponsiveHistoryPageSize(typeof window !== 'undefined' ? window.innerHeight : 1080)
   );
@@ -463,15 +472,32 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                 <button
                   type="button"
                   className="history-back-to-list-btn"
-                  onClick={() => setSelectedSessionId(null)}
+                  onClick={() => {
+                    if (innerViewMode === 'detailed') {
+                      setInnerViewMode('results');
+                    } else {
+                      setSelectedSessionId(null);
+                    }
+                  }}
                 >
-                   <IoChevronBack /> Back to History
+                   <IoChevronBack /> {innerViewMode === 'detailed' ? 'Back to Results' : 'Back to History'}
                 </button>
              </div>
              <div className="history-session-view-content">
-                {/* Render SessionResultPage inside the container, passed as a prop or loaded here */}
-                 {/* For now we just load it. If SessionResultPage expects URL params, might need an inner version or prop passing. Assuming it can take a session prop or id via some context or we can just render the component and let it use its hooks if we're not strict on routing */}
-                <SessionResultPage sessionIdProp={selectedSessionId} isInnerView={true} onCloseInner={() => setSelectedSessionId(null)} />
+                {innerViewMode === 'results' ? (
+                  <SessionResultPage 
+                    sessionIdProp={selectedSessionId} 
+                    isInnerView={true} 
+                    onCloseInner={() => setSelectedSessionId(null)}
+                    onViewDetailed={() => setInnerViewMode('detailed')}
+                  />
+                ) : (
+                  <DetailedFeedbackPage 
+                    sessionIdProp={selectedSessionId} 
+                    isInnerView={true} 
+                    onCloseInner={() => setInnerViewMode('results')}
+                  />
+                )}
              </div>
           </div>
         )}

@@ -190,6 +190,8 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                   </button>
                 ))}
               </div>
+            </div>
+            <div className="history-sort-row">
               <div className="history-score-sort">
                 <label className="history-score-sort-label" htmlFor="history-score-sort-select">Sort score</label>
                 <select

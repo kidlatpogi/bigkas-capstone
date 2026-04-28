@@ -79,6 +79,11 @@
   display: none;
 }
 
+.history-controls {
+  display: flex;
+  flex-direction: column;
+}
+
 .history-filters {
   display: flex;
   gap: 8px;
@@ -467,17 +472,19 @@
 
   .history-sticky-header {
     background: #FDFDF9;
-    padding: 24px 24px 16px;
+    padding: 24px 24px 12px;
     border-bottom: 1px solid rgba(11, 57, 84, 0.08);
   }
 
   .history-header-row {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+    display: block;
     padding-left: 0;
     padding-right: 0;
+  }
+
+  .history-controls {
+    margin-top: 12px;
+    gap: 8px;
   }
 
   .history-title {
@@ -533,7 +540,7 @@
 
   .history-sort-row {
     justify-content: flex-start;
-    margin-top: 6px;
+    margin-top: 0;
     padding-left: 0;
     padding-right: 0;
   }

@@ -201,7 +201,7 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
         className={`progress-history-sidebar history-visible${isMobile ? ' progress-history-sidebar--mobile' : ''}`}
       >
         <div className="history-container">
-          <div className="history-sticky-header dashboard-anim-top dashboard-anim-delay-1">
+          <div className="history-overlay-header dashboard-anim-top dashboard-anim-delay-1">
             <div className="history-header-row">
               <div className="history-title-row">
                 <h2 className="history-title">History</h2>
@@ -256,153 +256,155 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
             </div>
           </div>
 
-          <div className="history-list">
-            {paginatedHistorySessions.map((s, index) => {
-              const mode = getSessionMode(s);
-              const score = toFivePointScore(s.confidence_score);
-              const tier = getScoreTier15(score);
-              const pillars = resolveSessionPillars(s);
-              const lacksSummary = buildLacksSummary(pillars);
-              const delay = Math.min(index + 2, 9);
-              const dateObj = new Date(s.created_at);
-              const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-              const formattedTime = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+          <div className="history-overlay-scroll-content">
+            <div className="history-list">
+              {paginatedHistorySessions.map((s, index) => {
+                const mode = getSessionMode(s);
+                const score = toFivePointScore(s.confidence_score);
+                const tier = getScoreTier15(score);
+                const pillars = resolveSessionPillars(s);
+                const lacksSummary = buildLacksSummary(pillars);
+                const delay = Math.min(index + 2, 9);
+                const dateObj = new Date(s.created_at);
+                const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                const formattedTime = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
 
-              return (
-                <div
-                  key={s.id}
-                  className={`history-item dashboard-anim-bottom dashboard-anim-delay-${delay}`}
-                  onClick={() => {
-                    onClose();
-                    navigate(buildRoute.sessionResult(s.id), { state: { ...s, source: 'progress' } });
-                  }}
-                  style={{
-                    '--tier-color': tier.color,
-                    '--tier-border': `${tier.color}2e`,
-                    '--tier-border-hover': `${tier.color}5a`,
-                  }}
-                >
-                  <div className="history-item-row-left">
-                    <div className="history-item-title-section">
-                      <h3 className="history-item-main-title">{buildSessionTitleOrTopic(s)}</h3>
-                      <p className="history-item-session-type">{mode}</p>
-                    </div>
-                  </div>
-
-                  <div className="history-item-row-center">
-                    <div className="history-item-info-compact">
-                      <p className="history-item-info-line">{formattedDate} • {formattedTime}</p>
-                      <p className="history-item-lacks-line">{lacksSummary}</p>
-                      <div className="history-item-pillars">
-                        {pillars.map((pillar) => (
-                          <div
-                            key={pillar.key}
-                            className={`history-item-pillar-chip ${
-                              pillar.score <= 2.0
-                                ? 'history-item-pillar-chip--critical'
-                                : pillar.score <= 3.0
-                                  ? 'history-item-pillar-chip--warning'
-                                  : 'history-item-pillar-chip--healthy'
-                            }`}
-                          >
-                            <img src={pillar.sprite} alt={pillar.label} className="history-item-pillar-sprite" />
-                            <span className="history-item-pillar-label">{pillar.label}</span>
-                            <span className="history-item-pillar-score">{pillar.score.toFixed(1)}</span>
-                          </div>
-                        ))}
+                return (
+                  <div
+                    key={s.id}
+                    className={`history-item dashboard-anim-bottom dashboard-anim-delay-${delay}`}
+                    onClick={() => {
+                      onClose();
+                      navigate(buildRoute.sessionResult(s.id), { state: { ...s, source: 'progress' } });
+                    }}
+                    style={{
+                      '--tier-color': tier.color,
+                      '--tier-border': `${tier.color}2e`,
+                      '--tier-border-hover': `${tier.color}5a`,
+                    }}
+                  >
+                    <div className="history-item-row-left">
+                      <div className="history-item-title-section">
+                        <h3 className="history-item-main-title">{buildSessionTitleOrTopic(s)}</h3>
+                        <p className="history-item-session-type">{mode}</p>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="history-item-row-right">
-                    <div className="history-item-performance-section">
-                      <span className="history-item-badge" style={{ borderColor: tier.color, backgroundColor: `${tier.color}15` }}>
-                        <span className="history-item-badge-dot" style={{ backgroundColor: tier.color }} />
-                        {tier.label}
-                      </span>
-                    </div>
-
-                    <div className="history-item-score-compact">
-                      <div className="history-item-score-label-compact">Confidence</div>
-                      <div
-                        className="history-item-score-ring-compact"
-                        style={{
-                          background: `conic-gradient(${tier.color} ${(score / 5) * 100}%, #f1f5f9 0)`
-                        }}
-                      >
-                        <div className="history-item-score-ring-inner-compact">
-                          {score.toFixed(1)}
+                    <div className="history-item-row-center">
+                      <div className="history-item-info-compact">
+                        <p className="history-item-info-line">{formattedDate} • {formattedTime}</p>
+                        <p className="history-item-lacks-line">{lacksSummary}</p>
+                        <div className="history-item-pillars">
+                          {pillars.map((pillar) => (
+                            <div
+                              key={pillar.key}
+                              className={`history-item-pillar-chip ${
+                                pillar.score <= 2.0
+                                  ? 'history-item-pillar-chip--critical'
+                                  : pillar.score <= 3.0
+                                    ? 'history-item-pillar-chip--warning'
+                                    : 'history-item-pillar-chip--healthy'
+                              }`}
+                            >
+                              <img src={pillar.sprite} alt={pillar.label} className="history-item-pillar-sprite" />
+                              <span className="history-item-pillar-label">{pillar.label}</span>
+                              <span className="history-item-pillar-score">{pillar.score.toFixed(1)}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
+
+                    <div className="history-item-row-right">
+                      <div className="history-item-performance-section">
+                        <span className="history-item-badge" style={{ borderColor: tier.color, backgroundColor: `${tier.color}15` }}>
+                          <span className="history-item-badge-dot" style={{ backgroundColor: tier.color }} />
+                          {tier.label}
+                        </span>
+                      </div>
+
+                      <div className="history-item-score-compact">
+                        <div className="history-item-score-label-compact">Confidence</div>
+                        <div
+                          className="history-item-score-ring-compact"
+                          style={{
+                            background: `conic-gradient(${tier.color} ${(score / 5) * 100}%, #f1f5f9 0)`
+                          }}
+                        >
+                          <div className="history-item-score-ring-inner-compact">
+                            {score.toFixed(1)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="history-item-glow" style={{ background: `radial-gradient(circle at bottom, ${tier.color} 0%, transparent 70%)` }} />
                   </div>
+                );
+              })}
 
-                  <div className="history-item-glow" style={{ background: `radial-gradient(circle at bottom, ${tier.color} 0%, transparent 70%)` }} />
-                </div>
-              );
-            })}
-
-            {isLoading && sessionsForDisplay.length === 0 && (
-              <p style={{ textAlign: 'center', color: '#888', padding: '40px 0' }}>Loading history...</p>
-            )}
-            {!isLoading && sessionsForDisplay.length === 0 && (
-              <p style={{ textAlign: 'center', color: '#888', padding: '40px 0' }}>No sessions found.</p>
-            )}
-          </div>
-
-          {!isLoading && (
-            <div className="history-pagination-shell">
-              <ul className="history-pagination" aria-label="History pagination">
-                <li className={`history-pagination-page history-pagination-nav ${safeHistoryPage <= 0 ? 'disabled' : ''}`}>
-                  <button
-                    type="button"
-                    className="history-pagination-link"
-                    onClick={() => setHistoryPage((current) => Math.max(0, current - 1))}
-                    disabled={safeHistoryPage <= 0 || paginationPageCount <= 1}
-                  >
-                    <IoChevronBack />
-                  </button>
-                </li>
-
-                {adaptiveHistoryPages.map((entry, idx) => {
-                  if (entry === 'start-ellipsis' || entry === 'end-ellipsis') {
-                    return <li key={`${entry}-${idx}`} className="history-pagination-break">...</li>;
-                  }
-                  const isActive = entry === safeHistoryPage;
-                  return (
-                    <li key={`page-${entry}`} className={`history-pagination-page ${isActive ? 'active' : ''}`}>
-                      <button
-                        type="button"
-                        className="history-pagination-link"
-                        onClick={() => setHistoryPage(entry)}
-                      >
-                        {entry + 1}
-                      </button>
-                    </li>
-                  );
-                })}
-
-                <li className={`history-pagination-page history-pagination-nav ${safeHistoryPage >= paginationPageCount - 1 ? 'disabled' : ''}`}>
-                  <button
-                    type="button"
-                    className="history-pagination-link"
-                    onClick={() => setHistoryPage((current) => Math.min(paginationPageCount - 1, current + 1))}
-                    disabled={safeHistoryPage >= paginationPageCount - 1 || paginationPageCount <= 1}
-                  >
-                    <IoChevronForward />
-                  </button>
-                </li>
-              </ul>
+              {isLoading && sessionsForDisplay.length === 0 && (
+                <p style={{ textAlign: 'center', color: '#888', padding: '40px 0' }}>Loading history...</p>
+              )}
+              {!isLoading && sessionsForDisplay.length === 0 && (
+                <p style={{ textAlign: 'center', color: '#888', padding: '40px 0' }}>No sessions found.</p>
+              )}
             </div>
-          )}
 
-          <div className="history-footer">
-            <button
-              className="history-back-btn"
-              onClick={onClose}
-            >
-              Close History
-            </button>
+            {!isLoading && (
+              <div className="history-pagination-shell">
+                <ul className="history-pagination" aria-label="History pagination">
+                  <li className={`history-pagination-page history-pagination-nav ${safeHistoryPage <= 0 ? 'disabled' : ''}`}>
+                    <button
+                      type="button"
+                      className="history-pagination-link"
+                      onClick={() => setHistoryPage((current) => Math.max(0, current - 1))}
+                      disabled={safeHistoryPage <= 0 || paginationPageCount <= 1}
+                    >
+                      <IoChevronBack />
+                    </button>
+                  </li>
+
+                  {adaptiveHistoryPages.map((entry, idx) => {
+                    if (entry === 'start-ellipsis' || entry === 'end-ellipsis') {
+                      return <li key={`${entry}-${idx}`} className="history-pagination-break">...</li>;
+                    }
+                    const isActive = entry === safeHistoryPage;
+                    return (
+                      <li key={`page-${entry}`} className={`history-pagination-page ${isActive ? 'active' : ''}`}>
+                        <button
+                          type="button"
+                          className="history-pagination-link"
+                          onClick={() => setHistoryPage(entry)}
+                        >
+                          {entry + 1}
+                        </button>
+                      </li>
+                    );
+                  })}
+
+                  <li className={`history-pagination-page history-pagination-nav ${safeHistoryPage >= paginationPageCount - 1 ? 'disabled' : ''}`}>
+                    <button
+                      type="button"
+                      className="history-pagination-link"
+                      onClick={() => setHistoryPage((current) => Math.min(paginationPageCount - 1, current + 1))}
+                      disabled={safeHistoryPage >= paginationPageCount - 1 || paginationPageCount <= 1}
+                    >
+                      <IoChevronForward />
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            )}
+
+            <div className="history-footer">
+              <button
+                className="history-back-btn"
+                onClick={onClose}
+              >
+                Close History
+              </button>
+            </div>
           </div>
         </div>
       </div>

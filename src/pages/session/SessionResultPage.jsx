@@ -24,6 +24,8 @@ import vocalSprite from '../../assets/Sprites/common/Vocal.png';
 
 import heroRobotImage from '../../assets/Sprites/Robot/0018.webp';
 
+import SessionResultPageMobile from './SessionResultPageMobile';
+
 import '../main/InnerPages.css';
 
 import './SessionResultPage.css';
@@ -277,6 +279,21 @@ function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner, onViewDet
   }, [currentSession, hasCompleteState, activeSessionId, state]);
 
 
+
+  if (windowSize.width < 768) {
+
+    return (
+
+      <SessionResultPageMobile 
+
+        sessionIdProp={activeSessionId}
+
+        isInnerView={isInnerView}
+        onCloseInner={onCloseInner}
+        onViewDetailed={onViewDetailed}
+      />
+    );
+  }
 
   if (!result && isLoading) {
 

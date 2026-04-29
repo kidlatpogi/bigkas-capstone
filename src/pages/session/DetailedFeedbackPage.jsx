@@ -21,6 +21,7 @@ import heroRobotImage from '../../assets/Sprites/Robot/0018.webp';
 import verbalSprite from '../../assets/Sprites/common/Verbal.png';
 import visualSprite from '../../assets/Sprites/common/Visual.png';
 import vocalSprite from '../../assets/Sprites/common/Vocal.png';
+import DetailedFeedbackPageMobile from './DetailedFeedbackPageMobile';
 import '../main/InnerPages.css';
 import './DetailedFeedbackPage.css';
 
@@ -224,6 +225,13 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
   const { state: locationState } = useLocation();
   const { currentSession, fetchSessionById, isLoading } = useSessionContext();
   const [recordingMedia, setRecordingMedia] = useState({ audioUrl: null, videoUrl: null, transcript: '' });
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const hasCompleteLocationState = useMemo(() => {
     if (!locationState || typeof locationState !== 'object') return false;
@@ -324,6 +332,16 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
     loadSessionMedia();
     return () => { isMounted = false; };
   }, [session?.created_at, session?.user_id, sessionId]);
+
+  if (windowWidth < 768) {
+    return (
+      <DetailedFeedbackPageMobile 
+        sessionIdProp={sessionId}
+        isInnerView={isInnerView}
+        onCloseInner={onCloseInner}
+      />
+    );
+  }
 
   if (isLoading && !session) {
     return (

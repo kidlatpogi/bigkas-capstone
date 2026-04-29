@@ -150,65 +150,102 @@ body.activity-tutorial-open .side-nav {
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-.side-nav-notif-wrapper {
-  position: relative;
-  z-index: 1000;
+.side-nav-notif-drawer-root {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  justify-content: flex-end;
 }
 
-.side-nav-notif-tray {
+.side-nav-notif-drawer-scrim {
   position: absolute;
-  top: calc(100% + 8px);
-  right: -4px;
-  width: 320px;
+  inset: 0;
+  background: rgba(11, 57, 84, 0.2);
+  backdrop-filter: blur(4px);
+  animation: drawerFadeIn 0.3s ease;
+}
+
+@keyframes drawerFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.side-nav-notif-tray--drawer {
+  position: relative;
+  width: min(100%, 380px);
+  height: 100%;
   background: #ffffff;
-  border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  overflow: hidden;
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
-  animation: trayFadeIn 0.2s ease-out;
+  animation: drawerSlideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  border-radius: 0; /* Reset for drawer */
 }
 
-@keyframes trayFadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+@keyframes drawerSlideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
 }
 
 .side-nav-notif-tray-head {
-  padding: 16px 20px;
+  padding: 24px 20px;
   background: #f8fafc;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
+.side-nav-notif-tray-head-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .side-nav-notif-tray-head h4 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.25rem;
   font-weight: 800;
   color: #1e293b;
 }
 
+.side-nav-notif-tray-close {
+  background: transparent;
+  border: none;
+  font-size: 2rem;
+  line-height: 1;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0 8px;
+  transition: color 0.2s ease;
+}
+
+.side-nav-notif-tray-close:hover {
+  color: #ef4444;
+}
+
 .side-nav-notif-tray-list {
-  max-height: 360px;
+  flex: 1;
   overflow-y: auto;
-  padding: 8px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
 .side-nav-notif-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  border-radius: 12px;
-  background: #ffffff;
-  transition: background-color 0.2s ease;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid rgba(11, 57, 84, 0.03);
+  transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
 .side-nav-notif-item:hover {
-  background: #f1f5f9;
+  background: #ffffff;
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
 .side-nav-notif-item-content {
@@ -220,7 +257,7 @@ body.activity-tutorial-open .side-nav {
 
 .side-nav-notif-item-title {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 700;
   color: #1e293b;
   line-height: 1.2;
@@ -228,7 +265,7 @@ body.activity-tutorial-open .side-nav {
 
 .side-nav-notif-item-desc {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: #059669;
   text-transform: uppercase;
@@ -239,28 +276,36 @@ body.activity-tutorial-open .side-nav {
   background: #059669;
   color: white;
   border: none;
-  padding: 6px 12px;
+  padding: 8px 16px;
   border-radius: 999px;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
-  margin-left: 12px;
+  margin-left: 16px;
 }
 
 .side-nav-notif-item-btn:hover {
   background: #047857;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
 }
 
 .side-nav-notif-empty {
-  padding: 40px 20px;
+  padding: 80px 20px;
   text-align: center;
   color: #64748b;
-  font-size: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.side-nav-notif-empty p {
+  font-size: 1rem;
   font-weight: 600;
 }
 
 .side-nav-notif-tray-foot {
-  padding: 12px;
+  padding: 20px;
   background: #f8fafc;
   border-top: 1px solid rgba(0, 0, 0, 0.05);
   display: flex;
@@ -268,19 +313,22 @@ body.activity-tutorial-open .side-nav {
 }
 
 .side-nav-notif-tray-foot button {
-  background: transparent;
-  border: none;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   color: #64748b;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
-  padding: 4px 12px;
-  border-radius: 8px;
+  padding: 10px 24px;
+  border-radius: 12px;
+  width: 100%;
+  transition: all 0.2s ease;
 }
 
 .side-nav-notif-tray-foot button:hover {
   color: #1e293b;
-  background: rgba(0, 0, 0, 0.05);
+  background: #f1f5f9;
+  border-color: #cbd5e1;
 }
 
 .side-nav-links {

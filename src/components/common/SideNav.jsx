@@ -150,40 +150,50 @@ export default function SideNav() {
             ) : null}
           </button>
 
-          {notifTrayOpen && (
-            <div className="side-nav-notif-tray">
-              <div className="side-nav-notif-tray-head">
-                <h4>Notifications</h4>
-              </div>
-              <div className="side-nav-notif-tray-list no-scrollbar">
-                {claimables.length > 0 ? (
-                  claimables.map((item) => (
-                    <div key={item.id} className="side-nav-notif-item">
-                      <div className="side-nav-notif-item-content">
-                        <p className="side-nav-notif-item-title">{item.title}</p>
-                        <p className="side-nav-notif-item-desc">Ready to claim</p>
-                      </div>
-                      <button
-                        type="button"
-                        className="side-nav-notif-item-btn"
-                        onClick={() => handleClaim(item.id)}
-                      >
-                        Claim
-                      </button>
-                    </div>
-                  ))
-                ) : (
-                  <div className="side-nav-notif-empty">
-                    <p>No new notifications</p>
+          {notifTrayOpen && createPortal(
+            <div className="side-nav-notif-drawer-root">
+              <div className="side-nav-notif-drawer-scrim" onClick={() => setNotifTrayOpen(false)} />
+              <div className="side-nav-notif-tray side-nav-notif-tray--drawer">
+                <div className="side-nav-notif-tray-head">
+                  <div className="side-nav-notif-tray-head-main">
+                    <h4>Notifications</h4>
+                    <button type="button" className="side-nav-notif-tray-close" onClick={() => setNotifTrayOpen(false)}>×</button>
                   </div>
-                )}
+                </div>
+                <div className="side-nav-notif-tray-list no-scrollbar">
+                  {claimables.length > 0 ? (
+                    claimables.map((item) => (
+                      <div key={item.id} className="side-nav-notif-item">
+                        <div className="side-nav-notif-item-content">
+                          <p className="side-nav-notif-item-title">{item.title}</p>
+                          <p className="side-nav-notif-item-desc">Ready to claim</p>
+                        </div>
+                        <button
+                          type="button"
+                          className="side-nav-notif-item-btn"
+                          onClick={() => handleClaim(item.id)}
+                        >
+                          Claim
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="side-nav-notif-empty">
+                      <p>No new notifications</p>
+                    </div>
+                  )}
+                </div>
+                <div className="side-nav-notif-tray-foot">
+                  <button type="button" onClick={() => {
+                    setNotifTrayOpen(false);
+                    navigate(ROUTES.ACHIEVEMENTS);
+                  }}>
+                    View all achievements
+                  </button>
+                </div>
               </div>
-              <div className="side-nav-notif-tray-foot">
-                <button type="button" onClick={() => navigate(ROUTES.ACHIEVEMENTS)}>
-                  View all achievements
-                </button>
-              </div>
-            </div>
+            </div>,
+            document.body
           )}
         </div>
       </div>

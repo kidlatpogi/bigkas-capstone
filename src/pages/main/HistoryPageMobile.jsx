@@ -182,13 +182,24 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
 
           {/* Fixed History Controls for Mobile */}
           <div className="history-controls" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '16px', padding: '12px 24px' }}>
-            <div className="history-filters" style={{ width: '100%', maxWidth: 'none', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px' }}>
+            <div className="history-filters" style={{ width: 'fit-content', display: 'flex', gap: '4px', background: '#f1f5f9', padding: '5px', borderRadius: '999px' }}>
               {HISTORY_FILTERS.map((f) => (
                 <button
                   key={f}
                   className={`history-filter-btn ${historyFilter === f ? 'active' : ''}`}
                   onClick={() => { setHistoryFilter(f); setHistoryPage(0); }}
-                  style={{ padding: '6px 4px', fontSize: '11px', minHeight: '36px' }}
+                  style={{ 
+                    padding: '6px 14px', 
+                    fontSize: '12px', 
+                    fontWeight: 700, 
+                    borderRadius: '999px', 
+                    border: 'none',
+                    background: historyFilter === f ? '#059669' : 'transparent',
+                    color: historyFilter === f ? '#fff' : '#64748b',
+                    minHeight: 'auto',
+                    boxShadow: historyFilter === f ? '0 4px 12px rgba(5, 150, 105, 0.2)' : 'none',
+                    transition: 'all 0.2s ease'
+                  }}
                 >
                   {f}
                 </button>

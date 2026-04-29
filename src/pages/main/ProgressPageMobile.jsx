@@ -374,7 +374,7 @@ function ProgressPageMobile() {
             <div className="progress-chart-header" style={{ marginBottom: '20px' }}>
               <h3 className="progress-chart-title" style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Speaking Performance</h3>
               <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '16px' }}>Your delivery scores over time</p>
-              <div className="progress-range-labels" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }} className="no-scrollbar">
+              <div className="progress-range-labels no-scrollbar" style={{ display: 'flex', gap: '4px', overflowX: 'auto', padding: '5px', background: '#f1f5f9', borderRadius: '999px', width: 'fit-content' }}>
                 {TIME_RANGES.map(r => (
                   <button
                     type="button"
@@ -382,14 +382,16 @@ function ProgressPageMobile() {
                     className={`progress-range-chip ${range === r ? 'active' : ''}`}
                     onClick={() => setRange(r)}
                     style={{ 
-                      padding: '8px 16px', 
-                      borderRadius: '12px', 
-                      fontSize: '0.8rem', 
-                      fontWeight: 600,
-                      background: range === r ? '#10b981' : '#f1f5f9',
+                      padding: '6px 14px', 
+                      borderRadius: '999px', 
+                      fontSize: '12px', 
+                      fontWeight: 700,
+                      background: range === r ? '#059669' : 'transparent',
                       color: range === r ? '#fff' : '#64748b',
                       border: 'none',
-                      whiteSpace: 'nowrap'
+                      whiteSpace: 'nowrap',
+                      boxShadow: range === r ? '0 4px 12px rgba(5, 150, 105, 0.2)' : 'none',
+                      transition: 'all 0.2s ease'
                     }}
                   >
                     {r}
@@ -418,7 +420,7 @@ function ProgressPageMobile() {
           <div className="progress-pillars-section dashboard-anim-bottom">
             <div className="progress-pillars-header" style={{ marginBottom: '20px' }}>
               <h3 className="progress-pillars-title" style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b', marginBottom: '16px' }}>Pillar Trends ({pillarRange})</h3>
-              <div className="progress-range-labels" style={{ display: 'flex', gap: '8px' }}>
+              <div className="progress-range-labels" style={{ display: 'flex', gap: '4px', padding: '5px', background: '#f1f5f9', borderRadius: '999px', width: 'fit-content' }}>
                 {TIME_RANGES.map(r => (
                   <button
                     type="button"
@@ -426,13 +428,15 @@ function ProgressPageMobile() {
                     className={`progress-range-chip ${pillarRange === r ? 'active' : ''}`}
                     onClick={() => setPillarRange(r)}
                     style={{ 
-                      padding: '8px 16px', 
-                      borderRadius: '12px', 
-                      fontSize: '0.8rem', 
-                      fontWeight: 600,
-                      background: pillarRange === r ? '#10b981' : '#f1f5f9',
+                      padding: '6px 14px', 
+                      borderRadius: '999px', 
+                      fontSize: '12px', 
+                      fontWeight: 700,
+                      background: pillarRange === r ? '#059669' : 'transparent',
                       color: pillarRange === r ? '#fff' : '#64748b',
-                      border: 'none'
+                      border: 'none',
+                      boxShadow: pillarRange === r ? '0 4px 12px rgba(5, 150, 105, 0.2)' : 'none',
+                      transition: 'all 0.2s ease'
                     }}
                   >
                     {r}

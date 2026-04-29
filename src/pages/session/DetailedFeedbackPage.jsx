@@ -382,9 +382,9 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
   }
 
   const visualSubMetrics = [
-    { label: 'Eye Contact', score: subMetric100to15(session?.facial_expression_score ?? session?.eye_contact_score) },
-    { label: 'Gestures', score: subMetric100to15(session?.gesture_score) },
-  ].filter((m) => m.score !== null);
+    { label: 'Eye Contact', score: subMetric100to15(session?.facial_expression_score ?? session?.eye_contact_score) ?? tripleV.visualAvg },
+    { label: 'Gestures', score: subMetric100to15(session?.gesture_score) ?? tripleV.visualAvg },
+  ];
 
   const vocalSubMetrics = [
     { label: 'Jitter Control', score: invertedSubMetric(session?.jitter_score) },
@@ -726,75 +726,61 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
           })}
         </div>
       </section>
-
-      {/* Media & Info Container */}
-      <div className="df-media-info-container dashboard-anim-bottom dashboard-anim-delay-7" style={{ marginTop: '48px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        <div className="df-media-info-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-          {/* Session Recordings (Static) */}
-          <div className="df-card" style={{ padding: '24px' }}>
-            <h3 className="df-section-title" style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Session Recording</h3>
-            <div className="df-recording-content">
-              {videoUrl && (
-                <div className="df-video-wrap" style={{ borderRadius: '16px', overflow: 'hidden', background: '#000' }}>
-                  <video className="df-video" controls preload="metadata" src={videoUrl} style={{ width: '100%', display: 'block' }}>
-                    Your browser does not support video playback.
-                  </video>
-                </div>
-              )}
-              {audioUrl && (
-                <div className="df-audio-wrap" style={{ marginTop: videoUrl ? '12px' : '0' }}>
-                  <audio className="df-audio" controls preload="metadata" src={audioUrl} style={{ width: '100%' }}>
-                    Your browser does not support audio playback.
-                  </audio>
-                </div>
-              )}
-              {!videoUrl && !audioUrl && (
-                <p className="df-recordings-empty">No recording available for this session.</p>
-              )}
-            </div>
-          </div>
-
-          {/* Session Information (Static) */}
-          <div className="df-card" style={{ padding: '24px' }}>
-            <h3 className="df-section-title" style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Session Details</h3>
-            <div className="df-info-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {session.created_at && (
-                <div className="df-info-row" style={{ padding: '8px 0' }}>
-                  <span className="df-info-key">Date</span>
-                  <span className="df-info-val">{formatDate(session.created_at)}</span>
-                </div>
-              )}
-              <div className="df-info-row" style={{ padding: '8px 0' }}>
-                <span className="df-info-key">Duration</span>
-                <span className="df-info-val">{formatDuration(durationSec)}</span>
+      <div className="df-media-info-container dashboard-anim-bottom dashboard-anim-delay-7" style={{ marginTop: '48px' }}>
+        <div className="df-card" style={{ padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          {/* Header with integrated details */}
+          <div style={{ padding: '24px', borderBottom: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+            <h3 className="df-section-title" style={{ fontSize: '1.1rem', margin: 0 }}>Session Performance Media</h3>
+            <div style={{ display: 'flex', gap: '32px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>Date</span>
+                <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{formatDate(session.created_at)}</span>
               </div>
-              <div className="df-info-row" style={{ padding: '8px 0' }}>
-                <span className="df-info-key">Mode</span>
-                <span className="df-info-val">{mode}</span>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>Duration</span>
+                <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{formatDuration(durationSec)}</span>
               </div>
-              <div className="df-info-row" style={{ padding: '8px 0' }}>
-                <span className="df-info-key">Speech Type</span>
-                <span className="df-info-val">{getSessionSpeechType(session)}</span>
-              </div>
-              <div className="df-info-row" style={{ padding: '8px 0' }}>
-                <span className="df-info-key">Confidence</span>
-                <span className="df-info-val">{(tripleV.entryPoint * 20).toFixed(0)}%</span>
-              </div>
-              <div className="df-info-row" style={{ padding: '8px 0', borderTop: '1px solid rgba(0,0,0,0.05)', marginTop: '8px', paddingTop: '16px' }}>
-                <span className="df-info-key" style={{ opacity: 0.5, fontSize: '0.75rem' }}>Analysis ID</span>
-                <span className="df-info-val" style={{ opacity: 0.5, fontSize: '0.75rem', fontFamily: 'monospace' }}>{session.id?.slice(0, 8)}...</span>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>Mode</span>
+                <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{mode}</span>
               </div>
             </div>
           </div>
-        </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', minHeight: '400px' }}>
+            {/* Recording Column */}
+            <div style={{ padding: '24px', borderRight: '1px solid rgba(0,0,0,0.05)', background: '#fff' }}>
+              <div className="df-recording-content">
+                {videoUrl && (
+                  <div className="df-video-wrap" style={{ borderRadius: '16px', overflow: 'hidden', background: '#000', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                    <video className="df-video" controls preload="metadata" src={videoUrl} style={{ width: '100%', display: 'block' }}>
+                      Your browser does not support video playback.
+                    </video>
+                  </div>
+                )}
+                {audioUrl && (
+                  <div className="df-audio-wrap" style={{ marginTop: videoUrl ? '12px' : '0' }}>
+                    <audio className="df-audio" controls preload="metadata" src={audioUrl} style={{ width: '100%' }}>
+                      Your browser does not support audio playback.
+                    </audio>
+                  </div>
+                )}
+                {!videoUrl && !audioUrl && (
+                  <p className="df-recordings-empty">No recording available for this session.</p>
+                )}
+              </div>
+            </div>
 
-        {/* Transcript Container (Full Width Underneath) */}
-        <div className="df-card" style={{ padding: '24px' }}>
-          <h3 className="df-section-title" style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Session Transcript</h3>
-          <p className="df-practiced-text" style={{ fontSize: '0.9rem', lineHeight: '1.6', background: '#f8fafc', padding: '20px', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.03)' }}>
-            {practicedText}
-          </p>
-        </div>
+            {/* Transcript Column */}
+            <div style={{ padding: '24px', background: '#fff', display: 'flex', flexDirection: 'column' }}>
+              <h3 className="df-section-title" style={{ fontSize: '0.9rem', marginBottom: '16px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Session Transcript</h3>
+              <div style={{ flex: 1, overflowY: 'auto', background: '#f8fafc', padding: '20px', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.03)' }}>
+                <p className="df-practiced-text" style={{ fontSize: '0.9rem', lineHeight: '1.6', margin: 0 }}>
+                  {practicedText}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

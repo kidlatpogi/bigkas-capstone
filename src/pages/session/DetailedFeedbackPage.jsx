@@ -782,6 +782,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
             </div>
           </div>
         </div>
+        </div>
       </div>
     </div>
   );

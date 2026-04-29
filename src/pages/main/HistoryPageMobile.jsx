@@ -245,25 +245,32 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
                       alignItems: 'stretch'
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                      <div>
-                        <h3 className="history-item-main-title" style={{ fontSize: '0.95rem' }}>{buildSessionTitleOrTopic(s)}</h3>
-                        <p className="history-item-session-type" style={{ fontSize: '0.7rem' }}>{getSessionMode(s)} • {formattedDate}</p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <h3 className="history-item-main-title" style={{ fontSize: '1rem' }}>{buildSessionTitleOrTopic(s)}</h3>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span className="history-item-badge" style={{ borderColor: tier.color, backgroundColor: `${tier.color}15`, padding: '4px 10px', fontSize: '10px' }}>
+                            <span className="history-item-badge-dot" style={{ backgroundColor: tier.color }} />
+                            {tier.label}
+                          </span>
+                          <p className="history-item-session-type" style={{ fontSize: '0.75rem', margin: 0 }}>{formattedDate}</p>
+                        </div>
                       </div>
-                      <div className="history-item-score-ring-compact" style={{ width: '40px', height: '40px', background: `conic-gradient(${tier.color} ${(score/5)*100}%, #f1f5f9 0)` }}>
-                        <div className="history-item-score-ring-inner-compact" style={{ width: '30px', height: '30px', fontSize: '11px' }}>{score.toFixed(1)}</div>
+                      <div className="history-item-score-ring-compact" style={{ width: '44px', height: '44px', background: `conic-gradient(${tier.color} ${(score/5)*100}%, #f1f5f9 0)` }}>
+                        <div className="history-item-score-ring-inner-compact" style={{ width: '34px', height: '34px', fontSize: '12px' }}>{score.toFixed(1)}</div>
                       </div>
                     </div>
                     
-                    <div className="history-item-pillars" style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    <div className="history-item-pillars" style={{ marginTop: '4px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
                       {pillars.map(p => (
                         <div 
                           key={p.key} 
                           className={`history-item-pillar-chip ${p.score <= 2.0 ? 'history-item-pillar-chip--critical' : p.score <= 3.0 ? 'history-item-pillar-chip--warning' : 'history-item-pillar-chip--healthy'}`} 
-                          style={{ padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '12px', minHeight: 'auto' }}
+                          style={{ padding: '6px 4px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', borderRadius: '12px', minHeight: 'auto', textAlign: 'center' }}
                         >
-                          <img src={p.sprite} alt="" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
-                          <span style={{ fontSize: '11px', fontWeight: 800 }}>{p.label} {p.score.toFixed(1)}</span>
+                          <img src={p.sprite} alt="" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
+                          <span style={{ fontSize: '10px', fontWeight: 800 }}>{p.label}</span>
+                          <span style={{ fontSize: '11px', fontWeight: 900 }}>{p.score.toFixed(1)}</span>
                         </div>
                       ))}
                     </div>

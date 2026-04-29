@@ -242,7 +242,6 @@ function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner, onViewDet
       <div className="sr-content-layout">
         {/* Overall Score Hero (Banner-like) */}
         <section className="sr-hero-banner" id="sr-hero-section">
-          <img src={heroRobotImage} alt="" className="sr-hero-robot" />
           <div className="sr-hero-banner-inner">
             <div className="sr-hero-main-content">
               <div className="sr-hero-header">

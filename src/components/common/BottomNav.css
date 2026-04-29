@@ -113,3 +113,9 @@ body {
     display: none;
   }
 }
+
+/* Hide BottomNav when a modal is active */
+body.modal-open .bottom-nav,
+body.bigkas-modal-active .bottom-nav {
+  display: none !important;
+}

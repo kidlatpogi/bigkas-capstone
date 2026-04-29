@@ -1,8 +1,12 @@
 /* DetailedFeedbackPageMobile.css */
 
 .df-mobile-root {
+  width: calc(100% + (var(--mobile-px, 16px) * 2));
+  margin-left: calc(var(--mobile-px, 16px) * -1);
+  margin-right: calc(var(--mobile-px, 16px) * -1);
   height: 100dvh;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-bottom: 80px;
   background-color: #FDFDF9;
   background-image: 
@@ -28,10 +32,13 @@
   background-size: 40px 40px, 100% 100%, 100% 100%;
   background-attachment: fixed;
   font-family: 'Fredoka', sans-serif;
+  box-sizing: border-box;
 }
 
 .df-mobile-content {
   padding: 16px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Breadcrumb */

@@ -833,6 +833,7 @@ function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner, onViewDet
             <div className="sr-detailed-card-icon">
 
               <IoChevronForward />
+            </div>
             <div className="sr-detailed-card-content">
 
               <span className="sr-detailed-card-kicker">ANALYTICS INSIGHTS</span>

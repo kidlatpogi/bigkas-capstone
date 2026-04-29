@@ -281,11 +281,15 @@ function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner, onViewDet
         <section className="sr-pillars-section">
           <h2 className="sr-section-title">Triple V Breakdown</h2>
           <div className="sr-pillars-grid">
-            {pillars.map((p) => {
+            {pillars.map((p, index) => {
               const tier = getScoreTier15(p.score);
               const scorePercent = scoreBarPercent(p.score);
               return (
-                <div key={p.key} className="pillar-card sr-pillar-progress-card" id={`pillar-${p.key}`}>
+                <div 
+                  key={p.key} 
+                  className={`pillar-card sr-pillar-progress-card dashboard-anim-bottom dashboard-anim-delay-${5 + index}`} 
+                  id={`pillar-${p.key}`}
+                >
                   <div className="new-widget-head">
                     <h2 className="new-widget-title">{p.label}</h2>
                     <span className="new-widget-chip" style={{ background: `${tier.color}20`, color: tier.color }}>

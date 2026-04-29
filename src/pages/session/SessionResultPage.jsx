@@ -1,13 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import Confetti from 'react-confetti';
-import { IoChevronForward } from 'react-icons/io5';
+import { IoChevronForward, IoChevronBack } from 'react-icons/io5';
 import { useSessionContext } from '../../context/useSessionContext';
 import { useAuthContext } from '../../context/useAuthContext';
 import { buildRoute, ROUTES } from '../../utils/constants';
 import { getSessionMode } from '../../utils/sessionFormatting';
 import { sanitizeRecommendationLines } from '../../utils/analysisTranscript';
+import heroRobotImage from '../../assets/Sprites/Robot/0018.webp';
+import visualSprite from '../../assets/Sprites/common/Visual.png';
+import verbalSprite from '../../assets/Sprites/common/Verbal.png';
+import vocalSprite from '../../assets/Sprites/common/Vocal.png';
 import '../main/InnerPages.css';
+import '../main/ActivityPage.css';
+import '../main/ProgressPage.css';
 import './SessionResultPage.css';
 
 const FOREST_GREEN = '#5A7863';
@@ -44,7 +50,7 @@ function getScoreTier15(score) {
   return { label: 'Needs Work', color: '#D94F3B' };
 }
 
-function scoreBarPercent(score) {
+function score15ToPercent(score) {
   return Math.max(0, Math.min(100, ((score - 1) / 4) * 100));
 }
 
@@ -206,7 +212,7 @@ function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner, onViewDet
   const onboardingLabel = user?.onboardingStage === 'analyzing' ? 'Analyze Level' : 'Continue Onboarding';
 
   return (
-    <div className={`sr-page ${isInnerView ? 'sr-page--inner' : ''}`}>
+    <div className={`sr-page no-scrollbar ${isInnerView ? 'sr-page--inner' : ''}`}>
       {shouldCelebrateScore(result) && !isInnerView && (
         <Confetti
           width={windowSize.width}
@@ -223,138 +229,171 @@ function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner, onViewDet
         <nav className="sr-breadcrumb">
           <button
             type="button"
-            className="sr-breadcrumb-link"
+            className="sr-breadcrumb-back"
             onClick={handleBackNavigation}
+            aria-label="Back"
           >
-            {breadcrumbParent}
+            <IoChevronBack />
           </button>
-          <IoChevronForward className="sr-breadcrumb-sep" />
-          <span className="sr-breadcrumb-current">
-            {sessionTitle} Analysis Result
-          </span>
+          <div className="sr-breadcrumb-content">
+            <span className="sr-breadcrumb-parent">{breadcrumbParent}</span>
+            <IoChevronForward className="sr-breadcrumb-sep" />
+            <span className="sr-breadcrumb-current">
+              {sessionTitle} Analysis Result
+            </span>
+          </div>
         </nav>
       )}
 
-      {/* Overall Score Hero */}
-      <section className="sr-hero">
-        <div className="sr-hero-top">
-          <p className="sr-hero-kicker">Overall Speaking Score</p>
-          <span
-            className="sr-hero-tier"
-            style={{ background: `${overallTier.color}1A`, color: overallTier.color }}
-          >
-            {overallTier.label}
-          </span>
-        </div>
+      <div className="sr-content-layout">
+        {/* Banner Section (1:1 with Progress/Activity Page) */}
+        <section className="new-banner dashboard-anim-top dashboard-anim-delay-2">
+          <div className="new-banner-left">
+            <img src={heroRobotImage} alt="" className="new-banner-robot" />
+            <div className="new-banner-bubble" aria-label="Coach message">
+              <p className="new-banner-kicker">B-01:</p>
+              <p className="new-banner-copy">
+                {tripleV.entryPoint >= 4.0
+                  ? 'Outstanding! Your speech was clear and confident.'
+                  : tripleV.entryPoint >= 3.0
+                    ? 'Good job! A few areas to polish for even better results.'
+                    : tripleV.entryPoint >= 2.0
+                      ? 'Keep going! Regular practice will push your score higher.'
+                      : "Don't give up. Every session makes you stronger."}
+              </p>
+            </div>
+          </div>
 
-        <div className="sr-hero-score-wrap">
-          <p className="sr-hero-score">{tripleV.entryPoint.toFixed(1)}</p>
-          <span className="sr-hero-max">/ 5.0</span>
-        </div>
-
-        <div className="sr-hero-track">
-          <div
-            className="sr-hero-track-fill"
-            style={{ width: `${scoreBarPercent(tripleV.entryPoint)}%` }}
-          />
-        </div>
-
-        <p className="sr-hero-message">
-          {tripleV.entryPoint >= 4.0
-            ? 'Outstanding! Your speech was clear and confident.'
-            : tripleV.entryPoint >= 3.0
-              ? 'Good job! A few areas to polish for even better results.'
-              : tripleV.entryPoint >= 2.0
-                ? 'Keep going! Regular practice will push your score higher.'
-                : "Don't give up. Every session makes you stronger."}
-        </p>
-      </section>
-
-      {/* Triple V Pillars */}
-      <section className="sr-pillars">
-        <h2 className="sr-section-title">Triple V Breakdown</h2>
-        <div className="sr-pillars-grid">
-          {pillars.map((p) => {
-            const tier = getScoreTier15(p.score);
-            return (
-              <div key={p.key} className="sr-pillar-card">
-                <div className="sr-pillar-header">
-                  <span className="sr-pillar-label">{p.label}</span>
-                  <span
-                    className="sr-pillar-tier"
-                    style={{ color: tier.color }}
-                  >
-                    {tier.label}
-                  </span>
-                </div>
-                <p className="sr-pillar-score">{p.score.toFixed(1)}<span>/5.0</span></p>
-                <p className="sr-pillar-desc">{p.desc}</p>
-                <div className="sr-pillar-track">
-                  <div
-                    className="sr-pillar-track-fill"
-                    style={{ width: `${scoreBarPercent(p.score)}%`, background: tier.color }}
-                  />
+          <div className="new-banner-right">
+            <div className="progress-banner-stats">
+              <div className="new-widget-rank-card progress-stat-card">
+                <div className="new-widget-rank-content">
+                  <p className="new-widget-kicker">Overall Score</p>
+                  <p className="new-widget-value">{tripleV.entryPoint.toFixed(1)}</p>
+                  <span className="sr-stat-max">/ 5.0</span>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Recommendations */}
-      {allRecommendations.length > 0 && (
-        <section className="sr-recs">
-          <h2 className="sr-section-title">Recommendations</h2>
-          <ul className="sr-recs-list">
-            {allRecommendations.map((text, idx) => (
-              <li key={idx} className="sr-rec-item">{text}</li>
-            ))}
-          </ul>
-          {pillarRecommendations.length > 0 && (
-            <button
-              className="sr-recs-hub-link"
-              onClick={() => navigate(ROUTES.FRAMEWORKS)}
-              type="button"
-            >
-              Visit Training Hub →
-            </button>
-          )}
+              <div className="new-widget-rank-card progress-stat-card">
+                <div className="new-widget-rank-content">
+                  <p className="new-widget-kicker">Status</p>
+                  <p className="new-widget-value" style={{ color: overallTier.color, fontSize: 'clamp(18px, 2.5vw, 24px)' }}>
+                    {overallTier.label.toUpperCase()}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
-      )}
 
-      {/* View Detailed Feedback */}
-      <button
-        type="button"
-        className="sr-detail-link"
-        onClick={() => {
-          if (isInnerView && onViewDetailed) {
-            onViewDetailed();
-          } else {
-            navigate(ROUTES.DETAILED_FEEDBACK.replace(':sessionId', activeSessionId), {
-              state: {
-                ...result,
-                source: state?.source,
-                backTo: state?.backTo,
-              },
-            });
-          }
-        }}
-      >
-        <span>View Detailed Feedback</span>
-        <IoChevronForward />
-      </button>
+        {/* Triple V Pillars Grid */}
+        <div className="sr-pillars-section dashboard-anim-bottom dashboard-anim-delay-4">
+          <div className="progress-pillars-header">
+            <h3 className="progress-pillars-title">Triple V Breakdown</h3>
+          </div>
+          <div className="progress-pillars-grid">
+            {pillars.map((pillar, index) => {
+              const tier = getScoreTier15(pillar.score);
+              const sprite = pillar.key === 'visual' ? visualSprite : pillar.key === 'vocal' ? vocalSprite : verbalSprite;
+              return (
+                <div 
+                  key={pillar.key} 
+                  className={`pillar-card dashboard-anim-bottom dashboard-anim-delay-${5 + index}`}
+                >
+                  <div className="new-widget-head">
+                    <h2 className="new-widget-title">{pillar.label}</h2>
+                    <span className="new-widget-chip" style={{ background: `${tier.color}20`, color: tier.color }}>
+                      {tier.label}
+                    </span>
+                  </div>
+                  <div className="new-widget-rank-card">
+                    <img src={sprite} alt="" className="new-widget-rank-sprite" />
+                    <div className="new-widget-rank-content">
+                      <p className="new-widget-kicker">Score</p>
+                      <p className="new-widget-value">{pillar.score.toFixed(1)} / 5.0</p>
+                    </div>
+                  </div>
+                  <div className="progress-pillar-track-header">
+                    <span className="progress-pillar-track-label">{pillar.desc}</span>
+                    <span className="progress-pillar-track-percent">{Math.round(score15ToPercent(pillar.score))}%</span>
+                  </div>
+                  <div className="progress-pillar-track">
+                    <div
+                      className="progress-pillar-track-fill"
+                      style={{ width: `${score15ToPercent(pillar.score)}%`, background: tier.color }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
-      {/* Action Buttons */}
-      <div className="sr-actions">
-        <button
-          className="sr-btn sr-btn-secondary"
-          onClick={handleBackNavigation}
-        >
-          {isInnerView ? 'Back to History' : (isOnboarding ? onboardingLabel : 'Back to Dashboard')}
-        </button>
-        <button className="sr-btn sr-btn-primary" onClick={replayAction.onClick}>
-          {replayAction.label}
-        </button>
+        {/* Recommendations & Actions */}
+        <div className="sr-footer-grid dashboard-anim-bottom dashboard-anim-delay-6">
+          {/* Recommendations */}
+          <section className="sr-recs-card pillar-card">
+            <div className="new-widget-head">
+              <h2 className="new-widget-title">Recommendations</h2>
+            </div>
+            <ul className="sr-recs-list">
+              {allRecommendations.map((text, idx) => (
+                <li key={idx} className="sr-rec-item">{text}</li>
+              ))}
+            </ul>
+            {pillarRecommendations.length > 0 && (
+              <button
+                className="sr-recs-hub-link"
+                onClick={() => navigate(ROUTES.FRAMEWORKS)}
+                type="button"
+              >
+                Visit Training Hub →
+              </button>
+            )}
+          </section>
+
+          {/* Action Center */}
+          <section className="sr-actions-card pillar-card">
+            <div className="new-widget-head">
+              <h2 className="new-widget-title">Next Steps</h2>
+            </div>
+            
+            <div className="sr-actions-buttons">
+              <button
+                type="button"
+                className="progress-show-history-btn sr-action-btn-detail"
+                onClick={() => {
+                  if (isInnerView && onViewDetailed) {
+                    onViewDetailed();
+                  } else {
+                    navigate(ROUTES.DETAILED_FEEDBACK.replace(':sessionId', activeSessionId), {
+                      state: {
+                        ...result,
+                        source: state?.source,
+                        backTo: state?.backTo,
+                      },
+                    });
+                  }
+                }}
+              >
+                View Detailed Feedback
+              </button>
+
+              <button 
+                className="progress-show-history-btn sr-action-btn-primary" 
+                onClick={replayAction.onClick}
+              >
+                {replayAction.label}
+              </button>
+
+              <button
+                className="progress-show-history-btn sr-action-btn-secondary"
+                onClick={handleBackNavigation}
+              >
+                {isInnerView ? 'Back to History' : (isOnboarding ? onboardingLabel : 'Back to Dashboard')}
+              </button>
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   );

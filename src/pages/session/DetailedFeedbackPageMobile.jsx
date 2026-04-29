@@ -140,9 +140,9 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
   ].filter(m => m.score !== null);
 
   const pillars = [
-    { key: 'visual', label: 'Visual', desc: 'Eye contact & gestures', score: tripleV.visualAvg, image: visualSprite, subMetrics: visualSubMetrics },
-    { key: 'vocal', label: 'Vocal', desc: 'Voice pitch & stability', score: tripleV.vocalAvg, image: vocalSprite, subMetrics: vocalSubMetrics },
-    { key: 'verbal', label: 'Verbal', desc: 'Pronunciation & clarity', score: tripleV.verbalAvg, image: verbalSprite, subMetrics: [] },
+    { key: 'visual', label: 'Visual', desc: 'Eye contact, facial expressions, and body gestures', score: tripleV.visualAvg, image: visualSprite, subMetrics: visualSubMetrics },
+    { key: 'vocal', label: 'Vocal', desc: 'Voice pitch stability, volume consistency, and clarity', score: tripleV.vocalAvg, image: vocalSprite, subMetrics: vocalSubMetrics },
+    { key: 'verbal', label: 'Verbal', desc: 'Pronunciation accuracy and topical relevance', score: tripleV.verbalAvg, image: verbalSprite, subMetrics: [] },
   ];
 
   const timelineData = Array.from({ length: 15 }, (_, idx) => {

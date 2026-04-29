@@ -239,7 +239,7 @@ function SessionResultPageMobile({ sessionIdProp, isInnerView, onCloseInner, onV
           <div className="sr-mobile-widget">
             <div className="sr-mobile-widget-header">
               <span className="sr-mobile-widget-title">Overall Score</span>
-              <span className="sr-mobile-widget-badge">CORE</span>
+              <span className="sr-mobile-widget-badge" style={{ background: '#f1f5f9', color: '#64748b' }}>PERFORMANCE</span>
             </div>
             <div className="sr-mobile-score-row">
               <span className="sr-mobile-score-value" style={{ color: overallTier.color }}>{tripleV.entryPoint.toFixed(1)}</span>
@@ -253,19 +253,19 @@ function SessionResultPageMobile({ sessionIdProp, isInnerView, onCloseInner, onV
 
           <div className="sr-mobile-widget">
             <div className="sr-mobile-widget-header">
-              <span className="sr-mobile-widget-title">Top Strength</span>
-              <span className="sr-mobile-widget-badge">BEST</span>
+              <span className="sr-mobile-widget-title">Primary Strength</span>
+              <span className="sr-mobile-widget-badge" style={{ background: '#f0fdf4', color: '#059669' }}>ANALYSIS</span>
             </div>
             {(() => {
               const topPillar = [...pillars].sort((a, b) => b.score - a.score)[0];
               return (
                 <div className="sr-mobile-strength-row">
                   <img src={topPillar.image} alt="" className="sr-mobile-strength-icon" />
-                  <span className="sr-mobile-strength-name">{topPillar.label}</span>
+                  <span className="sr-mobile-strength-name" style={{ color: '#059669' }}>{topPillar.label}</span>
                 </div>
               );
             })()}
-            <p style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700, marginTop: '8px', textTransform: 'uppercase' }}>Highest Performance</p>
+            <p style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700, marginTop: '8px', textTransform: 'uppercase' }}>Top Performance Area</p>
           </div>
         </div>
 

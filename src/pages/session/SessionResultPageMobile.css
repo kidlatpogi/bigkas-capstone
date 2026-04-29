@@ -5,9 +5,29 @@
   overflow-y: auto;
   padding-bottom: 80px;
   background-color: #FDFDF9;
-  background-image: radial-gradient(rgba(11, 57, 84, 0.1) 1px, transparent 0);
-  background-size: 40px 40px;
+  background-image: 
+    radial-gradient(rgba(11, 57, 84, 0.1) 1px, transparent 0),
+    repeating-radial-gradient(
+      circle at 100% 100%, 
+      transparent 0, 
+      transparent 200px, 
+      rgba(5, 150, 105, 0.06) 200px, 
+      rgba(5, 150, 105, 0.06) 202px, 
+      transparent 202px, 
+      transparent 400px
+    ),
+    repeating-radial-gradient(
+      circle at 0% 0%, 
+      transparent 0, 
+      transparent 300px, 
+      rgba(249, 115, 22, 0.05) 300px, 
+      rgba(249, 115, 22, 0.05) 302px, 
+      transparent 302px, 
+      transparent 600px
+    );
+  background-size: 40px 40px, 100% 100%, 100% 100%;
   background-attachment: fixed;
+  font-family: 'Fredoka', sans-serif;
 }
 
 .sr-mobile-content {

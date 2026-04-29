@@ -16,6 +16,8 @@ import { ROUTES } from '../../utils/constants';
 import {
   ACHIEVEMENTS_UPDATED_EVENT,
   getClaimableAchievementsCount,
+  getClaimableAchievements,
+  claimAchievement,
 } from '../../utils/achievementClaims';
 import './SideNav.css';
 

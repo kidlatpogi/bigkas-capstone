@@ -63,8 +63,9 @@ function scoreBarPercent(score) {
 
 function subMetric100to15(val) {
   const v = Number(val);
-  if (!Number.isFinite(v) || v === 0) return null;
-  return Math.round(Math.max(1, Math.min(5, 1.0 + (Math.max(0, Math.min(100, v)) / 100) * 4.0)) * 100) / 100;
+  if (!Number.isFinite(v)) return null;
+  const clamped = Math.max(0, Math.min(100, v));
+  return Math.round((1.0 + (clamped / 100) * 4.0) * 100) / 100;
 }
 
 function invertedSubMetric(val) {
@@ -766,6 +767,18 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
               <div className="df-info-row" style={{ padding: '8px 0' }}>
                 <span className="df-info-key">Mode</span>
                 <span className="df-info-val">{mode}</span>
+              </div>
+              <div className="df-info-row" style={{ padding: '8px 0' }}>
+                <span className="df-info-key">Speech Type</span>
+                <span className="df-info-val">{getSessionSpeechType(session)}</span>
+              </div>
+              <div className="df-info-row" style={{ padding: '8px 0' }}>
+                <span className="df-info-key">Confidence</span>
+                <span className="df-info-val">{(tripleV.entryPoint * 20).toFixed(0)}%</span>
+              </div>
+              <div className="df-info-row" style={{ padding: '8px 0', borderTop: '1px solid rgba(0,0,0,0.05)', marginTop: '8px', paddingTop: '16px' }}>
+                <span className="df-info-key" style={{ opacity: 0.5, fontSize: '0.75rem' }}>Analysis ID</span>
+                <span className="df-info-val" style={{ opacity: 0.5, fontSize: '0.75rem', fontFamily: 'monospace' }}>{session.id?.slice(0, 8)}...</span>
               </div>
             </div>
           </div>

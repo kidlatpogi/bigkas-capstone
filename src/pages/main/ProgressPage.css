@@ -982,6 +982,13 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 }
 
 /* Mobile responsive */
+@media (max-width: 1440px) {
+  .progress-banner-stats,
+  .progress-pillars-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 @media (max-width: 1024px) {
   .progress-main-layout {
     grid-template-columns: 1fr;
@@ -990,7 +997,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   
   .progress-banner-stats,
   .progress-pillars-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
   }
 
   .progress-pillars-header {
@@ -1039,7 +1046,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
   .progress-banner-stats,
   .progress-pillars-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 }
 

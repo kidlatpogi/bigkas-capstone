@@ -7,6 +7,10 @@ import { useAuthContext } from '../../context/useAuthContext';
 import { buildRoute, ROUTES } from '../../utils/constants';
 import { getSessionMode } from '../../utils/sessionFormatting';
 import { sanitizeRecommendationLines } from '../../utils/analysisTranscript';
+import verbalSprite from '../../assets/Sprites/common/Verbal.png';
+import visualSprite from '../../assets/Sprites/common/Visual.png';
+import vocalSprite from '../../assets/Sprites/common/Vocal.png';
+import heroRobotImage from '../../assets/Sprites/Robot/0018.webp';
 import '../main/InnerPages.css';
 import './SessionResultPage.css';
 
@@ -183,9 +187,9 @@ function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner, onViewDet
     Array.isArray(result.recommendations) ? result.recommendations : [],
   );
   const pillars = [
-    { key: 'visual', label: 'Visual', desc: 'Eye contact & gestures', score: tripleV.visualAvg },
-    { key: 'vocal', label: 'Vocal', desc: 'Voice quality & stability', score: tripleV.vocalAvg },
-    { key: 'verbal', label: 'Verbal', desc: 'Pronunciation & clarity', score: tripleV.verbalAvg },
+    { key: 'visual', label: 'Visual', desc: 'Eye contact & gestures', score: tripleV.visualAvg, image: visualSprite },
+    { key: 'vocal', label: 'Vocal', desc: 'Voice quality & stability', score: tripleV.vocalAvg, image: vocalSprite },
+    { key: 'verbal', label: 'Verbal', desc: 'Pronunciation & clarity', score: tripleV.verbalAvg, image: verbalSprite },
   ];
 
   const pillarRecommendations = pillars
@@ -238,6 +242,7 @@ function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner, onViewDet
       <div className="sr-content-layout">
         {/* Overall Score Hero (Banner-like) */}
         <section className="sr-hero-banner" id="sr-hero-section">
+          <img src={heroRobotImage} alt="" className="sr-hero-robot" />
           <div className="sr-hero-banner-inner">
             <div className="sr-hero-main-content">
               <div className="sr-hero-header">
@@ -279,27 +284,34 @@ function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner, onViewDet
           <div className="sr-pillars-grid">
             {pillars.map((p) => {
               const tier = getScoreTier15(p.score);
+              const scorePercent = scoreBarPercent(p.score);
               return (
-                <div key={p.key} className="sr-pillar-card-v2" id={`pillar-${p.key}`}>
-                  <div className="sr-pillar-header-v2">
-                    <span className="sr-pillar-label-v2">{p.label}</span>
-                    <span className="sr-pillar-status-chip" style={{ '--status-color': tier.color }}>
+                <div key={p.key} className="pillar-card sr-pillar-progress-card" id={`pillar-${p.key}`}>
+                  <div className="new-widget-head">
+                    <h2 className="new-widget-title">{p.label}</h2>
+                    <span className="new-widget-chip" style={{ background: `${tier.color}20`, color: tier.color }}>
                       {tier.label}
                     </span>
                   </div>
                   
-                  <div className="sr-pillar-score-row">
-                    <span className="sr-pillar-score-value">{p.score.toFixed(1)}</span>
-                    <span className="sr-pillar-score-total">/ 5.0</span>
+                  <div className="new-widget-rank-card">
+                    <img src={p.image} alt="" className="new-widget-rank-sprite" />
+                    <div className="new-widget-rank-content">
+                      <p className="new-widget-kicker">Score</p>
+                      <p className="new-widget-value">{p.score.toFixed(1)} / 5.0</p>
+                    </div>
                   </div>
                   
-                  <p className="sr-pillar-desc-v2">{p.desc}</p>
+                  <div className="progress-pillar-track-header">
+                    <span className="progress-pillar-track-label">{p.desc}</span>
+                    <span className="progress-pillar-track-percent">{Math.round(scorePercent)}%</span>
+                  </div>
                   
-                  <div className="sr-pillar-track-v2">
+                  <div className="progress-pillar-track">
                     <div
-                      className="sr-pillar-track-fill-v2"
+                      className="progress-pillar-track-fill"
                       style={{ 
-                        width: `${scoreBarPercent(p.score)}%`, 
+                        width: `${scorePercent}%`, 
                         background: tier.color 
                       }}
                     />
@@ -362,12 +374,6 @@ function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner, onViewDet
 
             {/* Action Buttons */}
             <div className="sr-footer-actions">
-              <button
-                className="sr-btn-action sr-btn-secondary-v2"
-                onClick={handleBackNavigation}
-              >
-                {isInnerView ? 'Back to History' : (isOnboarding ? onboardingLabel : 'Back to Dashboard')}
-              </button>
               <button className="sr-btn-action sr-btn-primary-v2" onClick={replayAction.onClick}>
                 {replayAction.label}
               </button>

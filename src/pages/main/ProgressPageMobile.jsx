@@ -387,21 +387,27 @@ function ProgressPageMobile() {
               ))}
             </div>
             
-            <div className="progress-mobile-chart-container">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 0, right: 0, left: -30, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} ticks={[1, 2, 3, 4, 5]} domain={[1, 5]} />
-                  <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                  <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={20}>
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={Number.isFinite(entry.value) ? '#10b981' : '#e2e8f0'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            {chartData.some(d => d.value !== null) ? (
+              <div className="progress-mobile-chart-container">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} margin={{ top: 0, right: 0, left: -30, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} ticks={[1, 2, 3, 4, 5]} domain={[1, 5]} />
+                    <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                    <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={20}>
+                      {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={Number.isFinite(entry.value) ? '#10b981' : '#e2e8f0'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="progress-mobile-empty-state">
+                No sessions found for this period.
+              </div>
+            )}
           </div>
 
           {/* Pillar Trends Section */}
@@ -422,34 +428,47 @@ function ProgressPageMobile() {
               </div>
             </div>
             
-            <div className="progress-mobile-pillars-list">
-              {pillarStats.map((pillar) => {
-                const tier = getScoreTier15(pillar.score);
-                return (
-                  <div key={pillar.key} className="progress-mobile-pillar-card">
-                    <div className="progress-mobile-pillar-header">
-                      <div className="progress-mobile-pillar-info">
-                        <img src={pillar.image} alt="" className="progress-mobile-pillar-icon" />
-                        <h4 className="progress-mobile-pillar-label">{pillar.label}</h4>
+            {userSessions.filter(s => {
+              const d = new Date(s.created_at);
+              if (pillarRange === 'Daily') return d >= new Date(new Date().setHours(0,0,0,0));
+              if (pillarRange === 'Weekly') return d >= new Date(new Date().setDate(new Date().getDate() - 7));
+              if (pillarRange === 'Monthly') return d >= new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+              if (pillarRange === 'Yearly') return d >= new Date(new Date().getFullYear(), 0, 1);
+              return true;
+            }).length > 0 ? (
+              <div className="progress-mobile-pillars-list">
+                {pillarStats.map((pillar) => {
+                  const tier = getScoreTier15(pillar.score);
+                  return (
+                    <div key={pillar.key} className="progress-mobile-pillar-card">
+                      <div className="progress-mobile-pillar-header">
+                        <div className="progress-mobile-pillar-info">
+                          <img src={pillar.image} alt="" className="progress-mobile-pillar-icon" />
+                          <h4 className="progress-mobile-pillar-label">{pillar.label}</h4>
+                        </div>
+                        <span className="progress-mobile-pillar-tier" style={{ background: `${tier.color}20`, color: tier.color }}>
+                          {tier.label}
+                        </span>
                       </div>
-                      <span className="progress-mobile-pillar-tier" style={{ background: `${tier.color}20`, color: tier.color }}>
-                        {tier.label}
-                      </span>
+                      <div className="progress-mobile-pillar-score-row">
+                        <span className="progress-mobile-pillar-score">{pillar.score.toFixed(1)}</span>
+                        <span className="progress-mobile-pillar-total">/ 5.0</span>
+                      </div>
+                      <div className="progress-mobile-pillar-track">
+                        <div
+                          className="progress-mobile-pillar-fill"
+                          style={{ width: `${pillar.value}%`, background: tier.color }}
+                        />
+                      </div>
                     </div>
-                    <div className="progress-mobile-pillar-score-row">
-                      <span className="progress-mobile-pillar-score">{pillar.score.toFixed(1)}</span>
-                      <span className="progress-mobile-pillar-total">/ 5.0</span>
-                    </div>
-                    <div className="progress-mobile-pillar-track">
-                      <div
-                        className="progress-mobile-pillar-fill"
-                        style={{ width: `${pillar.value}%`, background: tier.color }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="progress-mobile-empty-state" style={{ marginTop: '0', background: '#fff', borderRadius: '24px', padding: '40px 24px' }}>
+                No sessions found for this period.
+              </div>
+            )}
           </div>
 
           {/* Footer Action */}

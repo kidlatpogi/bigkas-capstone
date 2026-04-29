@@ -315,3 +315,19 @@
   transform: translateY(2px);
   box-shadow: 0 3px 0 #047857;
 }
+
+/* Empty State */
+.progress-mobile-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 20px;
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 700;
+  background: #f8fafc;
+  border-radius: 20px;
+  margin-top: 16px;
+  width: 100%;
+}

@@ -48,7 +48,7 @@ export default function StreakCalendarModal({ isOpen, onClose, activeDayKeys, st
     <AnimatePresence>
       {isOpen && (
         <motion.div 
-          className="streak-calendar-overlay" 
+          className="streak-calendar-overlay bigkas-modal-scrim" 
           onClick={onClose}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

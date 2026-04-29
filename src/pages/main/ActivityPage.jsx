@@ -963,7 +963,7 @@ function ActivityPage() {
            </div>
            <div className="new-banner-right">
               <div 
-                className="new-banner-streak" 
+                className={`new-banner-streak${(showRandomizerOverlay || showFreeSpeechOverlay) ? ' is-hidden' : ''}`} 
                 id="tutorial-target-home-streak" 
                 aria-label="Daily streak"
                 onClick={() => setIsStreakModalOpen(true)}
@@ -1008,7 +1008,7 @@ function ActivityPage() {
 
         {/* Right Column (Widgets) */}
         <div className="new-right-col no-scrollbar">
-            <section className="new-widget dashboard-anim-left dashboard-anim-delay-2" id="tutorial-target-home-rank">
+            <section className={`new-widget dashboard-anim-left dashboard-anim-delay-2${(showRandomizerOverlay || showFreeSpeechOverlay) ? ' is-hidden' : ''}`} id="tutorial-target-home-rank">
               <div className="new-widget-head">
                 <h2 className="new-widget-title">Journey Progression</h2>
                 <span className="new-widget-chip">Rank</span>
@@ -1049,7 +1049,7 @@ function ActivityPage() {
                   </div>
                   <Button
                     variant="practice"
-                    className="activity-practice-cta activity-practice-cta--randomizer dashboard-anim-bottom dashboard-anim-delay-5"
+                    className={`activity-practice-cta activity-practice-cta--randomizer dashboard-anim-bottom dashboard-anim-delay-5${(showRandomizerOverlay || showFreeSpeechOverlay) ? ' is-hidden' : ''}`}
                     onClick={handleRandomizerClick}
                   >
                     Randomizer
@@ -1068,7 +1068,7 @@ function ActivityPage() {
                   </div>
                   <Button
                     variant="training"
-                    className="activity-practice-cta activity-practice-cta--speech dashboard-anim-bottom dashboard-anim-delay-6"
+                    className={`activity-practice-cta activity-practice-cta--speech dashboard-anim-bottom dashboard-anim-delay-6${(showRandomizerOverlay || showFreeSpeechOverlay) ? ' is-hidden' : ''}`}
                     onClick={handleFreeSpeechClick}
                   >
                     Free Speech

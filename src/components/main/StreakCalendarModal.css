@@ -1,8 +1,6 @@
 .streak-calendar-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(240, 244, 248, 0.85);
-  backdrop-filter: blur(2px);
   z-index: 2000;
   display: flex;
   align-items: center;

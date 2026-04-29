@@ -143,6 +143,11 @@ ul, ol { list-style: none; }
 [data-theme="dark"] .loading-logo { color: #F5F5F5; }
 
 /* 8. GLOBAL MODAL SCRIM */
+@keyframes scrimFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 .bigkas-modal-scrim {
   position: fixed;
   inset: 0;
@@ -150,4 +155,5 @@ ul, ol { list-style: none; }
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   z-index: var(--scrim-z, 1100);
+  animation: scrimFadeIn 0.3s ease-out;
 }

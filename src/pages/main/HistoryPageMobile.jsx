@@ -11,7 +11,7 @@ import SessionResultPage from '../session/SessionResultPage';
 import DetailedFeedbackPage from '../session/DetailedFeedbackPage';
 import './HistoryPage.css';
 
-const HISTORY_FILTERS = ['All', 'Today', 'This Week', 'This Month'];
+const HISTORY_FILTERS = ['All', 'Daily', 'Weekly', 'Monthly', 'Yearly'];
 const HISTORY_SCORE_SORT_OPTIONS = [5, 4, 3, 2, 1];
 const HISTORY_SCORE_SORT_NONE = '';
 
@@ -120,22 +120,27 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
   const dateFilteredSessions = useMemo(() => {
     const filtered = userSessions.filter((s) => {
       const d = new Date(s.created_at);
-      if (historyFilter === 'Today') {
+      if (historyFilter === 'Daily') {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         return d >= today;
       }
-      if (historyFilter === 'This Week') {
+      if (historyFilter === 'Weekly') {
         const week = new Date();
         week.setDate(week.getDate() - 7);
         return d >= week;
       }
-      if (historyFilter === 'This Month') {
+      if (historyFilter === 'Monthly') {
         const monthStart = new Date();
-        monthStart.setDate(1);
-        monthStart.setHours(0, 0, 0, 0);
+        monthStart.setMonth(monthStart.getMonth() - 1);
         return d >= monthStart;
       }
+      if (historyFilter === 'Yearly') {
+        const yearStart = new Date();
+        yearStart.setFullYear(yearStart.getFullYear() - 1);
+        return d >= yearStart;
+      }
+      if (historyFilter === 'All') return true;
       return true;
     });
     return filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -302,8 +307,27 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
               </div>
             )}
 
-            <div className="history-footer" style={{ position: 'static', padding: '0 24px 24px', background: 'transparent' }}>
-              <button className="history-back-btn" onClick={onClose} style={{ width: '100%', maxWidth: 'none' }}>Close History</button>
+            <div className="history-footer" style={{ position: 'static', padding: '0 24px 40px', background: 'transparent', display: 'flex', justifyContent: 'center', width: '100%' }}>
+              <button 
+                className="history-back-btn" 
+                onClick={onClose} 
+                style={{ 
+                  width: 'min(100%, 348px)', 
+                  height: '56px', 
+                  borderRadius: '999px', 
+                  background: '#059669',
+                  color: '#fff',
+                  fontWeight: 800,
+                  border: 'none',
+                  boxShadow: '0 5px 0 #047857',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0 24px'
+                }}
+              >
+                Close History
+              </button>
             </div>
           </div>
         </div>

@@ -34,7 +34,7 @@ import vocalSprite from '../../assets/Sprites/common/Vocal.png';
 import HistoryPageMobile from './HistoryPageMobile';
 import './ProgressPage.css'; // Reuse styles but we will override for mobile
 
-const TIME_RANGES = ['Daily', 'Weekly', 'Monthly', 'Yearly'];
+const TIME_RANGES = ['All', 'Daily', 'Weekly', 'Monthly', 'Yearly'];
 
 // --- Helper Functions ---
 function toFivePointScore(rawScore) {
@@ -104,8 +104,8 @@ function ProgressPageMobile() {
   const hasLoggedActivityTaskRef = useRef(false);
   const activityScopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
 
-  const [range, setRange] = useState('Weekly');
-  const [pillarRange, setPillarRange] = useState('Weekly');
+  const [range, setRange] = useState('All');
+  const [pillarRange, setPillarRange] = useState('All');
   const [showMobileHistory, setShowMobileHistory] = useState(false);
 
   const userSessions = useMemo(() => {
@@ -167,7 +167,6 @@ function ProgressPageMobile() {
 
   const chartData = useMemo(() => {
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const now = new Date();
 
     if (range === 'Daily') {
@@ -221,15 +220,26 @@ function ProgressPageMobile() {
     if (range === 'Yearly') {
       const result = [];
       for (let i = 11; i >= 0; i -= 1) {
-        const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59, 999);
+        const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const monthSessions = userSessions.filter(s => {
           const d = new Date(s.created_at);
-          return d >= monthStart && d <= monthEnd;
+          return d.getMonth() === month.getMonth() && d.getFullYear() === month.getFullYear();
         });
         const avg = getAverageTrendScore15(monthSessions);
-        result.push({ label: monthNames[monthStart.getMonth()], value: avg });
+        result.push({ label: month.toLocaleString('default', { month: 'short' }), value: avg });
       }
+      return result;
+    }
+    if (range === 'All') {
+      const result = [];
+      const recentSessions = [...userSessions].sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 10).reverse();
+      recentSessions.forEach((s) => {
+        const d = new Date(s.created_at);
+        result.push({ 
+          label: `${d.getMonth() + 1}/${d.getDate()}`, 
+          value: toFivePointScore(s.confidence_score) 
+        });
+      });
       return result;
     }
     return [];
@@ -259,6 +269,7 @@ function ProgressPageMobile() {
         yearStart.setHours(0, 0, 0, 0);
         return d >= yearStart;
       }
+      if (range === 'All') return true;
       return true;
     });
 
@@ -299,6 +310,7 @@ function ProgressPageMobile() {
         yearStart.setHours(0, 0, 0, 0);
         return createdAt >= yearStart;
       }
+      if (pillarRange === 'All') return true;
       return true;
     });
 

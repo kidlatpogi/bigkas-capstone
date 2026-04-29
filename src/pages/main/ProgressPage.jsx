@@ -42,7 +42,7 @@ import HistoryPage from './HistoryPage';
 import HistoryPageMobile from './HistoryPageMobile';
 import './ProgressPage.css';
 
-const TIME_RANGES = ['Daily', 'Weekly', 'Monthly', 'Yearly'];
+const TIME_RANGES = ['All', 'Daily', 'Weekly', 'Monthly', 'Yearly'];
 
 function toFivePointScore(rawScore) {
   const numeric = Number(rawScore);
@@ -139,8 +139,6 @@ function buildSessionTitleOrTopic(session) {
   return 'Training Session';
 }
 
-/* history page size functions removed */
-
 function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -151,9 +149,8 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
   const hasLoggedActivityTaskRef = useRef(false);
   const activityScopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
 
-  const [chartRange, setChartRange] = useState('Weekly');
-  const [pillarRange, setPillarRange] = useState('Weekly');
-  const [range, setRange] = useState('daily');
+  const [range, setRange] = useState('All');
+  const [pillarRange, setPillarRange] = useState('All');
   const [showMobileHistory, setShowMobileHistory] = useState(false);
   const graphRef = useRef(null);
   const [graphWidth, setGraphWidth] = useState(0);
@@ -168,7 +165,6 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
     observer.observe(graphRef.current);
     return () => observer.disconnect();
   }, []);
-/* history page state removed */
 
   const userSessions = useMemo(() => {
     const userId = String(user?.id || '').trim();
@@ -239,12 +235,6 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
   }, []);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-
-/* sync history page size removed */
-  }, []);
-
-  useEffect(() => {
     if (isInitializing) return;
     if (!user) return;
 
@@ -257,7 +247,6 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
 
   const chartData = useMemo(() => {
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const now = new Date();
 
     if (range === 'Daily') {
@@ -311,18 +300,16 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
       return result;
     }
 
-    if (range === 'Yearly') {
+    if (range === 'All') {
       const result = [];
-      for (let i = 11; i >= 0; i -= 1) {
-        const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59, 999);
-        const monthSessions = userSessions.filter(s => {
-          const d = new Date(s.created_at);
-          return d >= monthStart && d <= monthEnd;
+      const recentSessions = [...userSessions].sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 10).reverse();
+      recentSessions.forEach((s) => {
+        const d = new Date(s.created_at);
+        result.push({ 
+          label: `${d.getMonth() + 1}/${d.getDate()}`, 
+          value: toFivePointScore(s.confidence_score) 
         });
-        const avg = getAverageTrendScore15(monthSessions);
-        result.push({ label: monthNames[monthStart.getMonth()], value: avg });
-      }
+      });
       return result;
     }
 
@@ -354,6 +341,7 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
         yearStart.setHours(0, 0, 0, 0);
         return d >= yearStart;
       }
+      if (range === 'All') return true;
       return true;
     });
 

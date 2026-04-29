@@ -379,10 +379,10 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                           <span className="history-item-badge-dot" style={{ backgroundColor: tier.color }} />
                           {tier.label}
                         </span>
+                        <div className="history-item-score-label-compact">Confidence</div>
                       </div>
 
                       <div className="history-item-score-compact">
-                        <div className="history-item-score-label-compact">Confidence</div>
                         <div
                           className="history-item-score-ring-compact"
                           style={{

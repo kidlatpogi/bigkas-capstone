@@ -34,12 +34,6 @@ import {
   createSpeakerPointsHistoryEntry,
 } from '../../utils/speakerPointsHistory';
 import { sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
-import {
-  ACHIEVEMENTS_UPDATED_EVENT,
-  claimAchievement,
-  claimAllAchievements,
-  getClaimableAchievements,
-} from '../../utils/achievementClaims';
 import heroRobotImage from '../../assets/Sprites/Robot/0018.webp';
 import visualSprite from '../../assets/Sprites/common/Visual.png';
 import verbalSprite from '../../assets/Sprites/common/Verbal.png';
@@ -175,18 +169,6 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
     return () => observer.disconnect();
   }, []);
 /* history page state removed */
-  const [claimableAchievements, setClaimableAchievements] = useState(() => getClaimableAchievements());
-
-  useEffect(() => {
-    const syncClaimables = () => setClaimableAchievements(getClaimableAchievements());
-    syncClaimables();
-    window.addEventListener('storage', syncClaimables);
-    window.addEventListener(ACHIEVEMENTS_UPDATED_EVENT, syncClaimables);
-    return () => {
-      window.removeEventListener('storage', syncClaimables);
-      window.removeEventListener(ACHIEVEMENTS_UPDATED_EVENT, syncClaimables);
-    };
-  }, []);
 
   const userSessions = useMemo(() => {
     const userId = String(user?.id || '').trim();
@@ -243,17 +225,6 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
 
     syncProgressVisitReward();
   }, [activityScopeKey, location.state, updateUserMetadata, user?.id, user?.speakerPoints, user?.speakerPointsHistory]);
-
-  useEffect(() => {
-    if (location.state?.focusAchievements !== true) return;
-    const t = window.setTimeout(() => {
-      const target = document.querySelector('.progress-achievement-card');
-      if (target && typeof target.scrollIntoView === 'function') {
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 120);
-    return () => window.clearTimeout(t);
-  }, [location.state?.focusAchievements]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -473,44 +444,6 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
             </div>
           ) : null}
 
-          {claimableAchievements.length > 0 ? (
-            <div className="progress-achievement-card dashboard-anim-bottom">
-              <div className="progress-achievement-head">
-                <h3 className="progress-achievement-title">Claimable Achievements</h3>
-                <button
-                  type="button"
-                  className="progress-achievement-claim-all"
-                  onClick={() => {
-                    claimAllAchievements();
-                    setClaimableAchievements(getClaimableAchievements());
-                  }}
-                >
-                  Claim All
-                </button>
-              </div>
-              <div className="progress-achievement-list">
-                {claimableAchievements.slice(0, 4).map((achievement) => (
-                  <div key={achievement.id} className="progress-achievement-item">
-                    <div className="progress-achievement-copy">
-                      <p className="progress-achievement-name">{achievement.title}</p>
-                      <p className="progress-achievement-meta">Ready to claim</p>
-                    </div>
-                    <button
-                      type="button"
-                      className="progress-achievement-claim-btn"
-                      onClick={() => {
-                        claimAchievement(achievement.id);
-                        setClaimableAchievements(getClaimableAchievements());
-                      }}
-                    >
-                      Claim
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
           {/* Banner Section (1:1 with Activity Page) */}
           <section className="new-banner dashboard-anim-top dashboard-anim-delay-2">
             <div className="new-banner-left" id="tutorial-target-home-banner">
@@ -518,7 +451,7 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
               <div className="new-banner-bubble" aria-label="Coach message">
                 <p className="new-banner-kicker">B-01:</p>
                 <p className="new-banner-copy">These are your weekly report. You're improving fast, keep up the good work</p>
-                <span className="progress-banner-signature">Ask Lito</span>
+                <span className="progress-banner-signature">Ask B-01</span>
               </div>
             </div>
 

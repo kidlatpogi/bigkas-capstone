@@ -240,18 +240,20 @@ html {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 28px;
-  padding: 14px 16px 14px 190px;
-  backdrop-filter: blur(1px);
+  padding: 14px 16px 14px clamp(190px, 20vw, 260px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   overflow: visible;
 }
 
 .new-banner-robot {
   width: clamp(190px, 16vw, 250px);
   position: absolute;
-  left: clamp(-32px, -2vw, -14px);
+  left: clamp(-40px, -3vw, -20px);
   bottom: -26px;
   z-index: 3;
   pointer-events: none;
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.25));
 }
 
 .new-banner-bubble {

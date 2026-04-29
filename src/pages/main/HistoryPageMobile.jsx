@@ -10,6 +10,7 @@ import vocalSprite from '../../assets/Sprites/common/Vocal.png';
 import SessionResultPage from '../session/SessionResultPage';
 import DetailedFeedbackPage from '../session/DetailedFeedbackPage';
 import './HistoryPage.css';
+import './HistoryPageMobile.css';
 
 const HISTORY_FILTERS = ['All', 'Daily', 'Weekly', 'Monthly', 'Yearly'];
 const HISTORY_SCORE_SORT_OPTIONS = [5, 4, 3, 2, 1];
@@ -175,49 +176,35 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
   return (
     <>
       <div className="bigkas-modal-scrim" onClick={handleClose} style={{ '--scrim-z': 1100 }} aria-hidden="true" />
-      <div id="progress-history-sidebar" className={`progress-history-sidebar history-visible progress-history-sidebar--mobile ${selectedSessionId ? 'history-viewing-session' : ''}`}>
-        <div className={`history-container ${selectedSessionId ? 'slide-out-left' : 'slide-in-right'}`}>
+      <div className={`history-mobile-sidebar history-visible ${selectedSessionId ? 'history-viewing-session' : ''}`}>
+        <div className={`history-mobile-container ${selectedSessionId ? 'slide-out-left' : 'slide-in-right'}`}>
           
-          <div className="history-overlay-header dashboard-anim-top">
-            <div className="history-title-row">
-              <h2 className="history-title">History</h2>
-              <button type="button" className="history-mobile-close-btn" onClick={onClose} style={{ display: 'flex' }}>×</button>
+          <div className="history-mobile-header dashboard-anim-top">
+            <div className="history-mobile-title-row">
+              <h2 className="history-mobile-title">History</h2>
+              <button type="button" className="history-mobile-close-btn" onClick={onClose}>×</button>
             </div>
           </div>
 
-          {/* Fixed History Controls for Mobile */}
-          <div className="history-controls" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '16px', padding: '12px 24px' }}>
-            <div className="history-filters" style={{ width: 'fit-content', display: 'flex', gap: '4px', background: '#f1f5f9', padding: '5px', borderRadius: '999px' }}>
+          <div className="history-mobile-controls">
+            <div className="history-mobile-filters no-scrollbar">
               {HISTORY_FILTERS.map((f) => (
                 <button
                   key={f}
-                  className={`history-filter-btn ${historyFilter === f ? 'active' : ''}`}
+                  className={`history-mobile-filter-btn ${historyFilter === f ? 'active' : ''}`}
                   onClick={() => { setHistoryFilter(f); setHistoryPage(0); }}
-                  style={{ 
-                    padding: '6px 14px', 
-                    fontSize: '12px', 
-                    fontWeight: 700, 
-                    borderRadius: '999px', 
-                    border: 'none',
-                    background: historyFilter === f ? '#059669' : 'transparent',
-                    color: historyFilter === f ? '#fff' : '#64748b',
-                    minHeight: 'auto',
-                    boxShadow: historyFilter === f ? '0 4px 12px rgba(5, 150, 105, 0.2)' : 'none',
-                    transition: 'all 0.2s ease'
-                  }}
                 >
                   {f}
                 </button>
               ))}
             </div>
             
-            <div className="history-sort-row" style={{ justifyContent: 'space-between', width: '100%' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Target Score</span>
+            <div className="history-mobile-sort-row">
+              <span className="history-mobile-sort-label">Target Score</span>
               <select
-                className="history-score-sort-select"
+                className="history-mobile-sort-select"
                 value={scoreSortTarget}
                 onChange={(e) => { setScoreSortTarget(e.target.value); setHistoryPage(0); }}
-                style={{ minHeight: '36px', height: '36px', padding: '0 32px 0 16px', minWidth: '120px' }}
               >
                 <option value={HISTORY_SCORE_SORT_NONE}>All Scores</option>
                 {HISTORY_SCORE_SORT_OPTIONS.map((opt) => (
@@ -227,9 +214,9 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
             </div>
           </div>
 
-          <div className="history-overlay-scroll-content">
-            <div className="history-list" style={{ padding: '16px 24px 24px' }}>
-              {paginatedSessions.map((s, idx) => {
+          <div className="history-mobile-scroll-content">
+            <div className="history-mobile-list">
+              {paginatedSessions.map((s) => {
                 const score = toFivePointScore(s.confidence_score);
                 const tier = getScoreTier15(score);
                 const pillars = resolveSessionPillars(s);
@@ -239,43 +226,35 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
                 return (
                   <div
                     key={s.id}
-                    className={`history-item dashboard-anim-bottom`}
+                    className="history-mobile-item dashboard-anim-bottom"
                     onClick={() => setSelectedSessionId(s.id)}
-                    style={{ 
-                      '--tier-color': tier.color, 
-                      '--tier-border': `${tier.color}2e`, 
-                      marginBottom: '12px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'stretch'
-                    }}
+                    style={{ '--tier-color': tier.color, '--tier-border': `${tier.color}2e` }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <h3 className="history-item-main-title" style={{ fontSize: '1rem' }}>{buildSessionTitleOrTopic(s)}</h3>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span className="history-item-badge" style={{ borderColor: tier.color, backgroundColor: `${tier.color}15`, padding: '4px 10px', fontSize: '10px' }}>
-                            <span className="history-item-badge-dot" style={{ backgroundColor: tier.color }} />
+                    <div className="history-mobile-item-top">
+                      <div className="history-mobile-item-info">
+                        <h3 className="history-mobile-item-title">{buildSessionTitleOrTopic(s)}</h3>
+                        <div className="history-mobile-item-meta">
+                          <span className="history-mobile-item-badge" style={{ borderColor: tier.color, backgroundColor: `${tier.color}15`, color: tier.color }}>
+                            <span className="history-mobile-item-badge-dot" style={{ backgroundColor: tier.color }} />
                             {tier.label}
                           </span>
-                          <p className="history-item-session-type" style={{ fontSize: '0.75rem', margin: 0 }}>{formattedDate}</p>
+                          <p className="history-mobile-item-date">{formattedDate}</p>
                         </div>
                       </div>
-                      <div className="history-item-score-ring-compact" style={{ width: '44px', height: '44px', background: `conic-gradient(${tier.color} ${(score/5)*100}%, #f1f5f9 0)` }}>
-                        <div className="history-item-score-ring-inner-compact" style={{ width: '34px', height: '34px', fontSize: '12px' }}>{score.toFixed(1)}</div>
+                      <div className="history-mobile-item-score-ring" style={{ background: `conic-gradient(${tier.color} ${(score/5)*100}%, #f1f5f9 0)` }}>
+                        <div className="history-mobile-item-score-inner">{score.toFixed(1)}</div>
                       </div>
                     </div>
                     
-                    <div className="history-item-pillars" style={{ marginTop: '4px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                    <div className="history-mobile-pillar-grid">
                       {pillars.map(p => (
                         <div 
                           key={p.key} 
-                          className={`history-item-pillar-chip ${p.score <= 2.0 ? 'history-item-pillar-chip--critical' : p.score <= 3.0 ? 'history-item-pillar-chip--warning' : 'history-item-pillar-chip--healthy'}`} 
-                          style={{ padding: '6px 4px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', borderRadius: '12px', minHeight: 'auto', textAlign: 'center' }}
+                          className={`history-mobile-pillar-chip ${p.score <= 2.0 ? 'history-mobile-pillar-chip--critical' : p.score <= 3.0 ? 'history-mobile-pillar-chip--warning' : 'history-mobile-pillar-chip--healthy'}`}
                         >
-                          <img src={p.sprite} alt="" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
-                          <span style={{ fontSize: '10px', fontWeight: 800 }}>{p.label}</span>
-                          <span style={{ fontSize: '11px', fontWeight: 900 }}>{p.score.toFixed(1)}</span>
+                          <img src={p.sprite} alt="" className="history-mobile-pillar-icon" />
+                          <span className="history-mobile-pillar-label">{p.label}</span>
+                          <span className="history-mobile-pillar-score">{p.score.toFixed(1)}</span>
                         </div>
                       ))}
                     </div>
@@ -288,7 +267,7 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
             </div>
 
             {pageCount > 1 && (
-              <div className="history-pagination-shell" style={{ marginBottom: '24px' }}>
+              <div className="history-mobile-pagination-container">
                 <ul className="history-pagination">
                   <li className={`history-pagination-page ${safePage <= 0 ? 'disabled' : ''}`}>
                     <button className="history-pagination-link" onClick={() => setHistoryPage(p => Math.max(0, p - 1))} disabled={safePage <= 0}><IoChevronBack /></button>
@@ -307,39 +286,20 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
               </div>
             )}
 
-            <div className="history-footer" style={{ position: 'static', padding: '0 24px 40px', background: 'transparent', display: 'flex', justifyContent: 'center', width: '100%' }}>
-              <button 
-                className="history-back-btn" 
-                onClick={onClose} 
-                style={{ 
-                  width: 'min(100%, 348px)', 
-                  height: '56px', 
-                  borderRadius: '999px', 
-                  background: '#059669',
-                  color: '#fff',
-                  fontWeight: 800,
-                  border: 'none',
-                  boxShadow: '0 5px 0 #047857',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '0 24px'
-                }}
-              >
-                Close History
-              </button>
+            <div className="history-mobile-footer">
+              <button className="history-mobile-back-btn" onClick={onClose}>Close History</button>
             </div>
           </div>
         </div>
 
         {selectedSessionId && (
-          <div className="history-session-view slide-in-right">
-             <div className="history-session-view-header">
-                <button type="button" className="history-back-to-list-btn" onClick={() => { if (innerViewMode === 'detailed') setInnerViewMode('results'); else setSelectedSessionId(null); }}>
+          <div className="history-mobile-session-view slide-in-right">
+             <div className="history-mobile-session-view-header">
+                <button type="button" className="history-mobile-back-to-list-btn" onClick={() => { if (innerViewMode === 'detailed') setInnerViewMode('results'); else setSelectedSessionId(null); }}>
                    <IoChevronBack /> {innerViewMode === 'detailed' ? 'Back to Results' : 'Back to History'}
                 </button>
              </div>
-             <div className="history-session-view-content">
+             <div className="history-mobile-session-view-content">
                 {innerViewMode === 'results' ? (
                   <SessionResultPage sessionIdProp={selectedSessionId} isInnerView={true} onCloseInner={() => setSelectedSessionId(null)} onViewDetailed={() => setInnerViewMode('detailed')} />
                 ) : (

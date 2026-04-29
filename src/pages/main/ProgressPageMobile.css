@@ -1,0 +1,290 @@
+/* ProgressPageMobile.css */
+
+.progress-page-mobile-root {
+  height: 100dvh;
+  overflow-y: auto;
+  padding-bottom: 80px;
+  background-color: #FDFDF9;
+  background-image: radial-gradient(rgba(11, 57, 84, 0.1) 1px, transparent 0);
+  background-size: 40px 40px;
+  background-attachment: fixed;
+}
+
+.progress-mobile-layout {
+  padding: 0;
+  max-width: 100%;
+}
+
+.progress-mobile-content {
+  padding: 16px;
+}
+
+/* Immersive Mobile Banner */
+.progress-mobile-banner {
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: 24px;
+  margin-bottom: 24px;
+  min-height: auto;
+  box-shadow: 0 12px 32px rgba(16, 185, 129, 0.25);
+}
+
+.progress-mobile-banner-top {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.progress-mobile-banner-avatar-box {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 12px;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.progress-mobile-banner-avatar {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+}
+
+.progress-mobile-banner-bubble {
+  background: #fff;
+  padding: 16px;
+  border-radius: 20px;
+  flex: 1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: none;
+  position: relative;
+}
+
+.progress-mobile-banner-bubble::after {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 20px;
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+
+.progress-mobile-banner-kicker {
+  color: #059669;
+  margin-bottom: 4px;
+  font-weight: 800;
+}
+
+.progress-mobile-banner-copy {
+  font-size: 0.9rem;
+  color: #1e293b;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Stats Grid */
+.progress-mobile-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  margin-top: 24px;
+}
+
+.progress-mobile-stat-card {
+  background: #fff;
+  padding: 12px;
+  border-radius: 16px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.progress-mobile-stat-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.progress-mobile-stat-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0;
+}
+
+/* Sections Common */
+.progress-mobile-section {
+  background: #fff;
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  margin-bottom: 24px;
+}
+
+.progress-mobile-section-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.progress-mobile-section-desc {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-bottom: 16px;
+}
+
+/* Range Labels */
+.progress-mobile-range-labels {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 5px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  width: fit-content;
+}
+
+.progress-mobile-range-chip {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: transparent;
+  color: #64748b;
+  border: none;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.progress-mobile-range-chip.active {
+  background: #059669;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
+}
+
+/* Chart Container */
+.progress-mobile-chart-container {
+  height: 200px;
+  width: 100%;
+}
+
+/* Pillar Cards */
+.progress-mobile-pillars-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.progress-mobile-pillar-card {
+  background: #fff;
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.progress-mobile-pillar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.progress-mobile-pillar-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-mobile-pillar-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.progress-mobile-pillar-label {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0;
+}
+
+.progress-mobile-pillar-tier {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.progress-mobile-pillar-score-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.progress-mobile-pillar-score {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.progress-mobile-pillar-total {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.progress-mobile-pillar-track {
+  height: 8px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-mobile-pillar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Footer Action */
+.progress-mobile-footer {
+  margin-top: 40px;
+  padding-bottom: 40px;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.progress-mobile-primary-btn {
+  width: min(100%, 348px);
+  height: 56px;
+  padding: 0 24px;
+  border-radius: 999px;
+  background: #059669;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 800;
+  border: none;
+  box-shadow: 0 5px 0 #047857;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.progress-mobile-primary-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 3px 0 #047857;
+}

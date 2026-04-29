@@ -32,7 +32,8 @@ import visualSprite from '../../assets/Sprites/common/Visual.png';
 import verbalSprite from '../../assets/Sprites/common/Verbal.png';
 import vocalSprite from '../../assets/Sprites/common/Vocal.png';
 import HistoryPageMobile from './HistoryPageMobile';
-import './ProgressPage.css'; // Reuse styles but we will override for mobile
+import './ProgressPage.css'; 
+import './ProgressPageMobile.css';
 
 const TIME_RANGES = ['All', 'Daily', 'Weekly', 'Monthly', 'Yearly'];
 
@@ -334,84 +335,59 @@ function ProgressPageMobile() {
   }, [pillarRange, userSessions]);
 
   return (
-    <div className="progress-page-bg progress-page-bg--mobile progress-page-mobile-root no-scrollbar" style={{ height: '100dvh', overflowY: 'auto', paddingBottom: '80px' }}>
-      <div className="progress-main-layout" style={{ padding: '0', maxWidth: '100%' }}>
-        <div className="progress-left-content" style={{ padding: '16px' }}>
+    <div className="progress-page-mobile-root no-scrollbar">
+      <div className="progress-mobile-layout">
+        <div className="progress-mobile-content">
           
           {/* Immersive Mobile Banner */}
-          <section 
-            className="new-banner dashboard-anim-top" 
-            style={{ 
-              flexDirection: 'column', 
-              padding: '24px', 
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              borderRadius: '24px',
-              marginBottom: '24px',
-              minHeight: 'auto',
-              boxShadow: '0 12px 32px rgba(16, 185, 129, 0.25)'
-            }}
-          >
-            <div className="new-banner-left" style={{ width: '100%', padding: '0', display: 'flex', alignItems: 'center', gap: '20px' }}>
-              <div style={{ background: 'rgba(255,255,255,0.2)', padding: '12px', borderRadius: '20px', backdropFilter: 'blur(10px)' }}>
-                <img src={heroRobotImage} alt="" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
+          <section className="progress-mobile-banner dashboard-anim-top">
+            <div className="progress-mobile-banner-top">
+              <div className="progress-mobile-banner-avatar-box">
+                <img src={heroRobotImage} alt="" className="progress-mobile-banner-avatar" />
               </div>
-              <div className="new-banner-bubble" style={{ background: '#fff', padding: '16px', borderRadius: '20px', flex: 1, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: 'none', position: 'relative' }}>
-                <p className="new-banner-kicker" style={{ color: '#059669', marginBottom: '4px', fontWeight: 800 }}>B-01:</p>
-                <p className="new-banner-copy" style={{ fontSize: '0.9rem', color: '#1e293b', lineHeight: '1.5', margin: 0 }}>
+              <div className="progress-mobile-banner-bubble">
+                <p className="progress-mobile-banner-kicker">B-01:</p>
+                <p className="progress-mobile-banner-copy">
                   You're improving fast! Keep up the good work and check your progress below.
                 </p>
-                <div style={{ position: 'absolute', left: '-10px', top: '20px', width: '20px', height: '20px', background: '#fff', transform: 'rotate(45deg)', borderRadius: '2px' }} />
               </div>
             </div>
 
             {/* Mobile Stats Grid */}
-            <div className="progress-banner-stats" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', width: '100%', marginTop: '24px' }}>
-              <div className="progress-stat-card" style={{ background: '#fff', padding: '12px', borderRadius: '16px', textAlign: 'center', boxShadow: '0 4px 8px rgba(0,0,0,0.05)' }}>
-                <p style={{ fontSize: '0.65rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>Sessions</p>
-                <p style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>{stats.sessionsCount}</p>
+            <div className="progress-mobile-stats-grid">
+              <div className="progress-mobile-stat-card">
+                <p className="progress-mobile-stat-label">Sessions</p>
+                <p className="progress-mobile-stat-value">{stats.sessionsCount}</p>
               </div>
-              <div className="progress-stat-card" style={{ background: '#fff', padding: '12px', borderRadius: '16px', textAlign: 'center', boxShadow: '0 4px 8px rgba(0,0,0,0.05)' }}>
-                <p style={{ fontSize: '0.65rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>Average</p>
-                <p style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>{stats.averageScoreLabel}</p>
+              <div className="progress-mobile-stat-card">
+                <p className="progress-mobile-stat-label">Average</p>
+                <p className="progress-mobile-stat-value">{stats.averageScoreLabel}</p>
               </div>
-              <div className="progress-stat-card" style={{ background: '#fff', padding: '12px', borderRadius: '16px', textAlign: 'center', boxShadow: '0 4px 8px rgba(0,0,0,0.05)' }}>
-                <p style={{ fontSize: '0.65rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>Minutes</p>
-                <p style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>{stats.totalSpeakingTime}</p>
+              <div className="progress-mobile-stat-card">
+                <p className="progress-mobile-stat-label">Minutes</p>
+                <p className="progress-mobile-stat-value">{stats.totalSpeakingTime}</p>
               </div>
             </div>
           </section>
 
           {/* Performance Graph Section */}
-          <div className="progress-graph-container dashboard-anim-bottom" style={{ background: '#fff', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', marginBottom: '24px' }}>
-            <div className="progress-chart-header" style={{ marginBottom: '20px' }}>
-              <h3 className="progress-chart-title" style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>Speaking Performance</h3>
-              <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '16px' }}>Your delivery scores over time</p>
-              <div className="progress-range-labels no-scrollbar" style={{ display: 'flex', gap: '4px', overflowX: 'auto', padding: '5px', background: '#f1f5f9', borderRadius: '999px', width: 'fit-content' }}>
-                {TIME_RANGES.map(r => (
-                  <button
-                    type="button"
-                    key={r} 
-                    className={`progress-range-chip ${range === r ? 'active' : ''}`}
-                    onClick={() => setRange(r)}
-                    style={{ 
-                      padding: '6px 14px', 
-                      borderRadius: '999px', 
-                      fontSize: '12px', 
-                      fontWeight: 700,
-                      background: range === r ? '#059669' : 'transparent',
-                      color: range === r ? '#fff' : '#64748b',
-                      border: 'none',
-                      whiteSpace: 'nowrap',
-                      boxShadow: range === r ? '0 4px 12px rgba(5, 150, 105, 0.2)' : 'none',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    {r}
-                  </button>
-                ))}
-              </div>
+          <div className="progress-mobile-section dashboard-anim-bottom">
+            <h3 className="progress-mobile-section-title">Speaking Performance</h3>
+            <p className="progress-mobile-section-desc">Your delivery scores over time</p>
+            <div className="progress-mobile-range-labels no-scrollbar">
+              {TIME_RANGES.map(r => (
+                <button
+                  type="button"
+                  key={r} 
+                  className={`progress-mobile-range-chip ${range === r ? 'active' : ''}`}
+                  onClick={() => setRange(r)}
+                >
+                  {r}
+                </button>
+              ))}
             </div>
-            <div className="progress-chart-container" style={{ height: '200px' }}>
+            
+            <div className="progress-mobile-chart-container">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 0, right: 0, left: -30, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -429,27 +405,16 @@ function ProgressPageMobile() {
           </div>
 
           {/* Pillar Trends Section */}
-          <div className="progress-pillars-section dashboard-anim-bottom">
-            <div className="progress-pillars-header" style={{ marginBottom: '20px' }}>
-              <h3 className="progress-pillars-title" style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b', marginBottom: '16px' }}>Pillar Trends ({pillarRange})</h3>
-              <div className="progress-range-labels" style={{ display: 'flex', gap: '4px', padding: '5px', background: '#f1f5f9', borderRadius: '999px', width: 'fit-content' }}>
+          <div className="progress-mobile-pillars-section dashboard-anim-bottom">
+            <div className="progress-mobile-section" style={{ marginBottom: 0, paddingBottom: '32px' }}>
+              <h3 className="progress-mobile-section-title">Pillar Trends ({pillarRange})</h3>
+              <div className="progress-mobile-range-labels">
                 {TIME_RANGES.map(r => (
                   <button
                     type="button"
                     key={r} 
-                    className={`progress-range-chip ${pillarRange === r ? 'active' : ''}`}
+                    className={`progress-mobile-range-chip ${pillarRange === r ? 'active' : ''}`}
                     onClick={() => setPillarRange(r)}
-                    style={{ 
-                      padding: '6px 14px', 
-                      borderRadius: '999px', 
-                      fontSize: '12px', 
-                      fontWeight: 700,
-                      background: pillarRange === r ? '#059669' : 'transparent',
-                      color: pillarRange === r ? '#fff' : '#64748b',
-                      border: 'none',
-                      boxShadow: pillarRange === r ? '0 4px 12px rgba(5, 150, 105, 0.2)' : 'none',
-                      transition: 'all 0.2s ease'
-                    }}
                   >
                     {r}
                   </button>
@@ -457,40 +422,28 @@ function ProgressPageMobile() {
               </div>
             </div>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {pillarStats.map((pillar, index) => {
+            <div className="progress-mobile-pillars-list">
+              {pillarStats.map((pillar) => {
                 const tier = getScoreTier15(pillar.score);
                 return (
-                  <div 
-                    key={pillar.key} 
-                    className="pillar-card"
-                    style={{ 
-                      background: '#fff', 
-                      borderRadius: '24px', 
-                      padding: '20px', 
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '12px'
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <img src={pillar.image} alt="" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
-                        <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>{pillar.label}</h4>
+                  <div key={pillar.key} className="progress-mobile-pillar-card">
+                    <div className="progress-mobile-pillar-header">
+                      <div className="progress-mobile-pillar-info">
+                        <img src={pillar.image} alt="" className="progress-mobile-pillar-icon" />
+                        <h4 className="progress-mobile-pillar-label">{pillar.label}</h4>
                       </div>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 700, background: `${tier.color}20`, color: tier.color, padding: '4px 10px', borderRadius: '8px' }}>
+                      <span className="progress-mobile-pillar-tier" style={{ background: `${tier.color}20`, color: tier.color }}>
                         {tier.label}
                       </span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                      <span style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e293b' }}>{pillar.score.toFixed(1)}</span>
-                      <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 600 }}>/ 5.0</span>
+                    <div className="progress-mobile-pillar-score-row">
+                      <span className="progress-mobile-pillar-score">{pillar.score.toFixed(1)}</span>
+                      <span className="progress-mobile-pillar-total">/ 5.0</span>
                     </div>
-                    <div className="progress-pillar-track" style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div className="progress-mobile-pillar-track">
                       <div
-                        className="progress-pillar-track-fill"
-                        style={{ width: `${pillar.value}%`, background: tier.color, height: '100%', borderRadius: '4px' }}
+                        className="progress-mobile-pillar-fill"
+                        style={{ width: `${pillar.value}%`, background: tier.color }}
                       />
                     </div>
                   </div>
@@ -500,28 +453,11 @@ function ProgressPageMobile() {
           </div>
 
           {/* Footer Action */}
-          <div style={{ marginTop: '40px', paddingBottom: '40px', display: 'flex', justifyContent: 'center', width: '100%' }}>
+          <div className="progress-mobile-footer">
             <button
               type="button"
-              className="progress-show-history-btn"
+              className="progress-mobile-primary-btn"
               onClick={() => setShowMobileHistory(true)}
-              style={{ 
-                width: 'min(100%, 348px)', 
-                height: '56px',
-                padding: '0 24px', 
-                borderRadius: '999px', 
-                background: '#059669', 
-                color: '#fff', 
-                fontSize: '1rem', 
-                fontWeight: 800, 
-                border: 'none',
-                boxShadow: '0 5px 0 #047857',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.2s ease',
-                cursor: 'pointer'
-              }}
             >
               Show Session History
             </button>

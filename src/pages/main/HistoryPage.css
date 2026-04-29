@@ -336,7 +336,7 @@
 .history-item {
   background: #ffffff;
   border-radius: 20px;
-  padding: 14px 18px;
+  padding: 16px 20px;
   position: relative;
   overflow: hidden;
   box-shadow: none;
@@ -344,9 +344,10 @@
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   border: 1px solid var(--tier-border, rgba(11, 57, 84, 0.12));
   display: grid;
-  grid-template-columns: 1.35fr 2fr 1.1fr;
-  gap: 14px;
+  grid-template-columns: minmax(150px, 1fr) minmax(200px, 2.5fr) minmax(180px, 1.2fr);
+  gap: 16px;
   align-items: center;
+  min-height: 104px;
 }
 
 .history-item:hover {
@@ -939,7 +940,7 @@
   transform: translateY(5px);
 }
 
-@container (max-width: 950px) {
+@container (max-width: 750px) {
   .history-header-row {
     flex-wrap: wrap;
     gap: 16px;
@@ -979,9 +980,9 @@
   }
 }
 
-@container (max-width: 550px) {
+@container (max-width: 500px) {
   .history-list {
-    padding: 24px 20px 140px 20px;
+    padding: 24px 16px 140px 16px;
   }
 
   .history-item-pillars {

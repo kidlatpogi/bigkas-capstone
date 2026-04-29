@@ -488,66 +488,100 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
       {/* Breadcrumb */}
       {!isInnerView && (
         <nav className="df-breadcrumb">
-        <button
-          type="button"
-          className="df-breadcrumb-link"
-          onClick={() => navigate(breadcrumbRoute, { replace: true })}
-        >
-          {breadcrumbParent}
-        </button>
-        <IoChevronForward className="df-breadcrumb-sep" />
-        <button
-          type="button"
-          className="df-breadcrumb-link"
-          onClick={() => navigate(`/session/${sessionId}/result`, {
-            state: {
-              ...session,
-              source: locationState?.source,
-              backTo: locationState?.backTo,
-            },
-          })}
-        >
-          Session Analysis Result
-        </button>
-        <IoChevronForward className="df-breadcrumb-sep" />
-        <span className="df-breadcrumb-current">Detailed Feedback</span>
-      </nav>
+          <button
+            type="button"
+            className="df-breadcrumb-link"
+            onClick={() => navigate(breadcrumbRoute, { replace: true })}
+          >
+            {breadcrumbParent}
+          </button>
+          <IoChevronForward className="df-breadcrumb-sep" />
+          <span className="df-breadcrumb-current">
+            Session Analysis Result
+          </span>
+        </nav>
       )}
 
-      {/* Overall Score Hero (Full Width Coach) */}
-      <section className="new-banner dashboard-anim-top" id="df-hero-section">
-        <div className="new-banner-left is-full-width">
-          <img src={heroRobotImage} alt="" className="new-banner-robot" />
-          <div className="new-banner-bubble" aria-label="Coach message">
-            <p className="new-banner-kicker">B-01:</p>
-            <div className="new-banner-feedback-content">
-              <p className="new-banner-intro-text">
-                {tripleV.entryPoint >= 4.0
-                  ? 'Outstanding! Your performance was exemplary.'
-                  : tripleV.entryPoint >= 3.0
-                    ? 'Great effort! Your speaking is clear and professional.'
-                    : tripleV.entryPoint >= 2.0
-                      ? 'Good progress. Keep practicing to reach the next tier.'
-                      : "Every session counts. Focus on the basics to improve."}
-              </p>
-              <div className="sr-hero-score-display" style={{ marginTop: '8px' }}>
-                <span className="sr-hero-score-value" style={{ fontSize: '2.5rem' }}>{tripleV.entryPoint.toFixed(1)}</span>
-                <span className="sr-hero-score-max" style={{ fontSize: '1rem', color: '#64748b' }}>/ 5.0</span>
-                <div className="sr-hero-tier-badge" style={{ '--tier-color': overallTier.color, marginLeft: '16px' }}>
-                  <span className="sr-hero-tier-dot" />
+      <div className="df-content-layout">
+        {/* Overall Score Hero (Full Width Coach) */}
+        <section className="new-banner dashboard-anim-top dashboard-anim-delay-2" id="sr-hero-section">
+          <div className="new-banner-left is-full-width">
+            <img src={heroRobotImage} alt="" className="new-banner-robot" />
+            <div className="new-banner-bubble" aria-label="Coach message">
+              <p className="new-banner-kicker">B-01:</p>
+              <div className="new-banner-feedback-content">
+                <p className="new-banner-intro-text">
+                  {tripleV.entryPoint >= 4.0
+                    ? 'Outstanding! Your performance was exemplary.'
+                    : tripleV.entryPoint >= 3.0
+                      ? 'Great effort! Your speaking is clear and professional.'
+                      : tripleV.entryPoint >= 2.0
+                        ? 'Good progress. Keep practicing to reach the next tier.'
+                        : "Every session counts. Focus on the basics to improve."}
+                </p>
+                <ul className="new-banner-recs-minilist">
+                  {recommendations.slice(0, 2).map((rec, idx) => (
+                    <li key={idx} className="new-banner-rec-item">
+                      <span className="new-banner-rec-bullet">•</span>
+                      {rec.text}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Overview Row (Relocated Widgets) */}
+        <div className="sr-overview-row dashboard-anim-bottom dashboard-anim-delay-3" style={{ marginBottom: '40px' }}>
+          {/* Overall Score Card */}
+          <div className="progress-stat-card new-banner-widget overall-score-card">
+            <div className="widget-content">
+              <div className="new-widget-head">
+                <h2 className="new-widget-title">Overall Score</h2>
+                <span className="new-widget-chip performance-chip">PERFORMANCE</span>
+              </div>
+              <div className="score-display">
+                <span className="score-value" style={{ color: overallTier.color }}>
+                  {tripleV.entryPoint.toFixed(1)}
+                </span>
+                <span className="score-max">/ 5.0</span>
+              </div>
+              <div className="score-label">
+                <div className="tier-indicator" style={{ '--tier-color': overallTier.color }}>
+                  <span className="tier-dot" />
                   {overallTier.label}
                 </div>
               </div>
-              <div className="sr-hero-progress-track" style={{ height: '8px', marginTop: '12px' }}>
-                <div
-                  className="sr-hero-progress-fill"
-                  style={{ width: `${scoreBarPercent(tripleV.entryPoint)}%`, background: overallTier.color }}
-                />
+            </div>
+          </div>
+
+          {/* Analysis Focus Card */}
+          <div className="progress-stat-card new-banner-widget analysis-focus-card">
+            <div className="widget-content">
+              <div className="new-widget-head">
+                <h2 className="new-widget-title">Primary Strength</h2>
+                <span className="new-widget-chip focus-chip">ANALYSIS</span>
+              </div>
+              <div className="strength-display">
+                {(() => {
+                  const sortedPillars = [...pillars].sort((a, b) => b.score - a.score);
+                  const topPillar = sortedPillars[0];
+                  const pillarIcon = pillarIcons[topPillar.key];
+                  return (
+                    <>
+                      <img src={pillarIcon} alt="" className="strength-sprite" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
+                      <span className="strength-name" style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e293b' }}>{topPillar.label}</span>
+                    </>
+                  );
+                })()}
+              </div>
+              <div className="score-label">
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>TOP PERFORMANCE AREA</span>
               </div>
             </div>
           </div>
         </div>
-      </section>
 
       {/* Performance Timeline */}
       <section className="df-timeline-section dashboard-anim-bottom dashboard-anim-delay-2">
@@ -743,6 +777,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
           <p className="df-practiced-text" style={{ fontSize: '0.9rem', lineHeight: '1.6', background: '#f8fafc', padding: '20px', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.03)' }}>
             {practicedText}
           </p>
+        </div>
         </div>
       </div>
     </div>

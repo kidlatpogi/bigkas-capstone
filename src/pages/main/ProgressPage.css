@@ -171,16 +171,16 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 .new-banner {
   background: linear-gradient(180deg, #34D399 0%, #059669 100%);
   border-radius: 24px;
-  min-height: 200px;
+  min-height: 220px;
   height: auto;
   box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 32px;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 32px;
+  padding: 32px 40px;
   position: relative;
   overflow: hidden;
   width: 100%;
@@ -194,8 +194,8 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   position: relative;
   z-index: 2;
   flex: 1;
-  min-width: 450px;
-  max-width: 700px;
+  min-width: 480px;
+  max-width: 650px;
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 32px;
@@ -393,14 +393,14 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   align-items: center;
   z-index: 2;
   flex: 0 0 auto;
-  min-width: 420px;
+  width: fit-content;
 }
 
 .progress-banner-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  width: 100%;
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  width: fit-content;
   align-items: center;
 }
 
@@ -411,12 +411,13 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: clamp(12px, 2vh, 20px);
+  padding: 16px;
   border-radius: 24px;
   border: 1px solid rgba(11, 57, 84, 0.1);
   background: #ffffff !important;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-  height: clamp(140px, 18vh, 160px);
+  width: 135px;
+  height: 135px;
   box-sizing: border-box;
   transition: none !important;
   transform: none !important;

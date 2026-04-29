@@ -987,14 +987,16 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   .new-banner {
     flex-direction: column !important;
     height: auto !important;
-    gap: 16px !important;
+    gap: 20px !important;
+    padding: 24px !important;
+    align-items: center !important;
   }
 
   .new-banner-left {
     width: 100% !important;
     flex: none !important;
-    max-width: 100% !important;
-    padding-left: clamp(160px, 18vw, 220px) !important;
+    max-width: 600px !important;
+    padding-left: clamp(140px, 15vw, 200px) !important;
   }
 
   .new-banner-robot {
@@ -1003,44 +1005,51 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
   .new-banner-right {
     width: 100% !important;
-    display: block !important;
+    display: flex !important;
+    justify-content: center !important;
   }
 
   .progress-banner-stats {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 12px !important;
-    width: 100% !important;
-  }
-
-  .progress-pillars-grid {
-    grid-template-columns: 1fr !important;
-    gap: 12px !important;
-  }
-
-  /* Compact Stats Cards */
-  .progress-stat-card.new-widget-rank-card {
-    padding: 12px 16px !important;
-    height: auto !important;
-    min-height: 80px !important;
-    gap: 8px !important;
-    flex-direction: column !important;
+    display: flex !important;
+    flex-direction: row !important;
     justify-content: center !important;
+    gap: 16px !important;
+    width: auto !important;
+  }
+
+  /* Equal Height/Width Stats Cards */
+  .progress-stat-card.new-widget-rank-card {
+    width: 120px !important;
+    height: 120px !important;
+    padding: 12px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    flex: none !important;
+    min-height: auto !important;
+    border-radius: 24px !important;
   }
 
   .progress-stat-card.new-widget-rank-card .new-widget-rank-content {
     align-items: center !important;
     text-align: center !important;
-    gap: 2px !important;
+    gap: 4px !important;
   }
 
   .progress-stat-card.new-widget-rank-card .new-widget-value {
-    font-size: 1.25rem !important;
+    font-size: 1.5rem !important;
   }
 
   /* Compact Pillar Cards */
+  .progress-pillars-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
   .pillar-card {
-    padding: 16px 24px !important;
+    padding: 20px 24px !important;
     min-height: auto !important;
     gap: 12px !important;
   }

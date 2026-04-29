@@ -726,11 +726,14 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
           })}
         </div>
       </section>
-      <div className="df-media-info-container dashboard-anim-bottom dashboard-anim-delay-7" style={{ marginTop: '48px' }}>
-        <div className="df-card" style={{ padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+
+      {/* Media & Info Container */}
+      <div className="df-media-info-container dashboard-anim-bottom dashboard-anim-delay-7" style={{ marginTop: '48px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        {/* Recording Card with Integrated Details */}
+        <div className="df-card" style={{ padding: '0', overflow: 'hidden' }}>
           {/* Header with integrated details */}
           <div style={{ padding: '24px', borderBottom: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
-            <h3 className="df-section-title" style={{ fontSize: '1.1rem', margin: 0 }}>Session Performance Media</h3>
+            <h3 className="df-section-title" style={{ fontSize: '1.1rem', margin: 0 }}>Session Recording</h3>
             <div style={{ display: 'flex', gap: '32px' }}>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>Date</span>
@@ -747,41 +750,37 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
             </div>
           </div>
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', minHeight: '400px' }}>
-            {/* Recording Column */}
-            <div style={{ padding: '24px', borderRight: '1px solid rgba(0,0,0,0.05)', background: '#fff' }}>
-              <div className="df-recording-content">
-                {videoUrl && (
-                  <div className="df-video-wrap" style={{ borderRadius: '16px', overflow: 'hidden', background: '#000', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-                    <video className="df-video" controls preload="metadata" src={videoUrl} style={{ width: '100%', display: 'block' }}>
-                      Your browser does not support video playback.
-                    </video>
-                  </div>
-                )}
-                {audioUrl && (
-                  <div className="df-audio-wrap" style={{ marginTop: videoUrl ? '12px' : '0' }}>
-                    <audio className="df-audio" controls preload="metadata" src={audioUrl} style={{ width: '100%' }}>
-                      Your browser does not support audio playback.
-                    </audio>
-                  </div>
-                )}
-                {!videoUrl && !audioUrl && (
-                  <p className="df-recordings-empty">No recording available for this session.</p>
-                )}
-              </div>
-            </div>
-
-            {/* Transcript Column */}
-            <div style={{ padding: '24px', background: '#fff', display: 'flex', flexDirection: 'column' }}>
-              <h3 className="df-section-title" style={{ fontSize: '0.9rem', marginBottom: '16px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Session Transcript</h3>
-              <div style={{ flex: 1, overflowY: 'auto', background: '#f8fafc', padding: '20px', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.03)' }}>
-                <p className="df-practiced-text" style={{ fontSize: '0.9rem', lineHeight: '1.6', margin: 0 }}>
-                  {practicedText}
-                </p>
-              </div>
+          <div style={{ padding: '24px', background: '#fff' }}>
+            <div className="df-recording-content">
+              {videoUrl && (
+                <div className="df-video-wrap" style={{ borderRadius: '16px', overflow: 'hidden', background: '#000', maxWidth: '800px', margin: '0 auto' }}>
+                  <video className="df-video" controls preload="metadata" src={videoUrl} style={{ width: '100%', display: 'block' }}>
+                    Your browser does not support video playback.
+                  </video>
+                </div>
+              )}
+              {audioUrl && (
+                <div className="df-audio-wrap" style={{ marginTop: videoUrl ? '24px' : '0', maxWidth: '800px', margin: videoUrl ? '24px auto 0' : '0 auto' }}>
+                  <audio className="df-audio" controls preload="metadata" src={audioUrl} style={{ width: '100%' }}>
+                    Your browser does not support audio playback.
+                  </audio>
+                </div>
+              )}
+              {!videoUrl && !audioUrl && (
+                <p className="df-recordings-empty">No recording available for this session.</p>
+              )}
             </div>
           </div>
         </div>
+
+        {/* Transcript Card (Full Width) */}
+        <div className="df-card" style={{ padding: '24px' }}>
+          <h3 className="df-section-title" style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Session Transcript</h3>
+          <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.03)' }}>
+            <p className="df-practiced-text" style={{ fontSize: '0.9rem', lineHeight: '1.7', margin: 0, color: '#1e293b' }}>
+              {practicedText}
+            </p>
+          </div>
         </div>
       </div>
     </div>

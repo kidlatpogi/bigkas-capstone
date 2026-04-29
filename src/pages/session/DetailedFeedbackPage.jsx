@@ -423,10 +423,11 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
   ];
 
   const timelineData = useMemo(() => {
-    const pointCount = clamp(Math.floor(durationSec / 5) + 1, 6, 12);
+    // Generate a data point for every single second of the session
+    const pointCount = durationSec + 1;
     return Array.from({ length: pointCount }, (_, idx) => {
-      const progress = pointCount === 1 ? 1 : idx / (pointCount - 1);
-      const timeSec = idx === pointCount - 1 ? durationSec : Math.round(durationSec * progress);
+      const timeSec = idx;
+      const progress = durationSec === 0 ? 0 : timeSec / durationSec;
       
       const values = {
         time: formatDuration(timeSec),
@@ -435,10 +436,12 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
       
       pillars.forEach((p, pIdx) => {
         const pct = scoreBarPercent(p.score);
-        const variance = 10 + (100 - pct) * 0.12;
-        const phase = progress * Math.PI * 2.2 + pIdx * 1.2;
-        const wave = Math.sin(phase) * variance * 0.6 + Math.cos(phase * 0.8) * variance * 0.3;
-        const momentum = (progress - 0.5) * ((pct - 50) / 8);
+        // Add subtle variation to simulate real-time fluctuations per second
+        // We use a combination of sine waves and random-ish math based on index to ensure smoothness
+        const variance = 8 + (100 - pct) * 0.1;
+        const phase = (timeSec * 0.4) + (pIdx * 1.5);
+        const wave = Math.sin(phase) * variance * 0.5 + Math.cos(phase * 0.7) * variance * 0.25;
+        const momentum = (progress - 0.5) * ((pct - 50) / 10);
         values[p.label] = clamp(Math.round(pct + wave + momentum), 5, 98);
       });
       
@@ -598,8 +601,9 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
                 dataKey="time" 
                 axisLine={false} 
                 tickLine={false} 
-                tick={{ fontSize: 12, fontWeight: 600, fill: '#94a3b8' }}
+                tick={{ fontSize: 11, fontWeight: 600, fill: '#94a3b8' }}
                 dy={10}
+                interval={Math.ceil(durationSec / 6)} // Show ~6-7 ticks regardless of density
               />
               <YAxis 
                 hide 
@@ -624,24 +628,24 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
                 dataKey="Visual" 
                 stroke="#059669" 
                 strokeWidth={3} 
-                dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} 
-                activeDot={{ r: 6 }} 
+                dot={false}
+                activeDot={{ r: 6, strokeWidth: 0 }} 
               />
               <Line 
                 type="monotone" 
                 dataKey="Vocal" 
                 stroke="#10b981" 
                 strokeWidth={3} 
-                dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} 
-                activeDot={{ r: 6 }} 
+                dot={false}
+                activeDot={{ r: 6, strokeWidth: 0 }} 
               />
               <Line 
                 type="monotone" 
                 dataKey="Verbal" 
                 stroke="#F97316" 
                 strokeWidth={3} 
-                dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} 
-                activeDot={{ r: 6 }} 
+                dot={false}
+                activeDot={{ r: 6, strokeWidth: 0 }} 
               />
             </LineChart>
           </ResponsiveContainer>

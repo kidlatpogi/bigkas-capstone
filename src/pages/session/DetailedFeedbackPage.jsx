@@ -467,7 +467,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
   })();
 
   return (
-    <div className={`df-page ${isInnerView ? 'df-page--inner' : ''}`}>
+    <div className={`df-page ${isInnerView ? 'df-page--inner' : ''} activity-page--skyward-entrance`}>
       {/* Breadcrumb */}
       {!isInnerView && (
         <nav className="df-breadcrumb">
@@ -497,31 +497,45 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
       </nav>
       )}
 
-      {/* Overall Score Hero */}
-      <section className="df-hero">
-        <div className="df-hero-top">
-          <p className="df-hero-kicker">Overall Speaking Score</p>
-          <span
-            className="df-hero-tier"
-            style={{ background: `${overallTier.color}1A`, color: overallTier.color }}
-          >
-            {overallTier.label}
-          </span>
-        </div>
-        <div className="df-hero-score-wrap">
-          <p className="df-hero-score">{tripleV.entryPoint.toFixed(1)}</p>
-          <span className="df-hero-max">/ 5.0</span>
-        </div>
-        <div className="df-hero-track">
-          <div
-            className="df-hero-track-fill"
-            style={{ width: `${scoreBarPercent(tripleV.entryPoint)}%` }}
-          />
+      {/* Overall Score Hero (ActivityPage Style) */}
+      <section className="sr-hero-banner dashboard-anim-top" id="df-hero-section">
+        <div className="sr-hero-banner-inner">
+          <div className="sr-hero-main-content">
+            <div className="sr-hero-header">
+              <p className="sr-hero-kicker">Overall Speaking Score</p>
+              <div className="sr-hero-tier-badge" style={{ '--tier-color': overallTier.color }}>
+                <span className="sr-hero-tier-dot" />
+                {overallTier.label}
+              </div>
+            </div>
+
+            <div className="sr-hero-score-display">
+              <h1 className="sr-hero-score-value">{tripleV.entryPoint.toFixed(1)}</h1>
+              <span className="sr-hero-score-max">/ 5.0</span>
+            </div>
+
+            <div className="sr-hero-progress-track">
+              <div
+                className="sr-hero-progress-fill"
+                style={{ width: `${scoreBarPercent(tripleV.entryPoint)}%` }}
+              />
+            </div>
+
+            <p className="sr-hero-message">
+              {tripleV.entryPoint >= 4.0
+                ? 'Outstanding! Your performance was exemplary.'
+                : tripleV.entryPoint >= 3.0
+                  ? 'Great effort! Your speaking is clear and professional.'
+                  : tripleV.entryPoint >= 2.0
+                    ? 'Good progress. Keep practicing to reach the next tier.'
+                    : "Every session counts. Focus on the basics to improve."}
+            </p>
+          </div>
         </div>
       </section>
 
       {/* Performance Timeline */}
-      <section className="df-timeline-section">
+      <section className="df-timeline-section dashboard-anim-bottom dashboard-anim-delay-2">
         <h2 className="df-section-title">Performance Timeline</h2>
         <div className="df-card">
           <div className="df-timeline">
@@ -558,25 +572,32 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
 
       {/* Triple V Pillar Detail Cards */}
       <section className="df-pillars-section">
-        <h2 className="df-section-title">Triple V Breakdown</h2>
+        <h2 className="df-section-title dashboard-anim-bottom dashboard-anim-delay-3">Triple V Breakdown</h2>
         <div className="df-pillars-list">
-          {pillars.map((p) => {
+          {pillars.map((p, index) => {
             const tier = getScoreTier15(p.score);
             return (
-              <div key={p.key} className="df-pillar-card">
+              <div key={p.key} className={`pillar-card df-pillar-card dashboard-anim-bottom dashboard-anim-delay-${4 + index}`}>
                 <div className="df-pillar-main">
-                  <div className="df-pillar-info">
-                    <span className="df-pillar-label">{p.label}</span>
-                    <span className="df-pillar-tier" style={{ color: tier.color }}>{tier.label}</span>
+                  <div className="new-widget-head">
+                    <h2 className="new-widget-title">{p.label}</h2>
+                    <span className="new-widget-chip" style={{ background: `${tier.color}20`, color: tier.color }}>
+                      {tier.label}
+                    </span>
                   </div>
+                  
                   <div className="df-pillar-score-row">
                     <p className="df-pillar-score">{p.score.toFixed(1)}<span>/5.0</span></p>
                   </div>
                   <p className="df-pillar-desc">{p.desc}</p>
-                  <div className="df-pillar-track">
+                  
+                  <div className="progress-pillar-track">
                     <div
-                      className="df-pillar-track-fill"
-                      style={{ width: `${scoreBarPercent(p.score)}%`, background: tier.color }}
+                      className="progress-pillar-track-fill"
+                      style={{ 
+                        width: `${scoreBarPercent(p.score)}%`, 
+                        background: tier.color 
+                      }}
                     />
                   </div>
                 </div>
@@ -609,7 +630,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
       </section>
 
       {/* Recommendations */}
-      <section className="df-recs-section">
+      <section className="df-recs-section dashboard-anim-bottom dashboard-anim-delay-7">
         <h2 className="df-section-title">Coaching Recommendations</h2>
         <div className="df-recs-list">
           {recommendations.map((tip, idx) => (
@@ -630,8 +651,8 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
         )}
       </section>
 
-      {/* Session Recordings — always show; media loaded from session_media + session row */}
-      <div className="df-collapsible">
+      {/* Session Recordings */}
+      <div className="df-collapsible dashboard-anim-bottom dashboard-anim-delay-8">
         <button
           className="df-collapsible-toggle"
           onClick={() => setIsRecordingsOpen((o) => !o)}
@@ -666,7 +687,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
       </div>
 
       {/* Session Information */}
-      <div className="df-collapsible">
+      <div className="df-collapsible dashboard-anim-bottom dashboard-anim-delay-9">
         <button
           className="df-collapsible-toggle"
           onClick={() => setIsSessionInfoOpen((o) => !o)}

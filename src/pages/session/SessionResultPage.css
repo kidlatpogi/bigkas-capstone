@@ -489,12 +489,13 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  height: 100%;
 }
 
 .sr-detailed-feedback-card {
   background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
   border-radius: 28px;
-  padding: 24px;
+  padding: 32px;
   border: 1px solid rgba(11, 57, 84, 0.1);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
   display: flex;
@@ -504,6 +505,7 @@
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   width: 100%;
+  flex: 1;
 }
 
 .sr-detailed-feedback-card:hover {

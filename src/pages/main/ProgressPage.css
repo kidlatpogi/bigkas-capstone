@@ -484,18 +484,19 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 .progress-chart-title {
   margin: 0;
   font-family: 'Fredoka', sans-serif;
-  font-size: clamp(1.1rem, 1.2vw, 1.3rem);
-  font-weight: 800;
+  font-size: clamp(24px, 4vw, 40px);
+  font-weight: 600;
   color: #1E293B;
   line-height: 1.2;
 }
 
 .progress-chart-explanation {
-  margin: 0;
-  font-family: 'Fredoka', sans-serif;
-  font-size: clamp(0.72rem, 0.78vw, 0.82rem);
-  font-weight: 500;
+  margin: 4px 0 0;
+  font-family: 'Nunito', sans-serif;
+  font-size: clamp(13px, 1.2vw, 15px);
+  font-weight: 400;
   color: #64748b;
+  line-height: 1.5;
 }
 
 .progress-range-labels {
@@ -557,8 +558,8 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 .progress-pillars-title {
   margin: 0;
   font-family: 'Fredoka', sans-serif;
-  font-size: clamp(20px, 2.5vw, 28px);
-  font-weight: 800;
+  font-size: clamp(24px, 4vw, 40px);
+  font-weight: 600;
   color: #1E293B !important;
 }
 
@@ -992,15 +993,24 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
     align-items: center !important;
   }
 
-  .new-banner-left {
+  .new-banner-left:not(.is-full-width) {
     width: 100% !important;
     flex: none !important;
     max-width: 600px !important;
-    padding-left: clamp(140px, 15vw, 200px) !important;
+    padding-left: clamp(150px, 16vw, 190px) !important;
+  }
+
+  .new-banner-left.is-full-width {
+    width: 100% !important;
+    max-width: none !important;
+    flex: none !important;
+    align-self: stretch !important;
   }
 
   .new-banner-robot {
     width: clamp(140px, 12vw, 180px) !important;
+    bottom: -10px !important;
+    left: -10px !important;
   }
 
   .new-banner-right {
@@ -1044,8 +1054,9 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
   /* Compact Pillar Cards */
   .progress-pillars-grid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: repeat(3, 1fr) !important;
     gap: 16px !important;
+    width: 100% !important;
   }
 
   .pillar-card {

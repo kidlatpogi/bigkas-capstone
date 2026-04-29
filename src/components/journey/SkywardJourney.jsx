@@ -33,7 +33,7 @@ import './SkywardJourney.css';
 
 const MAP_SCALE = 1;
 const DESKTOP_OFFSETS = [0, 120, 220, 220, 120, 0, -120, -220, -220, -120];
-const MOBILE_OFFSETS  = [0, 45, 85, 85, 45, 0, -45, -85, -85, -45];
+const MOBILE_OFFSETS = [0, 45, 85, 85, 45, 0, -45, -85, -85, -45];
 
 function getHorizontalOffset(index, isMobile) {
   const arr = isMobile ? MOBILE_OFFSETS : DESKTOP_OFFSETS;
@@ -351,12 +351,12 @@ const TooltipBox = styled.div`
     z-index: 2;
 
     ${(props) =>
-      props.$placement === 'bottom'
-        ? `
+    props.$placement === 'bottom'
+      ? `
       top: -12px;
       border-bottom: 12px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#059669'};
     `
-        : `
+      : `
       bottom: -12px;
       border-top: 12px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#059669'};
     `}
@@ -374,10 +374,10 @@ const TooltipBox = styled.div`
     border-right: 15px solid transparent;
     z-index: 1;
     ${(props) =>
-      props.$placement === 'bottom'
-        ? `top: -15px; border-bottom: 15px solid ${props.$nodeState === 'locked' ? '#e5e5e5' : '#047857'};`
-        : `bottom: -15px; border-top: 15px solid ${props.$nodeState === 'locked' ? '#e5e5e5' : '#047857'};`
-    }
+    props.$placement === 'bottom'
+      ? `top: -15px; border-bottom: 15px solid ${props.$nodeState === 'locked' ? '#e5e5e5' : '#047857'};`
+      : `bottom: -15px; border-top: 15px solid ${props.$nodeState === 'locked' ? '#e5e5e5' : '#047857'};`
+  }
   }
 `;
 
@@ -635,7 +635,7 @@ export default function SkywardJourney({
     [steps],
   );
   const isLockedLevel = steps.length === 0;
-  
+
   const completedCount = useMemo(() => steps.filter(s => s.nodeState === NODE_STATE.COMPLETED).length, [steps]);
 
   const [pathPoints, setPathPoints] = useState([]);
@@ -1039,14 +1039,14 @@ export default function SkywardJourney({
         }
         const chestButtonStyle = isSectionTrophy
           ? {
-              backgroundImage: `url(${isDone ? chestOpenImage : chestClosedImage})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
-              backgroundColor: 'transparent',
-              boxShadow: 'none',
-              border: 'none',
-            }
+            backgroundImage: `url(${isDone ? chestOpenImage : chestClosedImage})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            backgroundColor: 'transparent',
+            boxShadow: 'none',
+            border: 'none',
+          }
           : undefined;
 
         return (
@@ -1060,9 +1060,8 @@ export default function SkywardJourney({
           >
             <div className="skyward-journey-track">
               <div
-                className={`skyward-journey-node-shell${
-                  i === 0 && isActive ? ' skyward-journey-node-shell--start-onboarding' : ''
-                }`}
+                className={`skyward-journey-node-shell${i === 0 && isActive ? ' skyward-journey-node-shell--start-onboarding' : ''
+                  }`}
                 style={{ zIndex: isActive ? 140 : (startStage ? 120 : 10), position: 'relative' }}
               >
                 <div
@@ -1106,9 +1105,8 @@ export default function SkywardJourney({
                       .join(' ')}
                     aria-current={isActive ? 'step' : undefined}
                     aria-expanded={panelOpenId === step.id}
-                    aria-label={`${isUltimateBoss ? 'Milestone: ' : ''}${theme.shortLabel}: ${title}. ${
-                      isDone ? 'Completed' : isLocked ? 'Locked' : 'Current step'
-                    }. Open quest details.`}
+                    aria-label={`${isUltimateBoss ? 'Milestone: ' : ''}${theme.shortLabel}: ${title}. ${isDone ? 'Completed' : isLocked ? 'Locked' : 'Current step'
+                      }. Open quest details.`}
                     onClick={() => handleNodeClick(step, i)}
                     onPointerDown={(event) => event.stopPropagation()}
                     onTouchStart={(event) => event.stopPropagation()}
@@ -1446,42 +1444,42 @@ export default function SkywardJourney({
 
         {typeof document !== 'undefined' && selectedStep && selectedMeta
           ? createPortal(
-              <div className="skyward-journey-panel-root" role="presentation">
-                <button
-                  type="button"
-                  className={`skyward-journey-backdrop${panelVisible ? ' skyward-journey-backdrop--open' : ''}`}
-                  aria-label="Close quest details"
-                  onClick={closePanel}
-                />
-                <div
-                  ref={drawerRef}
-                  className={`skyward-journey-drawer${panelVisible ? ' skyward-journey-drawer--open' : ''}`}
-                  role="dialog"
-                  aria-modal="true"
-                  aria-labelledby="skyward-journey-drawer-title"
-                  onTransitionEnd={handlePanelTransitionEnd}
-                >
-                  <div className="skyward-journey-drawer-handle" aria-hidden />
-                  <div className="skyward-journey-drawer-header">
-                    <h2 id="skyward-journey-drawer-title" className="skyward-journey-drawer-title">
-                      Quest details
-                    </h2>
-                    <button
-                      type="button"
-                      className="skyward-journey-drawer-close"
-                      onClick={closePanel}
-                      aria-label="Close"
-                    >
-                      ×
-                    </button>
-                  </div>
-                  <div className="skyward-journey-drawer-body">
-                    {renderStepContent(selectedStep, selectedMeta)}
-                  </div>
+            <div className="skyward-journey-panel-root" role="presentation">
+              <button
+                type="button"
+                className={`skyward-journey-backdrop${panelVisible ? ' skyward-journey-backdrop--open' : ''}`}
+                aria-label="Close quest details"
+                onClick={closePanel}
+              />
+              <div
+                ref={drawerRef}
+                className={`skyward-journey-drawer${panelVisible ? ' skyward-journey-drawer--open' : ''}`}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="skyward-journey-drawer-title"
+                onTransitionEnd={handlePanelTransitionEnd}
+              >
+                <div className="skyward-journey-drawer-handle" aria-hidden />
+                <div className="skyward-journey-drawer-header">
+                  <h2 id="skyward-journey-drawer-title" className="skyward-journey-drawer-title">
+                    Quest details
+                  </h2>
+                  <button
+                    type="button"
+                    className="skyward-journey-drawer-close"
+                    onClick={closePanel}
+                    aria-label="Close"
+                  >
+                    ×
+                  </button>
                 </div>
-              </div>,
-              document.body,
-            )
+                <div className="skyward-journey-drawer-body">
+                  {renderStepContent(selectedStep, selectedMeta)}
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
           : null}
       </div>
     </div>

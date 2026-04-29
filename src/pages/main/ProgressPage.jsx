@@ -42,7 +42,7 @@ import HistoryPage from './HistoryPage';
 import HistoryPageMobile from './HistoryPageMobile';
 import './ProgressPage.css';
 
-const TIME_RANGES = ['daily', 'Weekly', 'Monthly', 'Yearly'];
+const TIME_RANGES = ['Daily', 'Weekly', 'Monthly', 'Yearly'];
 
 function toFivePointScore(rawScore) {
   const numeric = Number(rawScore);
@@ -260,7 +260,7 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const now = new Date();
 
-    if (range === 'daily') {
+    if (range === 'Daily') {
       const result = [];
       for (let i = 23; i >= 0; i -= 1) {
         const hour = new Date(now);
@@ -331,29 +331,51 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
 
   const stats = useMemo(() => {
     const now = new Date();
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - 7);
     
-    const weekSessions = userSessions.filter(s => new Date(s.created_at) >= weekStart);
-    const avgScoreRaw = userSessions.length
-      ? userSessions.reduce((a, b) => a + (b.confidence_score || 0), 0) / userSessions.length
+    const filteredSessions = userSessions.filter(s => {
+      const d = new Date(s.created_at);
+      if (range === 'Daily') {
+        const dayStart = new Date(now);
+        dayStart.setHours(0, 0, 0, 0);
+        return d >= dayStart;
+      }
+      if (range === 'Weekly') {
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - 7);
+        return d >= weekStart;
+      }
+      if (range === 'Monthly') {
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        monthStart.setHours(0, 0, 0, 0);
+        return d >= monthStart;
+      }
+      if (range === 'Yearly') {
+        const yearStart = new Date(now.getFullYear(), 0, 1);
+        yearStart.setHours(0, 0, 0, 0);
+        return d >= yearStart;
+      }
+      return true;
+    });
+
+    const avgScoreRaw = filteredSessions.length
+      ? filteredSessions.reduce((a, b) => a + (b.confidence_score || 0), 0) / filteredSessions.length
       : 0;
-    const totalTimeSec = userSessions.reduce((a, b) => a + (b.duration_sec || b.duration || 0), 0);
+    const totalTimeSec = filteredSessions.reduce((a, b) => a + (b.duration_sec || b.duration || 0), 0);
     const totalTimeMin = Math.round(totalTimeSec / 60);
 
     return {
-      sessionsThisWeek: weekSessions.length,
+      sessionsCount: filteredSessions.length,
       averageScoreLabel: formatFivePointScore(avgScoreRaw),
       averageScoreRaw: avgScoreRaw,
       totalSpeakingTime: totalTimeMin,
     };
-  }, [userSessions]);
+  }, [userSessions, range]);
 
   const pillarStats = useMemo(() => {
     const now = new Date();
     const filteredSessions = userSessions.filter((session) => {
       const createdAt = new Date(session.created_at);
-      if (pillarRange === 'daily') {
+      if (pillarRange === 'Daily') {
         const dayStart = new Date(now);
         dayStart.setHours(0, 0, 0, 0);
         return createdAt >= dayStart;
@@ -459,8 +481,8 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
               <div className="progress-banner-stats">
                 <div className="new-widget-rank-card progress-stat-card">
                   <div className="new-widget-rank-content">
-                    <p className="new-widget-kicker">Sessions</p>
-                    <p className="new-widget-value">{stats.sessionsThisWeek}</p>
+                    <p className="new-widget-kicker">Sessions ({range})</p>
+                    <p className="new-widget-value">{stats.sessionsCount}</p>
                   </div>
                 </div>
 
@@ -554,41 +576,72 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
                 ))}
               </div>
             </div>
-            <div className="progress-pillars-grid">
-              {pillarStats.map((pillar, index) => {
-                const tier = getScoreTier15(pillar.score);
-                return (
-                  <div 
-                    key={pillar.key} 
-                    className={`pillar-card dashboard-anim-bottom dashboard-anim-delay-${5 + index}`}
-                  >
-                    <div className="new-widget-head">
-                      <h2 className="new-widget-title">{pillar.label}</h2>
-                      <span className="new-widget-chip" style={{ background: `${tier.color}20`, color: tier.color }}>
-                        {tier.label}
-                      </span>
-                    </div>
-                    <div className="new-widget-rank-card">
-                      <img src={pillar.image} alt="" className="new-widget-rank-sprite" />
-                      <div className="new-widget-rank-content">
-                        <p className="new-widget-kicker">Score</p>
-                        <p className="new-widget-value">{pillar.score.toFixed(1)} / 5.0</p>
+            
+            {userSessions.filter(s => {
+              const d = new Date(s.created_at);
+              const now = new Date();
+              if (pillarRange === 'Daily') {
+                const dayStart = new Date(now);
+                dayStart.setHours(0, 0, 0, 0);
+                return d >= dayStart;
+              }
+              if (pillarRange === 'Weekly') {
+                const weekStart = new Date(now);
+                weekStart.setDate(weekStart.getDate() - 7);
+                return d >= weekStart;
+              }
+              if (pillarRange === 'Monthly') {
+                const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                monthStart.setHours(0, 0, 0, 0);
+                return d >= monthStart;
+              }
+              if (pillarRange === 'Yearly') {
+                const yearStart = new Date(now.getFullYear(), 0, 1);
+                yearStart.setHours(0, 0, 0, 0);
+                return d >= yearStart;
+              }
+              return true;
+            }).length === 0 ? (
+              <p style={{ textAlign: 'center', color: '#888', padding: '40px 0', fontWeight: 600 }}>
+                No sessions found for this period.
+              </p>
+            ) : (
+              <div className="progress-pillars-grid">
+                {pillarStats.map((pillar, index) => {
+                  const tier = getScoreTier15(pillar.score);
+                  return (
+                    <div 
+                      key={pillar.key} 
+                      className={`pillar-card dashboard-anim-bottom dashboard-anim-delay-${5 + index}`}
+                    >
+                      <div className="new-widget-head">
+                        <h2 className="new-widget-title">{pillar.label}</h2>
+                        <span className="new-widget-chip" style={{ background: `${tier.color}20`, color: tier.color }}>
+                          {tier.label}
+                        </span>
+                      </div>
+                      <div className="new-widget-rank-card">
+                        <img src={pillar.image} alt="" className="new-widget-rank-sprite" />
+                        <div className="new-widget-rank-content">
+                          <p className="new-widget-kicker">Score</p>
+                          <p className="new-widget-value">{pillar.score.toFixed(1)} / 5.0</p>
+                        </div>
+                      </div>
+                      <div className="progress-pillar-track-header">
+                        <span className="progress-pillar-track-label">Consistency Progress</span>
+                        <span className="progress-pillar-track-percent">{Math.round(pillar.value)}%</span>
+                      </div>
+                      <div className="progress-pillar-track">
+                        <div
+                          className="progress-pillar-track-fill"
+                          style={{ width: `${pillar.value}%`, background: tier.color }}
+                        />
                       </div>
                     </div>
-                    <div className="progress-pillar-track-header">
-                      <span className="progress-pillar-track-label">Consistency Progress</span>
-                      <span className="progress-pillar-track-percent">{Math.round(pillar.value)}%</span>
-                    </div>
-                    <div className="progress-pillar-track">
-                      <div
-                        className="progress-pillar-track-fill"
-                        style={{ width: `${pillar.value}%`, background: tier.color }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="progress-footer-actions dashboard-anim-bottom dashboard-anim-delay-5">

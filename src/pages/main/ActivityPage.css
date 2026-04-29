@@ -240,7 +240,7 @@ html {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 28px;
-  padding: 14px 16px 14px clamp(190px, 20vw, 260px);
+  padding: 14px 16px 14px clamp(180px, 18vw, 240px);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   overflow: visible;
@@ -249,8 +249,8 @@ html {
 .new-banner-robot {
   width: clamp(190px, 16vw, 250px);
   position: absolute;
-  left: clamp(-40px, -3vw, -20px);
-  bottom: -26px;
+  left: -10px;
+  bottom: -10px;
   z-index: 3;
   pointer-events: none;
   filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.25));

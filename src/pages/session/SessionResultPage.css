@@ -40,7 +40,7 @@
 
   min-height: 100dvh;
 
-  background-color: var(--sr-bg-white);
+  background-color: #FDFDF9;
 
   background-image: 
 
@@ -54,17 +54,35 @@
 
       transparent 300px, 
 
-      rgba(5, 150, 105, 0.06) 300px, 
+      rgba(5, 150, 105, 0.08) 300px, 
 
-      rgba(5, 150, 105, 0.06) 302px, 
+      rgba(5, 150, 105, 0.08) 302px, 
 
       transparent 302px, 
 
       transparent 600px
 
+    ),
+
+    repeating-radial-gradient(
+
+      circle at 0% 0%, 
+
+      transparent 0, 
+
+      transparent 400px, 
+
+      rgba(241, 143, 1, 0.07) 400px, 
+
+      rgba(241, 143, 1, 0.07) 402px, 
+
+      transparent 402px, 
+
+      transparent 800px
+
     );
 
-  background-size: 40px 40px, 100% 100%;
+  background-size: 40px 40px, 100% 100%, 100% 100%;
 
   background-attachment: fixed;
 
@@ -208,7 +226,7 @@
 
   border-radius: 32px;
 
-  min-height: 180px;
+  min-height: 120px;
 
   box-shadow: 0 20px 40px -10px rgba(5, 150, 105, 0.2);
 
@@ -254,7 +272,7 @@
 
   height: auto !important;
 
-  min-height: 180px !important;
+  min-height: 120px !important;
 
   max-width: none !important;
 
@@ -310,7 +328,7 @@
 
   box-shadow: 0 10px 25px rgba(11, 57, 84, 0.1);
 
-  min-height: 110px;
+  min-height: 0;
 
   display: flex;
 

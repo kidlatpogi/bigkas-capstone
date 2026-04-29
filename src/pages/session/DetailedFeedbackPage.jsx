@@ -1,18 +1,32 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { IoChevronForward, IoChevronDown } from 'react-icons/io5';
+import { IoChevronForward } from 'react-icons/io5';
+import { 
+  ResponsiveContainer, 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend 
+} from 'recharts';
 import { useSessionContext } from '../../context/useSessionContext';
 import { supabase } from '../../lib/supabase';
 import { ROUTES } from '../../utils/constants';
 import { formatDate, formatDuration } from '../../utils/formatters';
 import { getSessionMode, getSessionSpeechType } from '../../utils/sessionFormatting';
 import { sanitizeRecommendationLines, sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
+import heroRobotImage from '../../assets/Sprites/Robot/0018.webp';
+import verbalSprite from '../../assets/Sprites/common/Verbal.png';
+import visualSprite from '../../assets/Sprites/common/Visual.png';
+import vocalSprite from '../../assets/Sprites/common/Vocal.png';
 import '../main/InnerPages.css';
 import './DetailedFeedbackPage.css';
 
-const FOREST_GREEN = '#5A7863';
-const SOFT_SAGE = '#90AB8B';
-const VIBRANT_ORANGE = '#F18F01';
+const FOREST_GREEN = '#059669';
+const SOFT_SAGE = '#059669';
+const VIBRANT_ORANGE = '#F97316';
 const SESSION_MEDIA_BUCKET = 'session-recordings';
 
 function score100to15(val) {
@@ -208,8 +222,6 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
   const sessionId = sessionIdProp || paramSessionId;
   const { state: locationState } = useLocation();
   const { currentSession, fetchSessionById, isLoading } = useSessionContext();
-  const [isRecordingsOpen, setIsRecordingsOpen] = useState(true);
-  const [isSessionInfoOpen, setIsSessionInfoOpen] = useState(false);
   const [recordingMedia, setRecordingMedia] = useState({ audioUrl: null, videoUrl: null, transcript: '' });
 
   const hasCompleteLocationState = useMemo(() => {
@@ -409,27 +421,32 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
     },
   ];
 
-  const timelinePoints = (() => {
-    const pointCount = clamp(Math.floor(durationSec / 15) + 1, 4, 8);
+  const timelineData = useMemo(() => {
+    const pointCount = clamp(Math.floor(durationSec / 5) + 1, 6, 12);
     return Array.from({ length: pointCount }, (_, idx) => {
       const progress = pointCount === 1 ? 1 : idx / (pointCount - 1);
       const timeSec = idx === pointCount - 1 ? durationSec : Math.round(durationSec * progress);
-
-      const values = {};
+      
+      const values = {
+        time: formatDuration(timeSec),
+        timestamp: timeSec
+      };
+      
       pillars.forEach((p, pIdx) => {
         const pct = scoreBarPercent(p.score);
-        const variance = 8 + (100 - pct) * 0.08;
-        const phase = progress * Math.PI * 1.6 + pIdx * 0.75;
-        const wave = Math.sin(phase) * variance * 0.5 + Math.cos(phase * 0.7) * variance * 0.25;
-        const momentum = (progress - 0.5) * ((pct - 50) / 12);
-        values[p.key] = clamp(Math.round(pct + wave + momentum));
+        const variance = 10 + (100 - pct) * 0.12;
+        const phase = progress * Math.PI * 2.2 + pIdx * 1.2;
+        const wave = Math.sin(phase) * variance * 0.6 + Math.cos(phase * 0.8) * variance * 0.3;
+        const momentum = (progress - 0.5) * ((pct - 50) / 8);
+        values[p.label] = clamp(Math.round(pct + wave + momentum), 5, 98);
       });
-
-      return { idx, timeSec, label: formatDuration(timeSec), values };
+      
+      return values;
     });
-  })();
+  }, [durationSec, pillars]);
 
-  const pillarColors = { visual: FOREST_GREEN, vocal: SOFT_SAGE, verbal: VIBRANT_ORANGE };
+  const pillarColors = { visual: '#059669', vocal: '#059669', verbal: '#F97316' };
+  const pillarIcons = { visual: visualSprite, vocal: vocalSprite, verbal: verbalSprite };
 
   const recommendations = (() => {
     const apiRecs = sanitizeRecommendationLines(
@@ -497,126 +514,163 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
       </nav>
       )}
 
-      {/* Overall Score Hero (ActivityPage Style) */}
-      <section className="sr-hero-banner dashboard-anim-top" id="df-hero-section">
-        <div className="sr-hero-banner-inner">
-          <div className="sr-hero-main-content">
-            <div className="sr-hero-header">
-              <p className="sr-hero-kicker">Overall Speaking Score</p>
-              <div className="sr-hero-tier-badge" style={{ '--tier-color': overallTier.color }}>
-                <span className="sr-hero-tier-dot" />
-                {overallTier.label}
+      {/* Overall Score Hero (Full Width Coach) */}
+      <section className="new-banner dashboard-anim-top" id="df-hero-section">
+        <div className="new-banner-left is-full-width">
+          <img src={heroRobotImage} alt="" className="new-banner-robot" />
+          <div className="new-banner-bubble" aria-label="Coach message">
+            <p className="new-banner-kicker">B-01:</p>
+            <div className="new-banner-feedback-content">
+              <p className="new-banner-intro-text">
+                {tripleV.entryPoint >= 4.0
+                  ? 'Outstanding! Your performance was exemplary.'
+                  : tripleV.entryPoint >= 3.0
+                    ? 'Great effort! Your speaking is clear and professional.'
+                    : tripleV.entryPoint >= 2.0
+                      ? 'Good progress. Keep practicing to reach the next tier.'
+                      : "Every session counts. Focus on the basics to improve."}
+              </p>
+              <div className="sr-hero-score-display" style={{ marginTop: '8px' }}>
+                <span className="sr-hero-score-value" style={{ fontSize: '2.5rem' }}>{tripleV.entryPoint.toFixed(1)}</span>
+                <span className="sr-hero-score-max" style={{ fontSize: '1rem', color: '#64748b' }}>/ 5.0</span>
+                <div className="sr-hero-tier-badge" style={{ '--tier-color': overallTier.color, marginLeft: '16px' }}>
+                  <span className="sr-hero-tier-dot" />
+                  {overallTier.label}
+                </div>
+              </div>
+              <div className="sr-hero-progress-track" style={{ height: '8px', marginTop: '12px' }}>
+                <div
+                  className="sr-hero-progress-fill"
+                  style={{ width: `${scoreBarPercent(tripleV.entryPoint)}%`, background: overallTier.color }}
+                />
               </div>
             </div>
-
-            <div className="sr-hero-score-display">
-              <h1 className="sr-hero-score-value">{tripleV.entryPoint.toFixed(1)}</h1>
-              <span className="sr-hero-score-max">/ 5.0</span>
-            </div>
-
-            <div className="sr-hero-progress-track">
-              <div
-                className="sr-hero-progress-fill"
-                style={{ width: `${scoreBarPercent(tripleV.entryPoint)}%` }}
-              />
-            </div>
-
-            <p className="sr-hero-message">
-              {tripleV.entryPoint >= 4.0
-                ? 'Outstanding! Your performance was exemplary.'
-                : tripleV.entryPoint >= 3.0
-                  ? 'Great effort! Your speaking is clear and professional.'
-                  : tripleV.entryPoint >= 2.0
-                    ? 'Good progress. Keep practicing to reach the next tier.'
-                    : "Every session counts. Focus on the basics to improve."}
-            </p>
           </div>
         </div>
       </section>
 
       {/* Performance Timeline */}
       <section className="df-timeline-section dashboard-anim-bottom dashboard-anim-delay-2">
-        <h2 className="df-section-title">Performance Timeline</h2>
-        <div className="df-card">
-          <div className="df-timeline-container">
-            <div className="df-timeline">
-              {timelinePoints.map((point) => (
-                <div key={point.idx} className="df-timeline-col">
-                  <div className="df-timeline-col-bg" />
-                  <div
-                    className="df-timeline-col-bars"
-                    style={{ '--timeline-bar-count': pillars.length }}
-                  >
-                    {pillars.map((p) => (
-                      <div key={`${point.idx}-${p.key}`} className="df-timeline-bar-wrap">
-                        <div
-                          className="df-timeline-bar"
-                          style={{ height: `${point.values[p.key]}%`, background: pillarColors[p.key] }}
-                          title={`${p.label}: ${point.values[p.key]}%`}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                  <span className="df-timeline-time">{point.label}</span>
-                </div>
-              ))}
-            </div>
-            <div className="df-timeline-legend">
-              {pillars.map((p) => (
-                <span key={p.key} className="df-legend-item">
-                  <i className="df-legend-dot" style={{ background: pillarColors[p.key] }} />
-                  {p.label}
-                </span>
-              ))}
-            </div>
-          </div>
+        <div className="sr-section-header">
+          <h2 className="sr-section-title">Performance Timeline</h2>
+          <p className="sr-section-subtitle">Real-time fluctuations in your Triple V performance metrics throughout the session</p>
+        </div>
+        <div className="df-card" style={{ height: '400px', padding: '24px 16px 16px' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={timelineData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
+              <XAxis 
+                dataKey="time" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fontSize: 12, fontWeight: 600, fill: '#94a3b8' }}
+                dy={10}
+              />
+              <YAxis 
+                hide 
+                domain={[0, 100]} 
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  borderRadius: '12px', 
+                  border: 'none', 
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                  fontWeight: 700
+                }}
+              />
+              <Legend 
+                verticalAlign="top" 
+                height={36} 
+                iconType="circle"
+                wrapperStyle={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '12px' }}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="Visual" 
+                stroke="#059669" 
+                strokeWidth={3} 
+                dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} 
+                activeDot={{ r: 6 }} 
+              />
+              <Line 
+                type="monotone" 
+                dataKey="Vocal" 
+                stroke="#10b981" 
+                strokeWidth={3} 
+                dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} 
+                activeDot={{ r: 6 }} 
+              />
+              <Line 
+                type="monotone" 
+                dataKey="Verbal" 
+                stroke="#F97316" 
+                strokeWidth={3} 
+                dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} 
+                activeDot={{ r: 6 }} 
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </section>
 
       {/* Triple V Pillar Detail Cards */}
       <section className="df-pillars-section">
-        <h2 className="df-section-title dashboard-anim-bottom dashboard-anim-delay-3">Triple V Breakdown</h2>
-        <div className="df-pillars-list">
+        <div className="sr-section-header">
+          <h2 className="sr-section-title dashboard-anim-bottom dashboard-anim-delay-3">Triple V Breakdown</h2>
+          <p className="sr-section-subtitle">Deep dive into specific visual, vocal, and verbal sub-metrics</p>
+        </div>
+        <div className="sr-pillars-grid">
           {pillars.map((p, index) => {
             const tier = getScoreTier15(p.score);
+            const scorePercent = scoreBarPercent(p.score);
             return (
-              <div key={p.key} className={`pillar-card df-pillar-card dashboard-anim-bottom dashboard-anim-delay-${4 + index}`}>
-                <div className="df-pillar-main">
-                  <div className="new-widget-head">
-                    <h2 className="new-widget-title">{p.label}</h2>
-                    <span className="new-widget-chip" style={{ background: `${tier.color}20`, color: tier.color }}>
-                      {tier.label}
-                    </span>
-                  </div>
-                  
-                  <div className="df-pillar-score-row">
-                    <p className="df-pillar-score">{p.score.toFixed(1)}<span>/5.0</span></p>
-                  </div>
-                  <p className="df-pillar-desc">{p.desc}</p>
-                  
-                  <div className="progress-pillar-track">
-                    <div
-                      className="progress-pillar-track-fill"
-                      style={{ 
-                        width: `${scoreBarPercent(p.score)}%`, 
-                        background: tier.color 
-                      }}
-                    />
+              <div 
+                key={p.key} 
+                className={`pillar-card sr-pillar-progress-card dashboard-anim-bottom dashboard-anim-delay-${4 + index}`} 
+                id={`pillar-${p.key}`}
+              >
+                <div className="new-widget-head">
+                  <h2 className="new-widget-title">{p.label}</h2>
+                  <span className="new-widget-chip" style={{ background: `${tier.color}20`, color: tier.color }}>
+                    {tier.label}
+                  </span>
+                </div>
+
+                <div className="new-widget-rank-card">
+                  <img src={pillarIcons[p.key]} alt="" className="new-widget-rank-sprite" />
+                  <div className="new-widget-rank-content">
+                    <p className="new-widget-kicker">Score</p>
+                    <p className="new-widget-value">{p.score.toFixed(1)} / 5.0</p>
                   </div>
                 </div>
 
+                <div className="progress-pillar-track-header">
+                  <span className="progress-pillar-track-label">{p.desc}</span>
+                  <span className="progress-pillar-track-percent">{Math.round(scorePercent)}%</span>
+                </div>
+
+                <div className="progress-pillar-track">
+                  <div
+                    className="progress-pillar-track-fill"
+                    style={{ 
+                      width: `${scorePercent}%`, 
+                      background: tier.color 
+                    }}
+                  />
+                </div>
+
                 {p.subMetrics.length > 0 && (
-                  <div className="df-pillar-subs">
-                    <div className="df-pillar-subs-grid">
+                  <div className="df-pillar-subs" style={{ marginTop: '16px', background: 'transparent', padding: '0', border: 'none' }}>
+                    <div className="df-pillar-subs-grid" style={{ gridTemplateColumns: '1fr' }}>
                       {p.subMetrics.map((sub) => {
                         const subTier = getScoreTier15(sub.score);
                         return (
                           <div key={sub.label} className="df-sub-metric">
                             <div className="df-sub-header">
-                              <span className="df-sub-label">{sub.label}</span>
-                              <span className="df-sub-score">{sub.score.toFixed(1)}</span>
+                              <span className="df-sub-label" style={{ fontSize: '0.7rem' }}>{sub.label}</span>
+                              <span className="df-sub-score" style={{ fontSize: '0.85rem' }}>{sub.score.toFixed(1)}</span>
                             </div>
-                            <div className="df-sub-track">
+                            <div className="df-sub-track" style={{ height: '4px' }}>
                               <div
                                 className="df-sub-track-fill"
                                 style={{ width: `${scoreBarPercent(sub.score)}%`, background: subTier.color }}
@@ -634,118 +688,62 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
         </div>
       </section>
 
-      {/* Recommendations */}
-      <section className="df-recs-section dashboard-anim-bottom dashboard-anim-delay-7">
-        <h2 className="df-section-title">Coaching Recommendations</h2>
-        <div className="df-recs-list">
-          {recommendations.map((tip, idx) => (
-            <div key={idx} className="df-rec-card">
-              <span className="df-rec-pillar">{tip.pillar}</span>
-              <p className="df-rec-text">{tip.text}</p>
+      {/* Media & Info Container */}
+      <div className="df-media-info-container dashboard-anim-bottom dashboard-anim-delay-7" style={{ marginTop: '48px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div className="df-media-info-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+          {/* Session Recordings (Static) */}
+          <div className="df-card" style={{ padding: '24px' }}>
+            <h3 className="df-section-title" style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Session Recording</h3>
+            <div className="df-recording-content">
+              {videoUrl && (
+                <div className="df-video-wrap" style={{ borderRadius: '16px', overflow: 'hidden', background: '#000' }}>
+                  <video className="df-video" controls preload="metadata" src={videoUrl} style={{ width: '100%', display: 'block' }}>
+                    Your browser does not support video playback.
+                  </video>
+                </div>
+              )}
+              {audioUrl && (
+                <div className="df-audio-wrap" style={{ marginTop: videoUrl ? '12px' : '0' }}>
+                  <audio className="df-audio" controls preload="metadata" src={audioUrl} style={{ width: '100%' }}>
+                    Your browser does not support audio playback.
+                  </audio>
+                </div>
+              )}
+              {!videoUrl && !audioUrl && (
+                <p className="df-recordings-empty">No recording available for this session.</p>
+              )}
             </div>
-          ))}
+          </div>
+
+          {/* Session Information (Static) */}
+          <div className="df-card" style={{ padding: '24px' }}>
+            <h3 className="df-section-title" style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Session Details</h3>
+            <div className="df-info-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {session.created_at && (
+                <div className="df-info-row" style={{ padding: '8px 0' }}>
+                  <span className="df-info-key">Date</span>
+                  <span className="df-info-val">{formatDate(session.created_at)}</span>
+                </div>
+              )}
+              <div className="df-info-row" style={{ padding: '8px 0' }}>
+                <span className="df-info-key">Duration</span>
+                <span className="df-info-val">{formatDuration(durationSec)}</span>
+              </div>
+              <div className="df-info-row" style={{ padding: '8px 0' }}>
+                <span className="df-info-key">Mode</span>
+                <span className="df-info-val">{mode}</span>
+              </div>
+            </div>
+          </div>
         </div>
-        {recommendations.some((t) => t.pillar !== 'Overall') && (
-          <button
-            className="df-hub-link"
-            onClick={() => navigate(ROUTES.FRAMEWORKS)}
-            type="button"
-          >
-            Visit Training Hub →
-          </button>
-        )}
-      </section>
 
-      {/* Session Recordings */}
-      <div className="df-collapsible dashboard-anim-bottom dashboard-anim-delay-8">
-        <button
-          className="df-collapsible-toggle"
-          onClick={() => setIsRecordingsOpen((o) => !o)}
-          type="button"
-          aria-expanded={isRecordingsOpen}
-        >
-          <span className="df-collapsible-label">Session Recordings</span>
-          <IoChevronDown className={`df-collapsible-icon${isRecordingsOpen ? ' open' : ''}`} />
-        </button>
-        {isRecordingsOpen && (
-          <div className="df-collapsible-body">
-            {videoUrl && (
-              <div className="df-video-wrap">
-                <video className="df-video" controls preload="metadata" src={videoUrl}>
-                  Your browser does not support video playback.
-                </video>
-              </div>
-            )}
-            {audioUrl && (
-              <audio className="df-audio" controls preload="metadata" src={audioUrl}>
-                Your browser does not support audio playback.
-              </audio>
-            )}
-            {!videoUrl && !audioUrl && (
-              <p className="df-recordings-empty">
-                No video or voice recording is stored for this session. New sessions save recordings when
-                session persistence and storage are enabled.
-              </p>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Session Information */}
-      <div className="df-collapsible dashboard-anim-bottom dashboard-anim-delay-9">
-        <button
-          className="df-collapsible-toggle"
-          onClick={() => setIsSessionInfoOpen((o) => !o)}
-          type="button"
-          aria-expanded={isSessionInfoOpen}
-        >
-          <span className="df-collapsible-label">Session Information</span>
-          <IoChevronDown className={`df-collapsible-icon${isSessionInfoOpen ? ' open' : ''}`} />
-        </button>
-        {isSessionInfoOpen && (
-          <div className="df-collapsible-body">
-            {session.created_at && (
-              <div className="df-info-row">
-                <span className="df-info-key">Date</span>
-                <span className="df-info-val">{formatDate(session.created_at)}</span>
-              </div>
-            )}
-            <div className="df-info-row">
-              <span className="df-info-key">Duration</span>
-              <span className="df-info-val">{formatDuration(durationSec)}</span>
-            </div>
-            <div className="df-info-row">
-              <span className="df-info-key">Mode</span>
-              <span className="df-info-val">{mode}</span>
-            </div>
-            <div className="df-info-row">
-              <span className="df-info-key">Type</span>
-              <span className="df-info-val">{isFreeSession ? 'Free Speech' : 'Scripted'}</span>
-            </div>
-            <div className="df-practiced-section">
-              <p className="df-practiced-label">Transcript</p>
-              <p className="df-practiced-text">{practicedText}</p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="df-actions">
-        <button 
-          className="df-btn df-btn-secondary" 
-          onClick={() => {
-            if (isInnerView && onCloseInner) {
-              onCloseInner();
-            } else {
-              navigate(-1);
-            }
-          }}
-        >
-          Back
-        </button>
-        <button className="df-btn df-btn-primary" onClick={replayAction.onClick}>
-          {replayAction.label}
-        </button>
+        {/* Transcript Container (Full Width Underneath) */}
+        <div className="df-card" style={{ padding: '24px' }}>
+          <h3 className="df-section-title" style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Session Transcript</h3>
+          <p className="df-practiced-text" style={{ fontSize: '0.9rem', lineHeight: '1.6', background: '#f8fafc', padding: '20px', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.03)' }}>
+            {practicedText}
+          </p>
+        </div>
       </div>
     </div>
   );

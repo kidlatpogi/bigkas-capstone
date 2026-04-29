@@ -1,4 +1,4 @@
-#root, body {
+﻿#root, body {
   margin: 0;
   padding: 0;
   height: 100%;
@@ -171,16 +171,13 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 .new-banner {
   background: linear-gradient(180deg, #34D399 0%, #059669 100%);
   border-radius: 24px;
-  min-height: 200px;
-  height: auto;
+  min-height: 190px;
   box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
   display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 32px;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 20px;
+  padding: clamp(16px, 3vw, 24px);
   position: relative;
   overflow: hidden;
   width: 100%;
@@ -193,18 +190,16 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   gap: 0;
   position: relative;
   z-index: 2;
-  flex: 1;
-  min-width: 450px;
-  max-width: 700px;
+  flex: 1 1 500px;
+  min-width: 300px;
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 32px;
-  padding: 20px 24px 20px 220px;
+  padding: 16px 20px 16px clamp(190px, 20vw, 260px);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   overflow: visible;
   transition: all 0.3s ease;
-  height: 160px;
 }
 
 .new-banner-robot {
@@ -390,18 +385,17 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 
 .new-banner-right {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   z-index: 2;
-  flex: 0 0 auto;
-  min-width: 420px;
 }
 
 .progress-banner-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 12px;
   width: 100%;
   align-items: center;
+  flex: 1 1 400px;
 }
 
 /* Stats Card (Based on new-widget-rank-card) */
@@ -490,19 +484,18 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 .progress-chart-title {
   margin: 0;
   font-family: 'Fredoka', sans-serif;
-  font-size: clamp(24px, 4vw, 40px);
-  font-weight: 600;
+  font-size: clamp(1.1rem, 1.2vw, 1.3rem);
+  font-weight: 800;
   color: #1E293B;
   line-height: 1.2;
 }
 
 .progress-chart-explanation {
-  margin: 4px 0 0;
-  font-family: 'Nunito', sans-serif;
-  font-size: clamp(13px, 1.2vw, 15px);
-  font-weight: 400;
+  margin: 0;
+  font-family: 'Fredoka', sans-serif;
+  font-size: clamp(0.72rem, 0.78vw, 0.82rem);
+  font-weight: 500;
   color: #64748b;
-  line-height: 1.5;
 }
 
 .progress-range-labels {
@@ -564,8 +557,8 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 .progress-pillars-title {
   margin: 0;
   font-family: 'Fredoka', sans-serif;
-  font-size: clamp(24px, 4vw, 40px);
-  font-weight: 600;
+  font-size: clamp(20px, 2.5vw, 28px);
+  font-weight: 800;
   color: #1E293B !important;
 }
 
@@ -994,79 +987,60 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   .new-banner {
     flex-direction: column !important;
     height: auto !important;
-    gap: 20px !important;
-    padding: 24px !important;
-    align-items: center !important;
+    gap: 16px !important;
   }
 
-  .new-banner-left:not(.is-full-width) {
+  .new-banner-left {
     width: 100% !important;
     flex: none !important;
-    max-width: 600px !important;
-    padding-left: clamp(150px, 16vw, 190px) !important;
-  }
-
-  .new-banner-left.is-full-width {
-    width: 100% !important;
-    max-width: none !important;
-    flex: none !important;
-    align-self: stretch !important;
+    max-width: 100% !important;
+    padding-left: clamp(160px, 18vw, 220px) !important;
   }
 
   .new-banner-robot {
     width: clamp(140px, 12vw, 180px) !important;
-    bottom: -10px !important;
-    left: -10px !important;
   }
 
   .new-banner-right {
     width: 100% !important;
-    display: flex !important;
-    justify-content: center !important;
+    display: block !important;
   }
 
   .progress-banner-stats {
-    display: flex !important;
-    flex-direction: row !important;
-    justify-content: center !important;
-    gap: 16px !important;
-    width: auto !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 12px !important;
+    width: 100% !important;
   }
 
-  /* Equal Height/Width Stats Cards */
+  .progress-pillars-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* Compact Stats Cards */
   .progress-stat-card.new-widget-rank-card {
-    width: 120px !important;
-    height: 120px !important;
-    padding: 12px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
+    padding: 12px 16px !important;
+    height: auto !important;
+    min-height: 80px !important;
     gap: 8px !important;
-    flex: none !important;
-    min-height: auto !important;
-    border-radius: 24px !important;
+    flex-direction: column !important;
+    justify-content: center !important;
   }
 
   .progress-stat-card.new-widget-rank-card .new-widget-rank-content {
     align-items: center !important;
     text-align: center !important;
-    gap: 4px !important;
+    gap: 2px !important;
   }
 
   .progress-stat-card.new-widget-rank-card .new-widget-value {
-    font-size: 1.5rem !important;
+    font-size: 1.25rem !important;
   }
 
   /* Compact Pillar Cards */
-  .progress-pillars-grid {
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 16px !important;
-    width: 100% !important;
-  }
-
   .pillar-card {
-    padding: 20px 24px !important;
+    padding: 16px 24px !important;
     min-height: auto !important;
     gap: 12px !important;
   }

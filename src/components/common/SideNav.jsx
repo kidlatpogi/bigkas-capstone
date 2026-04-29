@@ -153,41 +153,70 @@ export default function SideNav() {
           {notifTrayOpen && createPortal(
             <div className="side-nav-notif-drawer-root">
               <div className="side-nav-notif-drawer-scrim" onClick={() => setNotifTrayOpen(false)} />
-              <div className="side-nav-notif-tray side-nav-notif-tray--drawer">
-                <div className="side-nav-notif-tray-head">
-                  <div className="side-nav-notif-tray-head-main">
-                    <h4>Notifications</h4>
-                    <button type="button" className="side-nav-notif-tray-close" onClick={() => setNotifTrayOpen(false)}>×</button>
+              <div className="side-nav-notif-tray side-nav-notif-tray--floating">
+                <div className="side-nav-notif-tray-header">
+                  <div className="side-nav-notif-tray-header-top">
+                    <h3 className="side-nav-notif-tray-title">Notifications</h3>
+                    <button 
+                      type="button" 
+                      className="side-nav-notif-close-btn" 
+                      onClick={() => setNotifTrayOpen(false)}
+                      aria-label="Close notifications"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <div className="side-nav-notif-tabs">
+                    <button type="button" className="side-nav-notif-tab active">All</button>
+                    <button type="button" className="side-nav-notif-tab">Unread</button>
                   </div>
                 </div>
+                
                 <div className="side-nav-notif-tray-list no-scrollbar">
                   {claimables.length > 0 ? (
                     claimables.map((item) => (
                       <div key={item.id} className="side-nav-notif-item">
-                        <div className="side-nav-notif-item-content">
-                          <p className="side-nav-notif-item-title">{item.title}</p>
-                          <p className="side-nav-notif-item-desc">Ready to claim</p>
+                        <div className="side-nav-notif-item-avatar">
+                          <IoMedalOutline />
                         </div>
-                        <button
-                          type="button"
-                          className="side-nav-notif-item-btn"
-                          onClick={() => handleClaim(item.id)}
-                        >
-                          Claim
-                        </button>
+                        <div className="side-nav-notif-item-content">
+                          <div className="side-nav-notif-item-header">
+                            <span className="side-nav-notif-item-name">{item.title}</span>
+                            <span className="side-nav-notif-item-time">Now</span>
+                            <span className="side-nav-notif-unread-dot" />
+                          </div>
+                          <p className="side-nav-notif-item-text">You've earned a new achievement! Claim your reward now.</p>
+                          <div className="side-nav-notif-item-actions">
+                            <button
+                              type="button"
+                              className="side-nav-notif-claim-btn"
+                              onClick={() => handleClaim(item.id)}
+                            >
+                              Claim Reward
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     ))
                   ) : (
                     <div className="side-nav-notif-empty">
+                      <div className="side-nav-notif-empty-icon">
+                        <IoNotificationsOutline />
+                      </div>
                       <p>No new notifications</p>
                     </div>
                   )}
                 </div>
-                <div className="side-nav-notif-tray-foot">
-                  <button type="button" onClick={() => {
-                    setNotifTrayOpen(false);
-                    navigate(ROUTES.ACHIEVEMENTS);
-                  }}>
+                
+                <div className="side-nav-notif-tray-footer">
+                  <button 
+                    type="button" 
+                    className="side-nav-notif-view-all"
+                    onClick={() => {
+                      setNotifTrayOpen(false);
+                      navigate(ROUTES.ACHIEVEMENTS);
+                    }}
+                  >
                     View all achievements
                   </button>
                 </div>

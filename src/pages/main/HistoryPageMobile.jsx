@@ -118,15 +118,6 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
     if (selectedSessionId) setInnerViewMode('results');
   }, [selectedSessionId]);
 
-  useEffect(() => {
-    if (isOpen) {
-      document.body.classList.add('modal-open');
-    } else {
-      document.body.classList.remove('modal-open');
-    }
-    return () => document.body.classList.remove('modal-open');
-  }, [isOpen]);
-
   const dateFilteredSessions = useMemo(() => {
     const filtered = userSessions.filter((s) => {
       const d = new Date(s.created_at);

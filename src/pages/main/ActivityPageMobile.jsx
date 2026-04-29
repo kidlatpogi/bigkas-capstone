@@ -251,17 +251,6 @@ function ActivityPageMobile() {
     if (!user?.id) return;
   }, [user?.id]);
 
-  const anyOverlayOpen = showRandomizerOverlay || showFreeSpeechOverlay || showDashboardOverlay || isStreakModalOpen || isRankModalOpen;
-
-  useEffect(() => {
-    if (anyOverlayOpen) {
-      document.body.classList.add('modal-open');
-    } else {
-      document.body.classList.remove('modal-open');
-    }
-    return () => document.body.classList.remove('modal-open');
-  }, [anyOverlayOpen]);
-
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     const onResize = () => {

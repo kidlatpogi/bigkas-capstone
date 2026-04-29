@@ -736,7 +736,7 @@ function ActivityPageMobile() {
         />
       </div>
 
-      <div className="activity-mobile-dashboard-section">
+      <div className={`activity-mobile-dashboard-section${(showDashboardOverlay || showRandomizerOverlay || showFreeSpeechOverlay) ? ' is-hidden' : ''}`}>
         <Button 
           variant="practice" 
           className="activity-mobile-dashboard-btn"

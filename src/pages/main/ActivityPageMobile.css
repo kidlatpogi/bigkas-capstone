@@ -244,7 +244,7 @@
 
 .activity-page-mobile-root .randomizer-overlay-content {
   position: relative;
-  z-index: 1;
+  z-index: 1200; /* Above scrim (1100) */
   width: min(100%, 420px);
   display: flex;
   flex-direction: column;
@@ -556,6 +556,12 @@
   justify-content: center;
   padding: 0; /* Handled by root gap */
   flex-shrink: 0;
+  transition: opacity 0.2s ease;
+}
+
+.activity-mobile-dashboard-section.is-hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .activity-mobile-dashboard-btn {
@@ -595,13 +601,18 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
+  pointer-events: none; /* Let clicks through to scrim if needed, but scrim is full screen */
+}
+
+.dashboard-overlay-wrapper > * {
+  pointer-events: auto;
 }
 
 /* dashboard-overlay-backdrop removed */
 
 .dashboard-overlay-content {
   position: relative;
-  z-index: 1;
+  z-index: 1200; /* Above scrim (1100) */
   width: 100%;
   max-width: 500px;
   background: #FDFDF9;

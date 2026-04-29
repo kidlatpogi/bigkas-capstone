@@ -195,13 +195,41 @@ function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner, onViewDet
   const pillarRecommendations = pillars
     .filter((p) => p.score < 3.0)
     .map((p) => {
-      if (p.key === 'visual') return 'Improve visual presence — maintain natural eye contact and use purposeful gestures.';
-      if (p.key === 'vocal') return 'Steady your voice — practice deep breathing for pitch and volume control.';
-      return 'Articulate more clearly — slow down on complex words and stay on topic.';
+      let text = '';
+      if (p.key === 'visual') text = 'Improve visual presence — maintain natural eye contact and use purposeful gestures.';
+      else if (p.key === 'vocal') text = 'Steady your voice — practice deep breathing for pitch and volume control.';
+      else text = 'Articulate more clearly — slow down on complex words and stay on topic.';
+      
+      return { text, pillar: p.key, image: p.image };
     });
-  const allRecommendations = Array.from(new Set([...pillarRecommendations, ...recommendations]));
+
+  const rawRecommendations = recommendations.map(text => {
+    const lowText = text.toLowerCase();
+    let pillar = 'general';
+    let image = null;
+    
+    if (lowText.includes('visual') || lowText.includes('eye') || lowText.includes('gesture')) {
+      pillar = 'visual';
+      image = visualSprite;
+    } else if (lowText.includes('vocal') || lowText.includes('voice') || lowText.includes('pitch')) {
+      pillar = 'vocal';
+      image = vocalSprite;
+    } else if (lowText.includes('verbal') || lowText.includes('word') || lowText.includes('pronunciation')) {
+      pillar = 'verbal';
+      image = verbalSprite;
+    }
+    
+    return { text, pillar, image };
+  });
+
+  const allRecommendations = [...pillarRecommendations, ...rawRecommendations];
+  
   if (allRecommendations.length === 0) {
-    allRecommendations.push('Great job! Keep up the excellent work across all areas.');
+    allRecommendations.push({ 
+      text: 'Great job! Keep up the excellent work across all areas.', 
+      pillar: 'general', 
+      image: null 
+    });
   }
 
   const replayAction = buildReplayAction(result, navigate);
@@ -330,9 +358,18 @@ function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner, onViewDet
           {allRecommendations.length > 0 && (
             <section className="sr-recs-card" id="sr-recommendations">
               <h2 className="sr-section-title">Recommendations</h2>
-              <ul className="sr-recs-list-v2">
-                {allRecommendations.map((text, idx) => (
-                  <li key={idx} className="sr-rec-item-v2">{text}</li>
+              <ul className="sr-recs-list-v3">
+                {allRecommendations.slice(0, 3).map((rec, idx) => (
+                  <li key={idx} className="sr-rec-item-v3">
+                    {rec.image && (
+                      <div className="sr-rec-icon-wrap">
+                        <img src={rec.image} alt={rec.pillar} className="sr-rec-icon-img" />
+                      </div>
+                    )}
+                    <div className="sr-rec-content">
+                      <p className="sr-rec-text">{rec.text}</p>
+                    </div>
+                  </li>
                 ))}
               </ul>
               {pillarRecommendations.length > 0 && (

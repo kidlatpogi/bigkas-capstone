@@ -538,34 +538,37 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
       <section className="df-timeline-section dashboard-anim-bottom dashboard-anim-delay-2">
         <h2 className="df-section-title">Performance Timeline</h2>
         <div className="df-card">
-          <div className="df-timeline">
-            {timelinePoints.map((point) => (
-              <div key={point.idx} className="df-timeline-col">
-                <div className="df-timeline-col-bg" />
-                <div
-                  className="df-timeline-col-bars"
-                  style={{ '--timeline-bar-count': pillars.length }}
-                >
-                  {pillars.map((p) => (
-                    <div key={`${point.idx}-${p.key}`} className="df-timeline-bar-wrap">
-                      <div
-                        className="df-timeline-bar"
-                        style={{ height: `${point.values[p.key]}%`, background: pillarColors[p.key] }}
-                      />
-                    </div>
-                  ))}
+          <div className="df-timeline-container">
+            <div className="df-timeline">
+              {timelinePoints.map((point) => (
+                <div key={point.idx} className="df-timeline-col">
+                  <div className="df-timeline-col-bg" />
+                  <div
+                    className="df-timeline-col-bars"
+                    style={{ '--timeline-bar-count': pillars.length }}
+                  >
+                    {pillars.map((p) => (
+                      <div key={`${point.idx}-${p.key}`} className="df-timeline-bar-wrap">
+                        <div
+                          className="df-timeline-bar"
+                          style={{ height: `${point.values[p.key]}%`, background: pillarColors[p.key] }}
+                          title={`${p.label}: ${point.values[p.key]}%`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <span className="df-timeline-time">{point.label}</span>
                 </div>
-                <span className="df-timeline-time">{point.label}</span>
-              </div>
-            ))}
-          </div>
-          <div className="df-timeline-legend">
-            {pillars.map((p) => (
-              <span key={p.key} className="df-legend-item">
-                <i className="df-legend-dot" style={{ background: pillarColors[p.key] }} />
-                {p.label}
-              </span>
-            ))}
+              ))}
+            </div>
+            <div className="df-timeline-legend">
+              {pillars.map((p) => (
+                <span key={p.key} className="df-legend-item">
+                  <i className="df-legend-dot" style={{ background: pillarColors[p.key] }} />
+                  {p.label}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -604,23 +607,25 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
 
                 {p.subMetrics.length > 0 && (
                   <div className="df-pillar-subs">
-                    {p.subMetrics.map((sub) => {
-                      const subTier = getScoreTier15(sub.score);
-                      return (
-                        <div key={sub.label} className="df-sub-metric">
-                          <div className="df-sub-header">
-                            <span className="df-sub-label">{sub.label}</span>
-                            <span className="df-sub-score">{sub.score.toFixed(1)}</span>
+                    <div className="df-pillar-subs-grid">
+                      {p.subMetrics.map((sub) => {
+                        const subTier = getScoreTier15(sub.score);
+                        return (
+                          <div key={sub.label} className="df-sub-metric">
+                            <div className="df-sub-header">
+                              <span className="df-sub-label">{sub.label}</span>
+                              <span className="df-sub-score">{sub.score.toFixed(1)}</span>
+                            </div>
+                            <div className="df-sub-track">
+                              <div
+                                className="df-sub-track-fill"
+                                style={{ width: `${scoreBarPercent(sub.score)}%`, background: subTier.color }}
+                              />
+                            </div>
                           </div>
-                          <div className="df-sub-track">
-                            <div
-                              className="df-sub-track-fill"
-                              style={{ width: `${scoreBarPercent(sub.score)}%`, background: subTier.color }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>

@@ -710,9 +710,9 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 }
 
 .progress-show-history-btn {
-  height: 44px !important;
-  min-height: 44px !important;
-  width: min(100%, 348px) !important;
+  height: 56px;
+  min-height: 56px;
+  width: min(100%, 348px);
   padding: 0 2rem !important;
   border-radius: 999px !important;
   font-family: 'Fredoka', 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif !important;

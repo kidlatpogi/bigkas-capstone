@@ -910,8 +910,8 @@
 }
 
 .history-back-btn {
-  height: 44px;
-  min-height: 44px;
+  height: 56px;
+  min-height: 56px;
   width: min(100%, 348px);
   padding: 0 2rem;
   border-radius: 999px;

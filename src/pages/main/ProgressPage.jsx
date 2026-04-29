@@ -452,7 +452,21 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
     >
       <div className="progress-main-layout">
         <div className="progress-left-content">
-          {/* Desktop/Mobile Unified Banner Section (1:1 with Activity Page) */}
+          {isMobile ? (
+            <div className="progress-mobile-top-strip">
+              <div className="progress-mobile-banner-left" aria-label="Coach message">
+                <img src={heroRobotImage} alt="" className="progress-mobile-banner-robot" />
+                <div className="progress-mobile-banner-bubble">
+                  <p className="progress-mobile-banner-kicker">B-01:</p>
+                  <p className="progress-mobile-banner-copy">
+                    You&apos;re on a roll. Keep doing your activities and improve your speaking.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Banner Section (1:1 with Activity Page) */}
           <section className="new-banner dashboard-anim-top dashboard-anim-delay-2">
             <div className="new-banner-left" id="tutorial-target-home-banner">
               <img src={heroRobotImage} alt="" className="new-banner-robot" />

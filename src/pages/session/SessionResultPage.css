@@ -212,7 +212,11 @@
 
   box-shadow: 0 20px 40px -10px rgba(5, 150, 105, 0.2);
 
-  display: flex; /* Changed from block to flex */
+  display: flex !important;
+
+  align-items: stretch !important; /* Ensure children stretch to full height */
+
+  justify-content: stretch !important; /* Ensure children stretch to full width */
 
   padding: 0;
 
@@ -222,7 +226,7 @@
 
   margin-bottom: 24px;
 
-  width: 100%;
+  width: 100% !important;
 
 }
 
@@ -242,13 +246,17 @@
 
   z-index: 2 !important;
 
+  flex: 1 1 100% !important; /* Grow and shrink, base width 100% */
+
   width: 100% !important;
 
-  height: 100% !important;
+  min-width: 100% !important;
+
+  height: auto !important;
+
+  min-height: 180px !important;
 
   max-width: none !important;
-
-  flex: 1 1 auto !important;
 
   background: rgba(255, 255, 255, 0.08) !important;
 
@@ -280,6 +288,8 @@
 
   filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.2));
 
+  pointer-events: none;
+
 }
 
 
@@ -294,7 +304,9 @@
 
   position: relative;
 
-  flex: 1;
+  flex: 1 !important;
+
+  width: 100% !important;
 
   box-shadow: 0 10px 25px rgba(11, 57, 84, 0.1);
 
@@ -1381,9 +1393,9 @@
 
 
 
-  .sr-hero-banner {
+  .new-banner {
 
-    padding: 24px 24px 24px 120px;
+    padding: 0;
 
     min-height: 160px;
 
@@ -1391,7 +1403,7 @@
 
 
 
-  .sr-hero-robot {
+  .new-banner-robot {
 
     width: 140px;
 
@@ -1467,9 +1479,9 @@
 
 @media (max-width: 480px) {
 
-  .sr-hero-banner {
+  .new-banner {
 
-    padding: 120px 20px 24px 20px;
+    padding: 0;
 
     flex-direction: column;
 
@@ -1479,7 +1491,7 @@
 
 
 
-  .sr-hero-robot {
+  .new-banner-robot {
 
     width: 120px;
 

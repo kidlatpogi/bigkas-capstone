@@ -195,7 +195,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   z-index: 2;
   flex: 1;
   min-width: 480px;
-  max-width: 650px;
+  max-width: 1000px;
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 32px;

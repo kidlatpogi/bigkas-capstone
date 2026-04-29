@@ -187,7 +187,7 @@ body.activity-tutorial-open .side-nav {
 .side-nav-notif-tray-title {
   font-family: 'Fredoka', sans-serif;
   font-size: 1.6rem;
-  font-weight: 800;
+  font-weight: 700;
   color: #111827;
   margin: 0;
 }
@@ -305,7 +305,7 @@ body.activity-tutorial-open .side-nav {
 
 .side-nav-notif-item-name {
   font-family: 'Fredoka', sans-serif;
-  font-weight: 800;
+  font-weight: 700;
   color: #111827;
   font-size: 1.05rem;
   line-height: 1.2;
@@ -337,32 +337,35 @@ body.activity-tutorial-open .side-nav {
 }
 
 .side-nav-notif-claim-btn {
-  height: 40px;
-  padding: 0 24px;
-  border-radius: 999px;
-  font-family: 'Fredoka', sans-serif;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #ffffff;
-  background: #059669;
-  border: none;
-  cursor: pointer;
-  box-shadow: #047857 0 4px 0 0;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  height: 44px !important;
+  min-height: 44px !important;
+  width: min(100%, 348px) !important;
+  padding: 0 2rem !important;
+  border-radius: 999px !important;
+  font-family: 'Fredoka', 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif !important;
+  font-size: clamp(0.9rem, 0.86rem + 0.2vw, 0.98rem) !important;
+  font-weight: 500 !important;
+  color: #ffffff !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border: none !important;
+  cursor: pointer !important;
+  background: #059669 !important;
+  box-shadow: #047857 0 5px 0 0 !important;
 }
 
 .side-nav-notif-claim-btn:hover {
-  background: #059669;
-  box-shadow: #047857 0 2px 0 0;
-  transform: translateY(2px);
+  box-shadow: #047857 0 3px 0 0 !important;
+  transform: translateY(2px) !important;
+  background: #059669 !important;
 }
 
 .side-nav-notif-claim-btn:active {
-  box-shadow: #047857 0 0 0 0;
-  transform: translateY(4px);
+  box-shadow: #047857 0 0 0 0 !important;
+  transform: translateY(5px) !important;
 }
 
 .side-nav-notif-empty {
@@ -631,6 +634,14 @@ body.activity-tutorial-open .side-nav {
 .side-nav-logout:hover {
   background: rgba(220, 38, 38, 0.14);
   color: #ef4444;
+}
+
+.side-nav-notif-drawer-root {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .side-nav-logout svg {

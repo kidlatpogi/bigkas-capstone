@@ -152,7 +152,12 @@ export default function SideNav() {
 
           {notifTrayOpen && createPortal(
             <div className="side-nav-notif-drawer-root">
-              <div className="side-nav-notif-drawer-scrim" onClick={() => setNotifTrayOpen(false)} />
+              <div 
+                className="bigkas-modal-scrim" 
+                style={{ '--scrim-z': 2000 }} 
+                onClick={() => setNotifTrayOpen(false)} 
+                aria-hidden="true" 
+              />
               <div className="side-nav-notif-tray side-nav-notif-tray--floating">
                 <div className="side-nav-notif-tray-header">
                   <div className="side-nav-notif-tray-header-top">

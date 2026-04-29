@@ -390,12 +390,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
     { label: 'Shimmer Control', score: invertedSubMetric(session?.shimmer_score) },
   ].filter((m) => m.score !== null);
 
-  const verbalSubMetrics = [
-    { label: 'Pronunciation', score: subMetric100to15(session?.pronunciation_score) },
-    ...(isFreeSession
-      ? [{ label: 'Context Relevance', score: subMetric100to15(session?.context_score) }]
-      : []),
-  ].filter((m) => m.score !== null);
+  const verbalSubMetrics = [];
 
   const pillars = [
     {

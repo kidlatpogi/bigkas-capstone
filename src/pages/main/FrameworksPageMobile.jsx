@@ -155,7 +155,7 @@ export default function FrameworksPageMobile({ initialItem }) {
   }, [filtered, page]);
 
   return (
-    <div className="fh-mobile-root no-scrollbar">
+    <div className="fh-mobile-root activity-page--skyward-entrance no-scrollbar">
       <div className="fh-mobile-header dashboard-anim-top">
         <div className="fh-mobile-search-bar">
           <IoSearch className="fh-mobile-search-icon" />

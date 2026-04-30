@@ -1,5 +1,16 @@
 /* FrameworksPageMobile.css */
 
+.activity-page--skyward-entrance {
+  opacity: 0;
+  animation: newEntrance 0.75s cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
+}
+
+@keyframes newEntrance {
+  to {
+    opacity: 1;
+  }
+}
+
 .fh-mobile-root {
   width: 100%;
   height: 100dvh;
@@ -8,17 +19,26 @@
   padding-bottom: 100px;
   background-color: #FDFDF9;
   background-image: 
-    radial-gradient(rgba(11, 57, 84, 0.08) 1px, transparent 0),
+    radial-gradient(rgba(11, 57, 84, 0.1) 1px, transparent 0),
     repeating-radial-gradient(
       circle at 100% 100%, 
       transparent 0, 
-      transparent 200px, 
-      rgba(241, 143, 1, 0.05) 200px, 
-      rgba(241, 143, 1, 0.05) 202px, 
-      transparent 202px, 
-      transparent 400px
+      transparent 300px, 
+      rgba(5, 150, 105, 0.08) 300px, 
+      rgba(5, 150, 105, 0.08) 302px, 
+      transparent 302px, 
+      transparent 600px
+    ),
+    repeating-radial-gradient(
+      circle at 0% 0%, 
+      transparent 0, 
+      transparent 400px, 
+      rgba(241, 143, 1, 0.07) 400px, 
+      rgba(241, 143, 1, 0.07) 402px, 
+      transparent 402px, 
+      transparent 800px
     );
-  background-size: 40px 40px, 100% 100%;
+  background-size: 40px 40px, 100% 100%, 100% 100%;
   background-attachment: fixed;
   font-family: 'Fredoka', sans-serif;
   box-sizing: border-box;
@@ -116,10 +136,10 @@
 }
 
 .fh-mobile-chip.active {
-  background: #f18f01;
+  background: #059669;
   color: #ffffff;
-  border-color: #f18f01;
-  box-shadow: 0 4px 12px rgba(241, 143, 1, 0.25);
+  border-color: #059669;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
 }
 
 /* Grid & Cards */
@@ -188,7 +208,7 @@
   margin: 2px 0 6px;
   font-size: 0.85rem;
   font-weight: 700;
-  color: #f18f01;
+  color: #059669;
 }
 
 .fh-mobile-card-summary {
@@ -260,7 +280,7 @@
 .fh-mobile-modal-kicker {
   font-size: 0.75rem;
   font-weight: 800;
-  color: #f18f01;
+  color: #059669;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -312,7 +332,7 @@
   width: 100%;
   height: 56px;
   border-radius: 16px;
-  background: #f18f01;
+  background: #f97316;
   color: #ffffff;
   font-weight: 800;
   font-size: 1.05rem;
@@ -321,7 +341,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 0 4px 12px rgba(241, 143, 1, 0.2);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2);
 }
 
 .fh-mobile-modal-action:active {

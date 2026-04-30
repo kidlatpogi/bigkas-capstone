@@ -153,9 +153,8 @@
 
 .sr-mobile-hero-recs {
   margin: 8px 0 0;
-  padding: 8px 0 0;
+  padding: 0;
   list-style: none;
-  border-top: 1px solid #f1f5f9;
 }
 
 .sr-mobile-hero-rec-item {

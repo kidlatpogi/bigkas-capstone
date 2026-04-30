@@ -231,7 +231,7 @@ export default function FrameworksPage() {
   };
 
   return (
-    <div className="fh-page">
+    <div className="fh-page no-scrollbar">
       <div className="fh-controls dashboard-anim-top">
         <div className="fh-search-wrap">
           <span className="fh-search-icon"><IconSearch /></span>

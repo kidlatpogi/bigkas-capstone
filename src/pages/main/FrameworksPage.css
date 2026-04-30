@@ -6,6 +6,8 @@
   --font-small: clamp(0.8125rem, 0.78rem + 0.15vw, 0.875rem);
   --font-button: clamp(0.95rem, 0.9rem + 0.2vw, 1rem);
   width: 100%;
+  height: 100dvh;
+  overflow-y: auto;
   margin: 0;
   padding: var(--responsive-page-padding);
   padding-bottom: calc(var(--responsive-page-padding) + 6rem);
@@ -35,6 +37,12 @@
   max-width: 100%;
   overflow-x: hidden;
   box-sizing: border-box;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.fh-page::-webkit-scrollbar {
+  display: none !important;
 }
 
 .fh-controls {

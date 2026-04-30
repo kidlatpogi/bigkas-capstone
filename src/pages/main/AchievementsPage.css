@@ -77,12 +77,18 @@
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: goldShimmer 3s linear infinite;
+  animation: goldShimmer 8s linear infinite;
   filter: drop-shadow(0 4px 15px rgba(179, 135, 40, 0.4));
 }
 
 @keyframes goldShimmer {
-  to {
+  0% {
+    background-position: -200% center;
+  }
+  30% {
+    background-position: 200% center;
+  }
+  100% {
     background-position: 200% center;
   }
 }

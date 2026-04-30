@@ -9,8 +9,8 @@
   height: 100dvh;
   overflow-y: auto;
   margin: 0;
-  padding: var(--responsive-page-padding);
-  padding-bottom: calc(var(--responsive-page-padding) + 6rem);
+  padding: clamp(16px, 3vh, 32px);
+  padding-bottom: calc(clamp(16px, 3vh, 32px) + 6rem);
   background-color: #FDFDF9;
   background-image: 
     radial-gradient(rgba(11, 57, 84, 0.1) 1px, transparent 0),

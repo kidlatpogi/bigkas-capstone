@@ -220,18 +220,18 @@ function SessionResultPageMobile({ sessionIdProp, isInnerView, onCloseInner, onV
                  tripleV.entryPoint >= 3.0 ? 'Good job! A few areas to polish but very natural.' :
                  'Keep going! Regular practice is key to steady improvement.'}
               </p>
+
+              {allRecommendations.length > 0 && (
+                <ul className="sr-mobile-hero-recs">
+                  {allRecommendations.slice(0, 1).map((rec, idx) => (
+                    <li key={idx} className="sr-mobile-hero-rec-item">
+                      <span className="sr-mobile-hero-rec-bullet">•</span>
+                      {rec.text}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-            
-            {allRecommendations.length > 0 && (
-              <ul className="sr-mobile-hero-recs">
-                {allRecommendations.slice(0, 2).map((rec, idx) => (
-                  <li key={idx} className="sr-mobile-hero-rec-item">
-                    <span className="sr-mobile-hero-rec-bullet">•</span>
-                    {rec.text}
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
         </section>
 

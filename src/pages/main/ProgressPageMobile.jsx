@@ -340,35 +340,33 @@ function ProgressPageMobile() {
         <div className="progress-mobile-content">
           
           {/* Immersive Mobile Banner */}
-          <section className="progress-mobile-banner dashboard-anim-top">
-            <div className="progress-mobile-banner-top">
-              <div className="progress-mobile-banner-avatar-box">
-                <img src={heroRobotImage} alt="" className="progress-mobile-banner-avatar" />
-              </div>
-              <div className="progress-mobile-banner-bubble">
-                <p className="progress-mobile-banner-kicker">B-01:</p>
-                <p className="progress-mobile-banner-copy">
+          <div className="activity-mobile-top-strip progress-mobile-banner dashboard-anim-top">
+            <div className="activity-mobile-banner-left" id="tutorial-target-home-banner" aria-label="Coach message">
+              <img src={heroRobotImage} alt="" className="activity-mobile-banner-robot" />
+              <div className="activity-mobile-banner-bubble">
+                <p className="activity-mobile-banner-kicker">B-01:</p>
+                <p className="activity-mobile-banner-copy">
                   You're improving fast! Keep up the good work and check your progress below.
                 </p>
               </div>
             </div>
+          </div>
 
-            {/* Mobile Stats Grid */}
-            <div className="progress-mobile-stats-grid">
-              <div className="progress-mobile-stat-card">
-                <p className="progress-mobile-stat-label">Sessions</p>
-                <p className="progress-mobile-stat-value">{stats.sessionsCount}</p>
-              </div>
-              <div className="progress-mobile-stat-card">
-                <p className="progress-mobile-stat-label">Average</p>
-                <p className="progress-mobile-stat-value">{stats.averageScoreLabel}</p>
-              </div>
-              <div className="progress-mobile-stat-card">
-                <p className="progress-mobile-stat-label">Minutes</p>
-                <p className="progress-mobile-stat-value">{stats.totalSpeakingTime}</p>
-              </div>
+          {/* Mobile Stats Grid */}
+          <div className="progress-mobile-stats-grid">
+            <div className="progress-mobile-stat-card">
+              <p className="progress-mobile-stat-label">Sessions</p>
+              <p className="progress-mobile-stat-value">{stats.sessionsCount}</p>
             </div>
-          </section>
+            <div className="progress-mobile-stat-card">
+              <p className="progress-mobile-stat-label">Average</p>
+              <p className="progress-mobile-stat-value">{stats.averageScoreLabel}</p>
+            </div>
+            <div className="progress-mobile-stat-card">
+              <p className="progress-mobile-stat-label">Minutes</p>
+              <p className="progress-mobile-stat-value">{stats.totalSpeakingTime}</p>
+            </div>
+          </div>
 
           {/* Performance Graph Section */}
           <div className="progress-mobile-section dashboard-anim-bottom">

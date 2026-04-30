@@ -37,6 +37,9 @@
   padding: 16px;
   width: 100%;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 /* Breadcrumb */
@@ -97,6 +100,201 @@
   font-size: 0.8rem;
   color: #64748b;
   line-height: 1.4;
+}
+
+/* Immersive Coach Hero */
+.activity-mobile-top-strip {
+  width: 100%;
+  min-height: 112px;
+  border-radius: 28px;
+  background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+  margin-bottom: 0;
+  padding: 12px;
+  display: flex;
+  align-items: stretch;
+  position: relative;
+}
+
+.activity-mobile-top-strip::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.activity-mobile-banner-left {
+  width: 100%;
+  border-radius: 16px;
+  position: relative;
+  padding: 10px 10px 10px 100px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.activity-mobile-banner-robot {
+  position: absolute;
+  left: -2px;
+  bottom: -10px;
+  width: 104px;
+  height: auto;
+  pointer-events: none;
+}
+
+.activity-mobile-banner-bubble {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 8px 10px;
+  box-shadow: 0 6px 12px rgba(11, 57, 84, 0.12);
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.activity-mobile-banner-kicker {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #059669;
+  line-height: 1.1;
+}
+
+.activity-mobile-banner-copy {
+  margin: 3px 0 0;
+  font-size: 0.72rem;
+  color: #1f2937;
+  line-height: 1.25;
+}
+
+.sr-mobile-hero-recs {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sr-mobile-hero-rec-item {
+  display: flex;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: #475569;
+  margin-bottom: 4px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.sr-mobile-hero-rec-bullet {
+  color: #059669;
+  font-weight: 800;
+}
+
+/* Overview Widgets */
+.sr-mobile-overview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+.sr-mobile-widget {
+  background: #fff;
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
+
+.sr-mobile-widget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.sr-mobile-widget-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.sr-mobile-widget-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.sr-mobile-score-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.sr-mobile-score-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+}
+
+.sr-mobile-score-max {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.sr-mobile-tier-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.sr-mobile-tier-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.sr-mobile-tier-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.sr-mobile-strength-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sr-mobile-strength-sprite {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.sr-mobile-strength-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #059669;
+}
+
+.sr-mobile-strength-kicker {
+  margin-top: 8px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 /* Timeline Card */

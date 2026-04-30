@@ -163,6 +163,25 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
     });
   }, [durationSec, pillars]);
 
+  const recommendations = sanitizeRecommendationLines(
+    Array.isArray(session?.recommendations) ? session.recommendations : []
+  );
+
+  const pillarRecommendations = pillars
+    .filter((p) => p.score < 3.0)
+    .map((p) => {
+      let text = '';
+      if (p.key === 'visual') text = 'Maintain natural eye contact and use purposeful gestures.';
+      else if (p.key === 'vocal') text = 'Practice deep breathing for pitch and volume control.';
+      else text = 'Slow down on complex words and stay on topic.';
+      return { text, pillar: p.key };
+    });
+
+  const allRecommendations = [...pillarRecommendations, ...recommendations.map(text => ({ text, pillar: 'general' }))];
+  if (allRecommendations.length === 0) {
+    allRecommendations.push({ text: 'Great job! Keep up the excellent work.', pillar: 'general' });
+  }
+
   return (
     <div className="df-mobile-root no-scrollbar">
       {!isInnerView && (
@@ -174,6 +193,69 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
       )}
 
       <div className="df-mobile-content">
+        
+        {/* Immersive Coach Hero */}
+        <section className="activity-mobile-top-strip sr-mobile-hero dashboard-anim-top">
+          <div className="activity-mobile-banner-left">
+            <img src={heroRobotImage} alt="" className="activity-mobile-banner-robot" />
+            <div className="activity-mobile-banner-bubble">
+              <p className="activity-mobile-banner-kicker">B-01:</p>
+              <p className="activity-mobile-banner-copy">
+                {tripleV.entryPoint >= 4.0 ? 'Outstanding! Clear and confident delivery.' : 
+                 tripleV.entryPoint >= 3.0 ? 'Good job! A few areas to polish but very natural.' :
+                 'Keep going! Regular practice is key to steady improvement.'}
+              </p>
+              
+              {allRecommendations.length > 0 && (
+                <ul className="sr-mobile-hero-recs">
+                  {allRecommendations.slice(0, 2).map((rec, idx) => (
+                    <li key={idx} className="sr-mobile-hero-rec-item">
+                      <span className="sr-mobile-hero-rec-bullet">•</span>
+                      {rec.text}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* Overview Widgets */}
+        <div className="sr-mobile-overview-grid dashboard-anim-bottom">
+          <div className="sr-mobile-widget">
+            <div className="sr-mobile-widget-header">
+              <span className="sr-mobile-widget-title">Overall Score</span>
+              <span className="sr-mobile-widget-badge" style={{ background: '#f1f5f9', color: '#64748b' }}>PERFORMANCE</span>
+            </div>
+            <div className="sr-mobile-score-row">
+              <span className="sr-mobile-score-value" style={{ color: overallTier.color }}>{tripleV.entryPoint.toFixed(1)}</span>
+              <span className="sr-mobile-score-max">/ 5.0</span>
+            </div>
+            <div className="sr-mobile-tier-row">
+              <span className="sr-mobile-tier-dot" style={{ background: overallTier.color }} />
+              <span className="sr-mobile-tier-label" style={{ color: overallTier.color }}>{overallTier.label}</span>
+            </div>
+          </div>
+
+          <div className="sr-mobile-widget">
+            <div className="sr-mobile-widget-header">
+              <span className="sr-mobile-widget-title">Primary Strength</span>
+              <span className="sr-mobile-widget-badge" style={{ background: '#f0fdf4', color: '#059669' }}>ANALYSIS</span>
+            </div>
+            <div className="sr-mobile-strength-row">
+              {(() => {
+                const topPillar = [...pillars].sort((a, b) => b.score - a.score)[0];
+                return (
+                  <>
+                    <img src={topPillar.image} alt="" className="sr-mobile-strength-sprite" />
+                    <span className="sr-mobile-strength-name">{topPillar.label}</span>
+                  </>
+                );
+              })()}
+            </div>
+            <div className="sr-mobile-strength-kicker">TOP PERFORMANCE AREA</div>
+          </div>
+        </div>
         
         {/* Timeline Chart */}
         <section className="df-mobile-section dashboard-anim-bottom">

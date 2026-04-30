@@ -58,16 +58,33 @@
 .achievements-title {
   font-size: clamp(3rem, 4.5vw, 4.2rem);
   font-weight: 900;
-  color: #0f172a;
   text-transform: uppercase;
   margin: 0;
   letter-spacing: -0.03em;
   font-family: 'Fredoka', sans-serif;
   line-height: 1;
-  background: linear-gradient(135deg, #0f172a 0%, #059669 100%);
+  
+  /* Gold Glittering Gradient */
+  background: linear-gradient(
+    to right, 
+    #BF953F 0%, 
+    #FCF6BA 20%, 
+    #B38728 40%, 
+    #FBF5B7 60%, 
+    #AA771C 80%, 
+    #BF953F 100%
+  );
+  background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 4px 12px rgba(5, 150, 105, 0.15));
+  animation: goldShimmer 3s linear infinite;
+  filter: drop-shadow(0 4px 15px rgba(179, 135, 40, 0.4));
+}
+
+@keyframes goldShimmer {
+  to {
+    background-position: 200% center;
+  }
 }
 
 /* ── Trophy Section ── */

@@ -307,14 +307,35 @@ function SessionResultPageMobile({ sessionIdProp, isInnerView, onCloseInner, onV
 
         {/* Footer Actions */}
         <footer className="sr-mobile-footer dashboard-anim-bottom">
-          <button type="button" className="sr-mobile-primary-btn" onClick={onViewDetailed}>
-            <IoPulse /> View Detailed Feedback
+          <button
+            type="button"
+            className="sr-mobile-primary-btn sr-detailed-feedback-card-v2"
+            onClick={onViewDetailed}
+          >
+            <div className="sr-detailed-card-icon">
+              <IoPulse />
+            </div>
+            <div className="sr-detailed-card-content">
+              <span className="sr-detailed-card-kicker">ANALYTICS INSIGHTS</span>
+              <h3 className="sr-detailed-card-title">Detailed Feedback</h3>
+            </div>
           </button>
-          <button type="button" className="sr-mobile-secondary-btn" onClick={replayAction.onClick}>
-            <IoRepeat /> {replayAction.label}
+
+          <button
+            type="button"
+            className="sr-mobile-secondary-btn sr-btn-action sr-btn-primary-v2"
+            onClick={replayAction.onClick}
+          >
+            {replayAction.label}
           </button>
+
           {!isInnerView && (
-            <button type="button" className="sr-mobile-secondary-btn" style={{ border: 'none', color: '#64748b' }} onClick={() => navigate(ROUTES.DASHBOARD)}>
+            <button
+              type="button"
+              className="sr-mobile-secondary-btn"
+              style={{ border: 'none', color: '#64748b', minHeight: 'auto', background: 'transparent', boxShadow: 'none' }}
+              onClick={() => navigate(ROUTES.DASHBOARD)}
+            >
               Return to Dashboard
             </button>
           )}

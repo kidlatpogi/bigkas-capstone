@@ -354,17 +354,23 @@ function ProgressPageMobile() {
 
           {/* Mobile Stats Grid */}
           <div className="progress-mobile-stats-grid">
-            <div className="progress-mobile-stat-card">
-              <p className="progress-mobile-stat-label">Sessions</p>
-              <p className="progress-mobile-stat-value">{stats.sessionsCount}</p>
+            <div className="new-widget-rank-card progress-mobile-stat-card">
+              <div className="new-widget-rank-content">
+                <p className="new-widget-kicker">Sessions</p>
+                <p className="new-widget-value">{stats.sessionsCount}</p>
+              </div>
             </div>
-            <div className="progress-mobile-stat-card">
-              <p className="progress-mobile-stat-label">Average</p>
-              <p className="progress-mobile-stat-value">{stats.averageScoreLabel}</p>
+            <div className="new-widget-rank-card progress-mobile-stat-card">
+              <div className="new-widget-rank-content">
+                <p className="new-widget-kicker">Average</p>
+                <p className="new-widget-value">{stats.averageScoreLabel}</p>
+              </div>
             </div>
-            <div className="progress-mobile-stat-card">
-              <p className="progress-mobile-stat-label">Minutes</p>
-              <p className="progress-mobile-stat-value">{stats.totalSpeakingTime}</p>
+            <div className="new-widget-rank-card progress-mobile-stat-card">
+              <div className="new-widget-rank-content">
+                <p className="new-widget-kicker">Minutes</p>
+                <p className="new-widget-value">{stats.totalSpeakingTime}</p>
+              </div>
             </div>
           </div>
 

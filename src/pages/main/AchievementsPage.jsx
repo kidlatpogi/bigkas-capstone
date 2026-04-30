@@ -76,13 +76,6 @@ export default function AchievementsPage() {
           <div key={trophy.id} className={`trophy-item ${!trophy.unlocked ? 'locked' : ''}`}>
             <div className="trophy-wrapper">
               <img src={trophyImg} alt={trophy.name} className="trophy-img" />
-              {!trophy.unlocked && (
-                <div className="lock-overlay">
-                  <div className="lock-icon-bg">
-                    <IoLockClosed />
-                  </div>
-                </div>
-              )}
             </div>
             <div className="trophy-progress-container">
               <div className="trophy-progress-bar">

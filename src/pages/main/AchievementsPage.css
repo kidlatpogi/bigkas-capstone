@@ -183,35 +183,6 @@
   opacity: 0.8;
 }
 
-.lock-overlay {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.lock-icon-bg {
-  width: 42px;
-  height: 42px;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #059669;
-  font-size: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 
-    0 8px 32px 0 rgba(11, 57, 84, 0.1),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-}
-
 .trophy-item.locked .trophy-img {
   filter: grayscale(1) brightness(0.2);
   opacity: 0.15;

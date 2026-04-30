@@ -48,7 +48,7 @@
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
 }
 
 /* Header & Search */
@@ -146,7 +146,7 @@
 .fh-mobile-grid {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
 }
 
 .fh-mobile-card {

@@ -222,64 +222,113 @@
 
 /* ── Badges Grid ── */
 .badges-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 24px;
   width: 100%;
 }
 
 .badge-card {
   background: #ffffff;
-  border-radius: 24px;
-  padding: 24px;
-  display: grid;
-  grid-template-columns: 120px 1fr 180px;
+  border-radius: 20px;
+  padding: 32px 20px;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(11, 57, 84, 0.06);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: center;
+  min-height: 400px;
   position: relative;
-  text-align: left;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  border: 2px solid #f1f5f9;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.badge-card::before {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  border: 1px solid rgba(11, 57, 84, 0.08);
+  border-radius: 12px;
+  pointer-events: none;
 }
 
 .badge-card:hover {
-  transform: translateX(4px);
-  box-shadow: 0 12px 24px rgba(11, 57, 84, 0.08);
-  border-color: rgba(5, 150, 105, 0.2);
+  transform: translateY(-12px) rotate(1deg);
+  box-shadow: 0 25px 50px rgba(11, 57, 84, 0.15);
+  border-color: #059669;
+}
+
+.badge-card.unlocked {
+  background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
+  border-color: #34d399;
+}
+
+.badge-card.unlocked::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 45%,
+    rgba(255, 255, 255, 0.8) 50%,
+    transparent 55%
+  );
+  animation: cardShine 4s infinite;
+  pointer-events: none;
+}
+
+@keyframes cardShine {
+  0% { transform: translate(-30%, -30%) rotate(0deg); }
+  20%, 100% { transform: translate(30%, 30%) rotate(0deg); }
 }
 
 .badge-status-top {
   position: absolute;
-  top: 16px;
-  right: 24px;
-  font-size: 0.7rem;
-  font-weight: 800;
-  color: #94A3B8;
+  top: 18px;
+  left: 18px;
+  font-size: 0.65rem;
+  font-weight: 900;
+  color: #059669;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
+  background: rgba(5, 150, 105, 0.1);
+  padding: 4px 8px;
+  border-radius: 6px;
+  z-index: 2;
 }
 
 .badge-icon-wrapper {
-  width: 120px;
-  height: 120px;
+  width: 140px;
+  height: 140px;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle, rgba(5, 150, 105, 0.08) 0%, transparent 70%);
-  border-radius: 20px;
+  background: radial-gradient(circle, rgba(5, 150, 105, 0.12) 0%, transparent 70%);
+  border-radius: 50%;
+  margin-bottom: 20px;
+  z-index: 2;
 }
 
 .badge-img {
-  width: 80px;
+  width: 90px;
   height: auto;
-  filter: drop-shadow(0 8px 16px rgba(5, 150, 105, 0.2));
+  filter: drop-shadow(0 12px 20px rgba(5, 150, 105, 0.3));
+  transition: transform 0.4s ease;
+}
+
+.badge-card:hover .badge-img {
+  transform: scale(1.15) translateY(-5px);
 }
 
 .badge-card.locked .badge-img {
-  filter: grayscale(1) brightness(0.6);
-  opacity: 0.4;
+  filter: grayscale(1) contrast(0.5) brightness(0.7);
+  opacity: 0.3;
 }
 
 .badge-card.locked .badge-icon-wrapper {
@@ -287,14 +336,16 @@
 }
 
 .badge-title {
-  font-size: 1.25rem;
-  font-weight: 800;
-  margin: 0 0 4px;
+  font-size: 1.4rem;
+  font-weight: 900;
+  margin: 0 0 8px;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  color: #1e293b;
+  color: #0f172a;
   font-family: 'Fredoka', sans-serif;
+  text-transform: capitalize;
 }
 
 .checkmark-icon {
@@ -304,27 +355,32 @@
 }
 
 .badge-description {
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   font-weight: 500;
-  color: #64748B;
-  margin: 0;
-  line-height: 1.5;
+  color: #64748b;
+  margin-bottom: 24px;
+  line-height: 1.4;
+  padding: 0 10px;
 }
 
 .badge-progress-container {
   width: 100%;
+  margin-top: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.5);
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(11, 57, 84, 0.04);
 }
 
 .badge-progress-bar {
   width: 100%;
-  height: 10px;
+  height: 8px;
   background: #f1f5f9;
   border-radius: 999px;
   overflow: hidden;
-  border: 1px solid rgba(11, 57, 84, 0.05);
 }
 
 .badge-progress-fill {

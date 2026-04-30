@@ -1,11 +1,18 @@
 .achievements-container {
   width: 100%;
-  max-width: 1400px;
-  margin: 0 auto;
+  height: 100dvh;
+  overflow-y: auto;
+  margin: 0;
   padding: 48px 40px;
   font-family: 'Nunito', sans-serif;
   color: var(--color-text-primary);
-  min-height: 100vh;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.achievements-container::-webkit-scrollbar {
+  display: none !important;
+}
   
   /* Synced with ActivityPage Skyward Journey theme */
   background-color: #FDFDF9;

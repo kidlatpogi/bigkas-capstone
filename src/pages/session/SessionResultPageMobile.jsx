@@ -313,13 +313,12 @@ function SessionResultPageMobile({ sessionIdProp, isInnerView, onCloseInner, onV
             onClick={onViewDetailed}
           >
             <div className="sr-mobile-detailed-icon-box">
-              <IoPulse />
+              <IoChevronForward />
             </div>
             <div className="sr-mobile-detailed-text">
               <span className="sr-mobile-detailed-kicker">ANALYTICS INSIGHTS</span>
               <h3 className="sr-mobile-detailed-title">Detailed Feedback</h3>
             </div>
-            <IoChevronForward className="sr-mobile-detailed-arrow" />
           </button>
 
           <button

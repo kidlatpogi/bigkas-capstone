@@ -240,18 +240,20 @@ html {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 28px;
-  padding: 14px 16px 14px 190px;
-  backdrop-filter: blur(1px);
+  padding: 14px 16px 14px clamp(180px, 18vw, 240px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   overflow: visible;
 }
 
 .new-banner-robot {
   width: clamp(190px, 16vw, 250px);
   position: absolute;
-  left: clamp(-32px, -2vw, -14px);
-  bottom: -26px;
+  left: -10px;
+  bottom: -10px;
   z-index: 3;
   pointer-events: none;
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.25));
 }
 
 .new-banner-bubble {
@@ -310,7 +312,12 @@ html {
   flex-direction: column;
   gap: 9px;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.new-banner-streak.is-hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .new-banner-streak:hover {
@@ -433,6 +440,12 @@ html {
   gap: 10px;
   min-height: 0;
   overflow: visible;
+  transition: opacity 0.2s ease;
+}
+
+.new-widget.is-hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .new-widget-head {
@@ -645,6 +658,11 @@ html {
   border: none !important;
 }
 
+.activity-practice-cta.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* Randomizer (Emerald) */
 .activity-practice-cta--randomizer.bigkas-btn {
   background: #059669 !important;
@@ -771,7 +789,7 @@ html {
   position: fixed;
   left: calc(var(--app-sidebar-width, 0px) + clamp(10px, 3vw, 30px));
   bottom: calc(clamp(10px, 3vh, 30px) + env(safe-area-inset-bottom, 0px));
-  z-index: 2;
+  z-index: 1200; /* Above scrim (1100) */
   display: flex;
   flex-direction: row;
   align-items: flex-end;

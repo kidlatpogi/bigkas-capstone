@@ -1,220 +1,217 @@
 /* ============================================================
-   DetailedFeedbackPage — Forest Green + White design system
-   Based on design.md (Bigkas Edition)
+   DetailedFeedbackPage — Final Polish & Visibility Fix
+   Aesthetic: ActivityPage (Skyward) + ProgressPage (Cards)
    ============================================================ */
 
-/* ── Page wrapper ── */
 .df-page {
-  max-width: 860px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 28px 24px calc(80px + env(safe-area-inset-bottom, 0px));
-  background: #FFFFFF;
+  padding: 32px 24px calc(100px + env(safe-area-inset-bottom, 0px));
   min-height: 100dvh;
+  font-family: 'Fredoka', sans-serif;
+  scrollbar-width: none;
+  
+  /* Synced with ActivityPage Skyward Journey theme */
+  background-color: #FDFDF9;
+  background-image: 
+    radial-gradient(rgba(11, 57, 84, 0.1) 1px, transparent 0),
+    repeating-radial-gradient(
+      circle at 100% 100%, 
+      transparent 0, 
+      transparent 300px, 
+      rgba(5, 150, 105, 0.08) 300px, 
+      rgba(5, 150, 105, 0.08) 302px, 
+      transparent 302px, 
+      transparent 600px
+    ),
+    repeating-radial-gradient(
+      circle at 0% 0%, 
+      transparent 0, 
+      transparent 400px, 
+      rgba(241, 143, 1, 0.07) 400px, 
+      rgba(241, 143, 1, 0.07) 402px, 
+      transparent 402px, 
+      transparent 800px
+    );
+  background-size: 40px 40px, 100% 100%, 100% 100%;
+  background-attachment: fixed;
 }
 
-.df-loading {
-  text-align: center;
-  padding: 80px 24px;
-  color: #3C4952;
-  font-size: 17px;
+.df-page::-webkit-scrollbar {
+  display: none;
 }
 
-.df-empty {
-  text-align: center;
-  padding: 80px 24px;
+.df-page--inner {
+  padding: 16px 24px 80px !important;
+  background: transparent !important;
+  min-height: auto !important;
 }
 
-.df-empty-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #3C4952;
-  margin: 0 0 20px;
-}
-
-/* ── Breadcrumb ── */
-.df-breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 24px;
-  font-size: 14px;
-  letter-spacing: -0.224px;
-  flex-wrap: wrap;
-}
-
-.df-breadcrumb-link {
-  background: none;
-  border: none;
+/* ── Hero Banner (Ported from SessionResultPage) ── */
+.new-banner {
+  background: linear-gradient(180deg, #34D399 0%, #059669 100%);
+  border-radius: 32px;
+  min-height: 120px;
+  box-shadow: 0 20px 40px -10px rgba(5, 150, 105, 0.2);
+  display: flex !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
   padding: 0;
-  cursor: pointer;
-  color: #5A7863;
-  font-size: inherit;
-  font-weight: 500;
-  letter-spacing: inherit;
-  transition: color 0.15s;
-}
-
-.df-breadcrumb-link:hover {
-  color: #90AB8B;
-}
-
-.df-breadcrumb-sep {
-  font-size: 12px;
-  color: rgba(11, 57, 84, 0.48);
-  flex-shrink: 0;
-}
-
-.df-breadcrumb-current {
-  color: #3C4952;
-  font-weight: 600;
-}
-
-/* ── Hero score card ── */
-.df-hero {
-  background: #FFFFFF;
-  border-radius: 12px;
-  padding: 28px 24px 24px;
-  margin-bottom: 20px;
-  box-shadow: rgba(11, 57, 84, 0.22) 3px 5px 30px 0px;
-}
-
-.df-hero-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.df-hero-kicker {
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 11px;
-  font-weight: 700;
-  color: rgba(11, 57, 84, 0.48);
-}
-
-.df-hero-tier {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  padding: 5px 14px;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.df-hero-score-wrap {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  margin-bottom: 14px;
-}
-
-.df-hero-score {
-  margin: 0;
-  font-size: 48px;
-  font-weight: 600;
-  color: #3C4952;
-  line-height: 1.07;
-  letter-spacing: -0.28px;
-}
-
-.df-hero-max {
-  font-size: 18px;
-  font-weight: 600;
-  color: rgba(11, 57, 84, 0.48);
-}
-
-.df-hero-track {
-  height: 10px;
-  border-radius: 999px;
-  background: #E8EDE9;
+  position: relative;
   overflow: hidden;
-  margin-bottom: 14px;
+  margin-bottom: 32px;
+  width: 100% !important;
 }
 
-.df-hero-track-fill {
-  height: 100%;
-  border-radius: 999px;
-  background: #5A7863;
-  transition: width 0.6s ease;
+.new-banner-left.is-full-width {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 0 !important;
+  position: relative !important;
+  z-index: 2 !important;
+  flex: 1 1 100% !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  height: auto !important;
+  min-height: 120px !important;
+  max-width: none !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: none !important;
+  border-radius: inherit !important;
+  padding: 24px 32px 24px 220px !important;
+  backdrop-filter: blur(10px) !important;
+  box-sizing: border-box !important;
 }
 
-.df-hero-level {
+.new-banner-robot {
+  width: 220px;
+  position: absolute;
+  left: -10px;
+  bottom: -10px;
+  z-index: 3;
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.2));
+  pointer-events: none;
+}
+
+.new-banner-bubble {
+  background: white;
+  border-radius: 22px;
+  padding: 18px 24px;
+  position: relative;
+  flex: 1 !important;
+  width: 100% !important;
+  box-shadow: 0 10px 25px rgba(11, 57, 84, 0.1);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.new-banner-kicker {
+  color: #059669;
+  font-weight: 800;
+  font-size: 0.85rem;
+  margin: 0 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.new-banner-feedback-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.new-banner-intro-text {
   margin: 0;
-  font-size: 14px;
+  font-size: 1rem;
   font-weight: 600;
-  color: #5A7863;
-  letter-spacing: -0.224px;
+  line-height: 1.5;
+  color: #111827;
 }
 
-/* ── Section titles ── */
-.df-section-title {
-  margin: 0 0 14px;
-  font-size: 17px;
-  font-weight: 700;
-  color: #3C4952;
-  letter-spacing: -0.374px;
+/* ── Section Headers ── */
+.sr-section-header {
+  margin-bottom: 24px;
 }
 
-/* ── Shared card ── */
-.df-card {
-  background: #FFFFFF;
-  border-radius: 12px;
-  padding: 22px 20px;
-  box-shadow: rgba(11, 57, 84, 0.22) 3px 5px 30px 0px;
+.sr-section-title {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0 0 6px;
+  letter-spacing: -0.02em;
+}
+
+.sr-section-subtitle {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin: 0;
+  font-weight: 500;
 }
 
 /* ── Performance Timeline ── */
 .df-timeline-section {
-  margin-bottom: 24px;
+  margin-bottom: 48px;
+}
+
+.df-card {
+  background: #ffffff;
+  border-radius: 32px;
+  padding: 32px;
+  box-shadow: 0 10px 30px rgba(11, 57, 84, 0.05);
+  border: 1px solid rgba(11, 57, 84, 0.08);
+}
+
+.df-timeline-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .df-timeline {
-  height: 180px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
-  gap: 8px;
-  align-items: end;
-  border-bottom: 1px solid rgba(11, 57, 84, 0.12);
-  padding-bottom: 18px;
-  margin-bottom: 14px;
+  height: 220px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  border-bottom: 2px solid rgba(11, 57, 84, 0.05);
+  padding-bottom: 20px;
 }
 
 .df-timeline-col {
+  flex: 1;
   position: relative;
   height: 100%;
-  padding-bottom: 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
 }
 
 .df-timeline-col-bg {
   position: absolute;
   top: 0;
-  right: 0;
-  bottom: 22px;
   left: 0;
-  background: #F2F5F3;
-  border-radius: 4px;
+  right: 0;
+  bottom: 0;
+  background: rgba(11, 57, 84, 0.03);
+  border-radius: 8px;
+  z-index: 1;
 }
 
 .df-timeline-col-bars {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 22px;
-  left: 0;
-  display: grid;
-  grid-template-columns: repeat(var(--timeline-bar-count, 3), minmax(0, 1fr));
-  gap: 3px;
-  align-items: end;
-  padding: 6px;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  gap: 4px;
+  height: 100%;
+  align-items: flex-end;
+  padding: 0 4px;
 }
 
 .df-timeline-bar-wrap {
+  flex: 1;
   height: 100%;
   display: flex;
   align-items: flex-end;
@@ -222,562 +219,268 @@
 
 .df-timeline-bar {
   width: 100%;
-  border-radius: 3px 3px 0 0;
+  border-radius: 99px 99px 0 0;
   min-height: 4px;
-  opacity: 0.85;
+  transition: height 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .df-timeline-time {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  margin-top: 12px;
+  text-align: center;
   font-size: 11px;
-  font-weight: 600;
-  color: rgba(11, 57, 84, 0.48);
-  white-space: nowrap;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
 }
 
 .df-timeline-legend {
   display: flex;
-  gap: 18px;
+  gap: 24px;
+  justify-content: center;
   flex-wrap: wrap;
-  font-size: 12px;
-  color: #3C4952;
 }
 
 .df-legend-item {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+  text-transform: uppercase;
 }
 
 .df-legend-dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  display: inline-block;
 }
 
-/* ── Triple V Pillar Detail Cards ── */
+/* ── Triple V Pillar Cards (Ported from SessionResultPage) ── */
 .df-pillars-section {
-  margin-bottom: 24px;
+  margin-bottom: 48px;
 }
 
-.df-pillars-list {
+.sr-pillars-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  width: 100%;
+}
+
+.pillar-card.sr-pillar-progress-card {
+  background: #ffffff;
+  border-radius: 28px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(11, 57, 84, 0.08);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
+  border: 1px solid rgba(11, 57, 84, 0.12);
 }
 
-.df-pillar-card {
-  background: #FFFFFF;
-  border-radius: 12px;
-  box-shadow: rgba(11, 57, 84, 0.22) 3px 5px 30px 0px;
-  overflow: hidden;
-}
-
-.df-pillar-main {
-  padding: 22px 22px 18px;
-}
-
-.df-pillar-info {
+.new-widget-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 6px;
+  gap: 12px;
 }
 
-.df-pillar-label {
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #3C4952;
-}
-
-.df-pillar-tier {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.df-pillar-score-row {
-  margin-bottom: 4px;
-}
-
-.df-pillar-score {
+.new-widget-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #1e293b;
   margin: 0;
-  font-size: 34px;
-  font-weight: 600;
-  color: #3C4952;
-  line-height: 1.1;
-  letter-spacing: -0.28px;
 }
 
-.df-pillar-score span {
-  font-size: 14px;
-  font-weight: 600;
-  color: rgba(11, 57, 84, 0.48);
-  margin-left: 4px;
-}
-
-.df-pillar-desc {
-  margin: 0 0 12px;
-  font-size: 13px;
-  color: rgba(11, 57, 84, 0.6);
-  letter-spacing: -0.224px;
-  line-height: 1.47;
-}
-
-.df-pillar-track {
-  height: 8px;
+.new-widget-chip {
+  padding: 4px 12px;
   border-radius: 999px;
-  background: #E8EDE9;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.new-widget-rank-card {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid rgba(11, 57, 84, 0.05);
+}
+
+.new-widget-rank-sprite {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+
+.new-widget-kicker {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.new-widget-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+}
+
+.progress-pillar-track-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.progress-pillar-track-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.progress-pillar-track-percent {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.progress-pillar-track {
+  height: 10px;
+  background: #f1f5f9;
+  border-radius: 999px;
   overflow: hidden;
 }
 
-.df-pillar-track-fill {
+.progress-pillar-track-fill {
   height: 100%;
   border-radius: 999px;
-  transition: width 0.5s ease;
-}
-
-/* ── Sub-metrics ── */
-.df-pillar-subs {
-  padding: 14px 22px 18px;
-  background: #FAFCFA;
-  border-top: 1px solid rgba(11, 57, 84, 0.08);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  transition: width 1s ease;
 }
 
 .df-sub-metric {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  margin-bottom: 8px;
 }
 
 .df-sub-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
 }
 
 .df-sub-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: #3C4952;
-  letter-spacing: -0.224px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
 }
 
 .df-sub-score {
-  font-size: 13px;
-  font-weight: 700;
-  color: #3C4952;
+  font-weight: 800;
+  color: #1e293b;
 }
 
 .df-sub-track {
-  height: 6px;
-  border-radius: 999px;
-  background: #E8EDE9;
+  background: #f1f5f9;
+  border-radius: 99px;
   overflow: hidden;
 }
 
 .df-sub-track-fill {
   height: 100%;
-  border-radius: 999px;
-  transition: width 0.5s ease;
+  border-radius: 99px;
 }
 
-/* ── Recommendations ── */
-.df-recs-section {
-  margin-bottom: 20px;
-}
-
-.df-recs-list {
+/* ── Hero Score Display (Integrated into Bubble) ── */
+.sr-hero-score-display {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 4px;
+  align-items: baseline;
+  gap: 6px;
 }
 
-.df-rec-card {
-  background: #FFFFFF;
-  border-radius: 10px;
-  padding: 16px 18px;
-  box-shadow: rgba(11, 57, 84, 0.12) 2px 3px 16px 0px;
-  border-left: 4px solid #5A7863;
+.sr-hero-score-value {
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 800;
+  color: #111827;
 }
 
-.df-rec-pillar {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #5A7863;
-  margin-bottom: 4px;
-}
-
-.df-rec-text {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.55;
-  color: #3C4952;
-  letter-spacing: -0.224px;
-}
-
-.df-hub-link {
+.sr-hero-tier-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 14px;
-  padding: 8px 16px;
-  background: transparent;
-  color: #5A7863;
-  border: 1px solid #5A7863;
-  border-radius: 980px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  gap: 6px;
+  background: #f8fafc;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #111827;
+  border: 1px solid rgba(11, 57, 84, 0.05);
 }
 
-.df-hub-link:hover {
-  background: #5A7863;
-  color: #FFFFFF;
+.sr-hero-tier-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tier-color, #059669);
+  box-shadow: 0 0 8px var(--tier-color, #059669);
 }
 
-/* ── Collapsible sections ── */
-.df-collapsible {
-  background: #FFFFFF;
-  border-radius: 12px;
-  box-shadow: rgba(11, 57, 84, 0.22) 3px 5px 30px 0px;
-  margin-bottom: 14px;
+.sr-hero-progress-track {
+  background: #f1f5f9;
+  border-radius: 999px;
   overflow: hidden;
 }
 
-.df-collapsible-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 16px 20px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  transition: background 0.15s;
+.sr-hero-progress-fill {
+  height: 100%;
+  border-radius: 999px;
 }
 
-.df-collapsible-toggle:hover {
-  background: #F7FAF8;
-}
-
-.df-collapsible-label {
-  font-size: 14px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #3C4952;
-}
-
-.df-collapsible-icon {
-  font-size: 16px;
-  color: rgba(11, 57, 84, 0.48);
-  transition: transform 0.2s ease;
-  transform: rotate(-90deg);
-}
-
-.df-collapsible-icon.open {
-  transform: rotate(0deg);
-}
-
-.df-collapsible-body {
-  padding: 0 20px 18px;
-}
-
-.df-recordings-empty {
-  margin: 0;
-  padding: 8px 0 4px;
-  font-size: 14px;
-  line-height: 1.5;
-  color: rgba(11, 57, 84, 0.65);
-}
-
-/* ── Session info rows ── */
+/* ── Info Rows ── */
 .df-info-row {
   display: flex;
   justify-content: space-between;
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(11, 57, 84, 0.08);
-  font-size: 14px;
-}
-
-.df-info-row:last-child {
-  border-bottom: none;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .df-info-key {
-  color: rgba(11, 57, 84, 0.6);
+  font-weight: 600;
+  color: #64748b;
+  font-size: 0.9rem;
 }
 
 .df-info-val {
-  font-weight: 600;
-  color: #3C4952;
-}
-
-.df-practiced-section {
-  margin-top: 14px;
-}
-
-.df-practiced-label {
-  margin: 0 0 8px;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: rgba(11, 57, 84, 0.48);
-}
-
-.df-practiced-text {
-  margin: 0;
-  font-size: 15px;
-  line-height: 1.7;
-  color: #3C4952;
-  background: #F7FAF8;
-  border-radius: 10px;
-  padding: 16px;
-}
-
-/* ── Media ── */
-.df-video-wrap {
-  width: 100%;
-  border-radius: 10px;
-  overflow: hidden;
-  background: #0B3954;
-  margin-bottom: 10px;
-}
-
-.df-video {
-  width: 100%;
-  display: block;
-  max-height: 400px;
-  object-fit: cover;
-}
-
-.df-audio {
-  width: 100%;
-}
-
-/* ── Action buttons ── */
-.df-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  margin-top: 24px;
-}
-
-.df-btn {
-  padding: 10px 24px;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  transition: background 0.15s, color 0.15s;
-}
-
-.df-btn-primary {
-  background: #5A7863;
-  color: #FFFFFF;
-}
-
-.df-btn-primary:hover {
-  background: #90AB8B;
-}
-
-.df-btn-secondary {
-  background: transparent;
-  color: #3C4952;
-  border: 1px solid #5A7863;
-}
-
-.df-btn-secondary:hover {
-  background: #5A7863;
-  color: #FFFFFF;
+  font-weight: 800;
+  color: #111827;
+  font-size: 0.95rem;
 }
 
 /* ── Responsive ── */
-@media (max-width: 700px) {
-  .df-hero-score {
-    font-size: 40px;
-  }
-
-  .df-pillar-score {
-    font-size: 28px;
-  }
-
-  .df-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .df-btn {
-    text-align: center;
-  }
-
-  .df-timeline {
-    height: 150px;
+@media (max-width: 1024px) {
+  .sr-pillars-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 480px) {
-  .df-page {
-    padding: 20px 16px calc(80px + env(safe-area-inset-bottom, 0px));
+@media (max-width: 768px) {
+  .sr-pillars-grid,
+  .df-media-info-grid {
+    grid-template-columns: 1fr !important;
   }
-
-  .df-hero {
-    padding: 22px 18px 20px;
+  
+  .new-banner-left.is-full-width {
+    padding-left: 32px !important;
   }
-
-  .df-hero-score {
-    font-size: 36px;
+  
+  .new-banner-robot {
+    display: none;
   }
-
-  .df-pillar-main {
-    padding: 18px 16px 14px;
-  }
-
-  .df-pillar-subs {
-    padding: 12px 16px 14px;
-  }
-
-  .df-breadcrumb-current {
-    font-size: 13px;
-  }
-
-  .df-timeline {
-    height: 130px;
-  }
-}
-
-/* ── Dark theme overrides ── */
-[data-theme="dark"] .df-page {
-  background: #0B3954;
-}
-
-[data-theme="dark"] .df-hero,
-[data-theme="dark"] .df-card,
-[data-theme="dark"] .df-pillar-card,
-[data-theme="dark"] .df-collapsible,
-[data-theme="dark"] .df-rec-card {
-  background: #1A4660;
-  box-shadow: none;
-}
-
-[data-theme="dark"] .df-hero-score,
-[data-theme="dark"] .df-pillar-score,
-[data-theme="dark"] .df-section-title,
-[data-theme="dark"] .df-pillar-label,
-[data-theme="dark"] .df-breadcrumb-current,
-[data-theme="dark"] .df-collapsible-label,
-[data-theme="dark"] .df-info-val,
-[data-theme="dark"] .df-sub-score,
-[data-theme="dark"] .df-empty-title {
-  color: #FFFFFF;
-}
-
-[data-theme="dark"] .df-hero-kicker,
-[data-theme="dark"] .df-hero-max,
-[data-theme="dark"] .df-pillar-score span,
-[data-theme="dark"] .df-breadcrumb-sep,
-[data-theme="dark"] .df-collapsible-icon,
-[data-theme="dark"] .df-timeline-time,
-[data-theme="dark"] .df-practiced-label {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-[data-theme="dark"] .df-pillar-desc,
-[data-theme="dark"] .df-info-key {
-  color: rgba(255, 255, 255, 0.6);
-}
-
-[data-theme="dark"] .df-rec-text,
-[data-theme="dark"] .df-sub-label,
-[data-theme="dark"] .df-timeline-legend {
-  color: rgba(255, 255, 255, 0.82);
-}
-
-[data-theme="dark"] .df-hero-level,
-[data-theme="dark"] .df-rec-pillar {
-  color: #90AB8B;
-}
-
-[data-theme="dark"] .df-breadcrumb-link {
-  color: #90AB8B;
-}
-
-[data-theme="dark"] .df-hero-track,
-[data-theme="dark"] .df-pillar-track,
-[data-theme="dark"] .df-sub-track {
-  background: rgba(255, 255, 255, 0.14);
-}
-
-[data-theme="dark"] .df-timeline-col-bg {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-[data-theme="dark"] .df-timeline {
-  border-bottom-color: rgba(255, 255, 255, 0.14);
-}
-
-[data-theme="dark"] .df-pillar-subs {
-  background: rgba(255, 255, 255, 0.04);
-  border-top-color: rgba(255, 255, 255, 0.08);
-}
-
-[data-theme="dark"] .df-info-row {
-  border-bottom-color: rgba(255, 255, 255, 0.08);
-}
-
-[data-theme="dark"] .df-practiced-text {
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.86);
-}
-
-[data-theme="dark"] .df-rec-card {
-  box-shadow: none;
-  border-left-color: #90AB8B;
-}
-
-[data-theme="dark"] .df-btn-secondary {
-  color: #FFFFFF;
-  border-color: #90AB8B;
-}
-
-[data-theme="dark"] .df-btn-secondary:hover {
-  background: #5A7863;
-  color: #FFFFFF;
-}
-
-[data-theme="dark"] .df-hub-link {
-  color: #90AB8B;
-  border-color: #90AB8B;
-}
-
-[data-theme="dark"] .df-hub-link:hover {
-  background: #5A7863;
-  color: #FFFFFF;
-}
-
-[data-theme="dark"] .df-collapsible-toggle:hover {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-[data-theme="dark"] .df-loading {
-  color: rgba(255, 255, 255, 0.7);
 }

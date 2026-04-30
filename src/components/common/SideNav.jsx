@@ -9,12 +9,15 @@ import {
   IoLogOutOutline,
   IoSettingsOutline,
   IoStatsChartOutline,
+  IoNotificationsOutline,
 } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import {
   ACHIEVEMENTS_UPDATED_EVENT,
   getClaimableAchievementsCount,
+  getClaimableAchievements,
+  claimAchievement,
 } from '../../utils/achievementClaims';
 import './SideNav.css';
 
@@ -33,6 +36,8 @@ export default function SideNav() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [claimableCount, setClaimableCount] = useState(() => getClaimableAchievementsCount());
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [notifTrayOpen, setNotifTrayOpen] = useState(false);
+  const [claimables, setClaimables] = useState(() => getClaimableAchievements());
 
   const isSettingsRoute = useMemo(
     () => location.pathname === ROUTES.PROFILE || location.pathname.startsWith(ROUTES.SETTINGS),
@@ -40,13 +45,16 @@ export default function SideNav() {
   );
 
   useEffect(() => {
-    const syncCount = () => setClaimableCount(getClaimableAchievementsCount());
-    syncCount();
-    window.addEventListener('storage', syncCount);
-    window.addEventListener(ACHIEVEMENTS_UPDATED_EVENT, syncCount);
+    const sync = () => {
+      setClaimableCount(getClaimableAchievementsCount());
+      setClaimables(getClaimableAchievements());
+    };
+    sync();
+    window.addEventListener('storage', sync);
+    window.addEventListener(ACHIEVEMENTS_UPDATED_EVENT, sync);
     return () => {
-      window.removeEventListener('storage', syncCount);
-      window.removeEventListener(ACHIEVEMENTS_UPDATED_EVENT, syncCount);
+      window.removeEventListener('storage', sync);
+      window.removeEventListener(ACHIEVEMENTS_UPDATED_EVENT, sync);
     };
   }, []);
 
@@ -55,6 +63,18 @@ export default function SideNav() {
       setSettingsOpen(true);
     }
   }, [isSettingsRoute]);
+
+  // Close tray when clicking outside
+  useEffect(() => {
+    if (!notifTrayOpen) return undefined;
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('.side-nav-notif-btn') && !e.target.closest('.side-nav-notif-tray')) {
+        setNotifTrayOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [notifTrayOpen]);
 
   const handleLogoutClick = () => {
     setShowLogoutConfirm(true);
@@ -76,6 +96,11 @@ export default function SideNav() {
         launchFreeSpeechTutorial: true,
       },
     });
+  };
+
+  const handleClaim = (id) => {
+    claimAchievement(id);
+    // sync will be triggered by event
   };
 
   const logoutModal = showLogoutConfirm && typeof document !== 'undefined'
@@ -107,8 +132,104 @@ export default function SideNav() {
   return (
     <aside className="side-nav" aria-label="Main navigation">
       <div className="side-nav-brand">
-        <span className="side-nav-brand-text">Bigkas</span>
-        <span className="side-nav-brand-subtitle">{displayName}</span>
+        <div className="side-nav-brand-main">
+          <span className="side-nav-brand-text">Bigkas</span>
+          <span className="side-nav-brand-subtitle">{displayName}</span>
+        </div>
+        <div className="side-nav-notif-wrapper">
+          <button
+            type="button"
+            className={`side-nav-notif-btn${notifTrayOpen ? ' active' : ''}`}
+            onClick={() => setNotifTrayOpen(!notifTrayOpen)}
+            aria-label="View notifications"
+            aria-expanded={notifTrayOpen}
+          >
+            <IoNotificationsOutline />
+            {claimableCount > 0 ? (
+              <span className="side-nav-notif-badge">{claimableCount > 9 ? '9+' : claimableCount}</span>
+            ) : null}
+          </button>
+
+          {notifTrayOpen && createPortal(
+            <div className="side-nav-notif-drawer-root">
+              <div 
+                className="bigkas-modal-scrim" 
+                style={{ '--scrim-z': 2000 }} 
+                onClick={() => setNotifTrayOpen(false)} 
+                aria-hidden="true" 
+              />
+              <div className="side-nav-notif-tray side-nav-notif-tray--floating">
+                <div className="side-nav-notif-tray-header">
+                  <div className="side-nav-notif-tray-header-top">
+                    <h3 className="side-nav-notif-tray-title">Notifications</h3>
+                    <button 
+                      type="button" 
+                      className="side-nav-notif-close-btn" 
+                      onClick={() => setNotifTrayOpen(false)}
+                      aria-label="Close notifications"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <div className="side-nav-notif-tabs">
+                    <button type="button" className="side-nav-notif-tab active">All</button>
+                    <button type="button" className="side-nav-notif-tab">Unread</button>
+                  </div>
+                </div>
+                
+                <div className="side-nav-notif-tray-list no-scrollbar">
+                  {claimables.length > 0 ? (
+                    claimables.map((item) => (
+                      <div key={item.id} className="side-nav-notif-item">
+                        <div className="side-nav-notif-item-avatar">
+                          <IoMedalOutline />
+                        </div>
+                        <div className="side-nav-notif-item-content">
+                          <div className="side-nav-notif-item-header">
+                            <span className="side-nav-notif-item-name">{item.title}</span>
+                            <span className="side-nav-notif-item-time">Now</span>
+                            <span className="side-nav-notif-unread-dot" />
+                          </div>
+                          <p className="side-nav-notif-item-text">You've earned a new achievement! Claim your reward now.</p>
+                          <div className="side-nav-notif-item-actions">
+                            <button
+                              type="button"
+                              className="side-nav-notif-claim-btn"
+                              onClick={() => handleClaim(item.id)}
+                            >
+                              Claim Reward
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="side-nav-notif-empty">
+                      <div className="side-nav-notif-empty-icon">
+                        <IoNotificationsOutline />
+                      </div>
+                      <p>No new notifications</p>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="side-nav-notif-tray-footer">
+                  <button 
+                    type="button" 
+                    className="side-nav-notif-view-all"
+                    onClick={() => {
+                      setNotifTrayOpen(false);
+                      navigate(ROUTES.ACHIEVEMENTS);
+                    }}
+                  >
+                    View all achievements
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )}
+        </div>
       </div>
 
       <nav className="side-nav-links">
@@ -121,12 +242,7 @@ export default function SideNav() {
             aria-label={label}
           >
             <Icon className="side-nav-icon" aria-hidden="true" />
-            <span className="side-nav-link-label">
-              {label}
-              {(label === 'Progress' || label === 'Achievement') && claimableCount > 0 ? (
-                <span className="side-nav-link-badge">{claimableCount > 9 ? '9+' : claimableCount}</span>
-              ) : null}
-            </span>
+            <span className="side-nav-link-label">{label}</span>
           </NavLink>
         ))}
         <button

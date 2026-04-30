@@ -605,7 +605,7 @@ function ActivityPageMobile() {
 
       {showRandomizerOverlay && (
         <section className="randomizer-overlay-wrapper" aria-label="Randomizer overlay">
-          <div className="bigkas-modal-scrim" style={{ '--scrim-z': 1 }} aria-hidden="true" onClick={handleCloseRandomizerOverlay} />
+          <div className="bigkas-modal-scrim" aria-hidden="true" onClick={handleCloseRandomizerOverlay} />
           <div className="randomizer-overlay-content">
             <div className="randomizer-overlay-card">
               <div className="randomizer-overlay-card-top">
@@ -660,7 +660,7 @@ function ActivityPageMobile() {
       )}
       {showFreeSpeechOverlay && (
         <section className="randomizer-overlay-wrapper" aria-label="Free speech overlay">
-          <div className="bigkas-modal-scrim" style={{ '--scrim-z': 1 }} aria-hidden="true" onClick={handleCloseFreeSpeechOverlay} />
+          <div className="bigkas-modal-scrim" aria-hidden="true" onClick={handleCloseFreeSpeechOverlay} />
           <div className="randomizer-overlay-content">
             <div className="randomizer-overlay-card free-speech-overlay-card">
               <div className="randomizer-overlay-card-top">
@@ -736,7 +736,7 @@ function ActivityPageMobile() {
         />
       </div>
 
-      <div className="activity-mobile-dashboard-section">
+      <div className={`activity-mobile-dashboard-section${(showDashboardOverlay || showRandomizerOverlay || showFreeSpeechOverlay) ? ' is-hidden' : ''}`}>
         <Button 
           variant="practice" 
           className="activity-mobile-dashboard-btn"
@@ -748,7 +748,7 @@ function ActivityPageMobile() {
 
       {showDashboardOverlay && (
         <section className="dashboard-overlay-wrapper" aria-label="Dashboard overlay">
-          <div className="bigkas-modal-scrim" style={{ '--scrim-z': 0 }} aria-hidden="true" onClick={() => setShowDashboardOverlay(false)} />
+          <div className="bigkas-modal-scrim" aria-hidden="true" onClick={() => setShowDashboardOverlay(false)} />
           <div className="dashboard-overlay-content no-scrollbar">
             <div className="dashboard-overlay-header">
               <h2 className="dashboard-overlay-title">Dashboard</h2>

@@ -24,10 +24,10 @@ function toFivePointScore(rawScore) {
 }
 
 function getScoreTier15(score) {
-  if (score >= 4.0) return { label: 'Excellent', color: '#5A7863' };
-  if (score >= 3.0) return { label: 'Good', color: '#90AB8B' };
-  if (score >= 2.0) return { label: 'Fair', color: '#F18F01' };
-  return { label: 'Needs Work', color: '#D94F3B' };
+  if (score >= 4.0) return { label: 'Excellent', color: '#059669' };
+  if (score >= 3.0) return { label: 'Good', color: '#059669' };
+  if (score >= 2.0) return { label: 'Fair', color: '#F97316' };
+  return { label: 'Needs Work', color: '#FF0000' };
 }
 
 function clamp15(value) {
@@ -379,10 +379,10 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                           <span className="history-item-badge-dot" style={{ backgroundColor: tier.color }} />
                           {tier.label}
                         </span>
+                        <div className="history-item-score-label-compact">Confidence</div>
                       </div>
 
                       <div className="history-item-score-compact">
-                        <div className="history-item-score-label-compact">Confidence</div>
                         <div
                           className="history-item-score-ring-compact"
                           style={{

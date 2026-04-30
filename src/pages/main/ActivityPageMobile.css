@@ -244,7 +244,7 @@
 
 .activity-page-mobile-root .randomizer-overlay-content {
   position: relative;
-  z-index: 1;
+  z-index: 1200; /* Above scrim (1100) */
   width: min(100%, 420px);
   display: flex;
   flex-direction: column;
@@ -556,19 +556,25 @@
   justify-content: center;
   padding: 0; /* Handled by root gap */
   flex-shrink: 0;
+  transition: opacity 0.2s ease;
+}
+
+.activity-mobile-dashboard-section.is-hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .activity-mobile-dashboard-btn {
-  height: 44px !important;
-  width: min(315px, 100%) !important;
+  height: 56px !important;
+  width: min(348px, 100%) !important;
   padding: 0 2rem !important;
   border-radius: 999px !important;
   background: #059669 !important;
   box-shadow: #047857 0 5px 0 0 !important;
   color: #ffffff !important;
   font-family: 'Fredoka', 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif !important;
-  font-size: 0.98rem !important;
-  font-weight: 600 !important;
+  font-size: 1rem !important;
+  font-weight: 800 !important;
   border: none !important;
   display: inline-flex !important;
   align-items: center !important;
@@ -595,13 +601,18 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
+  pointer-events: none; /* Let clicks through to scrim if needed, but scrim is full screen */
+}
+
+.dashboard-overlay-wrapper > * {
+  pointer-events: auto;
 }
 
 /* dashboard-overlay-backdrop removed */
 
 .dashboard-overlay-content {
   position: relative;
-  z-index: 1;
+  z-index: 1200; /* Above scrim (1100) */
   width: 100%;
   max-width: 500px;
   background: #FDFDF9;

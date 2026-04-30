@@ -115,14 +115,28 @@
   background: linear-gradient(180deg, rgba(241, 143, 1, 0.08) 0%, rgba(241, 143, 1, 0.02) 100%);
   border: 1px solid rgba(241, 143, 1, 0.1);
   border-bottom: 0;
+  transform-origin: bottom;
+  animation: trophyRise 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  opacity: 0;
 }
 
-/* Staircase/Podium Effect */
-.trophy-item:nth-child(1) .trophy-wrapper { height: 120px; }
-.trophy-item:nth-child(2) .trophy-wrapper { height: 150px; }
-.trophy-item:nth-child(3) .trophy-wrapper { height: 180px; }
-.trophy-item:nth-child(4) .trophy-wrapper { height: 210px; }
-.trophy-item:nth-child(5) .trophy-wrapper { height: 240px; }
+@keyframes trophyRise {
+  from {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+/* Staircase/Podium Effect & Animation Delays */
+.trophy-item:nth-child(1) .trophy-wrapper { height: 120px; animation-delay: 0.1s; }
+.trophy-item:nth-child(2) .trophy-wrapper { height: 150px; animation-delay: 0.25s; }
+.trophy-item:nth-child(3) .trophy-wrapper { height: 180px; animation-delay: 0.4s; }
+.trophy-item:nth-child(4) .trophy-wrapper { height: 210px; animation-delay: 0.55s; }
+.trophy-item:nth-child(5) .trophy-wrapper { height: 240px; animation-delay: 0.7s; }
 
 .trophy-wrapper::after {
   content: '';
@@ -144,6 +158,20 @@
   filter: drop-shadow(0 8px 12px rgba(241, 143, 1, 0.15));
   position: absolute;
   top: 10px;
+  animation: trophyPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation-delay: inherit;
+  opacity: 0;
+}
+
+@keyframes trophyPop {
+  from {
+    transform: scale(0.5) translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
 }
 
 .trophy-item:hover .trophy-img {

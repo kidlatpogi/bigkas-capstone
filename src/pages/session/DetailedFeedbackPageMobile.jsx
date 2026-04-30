@@ -498,17 +498,21 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
                 <span className="df-mobile-media-bit-value">{mode}</span>
               </div>
             </div>
-            {recordingMedia.videoUrl ? (
-              <div className="df-mobile-video-box">
-                <video src={recordingMedia.videoUrl} controls className="df-mobile-video" />
-              </div>
-            ) : recordingMedia.audioUrl ? (
-              <div className="df-mobile-audio-box">
-                <audio src={recordingMedia.audioUrl} controls className="df-mobile-audio" />
-              </div>
-            ) : (
-              <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8' }}>No recording available</div>
-            )}
+            <div className="df-mobile-recording-stack" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {recordingMedia.videoUrl && (
+                <div className="df-mobile-video-box" style={{ borderRadius: '16px', overflow: 'hidden', background: '#000' }}>
+                  <video src={recordingMedia.videoUrl} controls className="df-mobile-video" style={{ width: '100%', display: 'block' }} />
+                </div>
+              )}
+              {recordingMedia.audioUrl && (
+                <div className="df-mobile-audio-box" style={{ padding: recordingMedia.videoUrl ? '0 16px 16px' : '16px' }}>
+                  <audio src={recordingMedia.audioUrl} controls className="df-mobile-audio" style={{ width: '100%' }} />
+                </div>
+              )}
+              {!recordingMedia.videoUrl && !recordingMedia.audioUrl && (
+                <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8', fontWeight: 600 }}>No recording available</div>
+              )}
+            </div>
           </div>
         </section>
 

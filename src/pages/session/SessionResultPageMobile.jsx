@@ -210,28 +210,29 @@ function SessionResultPageMobile({ sessionIdProp, isInnerView, onCloseInner, onV
       <div className="sr-mobile-content">
         
         {/* Immersive Coach Hero */}
-        <section className="sr-mobile-hero dashboard-anim-top">
-          <div className="sr-mobile-hero-top">
-            <div className="sr-mobile-hero-avatar-box">
-              <img src={heroRobotImage} alt="" className="sr-mobile-hero-avatar" />
-            </div>
-            <div className="sr-mobile-hero-bubble">
-              <p className="sr-mobile-hero-kicker">B-01:</p>
-              <p className="sr-mobile-hero-copy">
+        <section className="activity-mobile-top-strip sr-mobile-hero dashboard-anim-top">
+          <div className="activity-mobile-banner-left">
+            <img src={heroRobotImage} alt="" className="activity-mobile-banner-robot" />
+            <div className="activity-mobile-banner-bubble">
+              <p className="activity-mobile-banner-kicker">B-01:</p>
+              <p className="activity-mobile-banner-copy">
                 {tripleV.entryPoint >= 4.0 ? 'Outstanding! Clear and confident delivery.' : 
                  tripleV.entryPoint >= 3.0 ? 'Good job! A few areas to polish but very natural.' :
                  'Keep going! Regular practice is key to steady improvement.'}
               </p>
             </div>
+            
+            {allRecommendations.length > 0 && (
+              <ul className="sr-mobile-hero-recs">
+                {allRecommendations.slice(0, 2).map((rec, idx) => (
+                  <li key={idx} className="sr-mobile-hero-rec-item">
+                    <span className="sr-mobile-hero-rec-bullet">•</span>
+                    {rec.text}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-          <ul className="sr-mobile-hero-recs">
-            {allRecommendations.slice(0, 2).map((rec, idx) => (
-              <li key={idx} className="sr-mobile-hero-rec-item">
-                <span className="sr-mobile-hero-rec-bullet">•</span>
-                {rec.text}
-              </li>
-            ))}
-          </ul>
         </section>
 
         {/* Overview Widgets */}

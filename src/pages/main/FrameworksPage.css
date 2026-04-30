@@ -243,19 +243,11 @@
 }
 
 .fh-pagination-wrap {
-  position: fixed;
-  left: 50%;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 1.25rem);
-  transform: translateX(-50%);
-  z-index: 90;
-  margin-top: 0;
-  padding: 0.4rem 0.8rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.15);
+  margin-top: 3rem;
+  padding: 1rem 0;
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
 
 .fh-pagination-wrap .history-pagination {
@@ -598,17 +590,6 @@
     padding-bottom: 8px;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
-  }
-
-  .fh-pagination-wrap {
-    position: relative;
-    left: auto;
-    bottom: auto;
-    transform: none;
-    margin: 24px auto;
-    width: 100%;
-    display: flex;
-    justify-content: center;
   }
 }
 

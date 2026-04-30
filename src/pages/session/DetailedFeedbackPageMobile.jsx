@@ -77,11 +77,107 @@ function clamp(value, min = 0, max = 100) {
   return Math.max(min, Math.min(max, value));
 }
 
+function extractBucketStoragePath(pathOrUrl) {
+  const value = String(pathOrUrl || '').trim();
+  if (!value) return null;
+  const fromBucket = value.match(new RegExp(`/${SESSION_MEDIA_BUCKET}/([^?]+)`));
+  if (fromBucket?.[1]) return decodeURIComponent(fromBucket[1]);
+  if (/^https?:\/\//i.test(value)) return null;
+  return value
+    .replace(/^\/+/, '')
+    .replace(new RegExp(`^${SESSION_MEDIA_BUCKET}/`), '')
+    .split('?')[0];
+}
+
+async function resolvePlayableStorageUrl(pathOrUrl) {
+  const storagePath = extractBucketStoragePath(pathOrUrl);
+  if (!storagePath) return buildBucketPublicUrl(pathOrUrl);
+  const { data, error } = await supabase.storage
+    .from(SESSION_MEDIA_BUCKET)
+    .createSignedUrl(storagePath, 3600);
+  if (!error && data?.signedUrl) return data.signedUrl;
+  return buildBucketPublicUrl(storagePath);
+}
+
+function isMissingVideoStorageColumn(error) {
+  const msg = String(error?.message || '').toLowerCase();
+  return msg.includes('video_storage_url') && msg.includes('does not exist');
+}
+
+function parseRecordingTimestamp(path) {
+  const value = String(path || '').trim();
+  if (!value) return null;
+  const match = value.match(/\/(\d{13})-[^/]+\.[a-z0-9]+$/i);
+  if (!match) return null;
+  const parsed = Number(match[1]);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function pickClosestRecordingPath(paths, targetMs) {
+  if (!Array.isArray(paths) || !paths.length || !Number.isFinite(targetMs)) return null;
+  let bestPath = null;
+  let bestDelta = Number.POSITIVE_INFINITY;
+  for (const path of paths) {
+    const ts = parseRecordingTimestamp(path);
+    if (!Number.isFinite(ts)) continue;
+    const delta = Math.abs(ts - targetMs);
+    if (delta < bestDelta) {
+      bestDelta = delta;
+      bestPath = path;
+    }
+  }
+  return bestPath;
+}
+
+async function findLikelyVideoUrl({ userId, createdAt }) {
+  const safeUserId = String(userId || '').trim();
+  if (!safeUserId || !createdAt) return null;
+  const sessionTs = new Date(createdAt).getTime();
+  if (!Number.isFinite(sessionTs)) return null;
+  const { data, error } = await supabase.storage
+    .from(SESSION_MEDIA_BUCKET)
+    .list(`${safeUserId}/video`, { limit: 200, sortBy: { column: 'name', order: 'desc' } });
+  if (error || !Array.isArray(data) || !data.length) return null;
+  const storagePaths = data
+    .map((file) => file?.name ? `${safeUserId}/video/${file.name}` : null)
+    .filter(Boolean);
+  const closestPath = pickClosestRecordingPath(storagePaths, sessionTs);
+  if (!closestPath) return null;
+  return buildBucketPublicUrl(closestPath);
+}
+
+async function findLikelyAudioUrl({ userId, createdAt }) {
+  const safeUserId = String(userId || '').trim();
+  if (!safeUserId || !createdAt) return null;
+  const sessionTs = new Date(createdAt).getTime();
+  if (!Number.isFinite(sessionTs)) return null;
+  const { data, error } = await supabase.storage
+    .from(SESSION_MEDIA_BUCKET)
+    .list(`${safeUserId}/audio`, { limit: 200, sortBy: { column: 'name', order: 'desc' } });
+  if (error || !Array.isArray(data) || !data.length) return null;
+  const storagePaths = data
+    .map((file) => file?.name ? `${safeUserId}/audio/${file.name}` : null)
+    .filter(Boolean);
+  const closestPath = pickClosestRecordingPath(storagePaths, sessionTs);
+  if (!closestPath) return null;
+  return buildBucketPublicUrl(closestPath);
+}
+
 function buildBucketPublicUrl(pathOrUrl) {
   const value = String(pathOrUrl || '').trim();
   if (!value) return null;
-  if (/^https?:\/\//i.test(value)) return value;
-  const cleaned = value.replace(/^\/+/, '').replace(new RegExp(`^${SESSION_MEDIA_BUCKET}/`), '').split('?')[0];
+  if (/^https?:\/\//i.test(value) && !value.includes(`/${SESSION_MEDIA_BUCKET}/`)) return value;
+  const marker = `/storage/v1/object/public/${SESSION_MEDIA_BUCKET}/`;
+  const markerIdx = value.indexOf(marker);
+  const signedMarker = `/storage/v1/object/sign/${SESSION_MEDIA_BUCKET}/`;
+  const signedMarkerIdx = value.indexOf(signedMarker);
+  const fromMarker = markerIdx >= 0
+    ? value.slice(markerIdx + marker.length)
+    : (signedMarkerIdx >= 0 ? value.slice(signedMarkerIdx + signedMarker.length) : value);
+  const cleaned = fromMarker
+    .replace(/^\/+/, '')
+    .replace(new RegExp(`^${SESSION_MEDIA_BUCKET}/`), '')
+    .split('?')[0];
   const { data } = supabase.storage.from(SESSION_MEDIA_BUCKET).getPublicUrl(cleaned);
   return data?.publicUrl || null;
 }
@@ -106,19 +202,74 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
   }, [fetchSessionById, session, sessionId]);
 
   useEffect(() => {
-    const loadMedia = async () => {
+    let isMounted = true;
+
+    const loadSessionMedia = async () => {
       if (!sessionId) return;
-      const { data } = await supabase.from('session_media').select('audio_url, video_storage_url, transcript').eq('session_id', sessionId).maybeSingle();
-      if (data) {
-        setRecordingMedia({
-          audioUrl: buildBucketPublicUrl(data.audio_url),
-          videoUrl: buildBucketPublicUrl(data.video_storage_url),
-          transcript: data.transcript || '',
+
+      let audioUrl = null;
+      let videoUrl = null;
+
+      const { data: richMedia, error: richMediaErr } = await supabase
+        .from('session_media')
+        .select('audio_url, video_storage_url, transcript')
+        .eq('session_id', sessionId)
+        .maybeSingle();
+
+      let mediaTranscript = '';
+      if (!richMediaErr && richMedia) {
+        audioUrl = richMedia.audio_url ?? null;
+        videoUrl = richMedia.video_storage_url ?? null;
+        mediaTranscript = String(richMedia.transcript || '').trim();
+      } else if (isMissingVideoStorageColumn(richMediaErr)) {
+        const { data: basicMedia } = await supabase
+          .from('session_media')
+          .select('audio_url, transcript')
+          .eq('session_id', sessionId)
+          .maybeSingle();
+        audioUrl = basicMedia?.audio_url ?? null;
+        mediaTranscript = String(basicMedia?.transcript || '').trim();
+      }
+
+      if (!mediaTranscript) {
+        const { data: transcriptOnlyMedia } = await supabase
+          .from('session_media')
+          .select('transcript')
+          .eq('session_id', sessionId)
+          .maybeSingle();
+        mediaTranscript = String(transcriptOnlyMedia?.transcript || '').trim();
+      }
+
+      if (!videoUrl) {
+        videoUrl = await findLikelyVideoUrl({
+          userId: session?.user_id,
+          createdAt: session?.created_at,
         });
       }
+
+      if (!audioUrl) {
+        audioUrl = await findLikelyAudioUrl({
+          userId: session?.user_id,
+          createdAt: session?.created_at,
+        });
+      }
+
+      if (!isMounted) return;
+      const [resolvedAudioUrl, resolvedVideoUrl] = await Promise.all([
+        resolvePlayableStorageUrl(audioUrl),
+        resolvePlayableStorageUrl(videoUrl),
+      ]);
+      if (!isMounted) return;
+      setRecordingMedia({
+        audioUrl: resolvedAudioUrl,
+        videoUrl: resolvedVideoUrl,
+        transcript: mediaTranscript,
+      });
     };
-    loadMedia();
-  }, [sessionId]);
+
+    loadSessionMedia();
+    return () => { isMounted = false; };
+  }, [session?.created_at, session?.user_id, sessionId]);
 
   if (!session && isLoading) return <div className="df-mobile-root"><div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div></div>;
   if (!session) return <div className="df-mobile-root"><div style={{ padding: '40px', textAlign: 'center' }}>Session not found</div></div>;

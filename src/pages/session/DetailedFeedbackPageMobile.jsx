@@ -145,14 +145,23 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
     { key: 'verbal', label: 'Verbal', desc: 'Pronunciation accuracy and topical relevance', score: tripleV.verbalAvg, image: verbalSprite, subMetrics: [] },
   ];
 
-  const timelineData = Array.from({ length: 15 }, (_, idx) => {
-    const values = { time: idx };
-    pillars.forEach(p => {
-      const base = scoreBarPercent(p.score);
-      values[p.label] = clamp(base + (Math.random() * 10 - 5), 0, 100);
+  const timelineData = useMemo(() => {
+    const pointCount = durationSec + 1;
+    return Array.from({ length: pointCount }, (_, idx) => {
+      const timeSec = idx;
+      const progress = durationSec === 0 ? 0 : timeSec / durationSec;
+      const values = { time: formatDuration(timeSec), timestamp: timeSec };
+      pillars.forEach((p, pIdx) => {
+        const pct = scoreBarPercent(p.score);
+        const variance = 8 + (100 - pct) * 0.1;
+        const phase = (timeSec * 0.4) + (pIdx * 1.5);
+        const wave = Math.sin(phase) * variance * 0.5 + Math.cos(phase * 0.7) * variance * 0.25;
+        const momentum = (progress - 0.5) * ((pct - 50) / 10);
+        values[p.label] = clamp(Math.round(pct + wave + momentum), 5, 98);
+      });
+      return values;
     });
-    return values;
-  });
+  }, [durationSec, pillars]);
 
   return (
     <div className="df-mobile-root no-scrollbar">
@@ -172,17 +181,31 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
             <h2 className="df-mobile-section-title">Performance Timeline</h2>
             <p className="df-mobile-section-subtitle">Real-time fluctuations during your session</p>
           </div>
-          <div className="df-mobile-card">
-            <div className="df-mobile-chart-container">
+          <div className="df-mobile-card" style={{ padding: '24px 16px 12px' }}>
+            <div className="df-mobile-chart-container" style={{ height: '240px' }}>
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={timelineData}>
+                <LineChart data={timelineData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
-                  <XAxis dataKey="time" hide />
+                  <XAxis 
+                    dataKey="time" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 10, fontWeight: 600, fill: '#94a3b8' }} 
+                    interval={Math.ceil(durationSec / 5)}
+                  />
                   <YAxis hide domain={[0, 100]} />
-                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 5px 15px rgba(0,0,0,0.05)' }} />
-                  <Line type="monotone" dataKey="Visual" stroke="#059669" strokeWidth={3} dot={false} />
-                  <Line type="monotone" dataKey="Vocal" stroke="#10b981" strokeWidth={3} dot={false} />
-                  <Line type="monotone" dataKey="Verbal" stroke="#F97316" strokeWidth={3} dot={false} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', fontWeight: 700, fontSize: '12px' }} 
+                  />
+                  <Legend 
+                    verticalAlign="top" 
+                    height={32} 
+                    iconType="circle" 
+                    wrapperStyle={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '10px', paddingBottom: '10px' }} 
+                  />
+                  <Line type="monotone" dataKey="Visual" stroke="#059669" strokeWidth={3} dot={false} activeDot={{ r: 5, strokeWidth: 0 }} />
+                  <Line type="monotone" dataKey="Vocal" stroke="#10b981" strokeWidth={3} dot={false} activeDot={{ r: 5, strokeWidth: 0 }} />
+                  <Line type="monotone" dataKey="Verbal" stroke="#F97316" strokeWidth={3} dot={false} activeDot={{ r: 5, strokeWidth: 0 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>

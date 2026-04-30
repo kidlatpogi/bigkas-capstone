@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import ReactPaginate from 'react-paginate';
 import { IoChevronBack, IoChevronDown, IoChevronForward } from 'react-icons/io5';
 import learnLibraryData from '../../assets/data/learnLibraryData.json';
+import FrameworksPageMobile from './FrameworksPageMobile';
 import './FrameworksPage.css';
 
 const CATEGORIES = [
@@ -156,6 +157,14 @@ function ItemModal({ item, onClose }) {
 
 export default function FrameworksPage() {
   const location = useLocation();
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const [activeTab, setActiveTab] = useState(() => {
     const catId = toCategoryId(location.state?.lessonItem?.category || location.state?.lessonItem?._categoryId);
     return (catId && CATEGORIES.find((c) => c.id === catId)) ? catId : CATEGORIES[0].id;
@@ -168,6 +177,10 @@ export default function FrameworksPage() {
   useEffect(() => {
     if (location.state?.lessonItem) window.history.replaceState({}, '', location.pathname);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (windowWidth < 768) {
+    return <FrameworksPageMobile initialItem={location.state?.lessonItem} />;
+  }
 
   const allItems = useMemo(() => {
     return (learnLibraryData || []).map((item) => ({

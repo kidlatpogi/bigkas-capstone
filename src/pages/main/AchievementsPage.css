@@ -9,26 +9,22 @@
   scrollbar-width: none;
   -ms-overflow-style: none;
   background-color: #FDFDF9;
-  background-image: 
+  background-image:
     radial-gradient(rgba(11, 57, 84, 0.1) 1px, transparent 0),
-    repeating-radial-gradient(
-      circle at 100% 100%, 
-      transparent 0, 
-      transparent 300px, 
-      rgba(5, 150, 105, 0.08) 300px, 
-      rgba(5, 150, 105, 0.08) 302px, 
-      transparent 302px, 
-      transparent 600px
-    ),
-    repeating-radial-gradient(
-      circle at 0% 0%, 
-      transparent 0, 
-      transparent 400px, 
-      rgba(241, 143, 1, 0.07) 400px, 
-      rgba(241, 143, 1, 0.07) 402px, 
-      transparent 402px, 
-      transparent 800px
-    );
+    repeating-radial-gradient(circle at 100% 100%,
+      transparent 0,
+      transparent 300px,
+      rgba(5, 150, 105, 0.08) 300px,
+      rgba(5, 150, 105, 0.08) 302px,
+      transparent 302px,
+      transparent 600px),
+    repeating-radial-gradient(circle at 0% 0%,
+      transparent 0,
+      transparent 400px,
+      rgba(241, 143, 1, 0.07) 400px,
+      rgba(241, 143, 1, 0.07) 402px,
+      transparent 402px,
+      transparent 800px);
   background-size: 40px 40px, 100% 100%, 100% 100%;
   background-attachment: fixed;
   display: flex;
@@ -63,27 +59,27 @@
   letter-spacing: -0.04em;
   font-family: 'Fredoka', sans-serif;
   line-height: 1;
-  color: #0f172a;
+  color: #059669;
   position: relative;
   display: inline-block;
-  
-  /* Subtle rewarding shine */
+
+  /* Subtle rewarding shine - Emerald Theme */
   background: linear-gradient(
     135deg, 
-    #0f172a 0%, 
-    #0f172a 45%, 
-    #1e293b 50%, 
-    #0f172a 55%, 
-    #0f172a 100%
+    #059669 0%, 
+    #059669 45%, 
+    #34d399 50%, 
+    #059669 55%, 
+    #059669 100%
   );
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: darkShine 6s linear infinite;
-  filter: drop-shadow(0 4px 8px rgba(15, 23, 42, 0.1));
+  animation: emeraldShine 6s linear infinite;
+  filter: drop-shadow(0 4px 10px rgba(5, 150, 105, 0.2));
 }
 
-@keyframes darkShine {
+@keyframes emeraldShine {
   0%, 70% { background-position: 200% center; }
   100% { background-position: -200% center; }
 }
@@ -93,7 +89,7 @@
   background: #ffffff;
   border-radius: 32px;
   padding: 60px 40px 40px;
-  box-shadow: 
+  box-shadow:
     0 4px 6px -1px rgba(0, 0, 0, 0.05),
     0 10px 15px -3px rgba(0, 0, 0, 0.1),
     inset 0 0 0 1px rgba(11, 57, 84, 0.05);
@@ -104,7 +100,7 @@
   overflow-x: auto;
   scrollbar-width: none;
   min-height: 380px;
-  background-image: 
+  background-image:
     linear-gradient(to top, rgba(5, 150, 105, 0.02) 0%, transparent 100%),
     url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23059669' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
@@ -143,6 +139,7 @@
     transform: scaleY(0);
     opacity: 0;
   }
+
   to {
     transform: scaleY(1);
     opacity: 1;
@@ -150,11 +147,30 @@
 }
 
 /* Staircase/Podium Effect & Animation Delays */
-.trophy-item:nth-child(1) .trophy-wrapper { height: 120px; animation-delay: 0.1s; }
-.trophy-item:nth-child(2) .trophy-wrapper { height: 150px; animation-delay: 0.25s; }
-.trophy-item:nth-child(3) .trophy-wrapper { height: 180px; animation-delay: 0.4s; }
-.trophy-item:nth-child(4) .trophy-wrapper { height: 210px; animation-delay: 0.55s; }
-.trophy-item:nth-child(5) .trophy-wrapper { height: 240px; animation-delay: 0.7s; }
+.trophy-item:nth-child(1) .trophy-wrapper {
+  height: 120px;
+  animation-delay: 0.1s;
+}
+
+.trophy-item:nth-child(2) .trophy-wrapper {
+  height: 150px;
+  animation-delay: 0.25s;
+}
+
+.trophy-item:nth-child(3) .trophy-wrapper {
+  height: 180px;
+  animation-delay: 0.4s;
+}
+
+.trophy-item:nth-child(4) .trophy-wrapper {
+  height: 210px;
+  animation-delay: 0.55s;
+}
+
+.trophy-item:nth-child(5) .trophy-wrapper {
+  height: 240px;
+  animation-delay: 0.7s;
+}
 
 .trophy-wrapper::after {
   content: '';
@@ -186,6 +202,7 @@
     transform: scale(0.5) translateY(20px);
     opacity: 0;
   }
+
   to {
     transform: scale(1) translateY(0);
     opacity: 1;
@@ -348,19 +365,23 @@
   left: -50%;
   width: 200%;
   height: 200%;
-  background: linear-gradient(
-    45deg,
-    transparent 45%,
-    rgba(255, 255, 255, 0.8) 50%,
-    transparent 55%
-  );
+  background: linear-gradient(45deg,
+      transparent 45%,
+      rgba(255, 255, 255, 0.8) 50%,
+      transparent 55%);
   animation: cardShine 4s infinite;
   pointer-events: none;
 }
 
 @keyframes cardShine {
-  0% { transform: translate(-30%, -30%) rotate(0deg); }
-  20%, 100% { transform: translate(30%, 30%) rotate(0deg); }
+  0% {
+    transform: translate(-30%, -30%) rotate(0deg);
+  }
+
+  20%,
+  100% {
+    transform: translate(30%, 30%) rotate(0deg);
+  }
 }
 
 .badge-status-top {

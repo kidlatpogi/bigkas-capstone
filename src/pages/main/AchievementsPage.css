@@ -60,37 +60,32 @@
   font-weight: 900;
   text-transform: uppercase;
   margin: 0;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
   font-family: 'Fredoka', sans-serif;
   line-height: 1;
+  color: #0f172a;
+  position: relative;
+  display: inline-block;
   
-  /* Gold Glittering Gradient */
+  /* Subtle rewarding shine */
   background: linear-gradient(
-    to right, 
-    #BF953F 0%, 
-    #FCF6BA 20%, 
-    #B38728 40%, 
-    #FBF5B7 60%, 
-    #AA771C 80%, 
-    #BF953F 100%
+    135deg, 
+    #0f172a 0%, 
+    #0f172a 45%, 
+    #1e293b 50%, 
+    #0f172a 55%, 
+    #0f172a 100%
   );
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: goldShimmer 8s linear infinite;
-  filter: drop-shadow(0 4px 15px rgba(179, 135, 40, 0.4));
+  animation: darkShine 6s linear infinite;
+  filter: drop-shadow(0 4px 8px rgba(15, 23, 42, 0.1));
 }
 
-@keyframes goldShimmer {
-  0% {
-    background-position: -200% center;
-  }
-  30% {
-    background-position: 200% center;
-  }
-  100% {
-    background-position: 200% center;
-  }
+@keyframes darkShine {
+  0%, 70% { background-position: 200% center; }
+  100% { background-position: -200% center; }
 }
 
 /* ── Trophy Section ── */

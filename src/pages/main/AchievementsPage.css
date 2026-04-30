@@ -222,94 +222,116 @@
 
 /* ── Badges Grid ── */
 .badges-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
 }
 
 .badge-card {
   background: #ffffff;
-  border-radius: 40px;
-  padding: 32px 24px;
-  display: flex;
-  flex-direction: column;
+  border-radius: 24px;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 120px 1fr 180px;
   align-items: center;
-  text-align: center;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.02);
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  gap: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(11, 57, 84, 0.06);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  text-align: left;
 }
 
 .badge-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+  transform: translateX(4px);
+  box-shadow: 0 12px 24px rgba(11, 57, 84, 0.08);
+  border-color: rgba(5, 150, 105, 0.2);
 }
 
 .badge-status-top {
-  align-self: flex-start;
+  position: absolute;
+  top: 16px;
+  right: 24px;
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: 800;
   color: #94A3B8;
-  margin-bottom: 12px;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .badge-icon-wrapper {
-  margin-bottom: 16px;
+  width: 120px;
+  height: 120px;
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, rgba(5, 150, 105, 0.08) 0%, transparent 70%);
+  border-radius: 20px;
 }
 
 .badge-img {
-  width: 120px;
+  width: 80px;
   height: auto;
+  filter: drop-shadow(0 8px 16px rgba(5, 150, 105, 0.2));
 }
 
 .badge-card.locked .badge-img {
-  filter: grayscale(1) brightness(0.2);
-  opacity: 0.5;
+  filter: grayscale(1) brightness(0.6);
+  opacity: 0.4;
+}
+
+.badge-card.locked .badge-icon-wrapper {
+  background: radial-gradient(circle, rgba(148, 163, 184, 0.1) 0%, transparent 70%);
 }
 
 .badge-title {
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   font-weight: 800;
   margin: 0 0 4px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  color: #1e293b;
+  font-family: 'Fredoka', sans-serif;
 }
 
 .checkmark-icon {
   color: #059669;
-  font-size: 1rem;
+  font-size: 1.2rem;
+  filter: drop-shadow(0 0 8px rgba(5, 150, 105, 0.4));
 }
 
 .badge-description {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 500;
   color: #64748B;
-  margin: 0 0 20px;
-  line-height: 1.4;
+  margin: 0;
+  line-height: 1.5;
 }
 
 .badge-progress-container {
   width: 100%;
-  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .badge-progress-bar {
   width: 100%;
-  height: 6px;
-  background: #F1F5F9;
+  height: 10px;
+  background: #f1f5f9;
   border-radius: 999px;
-  margin-bottom: 6px;
   overflow: hidden;
+  border: 1px solid rgba(11, 57, 84, 0.05);
 }
 
 .badge-progress-fill {
   height: 100%;
-  background: #059669;
+  background: linear-gradient(90deg, #34D399 0%, #059669 100%);
   border-radius: inherit;
+  box-shadow: 0 0 12px rgba(5, 150, 105, 0.3);
 }
 
 .badge-progress-text {

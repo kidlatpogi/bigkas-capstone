@@ -65,7 +65,8 @@ export default function AchievementsPage() {
 
   return (
     <div className="achievements-container dashboard-anim-fade">
-      <header className="achievements-header">
+      <header className="achievements-header dashboard-anim-top">
+        <span className="achievements-kicker">Milestones</span>
         <h1 className="achievements-title">Achievements</h1>
       </header>
 

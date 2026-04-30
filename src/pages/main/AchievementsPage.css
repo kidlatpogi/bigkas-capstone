@@ -8,13 +8,6 @@
   color: var(--color-text-primary);
   scrollbar-width: none;
   -ms-overflow-style: none;
-}
-
-.achievements-container::-webkit-scrollbar {
-  display: none !important;
-}
-  
-  /* Synced with ActivityPage Skyward Journey theme */
   background-color: #FDFDF9;
   background-image: 
     radial-gradient(rgba(11, 57, 84, 0.1) 1px, transparent 0),
@@ -41,6 +34,10 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.achievements-container::-webkit-scrollbar {
+  display: none !important;
 }
 
 .achievements-header {

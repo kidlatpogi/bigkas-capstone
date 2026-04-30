@@ -82,7 +82,7 @@
 
 /* Section Common */
 .df-mobile-section {
-  margin-bottom: 32px;
+  margin-bottom: 0;
 }
 
 .df-mobile-section-header {
@@ -303,7 +303,7 @@
   border-radius: 24px;
   padding: 20px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-  margin-bottom: 24px;
+  margin-bottom: 0;
   overflow: hidden;
 }
 
@@ -318,7 +318,7 @@
   border-radius: 20px;
   padding: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 
 .df-mobile-sub-grid {
@@ -443,7 +443,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin-top: 24px;
+  margin-top: 0;
 }
 
 .df-mobile-back-btn:active {

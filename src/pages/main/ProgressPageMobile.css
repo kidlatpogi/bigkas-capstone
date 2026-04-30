@@ -44,6 +44,9 @@
   padding: 16px;
   width: 100%;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 /* Immersive Mobile Banner */
@@ -56,7 +59,7 @@
     0 10px 25px -5px rgba(5, 150, 105, 0.3),
     0 8px 10px -6px rgba(5, 150, 105, 0.3);
   flex-shrink: 0;
-  margin-bottom: 40px !important;
+  margin-bottom: 0;
   padding: 12px;
   display: flex;
   align-items: stretch;
@@ -88,7 +91,7 @@
 .activity-mobile-banner-robot {
   position: absolute;
   left: -2px;
-  bottom: -4px;
+  bottom: -10px;
   width: 104px;
   height: auto;
   pointer-events: none;
@@ -127,8 +130,7 @@
   grid-template-columns: 1fr 1fr 1fr;
   gap: 12px;
   width: 100%;
-  margin-top: 12px !important;
-  margin-bottom: 24px;
+  margin: 0;
 }
 
 .progress-mobile-stat-card {
@@ -160,7 +162,7 @@
   border-radius: 24px;
   padding: 24px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-  margin-bottom: 24px;
+  margin-bottom: 0;
 }
 
 .progress-mobile-section-title {

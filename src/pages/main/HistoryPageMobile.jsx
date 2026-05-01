@@ -4,9 +4,11 @@ import { IoChevronBack, IoChevronForward } from 'react-icons/io5';
 import { buildRoute } from '../../utils/constants';
 import { getSessionMode } from '../../utils/sessionFormatting';
 import { sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
-import verbalSprite from '../../assets/Sprites/common/Verbal.png';
-import visualSprite from '../../assets/Sprites/common/Visual.png';
-import vocalSprite from '../../assets/Sprites/common/Vocal.png';
+import { getSpriteUrl } from '../../utils/assetUtils';
+
+const verbalSprite = getSpriteUrl('common/Verbal.png');
+const visualSprite = getSpriteUrl('common/Visual.png');
+const vocalSprite = getSpriteUrl('common/Vocal.png');
 import SessionResultPage from '../session/SessionResultPage';
 import DetailedFeedbackPage from '../session/DetailedFeedbackPage';
 import './HistoryPage.css';

@@ -44,7 +44,7 @@ const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.png');
 const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.png');
 const crystalBallImage = getSpriteUrl('common/crystal-ball.png');
 const crownImage = getSpriteUrl('common/crown.png');
-import fireAnimationData from '../../assets/Sprites/common/fire.json';
+import fireAnimationData from '../../assets/Lottie/fire.json';
 import './InnerPages.css';
 import './ActivityPageMobile.css';
 

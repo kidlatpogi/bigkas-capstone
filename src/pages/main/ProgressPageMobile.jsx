@@ -27,10 +27,12 @@ import {
   appendSpeakerPointsHistory,
   createSpeakerPointsHistoryEntry,
 } from '../../utils/speakerPointsHistory';
-import heroRobotImage from '../../assets/Sprites/Robot/0018.webp';
-import visualSprite from '../../assets/Sprites/common/Visual.png';
-import verbalSprite from '../../assets/Sprites/common/Verbal.png';
-import vocalSprite from '../../assets/Sprites/common/Vocal.png';
+import { getSpriteUrl } from '../../utils/assetUtils';
+
+const heroRobotImage = getSpriteUrl('Robot/0018.webp');
+const visualSprite = getSpriteUrl('common/Visual.png');
+const verbalSprite = getSpriteUrl('common/Verbal.png');
+const vocalSprite = getSpriteUrl('common/Vocal.png');
 import HistoryPageMobile from './HistoryPageMobile';
 import './ProgressPage.css'; 
 import './ProgressPageMobile.css';

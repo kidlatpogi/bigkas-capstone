@@ -5,24 +5,27 @@ import { useAuthContext } from '../../context/useAuthContext';
 import { supabase } from '../../lib/supabase';
 import { ROUTES } from '../../utils/constants';
 import { getBigkasLevelFromScore, mapPercentToEntryScore } from '../../utils/activityProgress';
-import analyzingRobotImage from '../../assets/Sprites/Robot/0010.webp';
-import resultRobotImage from '../../assets/Sprites/Robot/0013.webp';
-import robotImage0001 from '../../assets/Sprites/Robot/0001.webp';
-import robotImage0002 from '../../assets/Sprites/Robot/0002.webp';
-import robotImage0003 from '../../assets/Sprites/Robot/0003.webp';
-import robotImage0004 from '../../assets/Sprites/Robot/0004.webp';
-import robotImage0005 from '../../assets/Sprites/Robot/0005.webp';
-import robotImage0012 from '../../assets/Sprites/Robot/0012.webp';
-import robotImage0015 from '../../assets/Sprites/Robot/0015.webp';
-import analyzingProgressVoice from '../../assets/Voices/Profiling and Pre-Testing/Analyzing/Analyzing your level....mp3';
-import analyzingLevel1Voice from '../../assets/Voices/Profiling and Pre-Testing/Analyzing/Analyzing Level 1.mp3';
-import analyzingLevel2Voice from '../../assets/Voices/Profiling and Pre-Testing/Analyzing/Analyzing Level 2.mp3';
-import analyzingLevel3Voice from '../../assets/Voices/Profiling and Pre-Testing/Analyzing/Analyzing Level 3.mp3';
-import analyzingLevel4Voice from '../../assets/Voices/Profiling and Pre-Testing/Analyzing/Analyzing Level 4.mp3';
-import analyzingLevel5Voice from '../../assets/Voices/Profiling and Pre-Testing/Analyzing/Analyzing Level 5.mp3';
-import scoreBreakdownVoice1 from '../../assets/Voices/Profiling and Pre-Testing/Score Breakdown/Score Breakdown 1.mp3';
-import scoreBreakdownVoice2 from '../../assets/Voices/Profiling and Pre-Testing/Score Breakdown/Score Breakdown 2.mp3';
-import scoreBreakdownVoice3 from '../../assets/Voices/Profiling and Pre-Testing/Score Breakdown/Score Breakdown 3.mp3';
+import { getSpriteUrl, getVoiceUrl } from '../../utils/assetUtils';
+
+const analyzingRobotImage = getSpriteUrl('Robot/0010.webp');
+const resultRobotImage = getSpriteUrl('Robot/0013.webp');
+const robotImage0001 = getSpriteUrl('Robot/0001.webp');
+const robotImage0002 = getSpriteUrl('Robot/0002.webp');
+const robotImage0003 = getSpriteUrl('Robot/0003.webp');
+const robotImage0004 = getSpriteUrl('Robot/0004.webp');
+const robotImage0005 = getSpriteUrl('Robot/0005.webp');
+const robotImage0012 = getSpriteUrl('Robot/0012.webp');
+const robotImage0015 = getSpriteUrl('Robot/0015.webp');
+
+const analyzingProgressVoice = getVoiceUrl('Profiling and Pre-Testing/Analyzing/Analyzing your level....mp3');
+const analyzingLevel1Voice = getVoiceUrl('Profiling and Pre-Testing/Analyzing/Analyzing Level 1.mp3');
+const analyzingLevel2Voice = getVoiceUrl('Profiling and Pre-Testing/Analyzing/Analyzing Level 2.mp3');
+const analyzingLevel3Voice = getVoiceUrl('Profiling and Pre-Testing/Analyzing/Analyzing Level 3.mp3');
+const analyzingLevel4Voice = getVoiceUrl('Profiling and Pre-Testing/Analyzing/Analyzing Level 4.mp3');
+const analyzingLevel5Voice = getVoiceUrl('Profiling and Pre-Testing/Analyzing/Analyzing Level 5.mp3');
+const scoreBreakdownVoice1 = getVoiceUrl('Profiling and Pre-Testing/Score Breakdown/Score Breakdown 1.mp3');
+const scoreBreakdownVoice2 = getVoiceUrl('Profiling and Pre-Testing/Score Breakdown/Score Breakdown 2.mp3');
+const scoreBreakdownVoice3 = getVoiceUrl('Profiling and Pre-Testing/Score Breakdown/Score Breakdown 3.mp3');
 import './UserAnalyzingPage.css';
 
 function clampScore(value) {

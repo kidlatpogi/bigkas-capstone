@@ -1,9 +1,11 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import rankBronze from '../../assets/Sprites/Rank/rank-bronze.png';
-import rankSilverImage from '../../assets/Sprites/Rank/rank-silver.png';
-import rankGoldImage from '../../assets/Sprites/Rank/rank-gold.png';
-import rankMythrilImage from '../../assets/Sprites/Rank/rank-mythril.png';
-import rankLegendaryImage from '../../assets/Sprites/Rank/rank-legendary.png';
+import { getSpriteUrl } from '../../utils/assetUtils';
+
+const rankBronze = getSpriteUrl('Rank/rank-bronze.png');
+const rankSilverImage = getSpriteUrl('Rank/rank-silver.png');
+const rankGoldImage = getSpriteUrl('Rank/rank-gold.png');
+const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.png');
+const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.png');
 import { BIGKAS_LEVELS } from '../../utils/activityProgress';
 import './RankListModal.css';
 

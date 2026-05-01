@@ -39,12 +39,12 @@
 }
 
 .progress-mobile-content {
-  padding: 16px;
+  padding: 12px 0;
   width: 100%;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 16px;
 }
 
 /* Immersive Mobile Banner */
@@ -57,6 +57,9 @@
   flex-shrink: 0;
   margin-bottom: 0;
   padding: 12px;
+  margin: 0;
+  width: 100%;
+  border-radius: 0 0 28px 28px;
   display: flex;
   align-items: stretch;
   position: relative;
@@ -124,9 +127,11 @@
 .progress-mobile-stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
   margin: 0;
+  padding: 0 12px;
+  box-sizing: border-box;
 }
 
 .progress-mobile-stat-card {
@@ -176,9 +181,11 @@
 .progress-mobile-section {
   background: #fff;
   border-radius: 24px;
-  padding: 24px;
+  padding: 24px 20px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-  margin-bottom: 0;
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .progress-mobile-section-title {
@@ -196,24 +203,33 @@
 
 /* Range Labels */
 .progress-mobile-range-labels {
-  display: flex;
-  gap: 4px;
-  overflow-x: auto;
-  padding: 5px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  padding: 4px;
   background: #f1f5f9;
   border-radius: 999px;
-  width: fit-content;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.progress-mobile-range-labels::-webkit-scrollbar {
+  display: none;
 }
 
 .progress-mobile-range-chip {
-  padding: 6px 14px;
+  padding: 6px 4px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   background: transparent;
   color: #64748b;
   border: none;
+  min-height: auto;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s ease;
   cursor: pointer;
 }
@@ -234,17 +250,20 @@
 .progress-mobile-pillars-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+  padding: 0;
 }
 
 .progress-mobile-pillar-card {
   background: #fff;
   border-radius: 24px;
-  padding: 20px;
+  padding: 18px 20px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
   gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .progress-mobile-pillar-header {

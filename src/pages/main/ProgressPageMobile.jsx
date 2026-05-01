@@ -418,7 +418,7 @@ function ProgressPageMobile() {
           <div className="progress-mobile-pillars-section dashboard-anim-bottom">
             <div className="progress-mobile-section" style={{ marginBottom: 0, paddingBottom: '32px' }}>
               <h3 className="progress-mobile-section-title">Pillar Trends ({pillarRange})</h3>
-              <div className="progress-mobile-range-labels">
+              <div className="progress-mobile-range-labels no-scrollbar">
                 {TIME_RANGES.map(r => (
                   <button
                     type="button"

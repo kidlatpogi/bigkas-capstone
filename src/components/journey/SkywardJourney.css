@@ -256,18 +256,26 @@
   max-height: none;
 }
 
-.skyward-journey-locked-state {
+.skyward-journey-locked-state-container {
   position: absolute;
   inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   z-index: 10;
+  pointer-events: none;
+}
+
+.skyward-journey-locked-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
   gap: 12px;
-  padding: 110px 18px 24px;
+  padding: 40px 18px;
   box-sizing: border-box;
+  pointer-events: auto;
 }
 
 .skyward-journey-locked-image {

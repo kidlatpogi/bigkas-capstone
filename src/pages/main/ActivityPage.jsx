@@ -1011,7 +1011,7 @@ function ActivityPage() {
             <section className={`new-widget dashboard-anim-left dashboard-anim-delay-2${(showRandomizerOverlay || showFreeSpeechOverlay) ? ' is-hidden' : ''}`} id="tutorial-target-home-rank">
               <div className="new-widget-head">
                 <h2 className="new-widget-title">Journey Progression</h2>
-                <span className="new-widget-chip">Rank</span>
+                <span className="new-widget-chip">Level</span>
               </div>
               <div 
                 className="new-widget-rank-card"
@@ -1019,8 +1019,8 @@ function ActivityPage() {
               >
                 <img src={rankSpriteImage} alt="" className="new-widget-rank-sprite" />
                 <div className="new-widget-rank-content">
-                  <p className="new-widget-kicker">Current Rank</p>
-                  <p className="new-widget-value">{levelProgress.levelName}</p>
+                  <p className="new-widget-kicker">Current Level</p>
+                  <p className="new-widget-value">LEVEL {levelProgress.levelNumber}</p>
                 </div>
               </div>
               <p className="new-widget-caption">
@@ -1042,17 +1042,15 @@ function ActivityPage() {
                     <img src={crystalBallImage} alt="" className="new-btn-visual-img new-btn-visual-img--randomizer" />
                   </div>
                   <div className="new-btn-meta">
-                    <p className="new-btn-label">
-                      Randomizer
-                    </p>
+                    <p className="new-btn-label">Randomizer</p>
                     <p className="new-btn-hint">Instant prompt to warm up your delivery.</p>
                   </div>
                   <Button
                     variant="practice"
-                    className={`activity-practice-cta activity-practice-cta--randomizer dashboard-anim-bottom dashboard-anim-delay-5${(showRandomizerOverlay || showFreeSpeechOverlay) ? ' is-hidden' : ''}`}
+                    className={`activity-practice-cta activity-practice-cta--randomizer${(showRandomizerOverlay || showFreeSpeechOverlay) ? ' is-hidden' : ''}`}
                     onClick={handleRandomizerClick}
                   >
-                    Randomizer
+                    Start Randomizer
                   </Button>
                 </div>
                 
@@ -1061,17 +1059,15 @@ function ActivityPage() {
                     <img src={crownImage} alt="" className="new-btn-visual-img" />
                   </div>
                   <div className="new-btn-meta">
-                    <p className="new-btn-label">
-                      Free Speech
-                    </p>
+                    <p className="new-btn-label">Free Speech</p>
                     <p className="new-btn-hint">Open topic mode for confidence building.</p>
                   </div>
                   <Button
                     variant="training"
-                    className={`activity-practice-cta activity-practice-cta--speech dashboard-anim-bottom dashboard-anim-delay-6${(showRandomizerOverlay || showFreeSpeechOverlay) ? ' is-hidden' : ''}`}
+                    className={`activity-practice-cta activity-practice-cta--speech${(showRandomizerOverlay || showFreeSpeechOverlay) ? ' is-hidden' : ''}`}
                     onClick={handleFreeSpeechClick}
                   >
-                    Free Speech
+                    Start Session
                   </Button>
                 </div>
               </div>

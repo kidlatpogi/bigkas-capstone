@@ -802,6 +802,7 @@
   width: 56px;
   height: 56px;
   object-fit: contain;
+  flex-shrink: 0;
 }
 
 .dashboard-overlay-content .new-widget-kicker {

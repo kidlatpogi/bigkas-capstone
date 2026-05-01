@@ -4,7 +4,7 @@
 
 body,
 html {
-  background-color: #F8F9FA;
+  background-color: #FDFDF9;
   margin: 0;
   padding: 0;
   height: 100%;
@@ -23,7 +23,7 @@ html {
   padding: var(--activity-page-pad);
   
   /* Clean, white background with subtle brand-colored patterns (Inspired by 2nd photo) */
-  background-color: #ffffff;
+  background-color: #FDFDF9;
   background-image: 
     /* Subtle dot grid */
     radial-gradient(rgba(11, 57, 84, 0.1) 1px, transparent 0),
@@ -58,8 +58,6 @@ html {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(3, 7, 18, 0.18);
-  backdrop-filter: blur(1px);
 }
 
 .activity-fs-tutorial-card {
@@ -242,18 +240,20 @@ html {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 28px;
-  padding: 14px 16px 14px 190px;
-  backdrop-filter: blur(1px);
+  padding: 14px 16px 14px clamp(180px, 18vw, 240px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   overflow: visible;
 }
 
 .new-banner-robot {
   width: clamp(190px, 16vw, 250px);
   position: absolute;
-  left: clamp(-32px, -2vw, -14px);
-  bottom: -26px;
+  left: -10px;
+  bottom: -10px;
   z-index: 3;
   pointer-events: none;
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.25));
 }
 
 .new-banner-bubble {
@@ -312,7 +312,12 @@ html {
   flex-direction: column;
   gap: 9px;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.new-banner-streak.is-hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .new-banner-streak:hover {
@@ -422,6 +427,7 @@ html {
   gap: 16px;
   height: 100%;
   min-height: 0;
+  overflow: visible;
 }
 
 .new-widget {
@@ -434,7 +440,13 @@ html {
   flex-direction: column;
   gap: 10px;
   min-height: 0;
-  overflow: visible;
+  overflow: hidden;
+  transition: opacity 0.2s ease;
+}
+
+.new-widget.is-hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .new-widget-head {
@@ -536,12 +548,15 @@ html {
   gap: 12px;
   margin-top: 8px;
   flex: 1;
+  min-height: 0;
 }
 
 .new-btn-row {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  flex: 1;
+  min-height: 0;
 }
 
 .new-widget--practice {
@@ -556,16 +571,17 @@ html {
 }
 
 .new-btn-row--card {
-  padding: 16px 20px;
+  padding: clamp(10px, 1.5vh, 18px) 20px;
   border: 1px solid rgba(11, 57, 84, 0.08);
   border-radius: 20px;
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   display: grid;
-  grid-template-columns: 72px 1fr;
+  grid-template-columns: 80px 1fr;
   grid-template-rows: 1fr auto;
-  gap: 16px 16px;
+  gap: clamp(8px, 1.2vh, 12px) 16px;
   align-items: center;
   flex: 1;
+  min-height: 0;
 }
 
 .new-btn-row--card .activity-practice-cta {
@@ -647,6 +663,11 @@ html {
   border: none !important;
 }
 
+.activity-practice-cta.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* Randomizer (Emerald) */
 .activity-practice-cta--randomizer.bigkas-btn {
   background: #059669 !important;
@@ -691,66 +712,8 @@ html {
   }
 }
 
-@media (max-width: 768px) {
-  .activity-page-root {
-    --activity-page-pad: 0px;
-    align-items: stretch;
-    height: auto;
-    min-height: 100dvh;
-    overflow: hidden;
-    overflow-x: hidden;
-    padding: 0;
-  }
-
-  .activity-page-grid {
-    width: 100%;
-    max-width: 100%;
-    height: 100%;
-    min-height: 0;
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr;
-    gap: 0;
-    margin: 0;
-    padding: 0;
-  }
-
-  .new-banner {
-    display: none;
-  }
-
-  .new-left-col {
-    width: 100%;
-    height: 100%;
-    min-height: 0;
-    border-radius: 18px 18px 0 0;
-    overflow: hidden;
-    margin: 0;
-    box-shadow: none;
-    border-inline: 0;
-    border-bottom: 0;
-    border-top: 1px solid rgba(11, 57, 84, 0.06);
-  }
-
-  .new-left-col-inner {
-    height: 100%;
-    padding: 0;
-  }
-
-  .new-left-col-inner .skyward-journey-wrap {
-    height: 100%;
-    min-height: 0;
-  }
-
-  .new-left-col-inner .skyward-journey-container {
-    border-radius: 18px 18px 0 0;
-    height: 100%;
-  }
-
-  .new-right-col {
-    display: none;
-  }
-}
+/* Mobile viewport overrides are now handled by ActivityPageMobile.css 
+   and the ActivityPageWrapper component in AppRouter.jsx */
 
 /* =========================================================================
    RANDOMIZER OVERLAY
@@ -767,19 +730,13 @@ html {
   pointer-events: auto;
 }
 
-.randomizer-overlay-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(2px);
-  z-index: 1;
-}
+/* .randomizer-overlay-backdrop removed */
 
 .randomizer-overlay-content {
   position: fixed;
   left: calc(var(--app-sidebar-width, 0px) + clamp(10px, 3vw, 30px));
   bottom: calc(clamp(10px, 3vh, 30px) + env(safe-area-inset-bottom, 0px));
-  z-index: 2;
+  z-index: 1200; /* Above scrim (1100) */
   display: flex;
   flex-direction: row;
   align-items: flex-end;
@@ -1060,53 +1017,4 @@ html {
   height: clamp(1.1rem, 2.1vw, 1.35rem);
 }
 
-@media (max-width: 768px) {
-  .randomizer-overlay-wrapper {
-    padding: clamp(10px, 4vw, 16px);
-    align-items: flex-end;
-    justify-content: center;
-    padding-bottom: calc(clamp(10px, 4vw, 16px) + env(safe-area-inset-bottom));
-  }
-
-  .randomizer-overlay-content {
-    position: relative;
-    left: auto;
-    bottom: auto;
-    flex-direction: column;
-    align-items: center;
-    width: min(100%, 96vw);
-    gap: clamp(12px, 2vh, 18px);
-  }
-
-  .randomizer-overlay-card {
-    width: min(100%, 96vw);
-    border-radius: 18px;
-    padding: clamp(16px, 4vw, 22px);
-  }
-
-  .randomizer-overlay-card::before {
-    left: 50%;
-    bottom: -12px;
-    border-top: 12px solid #FDFDF9;
-    border-bottom: 0;
-    border-right: 12px solid transparent;
-    border-left: 12px solid transparent;
-    transform: translateX(-50%);
-  }
-
-  .randomizer-overlay-actions {
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .randomizer-overlay-robot {
-    width: clamp(180px, 38vw, 260px);
-  }
-
-  .randomizer-overlay-audio-action {
-    right: auto;
-    left: 50%;
-    transform: translateX(-50%);
-    bottom: calc(clamp(16px, 4.5vh, 28px) + env(safe-area-inset-bottom, 0px));
-  }
-}
+/* Overlay mobile adjustments are now handled by ActivityPageMobile.css */

@@ -1,0 +1,378 @@
+/* ProgressPageMobile.css */
+
+.progress-page-mobile-root {
+  width: 100%;
+  height: 100dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 80px;
+  background-color: #FDFDF9;
+  background-image: 
+    radial-gradient(rgba(11, 57, 84, 0.1) 1px, transparent 0),
+    repeating-radial-gradient(
+      circle at 100% 100%, 
+      transparent 0, 
+      transparent 200px, 
+      rgba(5, 150, 105, 0.06) 200px, 
+      rgba(5, 150, 105, 0.06) 202px, 
+      transparent 202px, 
+      transparent 400px
+    ),
+    repeating-radial-gradient(
+      circle at 0% 0%, 
+      transparent 0, 
+      transparent 300px, 
+      rgba(249, 115, 22, 0.05) 300px, 
+      rgba(249, 115, 22, 0.05) 302px, 
+      transparent 302px, 
+      transparent 600px
+    );
+  background-size: 40px 40px, 100% 100%, 100% 100%;
+  background-attachment: fixed;
+  font-family: 'Fredoka', sans-serif;
+  box-sizing: border-box;
+}
+
+.progress-mobile-layout {
+  width: 100%;
+  padding: 0;
+}
+
+.progress-mobile-content {
+  padding: 12px 0;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Immersive Mobile Banner */
+.activity-mobile-top-strip {
+  width: 100%;
+  min-height: 112px;
+  border-radius: 28px;
+  background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+  margin-bottom: 0;
+  padding: 12px;
+  margin: 0;
+  width: 100%;
+  border-radius: 0 0 28px 28px;
+  display: flex;
+  align-items: stretch;
+  position: relative;
+}
+
+.activity-mobile-top-strip::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.activity-mobile-banner-left {
+  width: 100%;
+  border-radius: 16px;
+  position: relative;
+  padding: 10px 10px 10px 100px;
+  display: flex;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.activity-mobile-banner-robot {
+  position: absolute;
+  left: -2px;
+  bottom: -10px;
+  width: 104px;
+  height: auto;
+  pointer-events: none;
+}
+
+.activity-mobile-banner-bubble {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 8px 10px;
+  box-shadow: 0 6px 12px rgba(11, 57, 84, 0.12);
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.activity-mobile-banner-kicker {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #059669;
+  line-height: 1.1;
+}
+
+.activity-mobile-banner-copy {
+  margin: 3px 0 0;
+  font-size: 0.72rem;
+  color: #1f2937;
+  line-height: 1.25;
+}
+
+/* Stats Grid */
+.progress-mobile-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+
+.progress-mobile-stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(11, 57, 84, 0.08);
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+  text-align: center;
+  min-height: 84px;
+  width: 100% !important;
+}
+
+.new-widget-rank-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.new-widget-kicker {
+  margin: 0;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #059669;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+}
+
+.new-widget-value {
+  margin: 0;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1;
+}
+
+/* Sections Common */
+.progress-mobile-section {
+  background: #fff;
+  border-radius: 24px;
+  padding: 24px 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.progress-mobile-section-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.progress-mobile-section-desc {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-bottom: 16px;
+}
+
+/* Range Labels */
+.progress-mobile-range-labels {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  padding: 4px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.progress-mobile-range-labels::-webkit-scrollbar {
+  display: none;
+}
+
+.progress-mobile-range-chip {
+  padding: 6px 4px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: transparent;
+  color: #64748b;
+  border: none;
+  min-height: auto;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.progress-mobile-range-chip.active {
+  background: #059669;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
+}
+
+/* Chart Container */
+.progress-mobile-chart-container {
+  height: 200px;
+  width: 100%;
+}
+
+/* Pillar Cards */
+.progress-mobile-pillars-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0;
+}
+
+.progress-mobile-pillar-card {
+  background: #fff;
+  border-radius: 24px;
+  padding: 18px 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.progress-mobile-pillar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.progress-mobile-pillar-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-mobile-pillar-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.progress-mobile-pillar-label {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0;
+}
+
+.progress-mobile-pillar-tier {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.progress-mobile-pillar-score-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.progress-mobile-pillar-score {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.progress-mobile-pillar-total {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.progress-mobile-pillar-track {
+  height: 8px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-mobile-pillar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Footer Action */
+.progress-mobile-footer {
+  margin-top: 40px;
+  padding-bottom: 40px;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.progress-mobile-primary-btn {
+  width: min(100%, 348px);
+  height: 56px;
+  padding: 0 24px;
+  border-radius: 999px;
+  background: #059669;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 800;
+  border: none;
+  box-shadow: 0 5px 0 #047857;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.progress-mobile-primary-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 3px 0 #047857;
+}
+
+/* Empty State */
+.progress-mobile-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 20px;
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 700;
+  background: #f8fafc;
+  border-radius: 20px;
+  margin-top: 16px;
+  width: 100%;
+}

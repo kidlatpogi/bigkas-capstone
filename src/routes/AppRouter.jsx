@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { useAuthContext } from '../context/useAuthContext';
 import { ENV } from '../config/env';
@@ -16,6 +16,7 @@ import ForgotPasswordPage from '../pages/auth/ForgotPasswordPage';
 // Main Pages
 import AdminDashboardPage from '../pages/main/AdminDashboardPage';
 import ProgressPage from '../pages/main/ProgressPage';
+import ProgressPageMobile from '../pages/main/ProgressPageMobile';
 import AchievementsPage from '../pages/main/AchievementsPage';
 import SettingsProfilePage from '../pages/main/SettingsProfilePage';
 import SettingsPage from '../pages/main/SettingsPage';
@@ -30,6 +31,7 @@ import UserPretestPage from '../pages/main/UserPretestPage';
 import UserAnalyzingPage from '../pages/main/UserAnalyzingPage';
 import ActivityPage from '../pages/main/ActivityPage';
 import ActivityPageMobile from '../pages/main/ActivityPageMobile';
+import AchievementsPageMobile from '../pages/main/AchievementsPageMobile';
 
 // Session Pages
 import SessionDetailPage from '../pages/session/SessionDetailPage';
@@ -67,6 +69,48 @@ function ActivityPageWrapper() {
   }, []);
 
   return isMobileViewport ? <ActivityPageMobile /> : <ActivityPage />;
+}
+
+function ProgressPageWrapper() {
+  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 768);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const handleViewportChange = (event) => setIsMobileViewport(event.matches);
+
+    setIsMobileViewport(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleViewportChange);
+      return () => mediaQuery.removeEventListener('change', handleViewportChange);
+    }
+
+    mediaQuery.addListener(handleViewportChange);
+    return () => mediaQuery.removeListener(handleViewportChange);
+  }, []);
+
+  return isMobileViewport ? <ProgressPageMobile /> : <ProgressPage />;
+}
+
+function AchievementsPageWrapper() {
+  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 768);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const handleViewportChange = (event) => setIsMobileViewport(event.matches);
+
+    setIsMobileViewport(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleViewportChange);
+      return () => mediaQuery.removeEventListener('change', handleViewportChange);
+    }
+
+    mediaQuery.addListener(handleViewportChange);
+    return () => mediaQuery.removeListener(handleViewportChange);
+  }, []);
+
+  return isMobileViewport ? <AchievementsPageMobile /> : <AchievementsPage />;
 }
 
 function getAuthenticatedRedirect(user, isAdminAuthenticated) {
@@ -287,8 +331,8 @@ function AppRouter() {
         <Route path={ROUTES.FRAMEWORKS} element={<FrameworksPage />} />
 
         {/* Progress / Activity */}
-        <Route path={ROUTES.PROGRESS} element={<ProgressPage />} />
-        <Route path={ROUTES.ACHIEVEMENTS} element={<AchievementsPage />} />
+        <Route path={ROUTES.PROGRESS} element={<ProgressPageWrapper />} />
+        <Route path={ROUTES.ACHIEVEMENTS} element={<AchievementsPageWrapper />} />
         <Route path={ROUTES.ACTIVITY} element={<ActivityPageWrapper />} />
 
         {/* Profile */}

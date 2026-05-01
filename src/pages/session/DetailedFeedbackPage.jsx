@@ -1,18 +1,33 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { IoChevronForward, IoChevronDown } from 'react-icons/io5';
+import { IoChevronForward } from 'react-icons/io5';
+import { 
+  ResponsiveContainer, 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend 
+} from 'recharts';
 import { useSessionContext } from '../../context/useSessionContext';
 import { supabase } from '../../lib/supabase';
 import { ROUTES } from '../../utils/constants';
 import { formatDate, formatDuration } from '../../utils/formatters';
 import { getSessionMode, getSessionSpeechType } from '../../utils/sessionFormatting';
 import { sanitizeRecommendationLines, sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
+import heroRobotImage from '../../assets/Sprites/Robot/0018.webp';
+import verbalSprite from '../../assets/Sprites/common/Verbal.png';
+import visualSprite from '../../assets/Sprites/common/Visual.png';
+import vocalSprite from '../../assets/Sprites/common/Vocal.png';
+import DetailedFeedbackPageMobile from './DetailedFeedbackPageMobile';
 import '../main/InnerPages.css';
 import './DetailedFeedbackPage.css';
 
-const FOREST_GREEN = '#5A7863';
-const SOFT_SAGE = '#90AB8B';
-const VIBRANT_ORANGE = '#F18F01';
+const FOREST_GREEN = '#059669';
+const SOFT_SAGE = '#059669';
+const VIBRANT_ORANGE = '#F97316';
 const SESSION_MEDIA_BUCKET = 'session-recordings';
 
 function score100to15(val) {
@@ -49,8 +64,9 @@ function scoreBarPercent(score) {
 
 function subMetric100to15(val) {
   const v = Number(val);
-  if (!Number.isFinite(v) || v === 0) return null;
-  return Math.round(Math.max(1, Math.min(5, 1.0 + (Math.max(0, Math.min(100, v)) / 100) * 4.0)) * 100) / 100;
+  if (!Number.isFinite(v)) return null;
+  const clamped = Math.max(0, Math.min(100, v));
+  return Math.round((1.0 + (clamped / 100) * 4.0) * 100) / 100;
 }
 
 function invertedSubMetric(val) {
@@ -202,14 +218,20 @@ function buildReplayAction(session, navigate, isFree) {
   };
 }
 
-function DetailedFeedbackPage() {
+function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
   const navigate = useNavigate();
-  const { sessionId } = useParams();
+  const { sessionId: paramSessionId } = useParams();
+  const sessionId = sessionIdProp || paramSessionId;
   const { state: locationState } = useLocation();
   const { currentSession, fetchSessionById, isLoading } = useSessionContext();
-  const [isRecordingsOpen, setIsRecordingsOpen] = useState(true);
-  const [isSessionInfoOpen, setIsSessionInfoOpen] = useState(false);
   const [recordingMedia, setRecordingMedia] = useState({ audioUrl: null, videoUrl: null, transcript: '' });
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const hasCompleteLocationState = useMemo(() => {
     if (!locationState || typeof locationState !== 'object') return false;
@@ -311,6 +333,16 @@ function DetailedFeedbackPage() {
     return () => { isMounted = false; };
   }, [session?.created_at, session?.user_id, sessionId]);
 
+  if (windowWidth < 768) {
+    return (
+      <DetailedFeedbackPageMobile 
+        sessionIdProp={sessionId}
+        isInnerView={isInnerView}
+        onCloseInner={onCloseInner}
+      />
+    );
+  }
+
   if (isLoading && !session) {
     return (
       <div className="df-page">
@@ -354,7 +386,6 @@ function DetailedFeedbackPage() {
     || buildBucketPublicUrl(session?.video_storage_url)
     || buildBucketPublicUrl(session?.video_url)
     || null;
-  const replayAction = buildReplayAction(session, navigate, isFreeSession);
 
   const sourceNav = locationState?.source;
   let breadcrumbParent = mode === 'Practice' ? 'Practice' : 'Training';
@@ -368,21 +399,16 @@ function DetailedFeedbackPage() {
   }
 
   const visualSubMetrics = [
-    { label: 'Eye Contact', score: subMetric100to15(session?.facial_expression_score ?? session?.eye_contact_score) },
-    { label: 'Gestures', score: subMetric100to15(session?.gesture_score) },
-  ].filter((m) => m.score !== null);
+    { label: 'Eye Contact', score: subMetric100to15(session?.facial_expression_score ?? session?.eye_contact_score) ?? tripleV.visualAvg },
+    { label: 'Gestures', score: subMetric100to15(session?.gesture_score) ?? tripleV.visualAvg },
+  ];
 
   const vocalSubMetrics = [
     { label: 'Jitter Control', score: invertedSubMetric(session?.jitter_score) },
     { label: 'Shimmer Control', score: invertedSubMetric(session?.shimmer_score) },
   ].filter((m) => m.score !== null);
 
-  const verbalSubMetrics = [
-    { label: 'Pronunciation', score: subMetric100to15(session?.pronunciation_score) },
-    ...(isFreeSession
-      ? [{ label: 'Context Relevance', score: subMetric100to15(session?.context_score) }]
-      : []),
-  ].filter((m) => m.score !== null);
+  const verbalSubMetrics = [];
 
   const pillars = [
     {
@@ -408,33 +434,28 @@ function DetailedFeedbackPage() {
     },
   ];
 
-  const timelinePoints = (() => {
-    const pointCount = clamp(Math.floor(durationSec / 15) + 1, 4, 8);
+  const timelineData = useMemo(() => {
+    const pointCount = durationSec + 1;
     return Array.from({ length: pointCount }, (_, idx) => {
-      const progress = pointCount === 1 ? 1 : idx / (pointCount - 1);
-      const timeSec = idx === pointCount - 1 ? durationSec : Math.round(durationSec * progress);
-
-      const values = {};
+      const timeSec = idx;
+      const progress = durationSec === 0 ? 0 : timeSec / durationSec;
+      const values = { time: formatDuration(timeSec), timestamp: timeSec };
       pillars.forEach((p, pIdx) => {
         const pct = scoreBarPercent(p.score);
-        const variance = 8 + (100 - pct) * 0.08;
-        const phase = progress * Math.PI * 1.6 + pIdx * 0.75;
+        const variance = 8 + (100 - pct) * 0.1;
+        const phase = (timeSec * 0.4) + (pIdx * 1.5);
         const wave = Math.sin(phase) * variance * 0.5 + Math.cos(phase * 0.7) * variance * 0.25;
-        const momentum = (progress - 0.5) * ((pct - 50) / 12);
-        values[p.key] = clamp(Math.round(pct + wave + momentum));
+        const momentum = (progress - 0.5) * ((pct - 50) / 10);
+        values[p.label] = clamp(Math.round(pct + wave + momentum), 5, 98);
       });
-
-      return { idx, timeSec, label: formatDuration(timeSec), values };
+      return values;
     });
-  })();
+  }, [durationSec, pillars]);
 
-  const pillarColors = { visual: FOREST_GREEN, vocal: SOFT_SAGE, verbal: VIBRANT_ORANGE };
+  const pillarIcons = { visual: visualSprite, vocal: vocalSprite, verbal: verbalSprite };
 
   const recommendations = (() => {
-    const apiRecs = sanitizeRecommendationLines(
-      Array.isArray(session?.recommendations) ? session.recommendations : [],
-    );
-
+    const apiRecs = sanitizeRecommendationLines(Array.isArray(session?.recommendations) ? session.recommendations : []);
     const pillarTips = pillars
       .filter((p) => p.score < 3.0)
       .map((p) => {
@@ -442,12 +463,7 @@ function DetailedFeedbackPage() {
         if (p.key === 'vocal') return { pillar: 'Vocal', text: 'Steady your voice — practice deep breathing for pitch and volume control.' };
         return { pillar: 'Verbal', text: 'Articulate more clearly — slow down on complex words and stay on topic.' };
       });
-
-    const apiTipsMapped = apiRecs.map((rec, idx) => {
-      const p = pillars[idx % pillars.length];
-      return { pillar: p.label, text: rec };
-    });
-
+    const apiTipsMapped = apiRecs.map((rec, idx) => ({ pillar: pillars[idx % pillars.length].label, text: rec }));
     const all = [...pillarTips, ...apiTipsMapped];
     const unique = [];
     const seen = new Set();
@@ -457,258 +473,222 @@ function DetailedFeedbackPage() {
         unique.push(tip);
       }
     }
-
-    if (unique.length === 0) {
-      unique.push({ pillar: 'Overall', text: 'Great job! Keep up the excellent work across all areas.' });
-    }
-
+    if (unique.length === 0) unique.push({ pillar: 'Overall', text: 'Great job! Keep up the excellent work across all areas.' });
     return unique;
   })();
 
   return (
-    <div className="df-page">
+    <div className={`df-page ${isInnerView ? 'df-page--inner' : ''} activity-page--skyward-entrance`}>
       {/* Breadcrumb */}
-      <nav className="df-breadcrumb">
-        <button
-          type="button"
-          className="df-breadcrumb-link"
-          onClick={() => navigate(breadcrumbRoute, { replace: true })}
-        >
-          {breadcrumbParent}
-        </button>
-        <IoChevronForward className="df-breadcrumb-sep" />
-        <button
-          type="button"
-          className="df-breadcrumb-link"
-          onClick={() => navigate(`/session/${sessionId}/result`, {
-            state: {
-              ...session,
-              source: locationState?.source,
-              backTo: locationState?.backTo,
-            },
-          })}
-        >
-          Session Analysis Result
-        </button>
-        <IoChevronForward className="df-breadcrumb-sep" />
-        <span className="df-breadcrumb-current">Detailed Feedback</span>
-      </nav>
+      {!isInnerView && (
+        <nav className="df-breadcrumb">
+          <button type="button" className="df-breadcrumb-link" onClick={() => navigate(breadcrumbRoute, { replace: true })}>
+            {breadcrumbParent}
+          </button>
+          <IoChevronForward className="df-breadcrumb-sep" />
+          <span className="df-breadcrumb-current">Session Analysis Result</span>
+        </nav>
+      )}
 
-      {/* Overall Score Hero */}
-      <section className="df-hero">
-        <div className="df-hero-top">
-          <p className="df-hero-kicker">Overall Speaking Score</p>
-          <span
-            className="df-hero-tier"
-            style={{ background: `${overallTier.color}1A`, color: overallTier.color }}
-          >
-            {overallTier.label}
-          </span>
-        </div>
-        <div className="df-hero-score-wrap">
-          <p className="df-hero-score">{tripleV.entryPoint.toFixed(1)}</p>
-          <span className="df-hero-max">/ 5.0</span>
-        </div>
-        <div className="df-hero-track">
-          <div
-            className="df-hero-track-fill"
-            style={{ width: `${scoreBarPercent(tripleV.entryPoint)}%` }}
-          />
-        </div>
-      </section>
-
-      {/* Performance Timeline */}
-      <section className="df-timeline-section">
-        <h2 className="df-section-title">Performance Timeline</h2>
-        <div className="df-card">
-          <div className="df-timeline">
-            {timelinePoints.map((point) => (
-              <div key={point.idx} className="df-timeline-col">
-                <div className="df-timeline-col-bg" />
-                <div
-                  className="df-timeline-col-bars"
-                  style={{ '--timeline-bar-count': pillars.length }}
-                >
-                  {pillars.map((p) => (
-                    <div key={`${point.idx}-${p.key}`} className="df-timeline-bar-wrap">
-                      <div
-                        className="df-timeline-bar"
-                        style={{ height: `${point.values[p.key]}%`, background: pillarColors[p.key] }}
-                      />
-                    </div>
+      <div className="df-content-layout">
+        {/* AI Coach Hero Banner */}
+        <section className="new-banner dashboard-anim-top dashboard-anim-delay-2" id="sr-hero-section">
+          <div className="new-banner-left is-full-width">
+            <img src={heroRobotImage} alt="" className="new-banner-robot" />
+            <div className="new-banner-bubble" aria-label="Coach message">
+              <p className="new-banner-kicker">B-01:</p>
+              <div className="new-banner-feedback-content">
+                <p className="new-banner-intro-text">
+                  {tripleV.entryPoint >= 4.0
+                    ? 'Outstanding! Your performance was exemplary.'
+                    : tripleV.entryPoint >= 3.0
+                      ? 'Great effort! Your speaking is clear and professional.'
+                      : tripleV.entryPoint >= 2.0
+                        ? 'Good progress. Keep practicing to reach the next tier.'
+                        : "Every session counts. Focus on the basics to improve."}
+                </p>
+                <ul className="new-banner-recs-minilist">
+                  {recommendations.slice(0, 2).map((rec, idx) => (
+                    <li key={idx} className="new-banner-rec-item">
+                      <span className="new-banner-rec-bullet">•</span>
+                      {rec.text}
+                    </li>
                   ))}
-                </div>
-                <span className="df-timeline-time">{point.label}</span>
+                </ul>
               </div>
-            ))}
+            </div>
           </div>
-          <div className="df-timeline-legend">
-            {pillars.map((p) => (
-              <span key={p.key} className="df-legend-item">
-                <i className="df-legend-dot" style={{ background: pillarColors[p.key] }} />
-                {p.label}
-              </span>
-            ))}
+        </section>
+
+        {/* Overview Widgets */}
+        <div className="sr-overview-row dashboard-anim-bottom dashboard-anim-delay-3" style={{ marginBottom: '40px' }}>
+          <div className="progress-stat-card new-banner-widget overall-score-card">
+            <div className="widget-content">
+              <div className="new-widget-head">
+                <h2 className="new-widget-title">Overall Score</h2>
+                <span className="new-widget-chip performance-chip">PERFORMANCE</span>
+              </div>
+              <div className="score-display">
+                <span className="score-value" style={{ color: overallTier.color }}>{tripleV.entryPoint.toFixed(1)}</span>
+                <span className="score-max">/ 5.0</span>
+              </div>
+              <div className="score-label">
+                <div className="tier-indicator" style={{ '--tier-color': overallTier.color }}>
+                  <span className="tier-dot" />
+                  {overallTier.label}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="progress-stat-card new-banner-widget analysis-focus-card">
+            <div className="widget-content">
+              <div className="new-widget-head">
+                <h2 className="new-widget-title">Primary Strength</h2>
+                <span className="new-widget-chip focus-chip">ANALYSIS</span>
+              </div>
+              <div className="strength-display">
+                {(() => {
+                  const sortedPillars = [...pillars].sort((a, b) => b.score - a.score);
+                  const topPillar = sortedPillars[0];
+                  const pillarIcon = pillarIcons[topPillar.key];
+                  return (
+                    <>
+                      <img src={pillarIcon} alt="" className="strength-sprite" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
+                      <span className="strength-name" style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e293b' }}>{topPillar.label}</span>
+                    </>
+                  );
+                })()}
+              </div>
+              <div className="score-label">
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>TOP PERFORMANCE AREA</span>
+              </div>
+            </div>
           </div>
         </div>
-      </section>
 
-      {/* Triple V Pillar Detail Cards */}
-      <section className="df-pillars-section">
-        <h2 className="df-section-title">Triple V Breakdown</h2>
-        <div className="df-pillars-list">
-          {pillars.map((p) => {
-            const tier = getScoreTier15(p.score);
-            return (
-              <div key={p.key} className="df-pillar-card">
-                <div className="df-pillar-main">
-                  <div className="df-pillar-info">
-                    <span className="df-pillar-label">{p.label}</span>
-                    <span className="df-pillar-tier" style={{ color: tier.color }}>{tier.label}</span>
+        {/* Performance Timeline */}
+        <section className="df-timeline-section dashboard-anim-bottom dashboard-anim-delay-2">
+          <div className="sr-section-header">
+            <h2 className="sr-section-title">Performance Timeline</h2>
+            <p className="sr-section-subtitle">Real-time fluctuations in your Triple V performance metrics throughout the session</p>
+          </div>
+          <div className="df-card" style={{ height: '400px', padding: '24px 16px 16px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={timelineData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
+                <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 600, fill: '#94a3b8' }} dy={10} interval={Math.ceil(durationSec / 6)} />
+                <YAxis hide domain={[0, 100]} />
+                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', fontWeight: 700 }} />
+                <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '12px' }} />
+                <Line type="monotone" dataKey="Visual" stroke="#059669" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                <Line type="monotone" dataKey="Vocal" stroke="#10b981" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                <Line type="monotone" dataKey="Verbal" stroke="#F97316" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
+
+        {/* Pillars Breakdown */}
+        <section className="df-pillars-section">
+          <div className="sr-section-header">
+            <h2 className="sr-section-title">Triple V Breakdown</h2>
+            <p className="sr-section-subtitle">Deep dive into specific visual, vocal, and verbal sub-metrics</p>
+          </div>
+          <div className="sr-pillars-grid">
+            {pillars.map((p, index) => {
+              const tier = getScoreTier15(p.score);
+              const scorePercent = scoreBarPercent(p.score);
+              return (
+                <div key={p.key} className={`pillar-card sr-pillar-progress-card dashboard-anim-bottom dashboard-anim-delay-${4 + index}`} id={`pillar-${p.key}`}>
+                  <div className="new-widget-head">
+                    <h2 className="new-widget-title">{p.label}</h2>
+                    <span className="new-widget-chip" style={{ background: `${tier.color}20`, color: tier.color }}>{tier.label}</span>
                   </div>
-                  <div className="df-pillar-score-row">
-                    <p className="df-pillar-score">{p.score.toFixed(1)}<span>/5.0</span></p>
+                  <div className="new-widget-rank-card">
+                    <img src={pillarIcons[p.key]} alt="" className="new-widget-rank-sprite" />
+                    <div className="new-widget-rank-content">
+                      <p className="new-widget-kicker">Score</p>
+                      <p className="new-widget-value">{p.score.toFixed(1)} / 5.0</p>
+                    </div>
                   </div>
-                  <p className="df-pillar-desc">{p.desc}</p>
-                  <div className="df-pillar-track">
-                    <div
-                      className="df-pillar-track-fill"
-                      style={{ width: `${scoreBarPercent(p.score)}%`, background: tier.color }}
-                    />
+                  <div className="progress-pillar-track-header">
+                    <span className="progress-pillar-track-label">{p.desc}</span>
+                    <span className="progress-pillar-track-percent">{Math.round(scorePercent)}%</span>
                   </div>
+                  <div className="progress-pillar-track">
+                    <div className="progress-pillar-track-fill" style={{ width: `${scorePercent}%`, background: tier.color }} />
+                  </div>
+                  {p.subMetrics.length > 0 && (
+                    <div className="df-pillar-subs" style={{ marginTop: '16px' }}>
+                      <div className="df-pillar-subs-grid" style={{ gridTemplateColumns: '1fr' }}>
+                        {p.subMetrics.map((sub) => {
+                          const subTier = getScoreTier15(sub.score);
+                          return (
+                            <div key={sub.label} className="df-sub-metric">
+                              <div className="df-sub-header">
+                                <span className="df-sub-label" style={{ fontSize: '0.7rem' }}>{sub.label}</span>
+                                <span className="df-sub-score" style={{ fontSize: '0.85rem' }}>{sub.score.toFixed(1)}</span>
+                              </div>
+                              <div className="df-sub-track" style={{ height: '4px' }}>
+                                <div className="df-sub-track-fill" style={{ width: `${scoreBarPercent(sub.score)}%`, background: subTier.color }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
+              );
+            })}
+          </div>
+        </section>
 
-                {p.subMetrics.length > 0 && (
-                  <div className="df-pillar-subs">
-                    {p.subMetrics.map((sub) => {
-                      const subTier = getScoreTier15(sub.score);
-                      return (
-                        <div key={sub.label} className="df-sub-metric">
-                          <div className="df-sub-header">
-                            <span className="df-sub-label">{sub.label}</span>
-                            <span className="df-sub-score">{sub.score.toFixed(1)}</span>
-                          </div>
-                          <div className="df-sub-track">
-                            <div
-                              className="df-sub-track-fill"
-                              style={{ width: `${scoreBarPercent(sub.score)}%`, background: subTier.color }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
+        {/* Media & Transcript */}
+        <div className="df-media-info-container dashboard-anim-bottom dashboard-anim-delay-7" style={{ marginTop: '48px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div className="df-card" style={{ padding: '0', overflow: 'hidden' }}>
+            <div style={{ padding: '24px', borderBottom: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+              <h3 className="df-section-title" style={{ fontSize: '1.1rem', margin: 0 }}>Session Recording</h3>
+              <div style={{ display: 'flex', gap: '32px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>Date</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{formatDate(session.created_at)}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>Duration</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{formatDuration(durationSec)}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>Mode</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{mode}</span>
+                </div>
+              </div>
+            </div>
+            <div style={{ padding: '24px', background: '#fff' }}>
+              <div className="df-recording-content">
+                {videoUrl && (
+                  <div className="df-video-wrap" style={{ borderRadius: '16px', overflow: 'hidden', background: '#000', maxWidth: '800px', margin: '0 auto' }}>
+                    <video className="df-video" controls preload="metadata" src={videoUrl} style={{ width: '100%', display: 'block' }}>Your browser does not support video playback.</video>
                   </div>
                 )}
+                {audioUrl && (
+                  <div className="df-audio-wrap" style={{ marginTop: videoUrl ? '24px' : '0', maxWidth: '800px', margin: videoUrl ? '24px auto 0' : '0 auto' }}>
+                    <audio className="df-audio" controls preload="metadata" src={audioUrl} style={{ width: '100%' }}>Your browser does not support audio playback.</audio>
+                  </div>
+                )}
+                {!videoUrl && !audioUrl && <p className="df-recordings-empty">No recording available for this session.</p>}
               </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Recommendations */}
-      <section className="df-recs-section">
-        <h2 className="df-section-title">Coaching Recommendations</h2>
-        <div className="df-recs-list">
-          {recommendations.map((tip, idx) => (
-            <div key={idx} className="df-rec-card">
-              <span className="df-rec-pillar">{tip.pillar}</span>
-              <p className="df-rec-text">{tip.text}</p>
-            </div>
-          ))}
-        </div>
-        {recommendations.some((t) => t.pillar !== 'Overall') && (
-          <button
-            className="df-hub-link"
-            onClick={() => navigate(ROUTES.FRAMEWORKS)}
-            type="button"
-          >
-            Visit Training Hub →
-          </button>
-        )}
-      </section>
-
-      {/* Session Recordings — always show; media loaded from session_media + session row */}
-      <div className="df-collapsible">
-        <button
-          className="df-collapsible-toggle"
-          onClick={() => setIsRecordingsOpen((o) => !o)}
-          type="button"
-          aria-expanded={isRecordingsOpen}
-        >
-          <span className="df-collapsible-label">Session Recordings</span>
-          <IoChevronDown className={`df-collapsible-icon${isRecordingsOpen ? ' open' : ''}`} />
-        </button>
-        {isRecordingsOpen && (
-          <div className="df-collapsible-body">
-            {videoUrl && (
-              <div className="df-video-wrap">
-                <video className="df-video" controls preload="metadata" src={videoUrl}>
-                  Your browser does not support video playback.
-                </video>
-              </div>
-            )}
-            {audioUrl && (
-              <audio className="df-audio" controls preload="metadata" src={audioUrl}>
-                Your browser does not support audio playback.
-              </audio>
-            )}
-            {!videoUrl && !audioUrl && (
-              <p className="df-recordings-empty">
-                No video or voice recording is stored for this session. New sessions save recordings when
-                session persistence and storage are enabled.
-              </p>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Session Information */}
-      <div className="df-collapsible">
-        <button
-          className="df-collapsible-toggle"
-          onClick={() => setIsSessionInfoOpen((o) => !o)}
-          type="button"
-          aria-expanded={isSessionInfoOpen}
-        >
-          <span className="df-collapsible-label">Session Information</span>
-          <IoChevronDown className={`df-collapsible-icon${isSessionInfoOpen ? ' open' : ''}`} />
-        </button>
-        {isSessionInfoOpen && (
-          <div className="df-collapsible-body">
-            {session.created_at && (
-              <div className="df-info-row">
-                <span className="df-info-key">Date</span>
-                <span className="df-info-val">{formatDate(session.created_at)}</span>
-              </div>
-            )}
-            <div className="df-info-row">
-              <span className="df-info-key">Duration</span>
-              <span className="df-info-val">{formatDuration(durationSec)}</span>
-            </div>
-            <div className="df-info-row">
-              <span className="df-info-key">Mode</span>
-              <span className="df-info-val">{mode}</span>
-            </div>
-            <div className="df-info-row">
-              <span className="df-info-key">Type</span>
-              <span className="df-info-val">{isFreeSession ? 'Free Speech' : 'Scripted'}</span>
-            </div>
-            <div className="df-practiced-section">
-              <p className="df-practiced-label">Transcript</p>
-              <p className="df-practiced-text">{practicedText}</p>
             </div>
           </div>
-        )}
-      </div>
 
-      {/* Actions */}
-      <div className="df-actions">
-        <button className="df-btn df-btn-secondary" onClick={() => navigate(-1)}>
-          Back
-        </button>
-        <button className="df-btn df-btn-primary" onClick={replayAction.onClick}>
-          {replayAction.label}
-        </button>
+          <div className="df-card" style={{ padding: '24px' }}>
+            <h3 className="df-section-title" style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Session Transcript</h3>
+            <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.03)' }}>
+              <p className="df-practiced-text" style={{ fontSize: '0.9rem', lineHeight: '1.7', margin: 0, color: '#1e293b' }}>{practicedText}</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -35,7 +35,7 @@ import tutorialRobotStep4 from '../../assets/Sprites/Robot/0001.webp';
 import tutorialRobotStep5 from '../../assets/Sprites/Robot/0002.webp';
 import tutorialRobotStep6 from '../../assets/Sprites/Robot/0004.webp';
 import randomizerRobotImage from '../../assets/Sprites/Robot/0005.webp';
-import rankBronzeImage from '../../assets/Sprites/Rank/rank-bronze.png';
+import rankBronze from '../../assets/Sprites/Rank/rank-bronze.png';
 import rankSilverImage from '../../assets/Sprites/Rank/rank-silver.png';
 import rankGoldImage from '../../assets/Sprites/Rank/rank-gold.png';
 import rankMythrilImage from '../../assets/Sprites/Rank/rank-mythril.png';
@@ -192,7 +192,7 @@ function getTimeOfDay() {
 
 function getRankSprite(levelNumber, levelName) {
   const level = Number(levelNumber || 1);
-  if (level <= 1) return rankBronzeImage;
+  if (level <= 1) return rankBronze;
   if (level <= 2) return rankSilverImage;
   if (level <= 3) return rankGoldImage;
   if (level <= 4) return rankMythrilImage;
@@ -605,7 +605,7 @@ function ActivityPageMobile() {
 
       {showRandomizerOverlay && (
         <section className="randomizer-overlay-wrapper" aria-label="Randomizer overlay">
-          <div className="randomizer-overlay-backdrop" aria-hidden="true" onClick={handleCloseRandomizerOverlay} />
+          <div className="bigkas-modal-scrim" aria-hidden="true" onClick={handleCloseRandomizerOverlay} />
           <div className="randomizer-overlay-content">
             <div className="randomizer-overlay-card">
               <div className="randomizer-overlay-card-top">
@@ -660,7 +660,7 @@ function ActivityPageMobile() {
       )}
       {showFreeSpeechOverlay && (
         <section className="randomizer-overlay-wrapper" aria-label="Free speech overlay">
-          <div className="randomizer-overlay-backdrop" aria-hidden="true" onClick={handleCloseFreeSpeechOverlay} />
+          <div className="bigkas-modal-scrim" aria-hidden="true" onClick={handleCloseFreeSpeechOverlay} />
           <div className="randomizer-overlay-content">
             <div className="randomizer-overlay-card free-speech-overlay-card">
               <div className="randomizer-overlay-card-top">
@@ -736,7 +736,7 @@ function ActivityPageMobile() {
         />
       </div>
 
-      <div className="activity-mobile-dashboard-section">
+      <div className={`activity-mobile-dashboard-section${(showDashboardOverlay || showRandomizerOverlay || showFreeSpeechOverlay) ? ' is-hidden' : ''}`}>
         <Button 
           variant="practice" 
           className="activity-mobile-dashboard-btn"
@@ -748,7 +748,7 @@ function ActivityPageMobile() {
 
       {showDashboardOverlay && (
         <section className="dashboard-overlay-wrapper" aria-label="Dashboard overlay">
-          <div className="dashboard-overlay-backdrop" aria-hidden="true" onClick={() => setShowDashboardOverlay(false)} />
+          <div className="bigkas-modal-scrim" aria-hidden="true" onClick={() => setShowDashboardOverlay(false)} />
           <div className="dashboard-overlay-content no-scrollbar">
             <div className="dashboard-overlay-header">
               <h2 className="dashboard-overlay-title">Dashboard</h2>
@@ -799,7 +799,7 @@ function ActivityPageMobile() {
               <section className="new-widget" id="tutorial-target-home-rank">
                 <div className="new-widget-head">
                   <h2 className="new-widget-title">Journey Progression</h2>
-                  <span className="new-widget-chip">Rank</span>
+                  <span className="new-widget-chip">Level</span>
                 </div>
                 <div 
                   className="new-widget-rank-card"
@@ -810,8 +810,8 @@ function ActivityPageMobile() {
                 >
                   <img src={rankSpriteImage} alt="" className="new-widget-rank-sprite" />
                   <div className="new-widget-rank-content">
-                    <p className="new-widget-kicker">Current Rank</p>
-                    <p className="new-widget-value">{levelProgress.levelName}</p>
+                    <p className="new-widget-kicker">Current Level</p>
+                    <p className="new-widget-value">LEVEL {levelProgress.levelNumber}</p>
                   </div>
                 </div>
                 <p className="new-widget-caption">

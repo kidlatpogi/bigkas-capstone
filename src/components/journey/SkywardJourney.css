@@ -56,10 +56,12 @@
     opacity: 0;
     transform: scale(0.5) translateY(40px);
   }
+
   60% {
     opacity: 1;
     transform: scale(1.1) translateY(-10px);
   }
+
   100% {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -71,16 +73,45 @@
   animation: nodeEntrancePop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
-.dashboard-anim-delay-1 { animation-delay: 0.1s; }
-.dashboard-anim-delay-2 { animation-delay: 0.2s; }
-.dashboard-anim-delay-3 { animation-delay: 0.3s; }
-.dashboard-anim-delay-4 { animation-delay: 0.4s; }
-.dashboard-anim-delay-5 { animation-delay: 0.5s; }
-.dashboard-anim-delay-6 { animation-delay: 0.6s; }
-.dashboard-anim-delay-7 { animation-delay: 0.7s; }
-.dashboard-anim-delay-8 { animation-delay: 0.8s; }
-.dashboard-anim-delay-9 { animation-delay: 0.9s; }
-.dashboard-anim-delay-10 { animation-delay: 1.0s; }
+.dashboard-anim-delay-1 {
+  animation-delay: 0.1s;
+}
+
+.dashboard-anim-delay-2 {
+  animation-delay: 0.2s;
+}
+
+.dashboard-anim-delay-3 {
+  animation-delay: 0.3s;
+}
+
+.dashboard-anim-delay-4 {
+  animation-delay: 0.4s;
+}
+
+.dashboard-anim-delay-5 {
+  animation-delay: 0.5s;
+}
+
+.dashboard-anim-delay-6 {
+  animation-delay: 0.6s;
+}
+
+.dashboard-anim-delay-7 {
+  animation-delay: 0.7s;
+}
+
+.dashboard-anim-delay-8 {
+  animation-delay: 0.8s;
+}
+
+.dashboard-anim-delay-9 {
+  animation-delay: 0.9s;
+}
+
+.dashboard-anim-delay-10 {
+  animation-delay: 1.0s;
+}
 
 /* Whole journey shell — ensures page open is visible (scroll parents can clip children-only animations) */
 .skyward-journey-anim-root {
@@ -105,10 +136,12 @@
     opacity: 0;
     transform: translateY(-2rem);
   }
+
   68% {
     opacity: 1;
     transform: translateY(0.3rem);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -120,10 +153,12 @@
     opacity: 0;
     transform: translateY(3rem);
   }
+
   68% {
     opacity: 1;
     transform: translateY(-0.4rem);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -131,6 +166,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .skyward-journey-anim-root,
   .skyward-journey-anim-map {
     animation: none;
@@ -220,18 +256,26 @@
   max-height: none;
 }
 
-.skyward-journey-locked-state {
+.skyward-journey-locked-state-container {
   position: absolute;
   inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   z-index: 10;
+  pointer-events: none;
+}
+
+.skyward-journey-locked-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
   gap: 12px;
-  padding: 110px 18px 24px;
+  padding: 40px 18px;
   box-sizing: border-box;
+  pointer-events: auto;
 }
 
 .skyward-journey-locked-image {
@@ -268,12 +312,18 @@
   shape-rendering: geometricPrecision;
   opacity: 0;
   animation: skywardSvgFadeIn 0.5s ease-in forwards;
-  animation-delay: 0.8s; /* wait for nodes to pop in */
+  animation-delay: 0.8s;
+  /* wait for nodes to pop in */
 }
 
 @keyframes skywardSvgFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .skyward-journey-polyline--rim {
@@ -547,11 +597,13 @@
 }
 
 @keyframes skyward-node-pulse-ring {
+
   0%,
   100% {
     transform: scale(1);
     opacity: 0.85;
   }
+
   50% {
     transform: scale(1.1);
     opacity: 0.28;
@@ -564,10 +616,12 @@
 }
 
 @keyframes skyward-node-float {
+
   0%,
   100% {
     transform: translateX(var(--skyward-node-offset, 0%)) translateY(0);
   }
+
   50% {
     transform: translateX(var(--skyward-node-offset, 0%)) translateY(-8px);
   }
@@ -594,19 +648,24 @@
 }
 
 @keyframes skyward-node-jiggle {
+
   0%,
   100% {
     transform: translateX(var(--skyward-node-offset, 0%)) rotate(0deg);
   }
+
   20% {
     transform: translateX(calc(var(--skyward-node-offset, 0%) - 6px)) rotate(-4deg);
   }
+
   40% {
     transform: translateX(calc(var(--skyward-node-offset, 0%) + 6px)) rotate(4deg);
   }
+
   60% {
     transform: translateX(calc(var(--skyward-node-offset, 0%) - 4px)) rotate(-2deg);
   }
+
   80% {
     transform: translateX(calc(var(--skyward-node-offset, 0%) + 4px)) rotate(2deg);
   }
@@ -837,11 +896,13 @@
 }
 
 @keyframes skyward-current-breathe {
+
   0%,
   100% {
     transform: scale(1);
     box-shadow: 0 5px 14px rgba(16, 185, 129, 0.42);
   }
+
   50% {
     transform: scale(1.06);
     box-shadow: 0 8px 22px rgba(16, 185, 129, 0.52);
@@ -910,20 +971,24 @@
 }
 
 @keyframes skyward-start-bob {
+
   0%,
   100% {
     transform: translateX(-50%) translateY(0);
   }
+
   50% {
     transform: translateX(-50%) translateY(-4px);
   }
 }
 
 @keyframes skyward-bubble-wobble {
+
   0%,
   100% {
     transform: rotate(-1deg);
   }
+
   50% {
     transform: rotate(1.5deg);
   }
@@ -1011,12 +1076,14 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .skyward-journey-start-callout,
   .skyward-journey-start-bubble {
     animation: none;
@@ -1033,7 +1100,8 @@
   inset: 0;
   z-index: 10050;
   display: flex;
-  align-items: center; /* Center vertically on desktop */
+  align-items: center;
+  /* Center vertically on desktop */
   justify-content: center;
   pointer-events: none;
 }

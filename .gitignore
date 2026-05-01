@@ -49,3 +49,7 @@ next-env.d.ts
 # Cursor Rules
 /.cursorrules
 /cursorrules
+
+# Assets
+/src/assets/Sprites/
+/src/assets/Voices/

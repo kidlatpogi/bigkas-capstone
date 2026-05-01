@@ -18,6 +18,7 @@ import { formatDate, formatDuration } from '../../utils/formatters';
 import { getSessionMode, getSessionSpeechType } from '../../utils/sessionFormatting';
 import { sanitizeRecommendationLines, sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
 import heroRobotImage from '../../assets/Sprites/Robot/0018.webp';
+import { getAssetUrl } from '../../utils/assetUtils';
 import verbalSprite from '../../assets/Sprites/common/Verbal.png';
 import visualSprite from '../../assets/Sprites/common/Visual.png';
 import vocalSprite from '../../assets/Sprites/common/Vocal.png';
@@ -84,20 +85,33 @@ function clamp(value, min = 0, max = 100) {
 function buildBucketPublicUrl(pathOrUrl) {
   const value = String(pathOrUrl || '').trim();
   if (!value) return null;
-  if (/^https?:\/\//i.test(value) && !value.includes(`/${SESSION_MEDIA_BUCKET}/`)) return value;
+  
+  // If it's already a full R2 URL or other external URL, return as is
+  if (/^https?:\/\//i.test(value) && !value.includes('/storage/v1/object/')) {
+    return value;
+  }
+
+  // Handle Supabase storage paths by converting them to R2 paths if possible,
+  // or just use the getAssetUrl helper which prepends the R2 base URL.
   const marker = `/storage/v1/object/public/${SESSION_MEDIA_BUCKET}/`;
   const markerIdx = value.indexOf(marker);
   const signedMarker = `/storage/v1/object/sign/${SESSION_MEDIA_BUCKET}/`;
   const signedMarkerIdx = value.indexOf(signedMarker);
-  const fromMarker = markerIdx >= 0
-    ? value.slice(markerIdx + marker.length)
-    : (signedMarkerIdx >= 0 ? value.slice(signedMarkerIdx + signedMarker.length) : value);
-  const cleaned = fromMarker
+  
+  let cleaned = value;
+  if (markerIdx >= 0) {
+    cleaned = value.slice(markerIdx + marker.length);
+  } else if (signedMarkerIdx >= 0) {
+    cleaned = value.slice(signedMarkerIdx + signedMarker.length);
+  }
+
+  cleaned = cleaned
     .replace(/^\/+/, '')
     .replace(new RegExp(`^${SESSION_MEDIA_BUCKET}/`), '')
     .split('?')[0];
-  const { data } = supabase.storage.from(SESSION_MEDIA_BUCKET).getPublicUrl(cleaned);
-  return data?.publicUrl || null;
+
+  // Use the R2 base URL via getAssetUrl
+  return getAssetUrl(cleaned);
 }
 
 function extractBucketStoragePath(pathOrUrl) {

@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
-import defaultRobotImage from '../../assets/Sprites/Robot/0008-noBulb-inverted.png';
-import tutorialVoice1 from '../../assets/Voices/Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 1.mp3';
-import tutorialVoice2 from '../../assets/Voices/Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 2.mp3';
-import tutorialVoice3 from '../../assets/Voices/Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 3.mp3';
-import tutorialVoice4 from '../../assets/Voices/Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 4.mp3';
-import tutorialVoice5 from '../../assets/Voices/Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 5.mp3';
-import tutorialVoiceFinal from '../../assets/Voices/Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial FINAL.mp3';
-import defaultFinalRobotImage from '../../assets/Sprites/Robot/0002.webp';
+import { getSpriteUrl, getVoiceUrl } from '../../utils/assetUtils';
+
+const defaultRobotImage = getSpriteUrl('Robot/0008-noBulb-inverted.png');
+const tutorialVoice1 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 1.mp3');
+const tutorialVoice2 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 2.mp3');
+const tutorialVoice3 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 3.mp3');
+const tutorialVoice4 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 4.mp3');
+const tutorialVoice5 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 5.mp3');
+const tutorialVoiceFinal = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial FINAL.mp3');
+const defaultFinalRobotImage = getSpriteUrl('Robot/0002.webp');
 import './TutorialOverlay.css';
 
 function TutorialOverlay({

@@ -248,7 +248,23 @@ function TrainingPage() {
   const [showMicWarning, setShowMicWarning] = useState(false);
   const [isFreeCompactLayout, setIsFreeCompactLayout] = useState(false);
   const [isTutorialOverlayOpen, setIsTutorialOverlayOpen] = useState(false);
-  const { startAnalysis, stopAnalysis, liveScores } = useVisualAnalysis();
+  const { startAnalysis, stopAnalysis, liveScores, error: visualError, isReady: isVisualReady } = useVisualAnalysis();
+
+  // Auto-start logic for pre-test or linked activities
+  useEffect(() => {
+    if (status !== 'idle') return;
+    
+    const params = new URLSearchParams(location.search);
+    const shouldAutoStart = params.get('autostart') === '1' || state?.autoStartCountdown;
+    
+    if (shouldAutoStart) {
+      // Small delay to ensure camera permissions and stream are ready
+      const t = setTimeout(() => {
+        startCountdown();
+      }, 800);
+      return () => clearTimeout(t);
+    }
+  }, [status, location.search, state, startCountdown]);
 
   const bumpElapsedSec = useCallback(() => {
     setElapsedSec((s) => {
@@ -1457,6 +1473,13 @@ function TrainingPage() {
         <div className="tp-error-banner">
           <span>{errorMsg}</span>
           <button className="tp-error-retry" onClick={handleRestart}>Retry</button>
+        </div>
+      )}
+
+      {/* ── Visual Analysis Error Banner ── */}
+      {visualError && isRecording && (
+        <div className="tp-error-banner tp-error-banner--visual">
+          <span>Visual Analysis: {visualError}</span>
         </div>
       )}
 

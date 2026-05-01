@@ -256,10 +256,10 @@ const HeaderRankSprite = styled.img`
 `;
 
 const HeaderRankWord = styled.span`
-  font-size: 0.62rem;
-  font-weight: 800;
-  color: #475569;
-  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: #059669;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   line-height: 1;
 `;
@@ -1271,12 +1271,10 @@ export default function SkywardJourney({
           <div className="skyward-journey-header-title-row">
             <HeaderTitle>{steps.length > 0 ? currentPillarText : `Level ${currentLevel}`}</HeaderTitle>
           </div>
-          {steps.length === 0 ? (
-            <HeaderRankBadge aria-label={`Rank ${rank.name}`}>
-              <HeaderRankSprite src={rank.image} alt="" />
-              <HeaderRankWord>{rank.name}</HeaderRankWord>
-            </HeaderRankBadge>
-          ) : null}
+          <HeaderRankBadge>
+            <HeaderRankSprite src={rank.image} alt="" />
+            <HeaderRankWord>LEVEL {currentLevel}</HeaderRankWord>
+          </HeaderRankBadge>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', width: '100%', justifyContent: 'center' }}>
             <button
               type="button"
@@ -1423,7 +1421,11 @@ export default function SkywardJourney({
                       />
                     </svg>
                   ) : null}
-                  {steps.length === 0 ? (
+                  {steps.length > 0 && sections}
+                </div>
+
+                {steps.length === 0 && (
+                  <div className="skyward-journey-locked-state-container">
                     <div className="skyward-journey-locked-state">
                       <img
                         src={safetyBarrierImage}
@@ -1433,10 +1435,8 @@ export default function SkywardJourney({
                       <h2 className="skyward-journey-locked-title">Level {currentLevel} is locked</h2>
                       <p className="skyward-journey-locked-copy">Please complete previous levels first!</p>
                     </div>
-                  ) : (
-                    sections
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

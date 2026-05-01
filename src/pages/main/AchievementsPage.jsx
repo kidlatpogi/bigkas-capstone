@@ -2,14 +2,19 @@ import { useState } from 'react';
 import { IoCheckmarkCircle, IoSearch, IoLockClosed } from 'react-icons/io5';
 import trophyImg from '../../assets/Sprites/Thropies/Thropy.png';
 import badgeImg from '../../assets/Sprites/Badges/Badge.png';
+import rankBronze from '../../assets/Sprites/Rank/rank-bronze.png';
+import rankSilver from '../../assets/Sprites/Rank/rank-silver.png';
+import rankGold from '../../assets/Sprites/Rank/rank-gold.png';
+import rankMythril from '../../assets/Sprites/Rank/rank-mythril.png';
+import rankLegendary from '../../assets/Sprites/Rank/rank-legendary.png';
 import './AchievementsPage.css';
 
 const MOCK_TROPHIES = [
-  { id: 1, name: 'Bronze', total: 31, current: 1, unlocked: true },
-  { id: 2, name: 'Silver', total: 50, current: 0, unlocked: false },
-  { id: 3, name: 'Gold', total: 100, current: 0, unlocked: false },
-  { id: 4, name: 'Platinum', total: 200, current: 0, unlocked: false },
-  { id: 5, name: 'Diamond', total: 500, current: 0, unlocked: false },
+  { id: 1, name: 'Bronze', rank: 'BRONZE', rankImg: rankBronze, total: 31, current: 1, unlocked: true },
+  { id: 2, name: 'Silver', rank: 'SILVER', rankImg: rankSilver, total: 50, current: 0, unlocked: false },
+  { id: 3, name: 'Gold', rank: 'GOLD', rankImg: rankGold, total: 100, current: 0, unlocked: false },
+  { id: 4, name: 'Mythril', rank: 'MYTHRIL', rankImg: rankMythril, total: 200, current: 0, unlocked: false },
+  { id: 5, name: 'Legendary', rank: 'LEGENDARY', rankImg: rankLegendary, total: 500, current: 0, unlocked: false },
 ];
 
 const MOCK_BADGES = [
@@ -74,6 +79,10 @@ export default function AchievementsPage() {
       <section className="trophy-showcase-card dashboard-anim-top dashboard-anim-delay-1">
         {MOCK_TROPHIES.map((trophy) => (
           <div key={trophy.id} className={`trophy-item ${!trophy.unlocked ? 'locked' : ''}`}>
+            <div className="trophy-rank-badge">
+              <img src={trophy.rankImg} alt={trophy.rank} className="rank-icon" />
+              <span className="rank-name">LEVEL {trophy.id}</span>
+            </div>
             <div className="trophy-wrapper">
               <img src={trophyImg} alt={trophy.name} className="trophy-img" />
             </div>

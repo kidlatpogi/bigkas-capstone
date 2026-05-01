@@ -35,7 +35,7 @@ import tutorialRobotStep4 from '../../assets/Sprites/Robot/0001.webp';
 import tutorialRobotStep5 from '../../assets/Sprites/Robot/0002.webp';
 import tutorialRobotStep6 from '../../assets/Sprites/Robot/0004.webp';
 import randomizerRobotImage from '../../assets/Sprites/Robot/0005.webp';
-import rankBronzeImage from '../../assets/Sprites/Rank/rank-bronze.png';
+import rankBronze from '../../assets/Sprites/Rank/rank-bronze.png';
 import rankSilverImage from '../../assets/Sprites/Rank/rank-silver.png';
 import rankGoldImage from '../../assets/Sprites/Rank/rank-gold.png';
 import rankMythrilImage from '../../assets/Sprites/Rank/rank-mythril.png';
@@ -192,7 +192,7 @@ function getTimeOfDay() {
 
 function getRankSprite(levelNumber, levelName) {
   const level = Number(levelNumber || 1);
-  if (level <= 1) return rankBronzeImage;
+  if (level <= 1) return rankBronze;
   if (level <= 2) return rankSilverImage;
   if (level <= 3) return rankGoldImage;
   if (level <= 4) return rankMythrilImage;
@@ -799,7 +799,7 @@ function ActivityPageMobile() {
               <section className="new-widget" id="tutorial-target-home-rank">
                 <div className="new-widget-head">
                   <h2 className="new-widget-title">Journey Progression</h2>
-                  <span className="new-widget-chip">Rank</span>
+                  <span className="new-widget-chip">Level</span>
                 </div>
                 <div 
                   className="new-widget-rank-card"
@@ -810,8 +810,8 @@ function ActivityPageMobile() {
                 >
                   <img src={rankSpriteImage} alt="" className="new-widget-rank-sprite" />
                   <div className="new-widget-rank-content">
-                    <p className="new-widget-kicker">Current Rank</p>
-                    <p className="new-widget-value">{levelProgress.levelName}</p>
+                    <p className="new-widget-kicker">Current Level</p>
+                    <p className="new-widget-value">LEVEL {levelProgress.levelNumber}</p>
                   </div>
                 </div>
                 <p className="new-widget-caption">

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import rankBronzeImage from '../../assets/Sprites/Rank/rank-bronze.png';
+import rankBronze from '../../assets/Sprites/Rank/rank-bronze.png';
 import rankSilverImage from '../../assets/Sprites/Rank/rank-silver.png';
 import rankGoldImage from '../../assets/Sprites/Rank/rank-gold.png';
 import rankMythrilImage from '../../assets/Sprites/Rank/rank-mythril.png';
@@ -8,7 +8,7 @@ import { BIGKAS_LEVELS } from '../../utils/activityProgress';
 import './RankListModal.css';
 
 const RANK_SPRITES = {
-  1: rankBronzeImage,
+  1: rankBronze,
   2: rankSilverImage,
   3: rankGoldImage,
   4: rankMythrilImage,
@@ -44,7 +44,14 @@ export default function RankListModal({ isOpen, onClose, currentLevelNumber }) {
             <div className="rank-modal-list">
               {BIGKAS_LEVELS.map((level) => {
                 const isCurrent = level.number === currentLevelNumber;
-                const sprite = RANK_SPRITES[level.number];
+                let sprite = RANK_SPRITES[level.number];
+                
+                // Fallback / Extra safety for Level 1 Bronze
+                if (level.number === 1) sprite = rankBronze;
+                if (level.number === 2) sprite = rankSilverImage;
+                if (level.number === 3) sprite = rankGoldImage;
+                if (level.number === 4) sprite = rankMythrilImage;
+                if (level.number === 5) sprite = rankLegendaryImage;
 
                 return (
                   <div
@@ -56,8 +63,6 @@ export default function RankListModal({ isOpen, onClose, currentLevelNumber }) {
                         src={sprite} 
                         alt={level.name} 
                         className="rank-modal-item-sprite" 
-                        decoding="async"
-                        loading="eager"
                       />
                     </div>
                     <div className="rank-modal-item-info">

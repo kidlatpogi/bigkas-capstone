@@ -45,3 +45,11 @@ next-env.d.ts
 # Supabase Folder
 /supabase
 /database
+
+# Cursor Rules
+/.cursorrules
+/cursorrules
+
+# Assets
+/src/assets/Sprites/
+/src/assets/Voices/

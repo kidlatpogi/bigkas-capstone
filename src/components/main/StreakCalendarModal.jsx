@@ -2,8 +2,10 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import Lottie from 'lottie-react';
-import iconFire from '../../assets/icons/Icon-Fire.svg';
-import fireAnimationData from '../../assets/Sprites/common/fire.json';
+import { getAssetUrl } from '../../utils/assetUtils';
+import fireAnimationData from '../../assets/Lottie/fire.json';
+
+const iconFire = getAssetUrl('icons/Icon-Fire.svg');
 import './StreakCalendarModal.css';
 
 export default function StreakCalendarModal({ isOpen, onClose, activeDayKeys, streakStats }) {

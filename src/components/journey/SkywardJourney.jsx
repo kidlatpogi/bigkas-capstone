@@ -21,14 +21,16 @@ import {
 } from './journeyConstants';
 import { BIGKAS_LEVELS } from '../../utils/activityProgress';
 import SkywardJourneyNodeButton from './SkywardJourneyNodeButton';
-import safetyBarrierImage from '../../assets/Sprites/common/safety-barrier.png';
-import rankBronzeImage from '../../assets/Sprites/Rank/rank-bronze.png';
-import rankSilverImage from '../../assets/Sprites/Rank/rank-silver.png';
-import rankGoldImage from '../../assets/Sprites/Rank/rank-gold.png';
-import rankMythrilImage from '../../assets/Sprites/Rank/rank-mythril.png';
-import rankLegendaryImage from '../../assets/Sprites/Rank/rank-legendary.png';
-import chestClosedImage from '../../assets/Sprites/common/treasure-chest.png';
-import chestOpenImage from '../../assets/Sprites/common/treasure-chest-open.png';
+import { getSpriteUrl } from '../../utils/assetUtils';
+
+const safetyBarrierImage = getSpriteUrl('common/safety-barrier.png');
+const rankBronzeImage = getSpriteUrl('Rank/rank-bronze.png');
+const rankSilverImage = getSpriteUrl('Rank/rank-silver.png');
+const rankGoldImage = getSpriteUrl('Rank/rank-gold.png');
+const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.png');
+const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.png');
+const chestClosedImage = getSpriteUrl('common/treasure-chest.png');
+const chestOpenImage = getSpriteUrl('common/treasure-chest-open.png');
 import './SkywardJourney.css';
 
 const MAP_SCALE = 1;

@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { IoCheckmarkCircle, IoSearch, IoLockClosed, IoChevronBack } from 'react-icons/io5';
-import trophyImg from '../../assets/Sprites/Thropies/Thropy.png';
-import badgeImg from '../../assets/Sprites/Badges/Badge.png';
-import rankBronze from '../../assets/Sprites/Rank/rank-bronze.png';
-import rankSilver from '../../assets/Sprites/Rank/rank-silver.png';
-import rankGold from '../../assets/Sprites/Rank/rank-gold.png';
-import rankMythril from '../../assets/Sprites/Rank/rank-mythril.png';
-import rankLegendary from '../../assets/Sprites/Rank/rank-legendary.png';
+import { getSpriteUrl } from '../../utils/assetUtils';
+
+const trophyImg = getSpriteUrl('Thropies/Thropy.png');
+const badgeImg = getSpriteUrl('Badges/Badge.png');
+const rankBronze = getSpriteUrl('Rank/rank-bronze.png');
+const rankSilver = getSpriteUrl('Rank/rank-silver.png');
+const rankGold = getSpriteUrl('Rank/rank-gold.png');
+const rankMythril = getSpriteUrl('Rank/rank-mythril.png');
+const rankLegendary = getSpriteUrl('Rank/rank-legendary.png');
 import './AchievementsPageMobile.css';
 
 const MOCK_TROPHIES = [

@@ -22,6 +22,7 @@ import {
 } from '../../utils/speakerPointsHistory';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
 import { useVisualAnalysis } from '../../hooks/useVisualAnalysis';
+import { getSpriteUrl } from '../../utils/assetUtils';
 import './TrainingPage.css';
 
 /* ─── Helpers ──────────────────────────────────────────────────────────────── */
@@ -1567,29 +1568,34 @@ function TrainingPage() {
       {/* ── Analysing Overlay ── */}
       {status === 'analysing' && (
         <div className="tp-overlay">
-          <div className="tp-analysing-card">
-            <h2 className="tp-analysing-title">Analyzing your session...</h2>
-            <p className="tp-analysing-subtitle">B-01 is reviewing your speech patterns, gestures, and tone.</p>
-            
-            <div className="tp-progress-container">
-              <div 
-                className="tp-progress-bar" 
-                style={{ width: `${Math.round(analysisProgress)}%` }}
-                aria-valuenow={Math.round(analysisProgress)}
-                aria-valuemin="0"
-                aria-valuemax="100"
-              />
+          <section className="tp-analysing-view">
+            <article className="analyzing-bubble" aria-label="Analyzing session">
+              <p className="analyzing-bubble-kicker">B-01:</p>
+              <p className="analyzing-bubble-title">Analyzing your session...</p>
+              <p className="analyzing-bubble-copy">
+                Hold tight while I review your speech patterns, gestures, and tone.
+              </p>
+
+              <div className="analyzing-loader" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(analysisProgress)}>
+                <span className="analyzing-loader-fill" style={{ width: `${Math.round(analysisProgress)}%` }} />
+              </div>
+              
+              <div className="tp-analysing-status-wrap">
+                <p className="analyzing-loader-text">{Math.round(analysisProgress)}%</p>
+                <p className="tp-analysing-status-text">
+                  {analysisProgress < 30 ? 'Uploading media...' : 
+                   analysisProgress < 60 ? 'Processing speech...' : 
+                   analysisProgress < 85 ? 'Calculating metrics...' : 'Finalizing feedback...'}
+                </p>
+              </div>
+            </article>
+
+            <div className="analyzing-robot-wrap">
+              <div className="analyzing-robot-media" aria-hidden="true">
+                <img src={getSpriteUrl('Robot/0010.webp')} alt="" className="analyzing-robot-image" />
+              </div>
             </div>
-            
-            <div className="tp-progress-labels">
-              <span className="tp-progress-pct">{Math.round(analysisProgress)}%</span>
-              <span className="tp-progress-status">
-                {analysisProgress < 30 ? 'Uploading media...' : 
-                 analysisProgress < 60 ? 'Processing speech...' : 
-                 analysisProgress < 85 ? 'Calculating metrics...' : 'Finalizing feedback...'}
-              </span>
-            </div>
-          </div>
+          </section>
         </div>
       )}
 

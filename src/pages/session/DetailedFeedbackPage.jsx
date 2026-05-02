@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { IoChevronForward } from 'react-icons/io5';
 import { 
@@ -492,6 +492,18 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
     return unique;
   })();
 
+  const deRecommendations = (() => {
+    const avoidTips = [];
+    if (tripleV.visualAvg < 3.0) avoidTips.push("Don't break eye contact frequently; avoid staring at the floor or ceiling.");
+    if (tripleV.vocalAvg < 3.0) avoidTips.push("Try to avoid monotone delivery or sudden volume shifts that can distract your audience.");
+    if (tripleV.verbalAvg < 3.0) avoidTips.push("Avoid rushing through complex words or drifting too far from your main topic.");
+    if (avoidTips.length === 0) avoidTips.push("Keep avoiding distractions and maintain your current high standards.");
+    return avoidTips;
+  })();
+
+  const avoidSectionRef = useRef(null);
+  const scrollToAvoid = () => avoidSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+
   return (
     <div className={`df-page ${isInnerView ? 'df-page--inner' : ''} activity-page--skyward-entrance`}>
       {/* Breadcrumb */}
@@ -532,27 +544,25 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
                   ))}
                 </ul>
                 <button 
-                  type="button"
-                  onClick={() => document.getElementById('detailed-recommendations')?.scrollIntoView({ behavior: 'smooth' })}
+                  onClick={scrollToAvoid}
                   style={{ 
                     marginTop: '12px', 
-                    padding: '8px 16px', 
-                    background: 'rgba(0,0,0,0.05)', 
+                    background: '#ef444415', 
+                    color: '#ef4444', 
                     border: 'none', 
-                    borderRadius: '20px', 
-                    fontSize: '0.75rem', 
+                    padding: '6px 12px', 
+                    borderRadius: '8px', 
+                    fontSize: '0.7rem', 
                     fontWeight: 700, 
-                    color: '#64748b', 
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
+                    gap: '4px',
                     transition: 'all 0.2s ease'
                   }}
-                  onMouseOver={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.1)'}
-                  onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
+                  className="df-avoid-btn"
                 >
-                  View full list ↓
+                  WHAT NOT TO DO ↓
                 </button>
               </div>
             </div>
@@ -692,29 +702,6 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
             })}
           </div>
         </section>
-        
-        {/* Detailed Recommendations Section */}
-        <section id="detailed-recommendations" className="df-recommendations-section dashboard-anim-bottom dashboard-anim-delay-6" style={{ marginTop: '48px' }}>
-          <div className="sr-section-header">
-            <h2 className="sr-section-title">Detailed Recommendations</h2>
-            <p className="sr-section-subtitle">Actionable steps to improve your Visual, Vocal, and Verbal delivery</p>
-          </div>
-          <div className="df-card" style={{ padding: '24px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
-              {recommendations.map((rec, idx) => (
-                <div key={idx} style={{ background: '#f8fafc', padding: '20px', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.03)', display: 'flex', gap: '16px' }}>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', flexShrink: 0, fontSize: '0.9rem', fontWeight: 800, color: '#10b981' }}>
-                    {idx + 1}
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.025em' }}>{rec.pillar}</span>
-                    <p style={{ margin: '4px 0 0', fontSize: '0.9rem', lineHeight: '1.6', color: '#1e293b', fontWeight: 500 }}>{rec.text}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
 
         {/* Media & Transcript */}
         <div className="df-media-info-container dashboard-anim-bottom dashboard-anim-delay-7" style={{ marginTop: '48px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -757,6 +744,18 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
             <h3 className="df-section-title" style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Session Transcript</h3>
             <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.03)' }}>
               <p className="df-practiced-text" style={{ fontSize: '0.9rem', lineHeight: '1.7', margin: 0, color: '#1e293b' }}>{practicedText}</p>
+            </div>
+          </div>
+
+          <div className="df-card" ref={avoidSectionRef} style={{ padding: '24px', borderLeft: '4px solid #ef4444' }}>
+            <h3 className="df-section-title" style={{ fontSize: '1.1rem', marginBottom: '16px', color: '#ef4444' }}>WHAT NOT TO DO</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {deRecommendations.map((tip, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: '12px', background: '#fef2f2', padding: '16px', borderRadius: '12px' }}>
+                  <span style={{ color: '#ef4444', fontWeight: 900 }}>✕</span>
+                  <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 500, color: '#991b1b' }}>{tip}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>

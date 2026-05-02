@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { IoChevronForward, IoPlay, IoMic } from 'react-icons/io5';
 import { 
@@ -343,9 +343,21 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
     });
 
   const allRecommendations = [...pillarRecommendations, ...recommendations.map(text => ({ text, pillar: 'general' }))];
-  if (allRecommendations.length === 0) {
+    if (allRecommendations.length === 0) {
     allRecommendations.push({ text: 'Great job! Keep up the excellent work.', pillar: 'general' });
   }
+
+  const deRecommendations = (() => {
+    const avoidTips = [];
+    if (tripleV.visualAvg < 3.0) avoidTips.push("Don't break eye contact frequently; avoid staring at the floor or ceiling.");
+    if (tripleV.vocalAvg < 3.0) avoidTips.push("Try to avoid monotone delivery or sudden volume shifts that can distract your audience.");
+    if (tripleV.verbalAvg < 3.0) avoidTips.push("Avoid rushing through complex words or drifting too far from your main topic.");
+    if (avoidTips.length === 0) avoidTips.push("Keep avoiding distractions and maintain your current high standards.");
+    return avoidTips;
+  })();
+
+  const avoidSectionRef = useRef(null);
+  const scrollToAvoid = () => avoidSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
 
   return (
     <div className="df-mobile-root no-scrollbar">
@@ -381,6 +393,22 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
                   ))}
                 </ul>
               )}
+              <button 
+                onClick={scrollToAvoid}
+                style={{ 
+                  marginTop: '12px', 
+                  background: '#ef444415', 
+                  color: '#ef4444', 
+                  border: 'none', 
+                  padding: '6px 10px', 
+                  borderRadius: '6px', 
+                  fontSize: '0.65rem', 
+                  fontWeight: 800, 
+                  cursor: 'pointer'
+                }}
+              >
+                WHAT NOT TO DO ↓
+              </button>
             </div>
           </div>
         </section>
@@ -544,6 +572,22 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
           </div>
           <div className="df-mobile-transcript-box">
             <p className="df-mobile-transcript-text">{practicedText || 'No transcript generated.'}</p>
+          </div>
+        </section>
+
+        <section className="df-mobile-section dashboard-anim-bottom" ref={avoidSectionRef}>
+          <div className="df-mobile-section-header">
+            <h2 className="df-mobile-section-title" style={{ color: '#ef4444' }}>WHAT NOT TO DO</h2>
+          </div>
+          <div className="df-mobile-card" style={{ borderLeft: '4px solid #ef4444' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
+              {deRecommendations.map((tip, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: '8px', background: '#fef2f2', padding: '12px', borderRadius: '10px' }}>
+                  <span style={{ color: '#ef4444', fontWeight: 900 }}>✕</span>
+                  <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 600, color: '#991b1b' }}>{tip}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 

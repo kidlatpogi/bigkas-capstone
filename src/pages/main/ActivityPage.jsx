@@ -214,7 +214,7 @@ function ActivityPage() {
   const [entranceFromNav] = useState(() => location.state?.skywardEntrance === true);
   const scopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
   /** Activities are filtered by `target_level` = Bigkas rank (same as dashboard `levelProgress.levelName`). */
-  const { tasks, loading: activitiesLoading, error: activitiesError } = useActivitiesJourneyTasks(1);
+  const { tasks, loading: activitiesLoading, error: activitiesError } = useActivitiesJourneyTasks(user?.speakerLevelNumber || 1);
   const { metricsSyncKey, refreshJourney } = useJourneyRemoteState(user);
   const stampResetTimeoutRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -397,8 +397,8 @@ function ActivityPage() {
   useEffect(() => {
     if (!user?.id || activitiesLoading) return;
     
-    // Condition: finished profiling AND pre-testing
-    const isReadyForTutorial = user.profilingCompleted && user.pretestCompleted;
+    // Condition: finished profiling AND pre-testing OR finished entire onboarding
+    const isReadyForTutorial = user.onboardingStage === 'completed' || (user.profilingCompleted && user.pretestCompleted);
     
     if (isReadyForTutorial) {
       const seen = window.localStorage.getItem(FREE_SPEECH_TUTORIAL_SEEN_KEY);
@@ -406,7 +406,7 @@ function ActivityPage() {
         setShowFreeSpeechTutorial(true);
       }
     }
-  }, [user?.id, user?.profilingCompleted, user?.pretestCompleted, activitiesLoading]);
+  }, [user?.id, user?.onboardingStage, user?.profilingCompleted, user?.pretestCompleted, activitiesLoading]);
 
   const handleActiveTaskIdChange = useCallback((id) => {
     setActiveTaskId(id);

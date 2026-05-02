@@ -614,12 +614,12 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
                         <img src={pillar.image} alt="" className="new-widget-rank-sprite" />
                         <div className="new-widget-rank-content">
                           <p className="new-widget-kicker">Score</p>
-                          <p className="new-widget-value">{Math.floor(pillar.score)} / 5</p>
+                          <p className="new-widget-value">{Math.round(pillar.value)}%</p>
                         </div>
                       </div>
                       <div className="progress-pillar-track-header">
                         <span className="progress-pillar-track-label">Overall consistency</span>
-                        <span className="progress-pillar-track-percent">{Math.floor(pillar.score)} / 5</span>
+                        <span className="progress-pillar-track-percent">{Math.round(pillar.value)}%</span>
                       </div>
                       <div className="progress-pillar-track">
                         <div

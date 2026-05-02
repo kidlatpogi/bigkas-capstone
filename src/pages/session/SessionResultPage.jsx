@@ -628,10 +628,10 @@ function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner, onViewDet
               <div className="score-display">
 
                 <span className="score-value" style={{ color: overallTier.color }}>
-                  {Math.floor(tripleV.entryPoint)}
+                  {Math.round(scoreBarPercent(tripleV.entryPoint))}%
                 </span>
 
-                <span className="score-max">/ 5</span>
+                <span className="score-max">Confidence</span>
 
               </div>
 
@@ -751,7 +751,7 @@ function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner, onViewDet
                     <div className="new-widget-rank-content">
 
                         <p className="new-widget-kicker">Score</p>
-                        <p className="new-widget-value">{Math.floor(p.score)} / 5</p>
+                        <p className="new-widget-value">{Math.round(scorePercent)}%</p>
 
                     </div>
 
@@ -761,7 +761,7 @@ function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner, onViewDet
 
                   <div className="progress-pillar-track-header">
                     <span className="progress-pillar-track-label">{p.desc}</span>
-                    <span className="progress-pillar-track-percent">{Math.floor(p.score)} / 5</span>
+                    <span className="progress-pillar-track-percent">{Math.round(scorePercent)}%</span>
                   </div>
 
                   

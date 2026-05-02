@@ -368,7 +368,7 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                             >
                               <img src={pillar.sprite} alt={pillar.label} className="history-item-pillar-sprite" />
                               <span className="history-item-pillar-label">{pillar.label}</span>
-                              <span className="history-item-pillar-score">{Math.floor(pillar.score)}</span>
+                              <span className="history-item-pillar-score">{Math.round(score15ToPercent(pillar.score))}%</span>
                             </div>
                           ))}
                         </div>
@@ -392,7 +392,7 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                           }}
                         >
                           <div className="history-item-score-ring-inner-compact">
-                            {Math.floor(score)}
+                            {Math.round(score15ToPercent(score))}%
                           </div>
                         </div>
                       </div>

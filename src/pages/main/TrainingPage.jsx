@@ -250,6 +250,7 @@ function TrainingPage() {
   const [isFreeCompactLayout, setIsFreeCompactLayout] = useState(false);
   const [isTutorialOverlayOpen, setIsTutorialOverlayOpen] = useState(false);
   const [showLowLightWarning, setShowLowLightWarning] = useState(false);
+  const [resumeCountdown, setResumeCountdown] = useState(0);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const { startAnalysis, stopAnalysis, liveScores, error: visualError, isReady: isVisualReady } = useVisualAnalysis();
 
@@ -1060,17 +1061,35 @@ function TrainingPage() {
   };
 
   const handleResumeFromPausedModal = useCallback(() => {
-    setShowPausedModal(false);
-    if (mediaRef.current?.state === 'paused') {
-      mediaRef.current.resume();
-      timerRef.current = setInterval(bumpElapsedSec, 1000);
-      startWaveformLoop();
-      if (focus === 'scripted') {
-        startScriptHighlightLoop(Math.max(highlightIdx, 0));
+    if (resumeCountdown > 0) return;
+
+    let count = 3;
+    setResumeCountdown(count);
+    playCountdownCue('tick');
+
+    const interval = setInterval(() => {
+      count -= 1;
+      if (count <= 0) {
+        clearInterval(interval);
+        setResumeCountdown(0);
+        setShowPausedModal(false);
+        playCountdownCue('start');
+
+        if (mediaRef.current?.state === 'paused') {
+          mediaRef.current.resume();
+          timerRef.current = setInterval(bumpElapsedSec, 1000);
+          startWaveformLoop();
+          if (focus === 'scripted') {
+            startScriptHighlightLoop(Math.max(highlightIdx, 0));
+          }
+          setStatus('recording');
+        }
+      } else {
+        setResumeCountdown(count);
+        playCountdownCue('tick');
       }
-      setStatus('recording');
-    }
-  }, [bumpElapsedSec, focus, highlightIdx, startScriptHighlightLoop, startWaveformLoop]);
+    }, 1000);
+  }, [bumpElapsedSec, focus, highlightIdx, resumeCountdown, startScriptHighlightLoop, startWaveformLoop, playCountdownCue]);
 
   /* ── Restart ── */
   const handleRestart = () => {
@@ -1707,12 +1726,18 @@ function TrainingPage() {
 
       <ConfirmationModal
         isOpen={showPausedModal}
-        title="Recording Paused"
-        message="Your recording is currently paused. You can resume anytime."
-        confirmLabel="Resume"
-        cancelLabel="Stay Paused"
+        title={resumeCountdown > 0 ? 'Get Ready!' : 'Recording Paused'}
+        message={
+          resumeCountdown > 0
+            ? `Resuming in ${resumeCountdown}...`
+            : 'Your recording is currently paused. You can resume anytime.'
+        }
+        confirmLabel={resumeCountdown > 0 ? '...' : 'Resume'}
+        cancelLabel={resumeCountdown > 0 ? null : ''}
         type="info"
-        onCancel={() => setShowPausedModal(false)}
+        onCancel={() => {
+          if (resumeCountdown === 0) setShowPausedModal(false);
+        }}
         onConfirm={handleResumeFromPausedModal}
       />
     </div>

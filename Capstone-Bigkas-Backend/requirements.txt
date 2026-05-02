@@ -1,8 +1,0 @@
-fastapi
-uvicorn
-python-multipart
-librosa
-soundfile
-google-generativeai
-supabase
-python-dotenv

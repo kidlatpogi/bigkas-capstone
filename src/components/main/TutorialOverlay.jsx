@@ -34,7 +34,7 @@ function TutorialOverlay({
       {
         id: 'step-topic',
         title: 'B-01:',
-        text: "'The Topic' This is your prompt! Focus on the subject shown here to keep your speech on track.",
+        text: "'The Topic' This is for your Verbal analysis! Focus on the prompt shown here to ensure your content is clear and stays on track.",
         button: 'Continue',
         targetElementId: 'tutorial-target-topic',
         emphasis: "'The Topic'",
@@ -42,7 +42,7 @@ function TutorialOverlay({
       {
         id: 'step-camera',
         title: 'B-01:',
-        text: "'The Camera View' Check your posture and expression in this frame! Position yourself within the guide so I can accurately analyze your eye contact, expressions, and gestures—confidence starts with how you carry yourself!",
+        text: "'The Camera View' This is for your Visual analysis! Position yourself within the guide so I can accurately track your eye contact, expressions, and gestures.",
         button: 'Next',
         targetElementId: 'tutorial-target-camera',
         emphasis: "'The Camera View'",
@@ -50,7 +50,7 @@ function TutorialOverlay({
       {
         id: 'step-soundbar',
         title: 'B-01:',
-        text: "'Voice and Time', Watch the soundbar dance as you speak and keep an eye on the timer to hit your goal.",
+        text: "'Voice and Time' This is for your Vocal analysis! Watch the soundbar dance as you speak to see your projection and emotional expression.",
         button: 'Next',
         targetElementId: 'tutorial-target-soundbar',
         emphasis: "'Voice and Time'",

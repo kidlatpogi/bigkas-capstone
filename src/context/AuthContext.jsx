@@ -514,6 +514,42 @@ export function AuthProvider({ children }) {
     };
   }, [resolveAvatarUrl]);
 
+  const fetchAndMergeProfile = useCallback(async (userId) => {
+    if (!userId) return;
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('is_profiling_completed, is_pre_test_completed, current_level, diagnostic_score, diagnostic_completed_at')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        if (error.code !== 'PGRST116') { // PGRST116 is 'no rows found'
+          console.error('Bigkas Auth: failed to fetch profile:', error);
+        }
+        return;
+      }
+
+      if (profile) {
+        setUser(prev => {
+          if (prev?.id !== userId) return prev;
+          return {
+            ...prev,
+            isProfilingCompleted: !!profile.is_profiling_completed,
+            isPreTestCompleted: !!profile.is_pre_test_completed,
+            // Ensure these match the buildUser mapped keys too
+            profilingCompleted: prev.profilingCompleted || !!profile.is_profiling_completed,
+            pretestCompleted: prev.pretestCompleted || !!profile.is_pre_test_completed,
+            speakerLevelNumber: profile.current_level || prev.speakerLevelNumber,
+            speakerEntryScore: profile.diagnostic_score || prev.speakerEntryScore,
+          };
+        });
+      }
+    } catch (err) {
+      console.error('Bigkas Auth: unexpected error fetching profile:', err);
+    }
+  }, []);
+
   useEffect(() => {
     if (!user?.id || !user?.onboardingStage) return;
 
@@ -1110,42 +1146,6 @@ export function AuthProvider({ children }) {
   }, []);
 
   /* ── Logout ── */
-  const fetchAndMergeProfile = useCallback(async (userId) => {
-    if (!userId) return;
-    try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('is_profiling_completed, is_pre_test_completed, current_level, diagnostic_score, diagnostic_completed_at')
-        .eq('id', userId)
-        .single();
-      
-      if (error) {
-        if (error.code !== 'PGRST116') { // PGRST116 is 'no rows found'
-          console.error('Bigkas Auth: failed to fetch profile:', error);
-        }
-        return;
-      }
-
-      if (profile) {
-        setUser(prev => {
-          if (prev?.id !== userId) return prev;
-          return {
-            ...prev,
-            isProfilingCompleted: !!profile.is_profiling_completed,
-            isPreTestCompleted: !!profile.is_pre_test_completed,
-            // Ensure these match the buildUser mapped keys too
-            profilingCompleted: prev.profilingCompleted || !!profile.is_profiling_completed,
-            pretestCompleted: prev.pretestCompleted || !!profile.is_pre_test_completed,
-            speakerLevelNumber: profile.current_level || prev.speakerLevelNumber,
-            speakerEntryScore: profile.diagnostic_score || prev.speakerEntryScore,
-          };
-        });
-      }
-    } catch (err) {
-      console.error('Bigkas Auth: unexpected error fetching profile:', err);
-    }
-  }, []);
-
   const logout = useCallback(async () => {
     setIsLoading(true);
     await supabase.auth.signOut();

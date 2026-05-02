@@ -154,7 +154,7 @@ function UserAnalyzingPage() {
   }, []);
   const profilingEntryScore = useMemo(() => {
     const rawProfileScore = clampScore(user?.speakerProfile?.baseline_score ?? 0);
-    return mapPercentToEntryScore(rawProfileScore).toFixed(1);
+    return formatEntryScale(rawProfileScore);
   }, [user?.speakerProfile?.baseline_score]);
   const pretestEntryScore = useMemo(
     () => formatEntryScale(analysis.freePretestScore),

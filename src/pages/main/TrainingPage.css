@@ -402,17 +402,32 @@ body.training-page-active {
   background: #111;
 }
 
-.tp-silhouette-overlay {
+.tp-camera-frame-guide {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  height: 95%;
-  width: auto;
-  opacity: 0.4;
+  width: min(65%, 260px);
+  height: min(85%, 360px);
+  border: 2.5px solid rgba(241, 143, 1, 0.8);
+  border-radius: 130px 130px 60px 60px;
+  box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.55);
   pointer-events: none;
   z-index: 1;
-  filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.15));
+}
+
+.tp-camera-frame-guide::after {
+  content: 'POSITION WITHIN FRAME';
+  position: absolute;
+  bottom: -32px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #F18F01;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
 }
 
 /* Waveform — 50 bars */

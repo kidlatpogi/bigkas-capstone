@@ -21,7 +21,6 @@ import {
 } from '../../utils/speakerPointsHistory';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
 import { useVisualAnalysis } from '../../hooks/useVisualAnalysis';
-import userSilhouette from '../../assets/Sprites/common/user-silhouette.png';
 import './TrainingPage.css';
 
 /* ─── Helpers ──────────────────────────────────────────────────────────────── */
@@ -1309,7 +1308,7 @@ function TrainingPage() {
               {/* Placeholder shown before recording starts */}
               {!isActive && (
                 <div className="tp-camera-idle">
-                  <img src={userSilhouette} className="tp-silhouette-overlay" alt="" />
+                  <div className="tp-camera-frame-guide" />
                 </div>
               )}
             </>

@@ -1061,7 +1061,8 @@ function TrainingPage() {
   };
 
   const handleResumeFromPausedModal = useCallback(() => {
-    if (resumeCountdown > 0) return;
+    setShowPausedModal(false);
+    setStatus('resume-countdown');
 
     let count = 3;
     setResumeCountdown(count);
@@ -1072,7 +1073,6 @@ function TrainingPage() {
       if (count <= 0) {
         clearInterval(interval);
         setResumeCountdown(0);
-        setShowPausedModal(false);
         playCountdownCue('start');
 
         if (mediaRef.current?.state === 'paused') {
@@ -1089,7 +1089,7 @@ function TrainingPage() {
         playCountdownCue('tick');
       }
     }, 1000);
-  }, [bumpElapsedSec, focus, highlightIdx, resumeCountdown, startScriptHighlightLoop, startWaveformLoop, playCountdownCue]);
+  }, [bumpElapsedSec, focus, highlightIdx, startScriptHighlightLoop, startWaveformLoop, playCountdownCue]);
 
   /* ── Restart ── */
   const handleRestart = () => {
@@ -1525,10 +1525,12 @@ function TrainingPage() {
       />
 
       {/* ── Countdown Overlay ── */}
-      {status === 'countdown' && (
+      {(status === 'countdown' || status === 'resume-countdown') && (
         <div className="tp-overlay">
           <div className="tp-countdown-box">
-            <span className="tp-countdown-num">{countdown > 0 ? countdown : 'Speak'}</span>
+            <span className="tp-countdown-num">
+              {status === 'resume-countdown' && resumeCountdown > 0 ? resumeCountdown : (countdown > 0 ? countdown : 'Speak')}
+            </span>
           </div>
         </div>
       )}
@@ -1726,18 +1728,12 @@ function TrainingPage() {
 
       <ConfirmationModal
         isOpen={showPausedModal}
-        title={resumeCountdown > 0 ? 'Get Ready!' : 'Recording Paused'}
-        message={
-          resumeCountdown > 0
-            ? `Resuming in ${resumeCountdown}...`
-            : 'Your recording is currently paused. You can resume anytime.'
-        }
-        confirmLabel={resumeCountdown > 0 ? '...' : 'Resume'}
-        cancelLabel={resumeCountdown > 0 ? null : ''}
+        title="Recording Paused"
+        message="Your recording is currently paused. You can resume anytime."
+        confirmLabel="Resume"
+        cancelLabel=""
         type="info"
-        onCancel={() => {
-          if (resumeCountdown === 0) setShowPausedModal(false);
-        }}
+        onCancel={() => setShowPausedModal(false)}
         onConfirm={handleResumeFromPausedModal}
       />
     </div>

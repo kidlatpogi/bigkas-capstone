@@ -440,8 +440,15 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
                     tick={{ fontSize: 10, fontWeight: 600, fill: '#94a3b8' }} 
                     interval={Math.ceil(durationSec / 5)}
                   />
-                  <YAxis hide domain={[0, 100]} />
+                  <YAxis 
+                    domain={[0, 100]} 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 9, fontWeight: 600, fill: '#94a3b8' }}
+                    tickFormatter={(val) => `${val}%`}
+                  />
                   <Tooltip 
+                    formatter={(value) => `${value}%`}
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', fontWeight: 700, fontSize: '12px' }} 
                   />
                   <Legend 

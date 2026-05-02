@@ -1310,17 +1310,6 @@ function TrainingPage() {
               {!isActive && (
                 <div className="tp-camera-idle">
                   <img src={userSilhouette} className="tp-silhouette-overlay" alt="" />
-                  
-                  <div className="tp-camera-idle-overlay-content">
-                    <h3 className="tp-camera-view-title">The Camera View</h3>
-                    <p className="tp-camera-view-explanation">
-                      Check your posture and expression in this frame—confidence starts with how you carry yourself!
-                    </p>
-                    <span className="tp-camera-idle-label">
-                      Position your face down to your navel within the frame.
-                    </span>
-                    <span className="tp-camera-idle-sublabel">Camera starts on record</span>
-                  </div>
                 </div>
               )}
             </>

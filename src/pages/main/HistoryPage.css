@@ -461,12 +461,12 @@
 }
 
 .history-item-pillar-chip--rising {
-  border-color: rgba(251, 191, 36, 0.45);
-  background: rgba(251, 191, 36, 0.06);
+  border-color: rgba(245, 158, 11, 0.45);
+  background: rgba(245, 158, 11, 0.06);
 }
 
 .history-item-pillar-chip--rising .history-item-pillar-score {
-  color: #FBBF24;
+  color: #F59E0B;
 }
 
 .history-item-pillar-chip--developing {

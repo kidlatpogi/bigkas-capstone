@@ -55,9 +55,9 @@ function getTripleVScores(result) {
 
 function getScoreTier15(score) {
   if (score >= 4.0) return { label: 'Stellar', color: '#10B981' };
-  if (score >= 3.0) return { label: 'Strong', color: '#34D399' };
+  if (score >= 3.0) return { label: 'Strong', color: '#0D9488' };
   if (score >= 2.0) return { label: 'Developing', color: '#3B82F6' };
-  return { label: 'Rising', color: '#FBBF24' };
+  return { label: 'Rising', color: '#F59E0B' };
 }
 
 function scoreBarPercent(score) {

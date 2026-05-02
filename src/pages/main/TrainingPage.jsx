@@ -1075,15 +1075,23 @@ function TrainingPage() {
         setResumeCountdown(0);
         playCountdownCue('start');
 
+        // Resume recording if paused
         if (mediaRef.current?.state === 'paused') {
           mediaRef.current.resume();
-          timerRef.current = setInterval(bumpElapsedSec, 1000);
-          startWaveformLoop();
-          if (focus === 'scripted') {
-            startScriptHighlightLoop(Math.max(highlightIdx, 0));
-          }
-          setStatus('recording');
         }
+
+        // Restart timers and logic
+        clearInterval(timerRef.current);
+        timerRef.current = setInterval(bumpElapsedSec, 1000);
+        startWaveformLoop();
+        if (focus === 'scripted') {
+          startScriptHighlightLoop(Math.max(highlightIdx, 0));
+        }
+
+        // Brief delay so "Speak" is visible before overlay clears
+        setTimeout(() => {
+          if (isMountedRef.current) setStatus('recording');
+        }, 600);
       } else {
         setResumeCountdown(count);
         playCountdownCue('tick');

@@ -495,8 +495,8 @@ export function AuthProvider({ children }) {
       nickname: meta.nickname || null,
       avatar_url: resolveAvatarUrl(meta.avatar_url),
       onboardingStage,
-      profilingCompleted: parseMetadataBoolean(meta.profiling_completed) || hasSpeakerProfileData(meta.speaker_profile),
-      pretestCompleted: parseMetadataBoolean(meta.pretest_completed),
+      profilingCompleted: parseMetadataBoolean(meta.is_profiling_completed) || parseMetadataBoolean(meta.profiling_completed) || hasSpeakerProfileData(meta.speaker_profile),
+      pretestCompleted: parseMetadataBoolean(meta.is_pre_test_completed) || parseMetadataBoolean(meta.pretest_completed),
       pretestScriptedCompleted: parseMetadataBoolean(meta.pretest_scripted_completed) || parseMetadataBoolean(meta.pretest_completed),
       pretestFreeCompleted: parseMetadataBoolean(meta.pretest_free_completed),
       pretestScriptedSessionId: meta.pretest_scripted_session_id || null,
@@ -1139,6 +1139,23 @@ export function AuthProvider({ children }) {
 
     const { data, error: err } = await supabase.auth.updateUser({ data: updates });
     if (err) return { success: false, error: err.message };
+
+    // Sync with public.profiles if completion flags are present
+    const profileUpdates = {};
+    if (updates.profiling_completed !== undefined) {
+      profileUpdates.is_profiling_completed = !!updates.profiling_completed;
+    }
+    if (updates.pretest_completed !== undefined) {
+      profileUpdates.is_pre_test_completed = !!updates.pretest_completed;
+    }
+    if (updates.onboarding_completed !== undefined) {
+      profileUpdates.diagnostic_completed_at = updates.onboarding_completed ? new Date().toISOString() : null;
+    }
+
+    if (Object.keys(profileUpdates).length > 0 && data.user?.id) {
+      await supabase.from('profiles').update(profileUpdates).eq('id', data.user.id);
+    }
+
     setUser(buildUser({ user: data.user }));
     return { success: true, user: buildUser({ user: data.user }) };
   }, [buildUser]);

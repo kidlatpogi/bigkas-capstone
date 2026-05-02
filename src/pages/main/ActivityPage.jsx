@@ -398,7 +398,10 @@ function ActivityPage() {
     if (!user?.id || activitiesLoading) return;
     
     // Condition: finished profiling AND pre-testing OR finished entire onboarding
-    const isReadyForTutorial = user.onboardingStage === 'completed' || (user.profilingCompleted && user.pretestCompleted);
+    const isReadyForTutorial = 
+      user.onboardingStage === 'completed' || 
+      (user.isProfilingCompleted && user.isPreTestCompleted) ||
+      (user.profilingCompleted && user.pretestCompleted);
     
     if (isReadyForTutorial) {
       const seen = window.localStorage.getItem(FREE_SPEECH_TUTORIAL_SEEN_KEY);
@@ -406,7 +409,7 @@ function ActivityPage() {
         setShowFreeSpeechTutorial(true);
       }
     }
-  }, [user?.id, user?.onboardingStage, user?.profilingCompleted, user?.pretestCompleted, activitiesLoading]);
+  }, [user?.id, user?.onboardingStage, user?.profilingCompleted, user?.pretestCompleted, user?.isProfilingCompleted, user?.isPreTestCompleted, activitiesLoading]);
 
   const handleActiveTaskIdChange = useCallback((id) => {
     setActiveTaskId(id);

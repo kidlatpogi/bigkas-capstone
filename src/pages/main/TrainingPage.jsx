@@ -21,6 +21,7 @@ import {
 } from '../../utils/speakerPointsHistory';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
 import { useVisualAnalysis } from '../../hooks/useVisualAnalysis';
+import userSilhouette from '../../assets/Sprites/common/user-silhouette.png';
 import './TrainingPage.css';
 
 /* ─── Helpers ──────────────────────────────────────────────────────────────── */
@@ -1308,14 +1309,18 @@ function TrainingPage() {
               {/* Placeholder shown before recording starts */}
               {!isActive && (
                 <div className="tp-camera-idle">
-                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M23 7l-7 5 7 5V7z" />
-                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-                  </svg>
-                  <span className="tp-camera-idle-label">
-                    Position your face down to your navel within the frame.
-                  </span>
-                  <span className="tp-camera-idle-sublabel">Camera starts on record</span>
+                  <img src={userSilhouette} className="tp-silhouette-overlay" alt="" />
+                  
+                  <div className="tp-camera-idle-overlay-content">
+                    <h3 className="tp-camera-view-title">The Camera View</h3>
+                    <p className="tp-camera-view-explanation">
+                      Check your posture and expression in this frame—confidence starts with how you carry yourself!
+                    </p>
+                    <span className="tp-camera-idle-label">
+                      Position your face down to your navel within the frame.
+                    </span>
+                    <span className="tp-camera-idle-sublabel">Camera starts on record</span>
+                  </div>
                 </div>
               )}
             </>

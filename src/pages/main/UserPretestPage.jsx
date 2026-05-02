@@ -7,12 +7,11 @@ function UserPretestPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    navigate(`${ROUTES.TRAINING}?autostart=1`, {
+    navigate(ROUTES.TRAINING, {
       state: {
         freeTopic: 'Tell me about yourself',
         focus: 'free',
         sessionType: 'pre-test',
-        autoStartCountdown: true,
       },
     });
   }, [navigate]);

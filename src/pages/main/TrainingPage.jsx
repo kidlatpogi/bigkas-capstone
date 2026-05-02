@@ -248,23 +248,15 @@ function TrainingPage() {
   const [showMicWarning, setShowMicWarning] = useState(false);
   const [isFreeCompactLayout, setIsFreeCompactLayout] = useState(false);
   const [isTutorialOverlayOpen, setIsTutorialOverlayOpen] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
   const { startAnalysis, stopAnalysis, liveScores, error: visualError, isReady: isVisualReady } = useVisualAnalysis();
 
-  // Auto-start logic for pre-test or linked activities
-  useEffect(() => {
-    if (status !== 'idle') return;
-    
-    const params = new URLSearchParams(location.search);
-    const shouldAutoStart = params.get('autostart') === '1' || state?.autoStartCountdown;
-    
-    if (shouldAutoStart) {
-      // Small delay to ensure camera permissions and stream are ready
-      const t = setTimeout(() => {
-        startCountdown();
-      }, 800);
-      return () => clearTimeout(t);
-    }
-  }, [status, location.search, state, startCountdown]);
+  const isRecording = status === 'recording';
+  const isPaused = status === 'paused';
+  const isActive = isRecording || isPaused;
+  const hasActivePretestTutorial = isFreePretestSession && isTutorialOverlayOpen;
+  const isStartBlockedByTutorial = hasActivePretestTutorial && !isActive && status !== 'countdown';
+
 
   const bumpElapsedSec = useCallback(() => {
     setElapsedSec((s) => {
@@ -334,6 +326,33 @@ function TrainingPage() {
   useEffect(() => {
     setIsTutorialOverlayOpen(isFreePretestSession);
   }, [isFreePretestSession]);
+
+  /** ── Simulated progress for AI analysis ── */
+  useEffect(() => {
+    if (status !== 'analysing') {
+      setAnalysisProgress(0);
+      return undefined;
+    }
+
+    // Initialize with a small amount
+    setAnalysisProgress(3);
+
+    const interval = setInterval(() => {
+      setAnalysisProgress((prev) => {
+        if (prev >= 96) return prev;
+        // Progressive slowdown: starts fast, drags near the end
+        let increment = 1.2;
+        if (prev < 30) increment = 3.5;
+        else if (prev < 65) increment = 2.1;
+        else if (prev < 85) increment = 0.8;
+        else increment = 0.3;
+
+        return Math.min(96, prev + increment);
+      });
+    }, 350);
+
+    return () => clearInterval(interval);
+  }, [status]);
 
   const scriptSentences = useMemo(() => {
     if (focus !== 'scripted' || scriptWords.length === 0) return [];
@@ -730,6 +749,8 @@ function TrainingPage() {
     }, 1000);
   }, [playCountdownCue, startRecording]);
 
+
+
   /* ── Stop → analyse ── */
   const stopRecording = () => {
     clearInterval(timerRef.current);
@@ -946,7 +967,12 @@ function TrainingPage() {
             await updateUserMetadata(metadataUpdates);
           }
 
-          navigate(buildRoute.sessionResult(result.data.id), { state: result.data });
+          setAnalysisProgress(100);
+          setTimeout(() => {
+            if (isMountedRef.current) {
+              navigate(buildRoute.sessionResult(result.data.id), { state: result.data });
+            }
+          }, 450);
         } else {
           if (isMountedRef.current) {
             setErrorMsg(result?.error || 'Analysis failed. Please try again.');
@@ -1046,11 +1072,6 @@ function TrainingPage() {
     visualMimeRef.current = '';
   };
 
-  const isRecording = status === 'recording';
-  const isPaused = status === 'paused';
-  const isActive = isRecording || isPaused;
-  const hasActivePretestTutorial = isFreePretestSession && isTutorialOverlayOpen;
-  const isStartBlockedByTutorial = hasActivePretestTutorial && !isActive && status !== 'countdown';
 
   const minDurationProgressPct = Math.min(100, (elapsedSec / MIN_RECORDING_SECONDS) * 100);
   const isMinDurationMet = elapsedSec >= MIN_RECORDING_SECONDS;
@@ -1291,7 +1312,10 @@ function TrainingPage() {
                     <path d="M23 7l-7 5 7 5V7z" />
                     <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
                   </svg>
-                  <span className="tp-camera-idle-label">Camera starts on record</span>
+                  <span className="tp-camera-idle-label">
+                    Position your face down to your navel within the frame.
+                  </span>
+                  <span className="tp-camera-idle-sublabel">Camera starts on record</span>
                 </div>
               )}
             </>
@@ -1461,9 +1485,28 @@ function TrainingPage() {
       {/* ── Analysing Overlay ── */}
       {status === 'analysing' && (
         <div className="tp-overlay">
-          <div className="tp-countdown-box">
-            <span className="tp-analysing-spinner" />
-            <span className="tp-analysing-text">Analysing…</span>
+          <div className="tp-analysing-card">
+            <h2 className="tp-analysing-title">Analyzing your session...</h2>
+            <p className="tp-analysing-subtitle">B-01 is reviewing your speech patterns, gestures, and tone.</p>
+            
+            <div className="tp-progress-container">
+              <div 
+                className="tp-progress-bar" 
+                style={{ width: `${Math.round(analysisProgress)}%` }}
+                aria-valuenow={Math.round(analysisProgress)}
+                aria-valuemin="0"
+                aria-valuemax="100"
+              />
+            </div>
+            
+            <div className="tp-progress-labels">
+              <span className="tp-progress-pct">{Math.round(analysisProgress)}%</span>
+              <span className="tp-progress-status">
+                {analysisProgress < 30 ? 'Uploading media...' : 
+                 analysisProgress < 60 ? 'Processing speech...' : 
+                 analysisProgress < 85 ? 'Calculating metrics...' : 'Finalizing feedback...'}
+              </span>
+            </div>
           </div>
         </div>
       )}

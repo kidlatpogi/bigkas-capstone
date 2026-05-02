@@ -18,6 +18,12 @@
     "options": ["Yes", "Sometimes", "No"]
   },
   {
+    "key": "visual_posture",
+    "label": "Do you tend to slouch, shift your weight nervously, or stand rigidly in one place while presenting?",
+    "type": "single",
+    "options": ["Yes", "Sometimes", "No"]
+  },
+  {
     "key": "vocal_projection",
     "label": "Is it difficult for you to project your voice loudly enough for a large room to hear?",
     "type": "single",

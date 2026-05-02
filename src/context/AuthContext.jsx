@@ -568,8 +568,16 @@ export function AuthProvider({ children }) {
       setIsInitializing(false);
     }, 8000);
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       if (!isMounted || isBootstrapped) return;
+
+      if (error) {
+        console.warn('Bigkas Auth: session restoration error:', error);
+        // Recover from "Refresh Token Not Found" or other 400 Bad Request errors by clearing local session
+        if (error.message?.includes('Refresh Token') || error.status === 400) {
+          await supabase.auth.signOut({ scope: 'local' });
+        }
+      }
 
       const blockedAccount = getAccountBlockedMessage(session?.user?.user_metadata || {});
       if (blockedAccount) {
@@ -593,8 +601,9 @@ export function AuthProvider({ children }) {
       clearTimeout(bootstrapTimeout);
       setIsLoading(false);
       setIsInitializing(false);
-    }).catch(() => {
+    }).catch((err) => {
       if (!isMounted || isBootstrapped) return;
+      console.error('Bigkas Auth: unexpected bootstrap error:', err);
       clearAdminSession();
       isBootstrapped = true;
       clearTimeout(bootstrapTimeout);

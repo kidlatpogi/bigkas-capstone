@@ -98,7 +98,7 @@ function UserProfilingPage() {
   const introFirstMessage =
     "Hello! I'm B-01, your personal guide on this exciting journey to master public speaking.";
   const introSecondMessage =
-    'Before we begin, we need to assess your current speaking level. This includes 9 short profiling questions and one small speaking pre-test. These tests ensure I can customize your experience and guide you smoothly throughout your entire journey!';
+    'Before we begin, we need to assess your current Public Speaking Level. This includes 9 short profiling questions and one small speaking pre-test. These tests ensure I can customize your experience and guide you smoothly throughout your entire journey!';
   const readyMessage =
     "Awesome! Since you're ready, let's jump right into your 9 profiling questions! And don't worry, you can answer every single one with a simple Yes, Sometimes, or No.";
   const outroFirstMessage = "You've made it to the final step! To wrap things up, let's try a quick Free Speech Pre-test.";
@@ -696,7 +696,15 @@ function UserProfilingPage() {
             <p className="profiling-pretest-text profiling-pretest-text--mission">
               <strong>Your mission:</strong>
               <br />
-              {typedOutroMissionText}
+              {isOutroTypingDone ? (
+                <>
+                  Speak for at least <strong>30 seconds</strong> on the topic,{' '}
+                  <strong>&apos;Tell me about yourself.&apos;</strong> Don&apos;t overthink it-just be
+                  you and let your voice lead the way!
+                </>
+              ) : (
+                typedOutroMissionText
+              )}
             </p>
             <div className="profiling-intro-actions profiling-intro-actions--end">
               <div className="profiling-submit-btn">

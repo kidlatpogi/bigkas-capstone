@@ -55,9 +55,8 @@ function calculateMehrabianTotal({ verbalScore = 0, vocalScore = 0, visualScore 
   return clampScore((verbalScore * 0.07) + (vocalScore * 0.38) + (visualScore * 0.55));
 }
 
-/** Display Triple V / aggregate scores on the Bigkas 1.0–5.0 entry scale (from raw 0–100 metrics). */
 function formatEntryScale(percent0to100) {
-  return mapPercentToEntryScore(percent0to100).toFixed(1);
+  return Math.round(mapPercentToEntryScore(percent0to100));
 }
 
 const ANALYZING_MUTE_KEY = 'bigkas_analyzing_muted';
@@ -155,7 +154,7 @@ function UserAnalyzingPage() {
   }, []);
   const profilingEntryScore = useMemo(() => {
     const rawProfileScore = clampScore(user?.speakerProfile?.baseline_score ?? 0);
-    return mapPercentToEntryScore(rawProfileScore).toFixed(1);
+    return Math.round(mapPercentToEntryScore(rawProfileScore));
   }, [user?.speakerProfile?.baseline_score]);
   const pretestEntryScore = useMemo(
     () => formatEntryScale(analysis.freePretestScore),
@@ -554,17 +553,6 @@ function UserAnalyzingPage() {
             <div className="analyzing-robot-media" aria-hidden="true">
               <img src={analyzingRobotImage} alt="" className="analyzing-robot-image" />
             </div>
-            <div className="analyzing-audio-action">
-              <button
-                type="button"
-                onClick={handleToggleMute}
-                aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                className={`analyzing-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
-              >
-                {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-              </button>
-            </div>
           </div>
         </section>
       ) : showScoreBreakdown ? (
@@ -575,15 +563,15 @@ function UserAnalyzingPage() {
 
             <div className="analyzing-breakdown-score-page">
               <p>
-                Profiling (<strong className="analyzing-score-value">{profilingEntryScore}/5.0</strong>): Your personal comfort and confidence levels.
+                Profiling (<strong className="analyzing-score-value">{profilingEntryScore}/5</strong>): Your personal comfort and confidence levels.
               </p>
               <p>
-                AI Pre-test (<strong className="analyzing-score-value">{pretestEntryScore}/5.0</strong>): An objective look at your Triple V:
+                AI Pre-test (<strong className="analyzing-score-value">{pretestEntryScore}/5</strong>): An objective look at your Triple V:
               </p>
               <ul className="analyzing-breakdown-list">
-                <li>Visual (55%): <strong className="analyzing-score-value">{visualEntryScore}/5.0</strong> - Eye contact and gestures.</li>
-                <li>Vocal (38%): <strong className="analyzing-score-value">{vocalEntryScore}/5.0</strong> - Projection and expression.</li>
-                <li>Verbal (7%): <strong className="analyzing-score-value">{verbalEntryScore}/5.0</strong> - Vocabulary and filler use.</li>
+                <li>Visual (55%): <strong className="analyzing-score-value">{visualEntryScore}/5</strong> - Eye contact and gestures.</li>
+                <li>Vocal (38%): <strong className="analyzing-score-value">{vocalEntryScore}/5</strong> - Projection and expression.</li>
+                <li>Verbal (7%): <strong className="analyzing-score-value">{verbalEntryScore}/5</strong> - Vocabulary and filler use.</li>
               </ul>
             </div>
 
@@ -601,17 +589,6 @@ function UserAnalyzingPage() {
           <div className="analyzing-robot-wrap">
             <div className="analyzing-robot-media analyzing-robot-media--result" aria-hidden="true">
               <img src={robotImage0015} alt="" className="analyzing-robot-image" />
-            </div>
-            <div className="analyzing-audio-action">
-              <button
-                type="button"
-                onClick={handleToggleMute}
-                aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                className={`analyzing-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
-              >
-                {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-              </button>
             </div>
           </div>
         </section>
@@ -645,20 +622,21 @@ function UserAnalyzingPage() {
             <div className="analyzing-robot-media analyzing-robot-media--result" aria-hidden="true">
               <img src={staticRandomResultRobot} alt="" className="analyzing-robot-image" />
             </div>
-            <div className="analyzing-audio-action">
-              <button
-                type="button"
-                onClick={handleToggleMute}
-                aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                className={`analyzing-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
-              >
-                {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-              </button>
-            </div>
           </div>
         </section>
       )}
+
+      <div className="analyzing-audio-action">
+        <button
+          type="button"
+          onClick={handleToggleMute}
+          aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+          title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+          className={`analyzing-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
+        >
+          {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+        </button>
+      </div>
     </div>
   );
 }

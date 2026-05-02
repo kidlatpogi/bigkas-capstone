@@ -618,8 +618,8 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
                         </div>
                       </div>
                       <div className="progress-pillar-track-header">
-                        <span className="progress-pillar-track-label">Consistency Progress</span>
-                        <span className="progress-pillar-track-percent">{Math.round(pillar.value)}%</span>
+                        <span className="progress-pillar-track-label">Overall consistency</span>
+                        <span className="progress-pillar-track-percent">{pillar.score.toFixed(1)} / 5.0</span>
                       </div>
                       <div className="progress-pillar-track">
                         <div

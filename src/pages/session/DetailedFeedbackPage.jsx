@@ -629,7 +629,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
                   </div>
                   <div className="progress-pillar-track-header">
                     <span className="progress-pillar-track-label">{p.desc}</span>
-                    <span className="progress-pillar-track-percent">{Math.round(scorePercent)}%</span>
+                    <span className="progress-pillar-track-percent">{p.score.toFixed(1)} / 5.0</span>
                   </div>
                   <div className="progress-pillar-track">
                     <div className="progress-pillar-track-fill" style={{ width: `${scorePercent}%`, background: tier.color }} />

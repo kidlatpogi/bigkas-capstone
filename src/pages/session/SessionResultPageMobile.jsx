@@ -296,7 +296,6 @@ function SessionResultPageMobile({ sessionIdProp, isInnerView, onCloseInner, onV
                   </div>
                   <div className="sr-mobile-pillar-score-row">
                     <span className="sr-mobile-pillar-score">{p.score.toFixed(1)} <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>/ 5.0</span></span>
-                    <span className="sr-mobile-pillar-percent">{Math.round(percent)}%</span>
                   </div>
                   <div className="sr-mobile-pillar-track">
                     <div className="sr-mobile-pillar-fill" style={{ width: `${percent}%`, background: tier.color }} />

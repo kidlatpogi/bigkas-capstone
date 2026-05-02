@@ -56,7 +56,7 @@ function calculateMehrabianTotal({ verbalScore = 0, vocalScore = 0, visualScore 
 }
 
 function formatEntryScale(percent0to100) {
-  return mapPercentToEntryScore(percent0to100).toFixed(1);
+  return Math.floor(mapPercentToEntryScore(percent0to100)).toString();
 }
 
 const ANALYZING_MUTE_KEY = 'bigkas_analyzing_muted';

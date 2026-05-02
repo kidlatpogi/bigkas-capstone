@@ -1753,7 +1753,7 @@ function TrainingPage() {
         message="Your current recording progress will be discarded and you will start over."
         confirmLabel="Restart"
         cancelLabel="Cancel"
-        type="warning"
+        type="info"
         onCancel={() => setShowRestartConfirm(false)}
         onConfirm={() => {
           handleRestart();

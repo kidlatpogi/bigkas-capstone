@@ -1306,11 +1306,9 @@ function TrainingPage() {
               />
               <canvas ref={visualCanvasRef} className="tp-camera-overlay" aria-hidden="true" />
               {/* Placeholder shown before recording starts */}
-              {!isActive && (
-                <div className="tp-camera-idle">
-                  <div className="tp-camera-frame-guide" />
-                </div>
-              )}
+              <div className={`tp-camera-idle ${isActive ? 'tp-camera-idle--active' : ''}`}>
+                <div className={`tp-camera-frame-guide ${isActive ? 'tp-camera-frame-guide--active' : ''}`} />
+              </div>
             </>
           </div>
 

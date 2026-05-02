@@ -400,6 +400,12 @@ body.training-page-active {
   justify-content: center;
   gap: 10px;
   background: #111;
+  transition: background 0.4s ease;
+  pointer-events: none;
+}
+
+.tp-camera-idle--active {
+  background: transparent;
 }
 
 .tp-camera-frame-guide {
@@ -428,6 +434,18 @@ body.training-page-active {
   letter-spacing: 0.12em;
   white-space: nowrap;
   text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  transition: opacity 0.3s ease;
+}
+
+.tp-camera-frame-guide--active {
+  border-color: rgba(255, 255, 255, 0.2);
+  border-style: dashed;
+  border-width: 1.5px;
+  box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.1);
+}
+
+.tp-camera-frame-guide--active::after {
+  opacity: 0;
 }
 
 /* Waveform — 50 bars */

@@ -1188,10 +1188,10 @@ body.training-page-active {
 
 .tp-progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #f18f01 0%, #ffae42 100%);
+  background: linear-gradient(90deg, #F97316 0%, #FB923C 100%);
   border-radius: inherit;
   transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 0 10px rgba(241, 143, 1, 0.3);
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.3);
 }
 
 .tp-progress-labels {
@@ -1204,7 +1204,7 @@ body.training-page-active {
 .tp-progress-pct {
   font-size: 1.35rem;
   font-weight: 800;
-  color: #f18f01;
+  color: #F97316;
   font-variant-numeric: tabular-nums;
 }
 

@@ -44,6 +44,11 @@ function score100to15(value) {
   return 1 + (Math.max(0, Math.min(100, numeric)) / 100) * 4;
 }
 
+function score15ToPercent(score15) {
+  const clamped = Math.max(1, Math.min(5, Number(score15) || 1));
+  return Math.round(((clamped - 1) / 4) * 100);
+}
+
 function resolveSessionPillars(session) {
   const visual = clamp15(session?.visual_avg) ?? score100to15(session?.visual_score) ?? 1;
   const verbal = clamp15(session?.verbal_avg) ?? score100to15(session?.context_score) ?? 1;

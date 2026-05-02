@@ -438,10 +438,10 @@ body.training-page-active {
 }
 
 .tp-camera-frame-guide--active {
-  border-color: rgba(255, 255, 255, 0.2);
-  border-style: dashed;
-  border-width: 1.5px;
-  box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.1);
+  border-color: rgba(241, 143, 1, 0.45);
+  border-style: solid;
+  border-width: 2px;
+  box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.35);
 }
 
 .tp-camera-frame-guide--active::after {

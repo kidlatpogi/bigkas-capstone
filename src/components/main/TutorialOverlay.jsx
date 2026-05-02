@@ -42,7 +42,7 @@ function TutorialOverlay({
       {
         id: 'step-camera',
         title: 'B-01:',
-        text: "'The Camera View' This is for your Visual analysis! Position yourself within the guide so I can accurately track your eye contact, expressions, and gestures.",
+        text: "'The Camera View' This is for your Visual analysis! Position yourself within the guide so I can accurately track your eye contact, expressions, and gestures. Also, make sure you're in a well-lit room so I can see you clearly—good lighting makes for a great performance!",
         button: 'Next',
         targetElementId: 'tutorial-target-camera',
         emphasis: "'The Camera View'",

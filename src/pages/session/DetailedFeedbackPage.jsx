@@ -531,6 +531,29 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
                     </li>
                   ))}
                 </ul>
+                <button 
+                  type="button"
+                  onClick={() => document.getElementById('detailed-recommendations')?.scrollIntoView({ behavior: 'smooth' })}
+                  style={{ 
+                    marginTop: '12px', 
+                    padding: '8px 16px', 
+                    background: 'rgba(0,0,0,0.05)', 
+                    border: 'none', 
+                    borderRadius: '20px', 
+                    fontSize: '0.75rem', 
+                    fontWeight: 700, 
+                    color: '#64748b', 
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.1)'}
+                  onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
+                >
+                  View full list ↓
+                </button>
               </div>
             </div>
           </div>
@@ -667,6 +690,29 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
                 </div>
               );
             })}
+          </div>
+        </section>
+        
+        {/* Detailed Recommendations Section */}
+        <section id="detailed-recommendations" className="df-recommendations-section dashboard-anim-bottom dashboard-anim-delay-6" style={{ marginTop: '48px' }}>
+          <div className="sr-section-header">
+            <h2 className="sr-section-title">Detailed Recommendations</h2>
+            <p className="sr-section-subtitle">Actionable steps to improve your Visual, Vocal, and Verbal delivery</p>
+          </div>
+          <div className="df-card" style={{ padding: '24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+              {recommendations.map((rec, idx) => (
+                <div key={idx} style={{ background: '#f8fafc', padding: '20px', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.03)', display: 'flex', gap: '16px' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', flexShrink: 0, fontSize: '0.9rem', fontWeight: 800, color: '#10b981' }}>
+                    {idx + 1}
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.025em' }}>{rec.pillar}</span>
+                    <p style={{ margin: '4px 0 0', fontSize: '0.9rem', lineHeight: '1.6', color: '#1e293b', fontWeight: 500 }}>{rec.text}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 

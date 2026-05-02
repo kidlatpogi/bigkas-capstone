@@ -563,12 +563,16 @@ function ActivityPage() {
 
   useEffect(() => {
     if (location.state?.launchFreeSpeechTutorial !== true) return;
+    
+    // Explicitly reset the seen flag if we're coming from the onboarding reveal
+    window.localStorage.setItem(FREE_SPEECH_TUTORIAL_SEEN_KEY, '0');
     setShowFreeSpeechTutorial(true);
+
     navigate(location.pathname, {
       replace: true,
       state: { ...(location.state || {}), launchFreeSpeechTutorial: false },
     });
-  }, [location.pathname, location.state, navigate]);
+  }, [location.pathname, location.state, navigate, FREE_SPEECH_TUTORIAL_SEEN_KEY]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
@@ -785,6 +789,13 @@ function ActivityPage() {
   if (activitiesLoading) {
     return (
       <div className="activity-page-root">
+        <TutorialOverlay
+          isOpen={showFreeSpeechTutorial}
+          steps={FREE_SPEECH_TUTORIAL_STEPS}
+          showAudioToggle
+          onClose={() => setShowFreeSpeechTutorial(false)}
+          onFinish={handleTutorialFinish}
+        />
         <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
           <p className="section-label">Loading journey…</p>
         </div>
@@ -795,6 +806,13 @@ function ActivityPage() {
   if (activitiesError) {
     return (
       <div className="activity-page-root">
+        <TutorialOverlay
+          isOpen={showFreeSpeechTutorial}
+          steps={FREE_SPEECH_TUTORIAL_STEPS}
+          showAudioToggle
+          onClose={() => setShowFreeSpeechTutorial(false)}
+          onFinish={handleTutorialFinish}
+        />
         <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
           <p className="activity-task-lock-note">Could not load activities: {activitiesError}</p>
           <p className="activity-task-detail">Ensure the `activities` table exists and RLS allows read for authenticated users.</p>

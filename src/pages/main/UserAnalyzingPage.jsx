@@ -365,6 +365,12 @@ function UserAnalyzingPage() {
   ]);
 
   useEffect(() => {
+    if (isReady && !showLevelReveal && !isPersisting && !isPersisted) {
+      persistAndReveal();
+    }
+  }, [isReady, showLevelReveal, isPersisting, isPersisted, persistAndReveal]);
+
+  useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     const audio = new Audio(analyzingProgressVoice);
     audio.preload = 'auto';
@@ -523,31 +529,13 @@ function UserAnalyzingPage() {
     <div className="user-analyzing-page">
       {!showLevelReveal ? (
         <section className="analyzing-intro">
-          <article className="analyzing-bubble" aria-label="Analyzing onboarding level">
-            <p className="analyzing-bubble-kicker">B-01:</p>
-            <p className="analyzing-bubble-title">Analyzing your level...</p>
-            <p className="analyzing-bubble-copy">
-              Hold tight while I process your Triple V metrics and calibrate your starting level.
-            </p>
-
+          <div className="analyzing-minimal-loader" aria-label="Preparing your results">
             <div className="analyzing-loader" role="progressbar" aria-valuemin={1} aria-valuemax={100} aria-valuenow={loaderPct}>
               <span className="analyzing-loader-fill" style={{ width: `${loaderPct}%` }} />
             </div>
-            <p className="analyzing-loader-text">{loaderPct}%</p>
-            {!error && (
-              <div className="analyzing-actions">
-                <button
-                  type="button"
-                  className="analyzing-action-btn analyzing-action-btn--primary"
-                  onClick={() => void persistAndReveal()}
-                  disabled={loaderPct < 100 || !isReady || isPersisting}
-                >
-                  {isPersisting ? 'Saving...' : 'Continue'}
-                </button>
-              </div>
-            )}
+            <p className="analyzing-loader-text">Calibrating Results... {loaderPct}%</p>
             {error && <p className="analyzing-error">{error}</p>}
-          </article>
+          </div>
 
           <div className="analyzing-robot-wrap">
             <div className="analyzing-robot-media" aria-hidden="true">

@@ -86,20 +86,26 @@
 
 .cm-btn-cancel {
   flex: 1;
-  height: 52px;
-  border-radius: 14px;
-  border: 1.5px solid rgba(0, 0, 0, 0.1);
-  background: transparent;
-  color: #444;
-  font-size: 15px;
-  font-weight: 600;
+  height: 56px;
+  border-radius: 999px;
+  border: none;
+  background: #F97316;
+  color: #FFFFFF;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
+  box-shadow: #C2410C 0 4px 0 0;
 }
 
-.cm-btn-cancel:hover {
-  background: rgba(0, 0, 0, 0.03);
-  border-color: rgba(0, 0, 0, 0.2);
+.cm-btn-cancel:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.cm-btn-cancel:active:not(:disabled) {
+  transform: translateY(2px);
 }
 
 .cm-btn-confirm {
@@ -177,12 +183,10 @@
 }
 
 [data-theme="dark"] .cm-btn-cancel {
-  border-color: rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.8);
-}
-
-[data-theme="dark"] .cm-btn-cancel:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: #F97316;
+  color: #FFFFFF;
+  box-shadow: #9A3412 0 4px 0 0;
+  border: none;
 }
 
 [data-theme="dark"] .cm-btn-confirm.info {

@@ -116,7 +116,6 @@ function UserAnalyzingPage() {
   const [isPersisted, setIsPersisted] = useState(false);
   const [showLevelReveal, setShowLevelReveal] = useState(false);
   const [showScoreBreakdown, setShowScoreBreakdown] = useState(false);
-  const [loaderPct, setLoaderPct] = useState(1);
   const [typedResultText, setTypedResultText] = useState('');
   const [isTypingDone, setIsTypingDone] = useState(false);
   const [isMuted, setIsMuted] = useState(() => {
@@ -383,18 +382,6 @@ function UserAnalyzingPage() {
     };
   }, []);
 
-  useEffect(() => {
-    if (showLevelReveal) return undefined;
-    const timer = window.setInterval(() => {
-      setLoaderPct((prev) => {
-        if (!isReady) {
-          return Math.min(94, prev + 1);
-        }
-        return Math.min(100, prev + 2);
-      });
-    }, 90);
-    return () => window.clearInterval(timer);
-  }, [isReady, showLevelReveal]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -529,14 +516,7 @@ function UserAnalyzingPage() {
     <div className="user-analyzing-page">
       {!showLevelReveal ? (
         <section className="analyzing-intro">
-          <div className="analyzing-minimal-loader" aria-label="Preparing your results">
-            <div className="analyzing-loader" role="progressbar" aria-valuemin={1} aria-valuemax={100} aria-valuenow={loaderPct}>
-              <span className="analyzing-loader-fill" style={{ width: `${loaderPct}%` }} />
-            </div>
-            <p className="analyzing-loader-text">Calibrating Results... {loaderPct}%</p>
-            {error && <p className="analyzing-error">{error}</p>}
-          </div>
-
+          {error && <p className="analyzing-error">{error}</p>}
           <div className="analyzing-robot-wrap">
             <div className="analyzing-robot-media" aria-hidden="true">
               <img src={analyzingRobotImage} alt="" className="analyzing-robot-image" />

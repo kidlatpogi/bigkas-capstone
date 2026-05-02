@@ -134,15 +134,6 @@
   margin-left: 0;
 }
 
-.analyzing-minimal-loader {
-  width: min(100%, 28rem);
-  padding: 1.5rem;
-  text-align: center;
-  position: relative;
-  z-index: 20;
-  transform: translateY(clamp(2rem, 5vh, 4rem));
-}
-
 .analyzing-audio-action {
   position: fixed;
   right: clamp(1rem, 3vw, 2.5rem);

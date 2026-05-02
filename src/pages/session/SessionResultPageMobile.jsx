@@ -222,7 +222,7 @@ function SessionResultPageMobile({ sessionIdProp, isInnerView, onCloseInner, onV
                  tripleV.entryPoint >= 3.0 ? 'Good job! A few areas to polish but very natural.' :
                  'Keep going! Regular practice is key to steady improvement.'}
               </p>
-              
+              <p style={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginTop: '12px', marginBottom: '4px' }}>Recommendations:</p>
               {allRecommendations.length > 0 && (
                 <ul className="sr-mobile-hero-recs">
                   {allRecommendations.slice(0, 2).map((rec, idx) => (

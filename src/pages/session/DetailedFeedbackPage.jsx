@@ -522,6 +522,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
                         ? 'Good progress. Keep practicing to reach the next tier.'
                         : "Every session counts. Focus on the basics to improve."}
                 </p>
+                <p className="new-banner-recs-title" style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.025em' }}>Recommendations:</p>
                 <ul className="new-banner-recs-minilist">
                   {recommendations.slice(0, 2).map((rec, idx) => (
                     <li key={idx} className="new-banner-rec-item">

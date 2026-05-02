@@ -580,7 +580,7 @@ function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner, onViewDet
                         : "Every session makes you stronger. Focus on the fundamentals and try again."}
 
                 </p>
-
+                <p className="new-banner-recs-title" style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.025em' }}>Recommendations:</p>
                 <ul className="new-banner-recs-minilist">
 
                   {allRecommendations.slice(0, 2).map((rec, idx) => (

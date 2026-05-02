@@ -54,10 +54,10 @@ function getTripleVScores(result) {
 }
 
 function getScoreTier15(score) {
-  if (score >= 4.0) return { label: 'Excellent', color: FOREST_GREEN };
-  if (score >= 3.0) return { label: 'Good', color: SOFT_SAGE };
-  if (score >= 2.0) return { label: 'Fair', color: VIBRANT_ORANGE };
-  return { label: 'Needs Work', color: '#D94F3B' };
+  if (score >= 4.0) return { label: 'Stellar', color: '#10B981' };
+  if (score >= 3.0) return { label: 'Strong', color: '#34D399' };
+  if (score >= 2.0) return { label: 'Developing', color: '#3B82F6' };
+  return { label: 'Rising', color: '#FBBF24' };
 }
 
 function scoreBarPercent(score) {

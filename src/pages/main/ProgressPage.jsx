@@ -71,10 +71,10 @@ function getAverageTrendScore15(sessionsList) {
 }
 
 function getScoreTier15(score) {
-  if (score >= 4.0) return { label: 'Excellent', color: '#059669' };
-  if (score >= 3.0) return { label: 'Good', color: '#059669' };
-  if (score >= 2.0) return { label: 'Fair', color: '#F97316' };
-  return { label: 'Needs Work', color: '#FF0000' };
+  if (score >= 4.0) return { label: 'Stellar', color: '#10B981' };
+  if (score >= 3.0) return { label: 'Strong', color: '#34D399' };
+  if (score >= 2.0) return { label: 'Developing', color: '#3B82F6' };
+  return { label: 'Rising', color: '#FBBF24' };
 }
 
 function clamp15(value) {

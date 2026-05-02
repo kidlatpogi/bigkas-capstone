@@ -397,17 +397,18 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
                 onClick={scrollToAvoid}
                 style={{ 
                   marginTop: '12px', 
-                  background: '#ef444415', 
-                  color: '#ef4444', 
+                  background: '#10b98115', 
+                  color: '#059669', 
                   border: 'none', 
-                  padding: '6px 10px', 
-                  borderRadius: '6px', 
+                  padding: '8px 14px', 
+                  borderRadius: '10px', 
                   fontSize: '0.65rem', 
                   fontWeight: 800, 
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 6px rgba(16, 185, 129, 0.1)'
                 }}
               >
-                WHAT NOT TO DO ↓
+                GROWTH FOCUS ↓
               </button>
             </div>
           </div>
@@ -577,14 +578,15 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
 
         <section className="df-mobile-section dashboard-anim-bottom" ref={avoidSectionRef}>
           <div className="df-mobile-section-header">
-            <h2 className="df-mobile-section-title" style={{ color: '#ef4444' }}>WHAT NOT TO DO</h2>
+            <h2 className="df-mobile-section-title" style={{ color: '#0d9488' }}>Growth Focus</h2>
           </div>
-          <div className="df-mobile-card" style={{ borderLeft: '4px solid #ef4444' }}>
+          <div className="df-mobile-card" style={{ borderLeft: '4px solid #0d9488', background: 'linear-gradient(to right, #f0fdfa, #ffffff)' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
+              <p style={{ margin: '0 0 4px', fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Be mindful of these points to level up:</p>
               {deRecommendations.map((tip, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: '8px', background: '#fef2f2', padding: '12px', borderRadius: '10px' }}>
-                  <span style={{ color: '#ef4444', fontWeight: 900 }}>✕</span>
-                  <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 600, color: '#991b1b' }}>{tip}</p>
+                <div key={idx} style={{ display: 'flex', gap: '12px', background: '#fff', padding: '16px', borderRadius: '12px', border: '1px solid #f0fdfa', boxShadow: '0 2px 8px rgba(0,0,0,0.01)' }}>
+                  <span style={{ color: '#0d9488', fontWeight: 900 }}>•</span>
+                  <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: '#334155', lineHeight: '1.5' }}>{tip}</p>
                 </div>
               ))}
             </div>

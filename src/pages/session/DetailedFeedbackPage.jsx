@@ -547,22 +547,23 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
                   onClick={scrollToAvoid}
                   style={{ 
                     marginTop: '12px', 
-                    background: '#ef444415', 
-                    color: '#ef4444', 
+                    background: '#10b98115', 
+                    color: '#059669', 
                     border: 'none', 
-                    padding: '6px 12px', 
-                    borderRadius: '8px', 
-                    fontSize: '0.7rem', 
-                    fontWeight: 700, 
+                    padding: '8px 16px', 
+                    borderRadius: '10px', 
+                    fontSize: '0.75rem', 
+                    fontWeight: 800, 
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px',
-                    transition: 'all 0.2s ease'
+                    gap: '6px',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 2px 8px rgba(16, 185, 129, 0.1)'
                   }}
                   className="df-avoid-btn"
                 >
-                  WHAT NOT TO DO ↓
+                  GROWTH FOCUS ↓
                 </button>
               </div>
             </div>
@@ -747,13 +748,21 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
             </div>
           </div>
 
-          <div className="df-card" ref={avoidSectionRef} style={{ padding: '24px', borderLeft: '4px solid #ef4444' }}>
-            <h3 className="df-section-title" style={{ fontSize: '1.1rem', marginBottom: '16px', color: '#ef4444' }}>WHAT NOT TO DO</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="df-card" ref={avoidSectionRef} style={{ padding: '32px', borderLeft: '4px solid #0d9488', background: 'linear-gradient(to right, #f0fdfa, #ffffff)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#ccfbf1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0d9488', fontSize: '1.2rem' }}>
+                💡
+              </div>
+              <div>
+                <h3 className="df-section-title" style={{ fontSize: '1.2rem', margin: 0, color: '#134e4a' }}>Growth Focus: Areas to Refine</h3>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>Be mindful of these points in your next session</p>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
               {deRecommendations.map((tip, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: '12px', background: '#fef2f2', padding: '16px', borderRadius: '12px' }}>
-                  <span style={{ color: '#ef4444', fontWeight: 900 }}>✕</span>
-                  <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 500, color: '#991b1b' }}>{tip}</p>
+                <div key={idx} style={{ display: 'flex', gap: '16px', background: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid #f0fdfa', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                  <span style={{ color: '#0d9488', fontWeight: 900, fontSize: '1.1rem' }}>•</span>
+                  <p style={{ margin: 0, fontSize: '0.95rem', lineHeight: '1.6', fontWeight: 500, color: '#334155' }}>{tip}</p>
                 </div>
               ))}
             </div>

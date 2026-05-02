@@ -294,8 +294,15 @@ function TrainingPage() {
   }, [trainingWpmStorageKey, wpm]);
 
   useEffect(() => {
-    micWarningVisibleRef.current = showMicWarning;
-  }, [showMicWarning]);
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      clearInterval(timerRef.current);
+      clearInterval(countRef.current);
+      clearInterval(wpmTimerRef.current);
+      cancelAnimationFrame(animRef.current);
+    };
+  }, []);
 
   /* Lighting detection logic */
   useEffect(() => {
@@ -597,6 +604,7 @@ function TrainingPage() {
       waveHistRef.current = [...waveHistRef.current.slice(1), visualLevel];
       setWaveformBars([...waveHistRef.current]);
 
+      /*
       if (measured < lowPickupThreshold) {
         if (!micLowStartRef.current) {
           micLowStartRef.current = Date.now();
@@ -614,7 +622,10 @@ function TrainingPage() {
           setShowMicWarning(false);
         }
       }
+      */
 
+      // Silence hints disabled per user request
+      /*
       if (measured < sensitivity.silenceThreshold) {
         if (!silenceStartRef.current) {
           silenceStartRef.current = Date.now();
@@ -632,6 +643,7 @@ function TrainingPage() {
       } else {
         silenceStartRef.current = null;
       }
+      */
 
       animRef.current = requestAnimationFrame(tick);
     };
@@ -1106,7 +1118,7 @@ function TrainingPage() {
         setStatus('recording');
 
         setTimeout(() => {
-          if (isMountedRef.current) setIsResumingVisual(false);
+          setIsResumingVisual(false);
         }, 800);
       } else {
         setResumeCountdown(count);

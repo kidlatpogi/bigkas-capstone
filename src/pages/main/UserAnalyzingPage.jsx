@@ -56,7 +56,7 @@ function calculateMehrabianTotal({ verbalScore = 0, vocalScore = 0, visualScore 
 }
 
 function formatEntryScale(percent0to100) {
-  return mapPercentToEntryScore(percent0to100).toFixed(1);
+  return Math.floor(mapPercentToEntryScore(percent0to100)).toString();
 }
 
 const ANALYZING_MUTE_KEY = 'bigkas_analyzing_muted';
@@ -563,15 +563,15 @@ function UserAnalyzingPage() {
 
             <div className="analyzing-breakdown-score-page">
               <p>
-                Profiling (<strong className="analyzing-score-value">{profilingEntryScore}/5.0</strong>): Your personal comfort and confidence levels.
+                Profiling (<strong className="analyzing-score-value">{profilingEntryScore}/5</strong>): Your personal comfort and confidence levels.
               </p>
               <p>
-                AI Pre-test (<strong className="analyzing-score-value">{pretestEntryScore}/5.0</strong>): An objective look at your Triple V:
+                AI Pre-test (<strong className="analyzing-score-value">{pretestEntryScore}/5</strong>): An objective look at your Triple V:
               </p>
               <ul className="analyzing-breakdown-list">
-                <li>Visual (55%): <strong className="analyzing-score-value">{visualEntryScore}/5.0</strong> - Eye contact and gestures.</li>
-                <li>Vocal (38%): <strong className="analyzing-score-value">{vocalEntryScore}/5.0</strong> - Projection and expression.</li>
-                <li>Verbal (7%): <strong className="analyzing-score-value">{verbalEntryScore}/5.0</strong> - Vocabulary and filler use.</li>
+                <li>Visual (55%): <strong className="analyzing-score-value">{visualEntryScore}/5</strong> - Eye contact and gestures.</li>
+                <li>Vocal (38%): <strong className="analyzing-score-value">{vocalEntryScore}/5</strong> - Projection and expression.</li>
+                <li>Verbal (7%): <strong className="analyzing-score-value">{verbalEntryScore}/5</strong> - Vocabulary and filler use.</li>
               </ul>
             </div>
 

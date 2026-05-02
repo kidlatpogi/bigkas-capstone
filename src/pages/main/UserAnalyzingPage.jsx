@@ -58,7 +58,7 @@ function formatEntryScale(percent0to100) {
   return Math.floor(mapPercentToEntryScore(percent0to100)).toString();
 }
 
-const ANALYZING_MUTE_KEY = 'bigkas_analyzing_muted';
+const GLOBAL_MUTE_KEY = 'bigkas_global_audio_muted_v1';
 const RESULT_ROBOT_POOL = [
   robotImage0001,
   robotImage0002,
@@ -119,7 +119,7 @@ function UserAnalyzingPage() {
   const [isTypingDone, setIsTypingDone] = useState(false);
   const [isMuted, setIsMuted] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem(ANALYZING_MUTE_KEY) === '1';
+    return window.localStorage.getItem(GLOBAL_MUTE_KEY) === '1';
   });
   const [analysis, setAnalysis] = useState({
     verbalScore: 0,
@@ -384,7 +384,7 @@ function UserAnalyzingPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    window.localStorage.setItem(ANALYZING_MUTE_KEY, isMuted ? '1' : '0');
+    window.localStorage.setItem(GLOBAL_MUTE_KEY, isMuted ? '1' : '0');
   }, [isMuted]);
 
   useEffect(() => {

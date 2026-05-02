@@ -21,7 +21,7 @@ function TutorialOverlay({
   finalRobotImage = defaultFinalRobotImage,
   showAudioToggle = false,
 }) {
-  const TUTORIAL_MUTE_KEY = 'bigkas_tutorial_overlay_muted_v1';
+  const GLOBAL_MUTE_KEY = 'bigkas_global_audio_muted_v1';
   const defaultSteps = useMemo(
     () => [
       {
@@ -86,7 +86,7 @@ function TutorialOverlay({
   const [isTypingDone, setIsTypingDone] = useState(false);
   const [isMuted, setIsMuted] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem(TUTORIAL_MUTE_KEY) === '1';
+    return window.localStorage.getItem(GLOBAL_MUTE_KEY) === '1';
   });
   const activeSpotlightRef = useRef(null);
   const companionContainerRef = useRef(null);
@@ -113,7 +113,7 @@ function TutorialOverlay({
     setIsMuted((prev) => {
       const next = !prev;
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem(TUTORIAL_MUTE_KEY, next ? '1' : '0');
+        window.localStorage.setItem(GLOBAL_MUTE_KEY, next ? '1' : '0');
       }
       if (next) {
         stopAllAudios();

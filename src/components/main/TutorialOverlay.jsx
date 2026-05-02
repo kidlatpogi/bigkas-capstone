@@ -42,7 +42,7 @@ function TutorialOverlay({
       {
         id: 'step-camera',
         title: 'B-01:',
-        text: "'The Camera View', Check your posture and expression in this frame—confidence starts with how you carry yourself!",
+        text: "'The Camera View' Check your posture and expression in this frame! Position yourself within the guide so I can accurately analyze your eye contact, expressions, and gestures—confidence starts with how you carry yourself!",
         button: 'Next',
         targetElementId: 'tutorial-target-camera',
         emphasis: "'The Camera View'",

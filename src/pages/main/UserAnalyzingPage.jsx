@@ -7,7 +7,6 @@ import { ROUTES } from '../../utils/constants';
 import { getBigkasLevelFromScore, mapPercentToEntryScore } from '../../utils/activityProgress';
 import { getSpriteUrl, getVoiceUrl } from '../../utils/assetUtils';
 
-const analyzingRobotImage = getSpriteUrl('Robot/0010.webp');
 const resultRobotImage = getSpriteUrl('Robot/0013.webp');
 const robotImage0001 = getSpriteUrl('Robot/0001.webp');
 const robotImage0002 = getSpriteUrl('Robot/0002.webp');
@@ -514,16 +513,7 @@ function UserAnalyzingPage() {
 
   return (
     <div className="user-analyzing-page">
-      {!showLevelReveal ? (
-        <section className="analyzing-intro">
-          {error && <p className="analyzing-error">{error}</p>}
-          <div className="analyzing-robot-wrap">
-            <div className="analyzing-robot-media" aria-hidden="true">
-              <img src={analyzingRobotImage} alt="" className="analyzing-robot-image" />
-            </div>
-          </div>
-        </section>
-      ) : showScoreBreakdown ? (
+      {!showLevelReveal ? null : showScoreBreakdown ? (
         <section className="analyzing-intro">
           <article className="analyzing-bubble analyzing-bubble--result" aria-label="Score breakdown">
             <p className="analyzing-bubble-kicker">B-01:</p>

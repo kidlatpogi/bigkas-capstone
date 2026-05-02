@@ -245,8 +245,8 @@ function SessionResultPageMobile({ sessionIdProp, isInnerView, onCloseInner, onV
               <span className="sr-mobile-widget-badge" style={{ background: '#f1f5f9', color: '#64748b' }}>PERFORMANCE</span>
             </div>
             <div className="sr-mobile-score-row">
-              <span className="sr-mobile-score-value" style={{ color: overallTier.color }}>{tripleV.entryPoint.toFixed(1)}</span>
-              <span className="sr-mobile-score-max">/ 5.0</span>
+              <span className="sr-mobile-score-value" style={{ color: overallTier.color }}>{Math.floor(tripleV.entryPoint)}</span>
+              <span className="sr-mobile-score-max">/ 5</span>
             </div>
             <div className="sr-mobile-tier-row">
               <span className="sr-mobile-tier-dot" style={{ background: overallTier.color }} />
@@ -295,7 +295,7 @@ function SessionResultPageMobile({ sessionIdProp, isInnerView, onCloseInner, onV
                     </span>
                   </div>
                   <div className="sr-mobile-pillar-score-row">
-                    <span className="sr-mobile-pillar-score">{p.score.toFixed(1)} <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>/ 5.0</span></span>
+                    <span className="sr-mobile-pillar-score">{Math.floor(p.score)} <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>/ 5</span></span>
                   </div>
                   <div className="sr-mobile-pillar-track">
                     <div className="sr-mobile-pillar-fill" style={{ width: `${percent}%`, background: tier.color }} />

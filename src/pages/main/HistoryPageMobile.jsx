@@ -244,7 +244,7 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
                         </div>
                       </div>
                       <div className="history-mobile-item-score-ring" style={{ background: `conic-gradient(${tier.color} ${(score/5)*100}%, #f1f5f9 0)` }}>
-                        <div className="history-mobile-item-score-inner">{score.toFixed(1)}</div>
+                        <div className="history-mobile-item-score-inner">{Math.floor(score)}</div>
                       </div>
                     </div>
                     
@@ -256,7 +256,7 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
                         >
                           <img src={p.sprite} alt="" className="history-mobile-pillar-icon" />
                           <span className="history-mobile-pillar-label">{p.label}</span>
-                          <span className="history-mobile-pillar-score">{p.score.toFixed(1)}</span>
+                          <span className="history-mobile-pillar-score">{Math.floor(p.score)}</span>
                         </div>
                       ))}
                     </div>

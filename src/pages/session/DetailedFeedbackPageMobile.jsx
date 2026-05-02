@@ -393,8 +393,8 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
               <span className="sr-mobile-widget-badge" style={{ background: '#f1f5f9', color: '#64748b' }}>PERFORMANCE</span>
             </div>
             <div className="sr-mobile-score-row">
-              <span className="sr-mobile-score-value" style={{ color: overallTier.color }}>{tripleV.entryPoint.toFixed(1)}</span>
-              <span className="sr-mobile-score-max">/ 5.0</span>
+              <span className="sr-mobile-score-value" style={{ color: overallTier.color }}>{Math.floor(tripleV.entryPoint)}</span>
+              <span className="sr-mobile-score-max">/ 5</span>
             </div>
             <div className="sr-mobile-tier-row">
               <span className="sr-mobile-tier-dot" style={{ background: overallTier.color }} />
@@ -474,7 +474,7 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
                     <img src={p.image} alt="" style={{ width: '20px', height: '20px' }} />
                     <span style={{ fontWeight: 800 }}>{p.label}</span>
                   </div>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: tier.color }}>{p.score.toFixed(1)} / 5.0</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: tier.color }}>{Math.floor(p.score)} / 5</span>
                 </div>
                 {p.subMetrics.length > 0 && (
                   <div className="df-mobile-sub-grid">
@@ -482,7 +482,7 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
                       <div key={sub.label} className="df-mobile-sub-item">
                         <div className="df-mobile-sub-label-row">
                           <span className="df-mobile-sub-label">{sub.label}</span>
-                          <span className="df-mobile-sub-score">{sub.score.toFixed(1)}</span>
+                          <span className="df-mobile-sub-score">{Math.floor(sub.score)}</span>
                         </div>
                         <div className="df-mobile-sub-track">
                           <div className="df-mobile-sub-fill" style={{ width: `${scoreBarPercent(sub.score)}%`, background: tier.color }} />

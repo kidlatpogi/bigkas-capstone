@@ -544,8 +544,8 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
                 <span className="new-widget-chip performance-chip">PERFORMANCE</span>
               </div>
               <div className="score-display">
-                <span className="score-value" style={{ color: overallTier.color }}>{tripleV.entryPoint.toFixed(1)}</span>
-                <span className="score-max">/ 5.0</span>
+                <span className="score-value" style={{ color: overallTier.color }}>{Math.floor(tripleV.entryPoint)}</span>
+                <span className="score-max">/ 5</span>
               </div>
               <div className="score-label">
                 <div className="tier-indicator" style={{ '--tier-color': overallTier.color }}>
@@ -624,12 +624,12 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
                     <img src={pillarIcons[p.key]} alt="" className="new-widget-rank-sprite" />
                     <div className="new-widget-rank-content">
                       <p className="new-widget-kicker">Score</p>
-                      <p className="new-widget-value">{p.score.toFixed(1)} / 5.0</p>
+                      <p className="new-widget-value">{Math.floor(p.score)} / 5</p>
                     </div>
                   </div>
                   <div className="progress-pillar-track-header">
                     <span className="progress-pillar-track-label">{p.desc}</span>
-                    <span className="progress-pillar-track-percent">{p.score.toFixed(1)} / 5.0</span>
+                    <span className="progress-pillar-track-percent">{Math.floor(p.score)} / 5</span>
                   </div>
                   <div className="progress-pillar-track">
                     <div className="progress-pillar-track-fill" style={{ width: `${scorePercent}%`, background: tier.color }} />
@@ -643,7 +643,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
                             <div key={sub.label} className="df-sub-metric">
                               <div className="df-sub-header">
                                 <span className="df-sub-label" style={{ fontSize: '0.7rem' }}>{sub.label}</span>
-                                <span className="df-sub-score" style={{ fontSize: '0.85rem' }}>{sub.score.toFixed(1)}</span>
+                                <span className="df-sub-score" style={{ fontSize: '0.85rem' }}>{Math.floor(sub.score)}</span>
                               </div>
                               <div className="df-sub-track" style={{ height: '4px' }}>
                                 <div className="df-sub-track-fill" style={{ width: `${scoreBarPercent(sub.score)}%`, background: subTier.color }} />

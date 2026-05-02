@@ -251,6 +251,7 @@ function TrainingPage() {
   const [isTutorialOverlayOpen, setIsTutorialOverlayOpen] = useState(false);
   const [showLowLightWarning, setShowLowLightWarning] = useState(false);
   const [resumeCountdown, setResumeCountdown] = useState(0);
+  const [isResumingVisual, setIsResumingVisual] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const { startAnalysis, stopAnalysis, liveScores, error: visualError, isReady: isVisualReady } = useVisualAnalysis();
 
@@ -1061,6 +1062,9 @@ function TrainingPage() {
   };
 
   const handleResumeFromPausedModal = useCallback(() => {
+    // Guard: already resuming
+    if (status === 'resume-countdown') return;
+
     setShowPausedModal(false);
     setStatus('resume-countdown');
 
@@ -1068,16 +1072,24 @@ function TrainingPage() {
     setResumeCountdown(count);
     playCountdownCue('tick');
 
-    const interval = setInterval(() => {
+    // Clear any existing countdown just in case
+    if (countRef.current) clearInterval(countRef.current);
+
+    countRef.current = setInterval(() => {
       count -= 1;
       if (count <= 0) {
-        clearInterval(interval);
+        clearInterval(countRef.current);
+        countRef.current = null;
         setResumeCountdown(0);
         playCountdownCue('start');
 
         // Resume recording if paused
         if (mediaRef.current?.state === 'paused') {
-          mediaRef.current.resume();
+          try {
+            mediaRef.current.resume();
+          } catch (e) {
+            console.error('Failed to resume media recorder:', e);
+          }
         }
 
         // Restart timers and logic
@@ -1088,16 +1100,19 @@ function TrainingPage() {
           startScriptHighlightLoop(Math.max(highlightIdx, 0));
         }
 
-        // Brief delay so "Speak" is visible before overlay clears
+        // Visual "Speak" overlay management
+        setIsResumingVisual(true);
+        setStatus('recording');
+
         setTimeout(() => {
-          if (isMountedRef.current) setStatus('recording');
-        }, 600);
+          if (isMountedRef.current) setIsResumingVisual(false);
+        }, 800);
       } else {
         setResumeCountdown(count);
         playCountdownCue('tick');
       }
     }, 1000);
-  }, [bumpElapsedSec, focus, highlightIdx, startScriptHighlightLoop, startWaveformLoop, playCountdownCue]);
+  }, [bumpElapsedSec, focus, highlightIdx, status, startScriptHighlightLoop, startWaveformLoop, playCountdownCue]);
 
   /* ── Restart ── */
   const handleRestart = () => {
@@ -1533,11 +1548,17 @@ function TrainingPage() {
       />
 
       {/* ── Countdown Overlay ── */}
-      {(status === 'countdown' || status === 'resume-countdown') && (
+      {(status === 'countdown' || status === 'resume-countdown' || isResumingVisual) && (
         <div className="tp-overlay">
           <div className="tp-countdown-box">
             <span className="tp-countdown-num">
-              {status === 'resume-countdown' && resumeCountdown > 0 ? resumeCountdown : (countdown > 0 ? countdown : 'Speak')}
+              {isResumingVisual
+                ? 'Speak'
+                : status === 'resume-countdown' && resumeCountdown > 0
+                ? resumeCountdown
+                : countdown > 0
+                ? countdown
+                : 'Speak'}
             </span>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LuRotateCcw } from 'react-icons/lu';
+import { FiAlertCircle } from 'react-icons/fi';
 import { useSessionContext } from '../../context/useSessionContext';
 import { useAuthContext } from '../../context/useAuthContext';
 import { buildRoute, ROUTES } from '../../utils/constants';
@@ -248,6 +249,7 @@ function TrainingPage() {
   const [showMicWarning, setShowMicWarning] = useState(false);
   const [isFreeCompactLayout, setIsFreeCompactLayout] = useState(false);
   const [isTutorialOverlayOpen, setIsTutorialOverlayOpen] = useState(false);
+  const [showLowLightWarning, setShowLowLightWarning] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const { startAnalysis, stopAnalysis, liveScores, error: visualError, isReady: isVisualReady } = useVisualAnalysis();
 
@@ -291,6 +293,38 @@ function TrainingPage() {
   useEffect(() => {
     micWarningVisibleRef.current = showMicWarning;
   }, [showMicWarning]);
+
+  /* Lighting detection logic */
+  useEffect(() => {
+    if (!isActive || !videoRef.current) {
+      setShowLowLightWarning(false);
+      return undefined;
+    }
+
+    const checkLighting = () => {
+      const video = videoRef.current;
+      if (!video || video.readyState < 2) return;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 100;
+      canvas.height = 75;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+      let totalBrightness = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        // Luminance formula
+        const avg = (data[i] * 299 + data[i + 1] * 587 + data[i + 2] * 114) / 1000;
+        totalBrightness += avg;
+      }
+      const brightness = totalBrightness / (data.length / 4);
+      setShowLowLightWarning(brightness < 45); // Threshold for "too dark"
+    };
+
+    const interval = setInterval(checkLighting, 3000);
+    return () => clearInterval(interval);
+  }, [isActive]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
@@ -1309,6 +1343,13 @@ function TrainingPage() {
               <div className={`tp-camera-idle ${isActive ? 'tp-camera-idle--active' : ''}`}>
                 <div className={`tp-camera-frame-guide ${isActive ? 'tp-camera-frame-guide--active' : ''}`} />
               </div>
+
+              {showLowLightWarning && (
+                <div className="tp-environment-warning">
+                  <FiAlertCircle className="tp-env-warning-icon" />
+                  <span>Low lighting detected. Please add some light for better AI analysis!</span>
+                </div>
+              )}
             </>
           </div>
 

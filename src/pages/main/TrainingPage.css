@@ -448,6 +448,38 @@ body.training-page-active {
   opacity: 0;
 }
 
+.tp-environment-warning {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 59, 48, 0.85);
+  color: #FFFFFF;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  z-index: 100;
+  animation: tp-env-warn-slide 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  pointer-events: none;
+}
+
+.tp-env-warning-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+@keyframes tp-env-warn-slide {
+  from { opacity: 0; transform: translate(-50%, -12px) scale(0.95); }
+  to   { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
 /* Waveform — 50 bars */
 .tp-waveform {
   display: flex;

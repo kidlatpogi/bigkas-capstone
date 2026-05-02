@@ -360,10 +360,10 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                               key={pillar.key}
                               className={`history-item-pillar-chip ${
                                 pillar.score <= 2.0
-                                  ? 'history-item-pillar-chip--critical'
+                                  ? 'history-item-pillar-chip--rising'
                                   : pillar.score <= 3.0
-                                    ? 'history-item-pillar-chip--warning'
-                                    : 'history-item-pillar-chip--healthy'
+                                    ? 'history-item-pillar-chip--developing'
+                                    : 'history-item-pillar-chip--stellar'
                               }`}
                             >
                               <img src={pillar.sprite} alt={pillar.label} className="history-item-pillar-sprite" />

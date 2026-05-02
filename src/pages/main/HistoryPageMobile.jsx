@@ -252,7 +252,7 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
                       {pillars.map(p => (
                         <div 
                           key={p.key} 
-                          className={`history-mobile-pillar-chip ${p.score <= 2.0 ? 'history-mobile-pillar-chip--critical' : p.score <= 3.0 ? 'history-mobile-pillar-chip--warning' : 'history-mobile-pillar-chip--healthy'}`}
+                          className={`history-mobile-pillar-chip ${p.score <= 2.0 ? 'history-mobile-pillar-chip--rising' : p.score <= 3.0 ? 'history-mobile-pillar-chip--developing' : 'history-mobile-pillar-chip--stellar'}`}
                         >
                           <img src={p.sprite} alt="" className="history-mobile-pillar-icon" />
                           <span className="history-mobile-pillar-label">{p.label}</span>

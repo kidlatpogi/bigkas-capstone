@@ -750,9 +750,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
 
           <div className="df-card" ref={avoidSectionRef} style={{ padding: '32px', borderLeft: '4px solid #0d9488', background: 'linear-gradient(to right, #f0fdfa, #ffffff)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#ccfbf1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0d9488', fontSize: '1.2rem' }}>
-                💡
-              </div>
+
               <div>
                 <h3 className="df-section-title" style={{ fontSize: '1.2rem', margin: 0, color: '#134e4a' }}>Growth Focus: Areas to Refine</h3>
                 <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>Be mindful of these points in your next session</p>

@@ -43,6 +43,7 @@ export function addClaimableAchievement(item) {
       id,
       title: String(item.title || 'Achievement Unlocked'),
       source: String(item.source || 'activity'),
+      description: String(item.description || ''),
       createdAt: Number(item.createdAt || Date.now()),
     },
   ];

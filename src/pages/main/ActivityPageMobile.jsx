@@ -93,6 +93,7 @@ const FREE_SPEECH_TUTORIAL_STEPS = [
     id: 'step-roadmap',
     title: 'B-01:',
     robot: tutorialRobotStep5,
+    robotClassName: 'is-roadmap-step',
     button: 'Next',
     targetElementId: 'tutorial-target-home-journey',
     text: 'This path is your customized learning roadmap! You will start at your first stage and unlock the next ones as you move forward. The activities gradually become more challenging, and once you complete all tasks on your path, you unlock a final Post-test challenge to advance.',
@@ -101,6 +102,7 @@ const FREE_SPEECH_TUTORIAL_STEPS = [
     id: 'step-practice',
     title: 'B-01:',
     robot: tutorialRobotStep6,
+    robotClassName: 'is-practice-step',
     button: 'Finish!',
     targetElementId: 'tutorial-target-home-practice',
     text: 'Need extra training? The Practice card gives you two ways to sharpen your skills anytime: Randomizer for surprise prompts, and Free Speech for open-topic confidence building. Ready? Let us start your Free Speech session now!',
@@ -204,7 +206,7 @@ function getRankSprite(levelNumber, levelName) {
 function ActivityPageMobile() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuthContext();
+  const { user, updateUserMetadata } = useAuthContext();
   const { sessions = [] } = useSessions();
 
   // Activity state
@@ -383,15 +385,37 @@ function ActivityPageMobile() {
     if (!user?.id || activitiesLoading) return;
     
     // Condition: finished profiling AND pre-testing
-    const isReadyForTutorial = user.profilingCompleted && user.pretestCompleted;
+    const isReadyForTutorial = 
+      user.onboardingStage === 'completed' || 
+      (user.profilingCompleted && user.pretestCompleted) ||
+      (user.isProfilingCompleted && user.isPreTestCompleted);
     
     if (isReadyForTutorial) {
-      const seen = window.localStorage.getItem(FREE_SPEECH_TUTORIAL_SEEN_KEY);
-      if (seen !== '1') {
+      const localSeen = window.localStorage.getItem(FREE_SPEECH_TUTORIAL_SEEN_KEY);
+      const remoteSeen = !!user.dashboardTutorialSeen;
+
+      if (localSeen !== '1' && !remoteSeen) {
         setShowFreeSpeechTutorial(true);
       }
     }
-  }, [user?.id, user?.profilingCompleted, user?.pretestCompleted, activitiesLoading]);
+  }, [user?.id, user?.onboardingStage, user?.profilingCompleted, user?.pretestCompleted, user?.isProfilingCompleted, user?.isPreTestCompleted, user?.dashboardTutorialSeen, activitiesLoading]);
+
+  useEffect(() => {
+    if (location.state?.launchFreeSpeechTutorial !== true) return undefined;
+    
+    // Explicitly reset the seen flag if we're coming from the onboarding reveal
+    window.localStorage.setItem(FREE_SPEECH_TUTORIAL_SEEN_KEY, '0');
+    setShowFreeSpeechTutorial(true);
+
+    const t = setTimeout(() => {
+      navigate(location.pathname, {
+        replace: true,
+        state: { ...(location.state || {}), launchFreeSpeechTutorial: false },
+      });
+    }, 100);
+
+    return () => clearTimeout(t);
+  }, [location.pathname, location.state, navigate, FREE_SPEECH_TUTORIAL_SEEN_KEY]);
 
   const handleActiveTaskIdChange = useCallback((id) => {
     setActiveTaskId(id);
@@ -506,7 +530,12 @@ function ActivityPageMobile() {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(FREE_SPEECH_TUTORIAL_SEEN_KEY, '1');
     }
-  }, []);
+
+    // Persist to database so it doesn't show again on other devices
+    if (user?.id) {
+      updateUserMetadata({ dashboard_tutorial_seen: true }).catch(() => {});
+    }
+  }, [user?.id, updateUserMetadata]);
 
   const renderTaskCardForShell = useCallback(({ task, animationClass = '' }) => {
     const done = taskState[task.id] === true;

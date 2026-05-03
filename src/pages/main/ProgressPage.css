@@ -6,7 +6,7 @@
 }
 
 .progress-page-bg {
-  --progress-page-pad: clamp(16px, 3vh, 32px);
+  --progress-page-pad: 1rem;
   width: 100%;
   min-height: 100dvh;
   background-color: #FDFDF9;

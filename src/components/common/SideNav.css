@@ -9,7 +9,7 @@
   color: #f7fbff;
   display: flex;
   flex-direction: column;
-  z-index: 900;
+  z-index: 2100;
   font-family: 'Nunito', sans-serif;
   border-right: 1px solid rgba(255, 255, 255, 0.22);
   box-shadow: 0 10px 30px rgba(1, 18, 33, 0.28);
@@ -184,10 +184,34 @@ body.activity-tutorial-open .side-nav {
   margin-bottom: 20px;
 }
 
+.side-nav-notif-tray-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.side-nav-notif-clear-all-btn {
+  background: transparent;
+  border: none;
+  color: #059669;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.side-nav-notif-clear-all-btn:hover {
+  background: #f0fdf4;
+  text-decoration: underline;
+}
+
 .side-nav-notif-tray-title {
   font-family: 'Fredoka', sans-serif;
   font-size: 1.6rem;
-  font-weight: 700;
+  font-weight: 500;
   color: #111827;
   margin: 0;
 }
@@ -224,21 +248,21 @@ body.activity-tutorial-open .side-nav {
 
 .side-nav-notif-tabs {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   background: #f1f5f9;
-  padding: 4px;
+  padding: 6px;
   border-radius: 999px;
   width: fit-content;
 }
 
 .side-nav-notif-tab {
-  padding: 5px 14px;
-  border-radius: 999px;
-  font-family: 'Fredoka', sans-serif;
-  font-size: 0.8rem;
-  font-weight: 700;
   border: none;
   background: transparent;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
   color: #64748b;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -246,12 +270,13 @@ body.activity-tutorial-open .side-nav {
 
 .side-nav-notif-tab:hover {
   color: #1e293b;
+  background: rgba(255, 255, 255, 0.5);
 }
 
 .side-nav-notif-tab.active {
-  background: #ffffff;
-  color: #059669;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  background: #059669;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
 }
 
 .side-nav-notif-tray-list {
@@ -305,7 +330,7 @@ body.activity-tutorial-open .side-nav {
 
 .side-nav-notif-item-name {
   font-family: 'Fredoka', sans-serif;
-  font-weight: 700;
+  font-weight: 500;
   color: #111827;
   font-size: 1.05rem;
   line-height: 1.2;
@@ -315,7 +340,7 @@ body.activity-tutorial-open .side-nav {
   font-family: 'Nunito', sans-serif;
   font-size: 0.8rem;
   color: #94a3b8;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .side-nav-notif-unread-dot {
@@ -331,7 +356,7 @@ body.activity-tutorial-open .side-nav {
   font-family: 'Nunito', sans-serif;
   font-size: 0.95rem;
   color: #4b5563;
-  font-weight: 600;
+  font-weight: 400;
   margin: 0 0 16px 0;
   line-height: 1.5;
 }
@@ -387,7 +412,7 @@ body.activity-tutorial-open .side-nav {
 .side-nav-notif-empty p {
   font-family: 'Fredoka', sans-serif;
   font-size: 1.25rem;
-  font-weight: 800;
+  font-weight: 500;
   margin: 0;
   color: #475569;
 }
@@ -407,7 +432,7 @@ body.activity-tutorial-open .side-nav {
   color: #4b5563;
   font-family: 'Fredoka', sans-serif;
   font-size: 0.95rem;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
 }

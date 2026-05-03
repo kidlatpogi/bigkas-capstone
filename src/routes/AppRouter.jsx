@@ -19,7 +19,9 @@ import ProgressPage from '../pages/main/ProgressPage';
 import ProgressPageMobile from '../pages/main/ProgressPageMobile';
 import AchievementsPage from '../pages/main/AchievementsPage';
 import SettingsProfilePage from '../pages/main/SettingsProfilePage';
+import SettingsProfilePageMobile from '../pages/main/SettingsProfilePageMobile';
 import SettingsPage from '../pages/main/SettingsPage';
+import SettingsPageMobile from '../pages/main/SettingsPageMobile';
 import ChangePasswordPage from '../pages/main/ChangePasswordPage';
 import AccountSettingsPage from '../pages/main/AccountSettingsPage';
 import TrainingSetupPage from '../pages/main/TrainingSetupPage';
@@ -111,6 +113,48 @@ function AchievementsPageWrapper() {
   }, []);
 
   return isMobileViewport ? <AchievementsPageMobile /> : <AchievementsPage />;
+}
+
+function SettingsProfilePageWrapper() {
+  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 768);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const handleViewportChange = (event) => setIsMobileViewport(event.matches);
+
+    setIsMobileViewport(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleViewportChange);
+      return () => mediaQuery.removeEventListener('change', handleViewportChange);
+    }
+
+    mediaQuery.addListener(handleViewportChange);
+    return () => mediaQuery.removeListener(handleViewportChange);
+  }, []);
+
+  return isMobileViewport ? <SettingsProfilePageMobile /> : <SettingsProfilePage />;
+}
+
+function SettingsPageWrapper() {
+  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 768);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const handleViewportChange = (event) => setIsMobileViewport(event.matches);
+
+    setIsMobileViewport(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleViewportChange);
+      return () => mediaQuery.removeEventListener('change', handleViewportChange);
+    }
+
+    mediaQuery.addListener(handleViewportChange);
+    return () => mediaQuery.removeListener(handleViewportChange);
+  }, []);
+
+  return isMobileViewport ? <SettingsPageMobile /> : <SettingsPage />;
 }
 
 function getAuthenticatedRedirect(user, isAdminAuthenticated) {
@@ -336,10 +380,10 @@ function AppRouter() {
         <Route path={ROUTES.ACTIVITY} element={<ActivityPageWrapper />} />
 
         {/* Profile */}
-        <Route path={ROUTES.PROFILE} element={<SettingsProfilePage />} />
+        <Route path={ROUTES.PROFILE} element={<SettingsProfilePageWrapper />} />
 
         {/* Settings */}
-        <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
+        <Route path={ROUTES.SETTINGS} element={<SettingsPageWrapper />} />
         <Route path={ROUTES.CHANGE_PASSWORD} element={<ChangePasswordPage />} />
         <Route path={ROUTES.ACCOUNT_SETTINGS} element={<AccountSettingsPage />} />
         <Route path={ROUTES.AUDIO_TEST} element={<TestAudioVideoPage />} />

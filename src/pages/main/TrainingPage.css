@@ -371,6 +371,7 @@ body.training-page-active {
   object-fit: cover;
   display: block;
   background: #111;
+  border-radius: inherit;
 }
 
 .tp-camera-overlay {
@@ -444,8 +445,9 @@ body.training-page-active {
   box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.35);
 }
 
-.tp-camera-frame-guide--active::after {
-  opacity: 0;
+/* Hide internal guide shadow when the whole camera is spotlighted by tutorial */
+.tp-camera-wrap.tutorial-spotlight-active .tp-camera-frame-guide {
+  box-shadow: none !important;
 }
 
 .tp-environment-warning {
@@ -1151,69 +1153,159 @@ body.training-page-active {
   line-height: 1;
 }
 
-.tp-analysing-card {
-  background: #ffffff;
-  padding: 2.5rem 2rem;
-  border-radius: 24px;
-  width: min(90%, 420px);
-  text-align: center;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+.tp-analysing-view {
+  width: 100%;
+  max-width: 72rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  padding: clamp(1.5rem, 5vh, 3rem) clamp(1rem, 2.2vw, 2.3rem);
   animation: tp-fade-in 0.35s ease-out;
 }
 
-.tp-analysing-title {
-  margin: 0 0 0.65rem;
-  font-family: 'Fredoka', 'SF Pro Display', sans-serif;
-  font-size: 1.55rem;
-  font-weight: 700;
-  color: #0b3954;
-  letter-spacing: -0.01em;
-}
-
-.tp-analysing-subtitle {
-  margin: 0 0 2.25rem;
-  font-size: 0.95rem;
-  line-height: 1.55;
-  color: rgba(11, 57, 84, 0.65);
-}
-
-.tp-progress-container {
-  height: 12px;
-  background: #f1f5f9;
-  border-radius: 999px;
-  overflow: hidden;
-  margin-bottom: 1.15rem;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.tp-progress-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #F97316 0%, #FB923C 100%);
-  border-radius: inherit;
-  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 0 10px rgba(249, 115, 22, 0.3);
-}
-
-.tp-progress-labels {
+.tp-analysing-status-wrap {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-top: 0.45rem;
+}
+
+.tp-analysing-status-text {
+  margin: 0;
   font-family: 'Inter', sans-serif;
-}
-
-.tp-progress-pct {
-  font-size: 1.35rem;
-  font-weight: 800;
-  color: #F97316;
-  font-variant-numeric: tabular-nums;
-}
-
-.tp-progress-status {
   font-size: 0.82rem;
   font-weight: 700;
   color: #5a7863;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+/* Porta-styles from UserAnalyzingPage.css */
+.analyzing-bubble {
+  width: min(100%, 34rem);
+  background: #fdfdfd;
+  border-radius: 1.5rem;
+  border: 1px solid rgba(11, 57, 84, 0.1);
+  box-shadow: 0 10px 22px -14px rgba(15, 23, 42, 0.45), 0 14px 34px -28px rgba(15, 23, 42, 0.5);
+  padding: clamp(0.95rem, 1.8vw, 1.2rem) clamp(1rem, 2vw, 1.3rem);
+  color: #111827;
+  position: relative;
+  z-index: 100;
+}
+
+.analyzing-bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -0.72rem;
+  width: 1.15rem;
+  height: 1.15rem;
+  background: #fdfdfd;
+  border-right: 1px solid rgba(11, 57, 84, 0.1);
+  border-bottom: 1px solid rgba(11, 57, 84, 0.1);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.analyzing-bubble-kicker {
+  margin: 0;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  color: #059669;
+  font-size: 1.05rem;
+}
+
+.analyzing-bubble-title {
+  margin: 0.35rem 0 0;
+  font-family: 'Nunito', sans-serif;
+  font-size: clamp(1.2rem, 1.08rem + 0.5vw, 1.45rem);
+  font-weight: 800;
+  line-height: 1.28;
+}
+
+.analyzing-bubble-copy {
+  margin: 0.75rem 0 0;
+  font-family: 'Nunito', sans-serif;
+  font-size: clamp(1rem, 0.95rem + 0.22vw, 1.06rem);
+  line-height: 1.45;
+  color: rgba(17, 24, 39, 0.86);
+}
+
+.analyzing-robot-wrap {
+  width: min(95vw, 50rem);
+  max-width: 50rem;
+  height: auto;
+  margin-top: -4.5rem;
+  align-self: center;
+  justify-self: center;
+  overflow: visible;
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  position: relative;
+  z-index: 8;
+}
+
+.analyzing-robot-media {
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+}
+
+.analyzing-robot-image {
+  width: 100%;
+  height: auto;
+  max-height: 60vh;
+  object-fit: contain;
+  display: block;
+  margin-left: 0;
+}
+
+.analyzing-loader {
+  margin-top: 1rem;
+  width: 100%;
+  height: 0.76rem;
+  border-radius: 999px;
+  background: rgba(11, 57, 84, 0.12);
+  overflow: hidden;
+}
+
+.analyzing-loader-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #10B981 0%, #059669 100%);
+  transition: width 0.24s ease;
+}
+
+.analyzing-loader-text {
+  margin: 0;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #047857;
+}
+
+
+[data-theme='dark'] .analyzing-bubble,
+[data-theme='dark'] .analyzing-bubble::after {
+  background: #111827;
+}
+
+[data-theme='dark'] .analyzing-bubble {
+  border-color: rgba(148, 163, 184, 0.26);
+}
+
+[data-theme='dark'] .analyzing-bubble-kicker,
+[data-theme='dark'] .analyzing-loader-text {
+  color: #34D399;
+}
+
+[data-theme='dark'] .analyzing-bubble-title,
+[data-theme='dark'] .analyzing-bubble-copy {
+  color: rgba(243, 244, 246, 0.94);
 }
 
 @keyframes tp-fade-in {
@@ -1942,3 +2034,133 @@ body.training-page-active .theme-toggle-wrap {
   display: none !important;
 }
 
+/* ── Milestone Warning Modal (1 Minute) ── */
+.bigkas-modal-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: var(--scrim-z, 3000);
+}
+
+.milestone-companion-container {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: nowrap;
+  gap: clamp(0.5rem, 2vw, 1.5rem);
+  width: min(100%, 820px);
+  position: relative;
+  z-index: 2;
+  animation: milestone-slide-up 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes milestone-slide-up {
+  from { transform: translateY(100px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.milestone-robot-img {
+  width: clamp(140px, 22vw, 320px);
+  height: auto;
+  flex-shrink: 0;
+  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.25));
+}
+
+.milestone-speech-bubble {
+  flex: 1;
+  background: #FDFDF9;
+  border-radius: 1.5rem;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+.milestone-speech-bubble::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  bottom: 26px;
+  width: 0;
+  height: 0;
+  border-top: 12px solid transparent;
+  border-bottom: 12px solid transparent;
+  border-right: 12px solid #FDFDF9;
+}
+
+.milestone-bubble-title {
+  font-family: 'Fredoka', sans-serif;
+  color: #059669;
+  font-weight: bold;
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.02em;
+}
+
+.milestone-bubble-text {
+  font-family: 'Nunito', sans-serif;
+  color: #1E293B;
+  font-size: clamp(0.875rem, 1.5vw, 1rem);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+.milestone-bubble-btn {
+  background: #059669;
+  color: white;
+  font-family: 'Fredoka', 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+  font-size: clamp(1rem, 1.2vw, 1.1rem);
+  font-weight: 600;
+  height: clamp(48px, 6vh, 56px);
+  padding: 0 2.5rem;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  float: right;
+  box-shadow: #047857 0 5px 0 0;
+  transition: all 0.2s ease;
+}
+
+.milestone-bubble-btn:hover {
+  transform: translateY(2px);
+  box-shadow: #047857 0 3px 0 0;
+}
+
+.milestone-bubble-btn:active {
+  transform: translateY(5px);
+  box-shadow: #047857 0 0 0 0;
+}
+
+@media (max-width: 768px) {
+  .milestone-companion-container {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .milestone-speech-bubble {
+    order: 1;
+    margin-bottom: 0;
+  }
+  .milestone-speech-bubble::before {
+    left: 50%;
+    bottom: -12px;
+    border-top: 12px solid #FDFDF9;
+    border-right: 12px solid transparent;
+    border-left: 12px solid transparent;
+    transform: translateX(-50%);
+  }
+  .milestone-robot-img {
+    order: 2;
+    width: 180px;
+    margin-top: -1rem;
+  }
+  .milestone-bubble-btn {
+    float: none;
+    width: 100%;
+  }
+}

@@ -11,7 +11,7 @@ html {
 }
 
 .activity-page-root {
-  --activity-page-pad: clamp(16px, 3vh, 32px);
+  --activity-page-pad: 1rem;
   width: 100%;
   height: 100dvh;
   min-height: 100dvh;
@@ -422,12 +422,24 @@ html {
    RIGHT COLUMN (Tracker / Practice Widgets)
    ------------------------------------------------------------------------- */
 .new-right-col {
-  display: grid;
-  grid-template-rows: auto 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
   height: 100%;
   min-height: 0;
-  overflow: visible;
+  overflow-y: auto;
+  overflow-x: visible;
+  padding: 6px;
+  margin: -6px;
+}
+
+.new-right-col::-webkit-scrollbar {
+  display: none;
+}
+
+.new-right-col {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .new-widget {
@@ -442,6 +454,7 @@ html {
   min-height: 0;
   overflow: hidden;
   transition: opacity 0.2s ease;
+  flex-shrink: 0;
 }
 
 .new-widget.is-hidden {
@@ -577,16 +590,23 @@ html {
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   display: grid;
   grid-template-columns: 80px 1fr;
-  grid-template-rows: 1fr auto;
-  gap: clamp(8px, 1.2vh, 12px) 16px;
+  grid-template-rows: 1fr;
+  gap: 16px;
   align-items: center;
   flex: 1;
   min-height: 0;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
 }
 
-.new-btn-row--card .activity-practice-cta {
-  grid-column: 1 / -1;
-  align-self: end;
+.new-btn-row--card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(11, 57, 84, 0.12);
+  border-color: rgba(5, 150, 105, 0.2);
+}
+
+.new-btn-row--card:active {
+  transform: translateY(0);
 }
 
 .new-btn-meta {
@@ -698,6 +718,55 @@ html {
 .activity-practice-cta--speech.bigkas-btn:active:not(:disabled) {
   box-shadow: #c2410c 0 0 0 0 !important;
   transform: translateY(5px) !important;
+}
+
+/* Responsive height adjustments for shorter screens */
+@media (max-height: 850px) {
+  .activity-page-root {
+    --activity-page-pad: 12px;
+  }
+  
+  .new-banner {
+    min-height: 160px;
+    padding: 12px 16px;
+  }
+  
+  .new-widget {
+    padding: 16px 20px;
+    gap: 8px;
+  }
+  
+  .new-widget-title {
+    font-size: 1.15rem;
+  }
+  
+  .new-btn-visual {
+    width: 60px;
+    height: 60px;
+    padding: 8px;
+  }
+  
+  .new-btn-label {
+    font-size: 1rem;
+  }
+  
+  .new-btn-hint {
+    font-size: 0.8rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .new-btn-row--card {
+    padding: 10px 16px;
+    gap: 12px;
+    grid-template-columns: 60px 1fr;
+  }
+  
+  .new-btn-group {
+    gap: 8px;
+  }
 }
 
 /* Modals / Entrance */

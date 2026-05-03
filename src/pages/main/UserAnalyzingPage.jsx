@@ -508,77 +508,88 @@ function UserAnalyzingPage() {
   };
 
   const handleGoToDashboard = () => {
-    navigate(ROUTES.DASHBOARD, { replace: true });
+    navigate(ROUTES.ACTIVITY, {
+      replace: true,
+      state: {
+        skywardEntrance: true,
+        launchFreeSpeechTutorial: true,
+        t: Date.now(),
+      },
+    });
   };
 
   return (
     <div className="user-analyzing-page">
       {!showLevelReveal ? null : showScoreBreakdown ? (
         <section className="analyzing-intro">
-          <article className="analyzing-bubble analyzing-bubble--result" aria-label="Score breakdown">
-            <p className="analyzing-bubble-kicker">B-01:</p>
-            <p className="analyzing-result-text">{scoreBreakdownContent.text}</p>
+          <div className="profiling-unit">
+            <article className="analyzing-bubble analyzing-bubble--result" aria-label="Score breakdown">
+              <p className="analyzing-bubble-kicker">B-01:</p>
+              <p className="analyzing-result-text">{scoreBreakdownContent.text}</p>
 
-            <div className="analyzing-breakdown-score-page">
-              <p>
-                Profiling (<strong className="analyzing-score-value">{profilingEntryScore}/5</strong>): Your personal comfort and confidence levels.
-              </p>
-              <p>
-                AI Pre-test (<strong className="analyzing-score-value">{pretestEntryScore}/5</strong>): An objective look at your Triple V:
-              </p>
-              <ul className="analyzing-breakdown-list">
-                <li>Visual (55%): <strong className="analyzing-score-value">{visualEntryScore}/5</strong> - Eye contact and gestures.</li>
-                <li>Vocal (38%): <strong className="analyzing-score-value">{vocalEntryScore}/5</strong> - Projection and expression.</li>
-                <li>Verbal (7%): <strong className="analyzing-score-value">{verbalEntryScore}/5</strong> - Vocabulary and filler use.</li>
-              </ul>
-            </div>
+              <div className="analyzing-breakdown-score-page">
+                <p>
+                  Profiling (<strong className="analyzing-score-value">{profilingEntryScore}/5</strong>): Your personal comfort and confidence levels.
+                </p>
+                <p>
+                  AI Pre-test (<strong className="analyzing-score-value">{pretestEntryScore}/5</strong>): An objective look at your Triple V:
+                </p>
+                <ul className="analyzing-breakdown-list">
+                  <li>Visual (55%): <strong className="analyzing-score-value">{visualEntryScore}/5</strong> - Eye contact and gestures.</li>
+                  <li>Vocal (38%): <strong className="analyzing-score-value">{vocalEntryScore}/5</strong> - Pitch and Projection.</li>
+                  <li>Verbal (7%): <strong className="analyzing-score-value">{verbalEntryScore}/5</strong> - Vocabulary and filler use.</li>
+                </ul>
+              </div>
 
-            <div className="analyzing-actions">
-              <button
-                type="button"
-                className="analyzing-action-btn analyzing-action-btn--primary"
-                onClick={handleGoToDashboard}
-              >
-                Next
-              </button>
-            </div>
-          </article>
+              <div className="analyzing-actions">
+                <button
+                  type="button"
+                  className="analyzing-action-btn analyzing-action-btn--primary"
+                  onClick={handleGoToDashboard}
+                >
+                  Next
+                </button>
+              </div>
+            </article>
 
-          <div className="analyzing-robot-wrap">
-            <div className="analyzing-robot-media analyzing-robot-media--result" aria-hidden="true">
-              <img src={robotImage0015} alt="" className="analyzing-robot-image" />
+            <div className="analyzing-robot-wrap">
+              <div className="analyzing-robot-media analyzing-robot-media--result" aria-hidden="true">
+                <img src={robotImage0015} alt="" className="analyzing-robot-image" />
+              </div>
             </div>
           </div>
         </section>
       ) : (
         <section className="analyzing-intro">
-          <article className="analyzing-bubble analyzing-bubble--result" aria-label="Your level result">
-            <p className="analyzing-bubble-kicker">B-01:</p>
-            <p className="analyzing-result-text">{typedResultText}</p>
+          <div className="profiling-unit">
+            <article className="analyzing-bubble analyzing-bubble--result" aria-label="Your level result">
+              <p className="analyzing-bubble-kicker">B-01:</p>
+              <p className="analyzing-result-text">{typedResultText}</p>
 
-            <div className="analyzing-actions">
-              <button
-                type="button"
-                className="analyzing-action-btn analyzing-action-btn--secondary"
-                onClick={() => setShowScoreBreakdown(true)}
-              >
-                Score Breakdown
-              </button>
-              <button
-                type="button"
-                className="analyzing-action-btn analyzing-action-btn--primary"
-                onClick={handleGoToDashboard}
-                disabled={!isTypingDone}
-              >
-                Next
-              </button>
-            </div>
+              <div className="analyzing-actions">
+                <button
+                  type="button"
+                  className="analyzing-action-btn analyzing-action-btn--secondary"
+                  onClick={() => setShowScoreBreakdown(true)}
+                >
+                  Score Breakdown
+                </button>
+                <button
+                  type="button"
+                  className="analyzing-action-btn analyzing-action-btn--primary"
+                  onClick={handleGoToDashboard}
+                  disabled={!isTypingDone}
+                >
+                  Next
+                </button>
+              </div>
 
-          </article>
+            </article>
 
-          <div className="analyzing-robot-wrap">
-            <div className="analyzing-robot-media analyzing-robot-media--result" aria-hidden="true">
-              <img src={staticRandomResultRobot} alt="" className="analyzing-robot-image" />
+            <div className="analyzing-robot-wrap">
+              <div className="analyzing-robot-media analyzing-robot-media--result" aria-hidden="true">
+                <img src={staticRandomResultRobot} alt="" className="analyzing-robot-image" />
+              </div>
             </div>
           </div>
         </section>

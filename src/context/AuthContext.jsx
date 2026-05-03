@@ -510,6 +510,9 @@ export function AuthProvider({ children }) {
       speakerLevelNumber: Number(meta.speaker_level_number ?? 1) || 1,
       speakerPointsHistory: normalizeSpeakerPointsHistory(meta.speaker_points_history),
       onboardingLevelAnalysis: meta.onboarding_level_analysis || null,
+      dashboardTutorialSeen: parseMetadataBoolean(meta.dashboard_tutorial_seen) || parseMetadataBoolean(meta.is_tutorial_completed),
+      activeBannerId: meta.active_banner_id || 'default_skyward',
+      unlockedBanners: Array.isArray(meta.unlocked_banners) ? meta.unlocked_banners : ['default_skyward'],
       createdAt: u.created_at,
     };
   }, [resolveAvatarUrl]);
@@ -1189,6 +1192,9 @@ export function AuthProvider({ children }) {
     }
     if (updates.onboarding_completed !== undefined) {
       profileUpdates.diagnostic_completed_at = updates.onboarding_completed ? new Date().toISOString() : null;
+    }
+    if (updates.dashboard_tutorial_seen !== undefined) {
+      profileUpdates.dashboard_tutorial_seen = !!updates.dashboard_tutorial_seen;
     }
 
     if (Object.keys(profileUpdates).length > 0 && data.user?.id) {

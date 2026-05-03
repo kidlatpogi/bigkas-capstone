@@ -62,26 +62,20 @@ function scoreMap(answer, values = {}) {
 }
 
 function computeBaselineScore(form) {
-  const ageScore = scoreMap(form.age, { 'Under 18': 0, '18–24': 2, '25–34': 2, '35–44': 2, '45–54': 2, '55 and above': 2 });
-  const socialAnxietyScore = scoreMap(form.social_anxiety, { No: 12, Sometimes: 6, Yes: 0 });
-  const vocalFluencyScore = scoreMap(form.vocal_fluency, { No: 14, Sometimes: 7, Yes: 0 });
-  const vocalPresenceScore = scoreMap(form.vocal_presence, { No: 12, Sometimes: 6, Yes: 0 });
-  const externalDynamicsScore = scoreMap(form.external_dynamics, { No: 12, Sometimes: 6, Yes: 0 });
-  const adaptabilityScore = scoreMap(form.adaptability, { Yes: 10, Sometimes: 6, No: 2 });
-  const nativeScore = scoreMap(form.native_speaker, { Yes: 8, No: 4 });
+  const scoring = { Yes: 2, Sometimes: 6, No: 10 };
+  let total = 0;
+  
+  const keys = [
+    'visual_eye_contact', 'visual_gestures', 'visual_energy', 'visual_posture',
+    'vocal_projection', 'vocal_expression', 'vocal_pacing',
+    'verbal_fillers', 'verbal_vocabulary', 'verbal_anxiety'
+  ];
 
-  const raw =
-    15 +
-    ageScore +
-    socialAnxietyScore +
-    vocalFluencyScore +
-    vocalPresenceScore +
-    externalDynamicsScore +
-    adaptabilityScore +
-    nativeScore +
-    (form.gender === 'Prefer not to say' ? 0 : 1);
+  keys.forEach((key) => {
+    total += scoring[form[key]] || 0;
+  });
 
-  return Math.max(20, Math.min(100, Math.round(raw)));
+  return Math.max(20, Math.min(100, Math.round(total)));
 }
 
 function isQuestionAnswered(question, value) {
@@ -118,6 +112,7 @@ function UserProfilingPage() {
   const [form, setForm] = useState(INITIAL_FORM);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [error, setError] = useState('');
   const [isMuted, setIsMuted] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -157,7 +152,7 @@ function UserProfilingPage() {
         window.clearInterval(typingInterval);
         setIsIntroTypingDone(true);
       }
-    }, 12);
+    }, 8);
 
     return () => {
       window.clearInterval(typingInterval);
@@ -180,7 +175,7 @@ function UserProfilingPage() {
         window.clearInterval(typingInterval);
         setIsReadyTypingDone(true);
       }
-    }, 12);
+    }, 8);
 
     return () => {
       window.clearInterval(typingInterval);
@@ -215,7 +210,7 @@ function UserProfilingPage() {
         window.clearInterval(typingInterval);
         setIsOutroTypingDone(true);
       }
-    }, 12);
+    }, 8);
 
     return () => {
       window.clearInterval(typingInterval);
@@ -344,24 +339,39 @@ function UserProfilingPage() {
   };
 
   const goToPreviousQuestion = () => {
-    setCurrentIndex((prev) => Math.max(0, prev - 1));
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentIndex((prev) => Math.max(0, prev - 1));
+      setIsTransitioning(false);
+    }, 400);
   };
 
   const goToNextQuestion = () => {
-    setCurrentIndex((prev) => Math.min(totalSteps - 1, prev + 1));
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentIndex((prev) => Math.min(totalSteps - 1, prev + 1));
+      setIsTransitioning(false);
+    }, 400);
   };
 
   const handleSingleAnswerAndAdvance = async (questionKey, option) => {
-    if (isSubmitting) return;
+    if (isSubmitting || isTransitioning) return;
     const nextForm = { ...form, [questionKey]: option };
     setForm(nextForm);
     if (error) setError('');
 
     if (currentIndex >= totalSteps - 1) {
-      await handleSubmit({ nextForm });
+      setTimeout(async () => {
+        await handleSubmit({ nextForm });
+      }, 500);
       return;
     }
-    goToNextQuestion();
+
+    setTimeout(() => {
+      goToNextQuestion();
+    }, 450);
   };
 
   const handleSubmit = async ({ nextForm = null } = {}) => {
@@ -370,7 +380,9 @@ function UserProfilingPage() {
     const pendingQuestions = QUESTIONS.filter((question) => !isQuestionAnswered(question, workingForm[question.key]));
 
     if (pendingQuestions.length > 0) {
-      setError('Please answer all questions before finishing profiling.');
+      const missingKeys = pendingQuestions.map(q => q.key).join(', ');
+      console.warn("Missing profiling questions:", missingKeys, "Form state:", workingForm);
+      setError(`Please answer all questions before finishing profiling. Missing: ${missingKeys}`);
       return;
     }
 
@@ -510,36 +522,38 @@ function UserProfilingPage() {
     <div className={`user-profiling-page ${screen !== 'questions' ? 'is-gate-screen' : ''}`}>
       {screen === 'intro' && (
         <section className="profiling-intro profiling-gate--pop">
-          <article
-            className={`profiling-intro-bubble ${introStep === 1 ? 'profiling-intro-bubble--intro-typing' : ''}`}
-            aria-label="Welcome message"
-          >
-            {introStep === 0 ? (
-              <p>
-                Hello! I&apos;m <strong>B-01</strong>, your personal guide on this exciting journey to master public
-                speaking.
-              </p>
-            ) : (
-              <p>{typedIntroText}</p>
-            )}
-            <div className="profiling-intro-actions">
-              <div className="profiling-submit-btn">
-                <button
-                  type="button"
-                  onClick={handleIntroContinue}
-                  disabled={introStep === 1 && !isIntroTypingDone}
-                >
-                  Continue
-                </button>
+          <div className="profiling-unit">
+            <article
+              className={`profiling-intro-bubble ${introStep === 1 ? 'profiling-intro-bubble--intro-typing' : ''}`}
+              aria-label="Welcome message"
+            >
+              {introStep === 0 ? (
+                <p>
+                  Hello! I&apos;m <strong>B-01</strong>, your personal guide on this exciting journey to master public
+                  speaking.
+                </p>
+              ) : (
+                <p>{typedIntroText}</p>
+              )}
+              <div className="profiling-intro-actions">
+                <div className="profiling-submit-btn">
+                  <button
+                    type="button"
+                    onClick={handleIntroContinue}
+                    disabled={introStep === 1 && !isIntroTypingDone}
+                  >
+                    Continue
+                  </button>
+                </div>
               </div>
-            </div>
-          </article>
-          <div className="profiling-intro-robot">
-            <div className="profiling-intro-robot-media" aria-hidden="true">
-              <video className="profiling-intro-video" autoPlay loop muted playsInline>
-                <source src={waveWebm} type="video/webm" />
-                <source src={waveMp4} type="video/mp4" />
-              </video>
+            </article>
+            <div className="profiling-intro-robot">
+              <div className="profiling-intro-robot-media" aria-hidden="true">
+                <video className="profiling-intro-video" autoPlay loop muted playsInline>
+                  <source src={waveWebm} type="video/webm" />
+                  <source src={waveMp4} type="video/mp4" />
+                </video>
+              </div>
             </div>
           </div>
         </section>
@@ -547,138 +561,143 @@ function UserProfilingPage() {
 
       {screen === 'ready' && (
         <section className="profiling-intro profiling-gate--pop">
-          <article
-            className="profiling-intro-bubble profiling-intro-bubble--ready profiling-intro-bubble--ready-typing"
-            aria-label="Ready message"
-          >
-            <p className="profiling-ready-text">
-              <strong>B-01:</strong>
-              <br />
-              {isReadyTypingDone ? (
-                <>
-                  Awesome! Since you&apos;re ready, let&apos;s jump right into your 10 profiling questions! And
-                  don&apos;t worry, you can answer every single one with a simple{' '}
-                  <strong className="profiling-answer-yes">Yes</strong>,{' '}
-                  <strong className="profiling-answer-sometimes">Sometimes</strong>, or{' '}
-                  <strong className="profiling-answer-no">No</strong>.
-                </>
-              ) : (
-                typedReadyText
-              )}
-            </p>
-            <div className="profiling-intro-actions">
-              <div className="profiling-submit-btn">
-                <button
-                  type="button"
-                  onClick={() => {
-                    stopAllIntroAudios();
-                    setScreen('questions');
-                  }}
-                  disabled={!isReadyTypingDone}
-                >
-                  Continue
-                </button>
+          <div className="profiling-unit">
+            <article
+              className="profiling-intro-bubble profiling-intro-bubble--ready profiling-intro-bubble--ready-typing"
+              aria-label="Ready message"
+            >
+              <p className="profiling-ready-text">
+                <strong>B-01:</strong>
+                <br />
+                {isReadyTypingDone ? (
+                  <>
+                    Awesome! Since you&apos;re ready, let&apos;s jump right into your 10 profiling questions! And
+                    don&apos;t worry, you can answer every single one with a simple{' '}
+                    <strong className="profiling-answer-yes">Yes</strong>,{' '}
+                    <strong className="profiling-answer-sometimes">Sometimes</strong>, or{' '}
+                    <strong className="profiling-answer-no">No</strong>.
+                  </>
+                ) : (
+                  typedReadyText
+                )}
+              </p>
+              <div className="profiling-intro-actions">
+                <div className="profiling-submit-btn">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      stopAllIntroAudios();
+                      setScreen('questions');
+                    }}
+                    disabled={!isReadyTypingDone}
+                  >
+                    Continue
+                  </button>
+                </div>
               </div>
-            </div>
-          </article>
+            </article>
 
-          <div className="profiling-intro-robot">
-            <div className="profiling-intro-robot-media profiling-intro-robot-media--ready" aria-hidden="true">
-              <video className="profiling-intro-video" autoPlay loop muted playsInline>
-                <source src={waveWebm} type="video/webm" />
-                <source src={waveMp4} type="video/mp4" />
-              </video>
+            <div className="profiling-intro-robot">
+              <div className="profiling-intro-robot-media profiling-intro-robot-media--ready" aria-hidden="true">
+                <video className="profiling-intro-video" autoPlay loop muted playsInline>
+                  <source src={waveWebm} type="video/webm" />
+                  <source src={waveMp4} type="video/mp4" />
+                </video>
+              </div>
             </div>
           </div>
         </section>
       )}
 
       {screen === 'questions' && (
-        <section className="profiling-question-stage profiling-gate--pop">
-          <article className="profiling-question-bubble">
-            <h2 className="profiling-question-count">
-              <span>Question:</span> {currentIndex + 1}/{totalSteps}
-            </h2>
-            <p className="profiling-question-text">
-              <strong>B-01:</strong>
-              <br />
-              {currentQuestion.label}
-            </p>
-            <div className="profiling-intro-actions profiling-intro-actions--split">
-              <button
-                type="button"
-                className="profiling-ready-btn profiling-ready-btn--back"
-                onClick={handleQuestionBack}
-                disabled={currentIndex === 0}
-              >
-                Previous
-              </button>
-              <button
-                type="button"
-                className="profiling-ready-btn profiling-ready-btn--next"
-                onClick={handleQuestionNext}
-                disabled={!canProceedQuestion || isSubmitting}
-              >
-                {currentIndex >= totalSteps - 1 ? 'Finish' : 'Next'}
-              </button>
-            </div>
-          </article>
+        <section className={`profiling-question-stage profiling-gate--pop ${isTransitioning ? 'is-transitioning' : ''}`}>
+          <div className="profiling-unit">
+            <article className="profiling-question-bubble">
+              <h2 className="profiling-question-count">
+                <span>Question:</span> {currentIndex + 1}/{totalSteps}
+              </h2>
+              <p className="profiling-question-text">
+                <strong>B-01:</strong>
+                <br />
+                {currentQuestion.label}
+              </p>
+              <div className="profiling-intro-actions profiling-intro-actions--split">
+                <button
+                  type="button"
+                  className="profiling-ready-btn profiling-ready-btn--back"
+                  onClick={handleQuestionBack}
+                  disabled={currentIndex === 0}
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  className="profiling-ready-btn profiling-ready-btn--next"
+                  onClick={handleQuestionNext}
+                  disabled={!canProceedQuestion || isSubmitting}
+                >
+                  {currentIndex >= totalSteps - 1 ? 'Finish' : 'Next'}
+                </button>
+              </div>
+            </article>
 
-          <div className="profiling-question-lower">
-            <div className="profiling-question-robot-wrap" aria-hidden="true">
-              <img src={robotQuestionImage} alt="" className="profiling-question-robot-image" />
-            </div>
+            <div className="profiling-question-lower">
+              <div className="profiling-question-robot-wrap" aria-hidden="true">
+                <img src={robotQuestionImage} alt="" className="profiling-question-robot-image" />
+              </div>
 
-            <div className="profiling-question-options-wrap">
-              {currentQuestion.type === 'single' && (
-                <div className="profiling-question-options">
-                  {currentQuestion.options.map((option) => {
-                    const isActive = form[currentQuestion.key] === option;
-                    return (
-                      <button
-                        key={option}
-                        type="button"
-                        className={`profiling-question-option ${isActive ? 'is-active' : ''}`}
-                        onClick={() => handleSingleAnswerAndAdvance(currentQuestion.key, option)}
-                      >
-                        {option}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+              <div className="profiling-question-options-wrap">
+                {currentQuestion.type === 'single' && (
+                  <div className="profiling-question-options">
+                    {currentQuestion.options.map((option) => {
+                      const isActive = form[currentQuestion.key] === option;
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          className={`profiling-question-option ${isActive ? 'is-active' : ''}`}
+                          onClick={() => handleSingleAnswerAndAdvance(currentQuestion.key, option)}
+                        >
+                          {option}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
-              {currentQuestion.type === 'multi' && (
-                <div className="profiling-question-options">
-                  {currentQuestion.options.map((option) => {
-                    const isActive = Array.isArray(form[currentQuestion.key]) && form[currentQuestion.key].includes(option);
-                    return (
-                      <button
-                        key={option}
-                        type="button"
-                        className={`profiling-question-option ${isActive ? 'is-active' : ''}`}
-                        onClick={() => toggleMultiValue(currentQuestion.key, option)}
-                      >
-                        {option}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+                {currentQuestion.type === 'multi' && (
+                  <div className="profiling-question-options">
+                    {currentQuestion.options.map((option) => {
+                      const isActive =
+                        Array.isArray(form[currentQuestion.key]) && form[currentQuestion.key].includes(option);
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          className={`profiling-question-option ${isActive ? 'is-active' : ''}`}
+                          onClick={() => toggleMultiValue(currentQuestion.key, option)}
+                        >
+                          {option}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
-              {currentQuestion.type === 'number' && (
-                <input
-                  className="profiling-input"
-                  type="number"
-                  min="1"
-                  max="120"
-                  value={form[currentQuestion.key]}
-                  onChange={(e) => updateField(currentQuestion.key, e.target.value)}
-                  placeholder={currentQuestion.placeholder}
-                />
-              )}
+                {currentQuestion.type === 'number' && (
+                  <input
+                    className="profiling-input"
+                    type="number"
+                    min="1"
+                    max="120"
+                    value={form[currentQuestion.key]}
+                    onChange={(e) => updateField(currentQuestion.key, e.target.value)}
+                    placeholder={currentQuestion.placeholder}
+                  />
+                )}
 
-              {error && <p className="profiling-error">{error}</p>}
+                {error && <p className="profiling-error">{error}</p>}
+              </div>
             </div>
           </div>
         </section>
@@ -686,43 +705,45 @@ function UserProfilingPage() {
 
       {screen === 'outro' && (
         <section className="profiling-intro profiling-intro--pretest profiling-gate--pop">
-          <article
-            className="profiling-intro-bubble profiling-intro-bubble--pretest profiling-intro-bubble--outro-typing"
-            aria-label="Before pre-testing message"
-          >
-            <p className="profiling-pretest-text">
-              <strong>B-01:</strong>
-              <br />
-              {typedOutroFirstText}
-            </p>
-            <p className="profiling-pretest-text profiling-pretest-text--mission">
-              <strong>Your mission:</strong>
-              <br />
-              {isOutroTypingDone ? (
-                <>
-                  Speak for at least <strong>30 seconds</strong> on the topic,{' '}
-                  <strong>&apos;Tell me about yourself.&apos;</strong> Don&apos;t overthink it-just be
-                  you and let your voice lead the way!
-                </>
-              ) : (
-                typedOutroMissionText
-              )}
-            </p>
-            <div className="profiling-intro-actions profiling-intro-actions--end">
-              <div className="profiling-submit-btn">
-                <button type="button" onClick={continueToPretest} disabled={!isOutroTypingDone}>
-                  Continue
-                </button>
+          <div className="profiling-unit">
+            <article
+              className="profiling-intro-bubble profiling-intro-bubble--pretest profiling-intro-bubble--outro-typing"
+              aria-label="Before pre-testing message"
+            >
+              <p className="profiling-pretest-text">
+                <strong>B-01:</strong>
+                <br />
+                {typedOutroFirstText}
+              </p>
+              <p className="profiling-pretest-text profiling-pretest-text--mission">
+                <strong>Your mission:</strong>
+                <br />
+                {isOutroTypingDone ? (
+                  <>
+                    Speak for at least <strong>30 seconds</strong> on the topic,{' '}
+                    <strong>&apos;Tell me about yourself.&apos;</strong> Don&apos;t overthink it-just be
+                    you and let your voice lead the way!
+                  </>
+                ) : (
+                  typedOutroMissionText
+                )}
+              </p>
+              <div className="profiling-intro-actions profiling-intro-actions--end">
+                <div className="profiling-submit-btn">
+                  <button type="button" onClick={continueToPretest} disabled={!isOutroTypingDone}>
+                    Continue
+                  </button>
+                </div>
               </div>
-            </div>
-          </article>
+            </article>
 
-          <div className="profiling-intro-robot">
-            <div className="profiling-intro-robot-media profiling-intro-robot-media--ready" aria-hidden="true">
-              <video className="profiling-intro-video" autoPlay loop muted playsInline>
-                <source src={waveWebm} type="video/webm" />
-                <source src={waveMp4} type="video/mp4" />
-              </video>
+            <div className="profiling-intro-robot">
+              <div className="profiling-intro-robot-media profiling-intro-robot-media--ready" aria-hidden="true">
+                <video className="profiling-intro-video" autoPlay loop muted playsInline>
+                  <source src={waveWebm} type="video/webm" />
+                  <source src={waveMp4} type="video/mp4" />
+                </video>
+              </div>
             </div>
           </div>
         </section>

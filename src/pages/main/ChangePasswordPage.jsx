@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { IoChevronForward, IoLockClosedOutline, IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
-import './InnerPages.css';
+import Button from '../../components/common/Button';
+import './SettingsProfilePage.css';
 import './ChangePasswordPage.css';
 
-function PwdField({ label, value, onChange, show, onToggle }) {
+function PwdField({ label, value, onChange, show, onToggle, placeholder }) {
   return (
     <div className="form-group">
       <label className="form-label">{label}</label>
@@ -15,7 +17,8 @@ function PwdField({ label, value, onChange, show, onToggle }) {
           type={show ? 'text' : 'password'}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          style={{ paddingRight: 44 }}
+          placeholder={placeholder}
+          style={{ paddingRight: 48 }}
         />
         <button
           type="button"
@@ -24,7 +27,7 @@ function PwdField({ label, value, onChange, show, onToggle }) {
           tabIndex={-1}
           aria-label={show ? 'Hide password' : 'Show password'}
         >
-          {show ? 'Hide' : 'Show'}
+          {show ? <IoEyeOffOutline /> : <IoEyeOutline />}
         </button>
       </div>
     </div>
@@ -85,51 +88,84 @@ function ChangePasswordPage() {
   };
 
   return (
-    <div className="subpage-layout change-password-layout">
-      <div className="subpage-frame">
-        <nav className="subpage-breadcrumb" aria-label="Breadcrumb">
-          <Link className="subpage-breadcrumb-link" to={breadcrumbParent.to}>
-            {breadcrumbParent.label}
-          </Link>
-          <span className="subpage-breadcrumb-sep">&gt;</span>
-          <span className="subpage-breadcrumb-current">Change Password</span>
-        </nav>
-
-        <div className="inner-page change-password-page">
-          <div className="inner-page-header change-password-header">
-            <h1 className="inner-page-title">Change Password</h1>
+    <div className="settings-profile-page">
+      <div className="settings-profile-container">
+        {/* Hero Banner */}
+        <div className="profile-hero-card hero-theme--emerald">
+          <div className="hero-info">
+            <h1 className="hero-name">Security</h1>
+            <p className="hero-email" style={{ opacity: 0.9 }}>Update your password to keep your account safe.</p>
           </div>
+        </div>
 
-          {error && <div className="page-error">{error}</div>}
-          {success && <div className="page-success">Password changed! Redirecting…</div>}
+        <div className="settings-content-wrapper">
+          <div className="settings-main-card">
+            
+            {error && (
+              <div className="sp-status-message sp-status-message--error">
+                {error}
+              </div>
+            )}
+            
+            {success && (
+              <div className="sp-status-message sp-status-message--success">
+                Password changed successfully! Redirecting…
+              </div>
+            )}
 
-          <PwdField
-            label="Current Password"
-            value={currentPwd}
-            onChange={setCurrentPwd}
-            show={showCur}
-            onToggle={() => setShowCur(v => !v)}
-          />
-          <PwdField
-            label="New Password"
-            value={newPwd}
-            onChange={setNewPwd}
-            show={showNew}
-            onToggle={() => setShowNew(v => !v)}
-          />
-          <PwdField
-            label="Confirm New Password"
-            value={confirmPwd}
-            onChange={setConfirmPwd}
-            show={showCon}
-            onToggle={() => setShowCon(v => !v)}
-          />
+            <div className="settings-form">
+              <div className="settings-form-section">
+                <h2 className="section-heading">Change Password</h2>
+                
+                <PwdField
+                  label="Current Password"
+                  value={currentPwd}
+                  onChange={setCurrentPwd}
+                  show={showCur}
+                  onToggle={() => setShowCur(v => !v)}
+                  placeholder="Enter current password"
+                />
 
-          <div className="btn-row">
-            <button className="btn-secondary" onClick={() => navigate(-1)} disabled={isSaving}>Cancel</button>
-            <button className="btn-primary cp-btn-primary" onClick={handleSave} disabled={isSaving}>
-              {isSaving ? 'Saving…' : 'Save New Password'}
-            </button>
+                <div className="settings-divider" style={{ margin: '8px 0' }} />
+
+                <div className="form-grid">
+                  <PwdField
+                    label="New Password"
+                    value={newPwd}
+                    onChange={setNewPwd}
+                    show={showNew}
+                    onToggle={() => setShowNew(v => !v)}
+                    placeholder="Min. 8 characters"
+                  />
+                  <PwdField
+                    label="Confirm New Password"
+                    value={confirmPwd}
+                    onChange={setConfirmPwd}
+                    show={showCon}
+                    onToggle={() => setShowCon(v => !v)}
+                    placeholder="Repeat new password"
+                  />
+                </div>
+              </div>
+
+              <div className="settings-footer-actions">
+                <Button 
+                  variant="ghost" 
+                  onClick={() => navigate(-1)} 
+                  disabled={isSaving}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  variant="practice" 
+                  onClick={handleSave} 
+                  disabled={isSaving}
+                  isLoading={isSaving}
+                >
+                  Save New Password
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

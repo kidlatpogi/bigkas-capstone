@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LuRotateCcw } from 'react-icons/lu';
+import { FiAlertCircle } from 'react-icons/fi';
 import { useSessionContext } from '../../context/useSessionContext';
 import { useAuthContext } from '../../context/useAuthContext';
 import { buildRoute, ROUTES } from '../../utils/constants';
@@ -21,6 +22,7 @@ import {
 } from '../../utils/speakerPointsHistory';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
 import { useVisualAnalysis } from '../../hooks/useVisualAnalysis';
+import { getSpriteUrl } from '../../utils/assetUtils';
 import './TrainingPage.css';
 
 /* ─── Helpers ──────────────────────────────────────────────────────────────── */
@@ -248,23 +250,18 @@ function TrainingPage() {
   const [showMicWarning, setShowMicWarning] = useState(false);
   const [isFreeCompactLayout, setIsFreeCompactLayout] = useState(false);
   const [isTutorialOverlayOpen, setIsTutorialOverlayOpen] = useState(false);
+  const [showLowLightWarning, setShowLowLightWarning] = useState(false);
+  const [resumeCountdown, setResumeCountdown] = useState(0);
+  const [isResumingVisual, setIsResumingVisual] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
   const { startAnalysis, stopAnalysis, liveScores, error: visualError, isReady: isVisualReady } = useVisualAnalysis();
 
-  // Auto-start logic for pre-test or linked activities
-  useEffect(() => {
-    if (status !== 'idle') return;
-    
-    const params = new URLSearchParams(location.search);
-    const shouldAutoStart = params.get('autostart') === '1' || state?.autoStartCountdown;
-    
-    if (shouldAutoStart) {
-      // Small delay to ensure camera permissions and stream are ready
-      const t = setTimeout(() => {
-        startCountdown();
-      }, 800);
-      return () => clearTimeout(t);
-    }
-  }, [status, location.search, state, startCountdown]);
+  const isRecording = status === 'recording';
+  const isPaused = status === 'paused';
+  const isActive = isRecording || isPaused;
+  const hasActivePretestTutorial = isFreePretestSession && isTutorialOverlayOpen;
+  const isStartBlockedByTutorial = hasActivePretestTutorial && !isActive && status !== 'countdown';
+
 
   const bumpElapsedSec = useCallback(() => {
     setElapsedSec((s) => {
@@ -297,8 +294,47 @@ function TrainingPage() {
   }, [trainingWpmStorageKey, wpm]);
 
   useEffect(() => {
-    micWarningVisibleRef.current = showMicWarning;
-  }, [showMicWarning]);
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      clearInterval(timerRef.current);
+      clearInterval(countRef.current);
+      clearInterval(wpmTimerRef.current);
+      cancelAnimationFrame(animRef.current);
+    };
+  }, []);
+
+  /* Lighting detection logic */
+  useEffect(() => {
+    if (!isActive || !videoRef.current) {
+      setShowLowLightWarning(false);
+      return undefined;
+    }
+
+    const checkLighting = () => {
+      const video = videoRef.current;
+      if (!video || video.readyState < 2) return;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 100;
+      canvas.height = 75;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+      let totalBrightness = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        // Luminance formula
+        const avg = (data[i] * 299 + data[i + 1] * 587 + data[i + 2] * 114) / 1000;
+        totalBrightness += avg;
+      }
+      const brightness = totalBrightness / (data.length / 4);
+      setShowLowLightWarning(brightness < 45); // Threshold for "too dark"
+    };
+
+    const interval = setInterval(checkLighting, 3000);
+    return () => clearInterval(interval);
+  }, [isActive]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
@@ -334,6 +370,33 @@ function TrainingPage() {
   useEffect(() => {
     setIsTutorialOverlayOpen(isFreePretestSession);
   }, [isFreePretestSession]);
+
+  /** ── Simulated progress for AI analysis ── */
+  useEffect(() => {
+    if (status !== 'analysing') {
+      setAnalysisProgress(0);
+      return undefined;
+    }
+
+    // Initialize with a small amount
+    setAnalysisProgress(3);
+
+    const interval = setInterval(() => {
+      setAnalysisProgress((prev) => {
+        if (prev >= 96) return prev;
+        // Progressive slowdown: starts fast, drags near the end
+        let increment = 1.2;
+        if (prev < 30) increment = 3.5;
+        else if (prev < 65) increment = 2.1;
+        else if (prev < 85) increment = 0.8;
+        else increment = 0.3;
+
+        return Math.min(96, prev + increment);
+      });
+    }, 350);
+
+    return () => clearInterval(interval);
+  }, [status]);
 
   const scriptSentences = useMemo(() => {
     if (focus !== 'scripted' || scriptWords.length === 0) return [];
@@ -541,6 +604,7 @@ function TrainingPage() {
       waveHistRef.current = [...waveHistRef.current.slice(1), visualLevel];
       setWaveformBars([...waveHistRef.current]);
 
+      /*
       if (measured < lowPickupThreshold) {
         if (!micLowStartRef.current) {
           micLowStartRef.current = Date.now();
@@ -558,7 +622,10 @@ function TrainingPage() {
           setShowMicWarning(false);
         }
       }
+      */
 
+      // Silence hints disabled per user request
+      /*
       if (measured < sensitivity.silenceThreshold) {
         if (!silenceStartRef.current) {
           silenceStartRef.current = Date.now();
@@ -576,6 +643,7 @@ function TrainingPage() {
       } else {
         silenceStartRef.current = null;
       }
+      */
 
       animRef.current = requestAnimationFrame(tick);
     };
@@ -729,6 +797,8 @@ function TrainingPage() {
       }
     }, 1000);
   }, [playCountdownCue, startRecording]);
+
+
 
   /* ── Stop → analyse ── */
   const stopRecording = () => {
@@ -946,7 +1016,12 @@ function TrainingPage() {
             await updateUserMetadata(metadataUpdates);
           }
 
-          navigate(buildRoute.sessionResult(result.data.id), { state: result.data });
+          setAnalysisProgress(100);
+          setTimeout(() => {
+            if (isMountedRef.current) {
+              navigate(buildRoute.sessionResult(result.data.id), { state: result.data });
+            }
+          }, 450);
         } else {
           if (isMountedRef.current) {
             setErrorMsg(result?.error || 'Analysis failed. Please try again.');
@@ -1000,17 +1075,57 @@ function TrainingPage() {
   };
 
   const handleResumeFromPausedModal = useCallback(() => {
+    // Guard: already resuming
+    if (status === 'resume-countdown') return;
+
     setShowPausedModal(false);
-    if (mediaRef.current?.state === 'paused') {
-      mediaRef.current.resume();
-      timerRef.current = setInterval(bumpElapsedSec, 1000);
-      startWaveformLoop();
-      if (focus === 'scripted') {
-        startScriptHighlightLoop(Math.max(highlightIdx, 0));
+    setStatus('resume-countdown');
+
+    let count = 3;
+    setResumeCountdown(count);
+    playCountdownCue('tick');
+
+    // Clear any existing countdown just in case
+    if (countRef.current) clearInterval(countRef.current);
+
+    countRef.current = setInterval(() => {
+      count -= 1;
+      if (count <= 0) {
+        clearInterval(countRef.current);
+        countRef.current = null;
+        setResumeCountdown(0);
+        playCountdownCue('start');
+
+        // Resume recording if paused
+        if (mediaRef.current?.state === 'paused') {
+          try {
+            mediaRef.current.resume();
+          } catch (e) {
+            console.error('Failed to resume media recorder:', e);
+          }
+        }
+
+        // Restart timers and logic
+        clearInterval(timerRef.current);
+        timerRef.current = setInterval(bumpElapsedSec, 1000);
+        startWaveformLoop();
+        if (focus === 'scripted') {
+          startScriptHighlightLoop(Math.max(highlightIdx, 0));
+        }
+
+        // Visual "Speak" overlay management
+        setIsResumingVisual(true);
+        setStatus('recording');
+
+        setTimeout(() => {
+          setIsResumingVisual(false);
+        }, 800);
+      } else {
+        setResumeCountdown(count);
+        playCountdownCue('tick');
       }
-      setStatus('recording');
-    }
-  }, [bumpElapsedSec, focus, highlightIdx, startScriptHighlightLoop, startWaveformLoop]);
+    }, 1000);
+  }, [bumpElapsedSec, focus, highlightIdx, status, startScriptHighlightLoop, startWaveformLoop, playCountdownCue]);
 
   /* ── Restart ── */
   const handleRestart = () => {
@@ -1046,11 +1161,6 @@ function TrainingPage() {
     visualMimeRef.current = '';
   };
 
-  const isRecording = status === 'recording';
-  const isPaused = status === 'paused';
-  const isActive = isRecording || isPaused;
-  const hasActivePretestTutorial = isFreePretestSession && isTutorialOverlayOpen;
-  const isStartBlockedByTutorial = hasActivePretestTutorial && !isActive && status !== 'countdown';
 
   const minDurationProgressPct = Math.min(100, (elapsedSec / MIN_RECORDING_SECONDS) * 100);
   const isMinDurationMet = elapsedSec >= MIN_RECORDING_SECONDS;
@@ -1285,13 +1395,14 @@ function TrainingPage() {
               />
               <canvas ref={visualCanvasRef} className="tp-camera-overlay" aria-hidden="true" />
               {/* Placeholder shown before recording starts */}
-              {!isActive && (
-                <div className="tp-camera-idle">
-                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M23 7l-7 5 7 5V7z" />
-                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-                  </svg>
-                  <span className="tp-camera-idle-label">Camera starts on record</span>
+              <div className={`tp-camera-idle ${isActive ? 'tp-camera-idle--active' : ''}`}>
+                <div className={`tp-camera-frame-guide ${isActive ? 'tp-camera-frame-guide--active' : ''}`} />
+              </div>
+
+              {showLowLightWarning && (
+                <div className="tp-environment-warning">
+                  <FiAlertCircle className="tp-env-warning-icon" />
+                  <span>Low lighting detected. Please add some light for better AI analysis!</span>
                 </div>
               )}
             </>
@@ -1450,10 +1561,18 @@ function TrainingPage() {
       />
 
       {/* ── Countdown Overlay ── */}
-      {status === 'countdown' && (
+      {(status === 'countdown' || status === 'resume-countdown' || isResumingVisual) && (
         <div className="tp-overlay">
           <div className="tp-countdown-box">
-            <span className="tp-countdown-num">{countdown > 0 ? countdown : 'Speak'}</span>
+            <span className="tp-countdown-num">
+              {isResumingVisual
+                ? 'Speak'
+                : status === 'resume-countdown' && resumeCountdown > 0
+                ? resumeCountdown
+                : countdown > 0
+                ? countdown
+                : 'Speak'}
+            </span>
           </div>
         </div>
       )}
@@ -1461,10 +1580,34 @@ function TrainingPage() {
       {/* ── Analysing Overlay ── */}
       {status === 'analysing' && (
         <div className="tp-overlay">
-          <div className="tp-countdown-box">
-            <span className="tp-analysing-spinner" />
-            <span className="tp-analysing-text">Analysing…</span>
-          </div>
+          <section className="tp-analysing-view">
+            <article className="analyzing-bubble" aria-label="Analyzing session">
+              <p className="analyzing-bubble-kicker">B-01:</p>
+              <p className="analyzing-bubble-title">Analyzing your session...</p>
+              <p className="analyzing-bubble-copy">
+                Hold tight while I review your speech patterns, gestures, and tone.
+              </p>
+
+              <div className="analyzing-loader" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(analysisProgress)}>
+                <span className="analyzing-loader-fill" style={{ width: `${Math.round(analysisProgress)}%` }} />
+              </div>
+              
+              <div className="tp-analysing-status-wrap">
+                <p className="analyzing-loader-text">{Math.round(analysisProgress)}%</p>
+                <p className="tp-analysing-status-text">
+                  {analysisProgress < 30 ? 'Uploading media...' : 
+                   analysisProgress < 60 ? 'Processing speech...' : 
+                   analysisProgress < 85 ? 'Calculating metrics...' : 'Finalizing feedback...'}
+                </p>
+              </div>
+            </article>
+
+            <div className="analyzing-robot-wrap">
+              <div className="analyzing-robot-media" aria-hidden="true">
+                <img src={getSpriteUrl('Robot/0010.webp')} alt="" className="analyzing-robot-image" />
+              </div>
+            </div>
+          </section>
         </div>
       )}
 
@@ -1622,7 +1765,7 @@ function TrainingPage() {
         message="Your current recording progress will be discarded and you will start over."
         confirmLabel="Restart"
         cancelLabel="Cancel"
-        type="warning"
+        type="info"
         onCancel={() => setShowRestartConfirm(false)}
         onConfirm={() => {
           handleRestart();
@@ -1635,7 +1778,7 @@ function TrainingPage() {
         title="Recording Paused"
         message="Your recording is currently paused. You can resume anytime."
         confirmLabel="Resume"
-        cancelLabel="Stay Paused"
+        cancelLabel=""
         type="info"
         onCancel={() => setShowPausedModal(false)}
         onConfirm={handleResumeFromPausedModal}

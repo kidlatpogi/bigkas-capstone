@@ -71,10 +71,10 @@ function getAverageTrendScore15(sessionsList) {
 }
 
 function getScoreTier15(score) {
-  if (score >= 4.0) return { label: 'Excellent', color: '#059669' };
-  if (score >= 3.0) return { label: 'Good', color: '#059669' };
-  if (score >= 2.0) return { label: 'Fair', color: '#F97316' };
-  return { label: 'Needs Work', color: '#FF0000' };
+  if (score >= 4.0) return { label: 'Stellar', color: '#10B981' };
+  if (score >= 3.0) return { label: 'Strong', color: '#0D9488' };
+  if (score >= 2.0) return { label: 'Developing', color: '#3B82F6' };
+  return { label: 'Rising', color: '#F59E0B' };
 }
 
 function clamp15(value) {
@@ -614,11 +614,11 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
                         <img src={pillar.image} alt="" className="new-widget-rank-sprite" />
                         <div className="new-widget-rank-content">
                           <p className="new-widget-kicker">Score</p>
-                          <p className="new-widget-value">{pillar.score.toFixed(1)} / 5.0</p>
+                          <p className="new-widget-value">{Math.round(pillar.value)}%</p>
                         </div>
                       </div>
                       <div className="progress-pillar-track-header">
-                        <span className="progress-pillar-track-label">Consistency Progress</span>
+                        <span className="progress-pillar-track-label">Overall consistency</span>
                         <span className="progress-pillar-track-percent">{Math.round(pillar.value)}%</span>
                       </div>
                       <div className="progress-pillar-track">

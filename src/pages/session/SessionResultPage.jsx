@@ -86,15 +86,10 @@ function getTripleVScores(result) {
 
 
 function getScoreTier15(score) {
-
-  if (score >= 4.0) return { label: 'Excellent', color: '#059669' };
-
-  if (score >= 3.0) return { label: 'Good', color: '#059669' };
-
-  if (score >= 2.0) return { label: 'Fair', color: '#F97316' };
-
-  return { label: 'Needs Work', color: '#FF0000' };
-
+  if (score >= 4.0) return { label: 'Stellar', color: '#10B981' };
+  if (score >= 3.0) return { label: 'Strong', color: '#0D9488' };
+  if (score >= 2.0) return { label: 'Developing', color: '#3B82F6' };
+  return { label: 'Rising', color: '#F59E0B' };
 }
 
 
@@ -585,7 +580,7 @@ function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner, onViewDet
                         : "Every session makes you stronger. Focus on the fundamentals and try again."}
 
                 </p>
-
+                <p className="new-banner-recs-title" style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.025em' }}>Recommendations:</p>
                 <ul className="new-banner-recs-minilist">
 
                   {allRecommendations.slice(0, 2).map((rec, idx) => (
@@ -633,12 +628,10 @@ function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner, onViewDet
               <div className="score-display">
 
                 <span className="score-value" style={{ color: overallTier.color }}>
-
-                  {tripleV.entryPoint.toFixed(1)}
-
+                  {Math.round(scoreBarPercent(tripleV.entryPoint))}%
                 </span>
 
-                <span className="score-max">/ 5.0</span>
+                <span className="score-max">Confidence</span>
 
               </div>
 
@@ -685,7 +678,6 @@ function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner, onViewDet
                     <>
 
                       <img src={topPillar.image} alt="" className="strength-sprite" />
-
                       <span className="strength-name">{topPillar.label}</span>
 
                     </>
@@ -758,9 +750,8 @@ function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner, onViewDet
 
                     <div className="new-widget-rank-content">
 
-                      <p className="new-widget-kicker">Score</p>
-
-                      <p className="new-widget-value">{p.score.toFixed(1)} / 5.0</p>
+                        <p className="new-widget-kicker">Score</p>
+                        <p className="new-widget-value">{Math.round(scorePercent)}%</p>
 
                     </div>
 
@@ -769,11 +760,8 @@ function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner, onViewDet
                   
 
                   <div className="progress-pillar-track-header">
-
                     <span className="progress-pillar-track-label">{p.desc}</span>
-
                     <span className="progress-pillar-track-percent">{Math.round(scorePercent)}%</span>
-
                   </div>
 
                   

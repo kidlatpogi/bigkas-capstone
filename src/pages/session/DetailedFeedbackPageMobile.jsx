@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { IoChevronForward, IoPlay, IoMic } from 'react-icons/io5';
 import { 
@@ -343,9 +343,21 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
     });
 
   const allRecommendations = [...pillarRecommendations, ...recommendations.map(text => ({ text, pillar: 'general' }))];
-  if (allRecommendations.length === 0) {
+    if (allRecommendations.length === 0) {
     allRecommendations.push({ text: 'Great job! Keep up the excellent work.', pillar: 'general' });
   }
+
+  const deRecommendations = (() => {
+    const avoidTips = [];
+    if (tripleV.visualAvg < 3.0) avoidTips.push("Don't break eye contact frequently; avoid staring at the floor or ceiling.");
+    if (tripleV.vocalAvg < 3.0) avoidTips.push("Try to avoid monotone delivery or sudden volume shifts that can distract your audience.");
+    if (tripleV.verbalAvg < 3.0) avoidTips.push("Avoid rushing through complex words or drifting too far from your main topic.");
+    if (avoidTips.length === 0) avoidTips.push("Keep avoiding distractions and maintain your current high standards.");
+    return avoidTips;
+  })();
+
+  const avoidSectionRef = useRef(null);
+  const scrollToAvoid = () => avoidSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
 
   return (
     <div className="df-mobile-root no-scrollbar">
@@ -370,7 +382,7 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
                  tripleV.entryPoint >= 3.0 ? 'Good job! A few areas to polish but very natural.' :
                  'Keep going! Regular practice is key to steady improvement.'}
               </p>
-              
+              <p style={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginTop: '12px', marginBottom: '4px' }}>Recommendations:</p>
               {allRecommendations.length > 0 && (
                 <ul className="sr-mobile-hero-recs">
                   {allRecommendations.slice(0, 2).map((rec, idx) => (
@@ -381,6 +393,23 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
                   ))}
                 </ul>
               )}
+              <button 
+                onClick={scrollToAvoid}
+                style={{ 
+                  marginTop: '12px', 
+                  background: '#10b98115', 
+                  color: '#059669', 
+                  border: 'none', 
+                  padding: '8px 14px', 
+                  borderRadius: '10px', 
+                  fontSize: '0.65rem', 
+                  fontWeight: 800, 
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 6px rgba(16, 185, 129, 0.1)'
+                }}
+              >
+                GROWTH FOCUS ↓
+              </button>
             </div>
           </div>
         </section>
@@ -393,8 +422,8 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
               <span className="sr-mobile-widget-badge" style={{ background: '#f1f5f9', color: '#64748b' }}>PERFORMANCE</span>
             </div>
             <div className="sr-mobile-score-row">
-              <span className="sr-mobile-score-value" style={{ color: overallTier.color }}>{tripleV.entryPoint.toFixed(1)}</span>
-              <span className="sr-mobile-score-max">/ 5.0</span>
+              <span className="sr-mobile-score-value" style={{ color: overallTier.color }}>{Math.round(scoreBarPercent(tripleV.entryPoint))}%</span>
+              <span className="sr-mobile-score-max">Confidence</span>
             </div>
             <div className="sr-mobile-tier-row">
               <span className="sr-mobile-tier-dot" style={{ background: overallTier.color }} />
@@ -440,8 +469,15 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
                     tick={{ fontSize: 10, fontWeight: 600, fill: '#94a3b8' }} 
                     interval={Math.ceil(durationSec / 5)}
                   />
-                  <YAxis hide domain={[0, 100]} />
+                  <YAxis 
+                    domain={[0, 100]} 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 9, fontWeight: 600, fill: '#94a3b8' }}
+                    tickFormatter={(val) => `${val}%`}
+                  />
                   <Tooltip 
+                    formatter={(value) => `${value}%`}
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', fontWeight: 700, fontSize: '12px' }} 
                   />
                   <Legend 
@@ -474,7 +510,7 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
                     <img src={p.image} alt="" style={{ width: '20px', height: '20px' }} />
                     <span style={{ fontWeight: 800 }}>{p.label}</span>
                   </div>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: tier.color }}>{p.score.toFixed(1)} / 5.0</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: tier.color }}>{Math.round(scoreBarPercent(p.score))}% Strength</span>
                 </div>
                 {p.subMetrics.length > 0 && (
                   <div className="df-mobile-sub-grid">
@@ -482,7 +518,7 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
                       <div key={sub.label} className="df-mobile-sub-item">
                         <div className="df-mobile-sub-label-row">
                           <span className="df-mobile-sub-label">{sub.label}</span>
-                          <span className="df-mobile-sub-score">{sub.score.toFixed(1)}</span>
+                          <span className="df-mobile-sub-score">{Math.round(scoreBarPercent(sub.score))}%</span>
                         </div>
                         <div className="df-mobile-sub-track">
                           <div className="df-mobile-sub-fill" style={{ width: `${scoreBarPercent(sub.score)}%`, background: tier.color }} />
@@ -537,6 +573,23 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
           </div>
           <div className="df-mobile-transcript-box">
             <p className="df-mobile-transcript-text">{practicedText || 'No transcript generated.'}</p>
+          </div>
+        </section>
+
+        <section className="df-mobile-section dashboard-anim-bottom" ref={avoidSectionRef}>
+          <div className="df-mobile-section-header">
+            <h2 className="df-mobile-section-title" style={{ color: '#0d9488' }}>Growth Focus</h2>
+          </div>
+          <div className="df-mobile-card" style={{ borderLeft: '4px solid #0d9488', background: 'linear-gradient(to right, #f0fdfa, #ffffff)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
+              <p style={{ margin: '0 0 4px', fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Be mindful of these points to level up:</p>
+              {deRecommendations.map((tip, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: '12px', background: '#fff', padding: '16px', borderRadius: '12px', border: '1px solid #f0fdfa', boxShadow: '0 2px 8px rgba(0,0,0,0.01)' }}>
+                  <span style={{ color: '#0d9488', fontWeight: 900 }}>•</span>
+                  <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: '#334155', lineHeight: '1.5' }}>{tip}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 

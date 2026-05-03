@@ -495,8 +495,8 @@ export function AuthProvider({ children }) {
       nickname: meta.nickname || null,
       avatar_url: resolveAvatarUrl(meta.avatar_url),
       onboardingStage,
-      profilingCompleted: parseMetadataBoolean(meta.profiling_completed) || hasSpeakerProfileData(meta.speaker_profile),
-      pretestCompleted: parseMetadataBoolean(meta.pretest_completed),
+      profilingCompleted: parseMetadataBoolean(meta.is_profiling_completed) || parseMetadataBoolean(meta.profiling_completed) || hasSpeakerProfileData(meta.speaker_profile),
+      pretestCompleted: parseMetadataBoolean(meta.is_pre_test_completed) || parseMetadataBoolean(meta.pretest_completed),
       pretestScriptedCompleted: parseMetadataBoolean(meta.pretest_scripted_completed) || parseMetadataBoolean(meta.pretest_completed),
       pretestFreeCompleted: parseMetadataBoolean(meta.pretest_free_completed),
       pretestScriptedSessionId: meta.pretest_scripted_session_id || null,
@@ -513,6 +513,42 @@ export function AuthProvider({ children }) {
       createdAt: u.created_at,
     };
   }, [resolveAvatarUrl]);
+
+  const fetchAndMergeProfile = useCallback(async (userId) => {
+    if (!userId) return;
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('is_profiling_completed, is_pre_test_completed, current_level, diagnostic_score, diagnostic_completed_at')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        if (error.code !== 'PGRST116') { // PGRST116 is 'no rows found'
+          console.error('Bigkas Auth: failed to fetch profile:', error);
+        }
+        return;
+      }
+
+      if (profile) {
+        setUser(prev => {
+          if (prev?.id !== userId) return prev;
+          return {
+            ...prev,
+            isProfilingCompleted: !!profile.is_profiling_completed,
+            isPreTestCompleted: !!profile.is_pre_test_completed,
+            // Ensure these match the buildUser mapped keys too
+            profilingCompleted: prev.profilingCompleted || !!profile.is_profiling_completed,
+            pretestCompleted: prev.pretestCompleted || !!profile.is_pre_test_completed,
+            speakerLevelNumber: profile.current_level || prev.speakerLevelNumber,
+            speakerEntryScore: profile.diagnostic_score || prev.speakerEntryScore,
+          };
+        });
+      }
+    } catch (err) {
+      console.error('Bigkas Auth: unexpected error fetching profile:', err);
+    }
+  }, []);
 
   useEffect(() => {
     if (!user?.id || !user?.onboardingStage) return;
@@ -568,8 +604,16 @@ export function AuthProvider({ children }) {
       setIsInitializing(false);
     }, 8000);
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       if (!isMounted || isBootstrapped) return;
+
+      if (error) {
+        console.warn('Bigkas Auth: session restoration error:', error);
+        // Recover from "Refresh Token Not Found" or other 400 Bad Request errors by clearing local session
+        if (error.message?.includes('Refresh Token') || error.status === 400) {
+          await supabase.auth.signOut({ scope: 'local' });
+        }
+      }
 
       const blockedAccount = getAccountBlockedMessage(session?.user?.user_metadata || {});
       if (blockedAccount) {
@@ -593,8 +637,9 @@ export function AuthProvider({ children }) {
       clearTimeout(bootstrapTimeout);
       setIsLoading(false);
       setIsInitializing(false);
-    }).catch(() => {
+    }).catch((err) => {
       if (!isMounted || isBootstrapped) return;
+      console.error('Bigkas Auth: unexpected bootstrap error:', err);
       clearAdminSession();
       isBootstrapped = true;
       clearTimeout(bootstrapTimeout);
@@ -633,6 +678,9 @@ export function AuthProvider({ children }) {
       setPendingEmailVerification(false);
       setPendingEmail(null);
       setUser(nextUser);
+      if (nextUser?.id) {
+        void fetchAndMergeProfile(nextUser.id);
+      }
       if (!nextUser) {
         clearAdminSession();
       }
@@ -643,7 +691,7 @@ export function AuthProvider({ children }) {
       clearTimeout(bootstrapTimeout);
       subscription.unsubscribe();
     };
-  }, [buildUser, clearAdminSession]);
+  }, [buildUser, clearAdminSession, fetchAndMergeProfile]);
 
   /* ── Login ── */
   const login = useCallback(async (email, password) => {
@@ -1130,6 +1178,23 @@ export function AuthProvider({ children }) {
 
     const { data, error: err } = await supabase.auth.updateUser({ data: updates });
     if (err) return { success: false, error: err.message };
+
+    // Sync with public.profiles if completion flags are present
+    const profileUpdates = {};
+    if (updates.profiling_completed !== undefined) {
+      profileUpdates.is_profiling_completed = !!updates.profiling_completed;
+    }
+    if (updates.pretest_completed !== undefined) {
+      profileUpdates.is_pre_test_completed = !!updates.pretest_completed;
+    }
+    if (updates.onboarding_completed !== undefined) {
+      profileUpdates.diagnostic_completed_at = updates.onboarding_completed ? new Date().toISOString() : null;
+    }
+
+    if (Object.keys(profileUpdates).length > 0 && data.user?.id) {
+      await supabase.from('profiles').update(profileUpdates).eq('id', data.user.id);
+    }
+
     setUser(buildUser({ user: data.user }));
     return { success: true, user: buildUser({ user: data.user }) };
   }, [buildUser]);

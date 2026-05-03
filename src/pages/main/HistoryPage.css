@@ -460,31 +460,31 @@
   color: #0f172a;
 }
 
-.history-item-pillar-chip--critical {
-  border-color: rgba(255, 0, 0, 0.45);
-  background: rgba(255, 0, 0, 0.06);
+.history-item-pillar-chip--rising {
+  border-color: rgba(245, 158, 11, 0.45);
+  background: rgba(245, 158, 11, 0.06);
 }
 
-.history-item-pillar-chip--critical .history-item-pillar-score {
-  color: #FF0000;
+.history-item-pillar-chip--rising .history-item-pillar-score {
+  color: #F59E0B;
 }
 
-.history-item-pillar-chip--warning {
-  border-color: rgba(249, 115, 22, 0.45);
-  background: rgba(249, 115, 22, 0.08);
+.history-item-pillar-chip--developing {
+  border-color: rgba(59, 130, 246, 0.45);
+  background: rgba(59, 130, 246, 0.08);
 }
 
-.history-item-pillar-chip--warning .history-item-pillar-score {
-  color: #F97316;
+.history-item-pillar-chip--developing .history-item-pillar-score {
+  color: #3B82F6;
 }
 
-.history-item-pillar-chip--healthy {
-  border-color: rgba(5, 150, 105, 0.45);
-  background: rgba(5, 150, 105, 0.08);
+.history-item-pillar-chip--stellar {
+  border-color: rgba(16, 185, 129, 0.45);
+  background: rgba(16, 185, 129, 0.08);
 }
 
-.history-item-pillar-chip--healthy .history-item-pillar-score {
-  color: #059669;
+.history-item-pillar-chip--stellar .history-item-pillar-score {
+  color: #10B981;
 }
 
 /* Right Column - Status & Score */

@@ -26,10 +26,10 @@ function toFivePointScore(rawScore) {
 }
 
 function getScoreTier15(score) {
-  if (score >= 4.0) return { label: 'Excellent', color: '#059669' };
-  if (score >= 3.0) return { label: 'Good', color: '#059669' };
-  if (score >= 2.0) return { label: 'Fair', color: '#F97316' };
-  return { label: 'Needs Work', color: '#FF0000' };
+  if (score >= 4.0) return { label: 'Stellar', color: '#10B981' };
+  if (score >= 3.0) return { label: 'Strong', color: '#0D9488' };
+  if (score >= 2.0) return { label: 'Developing', color: '#3B82F6' };
+  return { label: 'Rising', color: '#F59E0B' };
 }
 
 function clamp15(value) {
@@ -42,6 +42,11 @@ function score100to15(value) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return null;
   return 1 + (Math.max(0, Math.min(100, numeric)) / 100) * 4;
+}
+
+function score15ToPercent(score15) {
+  const clamped = Math.max(1, Math.min(5, Number(score15) || 1));
+  return Math.round(((clamped - 1) / 4) * 100);
 }
 
 function resolveSessionPillars(session) {
@@ -360,15 +365,15 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                               key={pillar.key}
                               className={`history-item-pillar-chip ${
                                 pillar.score <= 2.0
-                                  ? 'history-item-pillar-chip--critical'
+                                  ? 'history-item-pillar-chip--rising'
                                   : pillar.score <= 3.0
-                                    ? 'history-item-pillar-chip--warning'
-                                    : 'history-item-pillar-chip--healthy'
+                                    ? 'history-item-pillar-chip--developing'
+                                    : 'history-item-pillar-chip--stellar'
                               }`}
                             >
                               <img src={pillar.sprite} alt={pillar.label} className="history-item-pillar-sprite" />
                               <span className="history-item-pillar-label">{pillar.label}</span>
-                              <span className="history-item-pillar-score">{pillar.score.toFixed(1)}</span>
+                              <span className="history-item-pillar-score">{Math.round(score15ToPercent(pillar.score))}%</span>
                             </div>
                           ))}
                         </div>
@@ -392,7 +397,7 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                           }}
                         >
                           <div className="history-item-score-ring-inner-compact">
-                            {score.toFixed(1)}
+                            {Math.round(score15ToPercent(score))}%
                           </div>
                         </div>
                       </div>

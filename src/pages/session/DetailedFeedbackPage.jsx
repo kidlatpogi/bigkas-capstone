@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { IoChevronForward } from 'react-icons/io5';
 import { 
@@ -54,10 +54,10 @@ function getTripleVScores(result) {
 }
 
 function getScoreTier15(score) {
-  if (score >= 4.0) return { label: 'Excellent', color: FOREST_GREEN };
-  if (score >= 3.0) return { label: 'Good', color: SOFT_SAGE };
-  if (score >= 2.0) return { label: 'Fair', color: VIBRANT_ORANGE };
-  return { label: 'Needs Work', color: '#D94F3B' };
+  if (score >= 4.0) return { label: 'Stellar', color: '#10B981' };
+  if (score >= 3.0) return { label: 'Strong', color: '#0D9488' };
+  if (score >= 2.0) return { label: 'Developing', color: '#3B82F6' };
+  return { label: 'Rising', color: '#F59E0B' };
 }
 
 function scoreBarPercent(score) {
@@ -492,6 +492,18 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
     return unique;
   })();
 
+  const deRecommendations = (() => {
+    const avoidTips = [];
+    if (tripleV.visualAvg < 3.0) avoidTips.push("Don't break eye contact frequently; avoid staring at the floor or ceiling.");
+    if (tripleV.vocalAvg < 3.0) avoidTips.push("Try to avoid monotone delivery or sudden volume shifts that can distract your audience.");
+    if (tripleV.verbalAvg < 3.0) avoidTips.push("Avoid rushing through complex words or drifting too far from your main topic.");
+    if (avoidTips.length === 0) avoidTips.push("Keep avoiding distractions and maintain your current high standards.");
+    return avoidTips;
+  })();
+
+  const avoidSectionRef = useRef(null);
+  const scrollToAvoid = () => avoidSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+
   return (
     <div className={`df-page ${isInnerView ? 'df-page--inner' : ''} activity-page--skyward-entrance`}>
       {/* Breadcrumb */}
@@ -522,6 +534,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
                         ? 'Good progress. Keep practicing to reach the next tier.'
                         : "Every session counts. Focus on the basics to improve."}
                 </p>
+                <p className="new-banner-recs-title" style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.025em' }}>Recommendations:</p>
                 <ul className="new-banner-recs-minilist">
                   {recommendations.slice(0, 2).map((rec, idx) => (
                     <li key={idx} className="new-banner-rec-item">
@@ -530,6 +543,28 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
                     </li>
                   ))}
                 </ul>
+                <button 
+                  onClick={scrollToAvoid}
+                  style={{ 
+                    marginTop: '12px', 
+                    background: '#10b98115', 
+                    color: '#059669', 
+                    border: 'none', 
+                    padding: '8px 16px', 
+                    borderRadius: '10px', 
+                    fontSize: '0.75rem', 
+                    fontWeight: 800, 
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 2px 8px rgba(16, 185, 129, 0.1)'
+                  }}
+                  className="df-avoid-btn"
+                >
+                  GROWTH FOCUS ↓
+                </button>
               </div>
             </div>
           </div>
@@ -544,8 +579,8 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
                 <span className="new-widget-chip performance-chip">PERFORMANCE</span>
               </div>
               <div className="score-display">
-                <span className="score-value" style={{ color: overallTier.color }}>{tripleV.entryPoint.toFixed(1)}</span>
-                <span className="score-max">/ 5.0</span>
+                <span className="score-value" style={{ color: overallTier.color }}>{Math.round(scoreBarPercent(tripleV.entryPoint))}%</span>
+                <span className="score-max">Confidence</span>
               </div>
               <div className="score-label">
                 <div className="tier-indicator" style={{ '--tier-color': overallTier.color }}>
@@ -593,8 +628,17 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
               <LineChart data={timelineData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
                 <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 600, fill: '#94a3b8' }} dy={10} interval={Math.ceil(durationSec / 6)} />
-                <YAxis hide domain={[0, 100]} />
-                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', fontWeight: 700 }} />
+                <YAxis 
+                  domain={[0, 100]} 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 11, fontWeight: 600, fill: '#94a3b8' }} 
+                  tickFormatter={(val) => `${val}%`}
+                />
+                <Tooltip 
+                  formatter={(value) => `${value}%`}
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', fontWeight: 700 }} 
+                />
                 <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '12px' }} />
                 <Line type="monotone" dataKey="Visual" stroke="#059669" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
                 <Line type="monotone" dataKey="Vocal" stroke="#10b981" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
@@ -624,7 +668,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
                     <img src={pillarIcons[p.key]} alt="" className="new-widget-rank-sprite" />
                     <div className="new-widget-rank-content">
                       <p className="new-widget-kicker">Score</p>
-                      <p className="new-widget-value">{p.score.toFixed(1)} / 5.0</p>
+                      <p className="new-widget-value">{Math.round(scorePercent)}%</p>
                     </div>
                   </div>
                   <div className="progress-pillar-track-header">
@@ -643,7 +687,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
                             <div key={sub.label} className="df-sub-metric">
                               <div className="df-sub-header">
                                 <span className="df-sub-label" style={{ fontSize: '0.7rem' }}>{sub.label}</span>
-                                <span className="df-sub-score" style={{ fontSize: '0.85rem' }}>{sub.score.toFixed(1)}</span>
+                                <span className="df-sub-score" style={{ fontSize: '0.85rem' }}>{Math.round(scoreBarPercent(sub.score))}%</span>
                               </div>
                               <div className="df-sub-track" style={{ height: '4px' }}>
                                 <div className="df-sub-track-fill" style={{ width: `${scoreBarPercent(sub.score)}%`, background: subTier.color }} />
@@ -701,6 +745,26 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
             <h3 className="df-section-title" style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Session Transcript</h3>
             <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.03)' }}>
               <p className="df-practiced-text" style={{ fontSize: '0.9rem', lineHeight: '1.7', margin: 0, color: '#1e293b' }}>{practicedText}</p>
+            </div>
+          </div>
+
+          <div className="df-card" ref={avoidSectionRef} style={{ padding: '32px', borderLeft: '4px solid #0d9488', background: 'linear-gradient(to right, #f0fdfa, #ffffff)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#ccfbf1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0d9488', fontSize: '1.2rem' }}>
+                💡
+              </div>
+              <div>
+                <h3 className="df-section-title" style={{ fontSize: '1.2rem', margin: 0, color: '#134e4a' }}>Growth Focus: Areas to Refine</h3>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>Be mindful of these points in your next session</p>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+              {deRecommendations.map((tip, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: '16px', background: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid #f0fdfa', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                  <span style={{ color: '#0d9488', fontWeight: 900, fontSize: '1.1rem' }}>•</span>
+                  <p style={{ margin: 0, fontSize: '0.95rem', lineHeight: '1.6', fontWeight: 500, color: '#334155' }}>{tip}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>

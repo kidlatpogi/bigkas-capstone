@@ -94,6 +94,7 @@ export default function SideNav() {
       state: {
         skywardEntrance: true,
         launchFreeSpeechTutorial: true,
+        t: Date.now(),
       },
     });
   };

@@ -24,6 +24,7 @@ const profilingQuestion6Voice = getVoiceUrl('Profiling and Pre-Testing/Profiling
 const profilingQuestion7Voice = getVoiceUrl('Profiling and Pre-Testing/Profiling Questions/Profiling Question 7.mp3');
 const profilingQuestion8Voice = getVoiceUrl('Profiling and Pre-Testing/Profiling Questions/Profiling Question 8.mp3');
 const profilingQuestion9Voice = getVoiceUrl('Profiling and Pre-Testing/Profiling Questions/Profiling Question 9.mp3');
+const profilingQuestion10Voice = getVoiceUrl('Profiling and Pre-Testing/Profiling Questions/Profiling Question 10.mp3');
 import './UserProfilingPage.css';
 
 const QUESTIONS = questionsData;
@@ -44,6 +45,7 @@ const QUESTION_VOICE_SOURCES = [
   profilingQuestion7Voice,
   profilingQuestion8Voice,
   profilingQuestion9Voice,
+  profilingQuestion10Voice,
 ];
 
 function getSpeakerLevelNumber(score) {
@@ -98,9 +100,9 @@ function UserProfilingPage() {
   const introFirstMessage =
     "Hello! I'm B-01, your personal guide on this exciting journey to master public speaking.";
   const introSecondMessage =
-    'Before we begin, we need to assess your current speaking level. This includes 9 short profiling questions and one small speaking pre-test. These tests ensure I can customize your experience and guide you smoothly throughout your entire journey!';
+    'Before we begin, we need to assess your current Public Speaking Level. This includes 10 short profiling questions and one small speaking pre-test. These tests ensure I can customize your experience and guide you smoothly throughout your entire journey!';
   const readyMessage =
-    "Awesome! Since you're ready, let's jump right into your 9 profiling questions! And don't worry, you can answer every single one with a simple Yes, Sometimes, or No.";
+    "Awesome! Since you're ready, let's jump right into your 10 profiling questions! And don't worry, you can answer every single one with a simple Yes, Sometimes, or No.";
   const outroFirstMessage = "You've made it to the final step! To wrap things up, let's try a quick Free Speech Pre-test.";
   const outroMissionMessage =
     "Speak for at least 30 seconds on the topic, 'Tell me about yourself.' Don't overthink it-just be you and let your voice lead the way!";
@@ -554,7 +556,7 @@ function UserProfilingPage() {
               <br />
               {isReadyTypingDone ? (
                 <>
-                  Awesome! Since you&apos;re ready, let&apos;s jump right into your 9 profiling questions! And
+                  Awesome! Since you&apos;re ready, let&apos;s jump right into your 10 profiling questions! And
                   don&apos;t worry, you can answer every single one with a simple{' '}
                   <strong className="profiling-answer-yes">Yes</strong>,{' '}
                   <strong className="profiling-answer-sometimes">Sometimes</strong>, or{' '}
@@ -696,7 +698,15 @@ function UserProfilingPage() {
             <p className="profiling-pretest-text profiling-pretest-text--mission">
               <strong>Your mission:</strong>
               <br />
-              {typedOutroMissionText}
+              {isOutroTypingDone ? (
+                <>
+                  Speak for at least <strong>30 seconds</strong> on the topic,{' '}
+                  <strong>&apos;Tell me about yourself.&apos;</strong> Don&apos;t overthink it-just be
+                  you and let your voice lead the way!
+                </>
+              ) : (
+                typedOutroMissionText
+              )}
             </p>
             <div className="profiling-intro-actions profiling-intro-actions--end">
               <div className="profiling-submit-btn">

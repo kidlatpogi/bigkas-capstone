@@ -74,6 +74,13 @@ function RegisterPage() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Proactive restriction: only allow letters, spaces, and hyphens for names
+    if (name === 'firstName' || name === 'lastName') {
+      const regex = /^[A-Za-z\s-]*$/;
+      if (!regex.test(value)) return;
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: null }));
@@ -82,12 +89,21 @@ function RegisterPage() {
 
   const validateForm = () => {
     const newErrors = {};
+    
+    // First Name Validation
     if (!formData.firstName.trim()) {
       newErrors.firstName = 'First name is required';
+    } else if (!/^[A-Za-z\s-]+$/.test(formData.firstName)) {
+      newErrors.firstName = 'First name should only contain letters';
     }
+
+    // Last Name Validation
     if (!formData.lastName.trim()) {
       newErrors.lastName = 'Last name is required';
+    } else if (!/^[A-Za-z\s-]+$/.test(formData.lastName)) {
+      newErrors.lastName = 'Last name should only contain letters';
     }
+
     if (!formData.email) {
       newErrors.email = 'Email is required';
     } else if (!isValidEmail(formData.email)) {

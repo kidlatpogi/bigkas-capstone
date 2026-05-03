@@ -222,7 +222,7 @@ function SessionResultPageMobile({ sessionIdProp, isInnerView, onCloseInner, onV
                  tripleV.entryPoint >= 3.0 ? 'Good job! A few areas to polish but very natural.' :
                  'Keep going! Regular practice is key to steady improvement.'}
               </p>
-              
+              <p style={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginTop: '12px', marginBottom: '4px' }}>Recommendations:</p>
               {allRecommendations.length > 0 && (
                 <ul className="sr-mobile-hero-recs">
                   {allRecommendations.slice(0, 2).map((rec, idx) => (
@@ -245,8 +245,8 @@ function SessionResultPageMobile({ sessionIdProp, isInnerView, onCloseInner, onV
               <span className="sr-mobile-widget-badge" style={{ background: '#f1f5f9', color: '#64748b' }}>PERFORMANCE</span>
             </div>
             <div className="sr-mobile-score-row">
-              <span className="sr-mobile-score-value" style={{ color: overallTier.color }}>{tripleV.entryPoint.toFixed(1)}</span>
-              <span className="sr-mobile-score-max">/ 5.0</span>
+              <span className="sr-mobile-score-value" style={{ color: overallTier.color }}>{Math.round(scoreBarPercent(tripleV.entryPoint))}%</span>
+              <span className="sr-mobile-score-max">Confidence</span>
             </div>
             <div className="sr-mobile-tier-row">
               <span className="sr-mobile-tier-dot" style={{ background: overallTier.color }} />
@@ -295,8 +295,7 @@ function SessionResultPageMobile({ sessionIdProp, isInnerView, onCloseInner, onV
                     </span>
                   </div>
                   <div className="sr-mobile-pillar-score-row">
-                    <span className="sr-mobile-pillar-score">{p.score.toFixed(1)} <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>/ 5.0</span></span>
-                    <span className="sr-mobile-pillar-percent">{Math.round(percent)}%</span>
+                    <span className="sr-mobile-pillar-score">{Math.round(percent)}% <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Overall</span></span>
                   </div>
                   <div className="sr-mobile-pillar-track">
                     <div className="sr-mobile-pillar-fill" style={{ width: `${percent}%`, background: tier.color }} />

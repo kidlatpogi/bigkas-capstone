@@ -21,7 +21,7 @@ function TutorialOverlay({
   finalRobotImage = defaultFinalRobotImage,
   showAudioToggle = false,
 }) {
-  const TUTORIAL_MUTE_KEY = 'bigkas_tutorial_overlay_muted_v1';
+  const GLOBAL_MUTE_KEY = 'bigkas_global_audio_muted_v1';
   const defaultSteps = useMemo(
     () => [
       {
@@ -34,7 +34,7 @@ function TutorialOverlay({
       {
         id: 'step-topic',
         title: 'B-01:',
-        text: "'The Topic' This is your prompt! Focus on the subject shown here to keep your speech on track.",
+        text: "'The Topic' This is for your Verbal analysis! Focus on the prompt shown here to ensure your content is clear and stays on track.",
         button: 'Continue',
         targetElementId: 'tutorial-target-topic',
         emphasis: "'The Topic'",
@@ -42,7 +42,7 @@ function TutorialOverlay({
       {
         id: 'step-camera',
         title: 'B-01:',
-        text: "'The Camera View', Check your posture and expression in this frame—confidence starts with how you carry yourself!",
+        text: "'The Camera View' This is for your Visual analysis! Position yourself within the guide so I can accurately track your eye contact, expressions, and gestures. Also, make sure you're in a well-lit room so I can see you clearly—good lighting makes for a great performance!",
         button: 'Next',
         targetElementId: 'tutorial-target-camera',
         emphasis: "'The Camera View'",
@@ -50,7 +50,7 @@ function TutorialOverlay({
       {
         id: 'step-soundbar',
         title: 'B-01:',
-        text: "'Voice and Time', Watch the soundbar dance as you speak and keep an eye on the timer to hit your goal.",
+        text: "'Voice and Time' This is for your Vocal analysis! Watch the soundbar dance as you speak to see your projection and emotional expression.",
         button: 'Next',
         targetElementId: 'tutorial-target-soundbar',
         emphasis: "'Voice and Time'",
@@ -86,7 +86,7 @@ function TutorialOverlay({
   const [isTypingDone, setIsTypingDone] = useState(false);
   const [isMuted, setIsMuted] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem(TUTORIAL_MUTE_KEY) === '1';
+    return window.localStorage.getItem(GLOBAL_MUTE_KEY) === '1';
   });
   const activeSpotlightRef = useRef(null);
   const companionContainerRef = useRef(null);
@@ -113,7 +113,7 @@ function TutorialOverlay({
     setIsMuted((prev) => {
       const next = !prev;
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem(TUTORIAL_MUTE_KEY, next ? '1' : '0');
+        window.localStorage.setItem(GLOBAL_MUTE_KEY, next ? '1' : '0');
       }
       if (next) {
         stopAllAudios();

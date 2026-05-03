@@ -9,11 +9,11 @@ export const GLOBAL_ACTIVITY_SCOPE = 'global';
  * Bigkas speaker levels (1.0–5.0 entry-point scale). Replaces the old XP ladder.
  */
 export const BIGKAS_LEVELS = [
-  { number: 1, name: 'Mastering Fundamentals', min: 1.0, max: 1.9 },
-  { number: 2, name: 'Learning Your Style', min: 2.0, max: 2.9 },
-  { number: 3, name: 'Increasing Knowledge', min: 3.0, max: 3.9 },
-  { number: 4, name: 'Building Skills', min: 4.0, max: 4.9 },
-  { number: 5, name: 'Demonstrating Expertise', min: 5.0, max: 5.0 },
+  { number: 1, name: 'Mastering Fundamentals', threshold: 2.0 },
+  { number: 2, name: 'Learning Your Style', threshold: 3.0 },
+  { number: 3, name: 'Increasing Knowledge', threshold: 4.0 },
+  { number: 4, name: 'Building Skills', threshold: 5.0 },
+  { number: 5, name: 'Demonstrating Expertise', threshold: Infinity },
 ];
 
 /** @deprecated Use BIGKAS_LEVELS — kept for a few imports that expect an array */
@@ -108,14 +108,17 @@ export function resolveSpeakerEntryScore(user) {
  */
 export function getBigkasLevelFromScore(entryScoreRaw) {
   const s = Math.max(1, Math.min(5, Number(entryScoreRaw) || 1));
-  const level =
-    BIGKAS_LEVELS.find((L) => s >= L.min && s <= L.max) || BIGKAS_LEVELS[0];
+  const level = BIGKAS_LEVELS.find((L) => s < L.threshold) || BIGKAS_LEVELS[0];
   const next = BIGKAS_LEVELS.find((L) => L.number === level.number + 1);
+  
   let progressPct = 100;
   if (next && level.number < 5) {
-    const span = next.min - level.min;
+    // Current level base is the previous level's threshold (or 1.0 for Level 1)
+    const currentBase = level.number === 1 ? 1.0 : BIGKAS_LEVELS[level.number - 2].threshold;
+    const span = level.threshold - currentBase;
+    
     if (span > 0) {
-      progressPct = Math.round(((s - level.min) / span) * 100);
+      progressPct = Math.round(((s - currentBase) / span) * 100);
     }
   }
   return {

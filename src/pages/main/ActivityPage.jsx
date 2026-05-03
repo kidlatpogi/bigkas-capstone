@@ -214,7 +214,7 @@ function ActivityPage() {
   const [entranceFromNav] = useState(() => location.state?.skywardEntrance === true);
   const scopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
   /** Activities are filtered by `target_level` = Bigkas rank (same as dashboard `levelProgress.levelName`). */
-  const { tasks, loading: activitiesLoading, error: activitiesError } = useActivitiesJourneyTasks(1);
+  const { tasks, loading: activitiesLoading, error: activitiesError } = useActivitiesJourneyTasks(user?.speakerLevelNumber || 1);
   const { metricsSyncKey, refreshJourney } = useJourneyRemoteState(user);
   const stampResetTimeoutRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -397,8 +397,11 @@ function ActivityPage() {
   useEffect(() => {
     if (!user?.id || activitiesLoading) return;
     
-    // Condition: finished profiling AND pre-testing
-    const isReadyForTutorial = user.profilingCompleted && user.pretestCompleted;
+    // Condition: finished profiling AND pre-testing OR finished entire onboarding
+    const isReadyForTutorial = 
+      user.onboardingStage === 'completed' || 
+      (user.isProfilingCompleted && user.isPreTestCompleted) ||
+      (user.profilingCompleted && user.pretestCompleted);
     
     if (isReadyForTutorial) {
       const seen = window.localStorage.getItem(FREE_SPEECH_TUTORIAL_SEEN_KEY);
@@ -406,7 +409,7 @@ function ActivityPage() {
         setShowFreeSpeechTutorial(true);
       }
     }
-  }, [user?.id, user?.profilingCompleted, user?.pretestCompleted, activitiesLoading]);
+  }, [user?.id, user?.onboardingStage, user?.profilingCompleted, user?.pretestCompleted, user?.isProfilingCompleted, user?.isPreTestCompleted, activitiesLoading]);
 
   const handleActiveTaskIdChange = useCallback((id) => {
     setActiveTaskId(id);
@@ -563,12 +566,16 @@ function ActivityPage() {
 
   useEffect(() => {
     if (location.state?.launchFreeSpeechTutorial !== true) return;
+    
+    // Explicitly reset the seen flag if we're coming from the onboarding reveal
+    window.localStorage.setItem(FREE_SPEECH_TUTORIAL_SEEN_KEY, '0');
     setShowFreeSpeechTutorial(true);
+
     navigate(location.pathname, {
       replace: true,
       state: { ...(location.state || {}), launchFreeSpeechTutorial: false },
     });
-  }, [location.pathname, location.state, navigate]);
+  }, [location.pathname, location.state, navigate, FREE_SPEECH_TUTORIAL_SEEN_KEY]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
@@ -785,6 +792,13 @@ function ActivityPage() {
   if (activitiesLoading) {
     return (
       <div className="activity-page-root">
+        <TutorialOverlay
+          isOpen={showFreeSpeechTutorial}
+          steps={FREE_SPEECH_TUTORIAL_STEPS}
+          showAudioToggle
+          onClose={() => setShowFreeSpeechTutorial(false)}
+          onFinish={handleTutorialFinish}
+        />
         <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
           <p className="section-label">Loading journey…</p>
         </div>
@@ -795,6 +809,13 @@ function ActivityPage() {
   if (activitiesError) {
     return (
       <div className="activity-page-root">
+        <TutorialOverlay
+          isOpen={showFreeSpeechTutorial}
+          steps={FREE_SPEECH_TUTORIAL_STEPS}
+          showAudioToggle
+          onClose={() => setShowFreeSpeechTutorial(false)}
+          onFinish={handleTutorialFinish}
+        />
         <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
           <p className="activity-task-lock-note">Could not load activities: {activitiesError}</p>
           <p className="activity-task-detail">Ensure the `activities` table exists and RLS allows read for authenticated users.</p>

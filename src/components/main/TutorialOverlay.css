@@ -4,7 +4,7 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: 1300;
+  z-index: 5000;
   pointer-events: none;
 }
 
@@ -13,9 +13,9 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(2px);
-  z-index: 900;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 4000;
 }
 
 .tutorial-companion-container {
@@ -28,7 +28,7 @@
   gap: clamp(0.5rem, 2vw, 1.5rem);
   z-index: 2;
   pointer-events: auto;
-  transition: all 0.5s ease-in-out;
+  transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .tutorial-robot-img {
@@ -177,37 +177,69 @@
 
 .tutorial-spotlight-active {
   position: relative !important;
-  z-index: 950 !important;
+  z-index: 4500 !important;
   box-shadow: 0 0 0 5px #34D399, 0 0 42px rgba(52, 211, 153, 0.9) !important;
-  border-radius: 1rem !important;
-  background-color: #FDFDF9 !important;
-  padding: 0.25rem !important;
+  background-color: #FFFFFF !important;
   transition: all 0.3s ease;
   animation: tutorial-spotlight-pulse 1.2s ease-in-out infinite;
 }
 
-.tutorial-overlay-wrapper.is-controls-step .tutorial-companion-container {
+/* The camera wrap should stay transparent so the video is visible without white bleed */
+.tp-camera-wrap.tutorial-spotlight-active {
+  background-color: transparent !important;
+}
+
+.tp-waveform.tutorial-spotlight-active {
+  padding-inline: 1rem !important;
+}
+
+.tutorial-overlay-wrapper.is-controls-step .tutorial-companion-container,
+.tutorial-overlay-wrapper.is-roadmap-step .tutorial-companion-container,
+.tutorial-overlay-wrapper.is-practice-step .tutorial-companion-container {
   top: clamp(1rem, 7vh, 4.5rem);
   bottom: auto;
+}
+
+.tutorial-overlay-wrapper.is-roadmap-step .tutorial-companion-container,
+.tutorial-overlay-wrapper.is-practice-step .tutorial-companion-container {
+  align-items: flex-start;
+  gap: 2.5rem;
+  left: calc(var(--app-sidebar-width, 0px) + clamp(20px, 5vw, 60px));
+  width: max-content;
+  max-width: calc(100vw - var(--app-sidebar-width, 0px) - 80px);
+  top: -3.5rem !important;
+  bottom: auto !important;
+}
+
+.tutorial-overlay-wrapper.is-roadmap-step .tutorial-speech-bubble,
+.tutorial-overlay-wrapper.is-practice-step .tutorial-speech-bubble {
+  width: min(100%, 820px);
+  max-width: min(100%, 820px);
 }
 
 .tutorial-overlay-wrapper.is-final-step .tutorial-companion-container {
   left: calc(50% + (var(--app-sidebar-width, 0px) / 2));
   right: auto;
-  top: clamp(7rem, 14vh, 10rem);
+  top: 50%;
   bottom: auto;
-  transform: translateX(-50%);
-  width: min(100%, 46rem);
+  transform: translate(-50%, -50%);
+  width: min(90vw, 55rem);
+  height: auto;
+  max-height: 95vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: clamp(0.35rem, 0.9vw, 0.6rem);
+  justify-content: center;
+  gap: 0.75rem;
 }
 
 .tutorial-overlay-wrapper.is-final-step .tutorial-speech-bubble {
-  max-width: min(100%, 34rem);
+  max-width: min(90vw, 36rem);
   order: 1;
-  transform: translateY(8rem);
+  transform: none;
+  margin-top: 0;
+  margin-bottom: -4rem;
+  z-index: 100;
 }
 
 .tutorial-overlay-wrapper.is-final-step .tutorial-speech-bubble::before {
@@ -221,9 +253,13 @@
 }
 
 .tutorial-overlay-wrapper.is-final-step .tutorial-robot-img {
-  width: min(40.9375rem, 82vw);
-  max-width: none;
+  width: 100%;
+  height: auto;
+  max-height: 65vh;
+  max-width: min(85vw, 48rem);
   order: 2;
+  object-fit: contain;
+  flex-shrink: 1;
 }
 
 .tutorial-overlay-wrapper.is-default-tutorial .tutorial-robot-img {
@@ -246,6 +282,10 @@
   z-index: 1200;
 }
 
+.tutorial-overlay-wrapper.is-practice-step .tutorial-audio-action {
+  bottom: calc(clamp(16px, 2.8vh, 30px) + 70px);
+}
+
 .tutorial-overlay-wrapper.is-default-tutorial.is-final-step .tutorial-audio-action {
   right: clamp(16px, 2.2vw, 28px);
   left: auto;
@@ -254,11 +294,12 @@
 }
 
 .tutorial-overlay-wrapper.is-default-tutorial.is-final-step .tutorial-companion-container {
-  top: clamp(8rem, 16vh, 11rem);
+  top: 50%;
 }
 
 .tutorial-overlay-wrapper.is-default-tutorial.is-final-step .tutorial-robot-img {
-  width: clamp(520px, 40vw, 655px);
+  height: clamp(200px, 45vh, 655px);
+  width: auto;
 }
 
 .tutorial-overlay-wrapper.is-activity-home-step-1 .tutorial-companion-container {
@@ -325,7 +366,8 @@
 .tutorial-overlay-wrapper.is-custom-tutorial:not(.is-activity-home-step-1) .tutorial-companion-container {
   left: calc(var(--app-sidebar-width, 0px) + clamp(10px, 3vw, 30px));
   bottom: calc(clamp(10px, 3vh, 30px) + env(safe-area-inset-bottom, 0px));
-  width: min(100% - clamp(10px, 3vw, 30px), 62rem);
+  width: max-content;
+  max-width: calc(100vw - var(--app-sidebar-width, 0px) - 60px);
   align-items: flex-end;
   z-index: 1300;
   pointer-events: auto;
@@ -337,8 +379,8 @@
 }
 
 .tutorial-overlay-wrapper.is-custom-tutorial:not(.is-activity-home-step-1) .tutorial-speech-bubble {
-  width: min(100%, 608px);
-  max-width: min(100%, 608px);
+  width: min(100%, 600px);
+  max-width: min(100%, 600px);
   z-index: 1301;
   pointer-events: auto;
 }
@@ -381,11 +423,11 @@
 }
 
 .tutorial-overlay-wrapper.is-activity-home-step-2~.activity-page-grid .tutorial-spotlight-active {
-  z-index: 950 !important;
+  z-index: 4450 !important;
 }
 
 .tutorial-overlay-wrapper.is-activity-home-step-2~.activity-page-grid #tutorial-target-home-banner.tutorial-spotlight-active {
-  z-index: 1200 !important;
+  z-index: 4600 !important;
   position: relative !important;
   box-shadow: 0 0 0 5px #34D399, 0 0 42px rgba(52, 211, 153, 0.9) !important;
   opacity: 1 !important;
@@ -395,12 +437,12 @@
 
 .tutorial-overlay-wrapper.is-activity-home-step-2~.activity-page-grid .new-banner {
   position: relative;
-  z-index: 1000;
+  z-index: 4500;
 }
 
 .tutorial-overlay-wrapper.is-activity-home-step-2~.activity-page-grid #tutorial-target-home-banner {
   position: relative;
-  z-index: 1200;
+  z-index: 4600;
   opacity: 1 !important;
 }
 
@@ -418,11 +460,11 @@
 }
 
 .tutorial-overlay-wrapper.is-activity-home-step-3~.activity-page-grid .tutorial-spotlight-active {
-  z-index: 950 !important;
+  z-index: 4450 !important;
 }
 
 .tutorial-overlay-wrapper.is-activity-home-step-3~.activity-page-grid #tutorial-target-home-streak.tutorial-spotlight-active {
-  z-index: 1200 !important;
+  z-index: 4600 !important;
   position: relative !important;
   opacity: 1 !important;
   filter: none !important;
@@ -431,12 +473,12 @@
 
 .tutorial-overlay-wrapper.is-activity-home-step-3~.activity-page-grid .new-banner {
   position: relative;
-  z-index: 1000;
+  z-index: 4500;
 }
 
 .tutorial-overlay-wrapper.is-activity-home-step-3~.activity-page-grid .new-banner-right {
   position: relative;
-  z-index: 1100;
+  z-index: 4550;
   opacity: 1 !important;
   filter: none !important;
 }
@@ -450,12 +492,12 @@
 }
 
 .tutorial-overlay-wrapper.is-custom-tutorial~.activity-page-grid #tutorial-target-home-journey.tutorial-spotlight-active {
-  z-index: 1280 !important;
+  z-index: 4680 !important;
 }
 
 .tutorial-overlay-wrapper.is-custom-tutorial~.activity-page-grid #tutorial-target-home-journey.tutorial-spotlight-active .skyward-journey-container {
   position: relative;
-  z-index: 1281;
+  z-index: 4681;
 }
 
 .tutorial-overlay-wrapper.is-activity-home-step-2~.activity-page-grid .skyward-journey-header-card {
@@ -488,7 +530,7 @@
     transform: translateX(-50%);
     width: min(calc(100vw - clamp(16px, 6vw, 32px)), 54rem);
     align-items: flex-start;
-    z-index: 1100;
+    z-index: 5100;
   }
 
   .tutorial-overlay-wrapper.is-default-tutorial.is-final-step .tutorial-companion-container {

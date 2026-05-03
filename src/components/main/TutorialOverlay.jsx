@@ -189,7 +189,7 @@ function TutorialOverlay({
     const targetId = step?.targetElementId;
     const isCustomTutorial = Array.isArray(steps) && steps.length > 0;
     const spotlightZIndex =
-      isCustomTutorial && targetId === 'tutorial-target-home-journey' ? '1280' : '950';
+      isCustomTutorial && targetId === 'tutorial-target-home-journey' ? '4600' : '4500';
     let retryTimer = null;
     if (targetId) {
       const applySpotlight = (attempt = 0) => {
@@ -226,7 +226,7 @@ function TutorialOverlay({
     }
 
     const step = tutorialSteps[currentStep];
-    const shouldAnchorToTarget = step?.id === 'step-controls' || step?.id === 'step-soundbar';
+    const shouldAnchorToTarget = step?.id === 'step-controls' || step?.id === 'step-soundbar' || step?.id === 'step-roadmap' || step?.id === 'step-practice';
     if (!shouldAnchorToTarget) {
       setAnchoredCompanionStyle(null);
       return undefined;
@@ -243,13 +243,14 @@ function TutorialOverlay({
       const targetRect = targetEl.getBoundingClientRect();
       const companionRect = companionEl.getBoundingClientRect();
       const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
-      const gapPx = rootFontSize * 2;
+      const extraGap = step?.id === 'step-roadmap' ? rootFontSize : 0;
+      const gapPx = (rootFontSize * 2) + extraGap;
       const top = Math.max(8, targetRect.top - companionRect.height - gapPx);
 
       setAnchoredCompanionStyle({
         top: `${top}px`,
         bottom: 'auto',
-        zIndex: 1100,
+        zIndex: 5100,
       });
       return true;
     };
@@ -302,7 +303,7 @@ function TutorialOverlay({
         }
         setIsTypingDone(true);
       }
-    }, 12);
+    }, 8);
 
     if (shouldUseAudio && !isMuted) {
       stopAllAudios();

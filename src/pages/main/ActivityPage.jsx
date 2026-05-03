@@ -94,6 +94,7 @@ const FREE_SPEECH_TUTORIAL_STEPS = [
     id: 'step-roadmap',
     title: 'B-01:',
     robot: tutorialRobotStep5,
+    robotClassName: 'is-roadmap-step',
     button: 'Next',
     targetElementId: 'tutorial-target-home-journey',
     text: 'This path is your customized learning roadmap! You will start at your first stage and unlock the next ones as you move forward. The activities gradually become more challenging, and once you complete all tasks on your path, you unlock a final Post-test challenge to advance.',
@@ -102,6 +103,7 @@ const FREE_SPEECH_TUTORIAL_STEPS = [
     id: 'step-practice',
     title: 'B-01:',
     robot: tutorialRobotStep6,
+    robotClassName: 'is-practice-step',
     button: 'Finish!',
     targetElementId: 'tutorial-target-home-practice',
     text: 'Need extra training? The Practice card gives you two ways to sharpen your skills anytime: Randomizer for surprise prompts, and Free Speech for open-topic confidence building. Ready? Let us start your Free Speech session now!',
@@ -207,7 +209,7 @@ function getRankSprite(levelNumber, levelName = '') {
 function ActivityPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuthContext();
+  const { user, updateUserMetadata } = useAuthContext();
   const [showDesktopSidebar, setShowDesktopSidebar] = useState(
     typeof window === 'undefined' ? true : window.matchMedia('(min-width: 1025px)').matches,
   );
@@ -235,6 +237,7 @@ function ActivityPage() {
   const [freeSpeechDraftTopic, setFreeSpeechDraftTopic] = useState('');
   const [showRandomizerOverlay, setShowRandomizerOverlay] = useState(false);
   const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
+  const [showAssessmentModal, setShowAssessmentModal] = useState(false);
   const [randomizerTopic, setRandomizerTopic] = useState(() => {
     const defaultTopic = RANDOM_TOPICS.find((entry) => entry.title === RANDOMIZER_DEFAULT_TOPIC);
     return defaultTopic || { title: RANDOMIZER_DEFAULT_TOPIC, body: '' };
@@ -404,8 +407,10 @@ function ActivityPage() {
       (user.profilingCompleted && user.pretestCompleted);
     
     if (isReadyForTutorial) {
-      const seen = window.localStorage.getItem(FREE_SPEECH_TUTORIAL_SEEN_KEY);
-      if (seen !== '1') {
+      const localSeen = window.localStorage.getItem(FREE_SPEECH_TUTORIAL_SEEN_KEY);
+      const remoteSeen = !!user.dashboardTutorialSeen;
+
+      if (localSeen !== '1' && !remoteSeen) {
         setShowFreeSpeechTutorial(true);
       }
     }
@@ -482,6 +487,7 @@ function ActivityPage() {
       id: newlyCompletedTask.id,
       title: newlyCompletedTask.title || 'Activity achievement',
       source: 'activity-task',
+      description: "You've earned a new achievement! Claim your reward now.",
       createdAt: Date.now(),
     });
 
@@ -571,10 +577,15 @@ function ActivityPage() {
     window.localStorage.setItem(FREE_SPEECH_TUTORIAL_SEEN_KEY, '0');
     setShowFreeSpeechTutorial(true);
 
-    navigate(location.pathname, {
-      replace: true,
-      state: { ...(location.state || {}), launchFreeSpeechTutorial: false },
-    });
+    // Short delay to ensure the overlay renders before we clear the state flag
+    const t = setTimeout(() => {
+      navigate(location.pathname, {
+        replace: true,
+        state: { ...(location.state || {}), launchFreeSpeechTutorial: false },
+      });
+    }, 100);
+
+    return () => clearTimeout(t);
   }, [location.pathname, location.state, navigate, FREE_SPEECH_TUTORIAL_SEEN_KEY]);
 
   useEffect(() => {
@@ -599,7 +610,18 @@ function ActivityPage() {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(FREE_SPEECH_TUTORIAL_SEEN_KEY, '1');
     }
-  }, []);
+
+    // Persist to database so it doesn't show again on other devices
+    if (user?.id) {
+      updateUserMetadata({ dashboard_tutorial_seen: true }).catch(() => {});
+    }
+
+    const curLevel = Number(levelProgress?.levelNumber || 1);
+    const recLevel = Number(recommendedLevel || 1);
+    if (curLevel > 1 && curLevel === recLevel) {
+      setShowAssessmentModal(true);
+    }
+  }, [user?.id, levelProgress?.levelNumber, recommendedLevel, updateUserMetadata]);
 
   const handleCloseFreeSpeechOverlay = useCallback(() => {
     setShowFreeSpeechOverlay(false);
@@ -1060,7 +1082,13 @@ function ActivityPage() {
               <p className="new-practice-subtitle">Choose a mode and jump straight into speaking.</p>
 
               <div className="new-btn-group">
-                <div className="new-btn-row new-btn-row--card">
+                <div 
+                  className="new-btn-row new-btn-row--card"
+                  role="button"
+                  tabIndex={0}
+                  onClick={handleRandomizerClick}
+                  onKeyDown={(e) => e.key === 'Enter' && handleRandomizerClick()}
+                >
                   <div className="new-btn-visual new-btn-visual--randomizer">
                     <img src={crystalBallImage} alt="" className="new-btn-visual-img new-btn-visual-img--randomizer" />
                   </div>
@@ -1068,16 +1096,15 @@ function ActivityPage() {
                     <p className="new-btn-label">Randomizer</p>
                     <p className="new-btn-hint">Instant prompt to warm up your delivery.</p>
                   </div>
-                  <Button
-                    variant="practice"
-                    className={`activity-practice-cta activity-practice-cta--randomizer${(showRandomizerOverlay || showFreeSpeechOverlay) ? ' is-hidden' : ''}`}
-                    onClick={handleRandomizerClick}
-                  >
-                    Start Randomizer
-                  </Button>
                 </div>
                 
-                <div className="new-btn-row new-btn-row--card">
+                <div 
+                  className="new-btn-row new-btn-row--card"
+                  role="button"
+                  tabIndex={0}
+                  onClick={handleFreeSpeechClick}
+                  onKeyDown={(e) => e.key === 'Enter' && handleFreeSpeechClick()}
+                >
                   <div className="new-btn-visual new-btn-visual--speech">
                     <img src={crownImage} alt="" className="new-btn-visual-img" />
                   </div>
@@ -1085,13 +1112,6 @@ function ActivityPage() {
                     <p className="new-btn-label">Free Speech</p>
                     <p className="new-btn-hint">Open topic mode for confidence building.</p>
                   </div>
-                  <Button
-                    variant="training"
-                    className={`activity-practice-cta activity-practice-cta--speech${(showRandomizerOverlay || showFreeSpeechOverlay) ? ' is-hidden' : ''}`}
-                    onClick={handleFreeSpeechClick}
-                  >
-                    Start Session
-                  </Button>
                 </div>
               </div>
             </section>
@@ -1110,6 +1130,21 @@ function ActivityPage() {
         isOpen={isRankModalOpen}
         onClose={() => setIsRankModalOpen(false)}
         currentLevelNumber={levelProgress.levelNumber}
+      />
+      <TutorialOverlay
+        isOpen={showAssessmentModal}
+        onClose={() => setShowAssessmentModal(false)}
+        onFinish={() => setShowAssessmentModal(false)}
+        steps={[
+          {
+            id: 'assessment-notice',
+            title: 'B-01:',
+            text: `We assessed your speaking level as Level ${levelProgress?.levelNumber || 1}, so we fast-tracked earlier lessons and placed you where your growth is most meaningful.`,
+            button: 'Got it!',
+            targetElementId: null,
+            robot: tutorialRobotStep1,
+          },
+        ]}
       />
     </div>
   );

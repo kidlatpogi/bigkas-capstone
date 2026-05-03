@@ -197,6 +197,7 @@ function TrainingPage() {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   const [showPausedModal, setShowPausedModal] = useState(false);
+  const [showOneMinWarning, setShowOneMinWarning] = useState(false);
 
   const trainingSettingsScope = user?.id || 'guest';
   const trainingFontSizeStorageKey = `${TRAINING_FONT_SIZE_KEY}_${trainingSettingsScope}`;
@@ -267,9 +268,27 @@ function TrainingPage() {
     setElapsedSec((s) => {
       const next = s + 1;
       recordingDurationSecRef.current = next;
+
+      // 1-minute milestone for pre-test sessions
+      if (next === 60 && isPreTestSession) {
+        setShowOneMinWarning(true);
+        // Automatically pause recording
+        if (mediaRef.current && mediaRef.current.state === 'recording') {
+          mediaRef.current.pause();
+        }
+        if (visualMediaRef.current && visualMediaRef.current.state === 'recording') {
+          visualMediaRef.current.pause();
+        }
+        clearInterval(timerRef.current);
+        clearInterval(wpmTimerRef.current);
+        clearTimeout(wpmTimerRef.current);
+        cancelAnimationFrame(animRef.current);
+        setStatus('paused');
+      }
+
       return next;
     });
-  }, []);
+  }, [isPreTestSession]);
 
   useEffect(() => {
     const savedFontSize = readNumericSetting(trainingFontSizeStorageKey, null, 12, 24);
@@ -1581,30 +1600,32 @@ function TrainingPage() {
       {status === 'analysing' && (
         <div className="tp-overlay">
           <section className="tp-analysing-view">
-            <article className="analyzing-bubble" aria-label="Analyzing session">
-              <p className="analyzing-bubble-kicker">B-01:</p>
-              <p className="analyzing-bubble-title">Analyzing your session...</p>
-              <p className="analyzing-bubble-copy">
-                Hold tight while I review your speech patterns, gestures, and tone.
-              </p>
-
-              <div className="analyzing-loader" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(analysisProgress)}>
-                <span className="analyzing-loader-fill" style={{ width: `${Math.round(analysisProgress)}%` }} />
-              </div>
-              
-              <div className="tp-analysing-status-wrap">
-                <p className="analyzing-loader-text">{Math.round(analysisProgress)}%</p>
-                <p className="tp-analysing-status-text">
-                  {analysisProgress < 30 ? 'Uploading media...' : 
-                   analysisProgress < 60 ? 'Processing speech...' : 
-                   analysisProgress < 85 ? 'Calculating metrics...' : 'Finalizing feedback...'}
+            <div className="profiling-unit">
+              <article className="analyzing-bubble" aria-label="Analyzing session">
+                <p className="analyzing-bubble-kicker">B-01:</p>
+                <p className="analyzing-bubble-title">Analyzing your session...</p>
+                <p className="analyzing-bubble-copy">
+                  Hold tight while I review your speech patterns, gestures, and tone.
                 </p>
-              </div>
-            </article>
 
-            <div className="analyzing-robot-wrap">
-              <div className="analyzing-robot-media" aria-hidden="true">
-                <img src={getSpriteUrl('Robot/0010.webp')} alt="" className="analyzing-robot-image" />
+                <div className="analyzing-loader" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(analysisProgress)}>
+                  <span className="analyzing-loader-fill" style={{ width: `${Math.round(analysisProgress)}%` }} />
+                </div>
+                
+                <div className="tp-analysing-status-wrap">
+                  <p className="analyzing-loader-text">{Math.round(analysisProgress)}%</p>
+                  <p className="tp-analysing-status-text">
+                    {analysisProgress < 30 ? 'Uploading media...' : 
+                     analysisProgress < 60 ? 'Processing speech...' : 
+                     analysisProgress < 85 ? 'Calculating metrics...' : 'Finalizing feedback...'}
+                  </p>
+                </div>
+              </article>
+
+              <div className="analyzing-robot-wrap">
+                <div className="analyzing-robot-media" aria-hidden="true">
+                  <img src={getSpriteUrl('Robot/0010.webp')} alt="" className="analyzing-robot-image" />
+                </div>
               </div>
             </div>
           </section>
@@ -1772,6 +1793,36 @@ function TrainingPage() {
           setShowRestartConfirm(false);
         }}
       />
+
+      {/* Milestone Warning (1 Minute) */}
+      {showOneMinWarning && (
+        <div className="bigkas-modal-scrim" style={{ '--scrim-z': 3000 }}>
+          <div className="milestone-companion-container" onClick={(e) => e.stopPropagation()}>
+            <img 
+              src={getSpriteUrl('Robot/0012.webp')} 
+              alt="B-01" 
+              className="milestone-robot-img"
+            />
+            <article className="milestone-speech-bubble">
+              <div className="milestone-bubble-title">B-01:</div>
+              <p className="milestone-bubble-text">
+                Amazing job! You&rsquo;ve reached 1 minute of recording. This is the perfect amount of data for me to give you a deep, accurate analysis of your speech. Let&rsquo;s see how you did!
+              </p>
+              <button 
+                type="button" 
+                className="milestone-bubble-btn"
+                onClick={() => {
+                  setShowOneMinWarning(false);
+                  // Ensure we use the global stopRecording to properly set 100% progress and metadata
+                  stopRecording();
+                }}
+              >
+                Finish & Analyze
+              </button>
+            </article>
+          </div>
+        </div>
+      )}
 
       <ConfirmationModal
         isOpen={showPausedModal}

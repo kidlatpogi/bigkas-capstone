@@ -354,7 +354,7 @@
   z-index: 1;
   padding-inline: 4px;
   padding-top: 56px;
-  padding-bottom: 0;
+  padding-bottom: 48px;
 }
 
 .skyward-journey-section {
@@ -429,8 +429,8 @@
   width: 100%;
 }
 
-.skyward-journey-section:first-child .skyward-journey-track {
-  padding-bottom: 1rem;
+.skyward-journey-section:first-of-type .skyward-journey-row:first-child .skyward-journey-track {
+  padding-bottom: 120px;
 }
 
 .skyward-journey-node-shell {

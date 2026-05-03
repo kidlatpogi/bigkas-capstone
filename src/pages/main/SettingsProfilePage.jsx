@@ -1,10 +1,30 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IoChevronForward, IoCamera } from 'react-icons/io5';
+import { IoChevronForward, IoCamera, IoColorPalette, IoLockClosed } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import './SettingsProfilePage.css';
+
+// Import decorative assets
+import mascotSprite from '../../assets/Sprites/Robot/0002.webp';
+import bronzeRank from '../../assets/Sprites/Rank/rank-bronze.png';
+import silverRank from '../../assets/Sprites/Rank/rank-silver.png';
+import goldRank from '../../assets/Sprites/Rank/rank-gold.png';
+import mythrilRank from '../../assets/Sprites/Rank/rank-mythril.png';
+import legendaryRank from '../../assets/Sprites/Rank/rank-legendary.png';
+
+import { getBigkasLevelFromUser } from '../../utils/activityProgress';
+
+const THEME_CONFIG = [
+  { id: 'emerald', label: 'Default', requires: 0, decoration: null, className: 'emerald' },
+  { id: 'mascot', label: 'B-01', requires: 0, decoration: mascotSprite, className: 'mascot' },
+  { id: 'bronze', label: 'Bronze', requires: 1, decoration: bronzeRank, className: 'bronze' },
+  { id: 'silver', label: 'Silver', requires: 2, decoration: silverRank, className: 'silver' },
+  { id: 'gold', label: 'Gold', requires: 3, decoration: goldRank, className: 'gold' },
+  { id: 'mythril', label: 'Mythril', requires: 4, decoration: mythrilRank, className: 'mythril' },
+  { id: 'trophy', label: 'Legend', requires: 5, decoration: legendaryRank, className: 'trophy' },
+];
 
 function SettingsProfilePage() {
   const navigate = useNavigate();
@@ -23,6 +43,18 @@ function SettingsProfilePage() {
   const [updateMessage, setUpdateMessage] = useState({ type: '', text: '' });
 
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
+  const [heroTheme, setHeroTheme] = useState(() => {
+    return localStorage.getItem('pref_hero_theme') || 'emerald';
+  });
+
+  const userLevel = useMemo(() => getBigkasLevelFromUser(user), [user]);
+  const currentLevelNumber = userLevel.levelNumber;
+
+  const getThemeDecoration = (themeId) => {
+    const config = THEME_CONFIG.find(t => t.id === themeId);
+    return config?.decoration || null;
+  };
 
   useEffect(() => {
     if (user) {
@@ -33,6 +65,10 @@ function SettingsProfilePage() {
       setInitialSnapshot({ firstName: fn, lastName: ln });
     }
   }, [user]);
+
+  useEffect(() => {
+    localStorage.setItem('pref_hero_theme', heroTheme);
+  }, [heroTheme]);
 
   const hasChanges = useMemo(() => {
     return firstName !== initialSnapshot.firstName ||
@@ -118,79 +154,128 @@ function SettingsProfilePage() {
   }, [firstName, lastName]);
 
   return (
-    <div className="settings-profile-page dashboard-page-new">
-      <div className="settings-profile-shell">
-        
-        <div className="settings-profile-grid">
-          <section className="sp-widget">
-            <h2 className="sp-widget-title">Personal Info</h2>
-            <div className="sp-avatar-block">
-              <button type="button" className="sp-avatar-btn" onClick={handleAvatarClick} aria-label="Change avatar">
-                <div className="sp-avatar-ring">
-                  {(avatarLocalUrl || (user?.avatarUrl && !avatarRemoved)) ? (
-                    <img
-                      src={avatarLocalUrl || user.avatarUrl}
-                      alt="Avatar"
-                      className="sp-avatar-img"
-                    />
-                  ) : (
-                    <div className="sp-avatar-placeholder">{userInitials}</div>
-                  )}
-                </div>
-                <div className="sp-avatar-camera">
-                  <IoCamera />
-                </div>
-              </button>
-              <div className="sp-avatar-info">
-                <h2 className="sp-avatar-name">{firstName} {lastName}</h2>
-                <p className="sp-avatar-email">{user?.email}</p>
+    <div className="settings-profile-page">
+      <div className="settings-profile-container">
+        <div className={`profile-hero-card hero-theme--${heroTheme}`}>
+          <div className="hero-decoration">
+            {heroTheme === 'mascot' ? (
+              <img src={mascotSprite} alt="" className="decoration-img decoration-mascot" />
+            ) : (
+              getThemeDecoration(heroTheme) && (
+                <img 
+                  src={getThemeDecoration(heroTheme)} 
+                  alt="" 
+                  className={`decoration-img ${heroTheme === 'trophy' ? 'decoration-trophy' : 'decoration-rank'}`} 
+                />
+              )
+            )}
+          </div>
+          
+          <div className="hero-avatar-wrapper">
+            <button type="button" className="hero-avatar-btn" onClick={handleAvatarClick} aria-label="Change avatar">
+              <div className="hero-avatar-ring">
+                {(avatarLocalUrl || (user?.avatarUrl && !avatarRemoved)) ? (
+                  <img
+                    src={avatarLocalUrl || user.avatarUrl}
+                    alt="Avatar"
+                    className="hero-avatar-img"
+                  />
+                ) : (
+                  <div className="hero-avatar-placeholder">{userInitials}</div>
+                )}
               </div>
-            </div>
+              <div className="hero-avatar-camera">
+                <IoCamera />
+              </div>
+            </button>
+          </div>
+          <div className="hero-info">
+            <h1 className="hero-name">{firstName} {lastName}</h1>
+            <p className="hero-email">{user?.email}</p>
+          </div>
 
+          <button 
+            type="button" 
+            className="hero-theme-trigger" 
+            onClick={() => setIsThemeModalOpen(true)}
+            aria-label="Change theme"
+          >
+            <IoColorPalette />
+            <span>Theme</span>
+          </button>
+        </div>
+
+        <div className="settings-content-wrapper">
+          <div className="settings-main-card">
             {updateMessage.text && (
-              <div className={`sp-message sp-message--${updateMessage.type}`}>
+              <div className={`sp-status-message sp-status-message--${updateMessage.type}`}>
                 {updateMessage.text}
               </div>
             )}
 
-            <form className="sp-form" onSubmit={handleSubmit}>
-              <div className="sp-name-row">
-                <div className="sp-field">
-                  <label className="sp-label" htmlFor="firstName">First Name</label>
-                  <input
-                    id="firstName"
-                    type="text"
-                    className="sp-input"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="Enter first name"
-                  />
-                </div>
-                <div className="sp-field">
-                  <label className="sp-label" htmlFor="lastName">Last Name</label>
-                  <input
-                    id="lastName"
-                    type="text"
-                    className="sp-input"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    placeholder="Enter last name"
-                  />
+            <form className="settings-form" onSubmit={handleSubmit}>
+              <div className="settings-form-section">
+                <h2 className="section-heading">Personal Details</h2>
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="firstName">First Name</label>
+                    <input
+                      id="firstName"
+                      type="text"
+                      className="form-input"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      placeholder="First Name"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="lastName">Last Name</label>
+                    <input
+                      id="lastName"
+                      type="text"
+                      className="form-input"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      placeholder="Last Name"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="sp-field">
-                <label className="sp-label">Email Address</label>
-                <input
-                  type="email"
-                  className="sp-input sp-input--readonly"
-                  value={user?.email || ''}
-                  readOnly
-                  disabled
-                />
+              <div className="settings-divider" />
+
+              <div className="settings-form-section">
+                <h2 className="section-heading">Account</h2>
+                <div className="form-group">
+                  <label className="form-label">Email Address</label>
+                  <input
+                    type="email"
+                    className="form-input form-input--disabled"
+                    value={user?.email || ''}
+                    readOnly
+                    disabled
+                  />
+                  <p className="form-help-text">Email address is managed by your account provider.</p>
+                </div>
               </div>
 
-              <div className="sp-btn-row">
+              <div className="settings-divider" />
+
+              <div className="settings-form-section">
+                <h2 className="section-heading">Security</h2>
+                <div className="security-actions">
+                  <Button 
+                    variant="practice" 
+                    className="security-btn" 
+                    onClick={() => navigate(ROUTES.CHANGE_PASSWORD)} 
+                    icon={IoChevronForward}
+                  >
+                    Change Password
+                  </Button>
+                </div>
+              </div>
+
+              <div className="settings-footer-actions">
                 <Button
                   type="button"
                   variant="ghost"
@@ -209,34 +294,44 @@ function SettingsProfilePage() {
                 </Button>
               </div>
             </form>
-          </section>
-
-          <div className="settings-profile-side-col">
-            <section className="sp-widget">
-              <h3 className="sp-widget-title">Account Actions</h3>
-              <div className="sp-links-stack">
-                <Button variant="practice" onClick={() => {}} icon={IoChevronForward}>
-                  Change Password
-                </Button>
-              </div>
-            </section>
           </div>
         </div>
       </div>
 
       {isAvatarModalOpen && (
-        <div className="sp-modal-backdrop" onClick={() => setIsAvatarModalOpen(false)}>
-          <div className="sp-modal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="sp-modal-title">Edit Photo</h3>
-            <button type="button" className="sp-modal-action" onClick={() => fileRef.current?.click()}>
-              Upload Photo
-            </button>
-            <button type="button" className="sp-modal-action sp-modal-action--danger" onClick={handleRemoveAvatar}>
-              Remove Photo
-            </button>
-            <button type="button" className="sp-modal-cancel" onClick={() => setIsAvatarModalOpen(false)}>
-              Cancel
-            </button>
+        <div 
+          className="bigkas-modal-scrim sp-modal-backdrop" 
+          style={{ '--scrim-z': 800 }} 
+          onClick={() => setIsAvatarModalOpen(false)}
+        >
+          <div className="sp-modal" style={{ width: 'min(400px, 90vw)' }} onClick={(e) => e.stopPropagation()}>
+            <h3 className="sp-modal-title" style={{ marginBottom: '8px' }}>Edit Photo</h3>
+            <p style={{ textAlign: 'center', color: 'var(--sp-text-muted)', fontSize: '14px', marginBottom: '12px' }}>
+              Update your profile picture
+            </p>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <Button 
+                variant="practice" 
+                onClick={() => fileRef.current?.click()}
+              >
+                Upload Photo
+              </Button>
+              
+              <Button 
+                variant="danger" 
+                onClick={handleRemoveAvatar}
+              >
+                Remove Photo
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                onClick={() => setIsAvatarModalOpen(false)}
+              >
+                Cancel
+              </Button>
+            </div>
             <input
               type="file"
               ref={fileRef}
@@ -244,6 +339,87 @@ function SettingsProfilePage() {
               accept="image/*"
               onChange={handleFileChange}
             />
+          </div>
+        </div>
+      )}
+
+      {isThemeModalOpen && (
+        <div 
+          className="bigkas-modal-scrim sp-modal-backdrop" 
+          style={{ '--scrim-z': 800 }} 
+          onClick={() => setIsThemeModalOpen(false)}
+        >
+          <div className="sp-modal sp-modal--wide" onClick={(e) => e.stopPropagation()}>
+            <h3 className="sp-modal-title">Customize Profile Theme</h3>
+            
+            <div className="theme-modal-preview">
+              <div className={`profile-hero-card profile-hero-card--preview hero-theme--${heroTheme}`}>
+                <div className="hero-decoration">
+                  {heroTheme === 'mascot' ? (
+                    <img src={mascotSprite} alt="" className="decoration-img decoration-mascot" />
+                  ) : (
+                    getThemeDecoration(heroTheme) && (
+                      <img 
+                        src={getThemeDecoration(heroTheme)} 
+                        alt="" 
+                        className={`decoration-img ${heroTheme === 'trophy' ? 'decoration-trophy' : 'decoration-rank'}`} 
+                      />
+                    )
+                  )}
+                </div>
+                <div className="hero-avatar-wrapper">
+                  <div className="hero-avatar-ring">
+                    {(avatarLocalUrl || (user?.avatarUrl && !avatarRemoved)) ? (
+                      <img src={avatarLocalUrl || user.avatarUrl} alt="" className="hero-avatar-img" />
+                    ) : (
+                      <div className="hero-avatar-placeholder">{userInitials}</div>
+                    )}
+                  </div>
+                </div>
+                <div className="hero-info">
+                  <h1 className="hero-name">{firstName} {lastName}</h1>
+                  <p className="hero-email">{user?.email}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="theme-picker">
+              {THEME_CONFIG.map((theme) => {
+                const isLocked = currentLevelNumber < theme.requires;
+                const isActive = heroTheme === theme.id;
+                
+                return (
+                  <button 
+                    key={theme.id}
+                    type="button" 
+                    className={`theme-option theme-option--${theme.className} ${isActive ? 'is-active' : ''} ${isLocked ? 'theme-option--locked' : ''}`}
+                    onClick={() => !isLocked && setHeroTheme(theme.id)}
+                    disabled={isLocked}
+                  >
+                    <div className="theme-preview">
+                      {isLocked && (
+                        <div className="theme-lock-overlay">
+                          <IoLockClosed />
+                        </div>
+                      )}
+                    </div>
+                    <span>{theme.label}</span>
+                    {isLocked && (
+                      <div className="theme-rank-banner">Requires Level {theme.requires}</div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            <Button 
+              type="button" 
+              variant="practice"
+              className="sp-modal-cancel" 
+              onClick={() => setIsThemeModalOpen(false)}
+            >
+              Done
+            </Button>
           </div>
         </div>
       )}

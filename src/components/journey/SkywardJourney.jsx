@@ -1334,11 +1334,7 @@ export default function SkywardJourney({
               Next
             </button>
           </div>
-          {Number(currentLevel) > 1 && Number(currentLevel) === Number(recommendedLevel) ? (
-            <HeaderSkipNotice>
-              We assessed your speaking level as <strong>Level {currentLevel}</strong>, so we fast-tracked earlier lessons and placed you where your growth is most meaningful.
-            </HeaderSkipNotice>
-          ) : null}
+
           {steps.length > 0 ? (
             <HeaderProgressWrap>
               <HeaderProgressTrack>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { IoChevronForward, IoCamera } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
+import Button from '../../components/common/Button';
 import './SettingsProfilePage.css';
 
 function SettingsProfilePage() {
@@ -119,13 +120,10 @@ function SettingsProfilePage() {
   return (
     <div className="settings-profile-page dashboard-page-new">
       <div className="settings-profile-shell">
-        <header className="settings-profile-hero">
-          <h1 className="settings-profile-hero-title">Profile</h1>
-          <p className="settings-profile-hero-sub">Manage your account information and preferences.</p>
-        </header>
-
+        
         <div className="settings-profile-grid">
-          <section className="page-card settings-profile-card--main">
+          <section className="sp-widget">
+            <h2 className="sp-widget-title">Personal Info</h2>
             <div className="sp-avatar-block">
               <button type="button" className="sp-avatar-btn" onClick={handleAvatarClick} aria-label="Change avatar">
                 <div className="sp-avatar-ring">
@@ -193,58 +191,33 @@ function SettingsProfilePage() {
               </div>
 
               <div className="sp-btn-row">
-                <button
+                <Button
                   type="button"
-                  className="sp-btn sp-btn--cancel"
+                  variant="ghost"
                   onClick={handleCancel}
                   disabled={!hasChanges || isUpdating}
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="sp-btn sp-btn--save"
+                  variant="practice"
                   disabled={!hasChanges || isUpdating}
+                  isLoading={isUpdating}
                 >
-                  {isUpdating ? 'Saving...' : 'Save Changes'}
-                </button>
+                  Save Changes
+                </Button>
               </div>
             </form>
           </section>
 
           <div className="settings-profile-side-col">
-            <section className="page-card settings-profile-card--links">
-              <h3 className="sp-card-title">Account Actions</h3>
+            <section className="sp-widget">
+              <h3 className="sp-widget-title">Account Actions</h3>
               <div className="sp-links-stack">
-                <button type="button" className="sp-link-row">
-                  <span>Change Password</span>
-                  <IoChevronForward className="sp-link-chevron" />
-                </button>
-                <button type="button" className="sp-link-row">
-                  <span>Privacy Settings</span>
-                  <IoChevronForward className="sp-link-chevron" />
-                </button>
-                <button type="button" className="sp-link-row sp-link-row--logout" onClick={handleLogout}>
-                  Log Out
-                </button>
-              </div>
-            </section>
-
-            <section className="page-card settings-profile-card--legal">
-              <h3 className="sp-card-title">Support & Legal</h3>
-              <div className="sp-links-stack">
-                <button type="button" className="sp-link-row">
-                  <span>Help Center</span>
-                  <IoChevronForward className="sp-link-chevron" />
-                </button>
-                <button type="button" className="sp-link-row">
-                  <span>Terms of Service</span>
-                  <IoChevronForward className="sp-link-chevron" />
-                </button>
-                <button type="button" className="sp-link-row">
-                  <span>Privacy Policy</span>
-                  <IoChevronForward className="sp-link-chevron" />
-                </button>
+                <Button variant="practice" onClick={() => {}} icon={IoChevronForward}>
+                  Change Password
+                </Button>
               </div>
             </section>
           </div>

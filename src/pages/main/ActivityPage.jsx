@@ -1168,6 +1168,7 @@ function ActivityPage() {
           <div className="ask-b01-modal-card">
             <div className="ask-b01-modal-header">
               <h2 className="ask-b01-modal-title">
+                <img src={b01ChatHead} alt="" className="ask-b01-modal-title-logo" />
                 Ask <span>B-01</span>
               </h2>
               <button 
@@ -1181,7 +1182,7 @@ function ActivityPage() {
             
             <div className="ask-b01-chat-container">
               <div className="ask-b01-chat-row b01-row">
-                <div className="ask-b01-chat-head">
+                <div className="ask-b01-chat-head b01-chat-head-square">
                   <img src={b01ChatHead} alt="B-01" />
                 </div>
                 <div className="ask-b01-message ask-b01-message--b01">

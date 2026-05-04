@@ -288,14 +288,6 @@ export default function TestAudioVideoPage() {
                 </button>
               </div>
             </div>
-
-            <div className="settings-divider" />
-            
-            <div className="av-footer-actions">
-               <button className="bigkas-btn secondary" onClick={() => navigate(ROUTES.SETTINGS)}>
-                  Return to Settings
-               </button>
-            </div>
           </div>
         </div>
       </div>

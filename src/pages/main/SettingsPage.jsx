@@ -122,19 +122,9 @@ function SettingsPage() {
             )}
           </div>
 
-          <div className="hero-avatar-wrapper">
-            <div className="hero-avatar-ring">
-              {user?.avatarUrl ? (
-                <img src={user.avatarUrl} alt="Avatar" className="hero-avatar-img" />
-              ) : (
-                <div className="hero-avatar-placeholder">{userInitials}</div>
-              )}
-            </div>
-          </div>
-
           <div className="hero-info" style={{ position: 'relative', zIndex: 2 }}>
-            <h1 className="hero-name">{user?.firstName} {user?.lastName}</h1>
-            <p className="hero-email" style={{ opacity: 0.9 }}>{user?.email}</p>
+            <h1 className="hero-name">Preferences</h1>
+            <p className="hero-email" style={{ opacity: 0.9 }}>Customize your experience and manage your account.</p>
           </div>
         </div>
 

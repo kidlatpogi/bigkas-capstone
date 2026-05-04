@@ -3,8 +3,23 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { IoChevronForward, IoVideocamOutline, IoMicOutline, IoArrowBackOutline, IoRefreshOutline } from 'react-icons/io5';
 import { ROUTES } from '../../utils/constants';
 import TutorialOverlay from '../../components/main/TutorialOverlay';
-import mascotSprite from '../../assets/Sprites/Robot/0001.webp';
+import mascotSprite from '../../assets/Sprites/Robot/0002.webp';
+import bronzeRank from '../../assets/Sprites/Rank/rank-bronze.png';
+import silverRank from '../../assets/Sprites/Rank/rank-silver.png';
+import goldRank from '../../assets/Sprites/Rank/rank-gold.png';
+import mythrilRank from '../../assets/Sprites/Rank/rank-mythril.png';
+import legendaryRank from '../../assets/Sprites/Rank/rank-legendary.png';
 import './TestAudioVideoPage.css';
+
+const THEME_CONFIG = [
+  { id: 'emerald', label: 'Default', requires: 0, decoration: null, className: 'emerald' },
+  { id: 'mascot', label: 'B-01', requires: 0, decoration: mascotSprite, className: 'mascot' },
+  { id: 'bronze', label: 'Bronze', requires: 1, decoration: bronzeRank, className: 'bronze' },
+  { id: 'silver', label: 'Silver', requires: 2, decoration: silverRank, className: 'silver' },
+  { id: 'gold', label: 'Gold', requires: 3, decoration: goldRank, className: 'gold' },
+  { id: 'mythril', label: 'Mythril', requires: 4, decoration: mythrilRank, className: 'mythril' },
+  { id: 'trophy', label: 'Legend', requires: 5, decoration: legendaryRank, className: 'trophy' },
+];
 
 const MIC_SENSITIVITY_KEY = 'pref_mic_sensitivity';
 
@@ -15,7 +30,6 @@ function getMicSensitivityProfile() {
 
   const raw = (window.localStorage.getItem(MIC_SENSITIVITY_KEY) || '80').toLowerCase();
   const val = parseInt(raw, 10) || 80;
-  // Map 0-100 to gains
   return { analyserGain: (val / 100) * 5.5, visualGain: 2.2 };
 }
 
@@ -32,7 +46,7 @@ function AudioLevelBars({ level = 0, isActive = false, barCount = 20 }) {
             className={`av-bar${filled ? ' av-bar-lit' : ''}${partial ? ' av-bar-partial' : ''}`}
             style={{ 
                 opacity: isActive ? 1 : 0.25,
-                height: `${30 + (i % 3) * 10}%` // Add some variety in height
+                height: `${30 + (i % 3) * 10}%`
             }}
           />
         );
@@ -49,6 +63,7 @@ function StatusDot({ status }) {
 export default function TestAudioVideoPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuthContext();
   const videoRef  = useRef(null);
   const streamRef = useRef(null);
   const micStreamRef  = useRef(null);
@@ -63,6 +78,22 @@ export default function TestAudioVideoPage() {
   const [isMicTesting, setIsMicTesting] = useState(false);
   const [audioLevel,  setAudioLevel]  = useState(0);
   const [cameraReady, setCameraReady] = useState(false);
+  
+  const [heroTheme] = useState(() => {
+    return localStorage.getItem('pref_hero_theme') || 'emerald';
+  });
+
+  const getThemeDecoration = (themeId) => {
+    const config = THEME_CONFIG.find(t => t.id === themeId);
+    return config?.decoration || null;
+  };
+
+  const userInitials = useMemo(() => {
+    if (!user) return '?';
+    const first = user.firstName || '';
+    const last = user.lastName || '';
+    return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase() || '?';
+  }, [user]);
 
   const startCamera = useCallback(async (facingMode = 'user') => {
     try {
@@ -170,18 +201,39 @@ export default function TestAudioVideoPage() {
   return (
     <div className="settings-profile-page dashboard-page-new av-page-new">
       <div className="settings-profile-container">
-        <div className="profile-hero-card hero-theme--emerald">
+        <div className={`profile-hero-card hero-theme--${heroTheme}`}>
           <div className="hero-decoration">
-            <img src={mascotSprite} alt="" className="decoration-img decoration-mascot" />
+            {heroTheme === 'mascot' ? (
+              <img src={mascotSprite} alt="" className="decoration-img decoration-mascot" />
+            ) : (
+              getThemeDecoration(heroTheme) && (
+                <img 
+                  src={getThemeDecoration(heroTheme)} 
+                  alt="" 
+                  className={`decoration-img ${heroTheme === 'trophy' ? 'decoration-trophy' : 'decoration-rank'}`} 
+                />
+              )
+            )}
           </div>
+
+          <div className="hero-avatar-wrapper">
+            <div className="hero-avatar-ring">
+              {user?.avatarUrl ? (
+                <img src={user.avatarUrl} alt="Avatar" className="hero-avatar-img" />
+              ) : (
+                <div className="hero-avatar-placeholder">{userInitials}</div>
+              )}
+            </div>
+          </div>
+
           <div className="hero-info" style={{ position: 'relative', zIndex: 2 }}>
              <nav className="av-breadcrumb-new">
                <Link to={ROUTES.SETTINGS} className="av-back-link">
                  <IoArrowBackOutline /> Back to Settings
                </Link>
              </nav>
-            <h1 className="hero-name">Hardware Check</h1>
-            <p className="hero-email" style={{ opacity: 0.9 }}>Verify your camera and microphone for the best speaking experience.</p>
+            <h1 className="hero-name">{user?.firstName} {user?.lastName}</h1>
+            <p className="hero-email" style={{ opacity: 0.9 }}>{user?.email}</p>
           </div>
         </div>
 

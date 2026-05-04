@@ -136,16 +136,6 @@ function SettingsPage() {
             <h1 className="hero-name">{user?.firstName} {user?.lastName}</h1>
             <p className="hero-email" style={{ opacity: 0.9 }}>{user?.email}</p>
           </div>
-
-          <button 
-            type="button" 
-            className="hero-theme-trigger" 
-            onClick={() => navigate(ROUTES.PROFILE)}
-            aria-label="Change theme in profile"
-          >
-            <IoColorPalette />
-            <span>Theme</span>
-          </button>
         </div>
 
         <div className="settings-content-wrapper">

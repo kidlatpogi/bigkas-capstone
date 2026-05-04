@@ -151,13 +151,11 @@ export default function TestAudioVideoPage() {
     animFrameRef.current = requestAnimationFrame(poll);
   }, []);
 
-  const toggleCamera = useCallback(() => {
-    const next = facing === 'user' ? 'environment' : 'user';
-    setFacing(next);
-    startCamera(next);
-  }, [facing, startCamera]);
-
-  const startMicTest = useCallback(async () => {
+  const handleToggleMicTest = useCallback(async () => {
+    if (isMicTesting) {
+      stopMicTest();
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
@@ -180,7 +178,13 @@ export default function TestAudioVideoPage() {
       console.warn('Mic permission denied:', err);
       setAudioPermission(false);
     }
-  }, [pollLevel]);
+  }, [isMicTesting, stopMicTest, pollLevel]);
+
+  const handleFlipCamera = useCallback(() => {
+    const next = facing === 'user' ? 'environment' : 'user';
+    setFacing(next);
+    startCamera(next);
+  }, [facing, startCamera]);
 
   useEffect(() => {
     startCamera(facing);
@@ -189,6 +193,11 @@ export default function TestAudioVideoPage() {
       stopMicTest();
     };
   }, []);
+
+  const camStatus = cameraPermission === null ? 'warn' : cameraPermission && cameraReady ? 'ok' : 'err';
+  const camStatusText = cameraPermission === null ? 'Requesting camera...' : cameraPermission ? (cameraReady ? 'Camera active' : 'Initializing...') : 'Permission denied';
+  const micStatusColor = audioPermission === false ? 'err' : isMicTesting ? 'ok' : 'warn';
+  const micStatusText = audioPermission === false ? 'Mic denied' : isMicTesting ? 'Listening...' : 'Ready to test';
 
   return (
     <div className="settings-profile-page dashboard-page-new av-page-new">
@@ -225,67 +234,59 @@ export default function TestAudioVideoPage() {
         </div>
 
         <div className="settings-content-wrapper">
-          <div className="av-main-card">
-            <div className="av-section">
-              <p className="pretest-kicker">Device Check</p>
-              <div className="section-header-flex">
-                <h2 className="pretest-heading">Camera Preview</h2>
-                <div className="av-status-pill">
-                  <StatusDot status={cameraPermission ? 'ok' : 'err'} />
-                  {cameraPermission ? 'Camera active' : 'Camera inactive'}
+          <div className="settings-main-card">
+            <div className="settings-form">
+              {/* Camera Section */}
+              <div className="settings-form-section">
+                <div className="section-header-flex">
+                   <h2 className="section-heading">Camera Preview</h2>
+                   <div className="av-status-pill">
+                      <StatusDot status={camStatus} />
+                      <span>{camStatusText}</span>
+                   </div>
                 </div>
-              </div>
-
-              <div className="av-camera-viewport">
-                {cameraPermission !== false ? (
-                  <>
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      playsInline
-                      muted
-                      className="av-video-feed"
-                      onLoadedData={() => setCameraReady(true)}
-                    />
-                    <button
-                      type="button"
-                      className="av-action-btn flip"
-                      onClick={toggleCamera}
-                      aria-label="Switch camera"
-                    >
+                
+                <div className="av-camera-viewport">
+                  {cameraPermission !== false ? (
+                    <video ref={videoRef} autoPlay playsInline muted className="av-video-feed" />
+                  ) : (
+                    <div className="av-error-placeholder">
+                      <p>Camera access was denied. Please check your browser settings.</p>
+                    </div>
+                  )}
+                  {cameraPermission && cameraReady && (
+                    <button className="av-action-btn flip" onClick={handleFlipCamera} title="Flip Camera">
                       <IoRefreshOutline />
                     </button>
-                  </>
-                ) : (
-                  <div className="av-error-placeholder">
-                    <p>Camera access is required for speaking sessions.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="settings-divider" style={{ margin: '32px 0' }} />
+
+              {/* Microphone Section */}
+              <div className="settings-form-section">
+                 <div className="section-header-flex">
+                   <h2 className="section-heading">Microphone Test</h2>
+                   <div className="av-status-pill">
+                      <StatusDot status={micStatusColor} />
+                      <span>{micStatusText}</span>
+                   </div>
+                </div>
+
+                <div className="av-mic-test-area">
+                  <div className="av-visualizer-container">
+                    <AudioLevelBars level={audioLevel} isActive={isMicTesting} barCount={28} />
                   </div>
-                )}
-              </div>
-            </div>
-
-            <div className="av-section" style={{ marginTop: '40px' }}>
-              <p className="pretest-kicker">Audio Check</p>
-              <div className="section-header-flex">
-                <h2 className="pretest-heading">Microphone Test</h2>
-                <div className="av-status-pill">
-                  <StatusDot status={audioPermission === false ? 'err' : isMicTesting ? 'ok' : 'warn'} />
-                  {audioPermission === false ? 'Mic denied' : isMicTesting ? 'Listening...' : 'Ready to test'}
+                  
+                  <button 
+                    className={`av-toggle-btn ${isMicTesting ? 'is-active' : ''}`}
+                    onClick={handleToggleMicTest}
+                    disabled={audioPermission === false}
+                  >
+                    {isMicTesting ? 'Stop Mic Test' : 'Start Mic Test'}
+                  </button>
                 </div>
-              </div>
-
-              <div className="av-mic-test-area">
-                <div className="av-visualizer-container">
-                  <AudioLevelBars level={audioLevel} isActive={isMicTesting} barCount={28} />
-                </div>
-
-                <button
-                  type="button"
-                  className={`av-toggle-btn ${isMicTesting ? 'is-active' : ''}`}
-                  onClick={isMicTesting ? stopMicTest : startMicTest}
-                >
-                  {isMicTesting ? 'Stop Mic Test' : 'Start Mic Test'}
-                </button>
               </div>
             </div>
           </div>

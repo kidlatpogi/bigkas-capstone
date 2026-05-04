@@ -5,7 +5,13 @@
 }
 
 .av-main-card {
+    width: min(800px, 95vw);
+    margin: 40px auto 0;
+    border-radius: 24px;
+    background: #ffffff;
+    border: 1px solid rgba(1, 1, 1, 0.08);
     padding: clamp(1.5rem, 4vw, 2.5rem);
+    box-shadow: 0 16px 40px rgba(1, 1, 1, 0.08);
 }
 
 /* Header should be full width and sticky */
@@ -13,7 +19,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding-top: 0;
+    padding: 0 0 80px 0;
+    background: #FDFDF9;
 }
 
 .av-back-header-fixed {
@@ -21,7 +28,7 @@
     position: sticky;
     top: 0;
     z-index: 1000;
-    margin: 0 0 20px 0;
+    margin: 0;
     padding: 16px 40px;
     background: #FDFDF9;
     border-bottom: 1px solid rgba(11, 57, 84, 0.08);
@@ -223,27 +230,6 @@
 .av-toggle-btn.is-active {
     background: #059669;
     color: white;
-}
-
-.av-footer-actions {
-    display: flex;
-    justify-content: center;
-    margin-top: 1rem;
-}
-
-.bigkas-btn.secondary {
-    padding: 0.875rem 2rem;
-    border-radius: 999px;
-    background: #f1f5f9;
-    color: #475569;
-    border: none;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.bigkas-btn.secondary:hover {
-    background: #e2e8f0;
 }
 
 /* Responsive Tweaks */

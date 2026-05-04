@@ -254,11 +254,6 @@ export default function TestAudioVideoPage() {
                       <p>Camera access was denied. Please check your browser settings.</p>
                     </div>
                   )}
-                  {cameraPermission && cameraReady && (
-                    <button className="av-action-btn flip" onClick={handleFlipCamera} title="Flip Camera">
-                      <IoRefreshOutline />
-                    </button>
-                  )}
                 </div>
               </div>
 

@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { IoChevronDown } from 'react-icons/io5';
 import FrameworksPageMobile from './FrameworksPageMobile';
 import { getSpriteUrl } from '../../utils/assetUtils';
@@ -139,6 +139,7 @@ function ModuleModal({ module, onClose }) {
 
 export default function FrameworksPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   useEffect(() => {

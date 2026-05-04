@@ -101,7 +101,7 @@
 }
 
 .settings-profile-page.av-page-new .settings-profile-container {
-    padding: 24px 24px 80px 24px;
+    padding: 60px 24px 80px 24px; /* Significantly increased top padding */
     margin-top: 0;
     box-sizing: border-box;
     display: flex;
@@ -109,14 +109,14 @@
     align-items: center;
     justify-content: center;
     width: 100%;
-    max-width: 960px; /* Increased from 800px to make it larger */
+    max-width: 1100px; /* Increased further to make it wider */
 }
 
 .av-page-new .settings-main-card {
-    padding: clamp(1.5rem, 3vw, 2.5rem);
-    border-radius: 32px !important; /* Enforce equal radius on all sides */
+    padding: clamp(2rem, 4vw, 3.5rem); /* Increased top and side padding */
+    border-radius: 32px !important;
     width: 100%;
-    box-shadow: 0 20px 50px rgba(11, 57, 84, 0.05);
+    box-shadow: 0 25px 60px rgba(11, 57, 84, 0.06);
 }
 
 .av-page-new .settings-divider {

@@ -234,55 +234,64 @@ export default function TestAudioVideoPage() {
         </div>
 
         <div className="settings-content-wrapper">
-          <div className="settings-main-card sp-preferences-card av-main-card">
-            
-            {/* Camera Section */}
-            <div className="settings-form-section">
+          <div className="av-main-card">
+            <div className="av-section">
+              <p className="pretest-kicker">Device Check</p>
               <div className="section-header-flex">
-                 <h2 className="section-heading"><IoVideocamOutline /> Camera Preview</h2>
-                 <div className="av-status-pill">
-                    <StatusDot status={camStatus} />
-                    <span>{camStatusText}</span>
-                 </div>
+                <h2 className="pretest-heading">Camera Preview</h2>
+                <div className="av-status-pill">
+                  <StatusDot status={cameraPermission === 'granted' ? 'ok' : 'err'} />
+                  {cameraPermission === 'granted' ? 'Camera active' : 'Camera inactive'}
+                </div>
               </div>
-              
+
               <div className="av-camera-viewport">
-                {cameraPermission !== false ? (
-                  <video ref={videoRef} autoPlay playsInline muted className="av-video-feed" />
+                {cameraPermission === 'granted' ? (
+                  <>
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="av-video-feed"
+                      onLoadedData={() => setCameraReady(true)}
+                    />
+                    <button
+                      type="button"
+                      className="av-action-btn flip"
+                      onClick={toggleCamera}
+                      aria-label="Switch camera"
+                    >
+                      <IoRefreshOutline />
+                    </button>
+                  </>
                 ) : (
                   <div className="av-error-placeholder">
-                    <p>Camera access was denied. Please check your browser settings.</p>
+                    <p>Camera access is required for speaking sessions.</p>
                   </div>
-                )}
-                {cameraPermission && cameraReady && (
-                  <button className="av-action-btn flip" onClick={handleFlipCamera} title="Flip Camera">
-                    <IoRefreshOutline />
-                  </button>
                 )}
               </div>
             </div>
 
-            <div className="settings-divider" />
-
-            {/* Microphone Section */}
-            <div className="settings-form-section">
-               <div className="section-header-flex">
-                 <h2 className="section-heading"><IoMicOutline /> Microphone Test</h2>
-                 <div className="av-status-pill">
-                    <StatusDot status={micStatusColor} />
-                    <span>{micStatusText}</span>
-                 </div>
+            <div className="av-section" style={{ marginTop: '40px' }}>
+              <p className="pretest-kicker">Audio Check</p>
+              <div className="section-header-flex">
+                <h2 className="pretest-heading">Microphone Test</h2>
+                <div className="av-status-pill">
+                  <StatusDot status={audioPermission === 'granted' ? 'ok' : 'warn'} />
+                  {audioPermission === 'granted' ? 'Ready to test' : 'Awaiting mic access'}
+                </div>
               </div>
 
               <div className="av-mic-test-area">
                 <div className="av-visualizer-container">
                   <AudioLevelBars level={audioLevel} isActive={isMicTesting} barCount={28} />
                 </div>
-                
-                <button 
+
+                <button
+                  type="button"
                   className={`av-toggle-btn ${isMicTesting ? 'is-active' : ''}`}
-                  onClick={handleToggleMicTest}
-                  disabled={audioPermission === false}
+                  onClick={isMicTesting ? stopMicTest : startMicTest}
                 >
                   {isMicTesting ? 'Stop Mic Test' : 'Start Mic Test'}
                 </button>

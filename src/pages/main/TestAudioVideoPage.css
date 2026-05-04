@@ -5,13 +5,7 @@
 }
 
 .av-main-card {
-    width: min(800px, 95vw);
-    margin: 40px auto 0;
-    border-radius: 24px;
-    background: #ffffff;
-    border: 1px solid rgba(1, 1, 1, 0.08);
     padding: clamp(1.5rem, 4vw, 2.5rem);
-    box-shadow: 0 16px 40px rgba(1, 1, 1, 0.08);
 }
 
 /* Header should be full width and sticky */
@@ -19,14 +13,21 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 0 0 80px 0;
-    background: #FDFDF9;
+    padding: 0 0 80px 0; /* Remove horizontal padding for flush header */
+}
+
+.settings-profile-page.av-page-new .settings-profile-container {
+    padding: 0 24px; /* Restore side padding for content */
+    margin-top: 20px;
+    box-sizing: border-box;
 }
 
 .av-back-header-fixed {
     width: 100%;
     position: sticky;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 1000;
     margin: 0;
     padding: 16px 40px;
@@ -68,27 +69,12 @@
 }
 
 @media (max-width: 768px) {
-    .av-back-header-fixed {
-        padding: 12px 20px;
+    .settings-profile-page.av-page-new .settings-profile-container {
+        padding: 0 16px;
     }
-}
-
-.pretest-kicker {
-    margin: 0 0 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #5a7863;
-    font-size: 0.82rem;
-    font-weight: 700;
-}
-
-.pretest-heading {
-    margin: 0;
-    font-size: clamp(1.5rem, 2.5vw, 2rem);
-    line-height: 1.15;
-    color: #1f2a22;
-    font-family: 'Fredoka', sans-serif;
-    font-weight: 700;
+    .av-back-header-fixed {
+        padding: 12px 24px;
+    }
 }
 
 .section-header-flex {
@@ -100,22 +86,30 @@
     gap: 1rem;
 }
 
+.section-header-flex .section-heading {
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #0b3954;
+}
+
 .av-status-pill {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
     background: #f1f5f9;
-    padding: 0.5rem 1.25rem;
+    padding: 0.5rem 1rem;
     border-radius: 999px;
     font-size: 0.85rem;
-    font-weight: 700;
+    font-weight: 600;
     color: #475569;
     border: 1px solid #e2e8f0;
 }
 
 .av-status-dot {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
 }
 
@@ -240,6 +234,27 @@
 .av-toggle-btn.is-active {
     background: #059669;
     color: white;
+}
+
+.av-footer-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+.bigkas-btn.secondary {
+    padding: 0.875rem 2rem;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #475569;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.bigkas-btn.secondary:hover {
+    background: #e2e8f0;
 }
 
 /* Responsive Tweaks */

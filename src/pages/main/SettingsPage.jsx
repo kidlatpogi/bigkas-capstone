@@ -7,7 +7,8 @@ import {
   IoShieldCheckmarkOutline,
   IoPersonCircleOutline,
   IoLogOutOutline,
-  IoAlertCircleOutline
+  IoAlertCircleOutline,
+  IoVideocamOutline
 } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
@@ -171,6 +172,17 @@ function SettingsPage() {
                     </div>
                   </div>
                 </div>
+
+                <button className="sp-list-item" onClick={() => navigate(ROUTES.AUDIO_TEST)}>
+                  <div className="sp-list-icon">
+                    <IoVideocamOutline />
+                  </div>
+                  <div className="sp-list-content">
+                    <span className="sp-list-label">Test Audio/ Video</span>
+                    <span className="sp-list-hint">Verify your camera and microphone setup</span>
+                  </div>
+                  <IoChevronForward className="sp-list-chevron" />
+                </button>
 
               </div>
             </div>

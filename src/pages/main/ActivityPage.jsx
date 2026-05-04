@@ -1022,7 +1022,7 @@ function ActivityPage() {
            </div>
            <div className="new-banner-right">
               <div 
-                className={`new-banner-streak${(showRandomizerOverlay || showFreeSpeechOverlay) ? ' is-hidden' : ''}`} 
+                className="new-banner-streak" 
                 id="tutorial-target-home-streak" 
                 aria-label="Daily streak"
                 onClick={() => setIsStreakModalOpen(true)}
@@ -1067,7 +1067,7 @@ function ActivityPage() {
 
         {/* Right Column (Widgets) */}
         <div className="new-right-col no-scrollbar">
-            <section className={`new-widget dashboard-anim-left dashboard-anim-delay-2${(showRandomizerOverlay || showFreeSpeechOverlay) ? ' is-hidden' : ''}`} id="tutorial-target-home-rank">
+            <section className="new-widget dashboard-anim-left dashboard-anim-delay-2" id="tutorial-target-home-rank">
               <div className="new-widget-head">
                 <h2 className="new-widget-title">Journey Progression</h2>
                 <span className="new-widget-chip">Level</span>

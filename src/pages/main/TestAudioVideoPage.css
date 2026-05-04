@@ -4,10 +4,6 @@
     /* Inherits from settings-profile-page and dashboard-page-new */
 }
 
-.av-main-card {
-    padding: clamp(1.5rem, 4vw, 2.5rem);
-}
-
 /* Header should be full width and sticky */
 .settings-profile-page.av-page-new {
     display: flex;
@@ -77,11 +73,23 @@
     }
 }
 
+.av-page-new .settings-main-card {
+    padding: clamp(1rem, 2.5vw, 1.75rem);
+}
+
+.av-page-new .settings-divider {
+    margin: 20px 0 !important;
+}
+
+.av-page-new .settings-form-section {
+    margin-bottom: 0;
+}
+
 .section-header-flex {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
     flex-wrap: wrap;
     gap: 1rem;
 }
@@ -99,9 +107,9 @@
     align-items: center;
     gap: 0.5rem;
     background: #f1f5f9;
-    padding: 0.5rem 1rem;
+    padding: 0.4rem 0.8rem;
     border-radius: 999px;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 600;
     color: #475569;
     border: 1px solid #e2e8f0;
@@ -118,7 +126,7 @@
     width: 100%;
     aspect-ratio: 16 / 9;
     background: #0f172a;
-    border-radius: 1.5rem;
+    border-radius: 1.25rem;
     overflow: hidden;
     position: relative;
     border: 4px solid #f1f5f9;
@@ -144,15 +152,15 @@
 
 .av-action-btn {
     position: absolute;
-    width: 3rem;
-    height: 3rem;
+    width: 2.75rem;
+    height: 2.75rem;
     border-radius: 50%;
     background: white;
     border: none;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
+    font-size: 1.15rem;
     color: #059669;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -166,17 +174,17 @@
 }
 
 .av-action-btn.flip {
-    bottom: 1.5rem;
-    right: 1.5rem;
+    bottom: 1.25rem;
+    right: 1.25rem;
 }
 
-/* Mic Area */
+/* Mic Area - Compact */
 .av-mic-test-area {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1.25rem;
     align-items: center;
-    padding: 1rem 0;
+    padding: 0.5rem 0;
 }
 
 .av-visualizer-container {

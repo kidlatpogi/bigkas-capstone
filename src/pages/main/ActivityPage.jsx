@@ -1195,11 +1195,11 @@ function ActivityPage() {
                   How can I improve my confidence during a presentation?
                 </div>
                 <div className="ask-b01-chat-head user-head">
-                  {user?.avatarUrl ? (
-                    <img src={user.avatarUrl} alt="Me" />
+                  {(user?.avatarUrl || user?.avatar_url) ? (
+                    <img src={user.avatarUrl || user.avatar_url} alt="Me" />
                   ) : (
                     <div className="ask-b01-avatar-placeholder">
-                      {user?.firstName?.charAt(0) || 'U'}
+                      {user?.firstName?.charAt(0) || user?.email?.charAt(0) || 'U'}
                     </div>
                   )}
                 </div>

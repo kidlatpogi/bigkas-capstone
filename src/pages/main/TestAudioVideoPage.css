@@ -6,20 +6,20 @@
 
 /* Header should be full width and sticky */
 .settings-profile-page.av-page-new {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0 0 80px 0; /* Remove horizontal padding for flush header */
+    display: block; /* Use block for natural vertical stack */
+    padding: 0;
+    overflow-x: hidden;
 }
 
 .settings-profile-page.av-page-new .settings-profile-container {
-    padding: 24px 24px 80px 24px; /* Added top padding to prevent header overshadowing */
-    margin-top: 0;
+    padding: 80px 24px 80px 24px; /* Start below the 81px sticky header */
+    margin: 0 auto;
     box-sizing: border-box;
+    width: 100%;
+    max-width: 1100px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center; /* Center vertically if space allows */
 }
 
 .av-back-header-fixed {
@@ -100,17 +100,6 @@
     }
 }
 
-.settings-profile-page.av-page-new .settings-profile-container {
-    padding: 60px 24px 80px 24px; /* Significantly increased top padding */
-    margin-top: 0;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    max-width: 1100px; /* Increased further to make it wider */
-}
 
 .av-page-new .settings-main-card {
     padding: clamp(2rem, 4vw, 3.5rem); /* Increased top and side padding */

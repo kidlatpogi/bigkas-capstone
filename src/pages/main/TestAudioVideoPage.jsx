@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { IoChevronForward, IoVideocamOutline, IoMicOutline, IoArrowBackOutline, IoRefreshOutline } from 'react-icons/io5';
+import { IoChevronForward, IoVideocamOutline, IoMicOutline, IoChevronBack, IoRefreshOutline } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import TutorialOverlay from '../../components/main/TutorialOverlay';
@@ -201,6 +201,16 @@ export default function TestAudioVideoPage() {
 
   return (
     <div className="settings-profile-page dashboard-page-new av-page-new">
+      <div className="history-session-view-header av-back-header-fixed">
+        <button
+          type="button"
+          className="history-back-to-list-btn"
+          onClick={() => navigate(ROUTES.SETTINGS)}
+        >
+          <IoChevronBack /> Back to Settings
+        </button>
+      </div>
+
       <div className="settings-profile-container">
         <div className={`profile-hero-card hero-theme--${heroTheme}`}>
           <div className="hero-decoration">
@@ -218,11 +228,6 @@ export default function TestAudioVideoPage() {
           </div>
 
           <div className="hero-info" style={{ position: 'relative', zIndex: 2 }}>
-             <nav className="av-breadcrumb-new">
-               <Link to={ROUTES.SETTINGS} className="av-back-link">
-                 <IoArrowBackOutline /> Back to Settings
-               </Link>
-             </nav>
             <h1 className="hero-name">Hardware Check</h1>
             <p className="hero-email" style={{ opacity: 0.9 }}>Verify your camera and microphone for the best speaking experience.</p>
           </div>

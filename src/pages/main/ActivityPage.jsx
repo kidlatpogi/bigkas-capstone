@@ -1029,7 +1029,7 @@ function ActivityPage() {
               >
                  <div className="new-streak-top">
                    <div className="new-streak-fire">
-                     <Lottie animationData={fireAnimationData} loop={true} />
+                     {useMemo(() => <Lottie animationData={fireAnimationData} loop={true} />, [])}
                    </div>
                    <div className="new-streak-headline">
                      <div className="new-streak-value">{streakStats.currentStreak}</div>

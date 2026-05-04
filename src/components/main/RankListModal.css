@@ -8,7 +8,6 @@
   justify-content: center;
   padding: 1.5rem;
   padding-left: calc(1.5rem + var(--app-sidebar-width, 0px));
-  will-change: opacity;
 }
 
 .rank-modal-card {
@@ -20,9 +19,6 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  will-change: transform, opacity;
-  backface-visibility: hidden;
-  perspective: 1000px;
 }
 
 .rank-modal-header {

@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { IoSearch, IoClose } from 'react-icons/io5';
 import { getSpriteUrl } from '../../utils/assetUtils';
 import './FrameworksPageMobile.css';
@@ -115,9 +116,31 @@ function ModuleModal({ module, onClose }) {
 }
 
 export default function FrameworksPageMobile() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('all');
   const [activeModal, setActiveModal] = useState(null);
   const [query, setQuery] = useState('');
+
+  const handleOpenModule = (module) => {
+    const tutorialSteps = module.b01Script.map((msg, i) => ({
+      id: `${module.id}-step-${i}`,
+      title: 'B-01:',
+      text: msg.text,
+      button: i < module.b01Script.length - 1 ? 'Next' : 'Finish',
+      targetElementId: null,
+    }));
+
+    if (module.id === 'mod-0') {
+      navigate('/settings/test', {
+        state: {
+          launchTutorial: true,
+          tutorialSteps,
+        }
+      });
+    } else {
+      setActiveModal(module);
+    }
+  };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -174,7 +197,7 @@ export default function FrameworksPageMobile() {
               <ModuleCard
                 key={module.id}
                 module={module}
-                onOpen={setActiveModal}
+                onOpen={handleOpenModule}
                 index={index}
               />
             ))}

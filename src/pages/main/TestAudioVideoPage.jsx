@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ROUTES } from '../../utils/constants';
+import TutorialOverlay from '../../components/main/TutorialOverlay';
 import './TestAudioVideoPage.css';
 
 const MIC_SENSITIVITY_KEY = 'pref_mic_sensitivity';
@@ -53,6 +54,7 @@ function StatusDot({ status }) {
  */
 export default function TestAudioVideoPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const videoRef  = useRef(null);
   const streamRef = useRef(null);   // camera stream
   const micStreamRef  = useRef(null);
@@ -60,6 +62,7 @@ export default function TestAudioVideoPage() {
   const analyserRef   = useRef(null);
   const animFrameRef  = useRef(null);
 
+  const [isTutorialOpen, setIsTutorialOpen] = useState(location.state?.launchTutorial || false);
   const [cameraPermission, setCameraPermission] = useState(null); // null=unknown, true/false
   const [audioPermission,  setAudioPermission]  = useState(null);
   const [facing,      setFacing]      = useState('user'); // 'user' | 'environment'
@@ -288,6 +291,13 @@ export default function TestAudioVideoPage() {
           </button>
         </div>
       </section>
+
+      <TutorialOverlay
+        isOpen={isTutorialOpen}
+        onClose={() => setIsTutorialOpen(false)}
+        onFinish={() => setIsTutorialOpen(false)}
+        steps={location.state?.tutorialSteps}
+      />
     </div>
   );
 }

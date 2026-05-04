@@ -151,6 +151,27 @@ export default function FrameworksPage() {
   const [activeModal, setActiveModal] = useState(null);
   const [query, setQuery] = useState('');
 
+  const handleOpenModule = (module) => {
+    const tutorialSteps = module.b01Script.map((msg, i) => ({
+      id: `${module.id}-step-${i}`,
+      title: 'B-01:',
+      text: msg.text,
+      button: i < module.b01Script.length - 1 ? 'Next' : 'Finish',
+      targetElementId: null,
+    }));
+
+    if (module.id === 'mod-0') {
+      navigate('/settings/test', {
+        state: {
+          launchTutorial: true,
+          tutorialSteps,
+        }
+      });
+    } else {
+      setActiveModal(module);
+    }
+  };
+
   if (windowWidth < 768) {
     return <FrameworksPageMobile />;
   }
@@ -209,7 +230,7 @@ export default function FrameworksPage() {
             <ModuleCard
               key={module.id}
               module={module}
-              onOpen={setActiveModal}
+              onOpen={handleOpenModule}
               animationClass={`dashboard-anim-bottom dashboard-anim-delay-${Math.min(index + 2, 9)}`}
             />
           ))}

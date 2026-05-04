@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { IoChevronForward, IoVideocamOutline, IoMicOutline, IoArrowBackOutline, IoRefreshOutline } from 'react-icons/io5';
+import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import TutorialOverlay from '../../components/main/TutorialOverlay';
 import mascotSprite from '../../assets/Sprites/Robot/0002.webp';

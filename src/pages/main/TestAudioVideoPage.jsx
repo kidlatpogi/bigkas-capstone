@@ -151,11 +151,13 @@ export default function TestAudioVideoPage() {
     animFrameRef.current = requestAnimationFrame(poll);
   }, []);
 
-  const handleToggleMicTest = useCallback(async () => {
-    if (isMicTesting) {
-      stopMicTest();
-      return;
-    }
+  const toggleCamera = useCallback(() => {
+    const next = facing === 'user' ? 'environment' : 'user';
+    setFacing(next);
+    startCamera(next);
+  }, [facing, startCamera]);
+
+  const startMicTest = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
@@ -178,13 +180,7 @@ export default function TestAudioVideoPage() {
       console.warn('Mic permission denied:', err);
       setAudioPermission(false);
     }
-  }, [isMicTesting, stopMicTest, pollLevel]);
-
-  const handleFlipCamera = useCallback(() => {
-    const next = facing === 'user' ? 'environment' : 'user';
-    setFacing(next);
-    startCamera(next);
-  }, [facing, startCamera]);
+  }, [pollLevel]);
 
   useEffect(() => {
     startCamera(facing);
@@ -193,11 +189,6 @@ export default function TestAudioVideoPage() {
       stopMicTest();
     };
   }, []);
-
-  const camStatus = cameraPermission === null ? 'warn' : cameraPermission && cameraReady ? 'ok' : 'err';
-  const camStatusText = cameraPermission === null ? 'Requesting camera...' : cameraPermission ? (cameraReady ? 'Camera active' : 'Initializing...') : 'Permission denied';
-  const micStatusColor = audioPermission === false ? 'err' : isMicTesting ? 'ok' : 'warn';
-  const micStatusText = audioPermission === false ? 'Mic denied' : isMicTesting ? 'Listening...' : 'Ready to test';
 
   return (
     <div className="settings-profile-page dashboard-page-new av-page-new">
@@ -240,13 +231,13 @@ export default function TestAudioVideoPage() {
               <div className="section-header-flex">
                 <h2 className="pretest-heading">Camera Preview</h2>
                 <div className="av-status-pill">
-                  <StatusDot status={cameraPermission === 'granted' ? 'ok' : 'err'} />
-                  {cameraPermission === 'granted' ? 'Camera active' : 'Camera inactive'}
+                  <StatusDot status={cameraPermission ? 'ok' : 'err'} />
+                  {cameraPermission ? 'Camera active' : 'Camera inactive'}
                 </div>
               </div>
 
               <div className="av-camera-viewport">
-                {cameraPermission === 'granted' ? (
+                {cameraPermission !== false ? (
                   <>
                     <video
                       ref={videoRef}
@@ -278,8 +269,8 @@ export default function TestAudioVideoPage() {
               <div className="section-header-flex">
                 <h2 className="pretest-heading">Microphone Test</h2>
                 <div className="av-status-pill">
-                  <StatusDot status={audioPermission === 'granted' ? 'ok' : 'warn'} />
-                  {audioPermission === 'granted' ? 'Ready to test' : 'Awaiting mic access'}
+                  <StatusDot status={audioPermission === false ? 'err' : isMicTesting ? 'ok' : 'warn'} />
+                  {audioPermission === false ? 'Mic denied' : isMicTesting ? 'Listening...' : 'Ready to test'}
                 </div>
               </div>
 

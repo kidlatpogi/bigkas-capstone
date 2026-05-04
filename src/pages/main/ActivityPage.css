@@ -1247,19 +1247,26 @@ html {
 .ask-b01-input-wrapper:focus-within {
   border-color: #059669;
   background: white;
-  box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.1);
+  box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.15);
+  outline: none !important;
 }
 
 .ask-b01-input {
   flex: 1;
   background: transparent;
   border: none;
-  outline: none;
+  outline: none !important;
   padding: 8px 0;
   font-family: inherit;
   font-size: 0.94rem;
   font-weight: 500;
   color: #1e293b;
+  box-shadow: none !important;
+}
+
+.ask-b01-input:focus {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .ask-b01-input::placeholder {

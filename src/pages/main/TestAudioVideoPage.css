@@ -1,334 +1,226 @@
-/* ── TestAudioVideoPage.css ── */
+/* TestAudioVideoPage.css Redesign */
 
-.av-page {
-  position: relative;
-  left: 50%;
-  width: 100vw;
-  margin-left: -50vw;
-  margin-right: -50vw;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px 18px;
-  background:
-    radial-gradient(circle at top left, rgba(90, 120, 99, 0.12), transparent 30%),
-    #ffffff;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+.av-page-new {
+    /* Inherits from settings-profile-page and dashboard-page-new */
 }
 
-.av-single-card {
-  width: min(740px, 100%);
-  border-radius: 24px;
-  background: #ffffff;
-  border: 1px solid rgba(1, 1, 1, 0.08);
-  padding: 30px;
-  box-shadow: 0 16px 40px rgba(1, 1, 1, 0.08);
+.av-main-card {
+    padding: clamp(1.5rem, 4vw, 2.5rem);
 }
 
-.av-breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 12px;
-  font-size: 14px;
-  letter-spacing: -0.224px;
+.av-breadcrumb-new {
+    margin-bottom: 1rem;
 }
 
-.av-breadcrumb-link {
-  color: #5a7863;
-  text-decoration: none;
-  font-weight: 600;
+.av-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+    font-size: 0.9rem;
 }
 
-.av-breadcrumb-link:hover {
-  color: #4a6352;
+.av-back-link:hover {
+    opacity: 1;
 }
 
-.av-breadcrumb-sep {
-  color: rgba(11, 57, 84, 0.48);
+.section-header-flex {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
 }
 
-.av-breadcrumb-current {
-  color: #3c4952;
-  font-weight: 600;
+.section-header-flex .section-heading {
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #0b3954;
 }
 
-.av-kicker {
-  margin: 0 0 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #5a7863;
-  font-size: 0.82rem;
-  font-weight: 700;
-}
-
-.av-single-card h1 {
-  margin: 0;
-  font-size: clamp(1.8rem, 3vw, 2.2rem);
-  line-height: 1.15;
-  color: #1f2a22;
-}
-
-.av-subtitle {
-  margin: 14px 0 0;
-  line-height: 1.6;
-  color: #45524a;
-}
-
-/* ── Section ── */
-.av-section {
-  margin-top: 18px;
-}
-
-.av-section-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: #888;
-  letter-spacing: 0.1em;
-  margin: 0 0 10px;
-}
-
-/* ── Camera ── */
-.av-camera-wrap {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  min-height: 210px;
-  background: #1a1a1a;
-  border-radius: 14px;
-  overflow: hidden;
-  position: relative;
-  margin-bottom: 10px;
-}
-
-.av-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  background: #1a1a1a;
-}
-
-.av-camera-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 13px;
-  text-align: center;
-  padding: 20px;
-}
-
-.av-flip-btn {
-  position: absolute;
-  bottom: 12px;
-  right: 12px;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.55);
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  transition: background 0.15s;
-}
-
-.av-flip-btn:hover {
-  background: rgba(0, 0, 0, 0.75);
-}
-
-/* ── Status row ── */
-.av-status-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.av-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #f1f5f9;
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+    border: 1px solid #e2e8f0;
 }
 
 .av-status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
 }
 
-.av-status-text {
-  font-size: 13px;
-  color: #666;
+/* Viewport for Video */
+.av-camera-viewport {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #0f172a;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    position: relative;
+    border: 4px solid #f1f5f9;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
-/* ── Mic card ── */
-.av-mic-card {
-  background: #fff;
-  border-radius: 16px;
-  border: 1px solid #dbe4da;
-  padding: 20px 16px;
+.av-video-feed {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
-/* ── Level bars (AudioLevelIndicator) ── */
-.av-visualizer {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 14px;
+.av-error-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+    color: #94a3b8;
+}
+
+.av-action-btn {
+    position: absolute;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: #059669;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s, background 0.2s;
+    z-index: 5;
+}
+
+.av-action-btn:hover {
+    transform: scale(1.1);
+    background: #f0fdf4;
+}
+
+.av-action-btn.flip {
+    bottom: 1.5rem;
+    right: 1.5rem;
+}
+
+/* Mic Area */
+.av-mic-test-area {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    align-items: center;
+    padding: 1rem 0;
+}
+
+.av-visualizer-container {
+    width: 100%;
+    height: 80px;
+    background: #f8fafc;
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 2rem;
+    border: 1px solid #e2e8f0;
 }
 
 .av-bars {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    height: 100%;
 }
 
 .av-bar {
-  width: 8px;
-  height: 100%;
-  border-radius: 4px;
-  background: #e0e0e0;
-  transition: background 0.1s, height 0.08s;
-  flex-shrink: 0;
+    flex: 1;
+    background: #e2e8f0;
+    border-radius: 999px;
+    transition: background 0.1s ease, height 0.1s ease;
 }
 
 .av-bar-lit {
-  background: #5a7863;
+    background: #059669;
 }
 
 .av-bar-partial {
-  background: rgba(90, 120, 99, 0.5);
+    background: #34d399;
 }
 
-/* ── Mic button ── */
-.av-mic-btn {
-  width: 100%;
-  padding: 14px;
-  background: #5a7863;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  font-family: inherit;
-  transition: opacity 0.15s, transform 0.1s;
+.av-toggle-btn {
+    width: min(320px, 100%);
+    padding: 1rem;
+    border-radius: 999px;
+    background: white;
+    color: #059669;
+    border: 2px solid #059669;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 1rem;
 }
 
-.av-mic-btn:hover:not(:disabled) {
-  background: #4a6352;
-  opacity: 1;
+.av-toggle-btn:hover {
+    background: #f0fdf4;
 }
 
-.av-mic-btn:active:not(:disabled) {
-  transform: scale(0.98);
+.av-toggle-btn.is-active {
+    background: #059669;
+    color: white;
 }
 
-.av-mic-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.av-footer-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
 }
 
-.av-mic-btn-stop {
-  background: #f5f5f5;
-  color: #3c4952;
-  border: 1px solid #dbe4da;
+.bigkas-btn.secondary {
+    padding: 0.875rem 2rem;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #475569;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
 }
 
-.av-mic-btn-stop:hover:not(:disabled) {
-  background: #F5F5F5;
-  opacity: 1;
+.bigkas-btn.secondary:hover {
+    background: #e2e8f0;
 }
 
-/* ── Done button ── */
-.av-done-wrap {
-  margin-top: 20px;
-}
-
-.av-done-btn {
-  width: 100%;
-  padding: 14px;
-  background: #F5F5F5;
-  color: #010101;
-  border: 1px solid #e0e0e0;
-  border-radius: 10px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background 0.12s;
-}
-
-.av-done-btn:hover {
-  background: #E8E8E8;
-}
-
-.av-status-row--center {
-  justify-content: center;
-  margin-bottom: 16px;
-}
-
-/* ── Dark mode ── */
-[data-theme="dark"] .av-page { background: #0B0B0D; }
-
-[data-theme="dark"] .av-title {
-  color: #F0F0F0;
-}
-
-[data-theme="dark"] .av-section-label {
-  color: #666;
-}
-
-[data-theme="dark"] .av-mic-card {
-  background: #242424;
-  border-color: #333;
-}
-
-[data-theme="dark"] .av-bar {
-  background: #333;
-}
-
-[data-theme="dark"] .av-mic-btn-stop {
-  color: #F0F0F0;
-  border-color: #444;
-}
-
-[data-theme="dark"] .av-mic-btn-stop:hover:not(:disabled) {
-  background: #2e2e2e;
-}
-
-[data-theme="dark"] .av-done-btn {
-  background: #242424;
-  color: #F0F0F0;
-  border-color: #333;
-}
-
-[data-theme="dark"] .av-done-btn:hover {
-  background: #2e2e2e;
-}
-
-[data-theme="dark"] .av-status-text {
-  color: #888;
-}
-
-@media (max-width: 520px) {
-  .av-page {
-    padding-inline: 12px;
-  }
-
-  .av-single-card {
-    padding: 22px 18px;
-    border-radius: 20px;
-  }
-
-  .av-camera-wrap {
-    min-height: 200px;
-  }
-
-  .av-flip-btn {
-    width: 44px;
-    height: 44px;
-  }
+/* Responsive Tweaks */
+@media (max-width: 768px) {
+    .av-main-card {
+        padding: 1.25rem;
+    }
+    
+    .section-header-flex {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .av-status-pill {
+        width: 100%;
+        justify-content: center;
+    }
 }

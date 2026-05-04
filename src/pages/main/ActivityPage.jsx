@@ -684,13 +684,13 @@ function ActivityPage() {
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
-    if (showRandomizerOverlay || showFreeSpeechOverlay) {
+    if (showRandomizerOverlay || showFreeSpeechOverlay || isRankModalOpen || isAskB01ModalOpen) {
       document.body.classList.add('randomizer-overlay-open');
     } else {
       document.body.classList.remove('randomizer-overlay-open');
     }
     return () => document.body.classList.remove('randomizer-overlay-open');
-  }, [showRandomizerOverlay, showFreeSpeechOverlay]);
+  }, [showRandomizerOverlay, showFreeSpeechOverlay, isRankModalOpen, isAskB01ModalOpen]);
 
   const renderTaskCardForShell = useCallback(({ task, animationClass = '' }) => {
     const done = taskState[task.id] === true;

@@ -21,13 +21,9 @@ export default function RankListModal({ isOpen, onClose, currentLevelNumber }) {
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
+        <div
           className="rank-modal-overlay"
           onClick={onClose}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3, ease: 'easeInOut' }}
         >
           <motion.div
             className="rank-modal-card"
@@ -81,7 +77,7 @@ export default function RankListModal({ isOpen, onClose, currentLevelNumber }) {
               })}
             </div>
           </motion.div>
-        </motion.div>
+        </div>
       )}
     </AnimatePresence>
   );

@@ -11,6 +11,8 @@ import './StreakCalendarModal.css';
 export default function StreakCalendarModal({ isOpen, onClose, activeDayKeys, streakStats }) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
+  const lottieFireNode = useMemo(() => <Lottie animationData={fireAnimationData} loop={true} />, []);
+
   if (!isOpen) return null;
 
   const monthYearStr = currentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }).toUpperCase();
@@ -49,13 +51,9 @@ export default function StreakCalendarModal({ isOpen, onClose, activeDayKeys, st
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div 
+        <div 
           className="streak-calendar-overlay bigkas-modal-scrim" 
           onClick={onClose}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3, ease: "easeInOut" }}
         >
           <motion.div 
             className="streak-calendar-modal" 
@@ -91,7 +89,7 @@ export default function StreakCalendarModal({ isOpen, onClose, activeDayKeys, st
         {streakStats && (
           <div className="streak-calendar-streak-card">
             <div className="new-streak-fire">
-              <Lottie animationData={fireAnimationData} loop={true} />
+              {lottieFireNode}
             </div>
             <div className="new-streak-headline">
               <div className="new-streak-value">{streakStats.currentStreak}</div>
@@ -160,7 +158,7 @@ export default function StreakCalendarModal({ isOpen, onClose, activeDayKeys, st
           ))}
         </div>
         </motion.div>
-        </motion.div>
+        </div>
       )}
     </AnimatePresence>
   );

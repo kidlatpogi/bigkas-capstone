@@ -1351,9 +1351,7 @@ html {
 }
 
 .ask-b01-scrim {
-  background: rgba(2, 6, 23, 0.5); /* Slightly darker for better contrast */
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(15, 23, 42, 0.65);
   z-index: 9999;
 }
 

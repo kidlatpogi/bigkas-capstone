@@ -356,6 +356,8 @@ function ActivityPage() {
     [levelProgress?.levelNumber, levelProgress?.levelName],
   );
 
+  const lottieFireNode = useMemo(() => <Lottie animationData={fireAnimationData} loop={true} />, []);
+
   useEffect(() => {
     if (!user?.id || activitiesLoading) return undefined;
     let cancelled = false;
@@ -1029,7 +1031,7 @@ function ActivityPage() {
               >
                  <div className="new-streak-top">
                    <div className="new-streak-fire">
-                     {useMemo(() => <Lottie animationData={fireAnimationData} loop={true} />, [])}
+                     {lottieFireNode}
                    </div>
                    <div className="new-streak-headline">
                      <div className="new-streak-value">{streakStats.currentStreak}</div>

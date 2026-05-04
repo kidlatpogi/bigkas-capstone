@@ -12,11 +12,11 @@
 }
 
 .settings-profile-page.av-page-new .settings-profile-container {
-    padding: 80px 24px 80px 24px; /* Start below the 81px sticky header */
+    padding: 80px 24px 80px 24px; /* Maintain margin to avoid header overlap */
     margin: 0 auto;
     box-sizing: border-box;
     width: 100%;
-    max-width: 1100px;
+    max-width: 900px; /* Reduced for a more compact, focused look */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -102,10 +102,10 @@
 
 
 .av-page-new .settings-main-card {
-    padding: clamp(2rem, 4vw, 3.5rem); /* Increased top and side padding */
+    padding: clamp(1.25rem, 3vw, 2rem); /* Compact padding */
     border-radius: 32px !important;
     width: 100%;
-    box-shadow: 0 25px 60px rgba(11, 57, 84, 0.06);
+    box-shadow: 0 20px 50px rgba(11, 57, 84, 0.05);
 }
 
 .av-page-new .settings-divider {

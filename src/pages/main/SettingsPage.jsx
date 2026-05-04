@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   IoChevronForward, 
-  IoNotificationsOutline, 
   IoLockClosedOutline,
   IoShieldCheckmarkOutline,
   IoPersonCircleOutline,
@@ -45,7 +44,6 @@ function SettingsPage() {
   const navigate = useNavigate();
   const { user, logout } = useAuthContext();
   
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [micSensitivity, setMicSensitivity] = useState(() => {
     return localStorage.getItem(MIC_SENSITIVITY_KEY) || '80';
   });
@@ -187,25 +185,6 @@ function SettingsPage() {
             <div className="settings-form-section">
               <h2 className="section-heading">App Settings</h2>
               <div className="sp-list-group">
-                <div className="sp-list-item sp-list-item--interactive">
-                  <div className="sp-list-icon">
-                    <IoNotificationsOutline />
-                  </div>
-                  <div className="sp-list-content">
-                    <span className="sp-list-label">Push Notifications</span>
-                    <span className="sp-list-hint">Get alerts for streak and updates</span>
-                  </div>
-                  <label className="sp-toggle">
-                    <input 
-                      type="checkbox" 
-                      className="sp-toggle-input"
-                      checked={notificationsEnabled}
-                      onChange={(e) => setNotificationsEnabled(e.target.checked)}
-                    />
-                    <span className="sp-toggle-slider"></span>
-                  </label>
-                </div>
-
                 <div className="sp-list-item sp-list-item--interactive">
                   <div className="sp-list-icon">
                     <IoAlertCircleOutline />

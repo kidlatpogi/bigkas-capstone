@@ -36,7 +36,7 @@ export default function RankListModal({ isOpen, onClose, currentLevelNumber }) {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            style={{ transformZ: 0 }} /* Force GPU acceleration */
+            style={{ transform: 'translateZ(0)' }} /* Force GPU acceleration */
           >
             <div className="rank-modal-header">
               <h2 className="rank-modal-title">Speaker Ranks</h2>

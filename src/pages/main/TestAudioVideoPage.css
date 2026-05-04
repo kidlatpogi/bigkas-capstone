@@ -13,9 +13,13 @@
 }
 
 .settings-profile-page.av-page-new .settings-profile-container {
-    padding: 0 24px; /* Restore side padding for content */
-    margin-top: 40px; /* Increased to prevent header overshadowing */
+    padding: 24px 24px 80px 24px; /* Added top padding to prevent header overshadowing */
+    margin-top: 0;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center; /* Center vertically if space allows */
 }
 
 .av-back-header-fixed {
@@ -88,8 +92,8 @@
 
 @media (max-width: 768px) {
     .settings-profile-page.av-page-new .settings-profile-container {
-        padding: 0 16px;
-        margin-top: 24px;
+        padding: 20px 16px 60px 16px;
+        margin-top: 0;
     }
     .av-back-header-fixed {
         padding: 12px 24px;

@@ -365,8 +365,8 @@
 
 .av-success-banner {
     background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-    border-radius: 16px;
-    padding: 0.6rem 1rem;
+    border-radius: 24px;
+    padding: 0.6rem 1.25rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -421,26 +421,31 @@
 }
 
 .av-banner-launch-btn {
-    padding: 0.5rem 1.25rem;
-    background: #fff;
-    color: #059669;
+    padding: 0 2rem;
+    height: 48px;
+    background: #F97316;
+    color: #fff;
     border: none;
-    border-radius: 10px;
-    font-size: 0.875rem;
-    font-weight: 800;
+    border-radius: 999px;
+    font-size: 0.95rem;
+    font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 5px 0 #C2410C;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .av-banner-launch-btn:hover {
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
-    background: #f8fafc;
+    background: #F97316;
+    box-shadow: 0 3px 0 #C2410C;
+    transform: translateY(2px);
 }
 
 .av-banner-launch-btn:active {
-    transform: translateY(-1px) scale(0.98);
+    box-shadow: 0 0 0 #C2410C;
+    transform: translateY(5px);
 }
 
 @media (max-width: 768px) {

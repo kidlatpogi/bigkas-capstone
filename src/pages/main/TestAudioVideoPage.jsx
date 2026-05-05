@@ -79,6 +79,11 @@ export default function TestAudioVideoPage() {
   const [isMicTesting, setIsMicTesting] = useState(false);
   const [audioLevel,  setAudioLevel]  = useState(0);
   const [cameraReady, setCameraReady] = useState(false);
+  const [isMicOk, setIsMicOk] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  
+  const micOkRef = useRef(false);
+  const successTriggeredRef = useRef(false);
   
   const [heroTheme] = useState(() => {
     return localStorage.getItem('pref_hero_theme') || 'emerald';
@@ -148,8 +153,18 @@ export default function TestAudioVideoPage() {
     const measured = Math.min(1, rms * sensitivity.analyserGain);
     const level = Math.min(1, measured * sensitivity.visualGain);
     setAudioLevel(+level.toFixed(3));
+
+    // Auto-stop if clear audio is detected
+    if (level > 0.15 && !micOkRef.current) {
+      micOkRef.current = true;
+      setIsMicOk(true);
+      // Give it a moment for the user to see the bars moving before stopping
+      setTimeout(() => stopMicTest(), 1200);
+      return;
+    }
+
     animFrameRef.current = requestAnimationFrame(poll);
-  }, []);
+  }, [stopMicTest]);
 
   const handleToggleMicTest = useCallback(async () => {
     if (isMicTesting) {
@@ -193,6 +208,15 @@ export default function TestAudioVideoPage() {
       stopMicTest();
     };
   }, []);
+
+  useEffect(() => {
+    if (camStatus === 'ok' && isMicOk && !successTriggeredRef.current) {
+      successTriggeredRef.current = true;
+      // Delay slightly for a smoother transition
+      const timer = setTimeout(() => setShowSuccessModal(true), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [camStatus, isMicOk]);
 
   const camStatus = cameraPermission === null ? 'warn' : cameraPermission && cameraReady ? 'ok' : 'err';
   const camStatusText = cameraPermission === null ? 'Requesting camera...' : cameraPermission ? (cameraReady ? 'Camera active' : 'Initializing...') : 'Permission denied';
@@ -294,6 +318,29 @@ export default function TestAudioVideoPage() {
         onFinish={() => setIsTutorialOpen(false)}
         steps={location.state?.tutorialSteps}
       />
+
+      {showSuccessModal && (
+        <div className="av-success-overlay">
+          <div className="tutorial-dark-bg" onClick={() => setShowSuccessModal(false)} />
+          <div className="tutorial-companion-container is-success-modal">
+             <img src={mascotSprite} alt="" className="tutorial-robot-img" />
+             <div className="tutorial-speech-bubble">
+               <div className="tutorial-bubble-title">B-01:</div>
+               <p className="tutorial-bubble-text">
+                 Excellent! Your camera and microphone are working perfectly. 
+                 We're all set for your training session!
+               </p>
+               <button 
+                 type="button"
+                 className="tutorial-bubble-btn" 
+                 onClick={() => navigate(ROUTES.ACTIVITY)}
+               >
+                 Got it!
+               </button>
+             </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -352,3 +352,68 @@
         font-size: 0.75rem;
     }
 }
+
+/* Success Modal Overlay */
+.av-success-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 12000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.tutorial-companion-container.is-success-modal {
+    position: relative;
+    left: auto;
+    bottom: auto;
+    transform: none;
+    display: flex;
+    align-items: flex-end;
+    gap: 1.5rem;
+    max-width: 600px;
+    z-index: 10;
+    animation: avSuccessPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes avSuccessPop {
+    from { 
+        transform: scale(0.8) translateY(20px); 
+        opacity: 0; 
+    }
+    to { 
+        transform: scale(1) translateY(0); 
+        opacity: 1; 
+    }
+}
+
+@media (max-width: 768px) {
+    .tutorial-companion-container.is-success-modal {
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+    }
+    
+    .tutorial-companion-container.is-success-modal .tutorial-robot-img {
+        width: 180px;
+        order: 2;
+    }
+    
+    .tutorial-companion-container.is-success-modal .tutorial-speech-bubble {
+        order: 1;
+        margin-bottom: -20px;
+        z-index: 2;
+    }
+    
+    .tutorial-companion-container.is-success-modal .tutorial-speech-bubble::before {
+        left: 50%;
+        bottom: -12px;
+        top: auto;
+        border-top: 12px solid #FDFDF9;
+        border-bottom: 0;
+        border-right: 12px solid transparent;
+        border-left: 12px solid transparent;
+        transform: translateX(-50%);
+    }
+}

@@ -243,38 +243,6 @@ export default function TestAudioVideoPage() {
         </button>
       </div>
 
-      <AnimatePresence>
-        {showSuccessModal && (
-          <motion.div 
-            className="av-success-banner-wrap"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-          >
-            <div className="av-success-banner">
-              <div className="av-banner-left">
-                <div className="av-banner-badge">
-                  <IoCheckmarkCircle />
-                </div>
-                <div className="av-banner-info">
-                  <h3 className="av-banner-title">Hardware Verified</h3>
-                  <p className="av-banner-sub">Everything is working perfectly!</p>
-                </div>
-              </div>
-              <div className="av-banner-right">
-                <button 
-                  type="button"
-                  className="av-banner-launch-btn"
-                  onClick={() => navigate(ROUTES.ACTIVITY)}
-                >
-                  Start Training
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <div className="settings-profile-container">
         <div className={`profile-hero-card hero-theme--${heroTheme}`}>
           <div className="hero-decoration">
@@ -350,6 +318,38 @@ export default function TestAudioVideoPage() {
             </div>
           </div>
         </div>
+
+        <AnimatePresence>
+          {showSuccessModal && (
+            <motion.div 
+              className="av-success-banner-wrap"
+              initial={{ height: 0, opacity: 0, marginTop: 0 }}
+              animate={{ height: 'auto', opacity: 1, marginTop: 24 }}
+              exit={{ height: 0, opacity: 0, marginTop: 0 }}
+            >
+              <div className="av-success-banner">
+                <div className="av-banner-left">
+                  <div className="av-banner-badge">
+                    <IoCheckmarkCircle />
+                  </div>
+                  <div className="av-banner-info">
+                    <h3 className="av-banner-title">Hardware Verified</h3>
+                    <p className="av-banner-sub">Everything is working perfectly!</p>
+                  </div>
+                </div>
+                <div className="av-banner-right">
+                  <button 
+                    type="button"
+                    className="av-banner-launch-btn"
+                    onClick={() => navigate(ROUTES.ACTIVITY)}
+                  >
+                    Start Training
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <TutorialOverlay

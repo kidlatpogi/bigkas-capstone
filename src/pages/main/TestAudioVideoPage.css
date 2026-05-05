@@ -422,7 +422,7 @@
 .av-banner-launch-btn {
     padding: 0 1.5rem;
     height: 44px;
-    background: #059669;
+    background: #F97316;
     color: #fff;
     border: none;
     border-radius: 999px;
@@ -430,19 +430,19 @@
     font-weight: 800;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 0 #047857;
+    box-shadow: 0 4px 0 #B1510F;
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .av-banner-launch-btn:hover {
     transform: translateY(2px);
-    box-shadow: 0 2px 0 #047857;
-    background: #059669;
+    box-shadow: 0 2px 0 #B1510F;
+    background: #F97316;
 }
 
 .av-banner-launch-btn:active {
     transform: translateY(4px);
-    box-shadow: 0 0 0 #047857;
+    box-shadow: 0 0 0 #B1510F;
 }
 
 @media (max-width: 768px) {

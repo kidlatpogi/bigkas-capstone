@@ -1,6 +1,15 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { IoChevronForward, IoVideocamOutline, IoMicOutline, IoChevronBack, IoRefreshOutline } from 'react-icons/io5';
+import { 
+  IoChevronBack, 
+  IoVideocam, 
+  IoMic, 
+  IoCameraReverse,
+  IoSettingsOutline,
+  IoCheckmarkCircle
+} from 'react-icons/io5';
+import { motion, AnimatePresence } from 'framer-motion';
+import Confetti from 'react-confetti';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import TutorialOverlay from '../../components/main/TutorialOverlay';
@@ -319,28 +328,68 @@ export default function TestAudioVideoPage() {
         steps={location.state?.tutorialSteps}
       />
 
-      {showSuccessModal && (
-        <div className="av-success-overlay">
-          <div className="tutorial-dark-bg" onClick={() => setShowSuccessModal(false)} />
-          <div className="tutorial-companion-container is-success-modal">
-             <img src={mascotSprite} alt="" className="tutorial-robot-img" />
-             <div className="tutorial-speech-bubble">
-               <div className="tutorial-bubble-title">B-01:</div>
-               <p className="tutorial-bubble-text">
-                 Excellent! Your camera and microphone are working perfectly. 
-                 We're all set for your training session!
-               </p>
-               <button 
-                 type="button"
-                 className="tutorial-bubble-btn" 
-                 onClick={() => navigate(ROUTES.ACTIVITY)}
-               >
-                 Got it!
-               </button>
-             </div>
+      <AnimatePresence>
+        {showSuccessModal && (
+          <div className="av-success-overlay">
+            <Confetti 
+              width={window.innerWidth} 
+              height={window.innerHeight} 
+              recycle={false} 
+              numberOfPieces={300}
+              gravity={0.15}
+              colors={['#10B981', '#34D399', '#F97316', '#FFB129', '#0ea5e9']}
+            />
+            <motion.div 
+              className="tutorial-dark-bg"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowSuccessModal(false)}
+            />
+            <motion.div 
+              className="av-engagement-card"
+              initial={{ scale: 0.9, opacity: 0, y: 30 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 30 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 400 }}
+            >
+              <div className="av-success-badge">
+                 <IoCheckmarkCircle />
+              </div>
+              
+              <div className="av-success-content">
+                <h2 className="av-success-title">Systems Ready!</h2>
+                <p className="av-success-description">
+                  Great job! Your camera and microphone are perfectly configured and ready for your next training session.
+                </p>
+                
+                <div className="av-verification-pills">
+                   <div className="av-verify-pill">
+                      <IoVideocam className="av-verify-icon" />
+                      <span>Camera Verified</span>
+                   </div>
+                   <div className="av-verify-pill">
+                      <IoMic className="av-verify-icon" />
+                      <span>Audio Verified</span>
+                   </div>
+                </div>
+                
+                <div className="av-success-robot-wrap">
+                  <img src={mascotSprite} alt="B-01" className="av-success-robot-img" />
+                </div>
+                
+                <button 
+                  type="button"
+                  className="av-success-launch-btn"
+                  onClick={() => navigate(ROUTES.ACTIVITY)}
+                >
+                  Start Training Now
+                </button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -12,14 +12,15 @@
 }
 
 .settings-profile-page.av-page-new .settings-profile-container {
-    padding: 1.5rem 24px 80px 24px;
+    padding: clamp(1.5rem, 5dvh, 2.5rem) 24px 80px 24px;
     margin: 0 auto;
     box-sizing: border-box;
     width: 100%;
-    max-width: 1000px; /* Increased to accommodate side-by-side layout */
+    max-width: 1000px;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch; /* Ensure children fill the width */
+    gap: 0; /* Remove any gap between hero and content */
 }
 
 .av-back-header-fixed {
@@ -30,13 +31,87 @@
     right: 0;
     z-index: 1000;
     margin: 0;
-    padding: 16px 40px;
+    padding: clamp(0.75rem, 2vh, 1rem) clamp(1rem, 4vw, 2.5rem);
     background: #FDFDF9;
     border-bottom: 1px solid rgba(11, 57, 84, 0.08);
     display: flex;
     align-items: center;
     box-sizing: border-box;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Hero Card Styles for Hardware Check */
+.av-page-new .profile-hero-card {
+  border-radius: 24px 24px 0 0 !important;
+  padding: 48px 40px;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.hero-theme--emerald { background: linear-gradient(135deg, #10B981 0%, #34D399 100%); }
+.hero-theme--mascot { background: linear-gradient(135deg, #059669 0%, #06b6d4 100%); }
+.hero-theme--bronze { background: linear-gradient(135deg, #A87040 0%, #804A20 100%); }
+.hero-theme--silver { background: linear-gradient(135deg, #94A3B8 0%, #64748B 100%); }
+.hero-theme--gold { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+.hero-theme--mythril { background: linear-gradient(135deg, #0D9488 0%, #0F766E 100%); }
+.hero-theme--trophy { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); }
+
+.av-page-new .hero-decoration {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 50%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.av-page-new .decoration-img {
+  position: absolute;
+  right: -20px;
+  bottom: -20px;
+  height: 120%;
+  object-fit: contain;
+  opacity: 0.8;
+  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
+}
+
+.decoration-mascot {
+  height: 140% !important;
+  bottom: -30px !important;
+}
+
+.decoration-rank, .decoration-trophy {
+  height: 110% !important;
+  right: 10px !important;
+  bottom: 0 !important;
+}
+
+.av-page-new .hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 2;
+}
+
+.av-page-new .hero-name {
+  font-size: 32px;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.025em;
+  line-height: 1;
+}
+
+.av-page-new .hero-email {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.95);
+  margin: 0;
 }
 
 .history-back-to-list-btn,
@@ -105,15 +180,19 @@
 .av-page-new .settings-content-wrapper {
     background: #fff !important;
     border: 1px solid rgba(11, 57, 84, 0.08) !important;
-    border-radius: 32px !important;
+    border-top: none !important;
+    border-radius: 0 0 24px 24px !important;
     box-shadow: 0 20px 50px rgba(11, 57, 84, 0.05) !important;
     overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .av-page-new .settings-main-card {
-    padding: clamp(1.25rem, 3vw, 2rem);
+    padding: 40px;
     width: 100%;
     background: transparent;
+    box-sizing: border-box;
 }
 
 .av-page-new .settings-form {
@@ -147,6 +226,7 @@
     color: #0b3954;
 }
 
+/* Status Pill */
 .av-status-pill {
     display: inline-flex;
     align-items: center;
@@ -254,14 +334,14 @@
 
 @media (max-width: 768px) {
     .av-page-new .settings-content-wrapper {
-        border-radius: 24px !important;
+        border-radius: 0 0 24px 24px !important;
         padding: 0;
     }
     
     .av-page-new .settings-main-card {
         padding: 1.5rem;
     }
-    
+
     .section-header-flex {
         flex-direction: row;
         align-items: center;

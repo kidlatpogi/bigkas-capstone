@@ -212,6 +212,27 @@ export default function TestAudioVideoPage() {
       </div>
 
       <div className="settings-profile-container">
+        <div className={`profile-hero-card hero-theme--${heroTheme}`}>
+          <div className="hero-decoration">
+            {heroTheme === 'mascot' ? (
+              <img src={mascotSprite} alt="" className="decoration-img decoration-mascot" />
+            ) : (
+              getThemeDecoration(heroTheme) && (
+                <img 
+                  src={getThemeDecoration(heroTheme)} 
+                  alt="" 
+                  className={`decoration-img ${heroTheme === 'trophy' ? 'decoration-trophy' : 'decoration-rank'}`} 
+                />
+              )
+            )}
+          </div>
+
+          <div className="hero-info" style={{ position: 'relative', zIndex: 2 }}>
+            <h1 className="hero-name">Hardware Check</h1>
+            <p className="hero-email" style={{ opacity: 0.9 }}>Test your equipment for the best training experience.</p>
+          </div>
+        </div>
+
         <div className="settings-content-wrapper">
           <div className="settings-main-card">
             <div className="settings-form">

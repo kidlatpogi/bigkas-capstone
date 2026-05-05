@@ -526,8 +526,9 @@ body.activity-tutorial-open .side-nav {
 }
 
 .side-nav-sublink.active {
-  background: rgba(255, 159, 28, 0.22);
+  background: linear-gradient(180deg, #F97316 0%, #B1510F 100%);
   color: #ffffff;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
 }
 
 .side-nav-link-label {

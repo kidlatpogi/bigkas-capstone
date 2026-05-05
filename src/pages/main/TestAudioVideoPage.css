@@ -353,18 +353,139 @@
     }
 }
 
-.av-toggle-btn.is-ready {
+/* Success Banner - Top Flow */
+.av-success-banner-wrap {
+    width: 100%;
+    background: #FDFDF9;
+    padding: 1.25rem 24px;
+    border-bottom: 1px solid rgba(11, 57, 84, 0.08);
+    box-sizing: border-box;
+    display: flex;
+    justify-content: center;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.av-success-banner {
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+    border-radius: 20px;
+    padding: 0.85rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #fff;
+    width: 100%;
+    max-width: 952px; /* Matches profile-container inner width */
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.2);
+}
+
+.av-banner-left {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.av-banner-badge {
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    color: #fff;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.av-banner-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.av-banner-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+
+.av-banner-sub {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin: 0;
+    font-weight: 500;
+}
+
+.av-banner-right {
+    display: flex;
+    align-items: center;
+}
+
+.av-banner-launch-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     background: #F97316;
+    border: none;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    padding: 0 32px;
+    height: 48px;
+    border-radius: 999px;
     box-shadow: 0 5px 0 #B1510F;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.av-toggle-btn.is-ready:hover {
-    background: #F97316;
-    box-shadow: 0 3px 0 #B1510F;
+.av-banner-launch-btn:hover {
     transform: translateY(2px);
+    box-shadow: 0 3px 0 #B1510F;
+    background: #F97316;
 }
 
-.av-toggle-btn.is-ready:active {
+.av-banner-launch-btn:active {
     transform: translateY(5px);
     box-shadow: 0 0 0 #B1510F;
+}
+
+@media (max-width: 768px) {
+    .av-success-banner-wrap {
+        padding: 1rem 16px;
+    }
+    
+    .av-success-banner {
+        flex-direction: row;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        border-radius: 16px;
+    }
+    
+    .av-banner-badge {
+        width: 36px;
+        height: 36px;
+        font-size: 20px;
+    }
+    
+    .av-banner-info {
+        gap: 0;
+    }
+    
+    .av-banner-title {
+        font-size: 0.95rem;
+    }
+    
+    .av-banner-sub {
+        font-size: 0.75rem;
+    }
+    
+    .av-banner-launch-btn {
+        padding: 0 16px;
+        height: 38px;
+        font-size: 0.8rem;
+    }
 }

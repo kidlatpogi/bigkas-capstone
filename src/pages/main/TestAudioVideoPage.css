@@ -193,7 +193,7 @@
 }
 
 .av-page-new .settings-main-card {
-    padding: clamp(1rem, 3vh, 2rem) clamp(1.5rem, 4vw, 2.5rem);
+    padding: clamp(1rem, 2vh, 1.5rem) clamp(1.5rem, 4vw, 2.5rem);
     width: 100%;
     background: transparent;
     box-sizing: border-box;
@@ -253,7 +253,7 @@
 /* Viewport for Video */
 .av-camera-viewport {
     width: 100%;
-    height: clamp(160px, 28vh, 300px);
+    height: clamp(140px, 24vh, 260px);
     background: #0f172a;
     border-radius: 1.5rem;
     overflow: hidden;
@@ -365,12 +365,12 @@
 
 .av-success-banner {
     background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-    border-radius: 24px;
+    border-radius: 16px;
     padding: 0.6rem 1.25rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.2);
+    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.25);
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: #fff;
 }
@@ -382,14 +382,14 @@
 }
 
 .av-banner-badge {
-    width: 36px;
-    height: 36px;
+    width: 48px;
+    height: 48px;
     background: rgba(255, 255, 255, 0.15);
-    border-radius: 10px;
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 26px;
     color: #fff;
     backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -402,14 +402,14 @@
 }
 
 .av-banner-title {
-    font-size: 1rem;
+    font-size: 1.15rem;
     font-weight: 800;
     margin: 0;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
 }
 
 .av-banner-sub {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     opacity: 0.9;
     margin: 0;
     font-weight: 500;
@@ -421,31 +421,26 @@
 }
 
 .av-banner-launch-btn {
-    padding: 0 2rem;
-    height: 48px;
-    background: #F97316;
-    color: #fff;
+    padding: 0.75rem 1.75rem;
+    background: #fff;
+    color: #059669;
     border: none;
-    border-radius: 999px;
+    border-radius: 14px;
     font-size: 0.95rem;
-    font-weight: 700;
+    font-weight: 800;
     cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 5px 0 #C2410C;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
 .av-banner-launch-btn:hover {
-    background: #F97316;
-    box-shadow: 0 3px 0 #C2410C;
-    transform: translateY(2px);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+    background: #f8fafc;
 }
 
 .av-banner-launch-btn:active {
-    box-shadow: 0 0 0 #C2410C;
-    transform: translateY(5px);
+    transform: translateY(-1px) scale(0.98);
 }
 
 @media (max-width: 768px) {

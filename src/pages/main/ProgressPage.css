@@ -63,16 +63,13 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   background: #c3d49c;
 }
 
-@media (max-width: 1600px) and (min-width: 1025px) {
-  .progress-page-bg {
-    padding: var(--responsive-page-padding);
-  }
-}
+/* Removed responsive-page-padding override to match ActivityPage spacing */
+
 
 .progress-main-layout {
   display: flex;
   flex-direction: column;
-  gap: clamp(16px, 2.5vh, 24px);
+  gap: 1rem;
   width: 100%;
   max-width: 1424px;
   margin: 0 auto;
@@ -83,7 +80,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 .progress-left-content {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 1rem;
   width: 100%;
 }
 

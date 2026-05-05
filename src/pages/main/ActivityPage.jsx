@@ -7,6 +7,7 @@ import { useSessions } from '../../hooks/useSessions';
 import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import PushButton from '../../components/common/PushButton';
+import { IoChatbubbleEllipsesOutline, IoSend } from 'react-icons/io5';
 import TutorialOverlay from '../../components/main/TutorialOverlay';
 import {
   GLOBAL_ACTIVITY_SCOPE,
@@ -45,6 +46,7 @@ const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.png');
 const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.png');
 const crystalBallImage = getSpriteUrl('common/crystal-ball.png');
 const crownImage = getSpriteUrl('common/crown.png');
+import b01ChatHead from '../../assets/logos/0015.png';
 import fireAnimationData from '../../assets/Lottie/fire.json';
 import './InnerPages.css';
 import './ActivityPage.css';
@@ -238,6 +240,8 @@ function ActivityPage() {
   const [showRandomizerOverlay, setShowRandomizerOverlay] = useState(false);
   const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
+  const [isAskB01ModalOpen, setIsAskB01ModalOpen] = useState(false);
+  const [askB01Query, setAskB01Query] = useState('');
   const [randomizerTopic, setRandomizerTopic] = useState(() => {
     const defaultTopic = RANDOM_TOPICS.find((entry) => entry.title === RANDOMIZER_DEFAULT_TOPIC);
     return defaultTopic || { title: RANDOMIZER_DEFAULT_TOPIC, body: '' };
@@ -351,6 +355,8 @@ function ActivityPage() {
     () => getRankSprite(levelProgress?.levelNumber, levelProgress?.levelName),
     [levelProgress?.levelNumber, levelProgress?.levelName],
   );
+
+  const lottieFireNode = useMemo(() => <Lottie animationData={fireAnimationData} loop={true} />, []);
 
   useEffect(() => {
     if (!user?.id || activitiesLoading) return undefined;
@@ -678,13 +684,14 @@ function ActivityPage() {
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
-    if (showRandomizerOverlay || showFreeSpeechOverlay) {
+    const isAnyOverlayOpen = showRandomizerOverlay || showFreeSpeechOverlay || isRankModalOpen || isAskB01ModalOpen || isStreakModalOpen;
+    if (isAnyOverlayOpen) {
       document.body.classList.add('randomizer-overlay-open');
     } else {
       document.body.classList.remove('randomizer-overlay-open');
     }
     return () => document.body.classList.remove('randomizer-overlay-open');
-  }, [showRandomizerOverlay, showFreeSpeechOverlay]);
+  }, [showRandomizerOverlay, showFreeSpeechOverlay, isRankModalOpen, isAskB01ModalOpen, isStreakModalOpen]);
 
   const renderTaskCardForShell = useCallback(({ task, animationClass = '' }) => {
     const done = taskState[task.id] === true;
@@ -727,8 +734,8 @@ function ActivityPage() {
         ) : null}
 
         <div className="activity-task-actions">
-          <button
-            type="button"
+          <Button
+            variant="practice"
             className={`activity-action-btn${isLocked ? ' is-locked' : ''}${canShowProgress ? ' with-progress' : ''}`}
             onClick={() => handleTaskAction(task)}
             disabled={isLocked || done}
@@ -737,7 +744,7 @@ function ActivityPage() {
               <span className="activity-action-progress-fill" style={{ width: `${progressPctForTask}%` }} />
             ) : null}
             <span className="activity-action-btn-text">{ctaLabel}</span>
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -1004,18 +1011,29 @@ function ActivityPage() {
               <div className="new-banner-bubble" aria-label="Coach message">
                 <p className="new-banner-kicker">B-01:</p>
                 <p className="new-banner-copy">You're on a roll. Keep doing your activities and improve your speaking.</p>
+                <div className="new-banner-bubble-footer">
+                  <Button 
+                    variant="practice"
+                    className="ask-b01-trigger" 
+                    onClick={() => setIsAskB01ModalOpen(true)}
+                    aria-label="Ask B-01 a question"
+                  >
+                    <IoChatbubbleEllipsesOutline />
+                    <span>Ask B-01</span>
+                  </Button>
+                </div>
               </div>
            </div>
            <div className="new-banner-right">
               <div 
-                className={`new-banner-streak${(showRandomizerOverlay || showFreeSpeechOverlay) ? ' is-hidden' : ''}`} 
+                className="new-banner-streak" 
                 id="tutorial-target-home-streak" 
                 aria-label="Daily streak"
                 onClick={() => setIsStreakModalOpen(true)}
               >
                  <div className="new-streak-top">
                    <div className="new-streak-fire">
-                     <Lottie animationData={fireAnimationData} loop={true} />
+                     {lottieFireNode}
                    </div>
                    <div className="new-streak-headline">
                      <div className="new-streak-value">{streakStats.currentStreak}</div>
@@ -1053,7 +1071,7 @@ function ActivityPage() {
 
         {/* Right Column (Widgets) */}
         <div className="new-right-col no-scrollbar">
-            <section className={`new-widget dashboard-anim-left dashboard-anim-delay-2${(showRandomizerOverlay || showFreeSpeechOverlay) ? ' is-hidden' : ''}`} id="tutorial-target-home-rank">
+            <section className="new-widget dashboard-anim-left dashboard-anim-delay-2" id="tutorial-target-home-rank">
               <div className="new-widget-head">
                 <h2 className="new-widget-title">Journey Progression</h2>
                 <span className="new-widget-chip">Level</span>
@@ -1146,6 +1164,79 @@ function ActivityPage() {
           },
         ]}
       />
+      
+      {/* Ask B-01 Modal */}
+      {isAskB01ModalOpen && (
+        <section className="randomizer-overlay-wrapper ask-b01-modal-wrapper" aria-label="Ask B-01 modal">
+          <div className="bigkas-modal-scrim ask-b01-scrim" onClick={() => setIsAskB01ModalOpen(false)} />
+          <div className="ask-b01-modal-card">
+            <div className="ask-b01-modal-header">
+              <h2 className="ask-b01-modal-title">
+                <img src={b01ChatHead} alt="" className="ask-b01-modal-title-logo" />
+                Ask <span>B-01</span>
+              </h2>
+              <button 
+                className="ask-b01-modal-close" 
+                onClick={() => setIsAskB01ModalOpen(false)}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="ask-b01-chat-container">
+              <div className="ask-b01-chat-row b01-row">
+                <div className="ask-b01-chat-head b01-chat-head-square">
+                  <img src={b01ChatHead} alt="B-01" />
+                </div>
+                <div className="ask-b01-message ask-b01-message--b01">
+                  Hello! I'm B-01, your AI speaking coach. What would you like to know about public speaking or your progress today?
+                </div>
+              </div>
+
+              {/* Example User Message with chat head */}
+              <div className="ask-b01-chat-row user-row">
+                <div className="ask-b01-message ask-b01-message--user">
+                  How can I improve my confidence during a presentation?
+                </div>
+                <div className="ask-b01-chat-head user-head">
+                  {(user?.avatarUrl || user?.avatar_url) ? (
+                    <img src={user.avatarUrl || user.avatar_url} alt="Me" />
+                  ) : (
+                    <div className="ask-b01-avatar-placeholder">
+                      {user?.firstName?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="ask-b01-input-area">
+              <div className="ask-b01-input-wrapper">
+                <input 
+                  type="text" 
+                  className="ask-b01-input"
+                  placeholder="Ask me anything..."
+                  value={askB01Query}
+                  onChange={(e) => setAskB01Query(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && askB01Query.trim()) {
+                      setAskB01Query('');
+                    }
+                  }}
+                />
+                <button 
+                  className="ask-b01-send-btn"
+                  disabled={!askB01Query.trim()}
+                  onClick={() => setAskB01Query('')}
+                >
+                  <IoSend />
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

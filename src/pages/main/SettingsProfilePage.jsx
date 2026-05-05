@@ -154,7 +154,7 @@ function SettingsProfilePage() {
   }, [firstName, lastName]);
 
   return (
-    <div className="settings-profile-page">
+    <div className="settings-profile-page dashboard-page-new">
       <div className="settings-profile-container">
         <div className={`profile-hero-card hero-theme--${heroTheme}`}>
           <div className="hero-decoration">

@@ -463,7 +463,6 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
               <div className="new-banner-bubble" aria-label="Coach message">
                 <p className="new-banner-kicker">B-01:</p>
                 <p className="new-banner-copy">These are your weekly report. You're improving fast, keep up the good work</p>
-                <span className="progress-banner-signature">Ask B-01</span>
               </div>
             </div>
 

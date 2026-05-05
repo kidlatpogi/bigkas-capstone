@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   IoChevronForward, 
-  IoNotificationsOutline, 
   IoLockClosedOutline,
   IoShieldCheckmarkOutline,
   IoPersonCircleOutline,
   IoLogOutOutline,
-  IoAlertCircleOutline
+  IoAlertCircleOutline,
+  IoVideocamOutline,
+  IoColorPalette
 } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
@@ -20,8 +21,21 @@ import ConfirmationModal from '../../components/common/ConfirmationModal';
 
 // Import decorative assets
 import mascotSprite from '../../assets/Sprites/Robot/0001.webp';
+import bronzeRank from '../../assets/Sprites/Rank/rank-bronze.png';
+import silverRank from '../../assets/Sprites/Rank/rank-silver.png';
 import goldRank from '../../assets/Sprites/Rank/rank-gold.png';
+import mythrilRank from '../../assets/Sprites/Rank/rank-mythril.png';
 import legendaryRank from '../../assets/Sprites/Rank/rank-legendary.png';
+
+const THEME_CONFIG = [
+  { id: 'emerald', label: 'Default', requires: 0, decoration: null, className: 'emerald' },
+  { id: 'mascot', label: 'B-01', requires: 0, decoration: mascotSprite, className: 'mascot' },
+  { id: 'bronze', label: 'Bronze', requires: 1, decoration: bronzeRank, className: 'bronze' },
+  { id: 'silver', label: 'Silver', requires: 2, decoration: silverRank, className: 'silver' },
+  { id: 'gold', label: 'Gold', requires: 3, decoration: goldRank, className: 'gold' },
+  { id: 'mythril', label: 'Mythril', requires: 4, decoration: mythrilRank, className: 'mythril' },
+  { id: 'trophy', label: 'Legend', requires: 5, decoration: legendaryRank, className: 'trophy' },
+];
 
 const MIC_SENSITIVITY_KEY = 'pref_mic_sensitivity';
 const AUTO_NEXT_KEY = 'pref_auto_next';
@@ -30,7 +44,6 @@ function SettingsPage() {
   const navigate = useNavigate();
   const { user, logout } = useAuthContext();
   
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [micSensitivity, setMicSensitivity] = useState(() => {
     return localStorage.getItem(MIC_SENSITIVITY_KEY) || '80';
   });
@@ -43,6 +56,11 @@ function SettingsPage() {
   const [heroTheme] = useState(() => {
     return localStorage.getItem('pref_hero_theme') || 'emerald';
   });
+
+  const getThemeDecoration = (themeId) => {
+    const config = THEME_CONFIG.find(t => t.id === themeId);
+    return config?.decoration || null;
+  };
 
   useEffect(() => {
     localStorage.setItem(MIC_SENSITIVITY_KEY, micSensitivity);
@@ -79,15 +97,31 @@ function SettingsPage() {
     }
   };
 
+  const userInitials = useMemo(() => {
+    if (!user) return '?';
+    const first = user.firstName || '';
+    const last = user.lastName || '';
+    return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase() || '?';
+  }, [user]);
+
   return (
     <div className="settings-profile-page dashboard-page-new">
       <div className="settings-profile-container">
         <div className={`profile-hero-card hero-theme--${heroTheme}`}>
           <div className="hero-decoration">
-            {heroTheme === 'mascot' && <img src={mascotSprite} alt="" className="decoration-img decoration-mascot" />}
-            {heroTheme === 'trophy' && <img src={legendaryRank} alt="" className="decoration-img decoration-trophy" />}
-            {heroTheme === 'gold' && <img src={goldRank} alt="" className="decoration-img decoration-trophy" />}
+            {heroTheme === 'mascot' ? (
+              <img src={mascotSprite} alt="" className="decoration-img decoration-mascot" />
+            ) : (
+              getThemeDecoration(heroTheme) && (
+                <img 
+                  src={getThemeDecoration(heroTheme)} 
+                  alt="" 
+                  className={`decoration-img ${heroTheme === 'trophy' ? 'decoration-trophy' : 'decoration-rank'}`} 
+                />
+              )
+            )}
           </div>
+
           <div className="hero-info" style={{ position: 'relative', zIndex: 2 }}>
             <h1 className="hero-name">Preferences</h1>
             <p className="hero-email" style={{ opacity: 0.9 }}>Customize your experience and manage your account.</p>
@@ -133,25 +167,6 @@ function SettingsPage() {
               <div className="sp-list-group">
                 <div className="sp-list-item sp-list-item--interactive">
                   <div className="sp-list-icon">
-                    <IoNotificationsOutline />
-                  </div>
-                  <div className="sp-list-content">
-                    <span className="sp-list-label">Push Notifications</span>
-                    <span className="sp-list-hint">Get alerts for streak and updates</span>
-                  </div>
-                  <label className="sp-toggle">
-                    <input 
-                      type="checkbox" 
-                      className="sp-toggle-input"
-                      checked={notificationsEnabled}
-                      onChange={(e) => setNotificationsEnabled(e.target.checked)}
-                    />
-                    <span className="sp-toggle-slider"></span>
-                  </label>
-                </div>
-
-                <div className="sp-list-item sp-list-item--interactive">
-                  <div className="sp-list-icon">
                     <IoAlertCircleOutline />
                   </div>
                   <div className="sp-list-content">
@@ -171,6 +186,17 @@ function SettingsPage() {
                     </div>
                   </div>
                 </div>
+
+                <button className="sp-list-item" onClick={() => navigate(ROUTES.AUDIO_TEST)}>
+                  <div className="sp-list-icon">
+                    <IoVideocamOutline />
+                  </div>
+                  <div className="sp-list-content">
+                    <span className="sp-list-label">Test Audio/ Video</span>
+                    <span className="sp-list-hint">Verify your camera and microphone setup</span>
+                  </div>
+                  <IoChevronForward className="sp-list-chevron" />
+                </button>
 
               </div>
             </div>

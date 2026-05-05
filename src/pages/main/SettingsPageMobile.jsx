@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   IoChevronForward, 
-  IoNotificationsOutline, 
   IoLockClosedOutline,
   IoPersonCircleOutline,
   IoLogOutOutline,
   IoAlertCircleOutline,
-  IoArrowBack
+  IoArrowBack,
+  IoVideocamOutline
 } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
@@ -28,7 +28,6 @@ function SettingsPageMobile() {
   const navigate = useNavigate();
   const { logout } = useAuthContext();
   
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [micSensitivity, setMicSensitivity] = useState(() => {
     return localStorage.getItem(MIC_SENSITIVITY_KEY) || '80';
   });
@@ -124,24 +123,6 @@ function SettingsPageMobile() {
           <section className="stg-mobile-section">
             <h3 className="stg-section-title">App Settings</h3>
             <div className="stg-mobile-list">
-              <div className="stg-mobile-item no-click">
-                <div className="stg-item-icon notifications">
-                  <IoNotificationsOutline />
-                </div>
-                <div className="stg-item-content">
-                  <span className="stg-item-label">Push Notifications</span>
-                  <span className="stg-item-hint">Streak and update alerts</span>
-                </div>
-                <label className="stg-mobile-switch">
-                  <input 
-                    type="checkbox" 
-                    checked={notificationsEnabled}
-                    onChange={(e) => setNotificationsEnabled(e.target.checked)}
-                  />
-                  <span className="stg-mobile-slider"></span>
-                </label>
-              </div>
-
               <div className="stg-mobile-item no-click stacked">
                 <div className="stg-item-top">
                   <div className="stg-item-icon voice">
@@ -164,6 +145,17 @@ function SettingsPageMobile() {
                     </select>
                 </div>
               </div>
+
+              <button className="stg-mobile-item" onClick={() => navigate(ROUTES.AUDIO_TEST)}>
+                <div className="stg-item-icon voice">
+                  <IoVideocamOutline />
+                </div>
+                <div className="stg-item-content">
+                  <span className="stg-item-label">Test Audio/ Video</span>
+                  <span className="stg-item-hint">Verify camera and microphone</span>
+                </div>
+                <IoChevronForward className="stg-item-chevron" />
+              </button>
             </div>
           </section>
 

@@ -1,334 +1,470 @@
-/* ── TestAudioVideoPage.css ── */
+/* TestAudioVideoPage.css Redesign */
 
-.av-page {
+.av-page-new {
+    /* Inherits from settings-profile-page and dashboard-page-new */
+}
+
+/* Header should be full width and sticky */
+.settings-profile-page.av-page-new {
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background-color: #FDFDF9;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.settings-profile-page.av-page-new .settings-profile-container {
+    flex: 1;
+    padding: 1rem 24px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 1000px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0;
+    overflow: hidden;
+}
+
+.av-back-header-fixed {
+    width: 100%;
+    position: relative; /* Changed from sticky to relative since parent is flex-column */
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    margin: 0;
+    padding: 1.25rem 2.5rem;
+    background: #fff;
+    border-bottom: 1px solid rgba(11, 57, 84, 0.08);
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+/* Hero Card Styles for Hardware Check */
+.av-page-new .profile-hero-card {
+  border-radius: 24px 24px 0 0 !important;
+  padding: 48px 40px;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  color: #fff;
   position: relative;
-  left: 50%;
-  width: 100vw;
-  margin-left: -50vw;
-  margin-right: -50vw;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px 18px;
-  background:
-    radial-gradient(circle at top left, rgba(90, 120, 99, 0.12), transparent 30%),
-    #ffffff;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
-}
-
-.av-single-card {
-  width: min(740px, 100%);
-  border-radius: 24px;
-  background: #ffffff;
-  border: 1px solid rgba(1, 1, 1, 0.08);
-  padding: 30px;
-  box-shadow: 0 16px 40px rgba(1, 1, 1, 0.08);
-}
-
-.av-breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 12px;
-  font-size: 14px;
-  letter-spacing: -0.224px;
-}
-
-.av-breadcrumb-link {
-  color: #5a7863;
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.av-breadcrumb-link:hover {
-  color: #4a6352;
-}
-
-.av-breadcrumb-sep {
-  color: rgba(11, 57, 84, 0.48);
-}
-
-.av-breadcrumb-current {
-  color: #3c4952;
-  font-weight: 600;
-}
-
-.av-kicker {
-  margin: 0 0 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #5a7863;
-  font-size: 0.82rem;
-  font-weight: 700;
-}
-
-.av-single-card h1 {
-  margin: 0;
-  font-size: clamp(1.8rem, 3vw, 2.2rem);
-  line-height: 1.15;
-  color: #1f2a22;
-}
-
-.av-subtitle {
-  margin: 14px 0 0;
-  line-height: 1.6;
-  color: #45524a;
-}
-
-/* ── Section ── */
-.av-section {
-  margin-top: 18px;
-}
-
-.av-section-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: #888;
-  letter-spacing: 0.1em;
-  margin: 0 0 10px;
-}
-
-/* ── Camera ── */
-.av-camera-wrap {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  min-height: 210px;
-  background: #1a1a1a;
-  border-radius: 14px;
   overflow: hidden;
-  position: relative;
-  margin-bottom: 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.av-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  background: #1a1a1a;
+.hero-theme--emerald { background: linear-gradient(135deg, #10B981 0%, #34D399 100%); }
+.hero-theme--mascot { background: linear-gradient(135deg, #059669 0%, #06b6d4 100%); }
+.hero-theme--bronze { background: linear-gradient(135deg, #A87040 0%, #804A20 100%); }
+.hero-theme--silver { background: linear-gradient(135deg, #94A3B8 0%, #64748B 100%); }
+.hero-theme--gold { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+.hero-theme--mythril { background: linear-gradient(135deg, #0D9488 0%, #0F766E 100%); }
+.hero-theme--trophy { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); }
+
+.av-page-new .hero-decoration {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 50%;
+  pointer-events: none;
+  z-index: 1;
 }
 
-.av-camera-placeholder {
-  width: 100%;
-  height: 100%;
+.av-page-new .decoration-img {
+  position: absolute;
+  right: -20px;
+  bottom: -20px;
+  height: 120%;
+  object-fit: contain;
+  opacity: 0.8;
+  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
+}
+
+.decoration-mascot {
+  height: 140% !important;
+  bottom: -30px !important;
+}
+
+.decoration-rank, .decoration-trophy {
+  height: 110% !important;
+  right: 10px !important;
+  bottom: 0 !important;
+}
+
+.av-page-new .hero-info {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 13px;
-  text-align: center;
-  padding: 20px;
+  gap: 4px;
+  z-index: 2;
 }
 
-.av-flip-btn {
-  position: absolute;
-  bottom: 12px;
-  right: 12px;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.55);
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  transition: background 0.15s;
+.av-page-new .hero-name {
+  font-size: 32px;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.025em;
+  line-height: 1;
 }
 
-.av-flip-btn:hover {
-  background: rgba(0, 0, 0, 0.75);
+.av-page-new .hero-email {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.95);
+  margin: 0;
 }
 
-/* ── Status row ── */
-.av-status-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.history-back-to-list-btn,
+.av-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #059669;
+    border: none;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #fff;
+    cursor: pointer;
+    padding: 0 24px;
+    height: 48px;
+    border-radius: 999px;
+    box-shadow: 0 5px 0 #047857;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.av-toggle-btn {
+    width: 100%;
+    max-width: 320px;
+}
+
+.history-back-to-list-btn:hover,
+.av-toggle-btn:hover {
+    background: #059669;
+    box-shadow: 0 3px 0 #047857;
+    transform: translateY(2px);
+}
+
+.history-back-to-list-btn:active,
+.av-toggle-btn:active {
+    box-shadow: 0 0 0 #047857;
+    transform: translateY(5px);
+}
+
+.av-toggle-btn.is-active {
+    background: #EF4444;
+    box-shadow: 0 5px 0 #B91C1C;
+}
+
+.av-toggle-btn.is-active:hover {
+    background: #EF4444;
+    box-shadow: 0 3px 0 #B91C1C;
+}
+
+.av-toggle-btn.is-active:active {
+    box-shadow: 0 0 0 #B91C1C;
+}
+
+@media (max-width: 768px) {
+    .settings-profile-page.av-page-new .settings-profile-container {
+        padding: 20px 16px 60px 16px;
+        margin-top: 0;
+    }
+    .av-back-header-fixed {
+        padding: 12px 24px;
+    }
+}
+
+
+.av-page-new .settings-content-wrapper {
+    background: #fff !important;
+    border: 1px solid rgba(11, 57, 84, 0.08) !important;
+    border-top: none !important;
+    border-radius: 0 0 24px 24px !important;
+    box-shadow: 0 15px 40px rgba(11, 57, 84, 0.05) !important;
+    overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.av-page-new .settings-main-card {
+    padding: clamp(1rem, 2vh, 1.5rem) clamp(1.5rem, 4vw, 2.5rem);
+    width: 100%;
+    background: transparent;
+    box-sizing: border-box;
+}
+
+.av-page-new .settings-form {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 3rem;
+    align-items: start;
+}
+
+.av-page-new .settings-divider {
+    display: none !important;
+}
+
+.av-page-new .settings-form-section {
+    margin-bottom: 0;
+}
+
+.section-header-flex {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.section-header-flex .section-heading {
+    margin-bottom: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #0b3954;
+}
+
+/* Status Pill */
+.av-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #f1f5f9;
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+    border: 1px solid #e2e8f0;
 }
 
 .av-status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
 }
 
-.av-status-text {
-  font-size: 13px;
-  color: #666;
+/* Viewport for Video */
+.av-camera-viewport {
+    width: 100%;
+    height: clamp(calc(140px + 3rem), calc(24vh + 3rem), calc(260px + 3rem));
+    background: #0f172a;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    position: relative;
+    border: 4px solid #f1f5f9;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
-/* ── Mic card ── */
-.av-mic-card {
-  background: #fff;
-  border-radius: 16px;
-  border: 1px solid #dbe4da;
-  padding: 20px 16px;
+.av-video-feed {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
-/* ── Level bars (AudioLevelIndicator) ── */
-.av-visualizer {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 14px;
+.av-error-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+    color: #94a3b8;
+}
+
+/* Mic Area - Compact */
+.av-mic-test-area {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: center;
+    padding: 0.5rem 0;
+}
+
+.av-visualizer-container {
+    width: 100%;
+    height: 54px;
+    background: #f8fafc;
+    border-radius: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 2rem;
+    border: 1px solid #e2e8f0;
 }
 
 .av-bars {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    height: 100%;
 }
 
 .av-bar {
-  width: 8px;
-  height: 100%;
-  border-radius: 4px;
-  background: #e0e0e0;
-  transition: background 0.1s, height 0.08s;
-  flex-shrink: 0;
+    flex: 1;
+    background: #e2e8f0;
+    border-radius: 999px;
+    transition: background 0.1s ease, height 0.1s ease;
 }
 
 .av-bar-lit {
-  background: #5a7863;
+    background: #059669;
 }
 
 .av-bar-partial {
-  background: rgba(90, 120, 99, 0.5);
+    background: #34d399;
 }
 
-/* ── Mic button ── */
-.av-mic-btn {
-  width: 100%;
-  padding: 14px;
-  background: #5a7863;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  font-family: inherit;
-  transition: opacity 0.15s, transform 0.1s;
+/* Responsive Tweaks */
+@media (max-width: 992px) {
+    .av-page-new .settings-form {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .av-page-new .settings-divider {
+        display: block !important;
+        margin: 1.5rem 0 !important;
+    }
 }
 
-.av-mic-btn:hover:not(:disabled) {
-  background: #4a6352;
-  opacity: 1;
+@media (max-width: 768px) {
+    .av-page-new .settings-content-wrapper {
+        border-radius: 0 0 24px 24px !important;
+        padding: 0;
+    }
+    
+    .av-page-new .settings-main-card {
+        padding: 1.5rem;
+    }
+
+    .section-header-flex {
+        flex-direction: row;
+        align-items: center;
+    }
+    
+    .av-status-pill {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.75rem;
+    }
 }
 
-.av-mic-btn:active:not(:disabled) {
-  transform: scale(0.98);
+/* Success Banner */
+.av-success-banner-wrap {
+    overflow: hidden;
+    width: 100%;
 }
 
-.av-mic-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.av-success-banner {
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+    border-radius: 16px;
+    padding: 0.6rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
 }
 
-.av-mic-btn-stop {
-  background: #f5f5f5;
-  color: #3c4952;
-  border: 1px solid #dbe4da;
+.av-banner-left {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
 }
 
-.av-mic-btn-stop:hover:not(:disabled) {
-  background: #F5F5F5;
-  opacity: 1;
-}
-
-/* ── Done button ── */
-.av-done-wrap {
-  margin-top: 20px;
-}
-
-.av-done-btn {
-  width: 100%;
-  padding: 14px;
-  background: #F5F5F5;
-  color: #010101;
-  border: 1px solid #e0e0e0;
-  border-radius: 10px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background 0.12s;
-}
-
-.av-done-btn:hover {
-  background: #E8E8E8;
-}
-
-.av-status-row--center {
-  justify-content: center;
-  margin-bottom: 16px;
-}
-
-/* ── Dark mode ── */
-[data-theme="dark"] .av-page { background: #0B0B0D; }
-
-[data-theme="dark"] .av-title {
-  color: #F0F0F0;
-}
-
-[data-theme="dark"] .av-section-label {
-  color: #666;
-}
-
-[data-theme="dark"] .av-mic-card {
-  background: #242424;
-  border-color: #333;
-}
-
-[data-theme="dark"] .av-bar {
-  background: #333;
-}
-
-[data-theme="dark"] .av-mic-btn-stop {
-  color: #F0F0F0;
-  border-color: #444;
-}
-
-[data-theme="dark"] .av-mic-btn-stop:hover:not(:disabled) {
-  background: #2e2e2e;
-}
-
-[data-theme="dark"] .av-done-btn {
-  background: #242424;
-  color: #F0F0F0;
-  border-color: #333;
-}
-
-[data-theme="dark"] .av-done-btn:hover {
-  background: #2e2e2e;
-}
-
-[data-theme="dark"] .av-status-text {
-  color: #888;
-}
-
-@media (max-width: 520px) {
-  .av-page {
-    padding-inline: 12px;
-  }
-
-  .av-single-card {
-    padding: 22px 18px;
-    border-radius: 20px;
-  }
-
-  .av-camera-wrap {
-    min-height: 200px;
-  }
-
-  .av-flip-btn {
+.av-banner-badge {
     width: 44px;
     height: 44px;
-  }
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: #fff;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.av-banner-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.av-banner-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+
+.av-banner-sub {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    margin: 0;
+    font-weight: 500;
+}
+
+.av-banner-right {
+    display: flex;
+    align-items: center;
+}
+
+.av-banner-launch-btn {
+    padding: 0 1.5rem;
+    height: 44px;
+    background: #F97316;
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 0 #B1510F;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.av-banner-launch-btn:hover {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #B1510F;
+    background: #F97316;
+}
+
+.av-banner-launch-btn:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 #B1510F;
+}
+
+@media (max-width: 768px) {
+    .av-success-banner {
+        flex-direction: column;
+        gap: 1.25rem;
+        text-align: center;
+        padding: 1.5rem;
+    }
+    
+    .av-banner-left {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .av-banner-right {
+        width: 100%;
+    }
+    
+    .av-banner-launch-btn {
+        width: 100%;
+    }
 }

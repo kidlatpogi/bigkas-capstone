@@ -16,6 +16,12 @@ const ModalOverlay = styled(motion.div)`
   justify-content: center;
   z-index: 9999;
   padding: 20px;
+  /* Premium Centering: Offset by sidebar width to center in content area */
+  padding-left: calc(280px + 20px);
+
+  @media (max-width: 1100px) {
+    padding-left: 20px;
+  }
 `;
 
 const ModalContainer = styled(motion.div)`
@@ -24,7 +30,7 @@ const ModalContainer = styled(motion.div)`
   max-width: 550px;
   max-height: 85vh;
   border-radius: 24px;
-  border: 2px solid #f18f01;
+  border: 3px solid #10B981;
   display: flex;
   flex-direction: column;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
@@ -76,7 +82,7 @@ const ModalFooter = styled.div`
 `;
 
 const CloseButton = styled.button`
-  background-color: #f18f01;
+  background-color: #10B981;
   color: white;
   border: none;
   border-radius: 12px;
@@ -85,18 +91,18 @@ const CloseButton = styled.button`
   font-weight: 800;
   letter-spacing: 1px;
   cursor: pointer;
-  box-shadow: #cd8b76 0 6px 0 0;
+  box-shadow: #059669 0 6px 0 0;
   transition: all 0.1s ease;
   text-transform: uppercase;
 
   &:hover {
     transform: translateY(1px);
-    box-shadow: #cd8b76 0 5px 0 0;
+    box-shadow: #059669 0 5px 0 0;
   }
 
   &:active {
     transform: translateY(6px);
-    box-shadow: #cd8b76 0 0px 0 0;
+    box-shadow: #059669 0 0px 0 0;
     transition: 100ms;
   }
 `;

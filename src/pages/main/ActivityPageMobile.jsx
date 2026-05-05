@@ -578,8 +578,8 @@ function ActivityPageMobile() {
         ) : null}
 
         <div className="activity-task-actions">
-          <button
-            type="button"
+          <Button
+            variant="practice"
             className={`activity-action-btn${isLocked ? ' is-locked' : ''}${canShowProgress ? ' with-progress' : ''}`}
             onClick={() => handleTaskAction(task)}
             disabled={isLocked || done}
@@ -588,7 +588,7 @@ function ActivityPageMobile() {
               <span className="activity-action-progress-fill" style={{ width: `${progressPctForTask}%` }} />
             ) : null}
             <span className="activity-action-btn-text">{ctaLabel}</span>
-          </button>
+          </Button>
         </div>
       </div>
     );

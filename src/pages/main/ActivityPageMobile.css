@@ -367,66 +367,9 @@
   width: 100%;
 }
 
-.activity-page-mobile-root .randomizer-overlay-randomize-btn.bigkas-btn {
-  flex: 1;
-  height: 44px !important;
-  border-radius: 999px !important;
-  background: #f97316 !important;
-  box-shadow: #c2410c 0 5px 0 0 !important;
-  color: #ffffff !important;
-  font-family: 'Fredoka', sans-serif !important;
-  font-size: 0.98rem !important;
-  font-weight: 600 !important;
-  border: none !important;
-  transition: all 0.2s ease !important;
-}
-
+.activity-page-mobile-root .randomizer-overlay-randomize-btn.bigkas-btn,
 .activity-page-mobile-root .randomizer-overlay-start-btn.bigkas-btn {
   flex: 1;
-  height: 44px !important;
-  border-radius: 999px !important;
-  background: #059669 !important;
-  box-shadow: #047857 0 5px 0 0 !important;
-  color: #ffffff !important;
-  font-family: 'Fredoka', sans-serif !important;
-  font-size: 0.98rem !important;
-  font-weight: 600 !important;
-  border: none !important;
-  transition: all 0.2s ease !important;
-}
-
-.activity-page-mobile-root .randomizer-overlay-randomize-btn.bigkas-btn:hover:not(:disabled) {
-  box-shadow: #c2410c 0 3px 0 0 !important;
-  transform: translateY(2px) !important;
-}
-
-.activity-page-mobile-root .randomizer-overlay-start-btn.bigkas-btn:hover:not(:disabled) {
-  box-shadow: #047857 0 3px 0 0 !important;
-  transform: translateY(2px) !important;
-}
-
-.activity-page-mobile-root .randomizer-overlay-randomize-btn.bigkas-btn:active:not(:disabled) {
-  box-shadow: #c2410c 0 0 0 0 !important;
-  transform: translateY(5px) !important;
-}
-
-.activity-page-mobile-root .randomizer-overlay-start-btn.bigkas-btn:active:not(:disabled) {
-  box-shadow: #047857 0 0 0 0 !important;
-  transform: translateY(5px) !important;
-}
-
-.activity-page-mobile-root .randomizer-overlay-randomize-btn.bigkas-btn:disabled {
-  background: #cbd5e1 !important;
-  box-shadow: #94a3b8 0 5px 0 0 !important;
-  opacity: 0.7 !important;
-  transform: none !important;
-}
-
-.activity-page-mobile-root .randomizer-overlay-start-btn.bigkas-btn:disabled {
-  background: #cbd5e1 !important;
-  box-shadow: #94a3b8 0 5px 0 0 !important;
-  opacity: 0.7 !important;
-  transform: none !important;
 }
 
 .activity-page-mobile-root .randomizer-overlay-robot {

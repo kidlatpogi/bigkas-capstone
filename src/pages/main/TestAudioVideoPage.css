@@ -47,10 +47,10 @@
 /* Hero Card Styles for Hardware Check */
 .av-page-new .profile-hero-card {
   border-radius: 24px 24px 0 0 !important;
-  padding: clamp(1.5rem, 3vh, 2rem) clamp(1.5rem, 4vw, 2.5rem);
+  padding: 48px 40px;
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 32px;
   color: #fff;
   position: relative;
   overflow: hidden;
@@ -105,7 +105,7 @@
 }
 
 .av-page-new .hero-name {
-  font-size: clamp(1.5rem, 4vh, 2rem);
+  font-size: 32px;
   font-weight: 800;
   margin: 0;
   letter-spacing: -0.025em;
@@ -113,7 +113,7 @@
 }
 
 .av-page-new .hero-email {
-  font-size: 0.95rem;
+  font-size: 16px;
   color: rgba(255, 255, 255, 0.95);
   margin: 0;
 }
@@ -365,12 +365,12 @@
 
 .av-success-banner {
     background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-    border-radius: 20px;
-    padding: 0.75rem 1.25rem;
+    border-radius: 16px;
+    padding: 0.6rem 1rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.25);
+    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: #fff;
 }
@@ -382,14 +382,14 @@
 }
 
 .av-banner-badge {
-    width: 48px;
-    height: 48px;
+    width: 36px;
+    height: 36px;
     background: rgba(255, 255, 255, 0.15);
-    border-radius: 14px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 26px;
+    font-size: 20px;
     color: #fff;
     backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -402,14 +402,14 @@
 }
 
 .av-banner-title {
-    font-size: 1.15rem;
+    font-size: 1rem;
     font-weight: 800;
     margin: 0;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
 }
 
 .av-banner-sub {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     opacity: 0.9;
     margin: 0;
     font-weight: 500;
@@ -421,16 +421,16 @@
 }
 
 .av-banner-launch-btn {
-    padding: 0.75rem 1.75rem;
+    padding: 0.5rem 1.25rem;
     background: #fff;
     color: #059669;
     border: none;
-    border-radius: 14px;
-    font-size: 0.95rem;
+    border-radius: 10px;
+    font-size: 0.875rem;
     font-weight: 800;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .av-banner-launch-btn:hover {

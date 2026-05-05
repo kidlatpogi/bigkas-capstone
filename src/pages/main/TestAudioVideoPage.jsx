@@ -323,9 +323,9 @@ export default function TestAudioVideoPage() {
           {showSuccessModal && (
             <motion.div 
               className="av-success-banner-wrap"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
+              initial={{ height: 0, opacity: 0, marginTop: 0 }}
+              animate={{ height: 'auto', opacity: 1, marginTop: 24 }}
+              exit={{ height: 0, opacity: 0, marginTop: 0 }}
             >
               <div className="av-success-banner">
                 <div className="av-banner-left">

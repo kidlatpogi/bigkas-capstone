@@ -6,21 +6,25 @@
 
 /* Header should be full width and sticky */
 .settings-profile-page.av-page-new {
-    display: block; /* Use block for natural vertical stack */
-    padding: 0;
-    overflow-x: hidden;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background-color: #FDFDF9;
 }
 
 .settings-profile-page.av-page-new .settings-profile-container {
-    padding: clamp(1.5rem, 5dvh, 2.5rem) 24px 80px 24px;
+    flex: 1;
+    padding: 1rem 24px;
     margin: 0 auto;
     box-sizing: border-box;
     width: 100%;
     max-width: 1000px;
     display: flex;
     flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem; /* Reduced vertical gap to 0.5rem */
+    justify-content: center;
+    gap: 0;
+    overflow: hidden;
 }
 
 .av-back-header-fixed {
@@ -42,11 +46,11 @@
 
 /* Hero Card Styles for Hardware Check */
 .av-page-new .profile-hero-card {
-  border-radius: 24px !important; /* Full rounded corners */
-  padding: 48px 40px;
+  border-radius: 24px 24px 0 0 !important;
+  padding: clamp(1.5rem, 3vh, 2rem) clamp(1.5rem, 4vw, 2.5rem);
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 24px;
   color: #fff;
   position: relative;
   overflow: hidden;
@@ -101,7 +105,7 @@
 }
 
 .av-page-new .hero-name {
-  font-size: 32px;
+  font-size: clamp(1.5rem, 4vh, 2rem);
   font-weight: 800;
   margin: 0;
   letter-spacing: -0.025em;
@@ -109,7 +113,7 @@
 }
 
 .av-page-new .hero-email {
-  font-size: 16px;
+  font-size: 0.95rem;
   color: rgba(255, 255, 255, 0.95);
   margin: 0;
 }
@@ -180,15 +184,16 @@
 .av-page-new .settings-content-wrapper {
     background: #fff !important;
     border: 1px solid rgba(11, 57, 84, 0.08) !important;
-    border-radius: 24px !important; /* Full rounded corners */
-    box-shadow: 0 20px 50px rgba(11, 57, 84, 0.05) !important;
+    border-top: none !important;
+    border-radius: 0 0 24px 24px !important;
+    box-shadow: 0 15px 40px rgba(11, 57, 84, 0.05) !important;
     overflow: hidden;
     width: 100%;
     box-sizing: border-box;
 }
 
 .av-page-new .settings-main-card {
-    padding: 40px;
+    padding: clamp(1rem, 3vh, 2rem) clamp(1.5rem, 4vw, 2.5rem);
     width: 100%;
     background: transparent;
     box-sizing: border-box;
@@ -248,7 +253,7 @@
 /* Viewport for Video */
 .av-camera-viewport {
     width: 100%;
-    aspect-ratio: 16 / 9;
+    height: clamp(160px, 28vh, 300px);
     background: #0f172a;
     border-radius: 1.5rem;
     overflow: hidden;
@@ -333,7 +338,7 @@
 
 @media (max-width: 768px) {
     .av-page-new .settings-content-wrapper {
-        border-radius: 24px !important;
+        border-radius: 0 0 24px 24px !important;
         padding: 0;
     }
     
@@ -360,12 +365,12 @@
 
 .av-success-banner {
     background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-    border-radius: 24px;
-    padding: 1.25rem 1.75rem;
+    border-radius: 20px;
+    padding: 0.75rem 1.25rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    box-shadow: 0 12px 30px rgba(16, 185, 129, 0.25);
+    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.25);
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: #fff;
 }

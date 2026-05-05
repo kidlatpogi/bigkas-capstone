@@ -20,7 +20,7 @@
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 1rem; /* Added vertical gap */
+    gap: 0.5rem; /* Reduced vertical gap to 0.5rem */
 }
 
 .av-back-header-fixed {

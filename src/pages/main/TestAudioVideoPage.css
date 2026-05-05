@@ -11,6 +11,8 @@
     display: flex;
     flex-direction: column;
     background-color: #FDFDF9;
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
 .settings-profile-page.av-page-new .settings-profile-container {
@@ -29,19 +31,19 @@
 
 .av-back-header-fixed {
     width: 100%;
-    position: sticky;
+    position: relative; /* Changed from sticky to relative since parent is flex-column */
     top: 0;
     left: 0;
     right: 0;
     z-index: 1000;
     margin: 0;
-    padding: clamp(0.75rem, 2vh, 1rem) clamp(1rem, 4vw, 2.5rem);
-    background: #FDFDF9;
+    padding: 1.25rem 2.5rem;
+    background: #fff;
     border-bottom: 1px solid rgba(11, 57, 84, 0.08);
     display: flex;
     align-items: center;
     box-sizing: border-box;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
 /* Hero Card Styles for Hardware Check */

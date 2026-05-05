@@ -9,7 +9,6 @@ import {
   IoCheckmarkCircle
 } from 'react-icons/io5';
 import { motion, AnimatePresence } from 'framer-motion';
-import Confetti from 'react-confetti';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import TutorialOverlay from '../../components/main/TutorialOverlay';
@@ -245,6 +244,38 @@ export default function TestAudioVideoPage() {
       </div>
 
       <div className="settings-profile-container">
+        <AnimatePresence>
+          {showSuccessModal && (
+            <motion.div 
+              className="av-success-banner-wrap"
+              initial={{ height: 0, opacity: 0, marginBottom: 0 }}
+              animate={{ height: 'auto', opacity: 1, marginBottom: 24 }}
+              exit={{ height: 0, opacity: 0, marginBottom: 0 }}
+            >
+              <div className="av-success-banner">
+                <div className="av-banner-left">
+                  <div className="av-banner-badge">
+                    <IoCheckmarkCircle />
+                  </div>
+                  <div className="av-banner-info">
+                    <h3 className="av-banner-title">Hardware Verified</h3>
+                    <p className="av-banner-sub">Everything is working perfectly!</p>
+                  </div>
+                </div>
+                <div className="av-banner-right">
+                  <button 
+                    type="button"
+                    className="av-banner-launch-btn"
+                    onClick={() => navigate(ROUTES.ACTIVITY)}
+                  >
+                    Start Training
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className={`profile-hero-card hero-theme--${heroTheme}`}>
           <div className="hero-decoration">
             {heroTheme === 'mascot' ? (
@@ -327,69 +358,6 @@ export default function TestAudioVideoPage() {
         onFinish={() => setIsTutorialOpen(false)}
         steps={location.state?.tutorialSteps}
       />
-
-      <AnimatePresence>
-        {showSuccessModal && (
-          <div className="av-success-overlay">
-            <Confetti 
-              width={window.innerWidth} 
-              height={window.innerHeight} 
-              recycle={false} 
-              numberOfPieces={300}
-              gravity={0.15}
-              colors={['#10B981', '#34D399', '#F97316', '#FFB129', '#0ea5e9']}
-            />
-            <motion.div 
-              className="tutorial-dark-bg"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowSuccessModal(false)}
-            />
-            <motion.div 
-              className="av-engagement-card"
-              initial={{ scale: 0.9, opacity: 0, y: 30 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 30 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 400 }}
-            >
-              <div className="av-success-badge">
-                 <IoCheckmarkCircle />
-              </div>
-              
-              <div className="av-success-content">
-                <h2 className="av-success-title">Systems Ready!</h2>
-                <p className="av-success-description">
-                  Great job! Your camera and microphone are perfectly configured and ready for your next training session.
-                </p>
-                
-                <div className="av-verification-pills">
-                   <div className="av-verify-pill">
-                      <IoVideocam className="av-verify-icon" />
-                      <span>Camera Verified</span>
-                   </div>
-                   <div className="av-verify-pill">
-                      <IoMic className="av-verify-icon" />
-                      <span>Audio Verified</span>
-                   </div>
-                </div>
-                
-                <div className="av-success-robot-wrap">
-                  <img src={mascotSprite} alt="B-01" className="av-success-robot-img" />
-                </div>
-                
-                <button 
-                  type="button"
-                  className="av-success-launch-btn"
-                  onClick={() => navigate(ROUTES.ACTIVITY)}
-                >
-                  Start Training Now
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

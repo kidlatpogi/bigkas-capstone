@@ -1,10 +1,19 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IoSearch, IoClose } from 'react-icons/io5';
+import { 
+  IoSearch, 
+  IoClose, 
+  IoVideocam, 
+  IoEye, 
+  IoVolumeHigh, 
+  IoHandLeft, 
+  IoBook, 
+  IoRibbon 
+} from 'react-icons/io5';
 import { getSpriteUrl } from '../../utils/assetUtils';
 import './FrameworksPageMobile.css';
 
-const b01ChatHead = getSpriteUrl('Robot/0015.png');
+const b01ChatHead = getSpriteUrl('Robot/0015.webp');
 
 const CATEGORIES = [
   { id: 'all', label: 'All Modules' },
@@ -39,7 +48,23 @@ const MODULES = [
   }
 ];
 
+function getModuleIcon(id) {
+  const size = 42;
+  const color = '#059669';
+  switch (id) {
+    case 'mod-0': return <IoVideocam size={size} color={color} />;
+    case 'mod-1': return <IoEye size={size} color={color} />;
+    case 'mod-2': return <IoVolumeHigh size={size} color={color} />;
+    case 'mod-3': return <IoHandLeft size={size} color={color} />;
+    case 'mod-4': return <IoBook size={size} color={color} />;
+    case 'mod-5': return <IoRibbon size={size} color={color} />;
+    default: return <IoBook size={size} color={color} />;
+  }
+}
+
 function ModuleCard({ module, onOpen, index }) {
+  const [imgError, setImgError] = useState(false);
+
   return (
     <button 
       type="button" 
@@ -47,7 +72,18 @@ function ModuleCard({ module, onOpen, index }) {
       onClick={() => onOpen(module)}
     >
       <div style={{ background: '#f8fafc', height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid rgba(5,150,105,0.1)' }}>
-        <img src={b01ChatHead} alt="B-01" style={{ height: '70px', filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.1))' }} />
+        {!imgError ? (
+          <img 
+            src={b01ChatHead} 
+            alt="" 
+            onError={() => setImgError(true)}
+            style={{ height: '70px', filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.1))' }} 
+          />
+        ) : (
+          <div style={{ opacity: 0.8 }}>
+            {getModuleIcon(module.id)}
+          </div>
+        )}
       </div>
       <div className="fh-mobile-card-body">
         <div className="fh-mobile-card-info">

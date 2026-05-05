@@ -255,7 +255,7 @@
 /* Viewport for Video */
 .av-camera-viewport {
     width: 100%;
-    height: clamp(140px, 24vh, 260px);
+    height: clamp(calc(140px + 3rem), calc(24vh + 3rem), calc(260px + 3rem));
     background: #0f172a;
     border-radius: 1.5rem;
     overflow: hidden;

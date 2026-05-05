@@ -734,8 +734,8 @@ function ActivityPage() {
         ) : null}
 
         <div className="activity-task-actions">
-          <button
-            type="button"
+          <Button
+            variant="practice"
             className={`activity-action-btn${isLocked ? ' is-locked' : ''}${canShowProgress ? ' with-progress' : ''}`}
             onClick={() => handleTaskAction(task)}
             disabled={isLocked || done}
@@ -744,7 +744,7 @@ function ActivityPage() {
               <span className="activity-action-progress-fill" style={{ width: `${progressPctForTask}%` }} />
             ) : null}
             <span className="activity-action-btn-text">{ctaLabel}</span>
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -1012,14 +1012,15 @@ function ActivityPage() {
                 <p className="new-banner-kicker">B-01:</p>
                 <p className="new-banner-copy">You're on a roll. Keep doing your activities and improve your speaking.</p>
                 <div className="new-banner-bubble-footer">
-                  <button 
+                  <Button 
+                    variant="practice"
                     className="ask-b01-trigger" 
                     onClick={() => setIsAskB01ModalOpen(true)}
                     aria-label="Ask B-01 a question"
                   >
                     <IoChatbubbleEllipsesOutline />
                     <span>Ask B-01</span>
-                  </button>
+                  </Button>
                 </div>
               </div>
            </div>

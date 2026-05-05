@@ -59,7 +59,7 @@ function clampMapState(state, viewportEl, contentEl, scale) {
   const minX = Math.min(0, W - w) - horizontalPadding;
   const maxX = Math.max(0, W - w) + horizontalPadding;
 
-  // Clamp vertical movement by real section bounds (not decorative map padding),
+  // Clamp vertical movement by real section bounds + container padding,
   // so the first section can't disappear and the last section remains reachable.
   let contentTop = 0;
   let contentBottom = ch;
@@ -77,7 +77,8 @@ function clampMapState(state, viewportEl, contentEl, scale) {
     });
     if (Number.isFinite(minTop) && Number.isFinite(maxBottom) && maxBottom > minTop) {
       contentTop = minTop;
-      contentBottom = maxBottom;
+      // Ensure we respect the overall container padding at the bottom
+      contentBottom = Math.max(maxBottom, ch - 40); // 40 is a small safety offset
     }
   }
 
@@ -86,7 +87,7 @@ function clampMapState(state, viewportEl, contentEl, scale) {
   // Adaptive travel buffers keep first/last nodes fully visible across
   // different container heights and prevent edge clipping.
   const verticalTopBuffer = Math.max(80, Math.round(H * 0.16));
-  const verticalBottomBuffer = Math.max(110, Math.round(H * 0.2));
+  const verticalBottomBuffer = Math.max(160, Math.round(H * 0.25));
   const boundedHeight = ((contentBottom + verticalBottomBuffer) - (contentTop - verticalTopBuffer)) * scale;
   let minY;
   let maxY;
@@ -318,27 +319,20 @@ const HeaderSkipNotice = styled.div`
 const TooltipBox = styled.div`
   background: ${(props) => (props.$nodeState === 'locked' ? '#ffffff' : '#059669')};
   color: ${(props) => (props.$nodeState === 'locked' ? '#333333' : '#ffffff')};
-  padding: 20px;
-  border-radius: 16px;
-  border: ${(props) => (props.$nodeState === 'locked' ? '2px solid #e5e5e5' : '2px solid #047857')};
-  border-bottom: ${(props) => (props.$nodeState === 'locked' ? '4px solid #e5e5e5' : '4px solid #047857')};
+  padding: 24px;
+  border-radius: 20px;
+  border: ${(props) => (props.$nodeState === 'locked' ? '2px solid #e5e5e5' : '2px solid rgba(255, 255, 255, 0.1)')};
   width: min(380px, calc(100vw - 32px));
   box-sizing: border-box;
   max-height: min(70vh, 420px);
-  overflow-x: hidden;
-  overflow-y: auto;
-  scrollbar-width: none; /* Firefox */
-  &::-webkit-scrollbar {
-    display: none;
-  } /* Chrome/Safari */
-  -webkit-overflow-scrolling: touch;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   gap: 12px;
   position: relative;
   align-items: center;
   text-align: center;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
 
   /* Pointer notch that points to the node */
   &::after {
@@ -348,38 +342,22 @@ const TooltipBox = styled.div`
     transform: translateX(-50%);
     width: 0;
     height: 0;
-    border-left: 13px solid transparent;
-    border-right: 13px solid transparent;
     z-index: 2;
 
     ${(props) =>
     props.$placement === 'bottom'
       ? `
-      top: -12px;
-      border-bottom: 12px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#059669'};
+      top: -16px;
+      border-left: 16px solid transparent;
+      border-right: 16px solid transparent;
+      border-bottom: 16px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#059669'};
     `
       : `
-      bottom: -12px;
-      border-top: 12px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#059669'};
+      bottom: -16px;
+      border-left: 16px solid transparent;
+      border-right: 16px solid transparent;
+      border-top: 16px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#059669'};
     `}
-  }
-
-  /* Outer rim for pointer notch */
-  &::before {
-    content: '';
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 15px solid transparent;
-    border-right: 15px solid transparent;
-    z-index: 1;
-    ${(props) =>
-    props.$placement === 'bottom'
-      ? `top: -15px; border-bottom: 15px solid ${props.$nodeState === 'locked' ? '#e5e5e5' : '#047857'};`
-      : `bottom: -15px; border-top: 15px solid ${props.$nodeState === 'locked' ? '#e5e5e5' : '#047857'};`
-  }
   }
 `;
 
@@ -444,7 +422,7 @@ const TooltipStartButton = styled.button`
 `;
 
 const TOOLTIP_VIEW_MARGIN = 12;
-const TOOLTIP_GAP = 14;
+const TOOLTIP_GAP = 24;
 const TOOLTIP_MAX_WIDTH = 380;
 const MOBILE_TOOLTIP_CENTER_BREAKPOINT = 768;
 /** Conservative height for first layout; keeps bubble inside the viewport. */
@@ -455,16 +433,20 @@ function computeTooltipLayout(nodeEl, forceBottom = false) {
   const rect = nodeEl.getBoundingClientRect();
   const cx = rect.left + rect.width / 2;
   const viewportWidth = Math.max(window.innerWidth || 0, document.documentElement?.clientWidth || 0);
+  const viewportHeight = Math.max(window.innerHeight || 0, document.documentElement?.clientHeight || 0);
   const isMobileViewport = viewportWidth <= MOBILE_TOOLTIP_CENTER_BREAKPOINT;
 
   // Use window height for 25% calculation as requested
-  const isTopArea = rect.top < window.innerHeight * 0.25;
+  const isTopArea = rect.top < viewportHeight * 0.25;
 
   const placement = (isTopArea || forceBottom) ? 'bottom' : 'top';
 
   let top = placement === 'bottom' ? rect.bottom + TOOLTIP_GAP : rect.top - TOOLTIP_GAP;
-  const minTop = TOOLTIP_VIEW_MARGIN;
-  const maxTop = Math.max(minTop, window.innerHeight - TOOLTIP_EST_HEIGHT - TOOLTIP_VIEW_MARGIN);
+  
+  // Clamping to ensure visibility within viewport
+  const minTop = TOOLTIP_VIEW_MARGIN + (placement === 'bottom' ? 0 : 40); // 40 is a safety for the top edge
+  const maxTop = viewportHeight - TOOLTIP_VIEW_MARGIN - (placement === 'bottom' ? 40 : 0);
+  
   top = Math.max(minTop, Math.min(maxTop, top));
 
   const tooltipWidth = Math.min(TOOLTIP_MAX_WIDTH, Math.max(0, viewportWidth - (TOOLTIP_VIEW_MARGIN * 2)));
@@ -517,6 +499,8 @@ export const JourneyTooltip = ({ step, onStart, onClose, nodeRef, forceBottom = 
         zIndex: 10060,
         pointerEvents: 'auto',
       }}
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0 }}
@@ -643,8 +627,6 @@ export default function SkywardJourney({
   const [pathPoints, setPathPoints] = useState([]);
   const [indexedNodePoints, setIndexedNodePoints] = useState([]);
   const [panelOpenId, setPanelOpenId] = useState(null);
-  const [panelVisible, setPanelVisible] = useState(false);
-  const panelClosePendingRef = useRef(false);
   const [jiggleIndex, setJiggleIndex] = useState(null);
   // removed showTapHint
   const [map, setMap] = useState(() => ({ tx: 0, ty: 0 }));
@@ -664,15 +646,6 @@ export default function SkywardJourney({
   }, [isLockedLevel, currentLevel]);
 
   const requestClosePanel = useCallback(() => {
-    panelClosePendingRef.current = true;
-    setPanelVisible(false);
-  }, []);
-
-  const handlePanelTransitionEnd = useCallback((e) => {
-    if (drawerRef.current && e.target !== drawerRef.current) return;
-    if (!panelClosePendingRef.current) return;
-    if (e.propertyName !== 'opacity') return;
-    panelClosePendingRef.current = false;
     setPanelOpenId(null);
   }, []);
 
@@ -899,33 +872,6 @@ export default function SkywardJourney({
     return () => document.removeEventListener('keydown', onKey);
   }, [panelOpenId, requestClosePanel]);
 
-  useEffect(() => {
-    if (!panelOpenId) return;
-    panelClosePendingRef.current = false;
-    const resetVis = window.setTimeout(() => setPanelVisible(false), 0);
-    let innerRaf = 0;
-    const outerRaf = requestAnimationFrame(() => {
-      innerRaf = requestAnimationFrame(() => setPanelVisible(true));
-    });
-    return () => {
-      window.clearTimeout(resetVis);
-      cancelAnimationFrame(outerRaf);
-      if (innerRaf) cancelAnimationFrame(innerRaf);
-    };
-  }, [panelOpenId]);
-
-  useEffect(() => {
-    if (panelVisible || !panelOpenId) return undefined;
-    if (!panelClosePendingRef.current) return undefined;
-    const t = window.setTimeout(() => {
-      if (panelClosePendingRef.current) {
-        panelClosePendingRef.current = false;
-        setPanelOpenId(null);
-      }
-    }, 360);
-    return () => window.clearTimeout(t);
-  }, [panelVisible, panelOpenId]);
-
   const { solidPathD, dashedPathD } = useMemo(() => {
     let solid = '';
     let dashed = '';
@@ -950,36 +896,37 @@ export default function SkywardJourney({
   }, [pathPoints, steps]);
 
   const closePanel = requestClosePanel;
-
   const handleNodeClick = useCallback(
     (step, index) => {
       if (step.nodeState === NODE_STATE.LOCKED) {
         setJiggleIndex(index);
         window.setTimeout(() => setJiggleIndex(null), 520);
-      }
-      if (tooltipNodeId === step.id) {
-        setTooltipNodeId(null);
         return;
       }
-      if (step.nodeState === NODE_STATE.ACTIVE) {
-        tapDismissedRef.current = true;
-      }
-      if (panelOpenId === step.id && panelVisible) {
+
+      // Auto-close overlay if open when clicking ANY node
+      if (panelOpenId) {
         requestClosePanel();
+      }
+
+      if (step.nodeState === NODE_STATE.LOCKED) {
+        setJiggleIndex(index);
+        window.setTimeout(() => setJiggleIndex(null), 520);
         return;
       }
-      if (panelOpenId === step.id && !panelVisible) {
-        panelClosePendingRef.current = false;
-        setPanelVisible(true);
-        return;
+
+      // Auto-close overlay if open when clicking ANY node
+      if (panelOpenId) {
+        requestClosePanel();
       }
+
       setTooltipNodeId(step.id);
     },
-    [panelOpenId, panelVisible, requestClosePanel, tooltipNodeId],
+    [panelOpenId, requestClosePanel],
   );
 
   const selectedStep = useMemo(
-    () => (panelOpenId ? steps.find((s) => s.id === panelOpenId) : null),
+    () => (panelOpenId ? steps.find((s) => String(s.id) === String(panelOpenId)) : null),
     [panelOpenId, steps],
   );
 
@@ -1142,10 +1089,10 @@ export default function SkywardJourney({
                       <JourneyTooltip
                         key={step.id}
                         step={step}
-                        onStart={(s) => {
+                        onStart={() => {
                           setTooltipNodeId(null);
-                          if (s.onActivate) s.onActivate();
-                          else setPanelOpenId(s.id);
+                          if (step.onActivate) step.onActivate();
+                          else setPanelOpenId(step.id);
                         }}
                         onClose={() => setTooltipNodeId(null)}
                         nodeRef={{ get current() { return nodeRefs.current[i]; } }}
@@ -1424,8 +1371,7 @@ export default function SkywardJourney({
 
                 {steps.length === 0 && (
                   <div className="skyward-journey-locked-state-container">
-                    <div className="skyward-journey-locked-state">
-                      <img
+                    <div className="skyward-journey-locked-state">                      <img
                         src={safetyBarrierImage}
                         alt=""
                         className="skyward-journey-locked-image"
@@ -1440,42 +1386,61 @@ export default function SkywardJourney({
           </div>
         </div>
 
-        {typeof document !== 'undefined' && selectedStep && selectedMeta
+        {typeof document !== 'undefined' && selectedStep
           ? createPortal(
-            <div className="skyward-journey-panel-root" role="presentation">
-              <button
-                type="button"
-                className={`skyward-journey-backdrop${panelVisible ? ' skyward-journey-backdrop--open' : ''}`}
-                aria-label="Close quest details"
-                onClick={closePanel}
-              />
-              <div
-                ref={drawerRef}
-                className={`skyward-journey-drawer${panelVisible ? ' skyward-journey-drawer--open' : ''}`}
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="skyward-journey-drawer-title"
-                onTransitionEnd={handlePanelTransitionEnd}
-              >
-                <div className="skyward-journey-drawer-handle" aria-hidden />
-                <div className="skyward-journey-drawer-header">
-                  <h2 id="skyward-journey-drawer-title" className="skyward-journey-drawer-title">
-                    Quest details
-                  </h2>
-                  <button
-                    type="button"
-                    className="skyward-journey-drawer-close"
-                    onClick={closePanel}
-                    aria-label="Close"
-                  >
-                    ×
-                  </button>
+              <div className="skyward-journey-panel-root">
+                <div 
+                  className="bigkas-modal-scrim"
+                  onClick={closePanel}
+                  aria-hidden="true"
+                  style={{ '--scrim-z': 1100 }}
+                />
+                
+                <div
+                  ref={drawerRef}
+                  className="skyward-journey-overlay-content"
+                >
+                  <div className="randomizer-overlay-card">
+                    <div className="randomizer-overlay-card-top">
+                      <h2 className="randomizer-overlay-title">Quest details</h2>
+                      <button
+                        type="button"
+                        className="randomizer-overlay-close-btn"
+                        onClick={closePanel}
+                        aria-label="Close"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    
+                    <div className="skyward-journey-overlay-inner-body">
+                      <p className="randomizer-overlay-copy">
+                        <span className="randomizer-overlay-copy-kicker">B-01:</span>
+                        {selectedStep?.task?.detail || selectedStep?.task?.objective || 'Ready to start your next challenge?'}
+                      </p>
+                      
+                      <div className="randomizer-overlay-topic">
+                        <span className="randomizer-overlay-topic-label">Topic:</span>
+                        {' '}
+                        {selectedStep?.title || 'General Speaking'}
+                      </div>
+
+                      <div className="skyward-journey-overlay-task-inject">
+                        {selectedStep && renderStepContent?.(selectedStep, selectedMeta)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="randomizer-overlay-robot-wrap">
+                    <img 
+                      src={getSpriteUrl('Robot/0005.webp')} 
+                      alt="" 
+                      className="randomizer-overlay-robot"
+                      aria-hidden="true"
+                    />
+                  </div>
                 </div>
-                <div className="skyward-journey-drawer-body">
-                  {renderStepContent(selectedStep, selectedMeta)}
-                </div>
-              </div>
-            </div>,
+              </div>,
             document.body,
           )
           : null}

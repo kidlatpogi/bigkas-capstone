@@ -1295,45 +1295,51 @@ function TrainingPage() {
   }, [isRecording, startAnalysis]);
 
   return (
-    <div className={`tp-page${isFreePretestSession ? ' tp-page--free-pretest' : ''}`}>
-      {/* ── Dark Header ── */}
-      <div className={`tp-header${isFreePretestSession ? ' tp-header--free-pretest' : ''}`}>
-        {!isFreePretestSession && <BackButton className="tp-back-btn" onClick={handleBackPress} aria-label="Go Back" />}
-        {!isFreePretestSession && <span className="tp-header-title">{title}</span>}
-        {focus === 'scripted' && !isFreePretestSession ? (
-          <button className="tp-settings-btn" onClick={() => setShowSettings(true)} aria-label="Settings">
-            <SettingsGearIcon />
+    <div className="tp-page tp-page--free-pretest" ref={freeLayoutObserverRef}>
+      {/* ── Standardized Header ── */}
+      <div className="tp-header tp-header--free-pretest">
+        <div className="tp-free-pretest-header-actions">
+          <button
+            type="button"
+            className="tp-free-pretest-back-btn"
+            onClick={handleFreePretestBack}
+            aria-label="Go back"
+          >
+            Back
           </button>
-        ) : isFreePretestSession ? (
-          <div className="tp-free-pretest-header-actions">
+
+          {isFreePretestSession && (
+            <>
+              <button
+                type="button"
+                className="tp-free-pretest-logout-btn"
+                onClick={handleTemporaryLogout}
+                aria-label="Log out"
+              >
+                Logout
+              </button>
+              <button
+                type="button"
+                className="tp-free-pretest-skip-btn"
+                onClick={handleSkipPretestForDev}
+                aria-label="Skip pre-test for development"
+              >
+                Skip Pre-test
+              </button>
+            </>
+          )}
+
+          {focus === 'scripted' && !isFreePretestSession && (
             <button
               type="button"
-              className="tp-free-pretest-back-btn"
-              onClick={handleFreePretestBack}
-              aria-label="Go back"
+              className="tp-free-pretest-logout-btn" // Reuse same style as logout
+              onClick={() => setShowSettings(true)}
+              aria-label="Settings"
             >
-              Back
+              Settings
             </button>
-            <button
-              type="button"
-              className="tp-free-pretest-logout-btn"
-              onClick={handleTemporaryLogout}
-              aria-label="Log out"
-            >
-              Logout
-            </button>
-            <button
-              type="button"
-              className="tp-free-pretest-skip-btn"
-              onClick={handleSkipPretestForDev}
-              aria-label="Skip pre-test for development"
-            >
-              Skip Pre-test
-            </button>
-          </div>
-        ) : (
-          !isFreePretestSession && <div className="tp-header-spacer" />
-        )}
+          )}
+        </div>
       </div>
 
       {/* ── Main Content ── */}
@@ -1343,25 +1349,18 @@ function TrainingPage() {
 
         {/* ── Left / Main Column ── */}
         <div
-          ref={isFreePretestSession ? freeLayoutObserverRef : null}
-          className={`tp-left${isFreePretestSession ? ' tp-left--free-pretest' : ''}`}
+          ref={freeLayoutObserverRef}
+          className="tp-left tp-left--free-pretest"
         >
           {focus === 'free' && (
             <section
               id={isFreePretestSession ? 'tutorial-target-topic' : undefined}
-              className={`tp-topic-card${isFreePretestSession ? ' tp-topic-card--free-pretest' : ''}`}
+              className="tp-topic-card tp-topic-card--free-pretest"
               aria-label="Topic"
             >
-              {isFreePretestSession ? (
-                <p className="tp-topic-title tp-topic-title--inline">
-                  <strong>Topic:</strong> {objectiveText || freeTopic}.
-                </p>
-              ) : (
-                <>
-                  <p className="tp-topic-label">TOPIC</p>
-                  <h2 className="tp-topic-title">{objectiveText || freeTopic}</h2>
-                </>
-              )}
+              <p className="tp-topic-title tp-topic-title--inline">
+                <strong>Topic:</strong> {objectiveText || freeTopic}.
+              </p>
             </section>
           )}
 
@@ -1469,66 +1468,55 @@ function TrainingPage() {
           {/* Controls */}
           <div
             id={isFreePretestSession ? 'tutorial-target-controls' : undefined}
-            className={`tp-controls${isFreePretestSession ? ' tp-controls--free-pretest' : ''}`}
+            className="tp-controls tp-controls--free-pretest"
           >
             {/* Pause / Resume */}
-            <div
-              className={`tp-ctrl-col${isFreePretestSession && isFreeCompactLayout ? ' tp-ctrl-col--mobile-bottom' : ''}`}
-            >
+            <div className="tp-ctrl-col">
               <button
                 className="tp-ctrl-btn"
-                onClick={handlePause}
-                disabled={!isActive}
-                aria-label={isPaused ? 'Resume' : 'Pause'}
+                onClick={status === 'paused' ? handleResume : handlePause}
+                disabled={status === 'idle' || status === 'countdown'}
+                aria-label={status === 'paused' ? 'Resume' : 'Pause'}
               >
-                {isFreePretestSession ? (isPaused ? 'Resume' : 'Pause') : (isPaused ? <PlayIcon /> : <PauseIcon />)}
+                {status === 'paused' ? 'Resume' : 'Pause'}
               </button>
-              <span className={`tp-ctrl-label${isFreePretestSession ? ' tp-ctrl-label--free-pretest' : ''}`}>
-                {isPaused ? 'Resume' : 'Pause'}
+              <span className="tp-ctrl-label tp-ctrl-label--free-pretest">
+                {status === 'paused' ? 'Resume' : 'Pause'}
               </span>
             </div>
 
             {/* Record / Stop */}
-            <div
-              className={`tp-ctrl-col${isFreePretestSession && isFreeCompactLayout ? ' tp-ctrl-col--mobile-main' : ''}`}
-            >
+            <div className="tp-ctrl-col">
               <button
-                className={`tp-record-btn${isActive ? ' tp-record-btn--active' : ''}${status === 'idle' ? ' tp-record-btn--hint tp-record-btn--start' : ''}`}
+                className={`tp-record-btn${isActive ? ' tp-record-btn--active' : ' tp-record-btn--start'}`}
                 onClick={isActive ? stopRecording : startCountdown}
-                aria-label={isActive ? 'Stop and analyse' : 'Start recording'}
-                disabled={isStartBlockedByTutorial}
+                disabled={status === 'countdown' || isStartBlockedByTutorial}
+                aria-label={isActive ? 'Stop' : 'Start'}
               >
                 {isActive ? (
                   <div className="tp-record-inner">
                     <div className="tp-record-dot tp-record-dot--active" />
                   </div>
                 ) : (
-                  <span className="tp-start-text">{isFreePretestSession ? 'Start' : 'START'}</span>
+                  <span className="tp-start-text">Start</span>
                 )}
               </button>
-              {status === 'idle' && (
-                <div className="tp-record-tooltip" role="status" aria-live="polite">
-                  Tap START to begin a 3-second countdown
-                </div>
-              )}
-              <span className={`tp-ctrl-label${isFreePretestSession ? ' tp-ctrl-label--free-pretest' : ''}`}>
+              <span className="tp-ctrl-label tp-ctrl-label--free-pretest">
                 {isActive ? 'Stop' : (status === 'countdown' ? 'Starting...' : 'Start')}
               </span>
             </div>
 
             {/* Restart */}
-            <div
-              className={`tp-ctrl-col${isFreePretestSession && isFreeCompactLayout ? ' tp-ctrl-col--mobile-bottom' : ''}`}
-            >
+            <div className="tp-ctrl-col">
               <button
                 className="tp-ctrl-btn"
                 onClick={() => setShowRestartConfirm(true)}
                 disabled={status === 'idle' || status === 'countdown'}
                 aria-label="Restart"
               >
-                {isFreePretestSession ? 'Restart' : <RestartIcon />}
+                Restart
               </button>
-              <span className={`tp-ctrl-label${isFreePretestSession ? ' tp-ctrl-label--free-pretest' : ''}`}>Restart</span>
+              <span className="tp-ctrl-label tp-ctrl-label--free-pretest">Restart</span>
             </div>
           </div>
         </div>

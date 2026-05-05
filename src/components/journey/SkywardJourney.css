@@ -354,12 +354,12 @@
   z-index: 1;
   padding-inline: 4px;
   padding-top: 56px;
-  padding-bottom: 48px;
+  padding-bottom: 180px;
 }
 
 .skyward-journey-section {
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   gap: 20px;
   width: 100%;
   max-width: 100%;
@@ -429,8 +429,8 @@
   width: 100%;
 }
 
-.skyward-journey-section:first-of-type .skyward-journey-row:first-child .skyward-journey-track {
-  padding-bottom: 120px;
+.skyward-journey-section:first-of-type .skyward-journey-section-rows > .skyward-journey-row:first-child .skyward-journey-track {
+  padding-bottom: 0.5rem !important;
 }
 
 .skyward-journey-node-shell {
@@ -1094,105 +1094,76 @@
   }
 }
 
-/* Drawer + backdrop (scale + fade; visibility — no display:none) */
+/* Overlay + backdrop (scale + fade; visibility — no display:none) */
+/* =========================================================================
+   COMPANION OVERLAY (Quest Details)
+   ========================================================================= */
+
 .skyward-journey-panel-root {
   position: fixed;
   inset: 0;
-  z-index: 10050;
+  z-index: 1300;
   display: flex;
   align-items: center;
-  /* Center vertically on desktop */
   justify-content: center;
-  pointer-events: none;
-}
-
-.skyward-journey-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  border: 0;
-  padding: 0;
-  margin: 0;
-  cursor: pointer;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  touch-action: none;
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1),
-    visibility 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.skyward-journey-backdrop--open {
-  opacity: 1;
-  visibility: visible;
-}
-
-.skyward-journey-drawer {
-  position: relative;
-  z-index: 1;
-  width: min(512px, 92vw);
-  max-width: 32rem;
-  max-height: min(88vh, 720px);
-  margin: 0 auto;
-  padding: 0;
-  background: #ffffff;
-  border-radius: 24px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  opacity: 0;
-  visibility: hidden;
-  transform: scale(0.95) translateY(20px);
-  transform-origin: center;
-  transition:
-    opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1),
-    visibility 0.28s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.skyward-journey-drawer--open {
-  opacity: 1;
-  visibility: visible;
-  transform: scale(1) translateY(0);
   pointer-events: auto;
 }
 
-.skyward-journey-drawer:not(.skyward-journey-drawer--open) {
-  pointer-events: none;
-}
 
-.skyward-journey-drawer-handle {
-  width: 40px;
-  height: 4px;
-  border-radius: 999px;
-  background: #d4d4d8;
-  margin: 10px auto 8px;
-  flex-shrink: 0;
-}
 
-.skyward-journey-drawer-header {
+
+.skyward-journey-overlay-content {
+  position: fixed;
+  left: calc(var(--app-sidebar-width, 280px) + clamp(10px, 3vw, 30px)) !important;
+  bottom: calc(clamp(10px, 3vh, 30px) + env(safe-area-inset-bottom, 0px)) !important;
+  z-index: 1200;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px 16px 12px 16px;
-  border-bottom: 1px solid rgba(11, 57, 84, 0.08);
-  flex-shrink: 0;
+  flex-direction: row;
+  align-items: flex-end;
+  flex-wrap: nowrap;
+  gap: clamp(0.5rem, 2vw, 1.5rem);
+  width: min(100% - clamp(10px, 3vw, 30px), 62rem);
+  pointer-events: auto;
+  transition: all 0.5s ease-in-out;
 }
 
-.skyward-journey-drawer-title {
+.skyward-journey-overlay-card {
+  position: relative;
+  order: 2;
+  width: min(100%, 608px);
+  background: #FDFDF9;
+  border-radius: 1rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+}
+
+/* The Speech Bubble Notch */
+.randomizer-overlay-card::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  bottom: 26px;
+  width: 0;
+  height: 0;
+  border-top: 12px solid transparent;
+  border-bottom: 12px solid transparent;
+  border-right: 12px solid #FDFDF9;
+}
+
+.randomizer-overlay-title {
+  font-family: 'Fredoka', sans-serif;
+  color: #059669;
+  font-weight: bold;
+  font-size: clamp(1rem, 2vw, 1.25rem);
   margin: 0;
-  font-size: 1rem;
-  font-weight: 800;
-  color: #0b3954;
-  font-family: 'Nunito', 'Nunito Sans', sans-serif;
+  line-height: 1.2;
 }
 
-.skyward-journey-drawer-close {
+.randomizer-overlay-close-btn {
   width: 28px;
   height: 28px;
   min-width: 28px;
@@ -1212,48 +1183,121 @@
   flex-shrink: 0;
 }
 
-.skyward-journey-drawer-close:hover {
+.randomizer-overlay-close-btn:hover {
   background: #ef4444;
   color: #ffffff;
   transform: scale(1.03);
 }
 
-.skyward-journey-drawer-close:active {
-  transform: scale(0.97);
-}
-
-.skyward-journey-drawer-body {
-  overflow-y: auto;
-  padding: 16px 4px 8px;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-}
-
-.skyward-journey-drawer-body .activity-task-card {
-  width: 100%;
-  max-width: none;
+.randomizer-overlay-copy {
+  font-family: 'Nunito', sans-serif;
+  color: #1E293B;
+  font-size: clamp(0.875rem, 1.5vw, 1rem);
   margin: 0;
-  box-shadow: none !important;
+  line-height: 1.5;
 }
 
-.skyward-journey-drawer-body .activity-task-card:hover {
-  box-shadow: none !important;
+.randomizer-overlay-copy-kicker {
+  color: #059669;
+  font-weight: 800;
+  display: block;
+  margin-bottom: 2px;
 }
 
-@media (min-width: 900px) {
-  .skyward-journey-panel-root {
+.randomizer-overlay-topic {
+  font-family: 'Nunito', sans-serif;
+  font-size: clamp(1.12rem, 1rem + 0.26vw, 1.26rem);
+  line-height: 1.35;
+  color: #1f2937;
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(11, 57, 84, 0.08);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.randomizer-overlay-topic-label {
+  color: #f18f01;
+  font-weight: 800;
+}
+
+.randomizer-overlay-robot-wrap {
+  position: relative;
+  order: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.randomizer-overlay-robot {
+  width: clamp(260px, 24vw, 360px);
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 14px 24px rgba(2, 6, 23, 0.24));
+}
+
+/* Seamless integration for nested task cards in modal */
+.skyward-journey-overlay-task-inject {
+  margin-top: 0.5rem;
+}
+
+.skyward-journey-overlay-task-inject .activity-task-card {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+}
+
+.skyward-journey-overlay-task-inject .activity-task-top,
+.skyward-journey-overlay-task-inject .activity-task-detail:not(.weights) {
+  display: none !important;
+}
+
+/* activity-action-btn is now globally standardized in ActivityPage.css */
+
+@media (max-width: 1100px) {
+  .skyward-journey-overlay-content {
+    left: clamp(10px, 3vw, 30px) !important;
+    width: calc(100% - clamp(20px, 6vw, 60px)) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .skyward-journey-overlay-content {
+    flex-direction: column;
     align-items: center;
-    padding: 24px;
+    bottom: 20px !important;
+    left: 10px !important;
+    right: 10px !important;
+    width: auto !important;
+    gap: 0;
   }
-
-  .skyward-journey-drawer {
-    border-radius: 24px;
-    max-height: min(85vh, 640px);
-    transform-origin: 50% 50%;
+  
+  .randomizer-overlay-card {
+    order: 1;
+    width: 100%;
+    margin-bottom: -40px;
   }
-
-  .skyward-journey-drawer-handle {
-    display: none;
+  
+  .randomizer-overlay-card::before {
+    left: 50%;
+    bottom: -12px;
+    transform: translateX(-50%);
+    border-right: 12px solid transparent;
+    border-left: 12px solid transparent;
+    border-top: 12px solid #FDFDF9;
+    border-bottom: 0;
+  }
+  
+  .randomizer-overlay-robot-wrap {
+    order: 2;
+  }
+  
+  .randomizer-overlay-robot {
+    width: 200px;
   }
 }
 

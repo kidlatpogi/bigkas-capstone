@@ -12,11 +12,11 @@
 }
 
 .settings-profile-page.av-page-new .settings-profile-container {
-    padding: 80px 24px 80px 24px; /* Maintain margin to avoid header overlap */
+    padding: 1.5rem 24px 80px 24px;
     margin: 0 auto;
     box-sizing: border-box;
     width: 100%;
-    max-width: 900px; /* Reduced for a more compact, focused look */
+    max-width: 1000px; /* Increased to accommodate side-by-side layout */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -60,7 +60,8 @@
 }
 
 .av-toggle-btn {
-    width: 280px;
+    width: 100%;
+    max-width: 320px;
 }
 
 .history-back-to-list-btn:hover,
@@ -101,15 +102,29 @@
 }
 
 
-.av-page-new .settings-main-card {
-    padding: clamp(1.25rem, 3vw, 2rem); /* Compact padding */
+.av-page-new .settings-content-wrapper {
+    background: #fff !important;
+    border: 1px solid rgba(11, 57, 84, 0.08) !important;
     border-radius: 32px !important;
+    box-shadow: 0 20px 50px rgba(11, 57, 84, 0.05) !important;
+    overflow: hidden;
+}
+
+.av-page-new .settings-main-card {
+    padding: clamp(1.25rem, 3vw, 2rem);
     width: 100%;
-    box-shadow: 0 20px 50px rgba(11, 57, 84, 0.05);
+    background: transparent;
+}
+
+.av-page-new .settings-form {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 3rem;
+    align-items: start;
 }
 
 .av-page-new .settings-divider {
-    margin: 24px 0 !important;
+    display: none !important;
 }
 
 .av-page-new .settings-form-section {
@@ -225,10 +240,26 @@
 }
 
 /* Responsive Tweaks */
+@media (max-width: 992px) {
+    .av-page-new .settings-form {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .av-page-new .settings-divider {
+        display: block !important;
+        margin: 1.5rem 0 !important;
+    }
+}
+
 @media (max-width: 768px) {
+    .av-page-new .settings-content-wrapper {
+        border-radius: 24px !important;
+        padding: 0;
+    }
+    
     .av-page-new .settings-main-card {
         padding: 1.5rem;
-        border-radius: 24px !important;
     }
     
     .section-header-flex {

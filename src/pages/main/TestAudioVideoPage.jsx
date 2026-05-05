@@ -209,6 +209,11 @@ export default function TestAudioVideoPage() {
     };
   }, []);
 
+  const camStatus = cameraPermission === null ? 'warn' : cameraPermission && cameraReady ? 'ok' : 'err';
+  const camStatusText = cameraPermission === null ? 'Requesting camera...' : cameraPermission ? (cameraReady ? 'Camera active' : 'Initializing...') : 'Permission denied';
+  const micStatusColor = audioPermission === false ? 'err' : isMicTesting ? 'ok' : 'warn';
+  const micStatusText = audioPermission === false ? 'Mic denied' : isMicTesting ? 'Listening...' : 'Ready to test';
+
   useEffect(() => {
     if (camStatus === 'ok' && isMicOk && !successTriggeredRef.current) {
       successTriggeredRef.current = true;
@@ -217,11 +222,6 @@ export default function TestAudioVideoPage() {
       return () => clearTimeout(timer);
     }
   }, [camStatus, isMicOk]);
-
-  const camStatus = cameraPermission === null ? 'warn' : cameraPermission && cameraReady ? 'ok' : 'err';
-  const camStatusText = cameraPermission === null ? 'Requesting camera...' : cameraPermission ? (cameraReady ? 'Camera active' : 'Initializing...') : 'Permission denied';
-  const micStatusColor = audioPermission === false ? 'err' : isMicTesting ? 'ok' : 'warn';
-  const micStatusText = audioPermission === false ? 'Mic denied' : isMicTesting ? 'Listening...' : 'Ready to test';
 
   return (
     <div className="settings-profile-page dashboard-page-new av-page-new">

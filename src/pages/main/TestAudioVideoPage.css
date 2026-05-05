@@ -364,6 +364,10 @@
     padding: 20px;
 }
 
+.av-success-overlay .tutorial-dark-bg {
+    z-index: 1;
+}
+
 .tutorial-companion-container.is-success-modal {
     position: relative;
     left: auto;
@@ -373,7 +377,7 @@
     align-items: flex-end;
     gap: 1.5rem;
     max-width: 600px;
-    z-index: 10;
+    z-index: 2;
     animation: avSuccessPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 

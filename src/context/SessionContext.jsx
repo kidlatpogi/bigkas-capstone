@@ -753,7 +753,7 @@ export function SessionProvider({ children }) {
         postAttempts += 1;
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout for initial POST
+          const timeoutId = setTimeout(() => controller.abort(), 180000); // 180s timeout for initial POST (Cold Starts)
 
           const res = await fetch(`${apiUrl}/api/analyze-speech`, {
             method: 'POST',

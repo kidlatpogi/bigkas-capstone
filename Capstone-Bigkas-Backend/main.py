@@ -43,6 +43,8 @@ analysis_jobs: Dict[str, Any] = {}
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+print("[System] Bigkas Backend initialization complete.")
+
 app = FastAPI(
     title="Bigkas Triple V Backend",
     description="Visual + Vocal + Verbal analysis service",
@@ -698,6 +700,7 @@ async def analyze_speech(
     session_origin: str = Form("training"),
     speaking_mode: str = Form(""),
 ) -> Dict[str, Any]:
+    print(f"\n[POST] /api/analyze-speech request RECEIVED for User: {user_id}")
     # Generate unique ID for this long-running task
     import uuid
     job_id = str(uuid.uuid4())

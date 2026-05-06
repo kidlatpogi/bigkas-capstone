@@ -366,7 +366,7 @@ function LoginPage({ managePageClass = true }) {
                 <img src={getSpriteUrl('Robot/0001.webp')} alt="AI Companion" className="auth-robot-img" />
               </motion.div>
               <motion.h2 variants={itemVariants} className="auth-hero-tagline">
-                Master the Art <br />of <span>Speaking</span>
+                Master <span>Public Speaking</span>
               </motion.h2>
               <motion.p variants={itemVariants} className="auth-hero-desc">
                 Your AI-powered journey to public speaking excellence starts here.

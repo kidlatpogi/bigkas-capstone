@@ -28,7 +28,10 @@ body.login-page-active {
   justify-content: center;
   overflow-x: hidden;
   font-family: 'Nunito', sans-serif;
-  padding: 20px;
+  padding: clamp(16px, 4vw, 40px);
+  padding-top: calc(clamp(16px, 4vw, 40px) + env(safe-area-inset-top));
+  padding-bottom: calc(clamp(16px, 4vw, 40px) + env(safe-area-inset-bottom));
+  box-sizing: border-box;
 }
 
 .auth-bg-wrapper {
@@ -57,7 +60,7 @@ body.login-page-active {
 /* Visual Side */
 .auth-visual-side {
   background: linear-gradient(180deg, #34D399 0%, #059669 100%);
-  padding: 60px;
+  padding: clamp(30px, 6vw, 60px);
   position: relative;
   overflow: hidden;
   display: flex;
@@ -174,7 +177,7 @@ body.login-page-active {
 
 /* Form Side */
 .auth-form-side {
-  padding: 60px;
+  padding: clamp(30px, 6vw, 60px);
   background: #ffffff;
   display: flex;
   flex-direction: column;
@@ -189,7 +192,7 @@ body.login-page-active {
 
 .auth-form-headline {
   font-family: 'Fredoka', sans-serif;
-  font-size: 1.75rem;
+  font-size: clamp(1.5rem, 4vw, 1.75rem);
   font-weight: 600;
   color: var(--text-main);
   margin-bottom: 8px;

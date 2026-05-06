@@ -621,7 +621,10 @@ function TrainingPage() {
     const sensitivity = getMicSensitivityProfile();
 
     const tick = () => {
-      if (!analyserRef.current) return;
+      if (!analyserRef.current || !audioCtxRef.current) return;
+      if (audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume().catch(() => {});
+      }
       const data = new Uint8Array(analyserRef.current.fftSize);
       analyserRef.current.getByteTimeDomainData(data);
 
@@ -683,6 +686,7 @@ function TrainingPage() {
       animRef.current = requestAnimationFrame(tick);
     };
 
+    if (animRef.current) cancelAnimationFrame(animRef.current);
     tick();
   }, []);
 
@@ -736,11 +740,13 @@ function TrainingPage() {
         }
         const ctx = new AudioCtx();
         audioCtxRef.current = ctx;
+        if (ctx.state === 'suspended') {
+          ctx.resume().catch(() => { });
+        }
         
         const audioTracks = stream.getAudioTracks();
         if (audioTracks.length > 0) {
-          const audioOnlyStream = new MediaStream(audioTracks);
-          const src = ctx.createMediaStreamSource(audioOnlyStream);
+          const src = ctx.createMediaStreamSource(stream);
           const analyser = ctx.createAnalyser();
           analyser.fftSize = 512;
           analyser.smoothingTimeConstant = 0.7;

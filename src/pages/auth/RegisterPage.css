@@ -70,8 +70,9 @@ body.register-page-active {
   border-radius: 32px;
   overflow: hidden;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  max-height: min(850px, 92dvh);
   width: 100%;
+  max-height: 94dvh;
+  margin: auto;
 }
 
 .auth-visual-side {
@@ -216,18 +217,20 @@ body.register-page-active {
 
 /* Form Side */
 .auth-form-side {
-  padding: clamp(24px, 5vw, 40px);
+  padding: clamp(16px, 3.5vw, 40px);
   background: #ffffff;
   display: flex;
   flex-direction: column;
   justify-content: center;
   overflow-y: auto;
+  min-height: 0;
 }
 
 .auth-form-inner {
   width: 100%;
   max-width: 360px;
-  margin: 0 auto;
+  margin: auto;
+  padding: 10px 0;
 }
 
 .auth-form-headline {
@@ -247,7 +250,7 @@ body.register-page-active {
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: clamp(8px, 1.5vh, 16px);
 }
 
 .form-row-v2 {
@@ -473,13 +476,25 @@ body.register-page-active {
   }
 }
 
-@media (max-height: 680px) {
+@media (max-height: 720px) {
   .auth-visual-side {
-    padding: 24px;
-    gap: 12px;
+    padding: 20px;
+    gap: 10px;
   }
   
   .auth-robot-img-wrap {
-    max-height: 30vh;
+    max-height: 25vh;
+  }
+
+  .auth-form-headline {
+    margin-bottom: 4px;
+  }
+
+  .auth-form-subline {
+    margin-bottom: 12px;
+  }
+
+  .form-group-v2 {
+    gap: 4px;
   }
 }

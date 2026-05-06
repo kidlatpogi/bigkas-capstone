@@ -72,8 +72,9 @@ body.login-page-active {
   border-radius: 32px;
   overflow: hidden;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  max-height: min(850px, 90dvh);
   width: 100%;
+  max-height: 92dvh;
+  margin: auto;
 }
 
 /* Visual Side */
@@ -256,18 +257,20 @@ body.login-page-active {
 
 /* Form Side */
 .auth-form-side {
-  padding: clamp(24px, 5vw, 60px);
+  padding: clamp(20px, 4vw, 50px);
   background: #ffffff;
   display: flex;
   flex-direction: column;
   justify-content: center;
   overflow-y: auto;
+  min-height: 0;
 }
 
 .auth-form-inner {
   width: 100%;
   max-width: 340px;
-  margin: 0 auto;
+  margin: auto;
+  padding: 10px 0;
 }
 
 .auth-form-headline {

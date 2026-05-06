@@ -391,55 +391,6 @@ def _log_supabase_error(table: str, payload: Any, exc: Exception) -> None:
         )
 
 
-def analyze_with_cloudflare(audio_bytes: bytes, topic: str) -> Dict[str, Any]:
-    """
-    Offloads transcription and verbal analysis to Cloudflare Workers AI.
-    Whisper (Speech-to-Text) + Llama-3 (Reasoning)
-    """
-    safe_topic = (topic or "").strip() or "General Public Speaking"
-    
-    try:
-        # 1. Call Cloudflare Worker /transcribe endpoint
-        response = requests.post(
-            f"{B01_WORKER_URL}/transcribe",
-            params={"topic": safe_topic},
-            data=audio_bytes,
-            headers={"Content-Type": "audio/wav"},
-            timeout=30
-        )
-        
-        if response.status_code != 200:
-            raise Exception(f"Cloudflare Worker error: {response.text}")
-            
-        data = response.json()
-        
-        transcript = data.get("transcript", "")
-        filler_count = int(data.get("filler_count", 0))
-        relevance_score = float(data.get("relevance_score", 3.0))
-        recommendations = data.get("recommendations", [])
-
-        return {
-            "transcript_exact": transcript,
-            "verbal_metrics": {
-                "context_score": _coerce_context_score(relevance_score),
-                "filler_words_count": max(0, filler_count),
-            },
-            "feedback_summary": "; ".join(recommendations) if recommendations else "Verbal analysis complete.",
-            "recommendations": recommendations,
-        }
-
-    except Exception as exc:
-        logger.error(f"Cloudflare Analysis failed: {exc}")
-        # Return a safe fallback
-        return {
-            "transcript_exact": "[Transcription Error]",
-            "verbal_metrics": {
-                "context_score": 1.0,
-                "filler_words_count": 0,
-            },
-            "feedback_summary": "Could not complete verbal analysis.",
-            "recommendations": ["Try recording again", "Check connection"],
-        }
 
 
 def persist_to_supabase(

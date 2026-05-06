@@ -709,6 +709,11 @@ function TrainingPage() {
         },
       };
 
+      /* Stop previous tracks if re-initializing */
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop());
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       if (!isMountedRef.current) {
         stream.getTracks().forEach(t => t.stop());
@@ -718,6 +723,7 @@ function TrainingPage() {
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.play().catch(e => console.warn('[TrainingPage] Preview play failed:', e));
       }
 
       /* Audio analyser setup (for preview waveform) */
@@ -746,10 +752,19 @@ function TrainingPage() {
       if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
         setStatus('permission-denied');
       } else {
-        setErrorMsg('Microphone or Camera access failed. Please check permissions.');
+        setErrorMsg(`Camera/Mic Error: ${err.message || 'Check permissions'}`);
       }
     }
   }, [startWaveformLoop]);
+
+  /* Ensure video element is synced with stream when it appears in DOM */
+  useEffect(() => {
+    if (videoRef.current && streamRef.current && videoRef.current.srcObject !== streamRef.current) {
+      console.log('[TrainingPage] Re-syncing stream to video element');
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch(e => console.warn('[TrainingPage] Sync play failed:', e));
+    }
+  });
 
   /* Start preview on mount or when returning from error/idle */
   useEffect(() => {

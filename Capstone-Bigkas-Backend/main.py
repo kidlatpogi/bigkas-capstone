@@ -35,11 +35,13 @@ def _parse_origins(raw_origins: str) -> List[str]:
     return origins or DEFAULT_CORS_ORIGINS
 
 
-print("[System] Bigkas Backend is initializing...")
-
 # In-memory store for background analysis jobs
 # In a production environment with multiple workers, use Redis/Postgres.
 analysis_jobs: Dict[str, Any] = {}
+
+# Define logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Bigkas Triple V Backend",

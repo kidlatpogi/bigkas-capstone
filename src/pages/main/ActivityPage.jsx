@@ -122,7 +122,6 @@ const FREE_SPEECH_TUTORIAL_STEPS = [
   },
 ];
 
-const RANDOMIZER_DEFAULT_TOPIC = 'How does artificial intelligence impact our everyday lives?';
 
 function getLocalDateKey(date = new Date()) {
   const year = date.getFullYear();
@@ -258,10 +257,7 @@ function ActivityPage() {
   ]);
   const chatScrollRef = useRef(null);
 
-  const [randomizerTopic, setRandomizerTopic] = useState(() => {
-    const defaultTopic = RANDOM_TOPICS.find((entry) => entry.title === RANDOMIZER_DEFAULT_TOPIC);
-    return defaultTopic || { title: RANDOMIZER_DEFAULT_TOPIC, body: '' };
-  });
+  const [randomizerTopic, setRandomizerTopic] = useState(null);
   const [bannerMessage, setBannerMessage] = useState("You're on a roll. Keep doing your activities and improve your speaking.");
   const [isBannerLoading, setIsBannerLoading] = useState(false);
   const [isRandomizingTopic, setIsRandomizingTopic] = useState(false);
@@ -1126,7 +1122,9 @@ function ActivityPage() {
               <p className="randomizer-overlay-topic">
                 <span className="randomizer-overlay-topic-label">Topic:</span>
                 {' '}
-                {isRandomizingTopic ? 'Thinking of a topic...' : (randomizerTopic?.title || RANDOMIZER_DEFAULT_TOPIC)}
+                {isRandomizingTopic 
+                  ? 'Thinking of a topic...' 
+                  : (randomizerTopic?.title || "Click 'Randomize Topic' below to get started!")}
               </p>
               <div className="randomizer-overlay-actions">
                 <Button
@@ -1141,6 +1139,7 @@ function ActivityPage() {
                   variant="practice"
                   className="randomizer-overlay-start-btn"
                   onClick={handleStartRandomizerTopic}
+                  disabled={!randomizerTopic?.title || isRandomizingTopic}
                 >
                   Start
                 </Button>

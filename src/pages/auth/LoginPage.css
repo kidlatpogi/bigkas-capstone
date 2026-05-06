@@ -333,7 +333,7 @@ body.login-page-active {
   width: 100%;
   height: 52px;
   padding: 0 20px;
-  border-radius: 14px;
+  border-radius: 16px;
   border: 1.5px solid #e5e7eb;
   background: #f9fafb;
   font-size: 1rem;
@@ -366,7 +366,7 @@ body.login-page-active {
   font-family: 'Fredoka', sans-serif !important;
   font-size: 1.05rem !important;
   height: 56px !important;
-  border-radius: 16px !important;
+  border-radius: 999px !important;
 }
 
 .divider-v2 {
@@ -396,7 +396,7 @@ body.login-page-active {
   gap: 12px;
   background: #ffffff;
   border: 1.5px solid #e5e7eb;
-  border-radius: 14px;
+  border-radius: 999px;
   font-family: 'Fredoka', sans-serif;
   font-weight: 500;
   color: #374151;

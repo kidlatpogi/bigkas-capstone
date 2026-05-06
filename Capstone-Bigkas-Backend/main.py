@@ -46,12 +46,17 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Root/Health check for Hugging Face
 @app.get("/")
 @app.get("/health")
 async def health_check():
-    print("[Health] Ping received.")
-    return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
+    print("[Health Check] Received ping from Hugging Face.")
+    return {"status": "ok"}
+
+@app.middleware("http")
+async def log_requests(request, call_next):
+    print(f"[Request] {request.method} {request.url.path}")
+    response = await call_next(request)
+    return response
 
 app.add_middleware(
     CORSMiddleware,
@@ -759,9 +764,5 @@ async def analyze_speech(
     }
 
 
-if __name__ == "__main__":
-    import uvicorn
-    # Hugging Face Spaces expects port 7860
-    port = int(os.getenv("PORT", "7860"))
-    print(f"Starting server on port {port}...")
-    uvicorn.run("main:app", host="0.0.0.0", port=port)
+# Start-up log
+print("[System] main.py loaded. Waiting for uvicorn...")

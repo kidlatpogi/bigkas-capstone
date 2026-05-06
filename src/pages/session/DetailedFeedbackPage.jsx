@@ -480,7 +480,6 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
   }
 
   const pillarIcons = { visual: visualSprite, vocal: vocalSprite, verbal: verbalSprite };
-  const scrollToAvoid = () => avoidSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
 
   return (
     <div className={`df-page ${isInnerView ? 'df-page--inner' : ''} activity-page--skyward-entrance`}>

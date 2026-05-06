@@ -55,18 +55,28 @@ body.login-page-active {
   overflow: hidden;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.3);
+  max-height: min(850px, 90dvh);
+  width: 100%;
 }
 
 /* Visual Side */
 .auth-visual-side {
   background: linear-gradient(180deg, #34D399 0%, #059669 100%);
-  padding: clamp(30px, 6vw, 60px);
+  padding: clamp(24px, 5vw, 60px);
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   justify-content: center;
   color: #ffffff;
+  /* Hide scrollbar for visual side while maintaining functionality */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.auth-visual-side::-webkit-scrollbar {
+  display: none;
 }
 
 .auth-visual-side::before,
@@ -177,11 +187,12 @@ body.login-page-active {
 
 /* Form Side */
 .auth-form-side {
-  padding: clamp(30px, 6vw, 60px);
+  padding: clamp(24px, 5vw, 60px);
   background: #ffffff;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  overflow-y: auto;
 }
 
 .auth-form-inner {

@@ -352,8 +352,8 @@ function LoginPage({ managePageClass = true }) {
                 Bigkas
               </motion.div>
               <motion.div 
-                variants={itemVariants}
                 className="auth-robot-img-wrap"
+                initial={{ opacity: 1, y: 0 }}
                 animate={{ 
                   y: [0, -15, 0],
                 }}

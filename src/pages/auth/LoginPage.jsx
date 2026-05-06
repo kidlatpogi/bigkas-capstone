@@ -6,7 +6,6 @@ import { ROUTES } from '../../utils/constants';
 import PasswordToggle from '../../components/common/PasswordToggle';
 import googleLogo from '../../assets/logos/Google-Logo.png';
 import { motion, AnimatePresence } from 'framer-motion';
-import Grainient from './Grainient';
 import PushButton from '../../components/common/PushButton';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import './LoginPage.css';
@@ -343,18 +342,7 @@ function LoginPage({ managePageClass = true }) {
       data-layout={layoutMode}
     >
       {/* Immersive Background */}
-      <div className="auth-bg-wrapper">
-        <Grainient
-          color1="#fdfdf9" // Brand Cream base
-          color2="#ecfdf5" // Very Light Emerald
-          color3="#d1fae5" // Light Emerald
-          timeSpeed={0.12}
-          noiseScale={1.2}
-          warpStrength={0.5}
-          contrast={1.1}
-          brightness={1.05}
-        />
-      </div>
+      <div className="auth-bg-wrapper" />
 
       <div className="auth-container">
         <motion.div

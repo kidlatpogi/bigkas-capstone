@@ -191,8 +191,9 @@ def extract_vocal_metrics(audio_bytes: bytes, _filename: str) -> Tuple[Dict[str,
     f0, _, _ = librosa.pyin(
         y,
         fmin=float(librosa.note_to_hz("C2")),
-        fmax=float(librosa.note_to_hz("C7")),
+        fmax=float(librosa.note_to_hz("C5")), # Narrowed from C7 to C5 for speech
         sr=sr,
+        hop_length=1024, # Increased from 512 for speed
     )
     voiced_f0 = f0[np.isfinite(f0)]
 
@@ -586,7 +587,7 @@ async def get_analysis_status(job_id: str):
     if job["status"] == "error":
         return {"status": "error", "error": job.get("error")}
     
-    return {"status": "completed", "data": job["result"]}
+    return {"status": "completed", "data": job["data"]}
 
 async def run_analysis_task(
     job_id: str,
@@ -600,11 +601,16 @@ async def run_analysis_task(
 ):
     try:
         # 1. EXTRACT METRICS
+        print(f"[Job] {job_id} - Step 1/4: Extracting vocal metrics...")
+        analysis_jobs[job_id]["progress"] = 15
         vocal_metrics, duration_seconds = await asyncio.to_thread(
             extract_vocal_metrics, audio_bytes, "recording.wav"
         )
+        print(f"[Job] {job_id} - Vocal metrics extracted ({duration_seconds}s).")
         
         # 2. COMPRESS AUDIO (MP3)
+        print(f"[Job] {job_id} - Step 2/4: Compressing audio for AI...")
+        analysis_jobs[job_id]["progress"] = 30
         def _compress_audio():
             import subprocess
             cmd = ['ffmpeg', '-y', '-i', 'pipe:0', '-acodec', 'libmp3lame', '-ab', '32k', '-ac', '1', '-ar', '16000', '-f', 'mp3', 'pipe:1']
@@ -612,10 +618,17 @@ async def run_analysis_task(
             stdout, _ = p.communicate(input=audio_bytes)
             return stdout
         clean_audio_bytes = await asyncio.to_thread(_compress_audio)
+        print(f"[Job] {job_id} - Audio compressed ({len(clean_audio_bytes)} bytes).")
 
-        # 3. CLOUDFLARE (Up to 5 min can take a while)
+        # 3. CLOUDFLARE (Whisper + Llama)
+        print(f"[Job] {job_id} - Step 3/4: Calling Cloudflare AI (Whisper/Llama)...")
+        analysis_jobs[job_id]["progress"] = 50
         verbal_payload = await analyze_with_cloudflare(clean_audio_bytes, topic)
+        print(f"[Job] {job_id} - Cloudflare analysis complete.")
 
+        # 4. PERSIST TO SUPABASE
+        print(f"[Job] {job_id} - Step 4/4: Persisting results to Supabase...")
+        analysis_jobs[job_id]["progress"] = 80
         combined_analysis = {
             "visual": visual_payload,
             "vocal": vocal_metrics,
@@ -625,7 +638,6 @@ async def run_analysis_task(
             "recommendations": verbal_payload.get("recommendations", []),
         }
 
-        # 4. PERSIST
         persistence = await asyncio.to_thread(
             persist_to_supabase,
             user_id=user_id,
@@ -634,6 +646,7 @@ async def run_analysis_task(
             session_origin=session_origin,
             speaking_mode=speaking_mode,
         )
+        print(f"[Job] {job_id} - Persisted successfully.")
 
         # 5. FORMAT CLIENT RESPONSE
         diagnostic = persistence["diagnostic"]

@@ -781,10 +781,15 @@ export function SessionProvider({ children }) {
           const sData = await sRes.json();
           
           if (onProgress) {
-            // Smooth progress calculation
-            const baseProgress = 30;
-            const crawl = attempts <= 10 ? attempts * 2 : 20 + (attempts * 0.4);
-            onProgress(Math.min(99, baseProgress + crawl));
+            // Priority 1: Use actual internal progress from backend if available
+            if (typeof sData.progress === 'number') {
+              onProgress(Math.min(99, sData.progress));
+            } else {
+              // Priority 2: Smooth crawl fallback
+              const baseProgress = 30;
+              const crawl = attempts <= 10 ? attempts * 2 : 20 + (attempts * 0.4);
+              onProgress(Math.min(99, baseProgress + crawl));
+            }
           }
 
           if (sData.status === 'completed') {

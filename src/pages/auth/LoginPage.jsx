@@ -469,10 +469,7 @@ function LoginPage({ managePageClass = true }) {
                 </motion.div>
 
                 <motion.div variants={itemVariants} className="form-group-v2">
-                  <div className="label-row">
-                    <label htmlFor="password">Password</label>
-                    <Link to={ROUTES.FORGOT_PASSWORD} className="forgot-pw-link">Forgot?</Link>
-                  </div>
+                  <label htmlFor="password">Password</label>
                   <div className="input-field-wrap">
                     <input
                       type={showPassword ? 'text' : 'password'}
@@ -491,6 +488,9 @@ function LoginPage({ managePageClass = true }) {
                       label="password"
                       disabled={isLoading || lockoutSeconds > 0}
                     />
+                  </div>
+                  <div className="form-footer-row">
+                    <Link to={ROUTES.FORGOT_PASSWORD} className="forgot-pw-link">Forgot Password?</Link>
                   </div>
                   {errors.password && <span className="field-error">{errors.password}</span>}
                 </motion.div>

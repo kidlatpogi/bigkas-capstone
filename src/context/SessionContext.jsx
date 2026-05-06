@@ -870,18 +870,32 @@ export function SessionProvider({ children }) {
       // 6. Wait for background media upload to finish before final update
       const { audioStorageUrl, videoStorageUrl } = await backgroundPersistence;
 
-      // 7. Update the session with media URLs and metadata
+      // 7. Update the session metadata and media URLs
       const backendSessionId = analysisResult.session_id || analysisResult.id;
       if (backendSessionId) {
-        await supabase
+        console.log('[SessionContext] Finalizing session metadata and media links...');
+        
+        // A. Update session metadata
+        const { error: sessErr } = await supabase
           .from('sessions')
           .update({
             session_origin: normalizeSessionOriginForPersistence(scriptType) || 'training',
             speaking_mode: String(speakingMode || '').trim() || null,
+          })
+          .eq('id', backendSessionId);
+        
+        if (sessErr) console.warn('[SessionContext] Session metadata update failed:', sessErr.message);
+
+        // B. Update media URLs in session_media table
+        const { error: mediaErr } = await supabase
+          .from('session_media')
+          .update({
             audio_url: audioStorageUrl,
             video_storage_url: videoStorageUrl,
           })
-          .eq('id', backendSessionId);
+          .eq('session_id', backendSessionId);
+          
+        if (mediaErr) console.warn('[SessionContext] Session media link update failed:', mediaErr.message);
       }
 
       return {

@@ -109,17 +109,28 @@ function buildSessionTitleOrTopic(session) {
   ];
 
   const firstMatch = candidates.find((value) => typeof value === 'string' && value.trim());
-  if (firstMatch) return firstMatch.trim();
+  let result = '';
 
-  const transcript = sanitizeTranscriptForDisplay(session?.transcript, '');
-  if (transcript) {
-    return transcript.length > 64 ? `${transcript.slice(0, 61)}...` : transcript;
+  if (firstMatch) {
+    result = firstMatch.trim();
+  } else {
+    const transcript = sanitizeTranscriptForDisplay(session?.transcript, '');
+    if (transcript) {
+      result = transcript;
+    } else {
+      const mode = getSessionMode(session);
+      if (mode === 'Pre-Test') result = 'Pre-Test Session';
+      else if (mode === 'Practice') result = 'Practice Session';
+      else result = 'Training Session';
+    }
   }
 
-  const mode = getSessionMode(session);
-  if (mode === 'Pre-Test') return 'Pre-Test Session';
-  if (mode === 'Practice') return 'Practice Session';
-  return 'Training Session';
+  // Truncate to first 3 words as requested
+  const words = result.split(/\s+/);
+  if (words.length > 3) {
+    return words.slice(0, 3).join(' ') + '...';
+  }
+  return result;
 }
 
 function getResponsiveHistoryPageSize(viewportHeight = 0) {

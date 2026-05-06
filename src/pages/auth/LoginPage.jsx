@@ -363,7 +363,31 @@ function LoginPage({ managePageClass = true }) {
                   ease: "easeInOut"
                 }}
               >
+                <div className="auth-robot-glow" />
                 <img src={getSpriteUrl('Robot/0001.webp')} alt="AI Companion" className="auth-robot-img" />
+                
+                {/* Floating Insight Chips */}
+                <motion.div 
+                  className="insight-chip chip-1"
+                  animate={{ y: [0, 10, 0], x: [0, 5, 0] }}
+                  transition={{ duration: 5, repeat: Infinity }}
+                >
+                  Vocal Variety
+                </motion.div>
+                <motion.div 
+                  className="insight-chip chip-2"
+                  animate={{ y: [0, -12, 0], x: [0, -8, 0] }}
+                  transition={{ duration: 6, repeat: Infinity }}
+                >
+                  Eye Contact
+                </motion.div>
+                <motion.div 
+                  className="insight-chip chip-3"
+                  animate={{ y: [0, 8, 0], x: [0, 10, 0] }}
+                  transition={{ duration: 7, repeat: Infinity }}
+                >
+                  Confidence
+                </motion.div>
               </motion.div>
               <motion.h2 variants={itemVariants} className="auth-hero-tagline">
                 Master <span>Public Speaking</span>

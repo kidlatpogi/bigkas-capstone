@@ -56,6 +56,14 @@ const ACTIVITY_CELEBRATION_STORAGE_KEY = 'bigkas_pending_activity_celebration_v1
 const LAST_SHOWN_COMPLETION_EVENT_KEY = 'bigkas_last_completion_event_v1';
 const FREE_SPEECH_TUTORIAL_SEEN_KEY = 'bigkas_free_speech_tutorial_seen_v1';
 
+const B01_SUGGESTIONS = [
+  "Summarize my progress so far",
+  "How can I improve my confidence?",
+  "Give me tips for vocal variety",
+  "Explain my current rank and growth",
+  "What should I practice next?"
+];
+
 const FREE_SPEECH_TUTORIAL_STEPS = [
   {
     id: 'step-intro',
@@ -242,6 +250,12 @@ function ActivityPage() {
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
   const [isAskB01ModalOpen, setIsAskB01ModalOpen] = useState(false);
   const [askB01Query, setAskB01Query] = useState('');
+  const [isB01Typing, setIsB01Typing] = useState(false);
+  const [chatMessages, setChatMessages] = useState([
+    { role: 'assistant', content: "Hello! I'm B-01, your AI speaking coach. What would you like to know about public speaking or your progress today?", id: 'initial-greeting' }
+  ]);
+  const chatScrollRef = useRef(null);
+
   const [randomizerTopic, setRandomizerTopic] = useState(() => {
     const defaultTopic = RANDOM_TOPICS.find((entry) => entry.title === RANDOMIZER_DEFAULT_TOPIC);
     return defaultTopic || { title: RANDOMIZER_DEFAULT_TOPIC, body: '' };
@@ -344,6 +358,99 @@ function ActivityPage() {
   }, [sessions, activityHistory]);
 
   const streakStats = useMemo(() => buildStreakStats(sessions, activityHistory), [sessions, activityHistory]);
+
+  const getProgressContext = useCallback(() => {
+    return {
+      sessionsCount: sessions.length,
+      averageScore: activityMetrics?.averageScore || "N/A",
+      currentLevel: levelProgress.levelNumber,
+      levelName: levelProgress.levelName,
+      currentStreak: streakStats.currentStreak,
+      tasksCompleted: completedTaskCount,
+      totalTasksInLevel: tasks.length,
+      recentTask: tasks.find(t => isActivityTaskCompleted(t.id, activityMetrics))?.title || "None"
+    };
+  }, [sessions.length, activityMetrics, levelProgress, streakStats.currentStreak, completedTaskCount, tasks]);
+
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [chatMessages, isB01Typing]);
+
+  const handleSendMessage = async (customQuery = null) => {
+    const query = (customQuery || askB01Query).trim();
+    if (!query || isB01Typing) return;
+
+    const userMessage = { role: 'user', content: query };
+    const newMessages = [...chatMessages, userMessage];
+    
+    setChatMessages(newMessages);
+    setAskB01Query('');
+    setIsB01Typing(true);
+
+    const assistantMessageId = Date.now();
+    setChatMessages(prev => [...prev, { role: 'assistant', content: '', id: assistantMessageId }]);
+
+    try {
+      const contextMessage = { 
+        role: 'system', 
+        content: `CONTEXT: User Progress Snapshot: ${JSON.stringify(getProgressContext())}. Reference these specific numbers if asked about progress, growth, or stats.` 
+      };
+
+      const response = await fetch('https://b01-ai-worker.dzeref4000.workers.dev', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          messages: [contextMessage, ...newMessages] 
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to connect to B-01');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+      let accumulatedResponse = '';
+
+      setIsB01Typing(false); // Hide spinner as text starts coming in
+
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        const chunkValue = decoder.decode(value);
+        
+        // Cloudflare Workers AI streaming returns data prefixes like "data: {...}"
+        const lines = chunkValue.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            if (line.includes('[DONE]')) break;
+            try {
+              const data = JSON.parse(line.slice(6));
+              accumulatedResponse += data.response || '';
+              
+              setChatMessages(prev => prev.map(msg => 
+                msg.id === assistantMessageId 
+                  ? { ...msg, content: accumulatedResponse }
+                  : msg
+              ));
+            } catch (e) {
+              console.warn("Chunk parse error", e);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('B-01 Error:', error);
+      setChatMessages(prev => prev.map(msg => 
+        msg.id === assistantMessageId 
+          ? { ...msg, content: "I'm having a little trouble connecting to my brain right now. Please try again in a moment!" }
+          : msg
+      ));
+    } finally {
+      setIsB01Typing(false);
+    }
+  };
   const weekPills = useMemo(() => getWeekdayPills(activeDayKeys), [activeDayKeys]);
   const timeOfDay = useMemo(() => getTimeOfDay(), []);
   const heroRobotImage = useMemo(() => {
@@ -1184,55 +1291,82 @@ function ActivityPage() {
               </button>
             </div>
             
-            <div className="ask-b01-chat-container">
-              <div className="ask-b01-chat-row b01-row">
-                <div className="ask-b01-chat-head b01-chat-head-square">
-                  <img src={b01ChatHead} alt="B-01" />
-                </div>
-                <div className="ask-b01-message ask-b01-message--b01">
-                  Hello! I'm B-01, your AI speaking coach. What would you like to know about public speaking or your progress today?
-                </div>
-              </div>
+            <div className="ask-b01-chat-container" ref={chatScrollRef}>
+              {chatMessages.map((msg, idx) => (
+                <div key={idx} className={`ask-b01-chat-row ${msg.role === 'assistant' ? 'b01-row' : 'user-row'}`}>
+                  {msg.role === 'assistant' && (
+                    <div className="ask-b01-chat-head b01-chat-head-square">
+                      <img src={b01ChatHead} alt="B-01" />
+                    </div>
+                  )}
+                  
+                  <div className={`ask-b01-message ask-b01-message--${msg.role === 'assistant' ? 'b01' : 'user'}`}>
+                    {msg.content}
+                  </div>
 
-              {/* Example User Message with chat head */}
-              <div className="ask-b01-chat-row user-row">
-                <div className="ask-b01-message ask-b01-message--user">
-                  How can I improve my confidence during a presentation?
-                </div>
-                <div className="ask-b01-chat-head user-head">
-                  {(user?.avatarUrl || user?.avatar_url) ? (
-                    <img src={user.avatarUrl || user.avatar_url} alt="Me" />
-                  ) : (
-                    <div className="ask-b01-avatar-placeholder">
-                      {user?.firstName?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                  {msg.role === 'user' && (
+                    <div className="ask-b01-chat-head user-head">
+                      {(user?.avatarUrl || user?.avatar_url) ? (
+                        <img src={user.avatarUrl || user.avatar_url} alt="Me" />
+                      ) : (
+                        <div className="ask-b01-avatar-placeholder">
+                          {user?.firstName?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              </div>
+              ))}
+
+              {isB01Typing && (
+                <div className="ask-b01-chat-row b01-row">
+                  <div className="ask-b01-chat-head b01-chat-head-square">
+                    <img src={b01ChatHead} alt="B-01" />
+                  </div>
+                  <div className="ask-b01-message ask-b01-message--b01 typing-indicator">
+                    <span>.</span><span>.</span><span>.</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="ask-b01-input-area">
-              <div className="ask-b01-input-wrapper">
+              {chatMessages.length === 1 && !isB01Typing && (
+                <div className="ask-b01-suggestions">
+                  {B01_SUGGESTIONS.map((suggestion, sIdx) => (
+                    <button 
+                      key={sIdx} 
+                      className="ask-b01-suggestion-chip"
+                      onClick={() => handleSendMessage(suggestion)}
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <form 
+                className="ask-b01-input-wrapper"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSendMessage();
+                }}
+              >
                 <input 
                   type="text" 
                   className="ask-b01-input"
                   placeholder="Ask me anything..."
                   value={askB01Query}
                   onChange={(e) => setAskB01Query(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && askB01Query.trim()) {
-                      setAskB01Query('');
-                    }
-                  }}
+                  disabled={isB01Typing}
                 />
                 <button 
+                  type="submit"
                   className="ask-b01-send-btn"
-                  disabled={!askB01Query.trim()}
-                  onClick={() => setAskB01Query('')}
+                  disabled={!askB01Query.trim() || isB01Typing}
                 >
                   <IoSend />
                 </button>
-              </div>
+              </form>
             </div>
           </div>
         </section>

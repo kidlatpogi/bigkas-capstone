@@ -6,9 +6,6 @@ import subprocess
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-import librosa
-import numpy as np
-import soundfile
 import requests
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, BackgroundTasks
@@ -62,7 +59,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_parse_origins(os.getenv("CORS_ORIGINS", ",".join(DEFAULT_CORS_ORIGINS))),
     allow_credentials=True,
-    allow_methods=["POST", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
@@ -123,13 +120,16 @@ def validate_audio_upload(audio_file: UploadFile, audio_bytes: bytes) -> None:
         )
 
 
-def _decode_audio_with_soundfile(audio_bytes: bytes) -> Tuple[np.ndarray, int]:
+def _decode_audio_with_soundfile(audio_bytes: bytes):
+    import numpy as np
+    import soundfile
     audio_fp = io.BytesIO(audio_bytes)
     with soundfile.SoundFile(audio_fp) as sf:
         y = sf.read(dtype="float32")
         sr = int(sf.samplerate)
 
     if len(y.shape) > 1:
+        import librosa
         y = librosa.to_mono(y.T)
 
     return np.asarray(y, dtype=np.float32), sr
@@ -165,7 +165,9 @@ def _decode_audio_with_ffmpeg(audio_bytes: bytes) -> Tuple[np.ndarray, int]:
     return _decode_audio_with_soundfile(ffmpeg_result.stdout)
 
 
-def extract_vocal_metrics(audio_bytes: bytes, _filename: str) -> Tuple[Dict[str, float], float]:
+def extract_vocal_metrics(audio_bytes: bytes, _filename: str):
+    import numpy as np
+    import librosa
     try:
         try:
             y, sr = _decode_audio_with_soundfile(audio_bytes)
@@ -195,9 +197,9 @@ def extract_vocal_metrics(audio_bytes: bytes, _filename: str) -> Tuple[Dict[str,
     f0, _, _ = librosa.pyin(
         y,
         fmin=float(librosa.note_to_hz("C2")),
-        fmax=float(librosa.note_to_hz("C5")), # Narrowed from C7 to C5 for speech
+        fmax=float(librosa.note_to_hz("C5")),
         sr=sr,
-        hop_length=1024, # Increased from 512 for speed
+        hop_length=1024,
     )
     voiced_f0 = f0[np.isfinite(f0)]
 

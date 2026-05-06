@@ -752,36 +752,41 @@ export function SessionProvider({ children }) {
       while (postAttempts < maxPostAttempts) {
         postAttempts += 1;
         try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 180000); // 180s timeout for initial POST (Cold Starts)
-
+          console.log(`[SessionContext] POST attempt ${postAttempts}/${maxPostAttempts}...`);
+          
+          // No AbortController — let the browser manage the connection
+          // HF cold starts can take 2-3 minutes; aborting early causes the loop
           const res = await fetch(`${apiUrl}/api/analyze-speech`, {
             method: 'POST',
             headers: authSession?.access_token ? { Authorization: `Bearer ${authSession.access_token}` } : undefined,
             body: formData,
-            signal: controller.signal,
           });
-          clearTimeout(timeoutId);
 
           const responseText = await res.text();
+          
           // Detect HTML (Hugging Face Starting/Restarting page)
           if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
-            console.warn(`[SessionContext] Initial POST received HTML (attempt ${postAttempts}/5). Space is likely starting. Retrying in 8s...`);
-            await new Promise((r) => setTimeout(r, 8000));
+            console.warn(`[SessionContext] POST received HTML (attempt ${postAttempts}/${maxPostAttempts}). Space is starting. Waiting 10s...`);
+            await new Promise((r) => setTimeout(r, 10000));
             continue;
           }
 
-          if (!res.ok) throw new Error(`Server returned ${res.status}: ${responseText.slice(0, 100)}`);
+          if (!res.ok) throw new Error(`Server returned ${res.status}: ${responseText.slice(0, 200)}`);
           
           analysisResult = JSON.parse(responseText);
           break; // Success!
         } catch (err) {
+          console.warn(`[SessionContext] POST attempt ${postAttempts} failed:`, err.message);
+          
           if (postAttempts >= maxPostAttempts) {
-            console.error('[SessionContext] Final POST Attempt Failed:', err);
-            throw new Error(`Connection to AI service failed after 5 attempts. ${err.name === 'AbortError' ? 'Request timed out.' : err.message}`);
+            console.error('[SessionContext] All POST attempts exhausted.');
+            throw new Error(`AI service unreachable after ${maxPostAttempts} attempts. The server may still be starting up — please wait 1-2 minutes and try again.`);
           }
-          console.warn(`[SessionContext] POST failed (attempt ${postAttempts}/5). Retrying in 4s...`, err.message);
-          await new Promise((r) => setTimeout(r, 4000));
+          
+          // Exponential backoff: 8s, 15s, 25s, 40s
+          const backoff = Math.min(8000 * Math.pow(1.8, postAttempts - 1), 45000);
+          console.log(`[SessionContext] Retrying in ${Math.round(backoff / 1000)}s...`);
+          await new Promise((r) => setTimeout(r, backoff));
         }
       }
       console.log('[SessionContext] Initial server response received:', analysisResult.status);

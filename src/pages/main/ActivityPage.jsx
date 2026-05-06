@@ -343,19 +343,24 @@ function ActivityPage() {
     ? Math.round((completedTaskCount / tasks.length) * 100)
     : 0;
 
-  const activeDayKeys = useMemo(() => {
-    const keys = new Set();
+  const sessionCountsByDay = useMemo(() => {
+    const counts = new Map();
     sessions.forEach((s) => {
       if (isPreTestSession(s)) return;
       const d = getSessionDate(s);
-      if (d) keys.add(getLocalDateKey(d));
+      if (d) {
+        const k = getLocalDateKey(d);
+        counts.set(k, (counts.get(k) || 0) + 1);
+      }
     });
     activityHistory.forEach((e) => {
       if (!e?.completedAt) return;
       const k = getDayKeyFromDate(e.completedAt);
-      if (k) keys.add(k);
+      if (k) {
+        counts.set(k, (counts.get(k) || 0) + 1);
+      }
     });
-    return keys;
+    return counts;
   }, [sessions, activityHistory]);
 
   const streakStats = useMemo(() => buildStreakStats(sessions, activityHistory), [sessions, activityHistory]);
@@ -533,7 +538,7 @@ function ActivityPage() {
       setIsB01Typing(false);
     }
   };
-  const weekPills = useMemo(() => getWeekdayPills(activeDayKeys), [activeDayKeys]);
+  const weekPills = useMemo(() => getWeekdayPills(sessionCountsByDay), [sessionCountsByDay]);
   const timeOfDay = useMemo(() => getTimeOfDay(), []);
   const heroRobotImage = useMemo(() => {
     if (timeOfDay === 'morning') return robotMorningImage;
@@ -1352,7 +1357,7 @@ function ActivityPage() {
       <StreakCalendarModal 
         isOpen={isStreakModalOpen} 
         onClose={() => setIsStreakModalOpen(false)} 
-        activeDayKeys={activeDayKeys} 
+        sessionCountsByDay={sessionCountsByDay} 
         streakStats={streakStats}
       />
 

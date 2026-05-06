@@ -110,13 +110,35 @@
 
 .streak-calendar-streak-card {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
+  gap: 8px;
+  padding: 16px;
   border-radius: 16px;
   border: 1px solid rgba(11, 57, 84, 0.08);
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   margin-bottom: 8px;
+}
+
+.streak-intensity-explanation {
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(11, 57, 84, 0.05);
+  width: 100%;
+  text-align: center;
+}
+
+.streak-card-main-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
 }
 
 .streak-calendar-streak-card .new-streak-fire {

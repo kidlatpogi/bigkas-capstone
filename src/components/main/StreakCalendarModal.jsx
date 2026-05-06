@@ -8,7 +8,17 @@ import fireAnimationData from '../../assets/Lottie/fire.json';
 const iconFire = getAssetUrl('icons/Icon-Fire.svg');
 import './StreakCalendarModal.css';
 
-export default function StreakCalendarModal({ isOpen, onClose, activeDayKeys, streakStats }) {
+// Heatmap color scale: Dark (less) -> Light (more)
+function getSessionIntensityColor(count) {
+  if (count <= 0) return '#e2e8f0'; // Default empty
+  if (count === 1) return '#064e3b'; // Darkest green
+  if (count === 2) return '#065f46';
+  if (count === 3) return '#059669';
+  if (count === 4) return '#10b981';
+  return '#34d399'; // Lightest/Brighter green
+}
+
+export default function StreakCalendarModal({ isOpen, onClose, sessionCountsByDay, streakStats }) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const lottieFireNode = useMemo(() => <Lottie animationData={fireAnimationData} loop={true} />, []);
@@ -42,10 +52,10 @@ export default function StreakCalendarModal({ isOpen, onClose, activeDayKeys, st
     return `${year}-${month}-${d}`;
   };
 
-  // Pre-calculate active status for each day to determine streak rendering
-  const dayStatuses = days.map((day) => {
+  // Pre-calculate session counts for each day
+  const dayCounts = days.map((day) => {
     const key = getLocalDateKey(day);
-    return activeDayKeys.has(key);
+    return sessionCountsByDay.get(key) || 0;
   });
 
   return (
@@ -88,12 +98,17 @@ export default function StreakCalendarModal({ isOpen, onClose, activeDayKeys, st
 
         {streakStats && (
           <div className="streak-calendar-streak-card">
-            <div className="new-streak-fire">
-              {lottieFireNode}
+            <div className="streak-intensity-explanation">
+              Intensity: Dark (1 session) → Light (More)
             </div>
-            <div className="new-streak-headline">
-              <div className="new-streak-value">{streakStats.currentStreak}</div>
-              <p className="new-streak-label">day streak</p>
+            <div className="streak-card-main-row">
+              <div className="new-streak-fire">
+                {lottieFireNode}
+              </div>
+              <div className="new-streak-headline">
+                <div className="new-streak-value">{streakStats.currentStreak}</div>
+                <p className="new-streak-label">day streak</p>
+              </div>
             </div>
           </div>
         )}
@@ -108,24 +123,19 @@ export default function StreakCalendarModal({ isOpen, onClose, activeDayKeys, st
           ))}
           
           {days.map((day, i) => {
-            const isActive = dayStatuses[i];
-            const isPrevActive = i > 0 ? dayStatuses[i - 1] : false;
-            const isNextActive = i < days.length - 1 ? dayStatuses[i + 1] : false;
+            const count = dayCounts[i];
+            const isActive = count > 0;
+            const isPrevActive = i > 0 ? dayCounts[i - 1] > 0 : false;
+            const isNextActive = i < days.length - 1 ? dayCounts[i + 1] > 0 : false;
             
             const isPartOfStreak = isActive && (isPrevActive || isNextActive);
-            const isSingleActive = isActive && !isPartOfStreak;
             
-            // Determine border radius for the streak background pill
-            // It should connect horizontally
-            const isStreakStart = isPartOfStreak && !isPrevActive;
-            const isStreakEnd = isPartOfStreak && !isNextActive;
-            // Also need to handle week wraps (Sunday to Monday)
             const currentDayOfWeek = (startDayOffset + i) % 7;
             const isMonday = currentDayOfWeek === 0;
             const isSunday = currentDayOfWeek === 6;
             
-            const roundedLeft = isStreakStart || isMonday;
-            const roundedRight = isStreakEnd || isSunday;
+            const roundedLeft = isPartOfStreak && (!isPrevActive || isMonday);
+            const roundedRight = isPartOfStreak && (!isNextActive || isSunday);
 
             let pillStyle = {};
             if (isPartOfStreak) {
@@ -142,7 +152,10 @@ export default function StreakCalendarModal({ isOpen, onClose, activeDayKeys, st
             return (
               <div key={day} className="streak-calendar-cell">
                 {isPartOfStreak && <div className="streak-bg-pill" style={pillStyle}></div>}
-                <div className={`streak-calendar-day ${isActive ? 'active' : ''} ${isPartOfStreak ? 'streak' : ''}`}>
+                <div 
+                  className={`streak-calendar-day ${isActive ? 'active' : ''} ${isPartOfStreak ? 'streak' : ''}`}
+                  style={{ backgroundColor: isActive ? getSessionIntensityColor(count) : undefined }}
+                >
                   {isPartOfStreak ? (
                     <img src={iconFire} alt="fire" className="streak-fire-icon" />
                   ) : (

@@ -778,17 +778,28 @@ export function SessionProvider({ children }) {
           const sRes = await fetch(`${apiUrl}/api/analysis-status/${jobId}`);
           if (!sRes.ok) continue; // Retry on transient network blip
           
-          const sData = await sRes.json();
+          let sData;
+          try {
+            const responseText = await sRes.text();
+            if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
+              console.warn('[SessionContext] Received HTML response from backend (likely Hugging Face restarting). Retrying...');
+              continue; 
+            }
+            sData = JSON.parse(responseText);
+          } catch (e) {
+            console.warn('[SessionContext] Polling received invalid JSON. Retrying...', e);
+            continue; 
+          }
           
           if (onProgress) {
             // Priority 1: Use actual internal progress from backend if available
             if (typeof sData.progress === 'number') {
-              onProgress(Math.min(99, sData.progress));
+              onProgress(Math.min(95, sData.progress));
             } else {
               // Priority 2: Smooth crawl fallback
               const baseProgress = 30;
               const crawl = attempts <= 10 ? attempts * 2 : 20 + (attempts * 0.4);
-              onProgress(Math.min(99, baseProgress + crawl));
+              onProgress(Math.min(95, baseProgress + crawl));
             }
           }
 

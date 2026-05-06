@@ -610,25 +610,33 @@ async def run_analysis_task(
         
         # 2. COMPRESS AUDIO (MP3)
         print(f"[Job] {job_id} - Step 2/4: Compressing audio for AI...")
-        analysis_jobs[job_id]["progress"] = 30
+        analysis_jobs[job_id]["progress"] = 35
         def _compress_audio():
             import subprocess
-            cmd = ['ffmpeg', '-y', '-i', 'pipe:0', '-acodec', 'libmp3lame', '-ab', '32k', '-ac', '1', '-ar', '16000', '-f', 'mp3', 'pipe:1']
+            cmd = ['ffmpeg', '-y', '-i', 'pipe:0', '-t', '305', '-acodec', 'libmp3lame', '-ab', '32k', '-ac', '1', '-ar', '16000', '-f', 'mp3', 'pipe:1']
             p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, _ = p.communicate(input=audio_bytes)
+            stdout, stderr = p.communicate(input=audio_bytes, timeout=60)
+            if p.returncode != 0:
+                logger.error(f"FFmpeg failed: {stderr.decode()}")
             return stdout
         clean_audio_bytes = await asyncio.to_thread(_compress_audio)
         print(f"[Job] {job_id} - Audio compressed ({len(clean_audio_bytes)} bytes).")
+        
+        # Free up original heavy audio buffer
+        del audio_bytes
 
         # 3. CLOUDFLARE (Whisper + Llama)
         print(f"[Job] {job_id} - Step 3/4: Calling Cloudflare AI (Whisper/Llama)...")
-        analysis_jobs[job_id]["progress"] = 50
+        analysis_jobs[job_id]["progress"] = 55
         verbal_payload = await analyze_with_cloudflare(clean_audio_bytes, topic)
         print(f"[Job] {job_id} - Cloudflare analysis complete.")
+        
+        # Free up compressed buffer
+        del clean_audio_bytes
 
         # 4. PERSIST TO SUPABASE
         print(f"[Job] {job_id} - Step 4/4: Persisting results to Supabase...")
-        analysis_jobs[job_id]["progress"] = 80
+        analysis_jobs[job_id]["progress"] = 90
         combined_analysis = {
             "visual": visual_payload,
             "vocal": vocal_metrics,

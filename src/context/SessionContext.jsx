@@ -697,7 +697,10 @@ export function SessionProvider({ children }) {
     dispatch({ type: 'SET_ANALYSING', payload: true });
     try {
       const apiUrl = ENV.PYTHON_SERVICE_URL;
-      const { data: { session: authSession } } = await supabase.auth.getSession();
+      // 0. Ensure session is fresh (prevents "exp" claim errors after long waits)
+      const { data: { session: currentSession }, error: sessionErr } = await supabase.auth.refreshSession();
+      if (sessionErr) console.warn('[SessionContext] Session refresh warning:', sessionErr.message);
+      const authSession = currentSession;
       const baseVisualMetrics = {
         overall_score: toNumeric(visualAnalysis?.overall_score, 0),
         eye_contact_score: toNumeric(visualAnalysis?.eye_contact_score, 0),

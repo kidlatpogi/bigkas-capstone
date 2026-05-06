@@ -712,7 +712,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
               <div style={{ display: 'flex', gap: '32px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>Date</span>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{formatDate(session.created_at)}</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{formatDate(session?.created_at)}</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>Duration</span>

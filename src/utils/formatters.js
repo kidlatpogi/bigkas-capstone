@@ -9,6 +9,11 @@
  * @returns {string}
  */
 export function formatDate(date, options = {}) {
+  if (!date) return 'N/A';
+  
+  const parsedDate = new Date(date);
+  if (isNaN(parsedDate.getTime())) return 'N/A';
+
   const defaultOptions = {
     year: 'numeric',
     month: 'long',
@@ -16,7 +21,12 @@ export function formatDate(date, options = {}) {
     ...options,
   };
   
-  return new Intl.DateTimeFormat('en-US', defaultOptions).format(new Date(date));
+  try {
+    return new Intl.DateTimeFormat('en-US', defaultOptions).format(parsedDate);
+  } catch (e) {
+    console.error('[formatDate] Error formatting date:', e);
+    return 'N/A';
+  }
 }
 
 /**

@@ -6,11 +6,9 @@ import subprocess
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-import requests
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from supabase import Client, create_client
 
 from scoring_logic import compute_full_diagnostic, format_diagnostic_log_line
 
@@ -63,7 +61,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-_supabase_client: Optional[Client] = None
+_supabase_client = None
 
 
 def _require_env(key: str) -> str:
@@ -73,9 +71,10 @@ def _require_env(key: str) -> str:
     return value
 
 
-def get_supabase_client() -> Client:
+def get_supabase_client():
     global _supabase_client
     if _supabase_client is None:
+        from supabase import create_client
         _supabase_client = create_client(
             _require_env("SUPABASE_URL"),
             _require_env("SUPABASE_SERVICE_KEY"),

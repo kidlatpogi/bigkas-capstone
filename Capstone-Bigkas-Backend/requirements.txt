@@ -3,6 +3,8 @@ uvicorn
 python-multipart
 librosa
 soundfile
-google-generativeai
 supabase
 python-dotenv
+requests
+httpx
+numpy

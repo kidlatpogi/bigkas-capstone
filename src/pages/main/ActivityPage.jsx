@@ -55,6 +55,8 @@ const DAY_MS = 86_400_000;
 const ACTIVITY_CELEBRATION_STORAGE_KEY = 'bigkas_pending_activity_celebration_v1';
 const LAST_SHOWN_COMPLETION_EVENT_KEY = 'bigkas_last_completion_event_v1';
 const FREE_SPEECH_TUTORIAL_SEEN_KEY = 'bigkas_free_speech_tutorial_seen_v1';
+const AI_BANNER_CACHE_KEY = 'bigkas_ai_banner_cache_v1';
+const EIGHT_HOURS_MS = 8 * 60 * 60 * 1000;
 
 const B01_SUGGESTIONS = [
   "Summarize my progress so far",
@@ -260,6 +262,9 @@ function ActivityPage() {
     const defaultTopic = RANDOM_TOPICS.find((entry) => entry.title === RANDOMIZER_DEFAULT_TOPIC);
     return defaultTopic || { title: RANDOMIZER_DEFAULT_TOPIC, body: '' };
   });
+  const [bannerMessage, setBannerMessage] = useState("You're on a roll. Keep doing your activities and improve your speaking.");
+  const [isBannerLoading, setIsBannerLoading] = useState(false);
+  const [isRandomizingTopic, setIsRandomizingTopic] = useState(false);
   const { sessions, fetchAllSessions } = useSessions();
   const activityMetrics = useMemo(
     () => getActivityMetrics(scopeKey),
@@ -360,17 +365,98 @@ function ActivityPage() {
   const streakStats = useMemo(() => buildStreakStats(sessions, activityHistory), [sessions, activityHistory]);
 
   const getProgressContext = useCallback(() => {
+    // Sort sessions by date to find the most recent ones
+    const sortedSessions = [...sessions]
+      .filter(s => !isPreTestSession(s)) // Exclude pre-tests for growth comparison
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    const latest = sortedSessions[0];
+    const first = sortedSessions[sortedSessions.length - 1];
+
+    const latestScore = latest?.overall_score || latest?.overallScore || 0;
+    const firstScore = first?.overall_score || first?.overallScore || 0;
+    const totalGrowth = latestScore - firstScore;
+
     return {
-      sessionsCount: sessions.length,
+      sessionsCount: sortedSessions.length,
       averageScore: activityMetrics?.averageScore || "N/A",
       currentLevel: levelProgress.levelNumber,
       levelName: levelProgress.levelName,
-      currentStreak: streakStats.currentStreak,
-      tasksCompleted: completedTaskCount,
-      totalTasksInLevel: tasks.length,
-      recentTask: tasks.find(t => isActivityTaskCompleted(t.id, activityMetrics))?.title || "None"
+      
+      // Pre-calculated Math for B-01
+      growthSummary: {
+        firstSessionScore: firstScore,
+        latestSessionScore: latestScore,
+        totalPercentagePointGrowth: totalGrowth.toFixed(1),
+        status: totalGrowth > 0 ? "Improving" : totalGrowth < 0 ? "Declining" : "Stable"
+      },
+
+      // Comparison Points
+      latestSession: latest ? {
+        score: latestScore,
+        topic: latest.topic,
+        date: latest.created_at
+      } : null,
+      firstSession: first ? {
+        score: firstScore,
+        topic: first.topic,
+        date: first.created_at
+      } : null,
+      
+      fullTimeline: sortedSessions.map(s => ({
+        date: new Date(s.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+        time: new Date(s.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        score: s.overall_score || s.overallScore,
+        topic: s.topic
+      }))
     };
-  }, [sessions.length, activityMetrics, levelProgress, streakStats.currentStreak, completedTaskCount, tasks]);
+  }, [sessions, activityMetrics, levelProgress, streakStats.currentStreak, completedTaskCount, tasks]);
+
+  useEffect(() => {
+    const fetchBannerMessage = async () => {
+      if (!user?.id) return;
+
+      // 1. Check Cache
+      try {
+        const cached = window.localStorage.getItem(AI_BANNER_CACHE_KEY);
+        if (cached) {
+          const { message, timestamp } = JSON.parse(cached);
+          if (Date.now() - timestamp < EIGHT_HOURS_MS) {
+            setBannerMessage(message);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to read banner cache', e);
+      }
+
+      // 2. Fetch New if expired or missing
+      setIsBannerLoading(true);
+      try {
+        const response = await fetch('https://b01-ai-worker.dzeref4000.workers.dev/banner-message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ context: getProgressContext() }),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.message) {
+            setBannerMessage(data.message);
+            // 3. Update Cache
+            window.localStorage.setItem(AI_BANNER_CACHE_KEY, JSON.stringify({
+              message: data.message,
+              timestamp: Date.now()
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch AI banner:', error);
+      } finally {
+        setIsBannerLoading(false);
+      }
+    };
+    fetchBannerMessage();
+  }, [user?.id, getProgressContext]);
 
   useEffect(() => {
     if (chatScrollRef.current) {
@@ -763,7 +849,24 @@ function ActivityPage() {
     setShowRandomizerOverlay(false);
   }, []);
 
-  const handleRandomizeTopic = useCallback(() => {
+  const handleRandomizeTopic = useCallback(async () => {
+    setIsRandomizingTopic(true);
+    try {
+      const response = await fetch('https://b01-ai-worker.dzeref4000.workers.dev/random-topic');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.title) {
+          setRandomizerTopic({ title: data.title, body: data.body || '' });
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch AI topic:', error);
+    } finally {
+      setIsRandomizingTopic(false);
+    }
+
+    // Fallback to local randomization
     if (!RANDOM_TOPICS.length) return;
     setRandomizerTopic((current) => {
       if (RANDOM_TOPICS.length === 1) return RANDOM_TOPICS[0];
@@ -1023,15 +1126,16 @@ function ActivityPage() {
               <p className="randomizer-overlay-topic">
                 <span className="randomizer-overlay-topic-label">Topic:</span>
                 {' '}
-                {randomizerTopic?.title || RANDOMIZER_DEFAULT_TOPIC}
+                {isRandomizingTopic ? 'Thinking of a topic...' : (randomizerTopic?.title || RANDOMIZER_DEFAULT_TOPIC)}
               </p>
               <div className="randomizer-overlay-actions">
                 <Button
                   variant="practice"
                   className="randomizer-overlay-randomize-btn"
                   onClick={handleRandomizeTopic}
+                  disabled={isRandomizingTopic}
                 >
-                  Randomize Topic
+                  {isRandomizingTopic ? 'Randomizing...' : 'Randomize Topic'}
                 </Button>
                 <Button
                   variant="practice"
@@ -1117,7 +1221,9 @@ function ActivityPage() {
               <img src={heroRobotImage} alt="" className="new-banner-robot" />
               <div className="new-banner-bubble" aria-label="Coach message">
                 <p className="new-banner-kicker">B-01:</p>
-                <p className="new-banner-copy">You're on a roll. Keep doing your activities and improve your speaking.</p>
+                <p className="new-banner-copy">
+                  {isBannerLoading ? 'Checking your progress...' : bannerMessage}
+                </p>
                 <div className="new-banner-bubble-footer">
                   <Button 
                     variant="practice"
@@ -1300,8 +1406,10 @@ function ActivityPage() {
                     </div>
                   )}
                   
-                  <div className={`ask-b01-message ask-b01-message--${msg.role === 'assistant' ? 'b01' : 'user'}`}>
-                    {msg.content}
+                  <div className={`ask-b01-message ask-b01-message--${msg.role === 'assistant' ? 'b01' : 'user'} ${!msg.content && msg.role === 'assistant' ? 'typing-indicator' : ''}`}>
+                    {msg.content || (msg.role === 'assistant' && (
+                      <><span>.</span><span>.</span><span>.</span></>
+                    ))}
                   </div>
 
                   {msg.role === 'user' && (
@@ -1318,19 +1426,6 @@ function ActivityPage() {
                 </div>
               ))}
 
-              {isB01Typing && (
-                <div className="ask-b01-chat-row b01-row">
-                  <div className="ask-b01-chat-head b01-chat-head-square">
-                    <img src={b01ChatHead} alt="B-01" />
-                  </div>
-                  <div className="ask-b01-message ask-b01-message--b01 typing-indicator">
-                    <span>.</span><span>.</span><span>.</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="ask-b01-input-area">
               {chatMessages.length === 1 && !isB01Typing && (
                 <div className="ask-b01-suggestions">
                   {B01_SUGGESTIONS.map((suggestion, sIdx) => (
@@ -1344,6 +1439,10 @@ function ActivityPage() {
                   ))}
                 </div>
               )}
+
+            </div>
+
+            <div className="ask-b01-input-area">
               <form 
                 className="ask-b01-input-wrapper"
                 onSubmit={(e) => {

@@ -743,18 +743,38 @@ export function SessionProvider({ children }) {
       console.log('[SessionContext] Requesting AI Analysis (No artificial timeout)...');
       
       let analysisResult;
-      try {
-        const res = await fetch(`${apiUrl}/api/analyze-speech`, {
-          method: 'POST',
-          headers: authSession?.access_token ? { Authorization: `Bearer ${authSession.access_token}` } : undefined,
-          body: formData,
-        });
+      let postAttempts = 0;
+      const maxPostAttempts = 5;
 
-        if (!res.ok) throw new Error(`Analysis request failed: ${res.status}`);
-        analysisResult = await res.json();
-      } catch (err) {
-        console.error('[SessionContext] Initial POST Error:', err);
-        throw err;
+      while (postAttempts < maxPostAttempts) {
+        postAttempts += 1;
+        try {
+          const res = await fetch(`${apiUrl}/api/analyze-speech`, {
+            method: 'POST',
+            headers: authSession?.access_token ? { Authorization: `Bearer ${authSession.access_token}` } : undefined,
+            body: formData,
+          });
+
+          const responseText = await res.text();
+          // Detect HTML (Hugging Face Starting/Restarting page)
+          if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
+            console.warn(`[SessionContext] Initial POST received HTML (attempt ${postAttempts}/5). Space is likely starting. Retrying in 6s...`);
+            await new Promise((r) => setTimeout(r, 6000));
+            continue;
+          }
+
+          if (!res.ok) throw new Error(`Server returned ${res.status}: ${responseText.slice(0, 100)}`);
+          
+          analysisResult = JSON.parse(responseText);
+          break; // Success!
+        } catch (err) {
+          if (postAttempts >= maxPostAttempts) {
+            console.error('[SessionContext] Final POST Attempt Failed:', err);
+            throw err;
+          }
+          console.warn(`[SessionContext] POST failed (attempt ${postAttempts}/5). Retrying in 3s...`, err.message);
+          await new Promise((r) => setTimeout(r, 3000));
+        }
       }
       console.log('[SessionContext] Initial server response received:', analysisResult.status);
 

@@ -6,6 +6,7 @@ import { ROUTES } from '../../utils/constants';
 import PasswordToggle from '../../components/common/PasswordToggle';
 import googleLogo from '../../assets/logos/Google-Logo.png';
 import { motion, AnimatePresence } from 'framer-motion';
+import Grainient from './Grainient';
 import PushButton from '../../components/common/PushButton';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import './LoginPage.css';
@@ -341,9 +342,6 @@ function LoginPage({ managePageClass = true }) {
       className="auth-page-v2"
       data-layout={layoutMode}
     >
-      {/* Immersive Background */}
-      <div className="auth-bg-wrapper" />
-
       <div className="auth-container">
         <motion.div
           className="auth-card"

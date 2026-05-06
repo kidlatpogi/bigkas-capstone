@@ -31,12 +31,8 @@ body.login-page-active {
   padding-top: calc(clamp(16px, 4vw, 40px) + env(safe-area-inset-top));
   padding-bottom: calc(clamp(16px, 4vw, 40px) + env(safe-area-inset-bottom));
   box-sizing: border-box;
-}
 
-.auth-bg-wrapper {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
+  /* Shared Background with ActivityPage */
   background-color: #FDFDF9;
   background-image: 
     radial-gradient(rgba(11, 57, 84, 0.1) 1px, transparent 0),

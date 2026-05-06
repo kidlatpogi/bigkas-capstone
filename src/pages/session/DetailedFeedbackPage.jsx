@@ -506,16 +506,6 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
 
   return (
     <div className={`df-page ${isInnerView ? 'df-page--inner' : ''} activity-page--skyward-entrance`}>
-      {/* Breadcrumb */}
-      {!isInnerView && (
-        <nav className="df-breadcrumb">
-          <button type="button" className="df-breadcrumb-link" onClick={() => navigate(breadcrumbRoute, { replace: true })}>
-            {breadcrumbParent}
-          </button>
-          <IoChevronForward className="df-breadcrumb-sep" />
-          <span className="df-breadcrumb-current">Session Analysis Result</span>
-        </nav>
-      )}
 
       <div className="df-content-layout">
         {/* AI Coach Hero Banner */}

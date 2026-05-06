@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap');
+/* Auth Page V2 Styles */
 
 :root {
   --emerald-600: #059669;
@@ -27,7 +27,6 @@ body.login-page-active {
   align-items: center;
   justify-content: center;
   overflow-x: hidden;
-  font-family: 'Nunito', sans-serif;
   padding: clamp(16px, 4vw, 40px);
   padding-top: calc(clamp(16px, 4vw, 40px) + env(safe-area-inset-top));
   padding-bottom: calc(clamp(16px, 4vw, 40px) + env(safe-area-inset-bottom));
@@ -290,7 +289,6 @@ body.login-page-active {
   border-radius: 14px;
   border: 1.5px solid #e5e7eb;
   background: #f9fafb;
-  font-family: 'Nunito', sans-serif;
   font-size: 1rem;
   transition: all 0.2s ease;
   outline: none;

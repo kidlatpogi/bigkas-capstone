@@ -11,9 +11,6 @@ import PushButton from '../../components/common/PushButton';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import './LoginPage.css';
 
-const waveWebm = getAssetUrl('Sprites/Robot Animated/Wave-webm.webm');
-const waveMp4 = getAssetUrl('Sprites/Robot Animated/Wave-mp4.mp4');
-
 const LOGIN_LOCKOUT_UNTIL_KEY = 'bigkas_login_lockout_until';
 
 function getStoredLockoutSeconds() {
@@ -356,12 +353,17 @@ function LoginPage({ managePageClass = true }) {
               </motion.div>
               <motion.div 
                 variants={itemVariants}
-                className="auth-robot-video-wrap"
+                className="auth-robot-img-wrap"
+                animate={{ 
+                  y: [0, -15, 0],
+                }}
+                transition={{
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
               >
-                <video className="auth-robot-video" autoPlay loop muted playsInline>
-                  <source src={waveWebm} type="video/webm" />
-                  <source src={waveMp4} type="video/mp4" />
-                </video>
+                <img src={getSpriteUrl('Robot/0001.webp')} alt="AI Companion" className="auth-robot-img" />
               </motion.div>
               <motion.h2 variants={itemVariants} className="auth-hero-tagline">
                 Master the Art <br />of <span>Speaking</span>

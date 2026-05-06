@@ -513,38 +513,6 @@ function SessionResultPage({ sessionIdProp, isInnerView, onCloseInner, onViewDet
 
 
 
-      {/* Breadcrumb */}
-
-      {!isInnerView && (
-
-        <nav className="sr-breadcrumb">
-
-          <button
-
-            type="button"
-
-            className="sr-breadcrumb-link"
-
-            onClick={handleBackNavigation}
-
-          >
-
-            {breadcrumbParent}
-
-          </button>
-
-          <IoChevronForward className="sr-breadcrumb-sep" />
-
-          <span className="sr-breadcrumb-current">
-
-            {sessionTitle} Analysis Result
-
-          </span>
-
-        </nav>
-
-      )}
-
 
 
       <div className="sr-content-layout">

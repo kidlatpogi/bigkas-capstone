@@ -5,8 +5,8 @@
   right: auto;
   transform: translate(-50%, 100%);
   width: min(1400px, calc(100vw - var(--app-sidebar-width, 0px) - 48px));
-  height: 70dvh;
-  max-height: 70dvh;
+  height: 85dvh;
+  max-height: 85dvh;
   background: #FDFDF9;
   border-radius: 48px 48px 0 0;
   padding: 0;
@@ -162,7 +162,7 @@
   top: 0;
   z-index: 10;
   background: #FDFDF9;
-  padding: 32px 40px 24px 40px;
+  padding: 24px 40px 16px 40px;
   border-bottom: 1px solid rgba(11, 57, 84, 0.08);
 }
 
@@ -325,8 +325,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  padding: 32px 40px 120px 40px;
-}
+  padding: 24px 40px 100px 40px;
 }
 
 .history-list::-webkit-scrollbar {
@@ -905,7 +904,7 @@
   display: flex;
   justify-content: center;
   margin-top: auto;
-  padding: 40px 0 20px;
+  padding: 20px 0 20px;
   background: #FDFDF9;
 }
 

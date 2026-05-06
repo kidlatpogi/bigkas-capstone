@@ -690,13 +690,17 @@ export function SessionProvider({ children }) {
     visualAnalysis = null,
     topic = '',
     profilingAnswers = [],
+    onProgress = null,
   }) => {
     const uid = await getUserId();
     if (!uid) return { success: false, error: 'Not authenticated' };
     dispatch({ type: 'SET_ANALYSING', payload: true });
     try {
       const apiUrl = ENV.PYTHON_SERVICE_URL;
-      const { data: { session: authSession } } = await supabase.auth.getSession();
+      // 0. Ensure session is fresh (prevents "exp" claim errors after long waits)
+      const { data: { session: currentSession }, error: sessionErr } = await supabase.auth.refreshSession();
+      if (sessionErr) console.warn('[SessionContext] Session refresh warning:', sessionErr.message);
+      const authSession = currentSession;
       const baseVisualMetrics = {
         overall_score: toNumeric(visualAnalysis?.overall_score, 0),
         eye_contact_score: toNumeric(visualAnalysis?.eye_contact_score, 0),
@@ -717,287 +721,195 @@ export function SessionProvider({ children }) {
       formData.append('session_origin', normalizeSessionOriginForPersistence(scriptType));
       formData.append('speaking_mode', String(speakingMode || '').trim());
 
-      const mediaUploadPromise = ENV.ENABLE_SESSION_PERSISTENCE
-        ? (async () => {
-          const audioStorageUrl = await uploadSessionMediaBlob({ userId: uid, blob: audioBlob, kind: 'audio' });
-          if (!audioStorageUrl) {
-            throw new Error('Failed to upload session audio to storage bucket.');
-          }
+      if (onProgress) onProgress(20);
 
+      // 3. BACKGROUND PERSISTENCE (Non-blocking)
+      const backgroundPersistence = (async () => {
+        try {
+          console.log('[SessionContext] Starting background media upload...');
+          const audioStorageUrl = await uploadSessionMediaBlob({ userId: uid, blob: audioBlob, kind: 'audio' });
           let videoStorageUrl = null;
           if (videoBlob) {
             try {
               videoStorageUrl = await uploadSessionMediaBlob({ userId: uid, blob: videoBlob, kind: 'video' });
-            } catch (videoUploadErr) {
-              if (!isObjectTooLargeError(videoUploadErr)) {
-                throw videoUploadErr;
-              }
-              videoStorageUrl = null;
-            }
+            } catch (vErr) { console.warn('[SessionContext] Background video upload skipped:', vErr.message); }
           }
-
+          console.log('[SessionContext] Background media upload successful.');
           return { audioStorageUrl, videoStorageUrl };
-        })().catch((uploadError) => ({
-          audioStorageUrl: null,
-          videoStorageUrl: null,
-          uploadError,
-        }))
-        : Promise.resolve({
-          audioStorageUrl: null,
-          videoStorageUrl: null,
-          uploadError: null,
-        });
-
-      const res = await fetch(`${apiUrl}/api/analyze-speech`, {
-        method: 'POST',
-        headers: authSession?.access_token ? { Authorization: `Bearer ${authSession.access_token}` } : undefined,
-        body: formData,
-      });
-
-      if (!res.ok) {
-        let errorMessage = `Analysis failed: ${res.status}`;
-        try {
-          const payload = await res.json();
-          const detail = payload?.detail;
-          console.error('FastAPI /api/analyze-speech error payload:', payload);
-          if (typeof detail === 'string' && detail.trim()) {
-            errorMessage = detail;
-          } else if (detail && typeof detail === 'object') {
-            const detailError = String(detail.error || '').trim();
-            if (detailError) {
-              errorMessage = detailError;
-            }
-          } else if (Array.isArray(detail) && detail.length > 0) {
-            errorMessage = detail.map((item) => String(item?.msg || '')).filter(Boolean).join('; ') || errorMessage;
-          } else if (typeof payload?.error === 'string' && payload.error.trim()) {
-            errorMessage = payload.error;
-          }
-        } catch {
-          try {
-            const fallbackText = await res.text();
-            console.error('FastAPI /api/analyze-speech non-JSON error:', fallbackText);
-            if (fallbackText && fallbackText.trim()) {
-              errorMessage = fallbackText.trim();
-            }
-          } catch {
-            // Keep status-based fallback message when body cannot be read.
-          }
+        } catch (err) {
+          console.warn('[SessionContext] Background media upload failed:', err.message);
+          return { audioStorageUrl: null, videoStorageUrl: null };
         }
-        throw new Error(errorMessage);
+      })();
+
+      // 4. MAIN ANALYSIS (Blocking initial POST)
+      console.log('[SessionContext] Requesting AI Analysis (No artificial timeout)...');
+      
+      let analysisResult;
+      let postAttempts = 0;
+      const maxPostAttempts = 5;
+
+      while (postAttempts < maxPostAttempts) {
+        postAttempts += 1;
+        try {
+          console.log(`[SessionContext] POST attempt ${postAttempts}/${maxPostAttempts}...`);
+          
+          // No AbortController — let the browser manage the connection
+          // HF cold starts can take 2-3 minutes; aborting early causes the loop
+          const res = await fetch(`${apiUrl}/api/analyze-speech`, {
+            method: 'POST',
+            headers: authSession?.access_token ? { Authorization: `Bearer ${authSession.access_token}` } : undefined,
+            body: formData,
+          });
+
+          const responseText = await res.text();
+          
+          // Detect HTML (Hugging Face Starting/Restarting page)
+          if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
+            console.warn(`[SessionContext] POST received HTML (attempt ${postAttempts}/${maxPostAttempts}). Space is starting. Waiting 10s...`);
+            await new Promise((r) => setTimeout(r, 10000));
+            continue;
+          }
+
+          if (!res.ok) throw new Error(`Server returned ${res.status}: ${responseText.slice(0, 200)}`);
+          
+          analysisResult = JSON.parse(responseText);
+          break; // Success!
+        } catch (err) {
+          console.warn(`[SessionContext] POST attempt ${postAttempts} failed:`, err.message);
+          
+          if (postAttempts >= maxPostAttempts) {
+            console.error('[SessionContext] All POST attempts exhausted.');
+            throw new Error(`AI service unreachable after ${maxPostAttempts} attempts. The server may still be starting up — please wait 1-2 minutes and try again.`);
+          }
+          
+          // Exponential backoff: 8s, 15s, 25s, 40s
+          const backoff = Math.min(8000 * Math.pow(1.8, postAttempts - 1), 45000);
+          console.log(`[SessionContext] Retrying in ${Math.round(backoff / 1000)}s...`);
+          await new Promise((r) => setTimeout(r, backoff));
+        }
       }
-      const analysisResult = await res.json();
+      console.log('[SessionContext] Initial server response received:', analysisResult.status);
 
-      const {
-        audioStorageUrl,
-        videoStorageUrl,
-        uploadError,
-      } = await mediaUploadPromise;
-      if (uploadError) {
-        throw uploadError;
+      // 5. ADAPTIVE POLLING LOGIC
+      if (analysisResult.status === 'processing' && analysisResult.job_id) {
+        const jobId = analysisResult.job_id;
+        console.log('[SessionContext] Adaptive polling started for Job:', jobId);
+        
+        let attempts = 0;
+        const maxAttempts = 200; 
+        
+        while (attempts < maxAttempts) {
+          attempts += 1;
+          
+          // ADAPTIVE INTERVAL: 
+          // Check every 1s for the first 10 tries (fast path for 30s audio)
+          // Then every 3s for the rest (slow path for 5min audio)
+          const delay = attempts <= 10 ? 1000 : 3000;
+          await new Promise(r => setTimeout(r, delay));
+          
+          const sController = new AbortController();
+          const sTimeoutId = setTimeout(() => sController.abort(), 45000); // 45s timeout for status check
+
+          let sRes;
+          try {
+            sRes = await fetch(`${apiUrl}/api/analysis-status/${jobId}`, { signal: sController.signal });
+          } catch (fetchErr) {
+            console.warn('[SessionContext] Status check fetch failed:', fetchErr.message);
+            continue;
+          } finally {
+            clearTimeout(sTimeoutId);
+          }
+
+          if (!sRes.ok) {
+            if (sRes.status === 404) {
+              throw new Error('Analysis job was lost. The server may have restarted. Please try a shorter recording.');
+            }
+            continue; // Retry on other errors (500, 502, 503, 504)
+          }
+          
+          let sData;
+          try {
+            const responseText = await sRes.text();
+            if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
+              console.warn('[SessionContext] Received HTML response from backend (likely Hugging Face restarting). Retrying...');
+              continue; 
+            }
+            sData = JSON.parse(responseText);
+          } catch (e) {
+            console.warn('[SessionContext] Polling received invalid JSON. Retrying...', e);
+            continue; 
+          }
+          
+          if (onProgress) {
+            // Priority 1: Use actual internal progress from backend if available
+            if (typeof sData.progress === 'number') {
+              onProgress(Math.min(95, sData.progress));
+            } else {
+              // Priority 2: Smooth crawl fallback
+              const baseProgress = 30;
+              const crawl = attempts <= 10 ? attempts * 2 : 20 + (attempts * 0.4);
+              onProgress(Math.min(95, baseProgress + crawl));
+            }
+          }
+
+          if (sData.status === 'completed') {
+            console.log(`[SessionContext] Analysis finished in ${attempts} polls.`);
+            analysisResult = sData.data;
+            if (onProgress) onProgress(100);
+            break;
+          }
+          
+          if (sData.status === 'error') throw new Error(sData.error || 'AI analysis failed.');
+          if (attempts >= maxAttempts) throw new Error('Analysis timed out.');
+        }
       }
 
-      const normalizedSpeakingMode = String(speakingMode || '').trim().toLowerCase();
-      const normalizedSessionOrigin = normalizeSessionOriginForPersistence(scriptType);
-      const normalizedSessionMode = normalizeSessionModeForPersistence({
-        scriptType,
-        speakingMode,
-      });
+      console.log('[SessionContext] AI Analysis complete.');
 
-      if (!ENV.ENABLE_SESSION_PERSISTENCE) {
-        throw new Error('Session persistence is disabled. Enable database persistence to save sessions.');
-      }
+      // 6. Wait for background media upload to finish before final update
+      const { audioStorageUrl, videoStorageUrl } = await backgroundPersistence;
 
-      /** FastAPI already inserted sessions + metrics + feedback; only attach media + origin fields. */
-      const backendSessionId = analysisResult.session_id;
-
-      let sessionId;
-
+      // 7. Update the session metadata and media URLs
+      const backendSessionId = analysisResult.session_id || analysisResult.id;
       if (backendSessionId) {
-        sessionId = backendSessionId;
-        const { error: sessionUpdateErr } = await supabase
+        console.log('[SessionContext] Finalizing session metadata and media links...');
+        
+        // A. Update session metadata
+        const { error: sessErr } = await supabase
           .from('sessions')
           .update({
-            session_origin: normalizedSessionOrigin || 'training',
-            speaking_mode: normalizedSpeakingMode || null,
-            session_mode: normalizedSessionMode,
-            activity_id: activityId || null,
-            duration: toInt(analysisResult.duration_sec, 0),
+            session_origin: normalizeSessionOriginForPersistence(scriptType) || 'training',
+            speaking_mode: String(speakingMode || '').trim() || null,
           })
-          .eq('id', sessionId)
-          .eq('user_id', uid);
+          .eq('id', backendSessionId);
+        
+        if (sessErr) console.warn('[SessionContext] Session metadata update failed:', sessErr.message);
 
-        if (sessionUpdateErr) {
-          throw new Error(sessionUpdateErr.message || 'Failed to update session after analysis.');
-        }
-
-        const rawTranscript = resolveAnalysisTranscript(analysisResult);
-        const transcript = isFailedAnalysisTranscript(rawTranscript) ? '' : rawTranscript;
-        const mediaRow = {
-          session_id: sessionId,
-          audio_url: audioStorageUrl,
-          video_storage_url: videoStorageUrl,
-          ...(transcript ? { transcript } : {}),
-        };
-        // Backend already inserted session_media; update avoids upsert INSERT path (stricter RLS).
-        const mediaUpdatePayload = {
-          audio_url: audioStorageUrl,
-          video_storage_url: videoStorageUrl,
-          ...(transcript ? { transcript } : {}),
-        };
-        const { data: mediaUpdated, error: mediaUpdateErr } = await supabase
+        // B. Update media URLs in session_media table
+        const { error: mediaErr } = await supabase
           .from('session_media')
-          .update(mediaUpdatePayload)
-          .eq('session_id', sessionId)
-          .select('session_id');
-        if (mediaUpdateErr) {
-          throw new Error(mediaUpdateErr.message || 'Failed to save session media.');
-        }
-        if (!mediaUpdated?.length) {
-          const { error: mediaInsertErr } = await supabase.from('session_media').insert(mediaRow);
-          if (mediaInsertErr) throw new Error(mediaInsertErr.message || 'Failed to save session media.');
-        }
-      } else {
-        const sessionRow = {
-          user_id: uid,
-          status: 'completed',
-          difficulty: null,
-          session_mode: normalizedSessionMode,
-          session_origin: normalizedSessionOrigin || 'training',
-          speaking_mode: normalizedSpeakingMode || null,
-          source: 'web',
-          activity_id: activityId || null,
-          duration: toInt(analysisResult.duration_sec, 0),
-        };
-
-        const { data: saved, error: saveErr } = await supabase
-          .from('sessions')
-          .insert(sessionRow)
-          .select('id')
-          .single();
-
-        if (saveErr || !saved?.id) {
-          if (isSessionsTableMissing(saveErr)) {
-            throw new Error('Supabase table "sessions" is missing. Create it in your Supabase project to persist data.');
-          }
-          throw new Error(saveErr.message || 'Failed to save session to Supabase.');
-        }
-
-        sessionId = saved.id;
-        const rawTranscript = resolveAnalysisTranscript(analysisResult);
-        const transcript = isFailedAnalysisTranscript(rawTranscript) ? '' : rawTranscript;
-
-        const mediaRow = {
-          session_id: sessionId,
-          audio_url: audioStorageUrl,
-          video_storage_url: videoStorageUrl,
-          ...(transcript ? { transcript } : {}),
-        };
-        const metricsRow = {
-          session_id: sessionId,
-          overall_score: toNumeric(analysisResult.confidence_score, 0),
-          verbal_score: analysisResult.context_score == null ? 0 : toNumeric(analysisResult.context_score, 0),
-          fluency_score: toNumeric(analysisResult.fluency_score, 0),
-          vocal_score: toNumeric(analysisResult.acoustic_score, 0),
-          pronunciation_score: analysisResult.pronunciation_score == null ? 0 : toNumeric(analysisResult.pronunciation_score, 0),
-          jitter: analysisResult.jitter_score == null ? null : toNumeric(analysisResult.jitter_score, 0),
-          shimmer: analysisResult.shimmer_score == null ? null : toNumeric(analysisResult.shimmer_score, 0),
-          visual_score: analysisResult.visual_score == null ? 0 : toNumeric(analysisResult.visual_score, 0),
-          facial_expression_score: analysisResult.facial_expression_score == null ? null : toNumeric(analysisResult.facial_expression_score, 0),
-          gesture_score: analysisResult.gesture_score == null ? null : toNumeric(analysisResult.gesture_score, 0),
-          confidence_score: toNumeric(analysisResult.confidence_score, 0),
-        };
-        const feedbackRow = {
-          session_id: sessionId,
-          general_feedback: analysisResult.summary ?? '',
-          detailed_feedback: analysisResult.detailed_feedback ?? analysisResult.summary ?? '',
-        };
-
-        const { error: mediaErr } = await supabase.from('session_media').upsert(mediaRow);
-        if (mediaErr) throw new Error(mediaErr.message || 'Failed to save session media.');
-        const { error: metricsErr } = await supabase.from('session_metrics').upsert(metricsRow);
-        if (metricsErr) throw new Error(metricsErr.message || 'Failed to save session metrics.');
-        const { error: feedbackErr } = await supabase.from('session_feedback').upsert(feedbackRow);
-        if (feedbackErr) throw new Error(feedbackErr.message || 'Failed to save session feedback.');
-
-        const recommendations = sanitizeRecommendationLines(
-          Array.isArray(analysisResult.recommendations) ? analysisResult.recommendations : [],
-        );
-        if (recommendations.length > 0) {
-          const recommendationRows = recommendations.map((text) => ({
-            session_id: sessionId,
-            recommendation_text: String(text).trim(),
-          }));
-          const { error: recommendationErr } = await supabase
-            .from('session_recommendations')
-            .insert(recommendationRows);
-          if (recommendationErr) throw new Error(recommendationErr.message || 'Failed to save recommendations.');
-        }
+          .update({
+            audio_url: audioStorageUrl,
+            video_storage_url: videoStorageUrl,
+          })
+          .eq('session_id', backendSessionId);
+          
+        if (mediaErr) console.warn('[SessionContext] Session media link update failed:', mediaErr.message);
       }
 
-      if (videoStorageUrl && sessionId) {
-        setSessionVideoCacheEntry(sessionId, videoStorageUrl);
-      }
-      setSessionTitleCacheEntry(
-        sessionId,
-        String(scriptTitle || targetText || topic || '').trim(),
-      );
-
-      const { data: persistedSession, error: persistedErr } = await supabase
-        .from('sessions')
-        .select(SESSIONS_SELECT_QUERY)
-        .eq('id', sessionId)
-        .single();
-      if (persistedErr) throw new Error(persistedErr.message || 'Failed to load saved session.');
-
-      const normalizedSaved = normalizeSessionRow(persistedSession);
-      invalidateSessionCaches();
-      dispatch({ type: 'ADD_SESSION', payload: normalizedSaved });
       return {
         success: true,
-        session: normalizedSaved,
-        analysisResult,
-        data: {
-          ...normalizedSaved,
-          speech_type: normalizedSpeakingMode,
-          session_origin: normalizedSessionOrigin,
-          // Keep free/scripted signal available for speech-type labeling even on older schemas.
-          session_mode: normalizedSessionMode || normalizedSaved.session_mode || null,
-          // Include speaking_mode so getSessionSpeechType can correctly identify Free Speech vs Scripted
-          speaking_mode: normalizedSpeakingMode,
-          confidence_score: analysisResult.confidence_score ?? normalizedSaved.score ?? 0,
-          acoustic_score: analysisResult.acoustic_score ?? normalizedSaved.acoustic_score ?? 0,
-          fluency_score: analysisResult.fluency_score ?? normalizedSaved.fluency_score ?? 0,
-          visual_score: analysisResult.visual_score ?? normalizedSaved.visual_score ?? null,
-          visual_avg: analysisResult.visual_avg ?? normalizedSaved.visual_avg ?? null,
-          vocal_avg: analysisResult.vocal_avg ?? normalizedSaved.vocal_avg ?? null,
-          verbal_avg: analysisResult.verbal_avg ?? normalizedSaved.verbal_avg ?? null,
-          entry_point: analysisResult.entry_point ?? null,
-          level: analysisResult.level ?? null,
-          level_label: analysisResult.level_label ?? null,
-          facial_expression_score: analysisResult.facial_expression_score ?? null,
-          gesture_score: analysisResult.gesture_score ?? null,
-          jitter_score: analysisResult.jitter_score ?? null,
-          shimmer_score: analysisResult.shimmer_score ?? null,
-          pronunciation_score: analysisResult.pronunciation_score ?? null,
-          context_score: analysisResult.context_score ?? normalizedSaved.context_score ?? null,
-          recommendations: analysisResult.recommendations ?? [],
-          recommendation_timestamps: analysisResult.recommendation_timestamps ?? [],
-          transcript: resolveAnalysisTranscript(analysisResult),
-          scripted_accuracy: analysisResult.scripted_accuracy ?? null,
-          duration_sec: analysisResult.duration_sec ?? normalizedSaved.duration ?? 0,
-          summary: analysisResult.summary ?? normalizedSaved.feedback ?? '',
-          audio_url: normalizedSaved.audio_url ?? audioStorageUrl,
-          video_url: normalizedSaved.video_url ?? videoStorageUrl,
-          video_storage_url: normalizedSaved.video_storage_url ?? videoStorageUrl,
-        },
+        data: analysisResult,
       };
     } catch (err) {
-      dispatch({ type: 'SET_ERROR', payload: err.message });
+      console.error('[SessionContext] Analysis Error:', err.message);
+      dispatch({ type: 'SET_ANALYSING', payload: false });
       return { success: false, error: err.message };
     } finally {
       dispatch({ type: 'SET_ANALYSING', payload: false });
     }
-  }, [getUserId]);
+  }, [dispatch, getUserId]);
 
   /* ── Delete session ── */
   const deleteSession = useCallback(async (sessionId) => {

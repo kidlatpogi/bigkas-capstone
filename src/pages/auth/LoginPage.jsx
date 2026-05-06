@@ -4,9 +4,11 @@ import { useAuthContext } from '../../context/useAuthContext';
 import { isValidEmail } from '../../utils/validators';
 import { ROUTES } from '../../utils/constants';
 import PasswordToggle from '../../components/common/PasswordToggle';
-import kamayImage from '../../assets/backgrounds/Login/Kamay.png';
 import googleLogo from '../../assets/logos/Google-Logo.png';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import Grainient from './Grainient';
+import PushButton from '../../components/common/PushButton';
+import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import './LoginPage.css';
 
 const LOGIN_LOCKOUT_UNTIL_KEY = 'bigkas_login_lockout_until';
@@ -314,151 +316,256 @@ function LoginPage({ managePageClass = true }) {
     visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
   };
 
+  const robotSprite = getSpriteUrl('Robot/0001.webp');
+
+  const insightWords = [
+    { text: 'Visual', size: '1rem', opacity: 0.8, top: '15%', left: '12%', delay: 0 },
+    { text: 'Vocal', size: '0.95rem', opacity: 0.7, top: '22%', left: '80%', delay: 1 },
+    { text: 'Verbal', size: '0.9rem', opacity: 0.6, top: '68%', left: '8%', delay: 0.5 },
+    { text: 'Gesture', size: '1.1rem', opacity: 0.9, top: '12%', left: '65%', delay: 2 },
+    { text: 'Eye Contact', size: '1rem', opacity: 0.75, top: '55%', left: '82%', delay: 1.5 },
+    { text: 'Jitter', size: '0.8rem', opacity: 0.5, top: '78%', left: '70%', delay: 3 },
+    { text: 'Shimmer', size: '0.9rem', opacity: 0.65, top: '38%', left: '6%', delay: 2.5 },
+    { text: 'Confidence', size: '1.15rem', opacity: 0.95, top: '50%', left: '10%', delay: 0 },
+    { text: 'Clarity', size: '1rem', opacity: 0.8, top: '82%', left: '22%', delay: 4 },
+    { text: 'Presence', size: '1.1rem', opacity: 0.85, top: '18%', left: '42%', delay: 1.2 },
+    { text: 'Empower', size: '0.9rem', opacity: 0.6, top: '72%', left: '48%', delay: 2.2 },
+    { text: 'Growth', size: '1.05rem', opacity: 0.8, top: '8%', left: '85%', delay: 0.8 },
+    { text: 'Flow', size: '1rem', opacity: 0.7, top: '48%', left: '88%', delay: 3.5 },
+    { text: 'Impact', size: '1.1rem', opacity: 0.9, top: '30%', left: '18%', delay: 4.5 },
+    { text: 'Authentic', size: '0.95rem', opacity: 0.75, top: '62%', left: '60%', delay: 5 },
+  ];
+
   return (
     <div
       ref={layoutRef}
-      className="auth-page"
+      className="auth-page-v2"
       data-layout={layoutMode}
     >
-      <div className="auth-hero-panel" aria-hidden="true">
-        <p className="auth-hero-subtitle">Just you and the mic. No judgement. Just Data</p>
-        <div className="auth-wave-pattern">
-          {Array.from({ length: 10 }).map((_, index) => (
-            <span key={`bar-${index}`} className={`auth-wave-bar auth-wave-bar-${index + 1}`} />
-          ))}
-        </div>
-        <img src={kamayImage} alt="" className="auth-hero-kamay" />
-        <h1 className="auth-hero-title">
-          Master
-          <br />
-          Speaking
-        </h1>
-      </div>
-
-      <div className="auth-form-panel">
+      <div className="auth-container">
         <motion.div
-          className="floating-card"
+          className="auth-card"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
         >
-          <motion.div variants={itemVariants} className="auth-brand">Bigkas</motion.div>
-          <motion.h2 variants={itemVariants} className="auth-form-title">Login</motion.h2>
-
-          <form className="auth-form" onSubmit={handleLogin}>
-            {showAccountCreated && !showUnverified && !errors.submit && (
-              <motion.div variants={itemVariants} className="auth-success-banner">
-                Account created successfully! Please check your email to verify your account before logging in.
+          {/* Left Side: Branding & Visuals */}
+          <div className="auth-visual-side">
+            <div className="auth-visual-content">
+              <motion.div variants={itemVariants} className="auth-brand-logo">
+                Bigkas
               </motion.div>
-            )}
-
-            {showAccountVerified && !showUnverified && !errors.submit && (
-              <motion.div variants={itemVariants} className="auth-success-banner">
-                ✓ Email verified! You can now log in.
+              <motion.div 
+                className="auth-robot-img-wrap"
+                initial={{ opacity: 1, y: 0 }}
+                animate={{ 
+                  y: [0, -15, 0],
+                }}
+                transition={{
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              >
+                <div className="auth-robot-glow" />
+                <img src={getSpriteUrl('Robot/0001.webp')} alt="AI Companion" className="auth-robot-img" />
               </motion.div>
-            )}
 
-            {resendSuccess && (
-              <motion.div variants={itemVariants} className="auth-success-banner">
-                Verification email resent! Please check your inbox.
-              </motion.div>
-            )}
-
-            {(lockoutMessage || errors.submit) && !showUnverified && (
-              <motion.div variants={itemVariants} className="auth-error-banner">{lockoutMessage || errors.submit}</motion.div>
-            )}
-
-            {showUnverified && (
-              <motion.div variants={itemVariants} className="auth-unverified-banner">
-                <p className="auth-unverified-text">
-                  Verify your Email Address. Check your inbox and spam folder for the verification link.
-                </p>
-                <button
-                  type="button"
-                  className="auth-resend-btn"
-                  onClick={handleResendVerification}
-                  disabled={resendLoading || resendCooldown > 0}
+              {/* Floating Insight Cloud */}
+              {insightWords.map((word, i) => (
+                <motion.div 
+                  key={i}
+                  className="insight-chip"
+                  style={{ 
+                    top: word.top, 
+                    left: word.left, 
+                    fontSize: word.size,
+                    opacity: word.opacity
+                  }}
+                  animate={{ 
+                    y: [0, -20, 0],
+                    x: [0, 15, 0],
+                  }}
+                  transition={{ 
+                    duration: 6 + (i % 4), 
+                    repeat: Infinity, 
+                    delay: word.delay,
+                    ease: "easeInOut"
+                  }}
                 >
-                  {resendLoading
-                    ? 'Sending...'
-                    : resendCooldown > 0
-                      ? `Resend available in ${resendCooldown}s`
-                      : 'Resend Verification Email'}
-                </button>
-              </motion.div>
-            )}
+                  {word.text}
+                </motion.div>
+              ))}
+              <motion.h2 variants={itemVariants} className="auth-hero-tagline">
+                Master <span>Public Speaking</span>
+              </motion.h2>
+              <motion.p variants={itemVariants} className="auth-hero-desc">
+                Your AI-powered journey to public speaking excellence starts here.
+              </motion.p>
+            </div>
+            
+            {/* Decorative soundwaves */}
+            <div className="auth-visual-waves">
+              {[...Array(24)].map((_, i) => (
+                <div key={i} className={`auth-visual-wave auth-visual-wave-${(i % 6) + 1}`} />
+              ))}
+            </div>
+          </div>
 
-            <motion.div variants={itemVariants} className="form-group">
-              <label htmlFor="email" className="form-label">Email</label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                className={`form-input ${errors.email ? 'form-input-error' : ''}`}
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="name@gmail.com"
-                disabled={isLoading || lockoutSeconds > 0}
-              />
-              {errors.email && <span className="form-error">{errors.email}</span>}
-            </motion.div>
+          {/* Right Side: Login Form */}
+          <div className="auth-form-side">
+            <div className="auth-form-inner">
+              <motion.h3 variants={itemVariants} className="auth-form-headline">Welcome Back</motion.h3>
+              <motion.p variants={itemVariants} className="auth-form-subline">Please enter your credentials to continue</motion.p>
 
-            <motion.div variants={itemVariants} className="form-group">
-              <label htmlFor="password" className="form-label">Password</label>
-              <div className="pw-input-wrap">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  name="password"
-                  className={`form-input ${errors.password ? 'form-input-error' : ''}`}
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                  disabled={isLoading || lockoutSeconds > 0}
-                  autoComplete="current-password"
-                />
-                <PasswordToggle
-                  isVisible={showPassword}
-                  onToggle={() => setShowPassword((v) => !v)}
-                  label="password"
-                  disabled={isLoading || lockoutSeconds > 0}
-                />
-              </div>
-              {errors.password && <span className="form-error">{errors.password}</span>}
-            </motion.div>
+              <form className="auth-form" onSubmit={handleLogin}>
+                <AnimatePresence>
+                  {showAccountCreated && !showUnverified && !errors.submit && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="auth-status-banner is-success"
+                    >
+                      Account created! Please check your email to verify before logging in.
+                    </motion.div>
+                  )}
 
-            <motion.div variants={itemVariants}>
-              <Link to={ROUTES.FORGOT_PASSWORD} className="auth-forgot-link">Forgot Password?</Link>
-            </motion.div>
+                  {showAccountVerified && !showUnverified && !errors.submit && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="auth-status-banner is-success"
+                    >
+                      ✓ Email verified! You can now log in.
+                    </motion.div>
+                  )}
 
-            <motion.div variants={itemVariants}>
-              <div className="auth-submit-btn">
-                <button
-                  type="submit"
-                  disabled={isLoading || lockoutSeconds > 0}
-                >
-                  {isLoading ? <span className="btn-loader"></span> : (lockoutSeconds > 0 ? `LOCKED (${formatCountdown(lockoutSeconds)})` : 'LOGIN')}
-                </button>
-              </div>
-            </motion.div>
+                  {resendSuccess && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="auth-status-banner is-success"
+                    >
+                      Verification email resent! Check your inbox.
+                    </motion.div>
+                  )}
 
-            <motion.div variants={itemVariants}>
-              <div className="auth-google-btn">
-                <button
-                  type="button"
-                  onClick={handleGoogleSignIn}
-                  disabled={isLoading}
-                >
-                  <img src={googleLogo} alt="Google" className="auth-google-logo" />
-                  <span>LOGIN WITH GOOGLE</span>
-                </button>
-              </div>
-            </motion.div>
+                  {(lockoutMessage || errors.submit) && !showUnverified && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="auth-status-banner is-error"
+                    >
+                      {lockoutMessage || errors.submit}
+                    </motion.div>
+                  )}
 
-            <motion.div variants={itemVariants} style={{ width: '100%', textAlign: 'center' }}>
-              <Link to={ROUTES.REGISTER} className="auth-link">Create Account?</Link>
-            </motion.div>
-          </form>
+                  {showUnverified && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="auth-status-banner is-warning"
+                    >
+                      <p>Verify your Email Address. Check your inbox and spam folder.</p>
+                      <button
+                        type="button"
+                        className="auth-resend-inline-btn"
+                        onClick={handleResendVerification}
+                        disabled={resendLoading || resendCooldown > 0}
+                      >
+                        {resendLoading ? 'Sending...' : resendCooldown > 0 ? `Retry in ${resendCooldown}s` : 'Resend Email'}
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <motion.div variants={itemVariants} className="form-group-v2">
+                  <label htmlFor="email">Email</label>
+                  <div className="input-field-wrap">
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      className={errors.email ? 'is-invalid' : ''}
+                      value={formData.email}
+                      onChange={handleChange}
+                      placeholder="your@email.com"
+                      disabled={isLoading || lockoutSeconds > 0}
+                    />
+                  </div>
+                  {errors.email && <span className="field-error">{errors.email}</span>}
+                </motion.div>
+
+                <motion.div variants={itemVariants} className="form-group-v2">
+                  <label htmlFor="password">Password</label>
+                  <div className="input-field-wrap">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      id="password"
+                      name="password"
+                      className={errors.password ? 'is-invalid' : ''}
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="••••••••"
+                      disabled={isLoading || lockoutSeconds > 0}
+                      autoComplete="current-password"
+                    />
+                    <PasswordToggle
+                      isVisible={showPassword}
+                      onToggle={() => setShowPassword((v) => !v)}
+                      label="password"
+                      disabled={isLoading || lockoutSeconds > 0}
+                    />
+                  </div>
+                  <div className="form-footer-row">
+                    <Link to={ROUTES.FORGOT_PASSWORD} className="forgot-pw-link">Forgot Password?</Link>
+                  </div>
+                  {errors.password && <span className="field-error">{errors.password}</span>}
+                </motion.div>
+
+                <motion.div variants={itemVariants} className="form-actions-v2">
+                  <PushButton
+                    type="submit"
+                    disabled={isLoading || lockoutSeconds > 0}
+                    bgColor="#059669"
+                    shadowColor="#047857"
+                    className="login-submit-btn"
+                  >
+                    {isLoading ? (
+                      <span className="loading-spinner" />
+                    ) : (
+                      lockoutSeconds > 0 ? `Locked (${formatCountdown(lockoutSeconds)})` : 'Login'
+                    )}
+                  </PushButton>
+                </motion.div>
+
+                <motion.div variants={itemVariants} className="divider-v2">
+                  <span>OR</span>
+                </motion.div>
+
+                <motion.div variants={itemVariants}>
+                  <button
+                    type="button"
+                    className="google-signin-btn-v2"
+                    onClick={handleGoogleSignIn}
+                    disabled={isLoading}
+                  >
+                    <img src={googleLogo} alt="" />
+                    Continue with Google
+                  </button>
+                </motion.div>
+
+                <motion.div variants={itemVariants} className="signup-prompt-v2">
+                  Don't have an account? <Link to={ROUTES.REGISTER}>Create one now</Link>
+                </motion.div>
+              </form>
+            </div>
+          </div>
         </motion.div>
       </div>
     </div>

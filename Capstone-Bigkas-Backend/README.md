@@ -4,7 +4,7 @@ emoji: "🎙️"
 colorFrom: blue
 colorTo: green
 sdk: docker
-app_port: 8000
+app_port: 7860
 pinned: false
 ---
 
@@ -16,13 +16,9 @@ This Space runs the Bigkas FastAPI backend for speech analysis.
 
 - POST /api/analyze-speech
 
-## Required Space Secrets
-
-Set these in your Hugging Face Space Settings -> Variables and secrets:
-
-- GEMINI_API_KEY
 - SUPABASE_URL
 - SUPABASE_SERVICE_KEY
+- CORS_ORIGINS
 
 ## Local Run
 
@@ -32,4 +28,4 @@ pip install -r requirements.txt
 
 Run server:
 
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn main:app --host 0.0.0.0 --port 7860 --reload

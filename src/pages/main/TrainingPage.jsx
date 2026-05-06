@@ -52,31 +52,39 @@ function getSupportedVideoMime() {
 
 async function stopRecorderSafely(recorder) {
   if (!recorder || recorder.state === 'inactive') return;
-  await new Promise((resolve) => {
+  
+  return new Promise((resolve) => {
     let settled = false;
+    const timeout = setTimeout(() => {
+      if (!settled) {
+        console.warn('stopRecorderSafely timed out for:', recorder);
+        settled = true;
+        resolve();
+      }
+    }, 3000); // 3-second safety timeout
+
     const finish = () => {
       if (settled) return;
       settled = true;
+      clearTimeout(timeout);
       resolve();
     };
+
     const prevStop = recorder.onstop;
     recorder.onstop = (event) => {
-      if (typeof prevStop === 'function') {
-        prevStop(event);
-      }
+      if (typeof prevStop === 'function') prevStop(event);
       finish();
     };
     recorder.onerror = () => finish();
+
     try {
-      if (recorder.state === 'recording') {
-        recorder.requestData();
+      if (recorder.state === 'recording' || recorder.state === 'paused') {
+        recorder.stop();
+      } else {
+        finish();
       }
-    } catch {
-      // Continue stopping even if requestData is unsupported.
-    }
-    try {
-      recorder.stop();
-    } catch {
+    } catch (err) {
+      console.error('Error stopping recorder:', err);
       finish();
     }
   });
@@ -255,6 +263,7 @@ function TrainingPage() {
   const [resumeCountdown, setResumeCountdown] = useState(0);
   const [isResumingVisual, setIsResumingVisual] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [isPreviewActive, setIsPreviewActive] = useState(false);
   const { startAnalysis, stopAnalysis, liveScores, error: visualError, isReady: isVisualReady } = useVisualAnalysis();
 
   const isRecording = status === 'recording';
@@ -398,21 +407,28 @@ function TrainingPage() {
     }
 
     // Initialize with a small amount
-    setAnalysisProgress(3);
+    setAnalysisProgress(5);
+    const startTime = Date.now();
 
     const interval = setInterval(() => {
       setAnalysisProgress((prev) => {
-        if (prev >= 96) return prev;
-        // Progressive slowdown: starts fast, drags near the end
-        let increment = 1.2;
-        if (prev < 30) increment = 3.5;
-        else if (prev < 65) increment = 2.1;
-        else if (prev < 85) increment = 0.8;
-        else increment = 0.3;
+        // NUCLEAR RESET: If stuck at 96% for more than 25 seconds, push to 99%
+        if (prev >= 96) {
+          const durationStuck = Date.now() - startTime;
+          if (durationStuck > 25000) return 99; 
+          return 96;
+        }
+
+        // Progressive slowdown
+        let increment = 1.0;
+        if (prev < 40) increment = 4.0;
+        else if (prev < 70) increment = 1.5;
+        else if (prev < 90) increment = 0.5;
+        else increment = 0.2;
 
         return Math.min(96, prev + increment);
       });
-    }, 350);
+    }, 400);
 
     return () => clearInterval(interval);
   }, [status]);
@@ -605,7 +621,10 @@ function TrainingPage() {
     const sensitivity = getMicSensitivityProfile();
 
     const tick = () => {
-      if (!analyserRef.current) return;
+      if (!analyserRef.current || !audioCtxRef.current) return;
+      if (audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume().catch(() => {});
+      }
       const data = new Uint8Array(analyserRef.current.fftSize);
       analyserRef.current.getByteTimeDomainData(data);
 
@@ -667,11 +686,13 @@ function TrainingPage() {
       animRef.current = requestAnimationFrame(tick);
     };
 
+    if (animRef.current) cancelAnimationFrame(animRef.current);
     tick();
   }, []);
 
-  /* ── Start recording ── */
-  const startRecording = useCallback(async () => {
+  /* ── Initialize Camera/Mic Preview ── */
+  const initPreview = useCallback(async () => {
+    if (!isMountedRef.current) return;
     try {
       const selectedMic = typeof window !== 'undefined'
         ? window.localStorage.getItem('pref_mic') || ''
@@ -693,41 +714,90 @@ function TrainingPage() {
         },
       };
 
+      /* Stop previous tracks if re-initializing */
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop());
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      if (!isMountedRef.current) {
+        stream.getTracks().forEach(t => t.stop());
+        return;
+      }
       streamRef.current = stream;
+      setIsPreviewActive(true);
 
-      /* Attach video */
-      if (videoRef.current && stream.getVideoTracks().length > 0) {
+      if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.play().catch(e => console.warn('[TrainingPage] Preview play failed:', e));
       }
 
-      /* Audio analyser → waveform history */
-      if (audioCtxRef.current) {
-        audioCtxRef.current.close().catch(() => { });
-      }
-
+      /* Audio analyser setup (for preview waveform) */
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      const ctx = new AudioCtx();
-      audioCtxRef.current = ctx;
-      if (ctx.state === 'suspended') {
-        await ctx.resume();
+      if (AudioCtx) {
+        if (audioCtxRef.current) {
+          audioCtxRef.current.close().catch(() => { });
+        }
+        const ctx = new AudioCtx();
+        audioCtxRef.current = ctx;
+        if (ctx.state === 'suspended') {
+          ctx.resume().catch(() => { });
+        }
+        
+        const audioTracks = stream.getAudioTracks();
+        if (audioTracks.length > 0) {
+          const src = ctx.createMediaStreamSource(stream);
+          const analyser = ctx.createAnalyser();
+          analyser.fftSize = 512;
+          analyser.smoothingTimeConstant = 0.7;
+          analyserRef.current = analyser;
+          src.connect(analyser);
+          startWaveformLoop();
+        }
+      }
+    } catch (err) {
+      console.error('[TrainingPage] Preview initialization failed:', err);
+      if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
+        setStatus('permission-denied');
+      } else {
+        setErrorMsg(`Camera/Mic Error: ${err.message || 'Check permissions'}`);
+      }
+    }
+  }, [startWaveformLoop]);
+
+  /* Ensure video element is synced with stream when it appears in DOM */
+  useEffect(() => {
+    if (videoRef.current && streamRef.current && videoRef.current.srcObject !== streamRef.current) {
+      console.log('[TrainingPage] Re-syncing stream to video element');
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch(e => console.warn('[TrainingPage] Sync play failed:', e));
+    }
+  });
+
+  /* Start preview on mount or when returning from error/idle */
+  useEffect(() => {
+    if (status === 'idle' || status === 'permission-denied') {
+      initPreview();
+    }
+  }, [initPreview, status]);
+
+  /* ── Start recording ── */
+  const startRecording = useCallback(async () => {
+    try {
+      let stream = streamRef.current;
+      const hasActiveVideo = stream?.getVideoTracks().some(t => t.readyState === 'live');
+      const hasActiveAudio = stream?.getAudioTracks().some(t => t.readyState === 'live');
+
+      if (!stream || !hasActiveVideo || !hasActiveAudio) {
+        await initPreview();
+        stream = streamRef.current;
+      }
+
+      if (!stream) {
+        throw new Error('Camera/Microphone stream not available.');
       }
 
       const audioTracks = stream.getAudioTracks();
-      if (audioTracks.length === 0) {
-        throw new Error('No microphone track available for recording.');
-      }
-
-      const audioOnlyStream = new MediaStream(audioTracks);
-      const src = ctx.createMediaStreamSource(audioOnlyStream);
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 512;
-      analyser.smoothingTimeConstant = 0.7;
-      analyser.minDecibels = -90;
-      analyser.maxDecibels = -10;
-      analyserRef.current = analyser;
-      src.connect(analyser);
-      startWaveformLoop();
 
       const recordingStream = new MediaStream(audioTracks);
       const recorderMime = getSupportedMime();
@@ -820,7 +890,14 @@ function TrainingPage() {
 
 
   /* ── Stop → analyse ── */
-  const stopRecording = () => {
+  const stopRecording = async () => {
+    console.log('[TrainingPage] stopRecording triggered.');
+    
+    // 1. Immediate UI Transition
+    setStatus('analysing');
+    setAnalysisProgress(5);
+
+    // 2. Clear all active timers/animations
     clearInterval(timerRef.current);
     clearInterval(wpmTimerRef.current);
     clearTimeout(wpmTimerRef.current);
@@ -831,27 +908,55 @@ function TrainingPage() {
     micLowStartRef.current = null;
     micWarningVisibleRef.current = false;
     setShowMicWarning(false);
+    
     const recorder = mediaRef.current;
-    if (!recorder || recorder.state === 'inactive') return;
     const videoRecorder = visualMediaRef.current;
-    const videoStopPromise = stopRecorderSafely(videoRecorder);
 
-    recorder.onstop = async () => {
-      // Stop visual analysis with final averaged scores.
-      visualScoresRef.current = stopAnalysis();
-      const mime = recorder.mimeType || getSupportedMime() || 'audio/webm';
-      const blob = new Blob(chunksRef.current, { type: mime });
-      if (blob.size < 1024) {
-        if (isMountedRef.current) {
-          setErrorMsg('Recorded audio was empty. Please check microphone permission and try again.');
-          setStatus('error');
-        }
-        handleRestart();
-        return;
+    // 3. Validation Check (Early)
+    const recordingDurationSec = recordingDurationSecRef.current;
+    const minSeconds = isPreTestSession ? 10 : 5; // Lowered for testing
+    
+    if (recordingDurationSec < minSeconds) {
+      console.warn('[TrainingPage] Session too short:', recordingDurationSec);
+      setHintContent(`Your recording is too short! Please speak for at least ${minSeconds} seconds.`);
+      setShowHint(true);
+      setTimeout(() => setShowHint(false), 5000);
+      setStatus('idle');
+      handleRestart(); // Reset to allow re-recording
+      return;
+    }
+
+    // 4. Stop hardware and collect final data
+    console.log('[TrainingPage] Stopping hardware recorders...');
+    visualScoresRef.current = stopAnalysis();
+    
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    if (audioCtxRef.current) {
+      audioCtxRef.current.close().catch(() => { });
+      audioCtxRef.current = null;
+    }
+    analyserRef.current = null;
+
+    try {
+      const audioStopPromise = new Promise((resolve) => {
+        if (!recorder || recorder.state === 'inactive') return resolve();
+        const t = setTimeout(() => resolve(), 2000);
+        recorder.onstop = () => { clearTimeout(t); resolve(); };
+        try { recorder.stop(); } catch (e) { resolve(); }
+      });
+
+      const videoStopPromise = stopRecorderSafely(videoRecorder);
+      await Promise.all([audioStopPromise, videoStopPromise]);
+
+      // 5. Prepare Blobs
+      const mime = recorder?.mimeType || getSupportedMime() || 'audio/webm';
+      const audioBlob = new Blob(chunksRef.current, { type: mime });
+      
+      if (audioBlob.size < 100) {
+        throw new Error('Recorded audio data is missing. Please check your microphone.');
       }
 
       let videoBlob = null;
-      await videoStopPromise;
       if (visualChunksRef.current.length > 0) {
         const candidateVideoBlob = new Blob(visualChunksRef.current, {
           type: visualMimeRef.current || 'video/webm',
@@ -861,43 +966,23 @@ function TrainingPage() {
         }
       }
 
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-      if (audioCtxRef.current) {
-        audioCtxRef.current.close().catch(() => { });
-        audioCtxRef.current = null;
-      }
-      analyserRef.current = null;
-
-      const recordingDurationSec = recordingDurationSecRef.current;
-      if (recordingDurationSec < MIN_RECORDING_SECONDS) {
-        if (isMountedRef.current) {
-          setHintContent(
-            'Your recording is too short! Please introduce yourself for at least 20 seconds so the AI can accurately analyze your gestures and tone.',
-          );
-          setShowHint(true);
-          clearTimeout(hintDismissRef.current);
-          hintDismissRef.current = setTimeout(() => setShowHint(false), 12000);
-        }
-        handleRestart();
-        return;
-      }
-
-      setStatus('analysing');
-      try {
-        const profilingKeys = [
-          'visual_eye_contact', 'visual_gestures', 'visual_energy',
-          'vocal_projection', 'vocal_expression', 'vocal_pacing',
-          'verbal_fillers', 'verbal_vocabulary', 'verbal_anxiety',
-        ];
-        const profileResponses = user?.speakerProfile?.responses || {};
-        const profilingAnswers = profilingKeys.map((key) => {
-          const raw = String(profileResponses[key] || '').trim();
-          if (['yes', 'no', 'sometimes'].includes(raw.toLowerCase())) return raw;
-          return 'No';
-        });
+      // 6. Execute Backend Analysis
+      console.log('[TrainingPage] Sending to AI analysis engine...');
+      setAnalysisProgress(20);
+      
+      const profilingKeys = [
+        'visual_eye_contact', 'visual_gestures', 'visual_energy',
+        'vocal_projection', 'vocal_expression', 'vocal_pacing',
+        'verbal_fillers', 'verbal_vocabulary', 'verbal_anxiety',
+      ];
+      const profileResponses = user?.speakerProfile?.responses || {};
+      const profilingAnswers = profilingKeys.map((key) => {
+        const raw = String(profileResponses[key] || '').trim();
+        return ['yes', 'no', 'sometimes'].includes(raw.toLowerCase()) ? raw : 'No';
+      });
 
         const result = await analyseAndSave({
-          audioBlob: blob,
+          audioBlob,
           videoBlob,
           targetText: focus === 'scripted' ? (script?.content || '') : freeTopic,
           scriptType: sessionType,
@@ -907,13 +992,25 @@ function TrainingPage() {
           visualAnalysis: visualScoresRef.current,
           topic: focus === 'scripted' ? (script?.title || 'Scripted Speech') : (freeTopic || 'General Speaking'),
           profilingAnswers,
+          onProgress: (p) => setAnalysisProgress(p), // Real-time feedback
         });
 
-        if (result?.success && result?.data?.id) {
-          const rawSessionScore = Number(result?.data?.confidence_score ?? result?.data?.score ?? 0);
-          const normalizedSessionScore = Number.isFinite(rawSessionScore)
-            ? (rawSessionScore <= 1 ? rawSessionScore * 100 : rawSessionScore)
-            : 0;
+        if (!result?.success || !(result?.data?.id || result?.data?.session_id)) {
+          throw new Error(result?.error || 'The analysis engine encountered an error. Please try again.');
+        }
+
+        // 7. Update Metadata & Rewards (Non-blocking)
+        console.log('[TrainingPage] Analysis success, preparing rewards...');
+        const rawSessionScore = Number(result.data.confidence_score ?? result.data.score ?? 0);
+        const normalizedSessionScore = rawSessionScore <= 1 ? rawSessionScore * 100 : rawSessionScore;
+        
+        // Finalize UI
+        setAnalysisProgress(100);
+
+      try {
+        const metadataUpdates = {};
+
+        if (sessionType !== 'pre-test') {
           const remotePoints = Math.max(0, Math.floor(Number(user?.speakerPoints ?? 0) || 0));
           let pointsBefore = getTotalActivityPoints(activityScopeKey);
           if (remotePoints > pointsBefore) {
@@ -922,152 +1019,89 @@ function TrainingPage() {
           }
           const completionHistoryBefore = getActivityCompletionHistory(activityScopeKey);
 
+          // Activity events
           if (focus === 'scripted') {
             recordActivityEvent({
               type: 'scripted-session-complete',
               sessionId: result.data.id,
-              durationSec: elapsedSec,
+              durationSec: recordingDurationSec,
               scriptTitle: script?.title || '',
             }, activityScopeKey);
           }
 
           if (focus === 'free' && state?.entryPoint === 'practice') {
-            recordActivityEvent({
-              type: 'randomizer-session-complete',
-              sessionId: result.data.id,
-            }, activityScopeKey);
+            recordActivityEvent({ type: 'randomizer-session-complete', sessionId: result.data.id }, activityScopeKey);
           }
 
           const fromActivity = String(state?.fromActivityTaskId || '').trim();
           if (fromActivity) {
-            recordActivityEvent({
-              type: 'activity-complete',
-              activityId: fromActivity,
-            }, activityScopeKey);
-            if (typeof window !== 'undefined') {
-              window.sessionStorage.setItem(
-                ACTIVITY_CELEBRATION_STORAGE_KEY,
-                JSON.stringify({
-                  activityId: fromActivity,
-                  activityTitle: String(state?.step?.title || freeTopic || '').trim(),
-                  completedAt: Date.now(),
-                }),
-              );
-            }
+            recordActivityEvent({ type: 'activity-complete', activityId: fromActivity }, activityScopeKey);
           }
 
-          if (sessionType !== 'pre-test') {
-            const earnedByScore = getScoreRewardPoints(normalizedSessionScore, elapsedSec);
-            if (earnedByScore > 0) {
-              addPointsToSpeakerProgress(earnedByScore, activityScopeKey);
-            }
-          }
-
+          const earnedByScore = getScoreRewardPoints(normalizedSessionScore, recordingDurationSec);
+          if (earnedByScore > 0) addPointsToSpeakerProgress(earnedByScore, activityScopeKey);
+          
           const pointsAfter = getTotalActivityPoints(activityScopeKey);
-          const metadataUpdates = {};
 
           if (pointsAfter !== pointsBefore) {
-            const completionHistoryAfter = getActivityCompletionHistory(activityScopeKey);
-            const seenTaskIdsBefore = new Set(
-              (completionHistoryBefore || []).map((entry) => String(entry?.taskId || '')).filter(Boolean),
-            );
-            const newlyCompletedTasks = (completionHistoryAfter || []).filter((entry) => {
-              const taskId = String(entry?.taskId || '');
-              return taskId && !seenTaskIdsBefore.has(taskId);
-            });
-
-            const scoreRewardPoints = sessionType !== 'pre-test'
-              ? Math.max(0, getScoreRewardPoints(normalizedSessionScore, elapsedSec))
-              : 0;
-            const taskRewardPoints = newlyCompletedTasks.reduce(
-              (sum, entry) => sum + Math.max(0, Number(entry?.pointsAwarded || 0)),
-              0,
-            );
-            const totalAwarded = Math.max(0, Math.floor(pointsAfter - pointsBefore));
-
             const levelProgress = getBigkasLevelFromUser(user);
             metadataUpdates.speaker_points = pointsAfter;
             metadataUpdates.speaker_level = levelProgress.levelName;
             metadataUpdates.speaker_level_number = levelProgress.levelNumber;
             metadataUpdates.speaker_points_updated_at = new Date().toISOString();
-            metadataUpdates.speaker_points_history = appendSpeakerPointsHistory(
-              user?.speakerPointsHistory,
-              createSpeakerPointsHistoryEntry({
-                source: 'session-reward',
-                label: taskRewardPoints > 0
-                  ? 'Session reward + activity task bonus'
-                  : 'Session performance reward',
-                pointsAwarded: totalAwarded,
-                totalPointsAfter: pointsAfter,
-                metadata: {
-                  session_id: result.data.id,
-                  score: Math.round(normalizedSessionScore),
-                  duration_sec: elapsedSec,
-                  session_type: sessionType,
-                  speaking_mode: focus,
-                  score_reward_points: scoreRewardPoints,
-                  task_reward_points: taskRewardPoints,
-                  completed_task_ids: newlyCompletedTasks.map((entry) => String(entry?.taskId || '')).filter(Boolean),
-                },
-              }),
-            );
           }
-
-          if (sessionType === 'pre-test') {
-            if (focus === 'scripted') {
-              metadataUpdates.pretest_scripted_completed = true;
-              metadataUpdates.pretest_scripted_completed_at = new Date().toISOString();
-              metadataUpdates.pretest_scripted_session_id = result.data.id;
-              metadataUpdates.pretest_scripted_score = Math.max(0, Math.min(100, Math.round(normalizedSessionScore)));
-            } else if (focus === 'free') {
-              metadataUpdates.onboarding_stage = 'analyzing';
-              metadataUpdates.onboarding_completed = false;
-              metadataUpdates.pretest_completed = true;
-              metadataUpdates.pretest_free_completed = true;
-              metadataUpdates.pretest_completed_at = new Date().toISOString();
-              metadataUpdates.pretest_free_session_id = result.data.id;
-              metadataUpdates.pretest_free_score = Math.max(0, Math.min(100, Math.round(normalizedSessionScore)));
-              metadataUpdates.pretest_session_id = result.data.id;
-            }
-          }
-
-          if (Object.keys(metadataUpdates).length > 0) {
-            await updateUserMetadata(metadataUpdates);
-          }
-
-          setAnalysisProgress(100);
-          setTimeout(() => {
-            if (isMountedRef.current) {
-              navigate(buildRoute.sessionResult(result.data.id), { state: result.data });
-            }
-          }, 450);
         } else {
-          if (isMountedRef.current) {
-            setErrorMsg(result?.error || 'Analysis failed. Please try again.');
-            setStatus('error');
+          // Pre-test specific metadata
+          if (focus === 'scripted') {
+            metadataUpdates.pretest_scripted_completed = true;
+            metadataUpdates.pretest_scripted_completed_at = new Date().toISOString();
+            metadataUpdates.pretest_scripted_session_id = result.data.id;
+            metadataUpdates.pretest_scripted_score = Math.round(normalizedSessionScore);
+          } else {
+            metadataUpdates.onboarding_stage = 'analyzing';
+            metadataUpdates.onboarding_completed = false;
+            metadataUpdates.pretest_completed = true;
+            metadataUpdates.pretest_free_completed = true;
+            metadataUpdates.pretest_completed_at = new Date().toISOString();
+            metadataUpdates.pretest_free_session_id = result.data.id;
+            metadataUpdates.pretest_free_score = Math.round(normalizedSessionScore);
+            metadataUpdates.pretest_session_id = result.data.id;
           }
         }
-      } catch (err) {
-        if (isMountedRef.current) {
-          setErrorMsg('An unexpected error occurred during analysis.');
-          setStatus('error');
+
+        if (Object.keys(metadataUpdates).length > 0) {
+          console.log('[TrainingPage] Background finalizing user metadata...');
+          updateUserMetadata(metadataUpdates).catch(e => console.warn('Background metadata update failed:', e));
         }
+      } catch (metaErr) {
+        console.warn('[TrainingPage] Metadata/Points update failed, but session was saved:', metaErr);
       }
-    };
-    try {
-      recorder.requestData();
-    } catch {
-      // Best-effort flush before stop.
-    }
-    if (videoRecorder && videoRecorder.state === 'recording') {
-      try {
-        videoRecorder.requestData();
-      } catch {
-        // Best-effort flush before stop.
+
+      // 8. Finalize and Navigate
+      console.log('[TrainingPage] Navigating to results...');
+      const finalSessionId = result.data.id || result.data.session_id;
+      
+      setTimeout(() => {
+        if (isMountedRef.current) {
+          if (!finalSessionId) {
+            console.error('[TrainingPage] No session ID found in result:', result);
+            setErrorMsg('Analysis completed, but session ID was missing.');
+            setStatus('error');
+            return;
+          }
+          navigate(buildRoute.sessionResult(finalSessionId), { state: result.data });
+        }
+      }, 500);
+
+    } catch (err) {
+      console.error('[TrainingPage] Analysis Error:', err);
+      if (isMountedRef.current) {
+        setErrorMsg(err.message || 'An unexpected error occurred.');
+        setStatus('error');
       }
     }
-    recorder.stop();
   };
+
 
   /* ── Pause / Resume ── */
   const handlePause = () => {
@@ -1155,13 +1189,10 @@ function TrainingPage() {
     cancelAnimationFrame(animRef.current);
     if (mediaRef.current && mediaRef.current.state !== 'inactive') mediaRef.current.stop();
     if (visualMediaRef.current && visualMediaRef.current.state !== 'inactive') visualMediaRef.current.stop();
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    if (audioCtxRef.current) {
-      audioCtxRef.current.close().catch(() => { });
-      audioCtxRef.current = null;
+    // Do NOT stop stream tracks here to keep the preview active
+    if (videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
     }
-    analyserRef.current = null;
-    if (videoRef.current) videoRef.current.srcObject = null;
     waveHistRef.current = Array(50).fill(0);
     setWaveformBars(Array(50).fill(0));
     silenceStartRef.current = null;
@@ -1286,7 +1317,6 @@ function TrainingPage() {
 
   useEffect(() => {
     if (!videoRef.current || !visualCanvasRef.current) return;
-    if (!isRecording) return;
 
     startAnalysis({
       videoElement: videoRef.current,
@@ -1413,8 +1443,8 @@ function TrainingPage() {
               />
               <canvas ref={visualCanvasRef} className="tp-camera-overlay" aria-hidden="true" />
               {/* Placeholder shown before recording starts */}
-              <div className={`tp-camera-idle ${isActive ? 'tp-camera-idle--active' : ''}`}>
-                <div className={`tp-camera-frame-guide ${isActive ? 'tp-camera-frame-guide--active' : ''}`} />
+              <div className={`tp-camera-idle ${isActive || isPreviewActive ? 'tp-camera-idle--active' : ''}`}>
+                <div className={`tp-camera-frame-guide ${isActive || isPreviewActive ? 'tp-camera-frame-guide--active' : ''}`} />
               </div>
 
               {showLowLightWarning && (
@@ -1430,14 +1460,21 @@ function TrainingPage() {
           <div
             id={isFreePretestSession ? 'tutorial-target-soundbar' : undefined}
             className={`tp-waveform${isFreePretestSession ? ' tp-waveform--free-pretest' : ''}`}
+            style={{ visibility: 'visible', minHeight: '52px' }}
           >
-            {waveformBars.map((lvl, i) => (
-              <div
-                key={i}
-                className="tp-wave-bar"
-                style={{ height: `${Math.max(4, lvl * 64)}px` }}
-              />
-            ))}
+            {waveformBars.length > 0 ? (
+              waveformBars.map((lvl, i) => (
+                <div
+                  key={i}
+                  className="tp-wave-bar"
+                  style={{ height: `${Math.max(4, lvl * 64)}px` }}
+                />
+              ))
+            ) : (
+              Array.from({ length: 40 }).map((_, i) => (
+                <div key={i} className="tp-wave-bar" style={{ height: '4px', opacity: 0.3 }} />
+              ))
+            )}
             {isFreePretestSession && (
               <span className="tp-free-pretest-timer" aria-live="polite">
                 {formatMinuteSecond(elapsedSec)}
@@ -1474,7 +1511,7 @@ function TrainingPage() {
             <div className="tp-ctrl-col">
               <button
                 className="tp-ctrl-btn"
-                onClick={status === 'paused' ? handleResume : handlePause}
+                onClick={status === 'paused' ? handleResumeFromPausedModal : handlePause}
                 disabled={status === 'idle' || status === 'countdown'}
                 aria-label={status === 'paused' ? 'Resume' : 'Pause'}
               >

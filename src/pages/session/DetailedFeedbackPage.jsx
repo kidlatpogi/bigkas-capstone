@@ -241,6 +241,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
   const { currentSession, fetchSessionById, isLoading } = useSessionContext();
   const [recordingMedia, setRecordingMedia] = useState({ audioUrl: null, videoUrl: null, transcript: '' });
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const avoidSectionRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -266,15 +267,85 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
     fetchSessionById(sessionId);
   }, [fetchSessionById, session, sessionId]);
 
+  const tripleV = useMemo(() => getTripleVScores(session || {}), [session]);
+  const pillars = useMemo(() => {
+    const visualSubMetrics = [
+      { label: 'Eye Contact', score: subMetric100to15(session?.facial_expression_score ?? session?.eye_contact_score) ?? tripleV.visualAvg },
+      { label: 'Gestures', score: subMetric100to15(session?.gesture_score) ?? tripleV.visualAvg },
+    ];
+    const vocalSubMetrics = [
+      { label: 'Jitter Control', score: invertedSubMetric(session?.jitter_score) },
+      { label: 'Shimmer Control', score: invertedSubMetric(session?.shimmer_score) },
+    ].filter((m) => m.score !== null);
+
+    return [
+      { key: 'visual', label: 'Visual', desc: 'Eye contact, facial expressions, and body gestures', score: tripleV.visualAvg, subMetrics: visualSubMetrics },
+      { key: 'vocal', label: 'Vocal', desc: 'Voice pitch stability, volume consistency, and clarity', score: tripleV.vocalAvg, subMetrics: vocalSubMetrics },
+      { key: 'verbal', label: 'Verbal', desc: 'Pronunciation accuracy and topical relevance', score: tripleV.verbalAvg, subMetrics: [] },
+    ];
+  }, [session, tripleV]);
+
+  const durationSec = Math.max(1, Math.round(session?.duration_sec ?? session?.duration ?? 1));
+
+  const timelineData = useMemo(() => {
+    if (!session) return [];
+    const pointCount = durationSec + 1;
+    return Array.from({ length: pointCount }, (_, idx) => {
+      const timeSec = idx;
+      const progress = durationSec === 0 ? 0 : timeSec / durationSec;
+      const values = { time: formatDuration(timeSec), timestamp: timeSec };
+      pillars.forEach((p, pIdx) => {
+        const pct = scoreBarPercent(p.score);
+        const variance = 8 + (100 - pct) * 0.1;
+        const phase = (timeSec * 0.4) + (pIdx * 1.5);
+        const wave = Math.sin(phase) * variance * 0.5 + Math.cos(phase * 0.7) * variance * 0.25;
+        const momentum = (progress - 0.5) * ((pct - 50) / 10);
+        values[p.label] = clamp(Math.round(pct + wave + momentum), 5, 98);
+      });
+      return values;
+    });
+  }, [durationSec, pillars, session]);
+
+  const recommendations = useMemo(() => {
+    if (!session) return [];
+    const apiRecs = sanitizeRecommendationLines(Array.isArray(session?.recommendations) ? session.recommendations : []);
+    const pillarTips = pillars
+      .filter((p) => p.score < 3.0)
+      .map((p) => {
+        if (p.key === 'visual') return { pillar: 'Visual', text: 'Improve visual presence — maintain natural eye contact and use purposeful gestures.' };
+        if (p.key === 'vocal') return { pillar: 'Vocal', text: 'Steady your voice — practice deep breathing for pitch and volume control.' };
+        return { pillar: 'Verbal', text: 'Articulate more clearly — slow down on complex words and stay on topic.' };
+      });
+    const apiTipsMapped = apiRecs.map((rec, idx) => ({ pillar: pillars[idx % pillars.length].label, text: rec }));
+    const all = [...pillarTips, ...apiTipsMapped];
+    const unique = [];
+    const seen = new Set();
+    for (const tip of all) {
+      if (!seen.has(tip.text)) {
+        seen.add(tip.text);
+        unique.push(tip);
+      }
+    }
+    if (unique.length === 0) unique.push({ pillar: 'Overall', text: 'Great job! Keep up the excellent work across all areas.' });
+    return unique;
+  }, [pillars, session]);
+
+  const deRecommendations = useMemo(() => {
+    if (!session) return [];
+    const avoidTips = [];
+    if (tripleV.visualAvg < 3.0) avoidTips.push("Don't break eye contact frequently; avoid staring at the floor or ceiling.");
+    if (tripleV.vocalAvg < 3.0) avoidTips.push("Try to avoid monotone delivery or sudden volume shifts that can distract your audience.");
+    if (tripleV.verbalAvg < 3.0) avoidTips.push("Avoid rushing through complex words or drifting too far from your main topic.");
+    if (avoidTips.length === 0) avoidTips.push("Keep avoiding distractions and maintain your current high standards.");
+    return avoidTips;
+  }, [session, tripleV]);
+
   useEffect(() => {
     let isMounted = true;
-
     const loadSessionMedia = async () => {
       if (!sessionId) return;
-
       let audioUrl = null;
       let videoUrl = null;
-
       const { data: richMedia, error: richMediaErr } = await supabase
         .from('session_media')
         .select('audio_url, video_storage_url, transcript')
@@ -348,6 +419,8 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
     return () => { isMounted = false; };
   }, [session?.created_at, session?.user_id, sessionId]);
 
+  const scrollToAvoid = () => avoidSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+
   if (windowWidth < 768) {
     return (
       <DetailedFeedbackPageMobile 
@@ -379,11 +452,9 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
     );
   }
 
-  const tripleV = getTripleVScores(session);
   const overallTier = getScoreTier15(tripleV.entryPoint);
   const mode = getSessionMode(session);
   const isFreeSession = getSessionSpeechType(session) === 'Free Speech';
-  const durationSec = Math.max(1, Math.round(session?.duration_sec ?? session?.duration ?? 1));
   const practicedText = sanitizeTranscriptForDisplay(
     recordingMedia.transcript
       || session?.transcript
@@ -392,15 +463,10 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
       || session?.analysis?.transcript
       || '',
     '',
-  )
-    || 'No recorded text available.';
-  const audioUrl = recordingMedia.audioUrl
-    || buildBucketPublicUrl(session?.audio_url)
-    || null;
-  const videoUrl = recordingMedia.videoUrl
-    || buildBucketPublicUrl(session?.video_storage_url)
-    || buildBucketPublicUrl(session?.video_url)
-    || null;
+  ) || 'No recorded text available.';
+  
+  const audioUrl = recordingMedia.audioUrl || buildBucketPublicUrl(session?.audio_url) || null;
+  const videoUrl = recordingMedia.videoUrl || buildBucketPublicUrl(session?.video_storage_url) || buildBucketPublicUrl(session?.video_url) || null;
 
   const sourceNav = locationState?.source;
   let breadcrumbParent = mode === 'Practice' ? 'Practice' : 'Training';
@@ -413,109 +479,10 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
     breadcrumbRoute = locationState?.backTo || ROUTES.DASHBOARD;
   }
 
-  const visualSubMetrics = [
-    { label: 'Eye Contact', score: subMetric100to15(session?.facial_expression_score ?? session?.eye_contact_score) ?? tripleV.visualAvg },
-    { label: 'Gestures', score: subMetric100to15(session?.gesture_score) ?? tripleV.visualAvg },
-  ];
-
-  const vocalSubMetrics = [
-    { label: 'Jitter Control', score: invertedSubMetric(session?.jitter_score) },
-    { label: 'Shimmer Control', score: invertedSubMetric(session?.shimmer_score) },
-  ].filter((m) => m.score !== null);
-
-  const verbalSubMetrics = [];
-
-  const pillars = [
-    {
-      key: 'visual',
-      label: 'Visual',
-      desc: 'Eye contact, facial expressions, and body gestures',
-      score: tripleV.visualAvg,
-      subMetrics: visualSubMetrics,
-    },
-    {
-      key: 'vocal',
-      label: 'Vocal',
-      desc: 'Voice pitch stability, volume consistency, and clarity',
-      score: tripleV.vocalAvg,
-      subMetrics: vocalSubMetrics,
-    },
-    {
-      key: 'verbal',
-      label: 'Verbal',
-      desc: 'Pronunciation accuracy and topical relevance',
-      score: tripleV.verbalAvg,
-      subMetrics: verbalSubMetrics,
-    },
-  ];
-
-  const timelineData = useMemo(() => {
-    const pointCount = durationSec + 1;
-    return Array.from({ length: pointCount }, (_, idx) => {
-      const timeSec = idx;
-      const progress = durationSec === 0 ? 0 : timeSec / durationSec;
-      const values = { time: formatDuration(timeSec), timestamp: timeSec };
-      pillars.forEach((p, pIdx) => {
-        const pct = scoreBarPercent(p.score);
-        const variance = 8 + (100 - pct) * 0.1;
-        const phase = (timeSec * 0.4) + (pIdx * 1.5);
-        const wave = Math.sin(phase) * variance * 0.5 + Math.cos(phase * 0.7) * variance * 0.25;
-        const momentum = (progress - 0.5) * ((pct - 50) / 10);
-        values[p.label] = clamp(Math.round(pct + wave + momentum), 5, 98);
-      });
-      return values;
-    });
-  }, [durationSec, pillars]);
-
   const pillarIcons = { visual: visualSprite, vocal: vocalSprite, verbal: verbalSprite };
-
-  const recommendations = (() => {
-    const apiRecs = sanitizeRecommendationLines(Array.isArray(session?.recommendations) ? session.recommendations : []);
-    const pillarTips = pillars
-      .filter((p) => p.score < 3.0)
-      .map((p) => {
-        if (p.key === 'visual') return { pillar: 'Visual', text: 'Improve visual presence — maintain natural eye contact and use purposeful gestures.' };
-        if (p.key === 'vocal') return { pillar: 'Vocal', text: 'Steady your voice — practice deep breathing for pitch and volume control.' };
-        return { pillar: 'Verbal', text: 'Articulate more clearly — slow down on complex words and stay on topic.' };
-      });
-    const apiTipsMapped = apiRecs.map((rec, idx) => ({ pillar: pillars[idx % pillars.length].label, text: rec }));
-    const all = [...pillarTips, ...apiTipsMapped];
-    const unique = [];
-    const seen = new Set();
-    for (const tip of all) {
-      if (!seen.has(tip.text)) {
-        seen.add(tip.text);
-        unique.push(tip);
-      }
-    }
-    if (unique.length === 0) unique.push({ pillar: 'Overall', text: 'Great job! Keep up the excellent work across all areas.' });
-    return unique;
-  })();
-
-  const deRecommendations = (() => {
-    const avoidTips = [];
-    if (tripleV.visualAvg < 3.0) avoidTips.push("Don't break eye contact frequently; avoid staring at the floor or ceiling.");
-    if (tripleV.vocalAvg < 3.0) avoidTips.push("Try to avoid monotone delivery or sudden volume shifts that can distract your audience.");
-    if (tripleV.verbalAvg < 3.0) avoidTips.push("Avoid rushing through complex words or drifting too far from your main topic.");
-    if (avoidTips.length === 0) avoidTips.push("Keep avoiding distractions and maintain your current high standards.");
-    return avoidTips;
-  })();
-
-  const avoidSectionRef = useRef(null);
-  const scrollToAvoid = () => avoidSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
 
   return (
     <div className={`df-page ${isInnerView ? 'df-page--inner' : ''} activity-page--skyward-entrance`}>
-      {/* Breadcrumb */}
-      {!isInnerView && (
-        <nav className="df-breadcrumb">
-          <button type="button" className="df-breadcrumb-link" onClick={() => navigate(breadcrumbRoute, { replace: true })}>
-            {breadcrumbParent}
-          </button>
-          <IoChevronForward className="df-breadcrumb-sep" />
-          <span className="df-breadcrumb-current">Session Analysis Result</span>
-        </nav>
-      )}
 
       <div className="df-content-layout">
         {/* AI Coach Hero Banner */}
@@ -712,7 +679,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
               <div style={{ display: 'flex', gap: '32px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>Date</span>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{formatDate(session.created_at)}</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{formatDate(session?.created_at)}</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>Duration</span>

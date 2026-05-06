@@ -1131,9 +1131,27 @@ html {
 
 /* Consistently styled via the shared activity-action-btn block above */
 
-.ask-b01-trigger svg,
-.activity-action-btn svg {
-  font-size: 1.1rem;
+.ask-b01-trigger {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  padding: 0 1.5rem !important;
+  height: 44px !important;
+  min-width: 140px !important;
+  border-radius: 999px !important;
+  white-space: nowrap !important;
+}
+
+.ask-b01-trigger svg {
+  font-size: 1.25rem !important;
+  flex-shrink: 0 !important;
+}
+
+.ask-b01-trigger span {
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
 }
 
 /* Modal Specifics */
@@ -1214,6 +1232,7 @@ html {
   font-size: 0.92rem;
   line-height: 1.45;
   font-weight: 500;
+  white-space: pre-wrap;
 }
 
 .ask-b01-message--b01 {
@@ -1233,10 +1252,66 @@ html {
   box-shadow: 0 4px 15px rgba(5, 150, 105, 0.2);
 }
 
+.typing-indicator {
+  display: flex;
+  gap: 4px;
+  padding: 12px 20px;
+}
+
+.typing-indicator span {
+  width: 8px;
+  height: 8px;
+  background: #94a3b8;
+  border-radius: 50%;
+  animation: typing 1.4s infinite ease-in-out both;
+}
+
+.typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+.typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes typing {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1.0); }
+}
+
 .ask-b01-input-area {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.ask-b01-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 4px 0 10px 50px; /* Aligned with message text, accounting for avatar width */
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ask-b01-suggestion-chip {
+  background: #ffffff;
+  border: 1.5px solid #059669; /* Emerald Green */
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #059669; /* Emerald Green */
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.1);
+}
+
+.ask-b01-suggestion-chip:hover {
+  background: #059669;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+  transform: translateY(-2px);
 }
 
 .ask-b01-input-wrapper {

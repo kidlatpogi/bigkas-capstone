@@ -6,20 +6,15 @@ import subprocess
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-import google.generativeai as genai
-import librosa
-import numpy as np
-import soundfile
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from supabase import Client, create_client
 
 from scoring_logic import compute_full_diagnostic, format_diagnostic_log_line
 
 load_dotenv()
 
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+B01_WORKER_URL = os.getenv("B01_WORKER_URL", "https://b01-ai-worker.dzeref4000.workers.dev")
 MAX_AUDIO_SIZE_MB = int(os.getenv("MAX_AUDIO_SIZE_MB", "20"))
 
 DEFAULT_CORS_ORIGINS = [
@@ -35,21 +30,43 @@ def _parse_origins(raw_origins: str) -> List[str]:
     return origins or DEFAULT_CORS_ORIGINS
 
 
+# In-memory store for background analysis jobs
+# In a production environment with multiple workers, use Redis/Postgres.
+analysis_jobs: Dict[str, Any] = {}
+
+# Define logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+print("[System] Bigkas Backend initialization complete.")
+
 app = FastAPI(
     title="Bigkas Triple V Backend",
     description="Visual + Vocal + Verbal analysis service",
     version="1.0.0",
 )
 
+@app.get("/")
+@app.get("/health")
+async def health_check():
+    print("[Health Check] Received ping from Hugging Face.")
+    return {"status": "ok"}
+
+@app.middleware("http")
+async def log_requests(request, call_next):
+    print(f"[Request] {request.method} {request.url.path}")
+    response = await call_next(request)
+    return response
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_parse_origins(os.getenv("CORS_ORIGINS", ",".join(DEFAULT_CORS_ORIGINS))),
     allow_credentials=True,
-    allow_methods=["POST", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
-_supabase_client: Optional[Client] = None
+_supabase_client = None
 
 
 def _require_env(key: str) -> str:
@@ -59,21 +76,10 @@ def _require_env(key: str) -> str:
     return value
 
 
-_gemini_model: Optional[Any] = None
-
-
-def get_gemini_model() -> Any:
-    global _gemini_model
-    if _gemini_model is None:
-        genai.configure(api_key=_require_env("GEMINI_API_KEY"))  # type: ignore[attr-defined]
-        model = genai.GenerativeModel(GEMINI_MODEL)  # type: ignore[attr-defined]
-        _gemini_model = model
-    return _gemini_model
-
-
-def get_supabase_client() -> Client:
+def get_supabase_client():
     global _supabase_client
     if _supabase_client is None:
+        from supabase import create_client
         _supabase_client = create_client(
             _require_env("SUPABASE_URL"),
             _require_env("SUPABASE_SERVICE_KEY"),
@@ -118,19 +124,22 @@ def validate_audio_upload(audio_file: UploadFile, audio_bytes: bytes) -> None:
         )
 
 
-def _decode_audio_with_soundfile(audio_bytes: bytes) -> Tuple[np.ndarray, int]:
+def _decode_audio_with_soundfile(audio_bytes: bytes):
+    import numpy as np
+    import soundfile
     audio_fp = io.BytesIO(audio_bytes)
     with soundfile.SoundFile(audio_fp) as sf:
         y = sf.read(dtype="float32")
         sr = int(sf.samplerate)
 
     if len(y.shape) > 1:
+        import librosa
         y = librosa.to_mono(y.T)
 
     return np.asarray(y, dtype=np.float32), sr
 
 
-def _decode_audio_with_ffmpeg(audio_bytes: bytes) -> Tuple[np.ndarray, int]:
+def _decode_audio_with_ffmpeg(audio_bytes: bytes):
     ffmpeg_result = subprocess.run(
         [
             "ffmpeg",
@@ -160,7 +169,9 @@ def _decode_audio_with_ffmpeg(audio_bytes: bytes) -> Tuple[np.ndarray, int]:
     return _decode_audio_with_soundfile(ffmpeg_result.stdout)
 
 
-def extract_vocal_metrics(audio_bytes: bytes, _filename: str) -> Tuple[Dict[str, float], float]:
+def extract_vocal_metrics(audio_bytes: bytes, _filename: str):
+    import numpy as np
+    import librosa
     try:
         try:
             y, sr = _decode_audio_with_soundfile(audio_bytes)
@@ -190,8 +201,9 @@ def extract_vocal_metrics(audio_bytes: bytes, _filename: str) -> Tuple[Dict[str,
     f0, _, _ = librosa.pyin(
         y,
         fmin=float(librosa.note_to_hz("C2")),
-        fmax=float(librosa.note_to_hz("C7")),
+        fmax=float(librosa.note_to_hz("C5")),
         sr=sr,
+        hop_length=1024,
     )
     voiced_f0 = f0[np.isfinite(f0)]
 
@@ -235,101 +247,75 @@ def extract_vocal_metrics(audio_bytes: bytes, _filename: str) -> Tuple[Dict[str,
     return vocal_metrics, duration_seconds
 
 
-def parse_gemini_json(raw_text: str) -> Dict[str, Any]:
-    payload = (raw_text or "").strip()
-    if not payload:
-        raise ValueError("Gemini returned an empty response")
+import httpx
+import asyncio
 
-    try:
-        parsed = json.loads(payload)
-        if isinstance(parsed, dict):
-            return parsed
-    except json.JSONDecodeError:
-        pass
+async def analyze_with_cloudflare(audio_bytes: bytes, topic: str) -> Dict[str, Any]:
+    """
+    Sends audio to Cloudflare Worker's /transcribe endpoint for
+    Whisper transcription + Llama analysis.
+    
+    The worker expects:
+      - POST /transcribe?topic=...
+      - Body: raw audio bytes (arrayBuffer)
+      - Content-Type: audio/wav
+    
+    It returns JSON with: transcript, filler_count, relevance_score, recommendations
+    """
+    import urllib.parse
+    worker_url = f"{B01_WORKER_URL}/transcribe?topic={urllib.parse.quote(topic)}"
+    
+    max_retries = 3
+    retry_delay = 2.0
+    
+    async with httpx.AsyncClient(timeout=180.0) as client:
+        for attempt in range(max_retries):
+            try:
+                print(f"[AI] Calling Cloudflare Worker /transcribe (Attempt {attempt+1}/{max_retries})...")
+                response = await client.post(
+                    worker_url,
+                    content=audio_bytes,
+                    headers={"Content-Type": "audio/wav"},
+                )
+                
+                if response.status_code == 503:
+                    print(f"[AI] Cloudflare returned 503. Retrying in {retry_delay}s...")
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2
+                    continue
+                    
+                response.raise_for_status()
+                data = response.json()
+                print(f"[AI] Cloudflare Worker response received. Transcript length: {len(data.get('transcript', ''))}")
+                
+                # Map worker response to pipeline expected format
+                return {
+                    "transcript_exact": data.get("transcript", ""),
+                    "verbal_metrics": {
+                        "context_score": float(data.get("relevance_score", 3.0)),
+                        "filler_words_count": int(data.get("filler_count", 0)),
+                    },
+                    "feedback_summary": f"Transcript: {data.get('transcript', 'N/A')}",
+                    "recommendations": data.get("recommendations", []),
+                }
+                
+            except Exception as e:
+                print(f"[AI] Attempt {attempt+1} failed: {str(e)}")
+                if attempt == max_retries - 1:
+                    return {
+                        "transcript_exact": "Analysis service currently unavailable.",
+                        "verbal_metrics": {"context_score": 3.0, "filler_count": 0},
+                        "feedback_summary": "We couldn't reach the AI coach. Please try again in a few minutes.",
+                        "recommendations": ["Check your internet connection", "Try a shorter recording"]
+                    }
+                await asyncio.sleep(retry_delay)
+                retry_delay *= 2
 
-    start = payload.find("{")
-    end = payload.rfind("}")
-    if start != -1 and end != -1 and end > start:
-        parsed = json.loads(payload[start : end + 1])
-        if isinstance(parsed, dict):
-            return parsed
-
-    raise ValueError("Gemini response did not contain valid JSON")
-
-
-def _extract_transcript_text(payload: Dict[str, Any]) -> str:
-    candidates = [
-        payload.get("transcript"),
-        payload.get("transcript_exact"),
-        payload.get("transcription"),
-        payload.get("transcript_text"),
-        payload.get("spoken_text"),
-        payload.get("text"),
-    ]
-    for candidate in candidates:
-        if isinstance(candidate, str) and candidate.strip():
-            return candidate.strip()
-    return ""
-
-
-def _fallback_transcribe_with_gemini(audio_bytes: bytes, mime_type: str) -> str:
-    resolved_mime = (mime_type or "").lower()
-    if "webm" in resolved_mime:
-        resolved_mime = "audio/webm"
-    elif "mp4" in resolved_mime or "octet-stream" in resolved_mime or not resolved_mime:
-        resolved_mime = "audio/mp4"
-    else:
-        resolved_mime = "audio/wav"
-
-    model = get_gemini_model()
-    try:
-        response = model.generate_content(
-            [
-                "Transcribe this audio accurately. Return only the spoken words as plain text, with no JSON and no explanations.",
-                {
-                    "mime_type": resolved_mime, # <--- CRITICAL FIX
-                    "data": audio_bytes,
-                },
-            ],
-            generation_config={
-                "temperature": 0.1,
-            },
-            request_options={"timeout": 30},
-        )
-    except Exception:
-        return ""
-
-    fallback_text = str(getattr(response, "text", "") or "").strip()
-    if fallback_text.startswith("```"):
-        fallback_text = fallback_text.strip("`").strip()
-        if fallback_text.lower().startswith("json"):
-            fallback_text = fallback_text[4:].strip()
-    return fallback_text
-
-
-def _is_failed_transcript_text(value: Any) -> bool:
-    text = str(value or "").strip().lower()
-    if not text:
-        return False
-    # If the text is long, it's a real transcript, not a brief API error message
-    if len(text) > 50:
-        return False
-        
-    failure_markers = (
-        "analysis failed",
-        "gemini error",
-        "check api key",
-        "verify model name",
-    )
-    return any(marker in text for marker in failure_markers)
+    return {}
 
 
 def _sanitize_transcript_text(value: Any) -> str:
     text = str(value or "").strip()
-    if not text:
-        return ""
-    if _is_failed_transcript_text(text):
-        return ""
     return text
 
 
@@ -437,102 +423,6 @@ def _log_supabase_error(table: str, payload: Any, exc: Exception) -> None:
             table,
         )
 
-
-def analyze_with_gemini(audio_bytes: bytes, mime_type: str, topic: str) -> Dict[str, Any]:
-    safe_topic = (topic or "").strip() or "(no topic provided)"
-    
-    # Dynamically resolve MIME type for Gemini
-    resolved_mime = (mime_type or "").lower()
-    if "webm" in resolved_mime:
-        resolved_mime = "audio/webm"
-    elif "mp4" in resolved_mime or "octet-stream" in resolved_mime or not resolved_mime:
-        resolved_mime = "audio/mp4"
-    else:
-        resolved_mime = "audio/wav"
-
-    prompt = f"""Act as a professional Speech Coach for Project Bigkas.
-1. Transcribe this audio accurately.
-2. The assigned topic is: '{safe_topic}'.
-3. Compare the transcript to the topic and provide a 'Contextual Relevance Score' (1.0 - 5.0).
-4. Identify the number of filler words (um, uh, like, etc.).
-5. Provide 2-3 specific recommendations for verbal improvement.
-
-Return the response strictly as a JSON object:
-{{
-  "transcript": "...",
-  "context_score": 0.0,
-  "filler_count": 0,
-  "recommendations": []
-}}"""
-
-    model = get_gemini_model()
-    try:
-        response = model.generate_content(
-            [
-                prompt,
-                {
-                    "mime_type": resolved_mime, # <--- CRITICAL FIX
-                    "data": audio_bytes,
-                },
-            ],
-            generation_config={
-                "temperature": 0.2,
-                "response_mime_type": "application/json",
-            },
-            request_options={"timeout": 30},
-        )
-    except Exception as exc:
-        fallback_transcript = _sanitize_transcript_text(
-            _fallback_transcribe_with_gemini(audio_bytes, mime_type)
-        )
-        return {
-            "transcript_exact": fallback_transcript,
-            "verbal_metrics": {
-                "context_score": 1.0,
-                "filler_words_count": 0,
-            },
-            "feedback_summary": f"Gemini Error: {str(exc)}",
-            "recommendations": ["Check API Key", "Verify Model Name"],
-        }
-
-    parsed = parse_gemini_json(getattr(response, "text", ""))
-    transcript = _extract_transcript_text(parsed)
-    if not transcript:
-        transcript = _fallback_transcribe_with_gemini(audio_bytes, mime_type)
-    transcript = _sanitize_transcript_text(transcript)
-
-    context_score = _coerce_context_score(parsed.get("context_score"))
-
-    try:
-        filler_count = int(parsed.get("filler_count") or 0)
-    except (TypeError, ValueError):
-        filler_count = 0
-    filler_count = max(0, filler_count)
-
-    recommendations = parsed.get("recommendations", [])
-    if isinstance(recommendations, str):
-        recommendations = [recommendations]
-    if not isinstance(recommendations, list):
-        recommendations = []
-    recommendations = [str(item).strip() for item in recommendations if str(item).strip()]
-
-    feedback_summary = (
-        "; ".join(recommendations)
-        if recommendations
-        else "Verbal analysis complete."
-    )
-
-    normalized_verbal = {
-        "context_score": context_score,
-        "filler_words_count": filler_count,
-    }
-
-    return {
-        "transcript_exact": transcript,
-        "verbal_metrics": normalized_verbal,
-        "feedback_summary": feedback_summary,
-        "recommendations": recommendations,
-    }
 
 
 
@@ -717,8 +607,119 @@ def persist_to_supabase(
     }
 
 
+@app.get("/api/analysis-status/{job_id}")
+async def get_analysis_status(job_id: str):
+    job = analysis_jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Analysis job not found.")
+    
+    if job["status"] == "processing":
+        return {"status": "processing", "progress": job.get("progress", 50)}
+    
+    if job["status"] == "error":
+        return {"status": "error", "error": job.get("error")}
+    
+    return {"status": "completed", "data": job["data"]}
+
+async def run_analysis_task(
+    job_id: str,
+    audio_bytes: bytes,
+    visual_payload: Dict[str, Any],
+    user_id: str,
+    parsed_answers: List[str],
+    topic: str,
+    session_origin: str,
+    speaking_mode: str,
+):
+    try:
+        # 1. EXTRACT METRICS
+        print(f"[Job] {job_id} - Step 1/4: Extracting vocal metrics...")
+        analysis_jobs[job_id]["progress"] = 15
+        vocal_metrics, duration_seconds = await asyncio.to_thread(
+            extract_vocal_metrics, audio_bytes, "recording.wav"
+        )
+        print(f"[Job] {job_id} - Vocal metrics extracted ({duration_seconds}s).")
+        
+        # 2. COMPRESS AUDIO (MP3)
+        print(f"[Job] {job_id} - Step 2/4: Compressing audio for AI...")
+        analysis_jobs[job_id]["progress"] = 35
+        def _compress_audio():
+            import subprocess
+            cmd = ['ffmpeg', '-y', '-i', 'pipe:0', '-t', '305', '-acodec', 'libmp3lame', '-ab', '32k', '-ac', '1', '-ar', '16000', '-f', 'mp3', 'pipe:1']
+            p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = p.communicate(input=audio_bytes, timeout=60)
+            if p.returncode != 0:
+                logger.error(f"FFmpeg failed: {stderr.decode()}")
+            return stdout
+        clean_audio_bytes = await asyncio.to_thread(_compress_audio)
+        print(f"[Job] {job_id} - Audio compressed ({len(clean_audio_bytes)} bytes).")
+        
+        # Free up original heavy audio buffer
+        del audio_bytes
+
+        # 3. CLOUDFLARE (Whisper + Llama)
+        print(f"[Job] {job_id} - Step 3/4: Calling Cloudflare AI (Whisper/Llama)...")
+        analysis_jobs[job_id]["progress"] = 55
+        verbal_payload = await analyze_with_cloudflare(clean_audio_bytes, topic)
+        print(f"[Job] {job_id} - Cloudflare analysis complete.")
+        
+        # Free up compressed buffer
+        del clean_audio_bytes
+
+        # 4. PERSIST TO SUPABASE
+        print(f"[Job] {job_id} - Step 4/4: Persisting results to Supabase...")
+        analysis_jobs[job_id]["progress"] = 90
+        combined_analysis = {
+            "visual": visual_payload,
+            "vocal": vocal_metrics,
+            "transcript_exact": verbal_payload.get("transcript_exact", ""),
+            "verbal": verbal_payload.get("verbal_metrics", {}),
+            "feedback_summary": verbal_payload.get("feedback_summary", ""),
+            "recommendations": verbal_payload.get("recommendations", []),
+        }
+
+        persistence = await asyncio.to_thread(
+            persist_to_supabase,
+            user_id=user_id,
+            combined_analysis=combined_analysis,
+            profiling_answers=parsed_answers,
+            session_origin=session_origin,
+            speaking_mode=speaking_mode,
+        )
+        print(f"[Job] {job_id} - Persisted successfully.")
+
+        # 5. FORMAT CLIENT RESPONSE
+        diagnostic = persistence["diagnostic"]
+        verbal = combined_analysis["verbal"]
+        vocal = combined_analysis["vocal"]
+        ctx = float(verbal.get("context_score", 3.0))
+        p0_100 = _context_score_to_0_100(ctx)
+
+        result_data = {
+            "ok": True,
+            "session_id": persistence["session_id"],
+            "id": persistence["session_id"],
+            "confidence_score": _scale_1_5_to_100(float(diagnostic["entry_point"])),
+            "context_score": p0_100,
+            "pronunciation_score": p0_100,
+            "acoustic_score": _scale_1_5_to_100(float(diagnostic["vocal_avg"])),
+            "visual_score": _scale_1_5_to_100(float(diagnostic["visual_avg"])),
+            "verbal_score": p0_100,
+            "transcript": _sanitize_transcript_text(combined_analysis.get("transcript_exact", "")),
+            "summary": combined_analysis.get("feedback_summary", ""),
+            "duration_sec": float(vocal.get("duration_seconds") or 0),
+            "recommendations": combined_analysis.get("recommendations", []),
+        }
+
+        analysis_jobs[job_id] = {"status": "completed", "data": result_data}
+        print(f"[Job] Task {job_id} completed successfully.")
+    except Exception as e:
+        logger.error(f"Background task {job_id} failed: {e}")
+        analysis_jobs[job_id] = {"status": "error", "error": str(e)}
+
 @app.post("/api/analyze-speech")
 async def analyze_speech(
+    background_tasks: BackgroundTasks,
     audio_file: UploadFile = File(...),
     visual_metrics: str = Form(...),
     user_id: str = Form(...),
@@ -727,124 +728,41 @@ async def analyze_speech(
     session_origin: str = Form("training"),
     speaking_mode: str = Form(""),
 ) -> Dict[str, Any]:
-    """
-    Accepts audio, visual sensor data, user ID, 9 profiling answers, and assigned topic.
-
-    topic: speaking prompt/title from your app or database (used for contextual scoring).
-
-    profiling_answers: JSON array of 9 strings, e.g.
-        '["No","Yes","Sometimes","No","Yes","Sometimes","No","No","Yes"]'
-    """
+    print(f"\n[POST] /api/analyze-speech request RECEIVED for User: {user_id}")
+    # Generate unique ID for this long-running task
+    import uuid
+    job_id = str(uuid.uuid4())
+    print(f"\n[Job] Created Background Task: {job_id} for User: {user_id}")
+    
+    print(f"[POST] Received analyze-speech request from User: {user_id}")
     visual_payload = parse_visual_metrics(visual_metrics)
+    
+    print("[POST] Reading audio file bytes...")
     audio_bytes = await audio_file.read()
-    validate_audio_upload(audio_file, audio_bytes)
+    print(f"[POST] Audio read complete ({len(audio_bytes)} bytes).")
+    
     try:
-        parsed_answers: List[str] = json.loads(profiling_answers)
-    except json.JSONDecodeError as exc:
-        raise HTTPException(status_code=400, detail=f"profiling_answers error: {exc.msg}")
+        parsed_answers = json.loads(profiling_answers)
+    except:
+        parsed_answers = []
 
-    # 1. EXTRACT METRICS (Handles ffmpeg fallback internally)
-    try:
-        vocal_metrics, duration_seconds = extract_vocal_metrics(audio_bytes, "recording.wav")
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Vocal analysis failed: {exc}")
+    # Initialize job state
+    analysis_jobs[job_id] = {"status": "processing", "progress": 5}
+    
+    print(f"[POST] Spawning background task for Job: {job_id}")
+    background_tasks.add_task(
+        run_analysis_task,
+        job_id, audio_bytes, visual_payload, user_id, 
+        parsed_answers, topic, session_origin, speaking_mode
+    )
 
-    if duration_seconds < 1.0:
-        raise HTTPException(status_code=400, detail="Recording is too short.")
-
-    # 2. REBUILD A PERFECT WAV FILE FOR GEMINI
-    # Decode the raw browser bytes and encode them with mathematically perfect RIFF headers.
-    try:
-        try:
-            y, sr = _decode_audio_with_soundfile(audio_bytes)
-        except Exception:
-            y, sr = _decode_audio_with_ffmpeg(audio_bytes)
-        
-        import soundfile as sf
-        clean_wav_io = io.BytesIO()
-        sf.write(clean_wav_io, y, sr, format='WAV')
-        clean_audio_bytes = clean_wav_io.getvalue()
-        mime_to_send = "audio/wav"
-    except Exception as exc:
-        logger.error(f"WAV rebuild failed: {exc}")
-        clean_audio_bytes = audio_bytes
-        mime_to_send = audio_file.content_type or "audio/wav"
-
-    # 3. SEND TO GEMINI
-    try:
-        verbal_payload = analyze_with_gemini(
-            clean_audio_bytes,
-            mime_to_send,
-            topic,
-        )
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Gemini analysis failed: {exc}")
-
-    combined_analysis = {
-        "visual": visual_payload,
-        "vocal": vocal_metrics,
-        "transcript_exact": verbal_payload.get("transcript_exact", ""),
-        "verbal": verbal_payload.get("verbal_metrics", {}),
-        "feedback_summary": verbal_payload.get("feedback_summary", ""),
-        "recommendations": verbal_payload.get("recommendations", []),
-    }
-
-    try:
-        persistence = persist_to_supabase(
-            user_id=user_id,
-            combined_analysis=combined_analysis,
-            profiling_answers=parsed_answers,
-            session_origin=session_origin,
-            speaking_mode=speaking_mode,
-        )
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Supabase persistence failed: {exc}")
-
-    diagnostic = persistence["diagnostic"]
-    visual = combined_analysis["visual"]
-    vocal = combined_analysis["vocal"]
-    verbal = combined_analysis["verbal"]
-    ctx = float(verbal.get("context_score", 3.0))
-    pronunciation_0_100 = _context_score_to_0_100(ctx)
-
-    # Flat fields expected by the web client (SessionContext) — avoids duplicate rows with zero scores.
-    client_scores = {
-        "confidence_score": _scale_1_5_to_100(float(diagnostic["entry_point"])),
-        "context_score": pronunciation_0_100,
-        "pronunciation_score": pronunciation_0_100,
-        "acoustic_score": _scale_1_5_to_100(float(diagnostic["vocal_avg"])),
-        "visual_score": _scale_1_5_to_100(float(diagnostic["visual_avg"])),
-        "verbal_score": pronunciation_0_100,
-        "fluency_score": 0.0,
-        "jitter_score": float(vocal.get("jitter_percent") or 0),
-        "shimmer_score": float(vocal.get("shimmer_db") or 0),
-        "gesture_score": float(visual.get("gesture_score") or 0),
-        "facial_expression_score": float(visual.get("eye_contact_score") or 0),
-        "transcript": _sanitize_transcript_text(combined_analysis.get("transcript_exact", "")),
-        "summary": combined_analysis.get("feedback_summary", ""),
-        "duration_sec": float(vocal.get("duration_seconds") or 0),
-        "recommendations": combined_analysis.get("recommendations", []),
-    }
-
+    print(f"[POST] Returning initial response for Job: {job_id}")
     return {
         "ok": True,
-        "session_id": persistence["session_id"],
-        **client_scores,
-        "entry_point": diagnostic["entry_point"],
-        "level": diagnostic["level"],
-        "level_label": diagnostic["level_label"],
-        "profiling_score": diagnostic["profiling_score"],
-        "pretest_score": diagnostic["pretest_score"],
-        "visual_avg": diagnostic["visual_avg"],
-        "vocal_avg": diagnostic["vocal_avg"],
-        "verbal_avg": diagnostic["verbal_avg"],
-        "analysis": combined_analysis,
+        "status": "processing",
+        "job_id": job_id
     }
 
 
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", "8000")), reload=True)
+# Start-up log
+print("[System] main.py loaded. Waiting for uvicorn...")

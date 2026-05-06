@@ -4,12 +4,14 @@
    ============================================================ */
 
 .df-page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 32px 24px calc(100px + env(safe-area-inset-bottom, 0px));
+  width: 100%;
   min-height: 100dvh;
-  font-family: 'Fredoka', sans-serif;
-  scrollbar-width: none;
+  font-family: 'Fredoka', 'SF Pro Display', sans-serif;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: clamp(20px, 4vh, 40px) 24px;
   
   /* Synced with ActivityPage Skyward Journey theme */
   background-color: #FDFDF9;
@@ -42,9 +44,25 @@
 }
 
 .df-page--inner {
-  padding: 16px 24px 80px !important;
+  padding: 16px 24px !important;
   background: transparent !important;
   min-height: auto !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  overflow-y: auto !important;
+}
+
+.df-page--inner::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.df-content-layout {
+  width: min(100%, 1200px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 /* ── Hero Banner (Ported from SessionResultPage) ── */

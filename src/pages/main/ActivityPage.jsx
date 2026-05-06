@@ -55,6 +55,16 @@ const DAY_MS = 86_400_000;
 const ACTIVITY_CELEBRATION_STORAGE_KEY = 'bigkas_pending_activity_celebration_v1';
 const LAST_SHOWN_COMPLETION_EVENT_KEY = 'bigkas_last_completion_event_v1';
 const FREE_SPEECH_TUTORIAL_SEEN_KEY = 'bigkas_free_speech_tutorial_seen_v1';
+const AI_BANNER_CACHE_KEY = 'bigkas_ai_banner_cache_v1';
+const EIGHT_HOURS_MS = 8 * 60 * 60 * 1000;
+
+const B01_SUGGESTIONS = [
+  "Summarize my progress so far",
+  "How can I improve my confidence?",
+  "Give me tips for vocal variety",
+  "Explain my current rank and growth",
+  "What should I practice next?"
+];
 
 const FREE_SPEECH_TUTORIAL_STEPS = [
   {
@@ -112,7 +122,6 @@ const FREE_SPEECH_TUTORIAL_STEPS = [
   },
 ];
 
-const RANDOMIZER_DEFAULT_TOPIC = 'How does artificial intelligence impact our everyday lives?';
 
 function getLocalDateKey(date = new Date()) {
   const year = date.getFullYear();
@@ -242,10 +251,16 @@ function ActivityPage() {
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
   const [isAskB01ModalOpen, setIsAskB01ModalOpen] = useState(false);
   const [askB01Query, setAskB01Query] = useState('');
-  const [randomizerTopic, setRandomizerTopic] = useState(() => {
-    const defaultTopic = RANDOM_TOPICS.find((entry) => entry.title === RANDOMIZER_DEFAULT_TOPIC);
-    return defaultTopic || { title: RANDOMIZER_DEFAULT_TOPIC, body: '' };
-  });
+  const [isB01Typing, setIsB01Typing] = useState(false);
+  const [chatMessages, setChatMessages] = useState([
+    { role: 'assistant', content: "Hello! I'm B-01, your AI speaking coach. What would you like to know about public speaking or your progress today?", id: 'initial-greeting' }
+  ]);
+  const chatScrollRef = useRef(null);
+
+  const [randomizerTopic, setRandomizerTopic] = useState(null);
+  const [bannerMessage, setBannerMessage] = useState("You're on a roll. Keep doing your activities and improve your speaking.");
+  const [isBannerLoading, setIsBannerLoading] = useState(false);
+  const [isRandomizingTopic, setIsRandomizingTopic] = useState(false);
   const { sessions, fetchAllSessions } = useSessions();
   const activityMetrics = useMemo(
     () => getActivityMetrics(scopeKey),
@@ -328,23 +343,202 @@ function ActivityPage() {
     ? Math.round((completedTaskCount / tasks.length) * 100)
     : 0;
 
-  const activeDayKeys = useMemo(() => {
-    const keys = new Set();
+  const sessionCountsByDay = useMemo(() => {
+    const counts = new Map();
     sessions.forEach((s) => {
       if (isPreTestSession(s)) return;
       const d = getSessionDate(s);
-      if (d) keys.add(getLocalDateKey(d));
+      if (d) {
+        const k = getLocalDateKey(d);
+        counts.set(k, (counts.get(k) || 0) + 1);
+      }
     });
     activityHistory.forEach((e) => {
       if (!e?.completedAt) return;
       const k = getDayKeyFromDate(e.completedAt);
-      if (k) keys.add(k);
+      if (k) {
+        counts.set(k, (counts.get(k) || 0) + 1);
+      }
     });
-    return keys;
+    return counts;
   }, [sessions, activityHistory]);
 
   const streakStats = useMemo(() => buildStreakStats(sessions, activityHistory), [sessions, activityHistory]);
-  const weekPills = useMemo(() => getWeekdayPills(activeDayKeys), [activeDayKeys]);
+
+  const getProgressContext = useCallback(() => {
+    // Sort sessions by date to find the most recent ones
+    const sortedSessions = [...sessions]
+      .filter(s => !isPreTestSession(s)) // Exclude pre-tests for growth comparison
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    const latest = sortedSessions[0];
+    const first = sortedSessions[sortedSessions.length - 1];
+
+    const latestScore = latest?.overall_score || latest?.overallScore || 0;
+    const firstScore = first?.overall_score || first?.overallScore || 0;
+    const totalGrowth = latestScore - firstScore;
+
+    return {
+      sessionsCount: sortedSessions.length,
+      averageScore: activityMetrics?.averageScore || "N/A",
+      currentLevel: levelProgress.levelNumber,
+      levelName: levelProgress.levelName,
+      
+      // Pre-calculated Math for B-01
+      growthSummary: {
+        firstSessionScore: firstScore,
+        latestSessionScore: latestScore,
+        totalPercentagePointGrowth: totalGrowth.toFixed(1),
+        status: totalGrowth > 0 ? "Improving" : totalGrowth < 0 ? "Declining" : "Stable"
+      },
+
+      // Comparison Points
+      latestSession: latest ? {
+        score: latestScore,
+        topic: latest.topic,
+        date: latest.created_at
+      } : null,
+      firstSession: first ? {
+        score: firstScore,
+        topic: first.topic,
+        date: first.created_at
+      } : null,
+      
+      fullTimeline: sortedSessions.map(s => ({
+        date: new Date(s.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+        time: new Date(s.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        score: s.overall_score || s.overallScore,
+        topic: s.topic
+      }))
+    };
+  }, [sessions, activityMetrics, levelProgress, streakStats.currentStreak, completedTaskCount, tasks]);
+
+  useEffect(() => {
+    const fetchBannerMessage = async () => {
+      if (!user?.id) return;
+
+      // 1. Check Cache
+      try {
+        const cached = window.localStorage.getItem(AI_BANNER_CACHE_KEY);
+        if (cached) {
+          const { message, timestamp } = JSON.parse(cached);
+          if (Date.now() - timestamp < EIGHT_HOURS_MS) {
+            setBannerMessage(message);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to read banner cache', e);
+      }
+
+      // 2. Fetch New if expired or missing
+      setIsBannerLoading(true);
+      try {
+        const response = await fetch('https://b01-ai-worker.dzeref4000.workers.dev/banner-message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ context: getProgressContext() }),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.message) {
+            setBannerMessage(data.message);
+            // 3. Update Cache
+            window.localStorage.setItem(AI_BANNER_CACHE_KEY, JSON.stringify({
+              message: data.message,
+              timestamp: Date.now()
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch AI banner:', error);
+      } finally {
+        setIsBannerLoading(false);
+      }
+    };
+    fetchBannerMessage();
+  }, [user?.id, getProgressContext]);
+
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [chatMessages, isB01Typing]);
+
+  const handleSendMessage = async (customQuery = null) => {
+    const query = (customQuery || askB01Query).trim();
+    if (!query || isB01Typing) return;
+
+    const userMessage = { role: 'user', content: query };
+    const newMessages = [...chatMessages, userMessage];
+    
+    setChatMessages(newMessages);
+    setAskB01Query('');
+    setIsB01Typing(true);
+
+    const assistantMessageId = Date.now();
+    setChatMessages(prev => [...prev, { role: 'assistant', content: '', id: assistantMessageId }]);
+
+    try {
+      const contextMessage = { 
+        role: 'system', 
+        content: `CONTEXT: User Progress Snapshot: ${JSON.stringify(getProgressContext())}. Reference these specific numbers if asked about progress, growth, or stats.` 
+      };
+
+      const response = await fetch('https://b01-ai-worker.dzeref4000.workers.dev', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          messages: [contextMessage, ...newMessages] 
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to connect to B-01');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+      let accumulatedResponse = '';
+
+      setIsB01Typing(false); // Hide spinner as text starts coming in
+
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        const chunkValue = decoder.decode(value);
+        
+        // Cloudflare Workers AI streaming returns data prefixes like "data: {...}"
+        const lines = chunkValue.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            if (line.includes('[DONE]')) break;
+            try {
+              const data = JSON.parse(line.slice(6));
+              accumulatedResponse += data.response || '';
+              
+              setChatMessages(prev => prev.map(msg => 
+                msg.id === assistantMessageId 
+                  ? { ...msg, content: accumulatedResponse }
+                  : msg
+              ));
+            } catch (e) {
+              console.warn("Chunk parse error", e);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('B-01 Error:', error);
+      setChatMessages(prev => prev.map(msg => 
+        msg.id === assistantMessageId 
+          ? { ...msg, content: "I'm having a little trouble connecting to my brain right now. Please try again in a moment!" }
+          : msg
+      ));
+    } finally {
+      setIsB01Typing(false);
+    }
+  };
+  const weekPills = useMemo(() => getWeekdayPills(sessionCountsByDay), [sessionCountsByDay]);
   const timeOfDay = useMemo(() => getTimeOfDay(), []);
   const heroRobotImage = useMemo(() => {
     if (timeOfDay === 'morning') return robotMorningImage;
@@ -656,7 +850,24 @@ function ActivityPage() {
     setShowRandomizerOverlay(false);
   }, []);
 
-  const handleRandomizeTopic = useCallback(() => {
+  const handleRandomizeTopic = useCallback(async () => {
+    setIsRandomizingTopic(true);
+    try {
+      const response = await fetch('https://b01-ai-worker.dzeref4000.workers.dev/random-topic');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.title) {
+          setRandomizerTopic({ title: data.title, body: data.body || '' });
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch AI topic:', error);
+    } finally {
+      setIsRandomizingTopic(false);
+    }
+
+    // Fallback to local randomization
     if (!RANDOM_TOPICS.length) return;
     setRandomizerTopic((current) => {
       if (RANDOM_TOPICS.length === 1) return RANDOM_TOPICS[0];
@@ -916,20 +1127,24 @@ function ActivityPage() {
               <p className="randomizer-overlay-topic">
                 <span className="randomizer-overlay-topic-label">Topic:</span>
                 {' '}
-                {randomizerTopic?.title || RANDOMIZER_DEFAULT_TOPIC}
+                {isRandomizingTopic 
+                  ? 'Thinking of a topic...' 
+                  : (randomizerTopic?.title || "Click 'Randomize Topic' below to get started!")}
               </p>
               <div className="randomizer-overlay-actions">
                 <Button
                   variant="practice"
                   className="randomizer-overlay-randomize-btn"
                   onClick={handleRandomizeTopic}
+                  disabled={isRandomizingTopic}
                 >
-                  Randomize Topic
+                  {isRandomizingTopic ? 'Randomizing...' : 'Randomize Topic'}
                 </Button>
                 <Button
                   variant="practice"
                   className="randomizer-overlay-start-btn"
                   onClick={handleStartRandomizerTopic}
+                  disabled={!randomizerTopic?.title || isRandomizingTopic}
                 >
                   Start
                 </Button>
@@ -1010,7 +1225,9 @@ function ActivityPage() {
               <img src={heroRobotImage} alt="" className="new-banner-robot" />
               <div className="new-banner-bubble" aria-label="Coach message">
                 <p className="new-banner-kicker">B-01:</p>
-                <p className="new-banner-copy">You're on a roll. Keep doing your activities and improve your speaking.</p>
+                <p className="new-banner-copy">
+                  {isBannerLoading ? 'Checking your progress...' : bannerMessage}
+                </p>
                 <div className="new-banner-bubble-footer">
                   <Button 
                     variant="practice"
@@ -1140,7 +1357,7 @@ function ActivityPage() {
       <StreakCalendarModal 
         isOpen={isStreakModalOpen} 
         onClose={() => setIsStreakModalOpen(false)} 
-        activeDayKeys={activeDayKeys} 
+        sessionCountsByDay={sessionCountsByDay} 
         streakStats={streakStats}
       />
 
@@ -1184,55 +1401,75 @@ function ActivityPage() {
               </button>
             </div>
             
-            <div className="ask-b01-chat-container">
-              <div className="ask-b01-chat-row b01-row">
-                <div className="ask-b01-chat-head b01-chat-head-square">
-                  <img src={b01ChatHead} alt="B-01" />
-                </div>
-                <div className="ask-b01-message ask-b01-message--b01">
-                  Hello! I'm B-01, your AI speaking coach. What would you like to know about public speaking or your progress today?
-                </div>
-              </div>
+            <div className="ask-b01-chat-container" ref={chatScrollRef}>
+              {chatMessages.map((msg, idx) => (
+                <div key={idx} className={`ask-b01-chat-row ${msg.role === 'assistant' ? 'b01-row' : 'user-row'}`}>
+                  {msg.role === 'assistant' && (
+                    <div className="ask-b01-chat-head b01-chat-head-square">
+                      <img src={b01ChatHead} alt="B-01" />
+                    </div>
+                  )}
+                  
+                  <div className={`ask-b01-message ask-b01-message--${msg.role === 'assistant' ? 'b01' : 'user'} ${!msg.content && msg.role === 'assistant' ? 'typing-indicator' : ''}`}>
+                    {msg.content || (msg.role === 'assistant' && (
+                      <><span>.</span><span>.</span><span>.</span></>
+                    ))}
+                  </div>
 
-              {/* Example User Message with chat head */}
-              <div className="ask-b01-chat-row user-row">
-                <div className="ask-b01-message ask-b01-message--user">
-                  How can I improve my confidence during a presentation?
-                </div>
-                <div className="ask-b01-chat-head user-head">
-                  {(user?.avatarUrl || user?.avatar_url) ? (
-                    <img src={user.avatarUrl || user.avatar_url} alt="Me" />
-                  ) : (
-                    <div className="ask-b01-avatar-placeholder">
-                      {user?.firstName?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                  {msg.role === 'user' && (
+                    <div className="ask-b01-chat-head user-head">
+                      {(user?.avatarUrl || user?.avatar_url) ? (
+                        <img src={user.avatarUrl || user.avatar_url} alt="Me" />
+                      ) : (
+                        <div className="ask-b01-avatar-placeholder">
+                          {user?.firstName?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              </div>
+              ))}
+
+              {chatMessages.length === 1 && !isB01Typing && (
+                <div className="ask-b01-suggestions">
+                  {B01_SUGGESTIONS.map((suggestion, sIdx) => (
+                    <button 
+                      key={sIdx} 
+                      className="ask-b01-suggestion-chip"
+                      onClick={() => handleSendMessage(suggestion)}
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              )}
+
             </div>
 
             <div className="ask-b01-input-area">
-              <div className="ask-b01-input-wrapper">
+              <form 
+                className="ask-b01-input-wrapper"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSendMessage();
+                }}
+              >
                 <input 
                   type="text" 
                   className="ask-b01-input"
                   placeholder="Ask me anything..."
                   value={askB01Query}
                   onChange={(e) => setAskB01Query(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && askB01Query.trim()) {
-                      setAskB01Query('');
-                    }
-                  }}
+                  disabled={isB01Typing}
                 />
                 <button 
+                  type="submit"
                   className="ask-b01-send-btn"
-                  disabled={!askB01Query.trim()}
-                  onClick={() => setAskB01Query('')}
+                  disabled={!askB01Query.trim() || isB01Typing}
                 >
                   <IoSend />
                 </button>
-              </div>
+              </form>
             </div>
           </div>
         </section>

@@ -263,6 +263,7 @@ function TrainingPage() {
   const [resumeCountdown, setResumeCountdown] = useState(0);
   const [isResumingVisual, setIsResumingVisual] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [isPreviewActive, setIsPreviewActive] = useState(false);
   const { startAnalysis, stopAnalysis, liveScores, error: visualError, isReady: isVisualReady } = useVisualAnalysis();
 
   const isRecording = status === 'recording';
@@ -720,6 +721,7 @@ function TrainingPage() {
         return;
       }
       streamRef.current = stream;
+      setIsPreviewActive(true);
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -1435,8 +1437,8 @@ function TrainingPage() {
               />
               <canvas ref={visualCanvasRef} className="tp-camera-overlay" aria-hidden="true" />
               {/* Placeholder shown before recording starts */}
-              <div className={`tp-camera-idle ${isActive ? 'tp-camera-idle--active' : ''}`}>
-                <div className={`tp-camera-frame-guide ${isActive ? 'tp-camera-frame-guide--active' : ''}`} />
+              <div className={`tp-camera-idle ${isActive || isPreviewActive ? 'tp-camera-idle--active' : ''}`}>
+                <div className={`tp-camera-frame-guide ${isActive || isPreviewActive ? 'tp-camera-frame-guide--active' : ''}`} />
               </div>
 
               {showLowLightWarning && (

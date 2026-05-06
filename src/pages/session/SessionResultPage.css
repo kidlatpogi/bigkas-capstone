@@ -135,15 +135,10 @@
 
 
 .sr-content-layout {
-
   width: min(100%, 1200px);
-
   display: flex;
-
   flex-direction: column;
-
-  gap: 24px;
-
+  gap: 8px;
 }
 
 

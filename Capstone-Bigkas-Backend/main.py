@@ -135,7 +135,7 @@ def _decode_audio_with_soundfile(audio_bytes: bytes):
     return np.asarray(y, dtype=np.float32), sr
 
 
-def _decode_audio_with_ffmpeg(audio_bytes: bytes) -> Tuple[np.ndarray, int]:
+def _decode_audio_with_ffmpeg(audio_bytes: bytes):
     ffmpeg_result = subprocess.run(
         [
             "ffmpeg",

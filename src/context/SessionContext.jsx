@@ -749,17 +749,22 @@ export function SessionProvider({ children }) {
       while (postAttempts < maxPostAttempts) {
         postAttempts += 1;
         try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout for initial POST
+
           const res = await fetch(`${apiUrl}/api/analyze-speech`, {
             method: 'POST',
             headers: authSession?.access_token ? { Authorization: `Bearer ${authSession.access_token}` } : undefined,
             body: formData,
+            signal: controller.signal,
           });
+          clearTimeout(timeoutId);
 
           const responseText = await res.text();
           // Detect HTML (Hugging Face Starting/Restarting page)
           if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
-            console.warn(`[SessionContext] Initial POST received HTML (attempt ${postAttempts}/5). Space is likely starting. Retrying in 6s...`);
-            await new Promise((r) => setTimeout(r, 6000));
+            console.warn(`[SessionContext] Initial POST received HTML (attempt ${postAttempts}/5). Space is likely starting. Retrying in 8s...`);
+            await new Promise((r) => setTimeout(r, 8000));
             continue;
           }
 
@@ -770,10 +775,10 @@ export function SessionProvider({ children }) {
         } catch (err) {
           if (postAttempts >= maxPostAttempts) {
             console.error('[SessionContext] Final POST Attempt Failed:', err);
-            throw err;
+            throw new Error(`Connection to AI service failed after 5 attempts. ${err.name === 'AbortError' ? 'Request timed out.' : err.message}`);
           }
-          console.warn(`[SessionContext] POST failed (attempt ${postAttempts}/5). Retrying in 3s...`, err.message);
-          await new Promise((r) => setTimeout(r, 3000));
+          console.warn(`[SessionContext] POST failed (attempt ${postAttempts}/5). Retrying in 4s...`, err.message);
+          await new Promise((r) => setTimeout(r, 4000));
         }
       }
       console.log('[SessionContext] Initial server response received:', analysisResult.status);
@@ -795,8 +800,25 @@ export function SessionProvider({ children }) {
           const delay = attempts <= 10 ? 1000 : 3000;
           await new Promise(r => setTimeout(r, delay));
           
-          const sRes = await fetch(`${apiUrl}/api/analysis-status/${jobId}`);
-          if (!sRes.ok) continue; // Retry on transient network blip
+          const sController = new AbortController();
+          const sTimeoutId = setTimeout(() => sController.abort(), 45000); // 45s timeout for status check
+
+          let sRes;
+          try {
+            sRes = await fetch(`${apiUrl}/api/analysis-status/${jobId}`, { signal: sController.signal });
+          } catch (fetchErr) {
+            console.warn('[SessionContext] Status check fetch failed:', fetchErr.message);
+            continue;
+          } finally {
+            clearTimeout(sTimeoutId);
+          }
+
+          if (!sRes.ok) {
+            if (sRes.status === 404) {
+              throw new Error('Analysis job was lost. The server may have restarted. Please try a shorter recording.');
+            }
+            continue; // Retry on other errors (500, 502, 503, 504)
+          }
           
           let sData;
           try {

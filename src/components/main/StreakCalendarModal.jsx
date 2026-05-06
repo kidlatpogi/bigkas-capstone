@@ -99,7 +99,17 @@ export default function StreakCalendarModal({ isOpen, onClose, sessionCountsByDa
         {streakStats && (
           <div className="streak-calendar-streak-card">
             <div className="streak-intensity-explanation">
-              Intensity: Dark (1 session) → Light (More)
+              <span className="intensity-label">Less</span>
+              <div className="intensity-boxes">
+                {[1, 2, 3, 4, 5].map((lvl) => (
+                  <div 
+                    key={lvl} 
+                    className="intensity-box" 
+                    style={{ backgroundColor: getSessionIntensityColor(lvl) }}
+                  />
+                ))}
+              </div>
+              <span className="intensity-label">More</span>
             </div>
             <div className="streak-card-main-row">
               <div className="new-streak-fire">

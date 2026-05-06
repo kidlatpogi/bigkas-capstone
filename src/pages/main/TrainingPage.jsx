@@ -685,8 +685,9 @@ function TrainingPage() {
     tick();
   }, []);
 
-  /* ── Start recording ── */
-  const startRecording = useCallback(async () => {
+  /* ── Initialize Camera/Mic Preview ── */
+  const initPreview = useCallback(async () => {
+    if (!isMountedRef.current) return;
     try {
       const selectedMic = typeof window !== 'undefined'
         ? window.localStorage.getItem('pref_mic') || ''
@@ -709,40 +710,71 @@ function TrainingPage() {
       };
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      if (!isMountedRef.current) {
+        stream.getTracks().forEach(t => t.stop());
+        return;
+      }
       streamRef.current = stream;
 
-      /* Attach video */
-      if (videoRef.current && stream.getVideoTracks().length > 0) {
+      if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
 
-      /* Audio analyser → waveform history */
-      if (audioCtxRef.current) {
-        audioCtxRef.current.close().catch(() => { });
+      /* Audio analyser setup (for preview waveform) */
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        if (audioCtxRef.current) {
+          audioCtxRef.current.close().catch(() => { });
+        }
+        const ctx = new AudioCtx();
+        audioCtxRef.current = ctx;
+        
+        const audioTracks = stream.getAudioTracks();
+        if (audioTracks.length > 0) {
+          const audioOnlyStream = new MediaStream(audioTracks);
+          const src = ctx.createMediaStreamSource(audioOnlyStream);
+          const analyser = ctx.createAnalyser();
+          analyser.fftSize = 512;
+          analyser.smoothingTimeConstant = 0.7;
+          analyserRef.current = analyser;
+          src.connect(analyser);
+          startWaveformLoop();
+        }
+      }
+    } catch (err) {
+      console.error('[TrainingPage] Preview initialization failed:', err);
+      if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
+        setStatus('permission-denied');
+      } else {
+        setErrorMsg('Microphone or Camera access failed. Please check permissions.');
+      }
+    }
+  }, [startWaveformLoop]);
+
+  /* Start preview on mount or when returning from error/idle */
+  useEffect(() => {
+    if (status === 'idle' || status === 'permission-denied') {
+      initPreview();
+    }
+  }, [initPreview, status]);
+
+  /* ── Start recording ── */
+  const startRecording = useCallback(async () => {
+    try {
+      let stream = streamRef.current;
+      const hasActiveVideo = stream?.getVideoTracks().some(t => t.readyState === 'live');
+      const hasActiveAudio = stream?.getAudioTracks().some(t => t.readyState === 'live');
+
+      if (!stream || !hasActiveVideo || !hasActiveAudio) {
+        await initPreview();
+        stream = streamRef.current;
       }
 
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      const ctx = new AudioCtx();
-      audioCtxRef.current = ctx;
-      if (ctx.state === 'suspended') {
-        await ctx.resume();
+      if (!stream) {
+        throw new Error('Camera/Microphone stream not available.');
       }
 
       const audioTracks = stream.getAudioTracks();
-      if (audioTracks.length === 0) {
-        throw new Error('No microphone track available for recording.');
-      }
-
-      const audioOnlyStream = new MediaStream(audioTracks);
-      const src = ctx.createMediaStreamSource(audioOnlyStream);
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 512;
-      analyser.smoothingTimeConstant = 0.7;
-      analyser.minDecibels = -90;
-      analyser.maxDecibels = -10;
-      analyserRef.current = analyser;
-      src.connect(analyser);
-      startWaveformLoop();
 
       const recordingStream = new MediaStream(audioTracks);
       const recorderMime = getSupportedMime();
@@ -1134,13 +1166,10 @@ function TrainingPage() {
     cancelAnimationFrame(animRef.current);
     if (mediaRef.current && mediaRef.current.state !== 'inactive') mediaRef.current.stop();
     if (visualMediaRef.current && visualMediaRef.current.state !== 'inactive') visualMediaRef.current.stop();
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    if (audioCtxRef.current) {
-      audioCtxRef.current.close().catch(() => { });
-      audioCtxRef.current = null;
+    // Do NOT stop stream tracks here to keep the preview active
+    if (videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
     }
-    analyserRef.current = null;
-    if (videoRef.current) videoRef.current.srcObject = null;
     waveHistRef.current = Array(50).fill(0);
     setWaveformBars(Array(50).fill(0));
     silenceStartRef.current = null;
@@ -1265,7 +1294,6 @@ function TrainingPage() {
 
   useEffect(() => {
     if (!videoRef.current || !visualCanvasRef.current) return;
-    if (!isRecording) return;
 
     startAnalysis({
       videoElement: videoRef.current,

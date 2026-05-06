@@ -248,21 +248,31 @@ import asyncio
 
 async def analyze_with_cloudflare(audio_bytes: bytes, topic: str) -> Dict[str, Any]:
     """
-    Sends audio to Cloudflare Worker for Whisper transcription + Llama analysis.
-    Uses httpx for async non-blocking requests with retries for 503 errors.
+    Sends audio to Cloudflare Worker's /transcribe endpoint for
+    Whisper transcription + Llama analysis.
+    
+    The worker expects:
+      - POST /transcribe?topic=...
+      - Body: raw audio bytes (arrayBuffer)
+      - Content-Type: audio/wav
+    
+    It returns JSON with: transcript, filler_count, relevance_score, recommendations
     """
-    worker_url = B01_WORKER_URL
-    files = {"audio": ("recording.wav", audio_bytes, "audio/wav")}
-    data = {"topic": topic}
+    import urllib.parse
+    worker_url = f"{B01_WORKER_URL}/transcribe?topic={urllib.parse.quote(topic)}"
     
     max_retries = 3
     retry_delay = 2.0
     
-    async with httpx.AsyncClient(timeout=120.0) as client:
+    async with httpx.AsyncClient(timeout=180.0) as client:
         for attempt in range(max_retries):
             try:
-                print(f"[AI] Calling Cloudflare Worker (Attempt {attempt+1}/{max_retries})...")
-                response = await client.post(worker_url, files=files, data=data)
+                print(f"[AI] Calling Cloudflare Worker /transcribe (Attempt {attempt+1}/{max_retries})...")
+                response = await client.post(
+                    worker_url,
+                    content=audio_bytes,
+                    headers={"Content-Type": "audio/wav"},
+                )
                 
                 if response.status_code == 503:
                     print(f"[AI] Cloudflare returned 503. Retrying in {retry_delay}s...")
@@ -271,7 +281,19 @@ async def analyze_with_cloudflare(audio_bytes: bytes, topic: str) -> Dict[str, A
                     continue
                     
                 response.raise_for_status()
-                return response.json()
+                data = response.json()
+                print(f"[AI] Cloudflare Worker response received. Transcript length: {len(data.get('transcript', ''))}")
+                
+                # Map worker response to pipeline expected format
+                return {
+                    "transcript_exact": data.get("transcript", ""),
+                    "verbal_metrics": {
+                        "context_score": float(data.get("relevance_score", 3.0)),
+                        "filler_words_count": int(data.get("filler_count", 0)),
+                    },
+                    "feedback_summary": f"Transcript: {data.get('transcript', 'N/A')}",
+                    "recommendations": data.get("recommendations", []),
+                }
                 
             except Exception as e:
                 print(f"[AI] Attempt {attempt+1} failed: {str(e)}")

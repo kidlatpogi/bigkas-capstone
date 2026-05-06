@@ -318,6 +318,24 @@ function LoginPage({ managePageClass = true }) {
 
   const robotSprite = getSpriteUrl('Robot/0001.webp');
 
+  const insightWords = [
+    { text: 'Visual', size: '1rem', opacity: 0.8, top: '15%', left: '12%', delay: 0 },
+    { text: 'Vocal', size: '0.95rem', opacity: 0.7, top: '22%', left: '80%', delay: 1 },
+    { text: 'Verbal', size: '0.9rem', opacity: 0.6, top: '68%', left: '8%', delay: 0.5 },
+    { text: 'Gesture', size: '1.1rem', opacity: 0.9, top: '12%', left: '65%', delay: 2 },
+    { text: 'Eye Contact', size: '1rem', opacity: 0.75, top: '55%', left: '82%', delay: 1.5 },
+    { text: 'Jitter', size: '0.8rem', opacity: 0.5, top: '78%', left: '70%', delay: 3 },
+    { text: 'Shimmer', size: '0.9rem', opacity: 0.65, top: '38%', left: '6%', delay: 2.5 },
+    { text: 'Confidence', size: '1.15rem', opacity: 0.95, top: '50%', left: '10%', delay: 0 },
+    { text: 'Clarity', size: '1rem', opacity: 0.8, top: '82%', left: '22%', delay: 4 },
+    { text: 'Presence', size: '1.1rem', opacity: 0.85, top: '18%', left: '42%', delay: 1.2 },
+    { text: 'Empower', size: '0.9rem', opacity: 0.6, top: '72%', left: '48%', delay: 2.2 },
+    { text: 'Growth', size: '1.05rem', opacity: 0.8, top: '8%', left: '85%', delay: 0.8 },
+    { text: 'Flow', size: '1rem', opacity: 0.7, top: '48%', left: '88%', delay: 3.5 },
+    { text: 'Impact', size: '1.1rem', opacity: 0.9, top: '30%', left: '18%', delay: 4.5 },
+    { text: 'Authentic', size: '0.95rem', opacity: 0.75, top: '62%', left: '60%', delay: 5 },
+  ];
+
   return (
     <div
       ref={layoutRef}
@@ -365,30 +383,33 @@ function LoginPage({ managePageClass = true }) {
               >
                 <div className="auth-robot-glow" />
                 <img src={getSpriteUrl('Robot/0001.webp')} alt="AI Companion" className="auth-robot-img" />
-                
-                {/* Floating Insight Chips */}
-                <motion.div 
-                  className="insight-chip chip-1"
-                  animate={{ y: [0, 10, 0], x: [0, 5, 0] }}
-                  transition={{ duration: 5, repeat: Infinity }}
-                >
-                  Vocal Variety
-                </motion.div>
-                <motion.div 
-                  className="insight-chip chip-2"
-                  animate={{ y: [0, -12, 0], x: [0, -8, 0] }}
-                  transition={{ duration: 6, repeat: Infinity }}
-                >
-                  Eye Contact
-                </motion.div>
-                <motion.div 
-                  className="insight-chip chip-3"
-                  animate={{ y: [0, 8, 0], x: [0, 10, 0] }}
-                  transition={{ duration: 7, repeat: Infinity }}
-                >
-                  Confidence
-                </motion.div>
               </motion.div>
+
+              {/* Floating Insight Cloud */}
+              {insightWords.map((word, i) => (
+                <motion.div 
+                  key={i}
+                  className="insight-chip"
+                  style={{ 
+                    top: word.top, 
+                    left: word.left, 
+                    fontSize: word.size,
+                    opacity: word.opacity
+                  }}
+                  animate={{ 
+                    y: [0, -20, 0],
+                    x: [0, 15, 0],
+                  }}
+                  transition={{ 
+                    duration: 6 + (i % 4), 
+                    repeat: Infinity, 
+                    delay: word.delay,
+                    ease: "easeInOut"
+                  }}
+                >
+                  {word.text}
+                </motion.div>
+              ))}
               <motion.h2 variants={itemVariants} className="auth-hero-tagline">
                 Master <span>Public Speaking</span>
               </motion.h2>

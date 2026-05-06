@@ -155,23 +155,25 @@ body.login-page-active {
 
 .insight-chip {
   position: absolute;
-  background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: clamp(6px, 1.2vh, 10px) clamp(12px, 2vw, 18px);
   border-radius: 999px;
-  font-size: 0.85rem;
   font-weight: 700;
   color: #ffffff;
   white-space: nowrap;
   pointer-events: none;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-  z-index: 6;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  z-index: 1;
+  transition: opacity 0.3s ease;
 }
 
-.chip-1 { top: 10%; right: -15%; }
-.chip-2 { bottom: 20%; left: -20%; }
-.chip-3 { top: 40%; left: -25%; }
+@media (max-width: 768px) {
+  .insight-chip {
+    display: none;
+  }
+}
 
 .auth-visual-content {
   position: relative;

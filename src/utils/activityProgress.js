@@ -9,7 +9,7 @@ export const GLOBAL_ACTIVITY_SCOPE = 'global';
  * Bigkas speaker levels (1.0–5.0 entry-point scale). Replaces the old XP ladder.
  */
 export const BIGKAS_LEVELS = [
-  { number: 1, name: 'Mastering Fundamentals', threshold: 2.0 },
+  { number: 1, name: 'Understanding the Fundamentals', threshold: 2.0 },
   { number: 2, name: 'Learning Your Style', threshold: 3.0 },
   { number: 3, name: 'Increasing Knowledge', threshold: 4.0 },
   { number: 4, name: 'Building Skills', threshold: 5.0 },

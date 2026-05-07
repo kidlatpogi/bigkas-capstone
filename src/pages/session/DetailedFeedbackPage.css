@@ -71,7 +71,7 @@
 
 .df-content-layout {
   width: 100%; /* Full width for flush look */
-  padding: 0 1rem 5rem; /* Same side padding as SessionResultPage + bottom clearance */
+  padding: 0 1rem 2rem; /* Reduced bottom clearance to avoid excess space */
   display: flex;
   flex-direction: column;
   gap: 1rem; /* Synchronized gap */

@@ -878,10 +878,10 @@
   font-weight: 900;
   letter-spacing: 0.12em;
   color: #ffffff;
-  background: #059669;
+  background: #f18f01;
   padding: 6px 12px;
   border-radius: 999px;
-  box-shadow: 0 5px 14px rgba(16, 185, 129, 0.42);
+  box-shadow: 0 5px 14px rgba(241, 143, 1, 0.42);
   animation: skyward-current-breathe 1.8s ease-in-out infinite;
   position: relative;
 }
@@ -896,7 +896,7 @@
   height: 0;
   border-left: 9px solid transparent;
   border-right: 9px solid transparent;
-  border-top: 9px solid #059669;
+  border-top: 9px solid #f18f01;
 }
 
 @keyframes skyward-current-breathe {
@@ -904,12 +904,12 @@
   0%,
   100% {
     transform: scale(1);
-    box-shadow: 0 5px 14px rgba(16, 185, 129, 0.42);
+    box-shadow: 0 5px 14px rgba(241, 143, 1, 0.42);
   }
 
   50% {
     transform: scale(1.06);
-    box-shadow: 0 8px 22px rgba(16, 185, 129, 0.52);
+    box-shadow: 0 8px 22px rgba(241, 143, 1, 0.52);
   }
 }
 

@@ -1330,17 +1330,17 @@ export default function SkywardJourney({
                     >
                       <defs>
                         <linearGradient id={`skyward-journey-line-grad-${gradId}`} x1="0%" y1="100%" x2="0%" y2="0%">
-                          <stop offset="0%" stopColor="#EBF4DD" />
-                          <stop offset={`${pathFillPercentage}%`} stopColor="#EBF4DD" />
-                          <stop offset={`${pathFillPercentage}%`} stopColor="#a1a1aa" />
-                          <stop offset="100%" stopColor="#a1a1aa" />
+                          <stop offset="0%" stopColor="#10b981" />
+                          <stop offset={`${pathFillPercentage}%`} stopColor="#10b981" />
+                          <stop offset={`${pathFillPercentage}%`} stopColor="#d1d5db" />
+                          <stop offset="100%" stopColor="#d1d5db" />
                         </linearGradient>
                       </defs>
                       <path
                         className="skyward-journey-polyline skyward-journey-polyline--rim"
                         fill="none"
                         d={solidPathD}
-                        stroke="var(--skyward-path-rim, #e4e4e7)"
+                        stroke="#e5e7eb"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth="20"

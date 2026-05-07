@@ -176,22 +176,39 @@ function buildStreakStats(sessions = [], historyEntries = []) {
   let canRecover = false;
   let potentialStreak = 0;
 
+  const daySet = new Set(activeDays);
+
   if (todayIndex - last <= 1 && !isDebugAtRisk) {
-    const set = new Set(activeDays);
     let cursor = last;
-    while (set.has(cursor) || (hasRecoveryToday && cursor === todayIndex - 1)) {
+    while (daySet.has(cursor) || (hasRecoveryToday && cursor === todayIndex - 1)) {
       currentStreak += 1;
       cursor -= 1;
     }
+
+    // Validation: Even if they did a session today, they might have missed yesterday and want to recover the old streak
+    if (todayIndex === last && !daySet.has(todayIndex - 1) && !hasRecoveryToday) {
+      let prevStreak = 0;
+      let pCursor = todayIndex - 2;
+      while (daySet.has(pCursor)) {
+        prevStreak += 1;
+        pCursor -= 1;
+      }
+      if (prevStreak > 0) {
+        canRecover = true;
+        potentialStreak = prevStreak + 1;
+      }
+    }
   } else if ((todayIndex - last === 2 || isDebugAtRisk) && !hasRecoveryToday) {
-    const set = new Set(activeDays);
+    let potentialStreakVal = 0;
     let cursor = last;
-    while (set.has(cursor)) {
-      potentialStreak += 1;
+    while (daySet.has(cursor)) {
+      potentialStreakVal += 1;
       cursor -= 1;
     }
-    if (isDebugAtRisk && potentialStreak === 0) potentialStreak = 10;
-    canRecover = true;
+    if (potentialStreakVal > 0 || isDebugAtRisk) {
+      canRecover = true;
+      potentialStreak = potentialStreakVal || (isDebugAtRisk ? 10 : 0);
+    }
   }
 
   // Calculate longest streak
@@ -208,7 +225,13 @@ function buildStreakStats(sessions = [], historyEntries = []) {
     prev = idx;
   });
 
-  return { currentStreak, longestStreak, activeDays, canRecover, potentialStreak };
+  return { 
+    currentStreak, 
+    longestStreak, 
+    activeDays, 
+    canRecover: canRecover && potentialStreak > 0, 
+    potentialStreak 
+  };
 }
 
 function getWeekdayPills(qa = new Set()) {

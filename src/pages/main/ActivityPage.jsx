@@ -187,29 +187,46 @@ function buildStreakStats(sessions = [], historyEntries = []) {
   let canRecover = false;
   let potentialStreak = 0;
 
+  const daySet = new Set(activeDays);
+
   if (todayIndex - last <= 1 && !isDebugAtRisk) {
-    const set = new Set(activeDays);
     let cursor = last;
-    while (set.has(cursor) || (hasRecoveryToday && cursor === todayIndex - 1)) {
+    while (daySet.has(cursor) || (hasRecoveryToday && cursor === todayIndex - 1)) {
       currentStreak += 1;
       cursor -= 1;
     }
+
+    if (todayIndex === last && !daySet.has(todayIndex - 1) && !hasRecoveryToday) {
+      let prevStreak = 0;
+      let pCursor = todayIndex - 2;
+      while (daySet.has(pCursor)) {
+        prevStreak += 1;
+        pCursor -= 1;
+      }
+      if (prevStreak > 0) {
+        canRecover = true;
+        potentialStreak = prevStreak + 1;
+      }
+    }
   } else if ((todayIndex - last === 2 || isDebugAtRisk) && !hasRecoveryToday) {
-    // Streak reset yesterday (or debug mode), but can still be recovered
     let potentialStreakVal = 0;
-    const set = new Set(activeDays);
     let cursor = last;
-    while (set.has(cursor)) {
+    while (daySet.has(cursor)) {
       potentialStreakVal += 1;
       cursor -= 1;
     }
-    // If no real streak exists but debug is ON, just show a fake potential streak for UI testing
-    if (isDebugAtRisk && potentialStreakVal === 0) potentialStreakVal = 10;
 
-    return { currentStreak: 0, canRecover: true, potentialStreak: potentialStreakVal };
+    if (potentialStreakVal > 0 || isDebugAtRisk) {
+      canRecover = true;
+      potentialStreak = potentialStreakVal || (isDebugAtRisk ? 10 : 0);
+    }
   }
 
-  return { currentStreak, canRecover: false };
+  return { 
+    currentStreak, 
+    canRecover: canRecover && potentialStreak > 0, 
+    potentialStreak 
+  };
 }
 
 function getWeekdayPills(activeDayKeys = new Set()) {

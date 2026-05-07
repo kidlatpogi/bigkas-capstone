@@ -10,8 +10,9 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 0 0 5rem; /* Flush at top and sides + Extra bottom clearance */
+  padding: 0; /* Remove padding from root to allow flush sticky header */
+  height: 100vh; /* Fill the main-content area */
+  overflow: hidden; /* Prevent root scrolling */
   
   /* Synced with ActivityPage Skyward Journey theme */
   background-color: #FDFDF9;
@@ -50,6 +51,7 @@
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
   overflow-y: auto !important;
+  height: auto !important; /* Let sidebar control height */
 }
 
 .df-page--inner::-webkit-scrollbar {
@@ -58,9 +60,18 @@
   height: 0 !important;
 }
 
+.df-page-body {
+  flex: 1;
+  width: 100%;
+  overflow-y: auto; /* Internal scroll area */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .df-content-layout {
   width: 100%; /* Full width for flush look */
-  padding: 0 1rem; /* Same side padding as SessionResultPage */
+  padding: 0 1rem 5rem; /* Same side padding as SessionResultPage + bottom clearance */
   display: flex;
   flex-direction: column;
   gap: 1rem; /* Synchronized gap */

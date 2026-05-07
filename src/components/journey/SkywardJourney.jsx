@@ -35,7 +35,7 @@ import {
   IoPerson,
   IoSettings,
   IoHardwareChip,
-  IoAward,
+  IoTrophy,
 } from 'react-icons/io5';
 import { FaBrain, FaGhost } from 'react-icons/fa';
 import { GiGoblinHead, GiFishMonster, GiWerewolf, GiVampireDracula } from 'react-icons/gi';
@@ -199,7 +199,7 @@ function getStepTitleIcon(step) {
 
   // 9. Program Milestone (award)
   if (title.includes('bigkas') || title.includes('final') || title.includes('integration') || title.includes('mastery') || title.includes('milestone')) {
-    return <IoAward />;
+    return <IoTrophy />;
   }
 
   return null;

@@ -149,24 +149,63 @@ function buildStreakStats(sessions = [], historyEntries = []) {
     const parsed = new Date(dateInput);
     if (!Number.isNaN(parsed.getTime())) dayIndexes.add(getLocalDayIndex(parsed));
   };
-  sessions.forEach((s) => { if (!isPreTestSession(s)) { const d = getSessionDate(s); if (d) addDate(d); } });
-  historyEntries.forEach((e) => { if (e?.completedAt) addDate(e.completedAt); });
-  const sortedIndexes = Array.from(dayIndexes).sort((a, b) => a - b);
-  if (!sortedIndexes.length) return { currentStreak: 0, longestStreak: 0, activeDays: [] };
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  const todayIndex = getLocalDayIndex(now);
-  const yesterdayIndex = todayIndex - 1;
-  let rl = 0;
-  let nl = 0;
-  let ol = null;
-  sortedIndexes.forEach((ll) => {
-    ol !== null && ll === ol + 1 ? (rl += 1) : (rl = 1), (nl = Math.max(nl, rl)), (ol = ll);
+  sessions.forEach((s) => {
+    if (!isPreTestSession(s)) {
+      const d = getSessionDate(s);
+      if (d) addDate(d);
+    }
   });
-  const isTodayActive = dayIndexes.has(todayIndex);
-  const isYesterdayActive = dayIndexes.has(yesterdayIndex);
-  const currentStreak = isTodayActive || isYesterdayActive ? rl : 0;
-  return { currentStreak, longestStreak: nl, activeDays: sortedIndexes };
+  historyEntries.forEach((e) => {
+    if (e?.completedAt) addDate(e.completedAt);
+  });
+  const activeDays = [...dayIndexes].sort((a, b) => a - b);
+  if (!activeDays.length) return { currentStreak: 0, longestStreak: 0, activeDays: [], canRecover: false };
+
+  const todayIndex = getLocalDayIndex(new Date());
+  const last = activeDays[activeDays.length - 1];
+
+  const hasRecoveryToday = sessions.some((s) => {
+    const d = getSessionDate(s);
+    const entry = s?.entry_point ?? s?.entryPoint;
+    return d && getLocalDayIndex(d) === todayIndex && entry === 'streak-recovery';
+  });
+
+  let currentStreak = 0;
+  let canRecover = false;
+  let potentialStreak = 0;
+
+  if (todayIndex - last <= 1) {
+    const set = new Set(activeDays);
+    let cursor = last;
+    while (set.has(cursor) || (hasRecoveryToday && cursor === todayIndex - 1)) {
+      currentStreak += 1;
+      cursor -= 1;
+    }
+  } else if (todayIndex - last === 2 && !hasRecoveryToday) {
+    const set = new Set(activeDays);
+    let cursor = last;
+    while (set.has(cursor)) {
+      potentialStreak += 1;
+      cursor -= 1;
+    }
+    canRecover = true;
+  }
+
+  // Calculate longest streak
+  let longestStreak = 0;
+  let current = 0;
+  let prev = null;
+  activeDays.forEach((idx) => {
+    if (prev !== null && idx === prev + 1) {
+      current += 1;
+    } else {
+      current = 1;
+    }
+    longestStreak = Math.max(longestStreak, current);
+    prev = idx;
+  });
+
+  return { currentStreak, longestStreak, activeDays, canRecover, potentialStreak };
 }
 
 function getWeekdayPills(qa = new Set()) {
@@ -472,6 +511,19 @@ function ActivityPageMobile() {
       },
     });
   }, [navigate, randomizerTopic]);
+
+  const handleRecoverStreak = useCallback(() => {
+    navigate(`${ROUTES.TRAINING}?autostart=1`, {
+      state: {
+        focus: 'free',
+        freeTopic: 'Reflecting on my speaking journey',
+        objective: 'Complete this session to recover your daily streak!',
+        sessionType: 'practice',
+        entryPoint: 'streak-recovery',
+        autoStartCountdown: true,
+      },
+    });
+  }, [navigate]);
 
   const handleFreeSpeechClick = useCallback(() => {
     setShowFreeSpeechOverlay(true);
@@ -823,7 +875,22 @@ function ActivityPageMobile() {
                     </span>
                   ))}
                 </div>
-                <p className="new-streak-copy">Build a daily speaking habit to keep stacking your streak.</p>
+                {streakStats.canRecover ? (
+                  <Button 
+                    variant="practice"
+                    className="activity-mobile-dashboard-btn streak-recovery-trigger" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRecoverStreak();
+                    }}
+                    aria-label={`Recover your ${streakStats.potentialStreak} day streak`}
+                    style={{ marginTop: '8px', width: '100%', height: '44px' }}
+                  >
+                    Recover Streak
+                  </Button>
+                ) : (
+                  <p className="new-streak-copy">Build a daily speaking habit to keep stacking your streak.</p>
+                )}
               </div>
 
               {/* Rank Widget */}
@@ -846,7 +913,7 @@ function ActivityPageMobile() {
                   </div>
                 </div>
                 <p className="new-widget-caption">
-                  {completedTaskCount}/{Math.max(tasks.length, 1)} Tasks Complete
+                  {completedTaskCount}/{Math.max(tasks.length, 1)} Stages Completed
                   <span className="new-widget-caption-sep"> - </span>
                   {sidebarProgressPct}% Cleared
                 </p>

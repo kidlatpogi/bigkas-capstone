@@ -7,7 +7,7 @@ import { useSessions } from '../../hooks/useSessions';
 import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import PushButton from '../../components/common/PushButton';
-import { IoChatbubbleEllipsesOutline, IoSend } from 'react-icons/io5';
+import { IoChatbubbleEllipsesOutline, IoSend, IoFlame } from 'react-icons/io5';
 import TutorialOverlay from '../../components/main/TutorialOverlay';
 import {
   GLOBAL_ACTIVITY_SCOPE,
@@ -161,19 +161,50 @@ function buildStreakStats(sessions = [], historyEntries = []) {
     const parsed = new Date(dateInput);
     if (!Number.isNaN(parsed.getTime())) dayIndexes.add(getLocalDayIndex(parsed));
   };
-  sessions.forEach((s) => { if (!isPreTestSession(s)) { const d = getSessionDate(s); if (d) addDate(d); } });
-  historyEntries.forEach((e) => { if (e?.completedAt) addDate(e.completedAt); });
+  sessions.forEach((s) => {
+    if (!isPreTestSession(s)) {
+      const d = getSessionDate(s);
+      if (d) addDate(d);
+    }
+  });
+  historyEntries.forEach((e) => {
+    if (e?.completedAt) addDate(e.completedAt);
+  });
   const activeDays = [...dayIndexes].sort((a, b) => a - b);
-  if (!activeDays.length) return { currentStreak: 0 };
+  if (!activeDays.length) return { currentStreak: 0, canRecover: false };
   const todayIndex = getLocalDayIndex(new Date());
   const last = activeDays[activeDays.length - 1];
+  
+  const hasRecoveryToday = sessions.some((s) => {
+    const d = getSessionDate(s);
+    const entry = s?.entry_point ?? s?.entryPoint;
+    return d && getLocalDayIndex(d) === todayIndex && entry === 'streak-recovery';
+  });
+
   let currentStreak = 0;
+  let canRecover = false;
+  let potentialStreak = 0;
+
   if (todayIndex - last <= 1) {
     const set = new Set(activeDays);
     let cursor = last;
-    while (set.has(cursor)) { currentStreak += 1; cursor -= 1; }
+    while (set.has(cursor) || (hasRecoveryToday && cursor === todayIndex - 1)) {
+      currentStreak += 1;
+      cursor -= 1;
+    }
+  } else if (todayIndex - last === 2 && !hasRecoveryToday) {
+    // Streak reset yesterday, but can still be recovered
+    let potentialStreakVal = 0;
+    const set = new Set(activeDays);
+    let cursor = last;
+    while (set.has(cursor)) {
+      potentialStreakVal += 1;
+      cursor -= 1;
+    }
+    return { currentStreak: 0, canRecover: true, potentialStreak: potentialStreakVal };
   }
-  return { currentStreak };
+
+  return { currentStreak, canRecover: false };
 }
 
 function getWeekdayPills(activeDayKeys = new Set()) {
@@ -893,6 +924,19 @@ function ActivityPage() {
     });
   }, [navigate, randomizerTopic]);
 
+  const handleRecoverStreak = useCallback(() => {
+    navigate(`${ROUTES.TRAINING}?autostart=1`, {
+      state: {
+        focus: 'free',
+        freeTopic: 'Reflecting on my speaking journey',
+        objective: 'Complete this session to recover your daily streak!',
+        sessionType: 'practice',
+        entryPoint: 'streak-recovery',
+        autoStartCountdown: true,
+      },
+    });
+  }, [navigate]);
+
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
     const isAnyOverlayOpen = showRandomizerOverlay || showFreeSpeechOverlay || isRankModalOpen || isAskB01ModalOpen || isStreakModalOpen;
@@ -1267,7 +1311,23 @@ function ActivityPage() {
                      </span>
                    ))}
                  </div>
-                 <p className="new-streak-copy">Build a daily speaking habit to keep stacking your streak.</p>
+                 {streakStats.canRecover ? (
+                   <Button 
+                     variant="practice"
+                     className="ask-b01-trigger streak-recovery-trigger" 
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       handleRecoverStreak();
+                     }}
+                     aria-label={`Recover your ${streakStats.potentialStreak} day streak`}
+                     style={{ marginTop: '4px', width: '100%' }}
+                   >
+                     <IoFlame />
+                     <span>Recover Streak</span>
+                   </Button>
+                 ) : (
+                   <p className="new-streak-copy">Build a daily speaking habit to keep stacking your streak.</p>
+                 )}
               </div>
            </div>
         </section>
@@ -1304,7 +1364,7 @@ function ActivityPage() {
                 </div>
               </div>
               <p className="new-widget-caption">
-                {completedTaskCount}/{Math.max(tasks.length, 1)} Tasks Complete
+                {completedTaskCount}/{Math.max(tasks.length, 1)} Stages Completed
                 <span className="new-widget-caption-sep"> - </span>
                 {sidebarProgressPct}% Cleared
               </p>

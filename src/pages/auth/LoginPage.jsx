@@ -352,10 +352,11 @@ function LoginPage({ managePageClass = true }) {
         >
           {/* Left Side: Branding & Visuals */}
           <div className="auth-visual-side">
+            <motion.div variants={itemVariants} className="auth-brand-logo">
+              Bigkas
+            </motion.div>
+            
             <div className="auth-visual-content">
-              <motion.div variants={itemVariants} className="auth-brand-logo">
-                Bigkas
-              </motion.div>
               <motion.div 
                 className="auth-robot-img-wrap"
                 initial={{ opacity: 1, y: 0 }}

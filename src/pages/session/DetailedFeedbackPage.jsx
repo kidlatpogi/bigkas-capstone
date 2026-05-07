@@ -514,10 +514,10 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
             type="button"
             className="history-back-to-list-btn"
             style={{ 
-              background: '#f8fafc', 
-              color: '#475569', 
-              boxShadow: '0 5px 0 #e2e8f0',
-              border: '1px solid #e2e8f0'
+              background: '#F97316', 
+              color: '#ffffff', 
+              boxShadow: '0 5px 0 #C2410C',
+              border: 'none'
             }}
             onClick={() => navigate(ROUTES.DASHBOARD)}
           >

@@ -113,6 +113,43 @@ export default function SideNav() {
     window.location.reload();
   };
 
+  const handleAddMockDay = () => {
+    if (typeof window === 'undefined' || !user?.id) return;
+    const scopeKey = user.id;
+    const historyKey = `bigkas_activity_completed_history_${scopeKey}`;
+    
+    try {
+      const raw = window.localStorage.getItem(historyKey);
+      const history = raw ? JSON.parse(raw) : [];
+      
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayKey = yesterday.toISOString().split('T')[0];
+      
+      const hasYesterday = history.some(e => e.completedAt?.startsWith(yesterdayKey));
+      
+      const targetDate = new Date();
+      if (hasYesterday) {
+        targetDate.setDate(targetDate.getDate() - 2);
+        alert('Yesterday found. Adding mock session for 2 days ago.');
+      } else {
+        targetDate.setDate(targetDate.getDate() - 1);
+        alert('Adding mock session for yesterday.');
+      }
+      
+      history.push({
+        taskId: `debug-mock-${Date.now()}`,
+        completedAt: targetDate.toISOString(),
+        pointsAwarded: 1
+      });
+      
+      window.localStorage.setItem(historyKey, JSON.stringify(history));
+      window.location.reload();
+    } catch (err) {
+      console.error('Failed to add mock day:', err);
+    }
+  };
+
   const handleClaim = (id) => {
     claimAchievement(id);
     setClaimables(getClaimableAchievements());
@@ -348,6 +385,15 @@ export default function SideNav() {
         style={{ color: '#f59e0b', fontSize: '0.8rem', opacity: 0.8 }}
       >
         <span className="side-nav-link-label">Test Streak (Debug)</span>
+      </button>
+
+      <button 
+        type="button" 
+        className="side-nav-link" 
+        onClick={handleAddMockDay}
+        style={{ color: '#10b981', fontSize: '0.8rem', opacity: 0.8 }}
+      >
+        <span className="side-nav-link-label">Add Mock Day (Debug)</span>
       </button>
 
       <button type="button" className="side-nav-logout" onClick={handleLogoutClick}>

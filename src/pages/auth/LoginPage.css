@@ -58,6 +58,40 @@ body.login-page-active {
   background-attachment: fixed;
 }
 
+.auth-back-btn {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #059669;
+  border: none;
+  font-family: 'Fredoka', sans-serif;
+  font-size: clamp(0.9rem, 0.86rem + 0.20vw, 0.98rem);
+  font-weight: 500;
+  color: #fff;
+  cursor: pointer;
+  padding: 0 16px;
+  height: 44px;
+  border-radius: 999px;
+  box-shadow: 0 5px 0 #047857;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.auth-back-btn:hover {
+  background: #059669;
+  box-shadow: 0 3px 0 #047857;
+  transform: translateY(2px);
+}
+
+.auth-back-btn:active {
+  box-shadow: 0 0 0 #047857;
+  transform: translateY(5px);
+}
+
 .auth-container {
   width: min(100%, 1024px);
   z-index: 10;

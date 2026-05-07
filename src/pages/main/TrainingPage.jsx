@@ -412,6 +412,9 @@ function TrainingPage() {
 
     const interval = setInterval(() => {
       setAnalysisProgress((prev) => {
+        // SAFETY: If we reached 100 (actual completion), don't revert to simulated values
+        if (prev >= 100) return 100;
+
         // NUCLEAR RESET: If stuck at 96% for more than 25 seconds, push to 99%
         if (prev >= 96) {
           const durationStuck = Date.now() - startTime;
@@ -1078,8 +1081,8 @@ function TrainingPage() {
       }
 
       // 8. Finalize and Navigate
-      console.log('[TrainingPage] Navigating to results...');
       const finalSessionId = result.data.id || result.data.session_id;
+      console.log(`[TrainingPage] Analysis complete. Target Session: ${finalSessionId}. Navigating in 500ms...`);
       
       setTimeout(() => {
         if (isMountedRef.current) {
@@ -1089,7 +1092,11 @@ function TrainingPage() {
             setStatus('error');
             return;
           }
+          // Set status to idle to clear any overlays before we actually leave
+          setStatus('idle');
           navigate(buildRoute.sessionResult(finalSessionId), { state: result.data });
+        } else {
+          console.warn('[TrainingPage] Component unmounted before navigation could trigger.');
         }
       }, 500);
 

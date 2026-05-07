@@ -117,7 +117,7 @@ body {
   color: var(--color-text-primary);
   background-color: var(--color-background);
   min-height: 100vh;
-  overflow-y: scroll;
+  overflow-y: auto;
 }
 
 /* Force a single typography family across the app UI */

@@ -28,6 +28,7 @@ html {
   height: 100dvh; 
   overflow: hidden; 
   background-color: #ECF3E9;
+  scrollbar-gutter: auto !important;
 }
 
 body {

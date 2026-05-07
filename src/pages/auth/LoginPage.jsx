@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { IoChevronBack } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
 import { isValidEmail } from '../../utils/validators';
 import { ROUTES } from '../../utils/constants';
@@ -342,6 +343,15 @@ function LoginPage({ managePageClass = true }) {
       className="auth-page-v2"
       data-layout={layoutMode}
     >
+      <button
+        type="button"
+        className="auth-back-btn"
+        onClick={() => navigate(ROUTES.HOME)}
+        aria-label="Back to Home"
+      >
+        <IoChevronBack /> Back
+      </button>
+
       <div className="auth-container">
         <motion.div
           className="auth-card"

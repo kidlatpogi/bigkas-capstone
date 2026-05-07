@@ -37,108 +37,63 @@
 
 
   width: 100%;
-
   min-height: 100dvh;
-
   background-color: #FDFDF9;
-
   background-image: 
-
     radial-gradient(rgba(11, 57, 84, 0.1) 1px, transparent 0),
-
     repeating-radial-gradient(
-
       circle at 100% 100%, 
-
       transparent 0, 
-
       transparent 300px, 
-
       rgba(5, 150, 105, 0.08) 300px, 
-
       rgba(5, 150, 105, 0.08) 302px, 
-
       transparent 302px, 
-
       transparent 600px
-
     ),
-
     repeating-radial-gradient(
-
       circle at 0% 0%, 
-
       transparent 0, 
-
       transparent 400px, 
-
       rgba(241, 143, 1, 0.07) 400px, 
-
       rgba(241, 143, 1, 0.07) 402px, 
-
       transparent 402px, 
-
       transparent 800px
-
     );
-
   background-size: 40px 40px, 100% 100%, 100% 100%;
-
   background-attachment: fixed;
-
   font-family: 'Fredoka', 'SF Pro Display', sans-serif;
-
   color: var(--sr-text-dark);
-
-  padding: clamp(20px, 4vh, 40px) 24px;
-
+  padding: 1rem 0 3rem; /* Same top padding as ActivityPage + Bottom safety */
   box-sizing: border-box;
-
   display: flex;
-
   flex-direction: column;
-
   align-items: center;
-
 }
-
-
 
 .sr-page--inner {
-
-  padding: 16px 24px !important;
-
+  padding: 16px 0 !important;
   background: transparent !important;
-
   min-height: auto !important;
-
   scrollbar-width: none !important;
-
   -ms-overflow-style: none !important;
-
   overflow-y: auto !important;
-
 }
 
-
-
 .sr-page--inner::-webkit-scrollbar {
-
   display: none !important;
-
   width: 0 !important;
-
   height: 0 !important;
-
 }
 
 
 
 .sr-content-layout {
-  width: min(100%, 1200px);
+  width: 100%;
+  padding: 0 1rem; /* Match ActivityPage side padding */
   display: flex;
   flex-direction: column;
   gap: 8px;
+  box-sizing: border-box;
 }
 
 
@@ -146,9 +101,7 @@
 /* ── Breadcrumb ── */
 
 .sr-breadcrumb {
-
-  width: min(100%, 1200px);
-
+  width: 100%;
   margin-bottom: 20px;
 
   display: flex;
@@ -278,12 +231,19 @@
   border-radius: inherit !important;
 
   padding: 24px 32px 24px 220px !important;
-
   backdrop-filter: blur(10px) !important;
-
   box-sizing: border-box !important;
-
 }
+
+.sr-page--inner .new-banner-left.is-full-width {
+  padding-left: 120px !important;
+  padding-right: 20px !important;
+}
+
+.sr-page--inner .new-banner-robot {
+  width: 120px !important;
+}
+
 
 
 
@@ -412,16 +372,25 @@
 /* ── Overview Row ── */
 
 .sr-overview-row {
-
   display: grid;
-
   grid-template-columns: repeat(2, 1fr);
-
   gap: 24px;
-
   margin-bottom: 32px;
-
+  width: 100%;
 }
+
+/* Inner view stacking */
+.sr-page--inner .sr-overview-row,
+.sr-page--inner .sr-pillars-grid {
+  grid-template-columns: 1fr !important;
+}
+
+@media (max-width: 900px) {
+  .sr-overview-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 
 
 
@@ -1390,7 +1359,9 @@
 
 @media (max-width: 768px) {
 
-  .sr-pillars-grid {
+  .sr-pillars-grid,
+
+  .sr-bottom-grid {
 
     grid-template-columns: 1fr;
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,6 +11,22 @@ import {
   IoPulse,
   IoStar,
   IoSync,
+  IoRestaurant,
+  IoFilm,
+  IoMusicalNotes,
+  IoBook,
+  IoFitness,
+  IoAirplane,
+  IoCodeWorking,
+  IoColorPalette,
+  IoSchool,
+  IoHome,
+  IoChatbubbles,
+  IoTime,
+  IoCash,
+  IoCall,
+  IoEarth,
+  IoPlanet,
 } from 'react-icons/io5';
 import { FaBrain, FaGhost } from 'react-icons/fa';
 import { GiGoblinHead, GiFishMonster, GiWerewolf, GiVampireDracula } from 'react-icons/gi';
@@ -129,9 +145,84 @@ function getPhaseIcon(step) {
   }
 }
 
+function getStepTitleIcon(step) {
+  const title = getStepActivityTitle(step).toLowerCase();
+  
+  if (title.includes('breakfast') || title.includes('food') || title.includes('dinner') || title.includes('lunch') || title.includes('eat') || title.includes('restaurant') || title.includes('cook')) {
+    return <IoRestaurant />;
+  }
+  if (title.includes('cinema') || title.includes('film') || title.includes('movie') || title.includes('theater') || title.includes('actor') || title.includes('scene')) {
+    return <IoFilm />;
+  }
+  if (title.includes('music') || title.includes('sing') || title.includes('audio') || title.includes('song') || title.includes('lyrics') || title.includes('listen')) {
+    return <IoMusicalNotes />;
+  }
+  if (title.includes('book') || title.includes('read') || title.includes('story') || title.includes('write') || title.includes('author') || title.includes('poetry')) {
+    return <IoBook />;
+  }
+  if (title.includes('health') || title.includes('fitness') || title.includes('workout') || title.includes('gym') || title.includes('exercise') || title.includes('body')) {
+    return <IoFitness />;
+  }
+  if (title.includes('travel') || title.includes('trip') || title.includes('plane') || title.includes('flight') || title.includes('journey') || title.includes('destination')) {
+    return <IoAirplane />;
+  }
+  if (title.includes('code') || title.includes('programming') || title.includes('tech') || title.includes('software') || title.includes('web') || title.includes('dev')) {
+    return <IoCodeWorking />;
+  }
+  if (title.includes('art') || title.includes('paint') || title.includes('design') || title.includes('color') || title.includes('creative') || title.includes('sketch')) {
+    return <IoColorPalette />;
+  }
+  if (title.includes('school') || title.includes('study') || title.includes('exam') || title.includes('student') || title.includes('teacher') || title.includes('class')) {
+    return <IoSchool />;
+  }
+  if (title.includes('home') || title.includes('house') || title.includes('family') || title.includes('stay') || title.includes('living')) {
+    return <IoHome />;
+  }
+  if (title.includes('chat') || title.includes('conversation') || title.includes('talk') || title.includes('social') || title.includes('friend') || title.includes('meeting')) {
+    return <IoChatbubbles />;
+  }
+  if (title.includes('time') || title.includes('routine') || title.includes('schedule') || title.includes('clock') || title.includes('habit') || title.includes('daily')) {
+    return <IoTime />;
+  }
+  if (title.includes('money') || title.includes('finance') || title.includes('cash') || title.includes('bank') || title.includes('earn') || title.includes('business')) {
+    return <IoCash />;
+  }
+  if (title.includes('phone') || title.includes('call') || title.includes('mobile') || title.includes('app')) {
+    return <IoCall />;
+  }
+  if (title.includes('nature') || title.includes('weather') || title.includes('earth') || title.includes('environment') || title.includes('world') || title.includes('global')) {
+    return <IoEarth />;
+  }
+  if (title.includes('science') || title.includes('lab') || title.includes('discovery') || title.includes('space') || title.includes('planet')) {
+    return <IoPlanet />;
+  }
+  if (title.includes('eye') || title.includes('watch') || title.includes('vision') || title.includes('gaze') || title.includes('see')) {
+    return <IoEye />;
+  }
+  if (title.includes('brain') || title.includes('mind') || title.includes('thought') || title.includes('idea') || title.includes('think')) {
+    return <FaBrain />;
+  }
+  if (title.includes('voice') || title.includes('speak') || title.includes('vocal') || title.includes('mic')) {
+    return <IoMic />;
+  }
+  if (title.includes('sync') || title.includes('update') || title.includes('refresh') || title.includes('loop')) {
+    return <IoSync />;
+  }
+
+  return null;
+}
+
 function JourneyNodeIcon({ step, index, className = '' }) {
   const iconClassName = `skyward-journey-node-icon ${className}`.trim();
   if (isStartNode(step, index)) return <IoStar aria-hidden className={iconClassName} />;
+
+  const TitleIcon = getStepTitleIcon(step);
+  if (TitleIcon) {
+    return React.cloneElement(TitleIcon, {
+      'aria-hidden': true,
+      className: iconClassName
+    });
+  }
 
   switch (getPhaseIcon(step)) {
     case 'gaze':

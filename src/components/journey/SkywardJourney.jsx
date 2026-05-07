@@ -29,8 +29,6 @@ const rankSilverImage = getSpriteUrl('Rank/rank-silver.png');
 const rankGoldImage = getSpriteUrl('Rank/rank-gold.png');
 const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.png');
 const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.png');
-const chestClosedImage = getSpriteUrl('common/treasure-chest.png');
-const chestOpenImage = getSpriteUrl('common/treasure-chest-open.png');
 import './SkywardJourney.css';
 
 const MAP_SCALE = 1;
@@ -971,9 +969,6 @@ export default function SkywardJourney({
         // A Level End (Square/Monster) triggers if it's Stage 31 of Levels 1-4, OR if the next step jumps to a new level
         const isLevelEnd = !isUltimateBoss && (isStage31 || (!nextStep || nextLevel !== currentLevel));
 
-        // A Section Trophy is any section end that isn't a Boss
-        const isSectionTrophy = isSectionEnd && !isUltimateBoss && !isLevelEnd;
-        const isEnhancedTrophyNode = !isUltimateBoss && (isSectionTrophy || isLevelEnd);
         const BossMonsterIcon = getBossMonsterIcon(currentLevel);
         const startStage = sectionTaskIndex === 0;
         const jiggle = jiggleIndex === i;
@@ -986,17 +981,6 @@ export default function SkywardJourney({
         } else {
           labelSide = i % 2 === 0 ? 'right' : 'left';
         }
-        const chestButtonStyle = isSectionTrophy
-          ? {
-            backgroundImage: `url(${isDone ? chestOpenImage : chestClosedImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            backgroundColor: 'transparent',
-            boxShadow: 'none',
-            border: 'none',
-          }
-          : undefined;
 
         return (
           <div
@@ -1045,7 +1029,6 @@ export default function SkywardJourney({
                       'skyward-journey-node',
                       `skyward-journey-node--${step.nodeState}`,
                       (isUltimateBoss || isLevelEnd) ? 'skyward-journey-node--boss' : '',
-                      isEnhancedTrophyNode ? 'skyward-journey-node--trophy' : '',
                       jiggle ? 'skyward-journey-node--jiggle' : '',
                       !isLocked ? 'skyward-journey-node--unlocked' : '',
                       isLocked ? 'skyward-journey-node--locked-teaser' : '',
@@ -1059,7 +1042,7 @@ export default function SkywardJourney({
                     onClick={() => handleNodeClick(step, i)}
                     onPointerDown={(event) => event.stopPropagation()}
                     onTouchStart={(event) => event.stopPropagation()}
-                    style={chestButtonStyle}
+                    style={undefined}
                   >
                     {isUltimateBoss ? (
                       <FaGhost
@@ -1071,8 +1054,6 @@ export default function SkywardJourney({
                         className="skyward-journey-node-icon skyward-journey-node-icon--boss"
                         aria-hidden
                       />
-                    ) : isSectionTrophy ? (
-                      null
                     ) : startStage ? (
                       <IoStar
                         className="skyward-journey-node-icon"

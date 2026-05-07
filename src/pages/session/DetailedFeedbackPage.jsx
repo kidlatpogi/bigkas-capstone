@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { IoChevronForward, IoChevronBack } from 'react-icons/io5';
+import { IoChevronForward, IoChevronBack, IoHomeOutline } from 'react-icons/io5';
 import { 
   ResponsiveContainer, 
   LineChart, 
@@ -484,7 +484,18 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
   return (
     <div className={`df-page ${isInnerView ? 'df-page--inner' : ''} activity-page--skyward-entrance`}>
       {!isInnerView && (
-        <div className="history-session-view-header" style={{ width: '100%', padding: '1.25rem 1.5rem', background: '#FDFDF9', borderBottom: '1px solid rgba(11, 57, 84, 0.08)', position: 'sticky', top: 0, zIndex: 10 }}>
+        <div className="history-session-view-header" style={{ 
+          width: '100%', 
+          padding: '1.25rem 1.5rem', 
+          background: '#FDFDF9', 
+          borderBottom: '1px solid rgba(11, 57, 84, 0.08)', 
+          position: 'sticky', 
+          top: 0, 
+          zIndex: 10,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
           <button
             type="button"
             className="history-back-to-list-btn"
@@ -497,6 +508,20 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
             }}
           >
             <IoChevronBack /> Back to Results
+          </button>
+
+          <button
+            type="button"
+            className="history-back-to-list-btn"
+            style={{ 
+              background: '#f8fafc', 
+              color: '#475569', 
+              boxShadow: '0 5px 0 #e2e8f0',
+              border: '1px solid #e2e8f0'
+            }}
+            onClick={() => navigate(ROUTES.DASHBOARD)}
+          >
+            <IoHomeOutline /> Return to Dashboard
           </button>
         </div>
       )}

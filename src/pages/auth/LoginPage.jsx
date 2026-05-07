@@ -352,15 +352,6 @@ function LoginPage({ managePageClass = true }) {
         >
           {/* Left Side: Branding & Visuals */}
           <div className="auth-visual-side">
-            <button
-              type="button"
-              className="auth-back-btn"
-              onClick={() => navigate(ROUTES.HOME)}
-              aria-label="Back to Home"
-            >
-              <IoChevronBack /> Back to Home
-            </button>
-
             <div className="auth-visual-content">
               <motion.div variants={itemVariants} className="auth-brand-logo">
                 Bigkas

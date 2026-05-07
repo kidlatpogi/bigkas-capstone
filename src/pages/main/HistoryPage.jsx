@@ -14,7 +14,13 @@ import SessionResultPage from '../session/SessionResultPage';
 import DetailedFeedbackPage from '../session/DetailedFeedbackPage';
 
 const HISTORY_FILTERS = ['All', 'Today', 'This Week', 'This Month'];
-const HISTORY_SCORE_SORT_OPTIONS = [5, 4, 3, 2, 1];
+const HISTORY_SCORE_SORT_OPTIONS = [
+  { label: '81-100%', value: '4.2' },
+  { label: '61-80%', value: '3.4' },
+  { label: '41-60%', value: '2.6' },
+  { label: '21-40%', value: '1.8' },
+  { label: '0-20%', value: '1.0' },
+];
 const HISTORY_SCORE_SORT_NONE = '';
 
 function toFivePointScore(rawScore) {
@@ -89,10 +95,9 @@ function sortSessionsByTargetScore(sessions, scoreTarget) {
 
 function getScoreBandBounds(scoreTarget) {
   const target = Number(scoreTarget);
-  if (!Number.isFinite(target)) return { min: 1, max: 1.9 };
+  if (!Number.isFinite(target)) return { min: 1, max: 1.8 };
   const clamped = Math.max(1, Math.min(5, target));
-  if (clamped >= 5) return { min: 5, max: 5 };
-  return { min: clamped, max: Math.min(5, clamped + 0.9) };
+  return { min: clamped, max: Math.min(5, clamped + 0.8) };
 }
 
 function buildSessionTitleOrTopic(session) {
@@ -236,9 +241,9 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
             aria-label="Sort history by score target"
           >
             <option value={HISTORY_SCORE_SORT_NONE}>---</option>
-            {HISTORY_SCORE_SORT_OPTIONS.map((scoreOption) => (
-              <option key={`score-sort-${scoreOption.toFixed(1)}`} value={scoreOption.toFixed(1)}>
-                {scoreOption === 5 ? '100%' : scoreOption === 4 ? '75%' : scoreOption === 3 ? '50%' : scoreOption === 2 ? '25%' : '0%'}
+            {HISTORY_SCORE_SORT_OPTIONS.map((opt) => (
+              <option key={`score-sort-${opt.value}`} value={opt.value}>
+                {opt.label}
               </option>
             ))}
           </select>
@@ -306,9 +311,9 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                       aria-label="Sort history by score target"
                     >
                       <option value={HISTORY_SCORE_SORT_NONE}>---</option>
-                      {HISTORY_SCORE_SORT_OPTIONS.map((scoreOption) => (
-                        <option key={`score-sort-${scoreOption.toFixed(1)}`} value={scoreOption.toFixed(1)}>
-                          {scoreOption === 5 ? '100%' : scoreOption === 4 ? '75%' : scoreOption === 3 ? '50%' : scoreOption === 2 ? '25%' : '0%'}
+                      {HISTORY_SCORE_SORT_OPTIONS.map((opt) => (
+                        <option key={`score-sort-${opt.value}`} value={opt.value}>
+                          {opt.label}
                         </option>
                       ))}
                     </select>

@@ -99,10 +99,12 @@ body.register-page-active {
   top: clamp(20px, 4vh, 40px);
   left: clamp(20px, 4vw, 40px);
   z-index: 10;
-  font-family: 'Fredoka', sans-serif;
-  font-size: 2rem;
-  font-weight: 700;
-  color: #ffffff;
+}
+
+.auth-logo-img {
+  height: clamp(32px, 4vh, 48px);
+  width: auto;
+  object-fit: contain;
 }
 
 .auth-robot-img-wrap {

@@ -62,13 +62,10 @@
   margin: 0 auto;
 }
 
-.auth-brand-name {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 72px;
-  font-weight: 900;
-  color: #010101;
-  line-height: 1;
-  letter-spacing: -2px;
+.admin-auth-logo {
+  height: clamp(64px, 12vh, 120px);
+  width: auto;
+  object-fit: contain;
   margin-bottom: 8px;
 }
 

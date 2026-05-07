@@ -11,6 +11,7 @@ import Grainient from './Grainient';
 import PushButton from '../../components/common/PushButton';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import './LoginPage.css';
+import bigkasLogo from '../../assets/logos/0015.png';
 
 const LOGIN_LOCKOUT_UNTIL_KEY = 'bigkas_login_lockout_until';
 
@@ -353,7 +354,7 @@ function LoginPage({ managePageClass = true }) {
           {/* Left Side: Branding & Visuals */}
           <div className="auth-visual-side">
             <motion.div variants={itemVariants} className="auth-brand-logo">
-              Bigkas
+              <img src={bigkasLogo} alt="Bigkas" className="auth-logo-img" />
             </motion.div>
             
             <div className="auth-visual-content">

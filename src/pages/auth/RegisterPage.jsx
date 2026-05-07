@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import PushButton from '../../components/common/PushButton';
 import { getSpriteUrl } from '../../utils/assetUtils';
 import './RegisterPage.css';
+import bigkasLogo from '../../assets/logos/0015.png';
 
 function RegisterPage({ managePageClass = true }) {
   const layoutRef = useRef(null);
@@ -198,7 +199,7 @@ function RegisterPage({ managePageClass = true }) {
           {/* Left Side: Visuals */}
           <div className="auth-visual-side">
             <motion.div variants={itemVariants} className="auth-brand-logo">
-              Bigkas
+              <img src={bigkasLogo} alt="Bigkas" className="auth-logo-img" />
             </motion.div>
             <div className="auth-visual-content">
               <motion.div 

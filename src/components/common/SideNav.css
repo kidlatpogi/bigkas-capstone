@@ -96,11 +96,10 @@ body.activity-tutorial-open .side-nav {
   gap: 2px;
 }
 
-.side-nav-brand-text {
-  font-size: 1.95rem;
-  line-height: 1;
-  font-weight: 800;
-  letter-spacing: -0.05em;
+.side-nav-brand-logo {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
 }
 
 .side-nav-brand-subtitle {

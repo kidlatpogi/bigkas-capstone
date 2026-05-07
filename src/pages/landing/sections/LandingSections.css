@@ -659,11 +659,11 @@ body.landing-page-active .hero-actions .hero-cta--forest-outline.bigkas-btn.land
   align-items: start;
 }
 
-.landing-footer-brand h4 {
-  margin: 0;
-  font-family: 'Nunito', sans-serif;
-  font-size: 24px;
-  font-weight: 900;
+.footer-logo-img {
+  height: 38px;
+  width: auto;
+  object-fit: contain;
+  margin-bottom: 4px;
 }
 
 .landing-footer-brand p {

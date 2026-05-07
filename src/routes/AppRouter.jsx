@@ -46,7 +46,7 @@ import PracticePage from '../pages/main/PracticePage';
 // Components
 import SideNav from '../components/common/SideNav';
 import BottomNav from '../components/common/BottomNav';
-import bigkasLogo from '../assets/Temporary Logo.png';
+import bigkasLogo from '../assets/logos/0015.png';
 
 /**
  * ActivityPageWrapper - Conditionally renders desktop or mobile version
@@ -206,7 +206,6 @@ function ProtectedRoute() {
       <div className="loading-screen">
         <div className="loading-logo">
           <img src={bigkasLogo} alt="Bigkas" className="loading-logo-image" />
-          <span>Bigkas</span>
         </div>
         <div className="loading-spinner" aria-label="Loading" />
       </div>
@@ -262,7 +261,6 @@ function AdminRoute() {
       <div className="loading-screen">
         <div className="loading-logo">
           <img src={bigkasLogo} alt="Bigkas" className="loading-logo-image" />
-          <span>Bigkas</span>
         </div>
         <div className="loading-spinner" aria-label="Loading" />
       </div>
@@ -311,7 +309,6 @@ function PublicRoute() {
       <div className="loading-screen">
         <div className="loading-logo">
           <img src={bigkasLogo} alt="Bigkas" className="loading-logo-image" />
-          <span>Bigkas</span>
         </div>
         <div className="loading-spinner" aria-label="Loading" />
       </div>

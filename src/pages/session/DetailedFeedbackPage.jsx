@@ -528,26 +528,6 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
         />
       )}
 
-      {!isInnerView && (
-        <div className="history-session-view-header dashboard-anim-top" style={{ width: '100%', maxWidth: '1200px', margin: '0 auto 20px', background: 'transparent', borderBottom: 'none', padding: '16px 0' }}>
-          <button
-            type="button"
-            className="history-back-to-list-btn"
-            onClick={() => {
-              if (showDetailed && !isInnerView) {
-                setShowDetailed(false);
-              } else {
-                const backRoute = locationState?.fromResult 
-                  ? ROUTES.SESSION_RESULT.replace(':sessionId', sessionId)
-                  : breadcrumbRoute;
-                navigate(backRoute, { state: locationState });
-              }
-            }}
-          >
-            <IoChevronBack /> {showDetailed ? 'Back to Overview' : `Back to ${breadcrumbParent}`}
-          </button>
-        </div>
-      )}
 
       <div className="sr-content-layout">
         {/* AI Coach Hero Banner */}

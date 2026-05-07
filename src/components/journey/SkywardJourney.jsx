@@ -36,6 +36,9 @@ import {
   IoSettings,
   IoHardwareChip,
   IoTrophy,
+  IoPeople,
+  IoList,
+  IoSparkles,
 } from 'react-icons/io5';
 import { FaBrain, FaGhost } from 'react-icons/fa';
 import { GiGoblinHead, GiFishMonster, GiWerewolf, GiVampireDracula } from 'react-icons/gi';
@@ -155,50 +158,98 @@ function getPhaseIcon(step) {
 }
 
 function getStepTitleIcon(step) {
-  const title = getStepActivityTitle(step).toLowerCase();
+  const title = getStepActivityTitle(step);
+  const normalizedTitle = title.toLowerCase();
   
   // 1. Daily Life & Routines (coffee)
-  if (title.includes('breakfast') || title.includes('weekend') || title.includes('relaxation') || title.includes('habit') || title.includes('routine') || title.includes('morning') || title.includes('night') || title.includes('daily') || title.includes('coffee')) {
+  if (
+    normalizedTitle === 'breakfast routine' ||
+    normalizedTitle === 'weekend recap' ||
+    normalizedTitle === 'yesterday recap' ||
+    normalizedTitle === 'relaxation tips'
+  ) {
     return <IoCafe />;
   }
   
-  // 2. Visual & Spatial (eye)
-  if (title.includes('room') || title.includes('layout') || title.includes('clothing') || title.includes('environment') || title.includes('window') || title.includes('scenery') || title.includes('view') || title.includes('visual description') || title.includes('description')) {
+  // 2. Visual & Environmental (eye)
+  if (
+    normalizedTitle === 'visual description' ||
+    normalizedTitle === 'window view' ||
+    normalizedTitle === 'spatial awareness' ||
+    normalizedTitle === 'weather forecast'
+  ) {
     return <IoEye />;
   }
 
-  // 3. Local & University (map-pin)
-  if (title.includes('nu dasmariñas') || title.includes('local') || title.includes('commute') || title.includes('delicacy') || title.includes('street') || title.includes('city') || title.includes('location')) {
+  // 3. Local & Campus Geography (map-pin)
+  if (
+    normalizedTitle === 'commute story' ||
+    normalizedTitle === 'local delicacy' ||
+    normalizedTitle === 'campus bites'
+  ) {
     return <IoLocation />;
   }
 
-  // 4. Media & Leisure (play-circle)
-  if (title.includes('movie') || title.includes('music') || title.includes('hobby') || title.includes('cinema') || title.includes('film') || title.includes('song') || title.includes('audio') || title.includes('series') || title.includes('tv show') || title.includes('anime')) {
+  // 4. Hobbies & Entertainment (play-circle)
+  if (
+    normalizedTitle === 'cinematic eye' ||
+    normalizedTitle === 'game rules' ||
+    normalizedTitle === 'music review' ||
+    normalizedTitle === 'hobby pitch'
+  ) {
     return <IoPlayCircle />;
   }
 
-  // 5. Identity & Social (user-check)
-  if (title.includes('introduction') || title.includes('family') || title.includes('networking') || title.includes('peer') || title.includes('friend') || title.includes('talk') || title.includes('chat') || title.includes('name') || title.includes('age') || title.includes('social')) {
-    return <IoPerson />;
+  // 5. Personal Identity & Social (users)
+  if (
+    normalizedTitle === 'identity check' ||
+    normalizedTitle === 'role model' ||
+    normalizedTitle === 'introduction'
+  ) {
+    return <IoPeople />;
   }
 
-  // 6. Academic & Career (graduation-cap)
-  if (title.includes('academic') || title.includes('career') || title.includes('it subject') || title.includes('study') || title.includes('goal') || title.includes('school') || title.includes('college') || title.includes('university') || title.includes('professional')) {
+  // 6. Academic & Career Growth (graduation-cap)
+  if (
+    normalizedTitle === 'academic choice' ||
+    normalizedTitle === 'university pride' ||
+    normalizedTitle === 'career ambition' ||
+    normalizedTitle === 'study habits' ||
+    normalizedTitle === 'time control'
+  ) {
     return <IoSchool />;
   }
 
-  // 7. Technical & Logic (settings)
-  if (title.includes('process') || title.includes('milo') || title.includes('science') || title.includes('logic') || title.includes('critical') || title.includes('think') || title.includes('how to') || title.includes('explain')) {
-    return <IoSettings />;
-  }
-
-  // 8. Future & Technology (cpu)
-  if (title.includes('ai') || title.includes('app') || title.includes('digital') || title.includes('technology') || title.includes('smartphone') || title.includes('internet') || title.includes('future')) {
+  // 7. Technology & Innovation (cpu)
+  if (
+    normalizedTitle === 'tech essential' ||
+    normalizedTitle === 'future ai'
+  ) {
     return <IoHardwareChip />;
   }
 
-  // 9. Program Milestone (award)
-  if (title.includes('bigkas') || title.includes('final') || title.includes('integration') || title.includes('mastery') || title.includes('milestone')) {
+  // 8. Logic & Process Explanation (list-tree)
+  if (
+    normalizedTitle === 'milo master' ||
+    normalizedTitle === 'vital logic'
+  ) {
+    return <IoList />;
+  }
+
+  // 9. Aspirations & Reflection (sparkles)
+  if (
+    normalizedTitle === 'dream escape' ||
+    normalizedTitle === 'small wins' ||
+    normalizedTitle === 'the hero'
+  ) {
+    return <IoSparkles />;
+  }
+
+  // 10. Program Milestones (award)
+  if (
+    normalizedTitle === 'the bigkas milestone' ||
+    normalizedTitle.includes('milestone')
+  ) {
     return <IoTrophy />;
   }
 

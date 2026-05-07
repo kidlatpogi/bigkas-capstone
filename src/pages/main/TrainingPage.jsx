@@ -1082,23 +1082,21 @@ function TrainingPage() {
 
       // 8. Finalize and Navigate
       const finalSessionId = result.data.id || result.data.session_id;
-      console.log(`[TrainingPage] Analysis complete. Target Session: ${finalSessionId}. Navigating in 500ms...`);
+      console.log(`[TrainingPage] Analysis complete. Target Session: ${finalSessionId}. Navigating...`);
       
-      setTimeout(() => {
-        if (isMountedRef.current) {
-          if (!finalSessionId) {
-            console.error('[TrainingPage] No session ID found in result:', result);
-            setErrorMsg('Analysis completed, but session ID was missing.');
-            setStatus('error');
-            return;
-          }
-          // Set status to idle to clear any overlays before we actually leave
-          setStatus('idle');
-          navigate(buildRoute.detailedFeedback(finalSessionId), { state: result.data });
-        } else {
-          console.warn('[TrainingPage] Component unmounted before navigation could trigger.');
+      if (isMountedRef.current) {
+        if (!finalSessionId) {
+          console.error('[TrainingPage] No session ID found in result:', result);
+          setErrorMsg('Analysis completed, but session ID was missing.');
+          setStatus('error');
+          return;
         }
-      }, 500);
+        // Set status to idle to clear any overlays before we actually leave
+        setStatus('idle');
+        navigate(buildRoute.detailedFeedback(finalSessionId), { state: result.data });
+      } else {
+        console.warn('[TrainingPage] Component unmounted before navigation could trigger.');
+      }
 
     } catch (err) {
       console.error('[TrainingPage] Analysis Error:', err);

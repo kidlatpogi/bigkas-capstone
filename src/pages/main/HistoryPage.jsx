@@ -238,7 +238,7 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
             <option value={HISTORY_SCORE_SORT_NONE}>---</option>
             {HISTORY_SCORE_SORT_OPTIONS.map((scoreOption) => (
               <option key={`score-sort-${scoreOption.toFixed(1)}`} value={scoreOption.toFixed(1)}>
-                {scoreOption.toFixed(1)}
+                {scoreOption === 5 ? '100%' : scoreOption === 4 ? '75%' : scoreOption === 3 ? '50%' : scoreOption === 2 ? '25%' : '0%'}
               </option>
             ))}
           </select>
@@ -308,7 +308,7 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                       <option value={HISTORY_SCORE_SORT_NONE}>---</option>
                       {HISTORY_SCORE_SORT_OPTIONS.map((scoreOption) => (
                         <option key={`score-sort-${scoreOption.toFixed(1)}`} value={scoreOption.toFixed(1)}>
-                          {scoreOption.toFixed(1)}
+                          {scoreOption === 5 ? '100%' : scoreOption === 4 ? '75%' : scoreOption === 3 ? '50%' : scoreOption === 2 ? '25%' : '0%'}
                         </option>
                       ))}
                     </select>

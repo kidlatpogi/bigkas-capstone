@@ -235,9 +235,9 @@
 }
 
 .streak-fire-icon {
-  width: 50%;
-  height: 50%;
-  object-fit: contain;
+  width: 60%;
+  height: 60%;
+  color: #ffffff;
   filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
 }
 

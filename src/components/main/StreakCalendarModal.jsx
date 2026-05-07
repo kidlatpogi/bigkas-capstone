@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { IoFlame } from 'react-icons/io5';
 import Lottie from 'lottie-react';
 import { getAssetUrl } from '../../utils/assetUtils';
 import fireAnimationData from '../../assets/Lottie/fire.json';
@@ -11,11 +12,11 @@ import './StreakCalendarModal.css';
 // Heatmap color scale: Dark (less) -> Light (more)
 function getSessionIntensityColor(count) {
   if (count <= 0) return '#e2e8f0'; // Default empty
-  if (count === 1) return '#064e3b'; // Darkest green
-  if (count === 2) return '#065f46';
-  if (count === 3) return '#059669';
-  if (count === 4) return '#10b981';
-  return '#34d399'; // Lightest/Brighter green
+  if (count === 1) return '#fef3c7'; // Lightest orange
+  if (count === 2) return '#fde68a';
+  if (count === 3) return '#fbbf24';
+  if (count === 4) return '#f59e0b';
+  return '#d97706'; // Darkest orange
 }
 
 export default function StreakCalendarModal({ isOpen, onClose, sessionCountsByDay, streakStats }) {
@@ -166,8 +167,8 @@ export default function StreakCalendarModal({ isOpen, onClose, sessionCountsByDa
                   className={`streak-calendar-day ${isActive ? 'active' : ''} ${isPartOfStreak ? 'streak' : ''}`}
                   style={{ backgroundColor: isActive ? getSessionIntensityColor(count) : undefined }}
                 >
-                  {isPartOfStreak ? (
-                    <img src={iconFire} alt="fire" className="streak-fire-icon" />
+                  {isActive ? (
+                    <IoFlame className="streak-fire-icon" />
                   ) : (
                     <span className="streak-day-text">{day}</span>
                   )}

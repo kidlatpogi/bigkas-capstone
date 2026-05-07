@@ -121,7 +121,7 @@ body.login-page-active {
     radial-gradient(rgba(255, 255, 255, 0.15) 1.5px, transparent 0),
     linear-gradient(180deg, #34D399 0%, #059669 100%);
   background-size: 32px 32px, 100% 100%;
-  padding: clamp(30px, 6vw, 60px);
+  padding: clamp(24px, 4vw, 48px);
   position: relative;
   overflow: hidden;
   display: flex;
@@ -175,13 +175,12 @@ body.login-page-active {
 }
 
 .auth-robot-img-wrap {
-  width: min(95%, 460px);
-  max-height: 48vh;
+  width: min(100%, 420px);
+  max-height: clamp(240px, 40vh, 440px);
   margin: 0 auto;
   filter: drop-shadow(0 30px 60px rgba(0,0,0,0.35));
   position: relative;
   z-index: 5;
-  flex-shrink: 2;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -234,10 +233,10 @@ body.login-page-active {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  justify-content: center;
+  gap: clamp(12px, 2vh, 24px);
   width: 100%;
-  margin-top: 20px;
-  margin-bottom: auto;
+  margin: auto 0;
 }
 
 .auth-hero-tagline {

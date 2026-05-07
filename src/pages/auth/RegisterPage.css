@@ -305,7 +305,8 @@ body.register-page-active {
 .input-field-wrap input:focus {
   border-color: var(--emerald-500);
   background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+  outline: none;
 }
 
 .input-field-wrap input.is-invalid {

@@ -1,5 +1,6 @@
 import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
+import bigkasLogo from '../../assets/logos/0015.png';
 import './StaggeredMenu.css';
 
 export const StaggeredMenu = ({
@@ -312,7 +313,10 @@ export const StaggeredMenu = ({
       <header className="staggered-menu-header" aria-label="Main navigation header">
         {(brandName || userName) && (
           <div className="sm-brand-container">
-            {brandName && <div className="sm-brand-name">{brandName}</div>}
+            <div className="sm-brand-wrap">
+              <img src={bigkasLogo} alt="" className="sm-brand-logo" />
+              {brandName && <div className="sm-brand-name">{brandName}</div>}
+            </div>
             {userName && <div className="sm-user-name">{userName}</div>}
           </div>
         )}

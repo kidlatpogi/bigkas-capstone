@@ -185,14 +185,10 @@
 .form-input:focus,
 .form-textarea:focus,
 .form-select:focus {
-  border-color: #F18F01;
+  border-color: #10B981;
   background: #FFFFFF;
-}
-
-.form-input:focus-visible,
-.form-textarea:focus-visible,
-.form-select:focus-visible {
-  outline-color: #8A5A00;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+  outline: none;
 }
 
 .form-input:disabled,

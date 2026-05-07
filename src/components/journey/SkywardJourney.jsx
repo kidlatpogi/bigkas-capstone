@@ -317,7 +317,7 @@ const HeaderSkipNotice = styled.div`
 `;
 
 const TooltipBox = styled.div`
-  background: ${(props) => (props.$nodeState === 'locked' ? '#ffffff' : '#059669')};
+  background: ${(props) => (props.$nodeState === 'locked' ? '#ffffff' : (props.$themeColor || '#059669'))};
   color: ${(props) => (props.$nodeState === 'locked' ? '#333333' : '#ffffff')};
   padding: 24px;
   border-radius: 20px;
@@ -350,13 +350,13 @@ const TooltipBox = styled.div`
       top: -16px;
       border-left: 16px solid transparent;
       border-right: 16px solid transparent;
-      border-bottom: 16px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#059669'};
+      border-bottom: 16px solid ${props.$nodeState === 'locked' ? '#ffffff' : (props.$themeColor || '#059669')};
     `
       : `
       bottom: -16px;
       border-left: 16px solid transparent;
       border-right: 16px solid transparent;
-      border-top: 16px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#059669'};
+      border-top: 16px solid ${props.$nodeState === 'locked' ? '#ffffff' : (props.$themeColor || '#059669')};
     `}
   }
 `;
@@ -386,7 +386,7 @@ const TooltipTitle = styled.h3`
   margin: 0;
   font-size: 18px;
   font-weight: 800;
-  color: inherit;
+  color: #ffffff;
   text-transform: uppercase;
   letter-spacing: 1.5px;
   margin-top: 8px; /* space for absolute close btn */
@@ -461,7 +461,7 @@ function computeTooltipLayout(nodeEl, forceBottom = false) {
   return { left, top, transform, placement };
 }
 
-export const JourneyTooltip = ({ step, onStart, onClose, nodeRef, forceBottom = false }) => {
+export const JourneyTooltip = ({ step, themeColor, onStart, onClose, nodeRef, forceBottom = false }) => {
   const [layout, setLayout] = useState(null);
 
   useLayoutEffect(() => {
@@ -513,7 +513,7 @@ export const JourneyTooltip = ({ step, onStart, onClose, nodeRef, forceBottom = 
           transformOrigin: layout.placement === 'bottom' ? 'top center' : 'bottom center',
         }}
       >
-        <TooltipBox $placement={layout.placement} $nodeState={step.nodeState}>
+        <TooltipBox $placement={layout.placement} $nodeState={step.nodeState} $themeColor={themeColor}>
           <TooltipCloseBtn
             $nodeState={step.nodeState}
             onClick={(e) => {
@@ -1096,6 +1096,7 @@ export default function SkywardJourney({
                         }}
                         onClose={() => setTooltipNodeId(null)}
                         nodeRef={{ get current() { return nodeRefs.current[i]; } }}
+                        themeColor={theme.color}
                         forceBottom={i >= steps.length - 2}
                       />
                     )}

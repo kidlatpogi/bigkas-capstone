@@ -10,9 +10,8 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  padding: 0; /* Remove padding from root to allow flush sticky header */
-  height: 100vh; /* Fill the main-content area */
-  overflow: hidden; /* Prevent root scrolling */
+  align-items: center;
+  padding: clamp(20px, 4vh, 40px) 24px;
   
   /* Synced with ActivityPage Skyward Journey theme */
   background-color: #FDFDF9;
@@ -44,47 +43,6 @@
   display: none;
 }
 
-/* Orange Button Style - Synced with history-back-to-list-btn feel */
-.btn-orange {
-  background: #F97316 !important;
-  box-shadow: 0 5px 0 #C2410C !important;
-  border: none !important;
-  color: white !important;
-  border-radius: 12px;
-  padding: 10px 20px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-orange:hover {
-  background: #F97316 !important;
-  box-shadow: 0 3px 0 #C2410C !important;
-  transform: translateY(2px);
-}
-
-.btn-orange:active {
-  box-shadow: 0 0 0 #C2410C !important;
-  transform: translateY(5px);
-}
-
-.history-back-to-list-btn.btn-orange {
-  background: #F97316 !important;
-  box-shadow: 0 5px 0 #C2410C !important;
-  border: none !important;
-  color: white !important;
-}
-
-.history-back-to-list-btn.btn-orange:hover {
-  background: #F97316 !important;
-  box-shadow: 0 3px 0 #C2410C !important;
-  transform: translateY(2px);
-}
-
-.history-back-to-list-btn.btn-orange:active {
-  box-shadow: 0 0 0 #C2410C !important;
-  transform: translateY(5px);
-}
-
 .df-page--inner {
   padding: 16px 24px !important;
   background: transparent !important;
@@ -92,7 +50,6 @@
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
   overflow-y: auto !important;
-  height: auto !important; /* Let sidebar control height */
 }
 
 .df-page--inner::-webkit-scrollbar {
@@ -101,21 +58,11 @@
   height: 0 !important;
 }
 
-.df-page-body {
-  flex: 1;
-  width: 100%;
-  overflow-y: auto; /* Internal scroll area */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
 .df-content-layout {
-  width: 100%; /* Full width for flush look */
-  padding: 0 1rem 2rem; /* Reduced bottom clearance to avoid excess space */
+  width: min(100%, 1200px);
   display: flex;
   flex-direction: column;
-  gap: 1rem; /* Synchronized gap */
+  gap: 8px;
 }
 
 /* ── Hero Banner (Ported from SessionResultPage) ── */
@@ -130,7 +77,7 @@
   padding: 0;
   position: relative;
   overflow: hidden;
-  margin-bottom: 0;
+  margin-bottom: 32px;
   width: 100% !important;
 }
 
@@ -153,21 +100,6 @@
   padding: 24px 32px 24px 220px !important;
   backdrop-filter: blur(10px) !important;
   box-sizing: border-box !important;
-}
-
-/* Inner View Overrides for Sidebar */
-.df-page--inner .new-banner-left.is-full-width {
-  padding-left: 120px !important;
-  padding-right: 20px !important;
-}
-
-.df-page--inner .new-banner-robot {
-  width: 120px !important;
-}
-
-.df-page--inner .sr-pillars-grid,
-.df-page--inner .sr-overview-row {
-  grid-template-columns: 1fr !important;
 }
 
 .new-banner-robot {
@@ -208,6 +140,7 @@
   flex-direction: column;
   gap: 12px;
 }
+
 .new-banner-intro-text {
   margin: 0;
   font-size: 1rem;
@@ -239,7 +172,7 @@
 
 /* ── Performance Timeline ── */
 .df-timeline-section {
-  margin-bottom: 0;
+  margin-bottom: 48px;
 }
 
 .df-card {
@@ -343,7 +276,7 @@
 
 /* ── Triple V Pillar Cards (Ported from SessionResultPage) ── */
 .df-pillars-section {
-  margin-bottom: 0;
+  margin-bottom: 48px;
 }
 
 .sr-pillars-grid {

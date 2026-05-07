@@ -1297,14 +1297,34 @@ function ActivityPage() {
                 aria-label="Daily streak"
                 onClick={() => setIsStreakModalOpen(true)}
               >
-                 <div className="new-streak-top">
-                   <div className="new-streak-fire">
-                     {lottieFireNode}
+                 <div className="new-streak-top" style={{ justifyContent: 'space-between', width: '100%' }}>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                     <div className="new-streak-fire">
+                       {lottieFireNode}
+                     </div>
+                     <div className="new-streak-headline">
+                       <div className="new-streak-value">
+                         {streakStats.canRecover ? streakStats.potentialStreak : streakStats.currentStreak}
+                       </div>
+                       <p className="new-streak-label">day streak</p>
+                     </div>
                    </div>
-                   <div className="new-streak-headline">
-                     <div className="new-streak-value">{streakStats.currentStreak}</div>
-                     <p className="new-streak-label">day streak</p>
-                   </div>
+
+                   {streakStats.canRecover && (
+                     <Button 
+                       variant="practice"
+                       className="ask-b01-trigger streak-recovery-trigger" 
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         handleRecoverStreak();
+                       }}
+                       aria-label={`Recover your ${streakStats.potentialStreak} day streak`}
+                       style={{ margin: 0, width: 'auto', padding: '0 12px', height: '36px', fontSize: '0.8rem' }}
+                     >
+                       <IoFlame />
+                       <span>Recover Streak</span>
+                     </Button>
+                   )}
                  </div>
                  <div className="new-streak-week" aria-label="This week streak activity">
                    {weekPills.map((pill, idx) => (
@@ -1316,23 +1336,7 @@ function ActivityPage() {
                      </span>
                    ))}
                  </div>
-                 {streakStats.canRecover ? (
-                   <Button 
-                     variant="practice"
-                     className="ask-b01-trigger streak-recovery-trigger" 
-                     onClick={(e) => {
-                       e.stopPropagation();
-                       handleRecoverStreak();
-                     }}
-                     aria-label={`Recover your ${streakStats.potentialStreak} day streak`}
-                     style={{ marginTop: '4px', width: '100%' }}
-                   >
-                     <IoFlame />
-                     <span>Recover Streak</span>
-                   </Button>
-                 ) : (
-                   <p className="new-streak-copy">Build a daily speaking habit to keep stacking your streak.</p>
-                 )}
+                 <p className="new-streak-copy">Build a daily speaking habit to keep stacking your streak.</p>
               </div>
            </div>
         </section>

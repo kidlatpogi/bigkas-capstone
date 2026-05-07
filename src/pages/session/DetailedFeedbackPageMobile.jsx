@@ -50,10 +50,9 @@ function getTripleVScores(result) {
 }
 
 function getScoreTier15(score) {
-  if (score >= 4.0) return { label: 'Excellent', color: '#059669' };
-  if (score >= 3.0) return { label: 'Good', color: '#059669' };
-  if (score >= 2.0) return { label: 'Fair', color: '#F97316' };
-  return { label: 'Needs Work', color: '#FF0000' };
+  if (score >= 3.0) return { label: 'Strong', color: '#10B981' };
+  if (score >= 2.0) return { label: 'Developing', color: '#3B82F6' };
+  return { label: 'Rising', color: '#F59E0B' };
 }
 
 function scoreBarPercent(score) {
@@ -306,9 +305,9 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
   ].filter(m => m.score !== null);
 
   const pillars = [
-    { key: 'visual', label: 'Visual', desc: 'Eye contact, facial expressions, and body gestures', score: tripleV.visualAvg, image: visualSprite, subMetrics: visualSubMetrics },
-    { key: 'vocal', label: 'Vocal', desc: 'Voice pitch stability, volume consistency, and clarity', score: tripleV.vocalAvg, image: vocalSprite, subMetrics: vocalSubMetrics },
-    { key: 'verbal', label: 'Verbal', desc: 'Pronunciation accuracy and topical relevance', score: tripleV.verbalAvg, image: verbalSprite, subMetrics: [] },
+    { key: 'visual', label: 'Visual', desc: 'Overall consistency', score: tripleV.visualAvg, image: visualSprite, subMetrics: visualSubMetrics },
+    { key: 'vocal', label: 'Vocal', desc: 'Overall consistency', score: tripleV.vocalAvg, image: vocalSprite, subMetrics: vocalSubMetrics },
+    { key: 'verbal', label: 'Verbal', desc: 'Overall consistency', score: tripleV.verbalAvg, image: verbalSprite, subMetrics: [] },
   ];
 
   const timelineData = useMemo(() => {

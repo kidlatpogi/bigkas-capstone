@@ -12,11 +12,11 @@ import './StreakCalendarModal.css';
 // Heatmap color scale: Dark (less) -> Light (more)
 function getSessionIntensityColor(count) {
   if (count <= 0) return '#e2e8f0'; // Default empty
-  if (count === 1) return '#fef3c7'; // Lightest orange
-  if (count === 2) return '#fde68a';
-  if (count === 3) return '#fbbf24';
-  if (count === 4) return '#f59e0b';
-  return '#d97706'; // Darkest orange
+  if (count === 1) return '#d1fae5'; // Very light emerald
+  if (count === 2) return '#a7f3d0';
+  if (count === 3) return '#34d399';
+  if (count === 4) return '#10b981';
+  return '#059669'; // Solid emerald
 }
 
 export default function StreakCalendarModal({ isOpen, onClose, sessionCountsByDay, streakStats }) {

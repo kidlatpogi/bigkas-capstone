@@ -9,7 +9,6 @@ import { getSpriteUrl } from '../../utils/assetUtils';
 const verbalSprite = getSpriteUrl('common/Verbal.png');
 const visualSprite = getSpriteUrl('common/Visual.png');
 const vocalSprite = getSpriteUrl('common/Vocal.png');
-import SessionResultPage from '../session/SessionResultPage';
 import DetailedFeedbackPage from '../session/DetailedFeedbackPage';
 import './HistoryPage.css';
 import './HistoryPageMobile.css';
@@ -307,11 +306,19 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
                 </button>
              </div>
              <div className="history-mobile-session-view-content">
-                {innerViewMode === 'results' ? (
-                  <SessionResultPage sessionIdProp={selectedSessionId} isInnerView={true} onCloseInner={() => setSelectedSessionId(null)} onViewDetailed={() => setInnerViewMode('detailed')} />
-                ) : (
-                  <DetailedFeedbackPage sessionIdProp={selectedSessionId} isInnerView={true} onCloseInner={() => setInnerViewMode('results')} />
-                )}
+                <DetailedFeedbackPage 
+                  sessionIdProp={selectedSessionId} 
+                  isInnerView={true} 
+                  initialShowDetailed={innerViewMode === 'detailed'}
+                  onCloseInner={() => {
+                    if (innerViewMode === 'detailed') {
+                      setInnerViewMode('results');
+                    } else {
+                      setSelectedSessionId(null);
+                    }
+                  }}
+                  onViewDetailed={() => setInnerViewMode('detailed')}
+                />
              </div>
           </div>
         )}

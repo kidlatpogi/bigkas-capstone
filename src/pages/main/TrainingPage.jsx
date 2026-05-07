@@ -1094,7 +1094,7 @@ function TrainingPage() {
           }
           // Set status to idle to clear any overlays before we actually leave
           setStatus('idle');
-          navigate(buildRoute.sessionResult(finalSessionId), { state: result.data });
+          navigate(buildRoute.detailedFeedback(finalSessionId), { state: result.data });
         } else {
           console.warn('[TrainingPage] Component unmounted before navigation could trigger.');
         }

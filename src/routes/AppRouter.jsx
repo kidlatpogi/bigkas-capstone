@@ -37,7 +37,6 @@ import AchievementsPageMobile from '../pages/main/AchievementsPageMobile';
 
 // Session Pages
 import SessionDetailPage from '../pages/session/SessionDetailPage';
-import SessionResultPage from '../pages/session/SessionResultPage';
 import DetailedFeedbackPage from '../pages/session/DetailedFeedbackPage';
 
 // Main Pages (continued)
@@ -390,8 +389,8 @@ function AppRouter() {
 
         {/* Session */}
         <Route path={ROUTES.SESSION_DETAIL} element={<SessionDetailPage />} />
-        <Route path={ROUTES.SESSION_RESULT} element={<SessionResultPage />} />
-        <Route path={ROUTES.DETAILED_FEEDBACK} element={<DetailedFeedbackPage />} />
+        <Route path={ROUTES.SESSION_RESULT} element={<DetailedFeedbackPage initialShowDetailed={false} />} />
+        <Route path={ROUTES.DETAILED_FEEDBACK} element={<DetailedFeedbackPage initialShowDetailed={true} />} />
       </Route>
 
       <Route element={<AdminRoute />}>

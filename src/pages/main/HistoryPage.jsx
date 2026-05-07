@@ -10,7 +10,6 @@ const verbalSprite = getSpriteUrl('common/Verbal.png');
 const visualSprite = getSpriteUrl('common/Visual.png');
 const vocalSprite = getSpriteUrl('common/Vocal.png');
 import './HistoryPage.css';
-import SessionResultPage from '../session/SessionResultPage';
 import DetailedFeedbackPage from '../session/DetailedFeedbackPage';
 
 const HISTORY_FILTERS = ['All', 'Today', 'This Week', 'This Month'];
@@ -491,7 +490,7 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
 
         {selectedSessionId && (
           <div className="history-session-view slide-in-right">
-             <div className="history-session-view-header">
+             <div className="history-session-view-header dashboard-anim-top">
                 <button
                   type="button"
                   className="history-back-to-list-btn"
@@ -506,21 +505,20 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                    <IoChevronBack /> {innerViewMode === 'detailed' ? 'Back to Results' : 'Back to History'}
                 </button>
              </div>
-             <div className="history-session-view-content">
-                {innerViewMode === 'results' ? (
-                  <SessionResultPage 
-                    sessionIdProp={selectedSessionId} 
-                    isInnerView={true} 
-                    onCloseInner={() => setSelectedSessionId(null)}
-                    onViewDetailed={() => setInnerViewMode('detailed')}
-                  />
-                ) : (
-                  <DetailedFeedbackPage 
-                    sessionIdProp={selectedSessionId} 
-                    isInnerView={true} 
-                    onCloseInner={() => setInnerViewMode('results')}
-                  />
-                )}
+             <div className="history-session-view-content dashboard-anim-bottom dashboard-anim-delay-1">
+                <DetailedFeedbackPage 
+                  sessionIdProp={selectedSessionId} 
+                  isInnerView={true} 
+                  initialShowDetailed={innerViewMode === 'detailed'}
+                  onCloseInner={() => {
+                    if (innerViewMode === 'detailed') {
+                      setInnerViewMode('results');
+                    } else {
+                      setSelectedSessionId(null);
+                    }
+                  }}
+                  onViewDetailed={() => setInnerViewMode('detailed')}
+                />
              </div>
           </div>
         )}

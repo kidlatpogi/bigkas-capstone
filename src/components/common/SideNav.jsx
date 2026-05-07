@@ -100,78 +100,6 @@ export default function SideNav() {
     });
   };
 
-  const handleToggleStreakDebug = () => {
-    if (typeof window === 'undefined') return;
-    const current = window.localStorage.getItem('__debug_streak_at_risk__');
-    if (current === '1') {
-      window.localStorage.removeItem('__debug_streak_at_risk__');
-      alert('Streak Debug: OFF (Natural calculation)');
-    } else {
-      window.localStorage.setItem('__debug_streak_at_risk__', '1');
-      alert('Streak Debug: ON (Simulating 1-day gap / At-risk state)');
-    }
-    window.location.reload();
-  };
-
-  const handleAddMockDay = () => {
-    if (typeof window === 'undefined' || !user?.id) return;
-    const scopeKey = user.id;
-    const historyKey = `bigkas_activity_completed_history_${scopeKey}`;
-    
-    try {
-      const raw = window.localStorage.getItem(historyKey);
-      const history = raw ? JSON.parse(raw) : [];
-      
-      const getLocalDateStr = (d) => {
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      };
-
-      let targetDate = new Date();
-      let foundGap = false;
-      
-      // Look back up to 10 days to find a gap
-      for (let i = 0; i < 10; i++) {
-        const checkDate = new Date();
-        checkDate.setDate(checkDate.getDate() - i);
-        const checkKey = getLocalDateStr(checkDate);
-        
-        const hasDate = history.some(e => {
-          if (!e.completedAt) return false;
-          const d = new Date(e.completedAt);
-          return getLocalDateStr(d) === checkKey;
-        });
-        
-        if (!hasDate) {
-          targetDate = checkDate;
-          foundGap = true;
-          break;
-        }
-      }
-
-      if (!foundGap) {
-        alert('No gaps found in the last 10 days!');
-        return;
-      }
-
-      const dateStr = getLocalDateStr(targetDate);
-      alert(`Adding mock session for ${dateStr}`);
-      
-      history.push({
-        taskId: `debug-mock-${Date.now()}`,
-        completedAt: targetDate.toISOString(),
-        pointsAwarded: 1
-      });
-      
-      window.localStorage.setItem(historyKey, JSON.stringify(history));
-      window.location.reload();
-    } catch (err) {
-      console.error('Failed to add mock day:', err);
-    }
-  };
-
   const handleClaim = (id) => {
     claimAchievement(id);
     setClaimables(getClaimableAchievements());
@@ -400,24 +328,6 @@ export default function SideNav() {
         <span className="side-nav-link-label">Launch Tutorial (Temp)</span>
       </button>
       
-      <button 
-        type="button" 
-        className="side-nav-link" 
-        onClick={handleToggleStreakDebug}
-        style={{ color: '#f59e0b', fontSize: '0.8rem', opacity: 0.8 }}
-      >
-        <span className="side-nav-link-label">Test Streak (Debug)</span>
-      </button>
-
-      <button 
-        type="button" 
-        className="side-nav-link" 
-        onClick={handleAddMockDay}
-        style={{ color: '#10b981', fontSize: '0.8rem', opacity: 0.8 }}
-      >
-        <span className="side-nav-link-label">Add Mock Day (Debug)</span>
-      </button>
-
       <button type="button" className="side-nav-logout" onClick={handleLogoutClick}>
         <IoLogOutOutline aria-hidden="true" />
         <span>Log Out</span>

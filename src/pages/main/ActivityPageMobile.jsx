@@ -170,22 +170,19 @@ function buildStreakStats(sessions = [], historyEntries = []) {
     return d && getLocalDayIndex(d) === todayIndex && entry === 'streak-recovery';
   });
 
-  const isDebugAtRisk = typeof window !== 'undefined' && window.localStorage.getItem('__debug_streak_at_risk__') === '1';
-
   let currentStreak = 0;
   let canRecover = false;
   let potentialStreak = 0;
 
   const daySet = new Set(activeDays);
 
-  if (todayIndex - last <= 1 && !isDebugAtRisk) {
+  if (todayIndex - last <= 1) {
     let cursor = last;
     while (daySet.has(cursor) || (hasRecoveryToday && cursor === todayIndex - 1)) {
       currentStreak += 1;
       cursor -= 1;
     }
 
-    // Validation: Even if they did a session today, they might have missed yesterday and want to recover the old streak
     if (todayIndex === last && !daySet.has(todayIndex - 1) && !hasRecoveryToday) {
       let prevStreak = 0;
       let pCursor = todayIndex - 2;
@@ -198,16 +195,16 @@ function buildStreakStats(sessions = [], historyEntries = []) {
         potentialStreak = prevStreak + 1;
       }
     }
-  } else if ((todayIndex - last === 2 || isDebugAtRisk) && !hasRecoveryToday) {
+  } else if (todayIndex - last === 2 && !hasRecoveryToday) {
     let potentialStreakVal = 0;
     let cursor = last;
     while (daySet.has(cursor)) {
       potentialStreakVal += 1;
       cursor -= 1;
     }
-    if (potentialStreakVal > 0 || isDebugAtRisk) {
+    if (potentialStreakVal > 0) {
       canRecover = true;
-      potentialStreak = potentialStreakVal || (isDebugAtRisk ? 10 : 0);
+      potentialStreak = potentialStreakVal;
     }
   }
 

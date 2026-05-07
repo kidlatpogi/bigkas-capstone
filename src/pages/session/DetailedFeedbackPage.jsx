@@ -521,7 +521,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
             }}
             onClick={() => navigate(ROUTES.DASHBOARD)}
           >
-            <IoHomeOutline /> Return to Dashboard
+            Back to Home
           </button>
         </div>
       )}

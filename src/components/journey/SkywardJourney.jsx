@@ -30,6 +30,12 @@ import {
   IoImage,
   IoBriefcase,
   IoCafe,
+  IoLocation,
+  IoPlayCircle,
+  IoPerson,
+  IoSettings,
+  IoHardwareChip,
+  IoAward,
 } from 'react-icons/io5';
 import { FaBrain, FaGhost } from 'react-icons/fa';
 import { GiGoblinHead, GiFishMonster, GiWerewolf, GiVampireDracula } from 'react-icons/gi';
@@ -151,75 +157,49 @@ function getPhaseIcon(step) {
 function getStepTitleIcon(step) {
   const title = getStepActivityTitle(step).toLowerCase();
   
-  // High-performance keyword mapping
-  if (title.includes('breakfast') || title.includes('delicacy') || title.includes('food') || title.includes('dinner') || title.includes('lunch') || title.includes('eat') || title.includes('restaurant') || title.includes('cook') || title.includes('meal')) {
-    return <IoRestaurant />;
-  }
-  if (title.includes('coffee') || title.includes('drink') || title.includes('cafe') || title.includes('snack') || title.includes('beverage')) {
+  // 1. Daily Life & Routines (coffee)
+  if (title.includes('breakfast') || title.includes('weekend') || title.includes('relaxation') || title.includes('habit') || title.includes('routine') || title.includes('morning') || title.includes('night') || title.includes('daily') || title.includes('coffee')) {
     return <IoCafe />;
   }
-  if (title.includes('window') || title.includes('commute') || title.includes('view') || title.includes('scenery') || title.includes('scenic') || title.includes('nature') || title.includes('landscape') || title.includes('outside')) {
-    return <IoImage />;
-  }
-  if (title.includes('movie') || title.includes('series') || title.includes('tv show') || title.includes('anime') || title.includes('visual desc') || title.includes('scene') || title.includes('cinema') || title.includes('film') || title.includes('actor') || title.includes('drama')) {
-    return <IoFilm />;
-  }
-  if (title.includes('music') || title.includes('sing') || title.includes('audio') || title.includes('song') || title.includes('lyrics') || title.includes('listen') || title.includes('melody') || title.includes('concert')) {
-    return <IoMusicalNotes />;
-  }
-  if (title.includes('school') || title.includes('academic') || title.includes('study') || title.includes('exam') || title.includes('student') || title.includes('teacher') || title.includes('class') || title.includes('university') || title.includes('lesson')) {
-    return <IoSchool />;
-  }
-  if (title.includes('book') || title.includes('read') || title.includes('story') || title.includes('write') || title.includes('author') || title.includes('poetry') || title.includes('literature')) {
-    return <IoBook />;
-  }
-  if (title.includes('health') || title.includes('fitness') || title.includes('workout') || title.includes('gym') || title.includes('exercise') || title.includes('body')) {
-    return <IoFitness />;
-  }
-  if (title.includes('travel') || title.includes('trip') || title.includes('plane') || title.includes('flight') || title.includes('journey') || title.includes('destination') || title.includes('holiday')) {
-    return <IoAirplane />;
-  }
-  if (title.includes('code') || title.includes('programming') || title.includes('tech') || title.includes('software') || title.includes('web') || title.includes('dev') || title.includes('digital')) {
-    return <IoCodeWorking />;
-  }
-  if (title.includes('art') || title.includes('paint') || title.includes('design') || title.includes('color') || title.includes('creative') || title.includes('sketch') || title.includes('drawing')) {
-    return <IoColorPalette />;
-  }
-  if (title.includes('home') || title.includes('house') || title.includes('family') || title.includes('stay') || title.includes('living')) {
-    return <IoHome />;
-  }
-  if (title.includes('chat') || title.includes('conversation') || title.includes('talk') || title.includes('social') || title.includes('friend') || title.includes('meeting') || title.includes('interview') || title.includes('speech')) {
-    return <IoChatbubbles />;
-  }
-  if (title.includes('business') || title.includes('work') || title.includes('office') || title.includes('professional') || title.includes('manager')) {
-    return <IoBriefcase />;
-  }
-  if (title.includes('time') || title.includes('routine') || title.includes('schedule') || title.includes('clock') || title.includes('habit') || title.includes('daily')) {
-    return <IoTime />;
-  }
-  if (title.includes('money') || title.includes('finance') || title.includes('cash') || title.includes('bank') || title.includes('earn')) {
-    return <IoCash />;
-  }
-  if (title.includes('phone') || title.includes('call') || title.includes('mobile') || title.includes('app')) {
-    return <IoCall />;
-  }
-  if (title.includes('earth') || title.includes('environment') || title.includes('world') || title.includes('global')) {
-    return <IoEarth />;
-  }
-  if (title.includes('science') || title.includes('lab') || title.includes('discovery') || title.includes('space') || title.includes('planet')) {
-    return <IoPlanet />;
-  }
-  if (title.includes('eye') || title.includes('watch') || title.includes('vision') || title.includes('gaze') || title.includes('see')) {
+  
+  // 2. Visual & Spatial (eye)
+  if (title.includes('room') || title.includes('layout') || title.includes('clothing') || title.includes('environment') || title.includes('window') || title.includes('scenery') || title.includes('view') || title.includes('visual description') || title.includes('description')) {
     return <IoEye />;
   }
-  if (title.includes('brain') || title.includes('mind') || title.includes('thought') || title.includes('idea') || title.includes('think')) {
-    return <FaBrain />;
+
+  // 3. Local & University (map-pin)
+  if (title.includes('nu dasmariñas') || title.includes('local') || title.includes('commute') || title.includes('delicacy') || title.includes('street') || title.includes('city') || title.includes('location')) {
+    return <IoLocation />;
   }
-  if (title.includes('voice') || title.includes('speak') || title.includes('vocal') || title.includes('mic')) {
-    return <IoMic />;
+
+  // 4. Media & Leisure (play-circle)
+  if (title.includes('movie') || title.includes('music') || title.includes('hobby') || title.includes('cinema') || title.includes('film') || title.includes('song') || title.includes('audio') || title.includes('series') || title.includes('tv show') || title.includes('anime')) {
+    return <IoPlayCircle />;
   }
-  if (title.includes('sync') || title.includes('update') || title.includes('refresh') || title.includes('loop')) {
-    return <IoSync />;
+
+  // 5. Identity & Social (user-check)
+  if (title.includes('introduction') || title.includes('family') || title.includes('networking') || title.includes('peer') || title.includes('friend') || title.includes('talk') || title.includes('chat') || title.includes('name') || title.includes('age') || title.includes('social')) {
+    return <IoPerson />;
+  }
+
+  // 6. Academic & Career (graduation-cap)
+  if (title.includes('academic') || title.includes('career') || title.includes('it subject') || title.includes('study') || title.includes('goal') || title.includes('school') || title.includes('college') || title.includes('university') || title.includes('professional')) {
+    return <IoSchool />;
+  }
+
+  // 7. Technical & Logic (settings)
+  if (title.includes('process') || title.includes('milo') || title.includes('science') || title.includes('logic') || title.includes('critical') || title.includes('think') || title.includes('how to') || title.includes('explain')) {
+    return <IoSettings />;
+  }
+
+  // 8. Future & Technology (cpu)
+  if (title.includes('ai') || title.includes('app') || title.includes('digital') || title.includes('technology') || title.includes('smartphone') || title.includes('internet') || title.includes('future')) {
+    return <IoHardwareChip />;
+  }
+
+  // 9. Program Milestone (award)
+  if (title.includes('bigkas') || title.includes('final') || title.includes('integration') || title.includes('mastery') || title.includes('milestone')) {
+    return <IoAward />;
   }
 
   return null;

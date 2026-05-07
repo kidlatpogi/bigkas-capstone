@@ -32,7 +32,10 @@ export default function LandingFooterSection({ navigateTo, onScrollToSection }) 
       <footer className="landing-footer" aria-label="Site footer">
         <div className="landing-footer-main">
           <div className="landing-footer-brand">
-            <img src={bigkasLogo} alt="Bigkas" className="footer-logo-img" />
+            <div className="footer-logo-wrapper">
+              <img src={bigkasLogo} alt="Bigkas" className="footer-logo-img" />
+              <h4 className="footer-logo-text">Bigkas</h4>
+            </div>
             <p>
               Build your speaking skills in a safe space that
               gives instant feedback on how you perform.

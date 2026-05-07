@@ -206,6 +206,7 @@ function ProtectedRoute() {
       <div className="loading-screen">
         <div className="loading-logo">
           <img src={bigkasLogo} alt="Bigkas" className="loading-logo-image" />
+          <span>Bigkas</span>
         </div>
         <div className="loading-spinner" aria-label="Loading" />
       </div>
@@ -261,6 +262,7 @@ function AdminRoute() {
       <div className="loading-screen">
         <div className="loading-logo">
           <img src={bigkasLogo} alt="Bigkas" className="loading-logo-image" />
+          <span>Bigkas</span>
         </div>
         <div className="loading-spinner" aria-label="Loading" />
       </div>
@@ -309,6 +311,7 @@ function PublicRoute() {
       <div className="loading-screen">
         <div className="loading-logo">
           <img src={bigkasLogo} alt="Bigkas" className="loading-logo-image" />
+          <span>Bigkas</span>
         </div>
         <div className="loading-spinner" aria-label="Loading" />
       </div>

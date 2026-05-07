@@ -158,7 +158,10 @@ export default function SideNav() {
     <aside className="side-nav" aria-label="Main navigation">
       <div className="side-nav-brand">
         <div className="side-nav-brand-main">
-          <img src={bigkasLogo} alt="Bigkas" className="side-nav-brand-logo" />
+          <div className="side-nav-brand-top">
+            <img src={bigkasLogo} alt="Bigkas" className="side-nav-brand-logo" />
+            <span className="side-nav-brand-text">Bigkas</span>
+          </div>
           <span className="side-nav-brand-subtitle">{displayName}</span>
         </div>
         <div className="side-nav-notif-wrapper">

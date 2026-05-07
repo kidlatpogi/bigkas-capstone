@@ -169,6 +169,13 @@ body.login-page-active {
   top: clamp(20px, 4vh, 40px);
   left: clamp(20px, 4vw, 40px);
   z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #ffffff;
 }
 
 .auth-logo-img {

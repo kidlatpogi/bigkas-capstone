@@ -60,6 +60,17 @@
   height: 24px;
 }
 
+.bottom-nav-logo {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  transition: transform 0.2s ease;
+}
+
+.bottom-nav__item.active .bottom-nav-logo {
+  filter: brightness(0) saturate(100%) invert(56%) sepia(87%) saturate(2254%) hue-rotate(344deg) brightness(101%) contrast(96%); /* #F97316 */
+}
+
 .bottom-nav__item svg {
   width: 22px;
   height: 22px;

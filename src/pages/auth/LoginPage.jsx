@@ -355,6 +355,7 @@ function LoginPage({ managePageClass = true }) {
           <div className="auth-visual-side">
             <motion.div variants={itemVariants} className="auth-brand-logo">
               <img src={bigkasLogo} alt="Bigkas" className="auth-logo-img" />
+              <span>Bigkas</span>
             </motion.div>
             
             <div className="auth-visual-content">

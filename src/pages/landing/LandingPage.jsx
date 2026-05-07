@@ -355,7 +355,10 @@ export default function LandingPage({ managePageClass = true }) {
             onClick={() => scrollToSectionById('hero', setMenuOpen)}
             aria-label="Go to hero section"
           >
-            <img src={bigkasLogo} alt="Bigkas" className="landing-logo-img" />
+            <div className="landing-logo-wrapper">
+              <img src={bigkasLogo} alt="Bigkas" className="landing-logo-img" />
+              <span className="logo-text">Bigkas</span>
+            </div>
           </button>
 
           <ul className="figma-nav-links">

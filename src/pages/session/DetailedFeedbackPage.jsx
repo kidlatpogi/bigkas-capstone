@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { IoChevronForward } from 'react-icons/io5';
+import { IoChevronForward, IoChevronBack } from 'react-icons/io5';
 import { 
   ResponsiveContainer, 
   LineChart, 
@@ -485,6 +485,17 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
     <div className={`df-page ${isInnerView ? 'df-page--inner' : ''} activity-page--skyward-entrance`}>
 
       <div className="df-content-layout">
+        {!isInnerView && (
+          <div className="history-session-view-header" style={{ width: '100%', marginBottom: '1rem', background: 'transparent', borderBottom: '1px solid rgba(11, 57, 84, 0.05)' }}>
+            <button
+              type="button"
+              className="history-back-to-list-btn"
+              onClick={() => navigate(-1)}
+            >
+              <IoChevronBack /> Back to Results
+            </button>
+          </div>
+        )}
         {/* AI Coach Hero Banner */}
         <section className="new-banner dashboard-anim-top dashboard-anim-delay-2" id="sr-hero-section">
           <div className="new-banner-left is-full-width">
@@ -538,7 +549,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
         </section>
 
         {/* Overview Widgets */}
-        <div className="sr-overview-row dashboard-anim-bottom dashboard-anim-delay-3" style={{ marginBottom: '40px' }}>
+        <div className="sr-overview-row dashboard-anim-bottom dashboard-anim-delay-3">
           <div className="progress-stat-card new-banner-widget overall-score-card">
             <div className="widget-content">
               <div className="new-widget-head">
@@ -672,7 +683,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
         </section>
 
         {/* Media & Transcript */}
-        <div className="df-media-info-container dashboard-anim-bottom dashboard-anim-delay-7" style={{ marginTop: '48px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div className="df-media-info-container dashboard-anim-bottom dashboard-anim-delay-7" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div className="df-card" style={{ padding: '0', overflow: 'hidden' }}>
             <div style={{ padding: '24px', borderBottom: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
               <h3 className="df-section-title" style={{ fontSize: '1.1rem', margin: 0 }}>Session Recording</h3>

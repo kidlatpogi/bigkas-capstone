@@ -237,6 +237,13 @@ img {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  scrollbar-gutter: auto !important;
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;  /* Firefox */
+}
+
+.main-content::-webkit-scrollbar {
+  display: none !important; /* Chrome, Safari and Opera */
 }
 
 .main-content--full {

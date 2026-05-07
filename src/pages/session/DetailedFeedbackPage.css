@@ -11,7 +11,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: clamp(20px, 4vh, 40px) 24px;
+  padding: 1rem 0 3rem; /* Synchronized with SessionResultPage */
   
   /* Synced with ActivityPage Skyward Journey theme */
   background-color: #FDFDF9;
@@ -59,10 +59,11 @@
 }
 
 .df-content-layout {
-  width: min(100%, 1200px);
+  width: 100%; /* Full width for flush look */
+  padding: 0 1rem; /* Same side padding as SessionResultPage */
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 1rem; /* Synchronized gap */
 }
 
 /* ── Hero Banner (Ported from SessionResultPage) ── */
@@ -77,7 +78,7 @@
   padding: 0;
   position: relative;
   overflow: hidden;
-  margin-bottom: 32px;
+  margin-bottom: 0;
   width: 100% !important;
 }
 
@@ -100,6 +101,21 @@
   padding: 24px 32px 24px 220px !important;
   backdrop-filter: blur(10px) !important;
   box-sizing: border-box !important;
+}
+
+/* Inner View Overrides for Sidebar */
+.df-page--inner .new-banner-left.is-full-width {
+  padding-left: 120px !important;
+  padding-right: 20px !important;
+}
+
+.df-page--inner .new-banner-robot {
+  width: 120px !important;
+}
+
+.df-page--inner .sr-pillars-grid,
+.df-page--inner .sr-overview-row {
+  grid-template-columns: 1fr !important;
 }
 
 .new-banner-robot {
@@ -140,7 +156,6 @@
   flex-direction: column;
   gap: 12px;
 }
-
 .new-banner-intro-text {
   margin: 0;
   font-size: 1rem;
@@ -172,7 +187,7 @@
 
 /* ── Performance Timeline ── */
 .df-timeline-section {
-  margin-bottom: 48px;
+  margin-bottom: 0;
 }
 
 .df-card {
@@ -276,7 +291,7 @@
 
 /* ── Triple V Pillar Cards (Ported from SessionResultPage) ── */
 .df-pillars-section {
-  margin-bottom: 48px;
+  margin-bottom: 0;
 }
 
 .sr-pillars-grid {

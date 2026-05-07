@@ -15,6 +15,7 @@
   box-shadow: 0 10px 30px rgba(1, 18, 33, 0.28);
   backdrop-filter: blur(12px) saturate(140%);
   -webkit-backdrop-filter: blur(12px) saturate(140%);
+  scrollbar-gutter: auto !important;
 }
 
 body.activity-tutorial-open .side-nav {

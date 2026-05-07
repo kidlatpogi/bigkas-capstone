@@ -1096,7 +1096,13 @@ export default function SkywardJourney({
                         }}
                         onClose={() => setTooltipNodeId(null)}
                         nodeRef={{ get current() { return nodeRefs.current[i]; } }}
-                        themeColor={theme.color}
+                        themeColor={
+                          step.nodeState === 'active' 
+                            ? '#f18f01' 
+                            : step.nodeState === 'completed' 
+                              ? '#10b981' 
+                              : '#ffffff'
+                        }
                         forceBottom={i >= steps.length - 2}
                       />
                     )}

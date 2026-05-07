@@ -701,7 +701,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
         {showDetailed && (
           <>
             {/* Media & Transcript */}
-            <div className="df-media-info-container dashboard-anim-bottom dashboard-anim-delay-7" style={{ marginTop: '48px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div className="df-media-info-container dashboard-anim-bottom dashboard-anim-delay-7" style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
               <div className="df-card" style={{ padding: '0', overflow: 'hidden' }}>
                 <div style={{ padding: '24px', borderBottom: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
                   <h3 className="df-section-title" style={{ fontSize: '1.1rem', margin: 0 }}>Session Recording</h3>

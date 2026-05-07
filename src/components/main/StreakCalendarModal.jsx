@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-import { IoFlame } from 'react-icons/io5';
 import Lottie from 'lottie-react';
 import { getAssetUrl } from '../../utils/assetUtils';
 import fireAnimationData from '../../assets/Lottie/fire.json';
@@ -18,6 +17,12 @@ function getSessionIntensityColor(count) {
   if (count === 4) return '#10b981';
   return '#059669'; // Solid emerald
 }
+
+const DayFireIcon = () => (
+  <div className="streak-fire-icon-lottie">
+    <Lottie animationData={fireAnimationData} loop={true} />
+  </div>
+);
 
 export default function StreakCalendarModal({ isOpen, onClose, sessionCountsByDay, streakStats }) {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -168,7 +173,7 @@ export default function StreakCalendarModal({ isOpen, onClose, sessionCountsByDa
                   style={{ backgroundColor: isActive ? getSessionIntensityColor(count) : undefined }}
                 >
                   {isActive ? (
-                    <IoFlame className="streak-fire-icon" />
+                    <DayFireIcon />
                   ) : (
                     <span className="streak-day-text">{day}</span>
                   )}

@@ -97,12 +97,17 @@ function SettingsProfilePageMobile() {
       if (avatarRemoved) {
         avatarUrl = null;
       } else if (avatarFile) {
-        avatarUrl = await uploadAvatar(avatarFile);
+        const uploadRes = await uploadAvatar(avatarFile);
+        if (uploadRes.success) {
+          avatarUrl = uploadRes.url;
+        } else {
+          throw new Error(uploadRes.error || 'Failed to upload avatar.');
+        }
       }
 
       await updateProfile({
-        firstName,
-        lastName,
+        first_name: firstName,
+        last_name: lastName,
         avatarUrl
       });
 

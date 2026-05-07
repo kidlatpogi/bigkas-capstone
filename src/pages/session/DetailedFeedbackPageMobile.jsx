@@ -556,6 +556,10 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
               <div className="df-mobile-card" style={{ padding: 0 }}>
                 <div className="df-mobile-media-header">
                   <div className="df-mobile-media-info-bit">
+                    <span className="df-mobile-media-bit-label">Date</span>
+                    <span className="df-mobile-media-bit-value">{formatDate(session?.created_at)}</span>
+                  </div>
+                  <div className="df-mobile-media-info-bit">
                     <span className="df-mobile-media-bit-label">Duration</span>
                     <span className="df-mobile-media-bit-value">{formatDuration(durationSec)}</span>
                   </div>

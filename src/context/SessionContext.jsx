@@ -902,6 +902,11 @@ export function SessionProvider({ children }) {
         }
       })();
 
+      // Add created_at if missing for immediate UI feedback (like DetailedFeedbackPage)
+      if (!analysisResult.created_at) {
+        analysisResult.created_at = new Date().toISOString();
+      }
+
       return {
         success: true,
         data: analysisResult,

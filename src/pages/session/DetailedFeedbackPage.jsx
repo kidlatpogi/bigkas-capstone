@@ -726,7 +726,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
             </div>
           </div>
 
-          <div className="df-card" ref={avoidSectionRef} style={{ padding: '32px 32px 1rem 32px', borderLeft: '4px solid #0d9488', background: 'linear-gradient(to right, #f0fdfa, #ffffff)' }}>
+          <div className="df-card" ref={avoidSectionRef} style={{ padding: '32px', borderLeft: '4px solid #0d9488', background: 'linear-gradient(to right, #f0fdfa, #ffffff)', marginBottom: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
 
               <div>

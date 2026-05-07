@@ -11,7 +11,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0 0 3rem; /* Flush at top and sides */
+  padding: 0 0 5rem; /* Flush at top and sides + Extra bottom clearance */
   
   /* Synced with ActivityPage Skyward Journey theme */
   background-color: #FDFDF9;

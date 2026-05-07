@@ -3,8 +3,8 @@ import styled from 'styled-components';
 
 const STATE_THEME = {
   active: {
-    bg: '#10b981',
-    shadow: '#059669',
+    bg: '#f18f01',
+    shadow: '#cd7600',
     text: '#ffffff',
   },
   locked: {
@@ -13,8 +13,8 @@ const STATE_THEME = {
     text: '#a1a1aa',
   },
   completed: {
-    bg: '#2d5a27',
-    shadow: '#1a3b16',
+    bg: '#10b981',
+    shadow: '#059669',
     text: '#ffffff',
   },
 };
@@ -37,8 +37,8 @@ const StyledWrapper = styled.div`
     font-size: 15px;
     transition: all 0.3s ease;
     
-    /* 3. The 3D Shadow (6px) */
-    box-shadow: ${(props) => props.$theme.shadow} 0px 6px 0px 0px;
+    /* 3. The 3D Shadow (10px) */
+    box-shadow: ${(props) => props.$theme.shadow} 0px 10px 0px 0px;
     
     /* 4. Layout */
     display: flex;
@@ -52,7 +52,7 @@ const StyledWrapper = styled.div`
   /* 1:1 Push-down Animation */
   button:active:not(:disabled) {
     box-shadow: ${(props) => props.$theme.shadow} 0px 0px 0px 0px;
-    transform: translateX(var(--skyward-node-offset, 0%)) translateY(6px);
+    transform: translateX(var(--skyward-node-offset, 0%)) translateY(10px);
     transition: 200ms;
   }
 

@@ -493,6 +493,7 @@ export function AuthProvider({ children }) {
       firstName: meta.first_name || fallbackFirst,
       lastName: meta.last_name || fallbackLast,
       nickname: meta.nickname || null,
+      avatarUrl: resolveAvatarUrl(meta.avatar_url),
       avatar_url: resolveAvatarUrl(meta.avatar_url),
       onboardingStage,
       profilingCompleted: parseMetadataBoolean(meta.is_profiling_completed) || parseMetadataBoolean(meta.profiling_completed) || hasSpeakerProfileData(meta.speaker_profile),

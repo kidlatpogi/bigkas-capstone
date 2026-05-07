@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
+import bigkasLogo from '../../assets/logos/0015.png';
 import './MobileTopBar.css';
 
 function getUserInitials(user) {
@@ -27,7 +28,10 @@ function MobileTopBar() {
 
   return (
     <header className="mobile-top-bar" aria-label="Mobile top navigation">
-      <span className="mobile-top-bar__brand">Bigkas</span>
+      <div className="mobile-top-bar__brand-wrap">
+        <img src={bigkasLogo} alt="" className="mobile-top-bar__logo" />
+        <span className="mobile-top-bar__brand">Bigkas</span>
+      </div>
       <Link className="mobile-top-bar__profile-link" to={ROUTES.PROFILE} aria-label="Go to profile">
         <div className="mobile-avatar" aria-hidden="true">
           {userInitials}

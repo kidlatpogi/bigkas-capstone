@@ -241,6 +241,18 @@ body.landing-page-active .figma-nav.nav-visible {
   height: var(--landing-btn-height);
 }
 
+.landing-logo-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.landing-logo-img {
+  height: clamp(24px, 3.2vh, 32px);
+  width: auto;
+  object-fit: contain;
+}
+
 .logo-text {
   font-family: var(--nav-font-display);
   font-size: clamp(1.25rem, 2.1vw, 1.45rem);
@@ -257,6 +269,10 @@ body.landing-page-active .figma-nav.nav-visible {
   color: #ffffff;
 }
 
+.figma-nav.nav-on-hero .landing-logo-img {
+  filter: brightness(0) invert(1);
+}
+
 .figma-nav.nav-on-hero .logo-text {
   color: #ffffff;
 }
@@ -265,12 +281,20 @@ body.landing-page-active .figma-nav.nav-on-green-sections {
   color: #ffffff;
 }
 
+body.landing-page-active .figma-nav.nav-on-green-sections .landing-logo-img {
+  filter: brightness(0) invert(1);
+}
+
 body.landing-page-active .figma-nav.nav-on-green-sections .logo-text {
   color: #ffffff;
 }
 
 body.landing-page-active .figma-nav.nav-on-last-section {
   color: #ffffff;
+}
+
+body.landing-page-active .figma-nav.nav-on-last-section .landing-logo-img {
+  filter: brightness(0) invert(1);
 }
 
 body.landing-page-active .figma-nav.nav-on-last-section .logo-text {
@@ -286,6 +310,10 @@ body.landing-page-active .figma-nav.nav-on-last-section .nav-link-btn {
 }
 
 /* Features (light section): logo + nav links read as black, not theme-dark slate */
+body.landing-page-active .figma-nav.nav-menu-black .landing-logo-img {
+  filter: none !important;
+}
+
 body.landing-page-active .figma-nav.nav-menu-black .logo-text {
   color: #111111 !important;
 }
@@ -307,9 +335,9 @@ body.landing-page-active .figma-nav.nav-menu-black .sm-toggle {
   color: inherit !important;
 }
 
-.figma-nav.nav-theme-dark .logo-text,
-.figma-nav.menu-open .logo-text {
-  color: var(--nav-slate);
+.figma-nav.nav-theme-dark .landing-logo-img,
+.figma-nav.menu-open .landing-logo-img {
+  filter: none;
 }
 
 .figma-nav-links {

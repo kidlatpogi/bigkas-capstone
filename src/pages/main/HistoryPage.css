@@ -284,10 +284,16 @@
   min-height: 44px;
 }
 
-.history-score-sort-select:hover,
-.history-score-sort-select:focus {
+.history-score-sort-select:hover {
   border-color: #059669;
   background: rgba(5, 150, 105, 0.08);
+}
+
+.history-score-sort-select:focus {
+  border-color: #059669;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+  outline: none;
 }
 
 .history-filter-btn {
@@ -308,6 +314,11 @@
 .history-filter-btn:hover {
   color: #1E293B;
   background: rgba(255, 255, 255, 0.5) !important;
+}
+
+.history-filter-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1) !important;
 }
 
 .history-filter-btn.active {

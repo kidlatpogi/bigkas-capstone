@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,6 +11,34 @@ import {
   IoPulse,
   IoStar,
   IoSync,
+  IoRestaurant,
+  IoFilm,
+  IoMusicalNotes,
+  IoBook,
+  IoFitness,
+  IoAirplane,
+  IoCodeWorking,
+  IoColorPalette,
+  IoSchool,
+  IoHome,
+  IoChatbubbles,
+  IoTime,
+  IoCash,
+  IoCall,
+  IoEarth,
+  IoPlanet,
+  IoImage,
+  IoBriefcase,
+  IoCafe,
+  IoLocation,
+  IoPlayCircle,
+  IoPerson,
+  IoSettings,
+  IoHardwareChip,
+  IoTrophy,
+  IoPeople,
+  IoList,
+  IoSparkles,
 } from 'react-icons/io5';
 import { FaBrain, FaGhost } from 'react-icons/fa';
 import { GiGoblinHead, GiFishMonster, GiWerewolf, GiVampireDracula } from 'react-icons/gi';
@@ -29,8 +57,6 @@ const rankSilverImage = getSpriteUrl('Rank/rank-silver.png');
 const rankGoldImage = getSpriteUrl('Rank/rank-gold.png');
 const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.png');
 const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.png');
-const chestClosedImage = getSpriteUrl('common/treasure-chest.png');
-const chestOpenImage = getSpriteUrl('common/treasure-chest-open.png');
 import './SkywardJourney.css';
 
 const MAP_SCALE = 1;
@@ -131,23 +157,140 @@ function getPhaseIcon(step) {
   }
 }
 
+function getStepTitleIcon(step) {
+  const title = getStepActivityTitle(step);
+  const normalizedTitle = title.toLowerCase();
+  
+  // 1. Daily Life & Routines (coffee)
+  if (
+    normalizedTitle === 'breakfast routine' ||
+    normalizedTitle === 'weekend recap' ||
+    normalizedTitle === 'yesterday recap' ||
+    normalizedTitle === 'relaxation tips'
+  ) {
+    return <IoCafe />;
+  }
+  
+  // 2. Visual & Environmental (eye)
+  if (
+    normalizedTitle === 'visual description' ||
+    normalizedTitle === 'window view' ||
+    normalizedTitle === 'spatial awareness' ||
+    normalizedTitle === 'weather forecast'
+  ) {
+    return <IoEye />;
+  }
+
+  // 3. Local & Campus Geography (map-pin)
+  if (
+    normalizedTitle === 'commute story' ||
+    normalizedTitle === 'local delicacy' ||
+    normalizedTitle === 'campus bites'
+  ) {
+    return <IoLocation />;
+  }
+
+  // 4. Hobbies & Entertainment (play-circle)
+  if (
+    normalizedTitle === 'cinematic eye' ||
+    normalizedTitle === 'game rules' ||
+    normalizedTitle === 'music review' ||
+    normalizedTitle === 'hobby pitch'
+  ) {
+    return <IoPlayCircle />;
+  }
+
+  // 5. Personal Identity & Social (users)
+  if (
+    normalizedTitle === 'identity check' ||
+    normalizedTitle === 'role model' ||
+    normalizedTitle === 'introduction'
+  ) {
+    return <IoPeople />;
+  }
+
+  // 6. Academic & Career Growth (graduation-cap)
+  if (
+    normalizedTitle === 'academic choice' ||
+    normalizedTitle === 'university pride' ||
+    normalizedTitle === 'career ambition' ||
+    normalizedTitle === 'study habits' ||
+    normalizedTitle === 'time control'
+  ) {
+    return <IoSchool />;
+  }
+
+  // 7. Technology & Innovation (cpu)
+  if (
+    normalizedTitle === 'tech essential' ||
+    normalizedTitle === 'future ai'
+  ) {
+    return <IoHardwareChip />;
+  }
+
+  // 8. Logic & Process Explanation (list-tree)
+  if (
+    normalizedTitle === 'milo master' ||
+    normalizedTitle === 'vital logic'
+  ) {
+    return <IoList />;
+  }
+
+  // 9. Aspirations & Reflection (sparkles)
+  if (
+    normalizedTitle === 'dream escape' ||
+    normalizedTitle === 'small wins' ||
+    normalizedTitle === 'the hero'
+  ) {
+    return <IoSparkles />;
+  }
+
+  // 10. Program Milestones (award)
+  if (
+    normalizedTitle === 'the bigkas milestone' ||
+    normalizedTitle.includes('milestone')
+  ) {
+    return <IoTrophy />;
+  }
+
+  return null;
+}
+
 function JourneyNodeIcon({ step, index, className = '' }) {
   const iconClassName = `skyward-journey-node-icon ${className}`.trim();
-  if (isStartNode(step, index)) return <IoStar aria-hidden className={iconClassName} />;
+  const isDone = step.nodeState === 'completed';
+
+  const renderIcon = (IconComponent) => {
+    return (
+      <div className="skyward-journey-icon-stack" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
+        {React.cloneElement(IconComponent, {
+          'aria-hidden': true,
+          className: iconClassName
+        })}
+      </div>
+    );
+  };
+
+  if (isStartNode(step, index)) return renderIcon(<IoStar />);
+
+  const TitleIcon = getStepTitleIcon(step);
+  if (TitleIcon) {
+    return renderIcon(TitleIcon);
+  }
 
   switch (getPhaseIcon(step)) {
     case 'gaze':
-      return <IoEye aria-hidden className={iconClassName} />;
+      return renderIcon(<IoEye />);
     case 'vocal':
-      return <IoMic aria-hidden className={iconClassName} />;
+      return renderIcon(<IoMic />);
     case 'verbal':
-      return <IoChatbubbleEllipses aria-hidden className={iconClassName} />;
+      return renderIcon(<IoChatbubbleEllipses />);
     case 'sync':
-      return <IoSync aria-hidden className={iconClassName} />;
+      return renderIcon(<IoSync />);
     case 'context':
-      return <FaBrain aria-hidden className={iconClassName} />;
+      return renderIcon(<FaBrain />);
     default:
-      return <IoCheckmarkCircle aria-hidden className={iconClassName} />;
+      return renderIcon(<IoCheckmarkCircle />);
   }
 }
 
@@ -317,7 +460,7 @@ const HeaderSkipNotice = styled.div`
 `;
 
 const TooltipBox = styled.div`
-  background: ${(props) => (props.$nodeState === 'locked' ? '#ffffff' : '#059669')};
+  background: ${(props) => (props.$nodeState === 'locked' ? '#ffffff' : (props.$themeColor || '#059669'))};
   color: ${(props) => (props.$nodeState === 'locked' ? '#333333' : '#ffffff')};
   padding: 24px;
   border-radius: 20px;
@@ -350,13 +493,13 @@ const TooltipBox = styled.div`
       top: -16px;
       border-left: 16px solid transparent;
       border-right: 16px solid transparent;
-      border-bottom: 16px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#059669'};
+      border-bottom: 16px solid ${props.$nodeState === 'locked' ? '#ffffff' : (props.$themeColor || '#059669')};
     `
       : `
       bottom: -16px;
       border-left: 16px solid transparent;
       border-right: 16px solid transparent;
-      border-top: 16px solid ${props.$nodeState === 'locked' ? '#ffffff' : '#059669'};
+      border-top: 16px solid ${props.$nodeState === 'locked' ? '#ffffff' : (props.$themeColor || '#059669')};
     `}
   }
 `;
@@ -386,7 +529,7 @@ const TooltipTitle = styled.h3`
   margin: 0;
   font-size: 18px;
   font-weight: 800;
-  color: inherit;
+  color: #ffffff;
   text-transform: uppercase;
   letter-spacing: 1.5px;
   margin-top: 8px; /* space for absolute close btn */
@@ -461,7 +604,7 @@ function computeTooltipLayout(nodeEl, forceBottom = false) {
   return { left, top, transform, placement };
 }
 
-export const JourneyTooltip = ({ step, onStart, onClose, nodeRef, forceBottom = false }) => {
+export const JourneyTooltip = ({ step, themeColor, onStart, onClose, nodeRef, forceBottom = false }) => {
   const [layout, setLayout] = useState(null);
 
   useLayoutEffect(() => {
@@ -513,7 +656,7 @@ export const JourneyTooltip = ({ step, onStart, onClose, nodeRef, forceBottom = 
           transformOrigin: layout.placement === 'bottom' ? 'top center' : 'bottom center',
         }}
       >
-        <TooltipBox $placement={layout.placement} $nodeState={step.nodeState}>
+        <TooltipBox $placement={layout.placement} $nodeState={step.nodeState} $themeColor={themeColor}>
           <TooltipCloseBtn
             $nodeState={step.nodeState}
             onClick={(e) => {
@@ -971,9 +1114,6 @@ export default function SkywardJourney({
         // A Level End (Square/Monster) triggers if it's Stage 31 of Levels 1-4, OR if the next step jumps to a new level
         const isLevelEnd = !isUltimateBoss && (isStage31 || (!nextStep || nextLevel !== currentLevel));
 
-        // A Section Trophy is any section end that isn't a Boss
-        const isSectionTrophy = isSectionEnd && !isUltimateBoss && !isLevelEnd;
-        const isEnhancedTrophyNode = !isUltimateBoss && (isSectionTrophy || isLevelEnd);
         const BossMonsterIcon = getBossMonsterIcon(currentLevel);
         const startStage = sectionTaskIndex === 0;
         const jiggle = jiggleIndex === i;
@@ -986,17 +1126,6 @@ export default function SkywardJourney({
         } else {
           labelSide = i % 2 === 0 ? 'right' : 'left';
         }
-        const chestButtonStyle = isSectionTrophy
-          ? {
-            backgroundImage: `url(${isDone ? chestOpenImage : chestClosedImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            backgroundColor: 'transparent',
-            boxShadow: 'none',
-            border: 'none',
-          }
-          : undefined;
 
         return (
           <div
@@ -1045,7 +1174,6 @@ export default function SkywardJourney({
                       'skyward-journey-node',
                       `skyward-journey-node--${step.nodeState}`,
                       (isUltimateBoss || isLevelEnd) ? 'skyward-journey-node--boss' : '',
-                      isEnhancedTrophyNode ? 'skyward-journey-node--trophy' : '',
                       jiggle ? 'skyward-journey-node--jiggle' : '',
                       !isLocked ? 'skyward-journey-node--unlocked' : '',
                       isLocked ? 'skyward-journey-node--locked-teaser' : '',
@@ -1059,7 +1187,7 @@ export default function SkywardJourney({
                     onClick={() => handleNodeClick(step, i)}
                     onPointerDown={(event) => event.stopPropagation()}
                     onTouchStart={(event) => event.stopPropagation()}
-                    style={chestButtonStyle}
+                    style={undefined}
                   >
                     {isUltimateBoss ? (
                       <FaGhost
@@ -1071,15 +1199,11 @@ export default function SkywardJourney({
                         className="skyward-journey-node-icon skyward-journey-node-icon--boss"
                         aria-hidden
                       />
-                    ) : isSectionTrophy ? (
-                      null
                     ) : startStage ? (
                       <IoStar
                         className="skyward-journey-node-icon"
                         aria-hidden
                       />
-                    ) : isDone ? (
-                      <IoCheckmarkCircle className="skyward-journey-node-state-icon" aria-hidden />
                     ) : (
                       <JourneyNodeIcon step={step} index={i} />
                     )}
@@ -1096,6 +1220,13 @@ export default function SkywardJourney({
                         }}
                         onClose={() => setTooltipNodeId(null)}
                         nodeRef={{ get current() { return nodeRefs.current[i]; } }}
+                        themeColor={
+                          step.nodeState === 'active' 
+                            ? '#f18f01' 
+                            : step.nodeState === 'completed' 
+                              ? '#10b981' 
+                              : '#ffffff'
+                        }
                         forceBottom={i >= steps.length - 2}
                       />
                     )}
@@ -1330,17 +1461,17 @@ export default function SkywardJourney({
                     >
                       <defs>
                         <linearGradient id={`skyward-journey-line-grad-${gradId}`} x1="0%" y1="100%" x2="0%" y2="0%">
-                          <stop offset="0%" stopColor="#EBF4DD" />
-                          <stop offset={`${pathFillPercentage}%`} stopColor="#EBF4DD" />
-                          <stop offset={`${pathFillPercentage}%`} stopColor="#a1a1aa" />
-                          <stop offset="100%" stopColor="#a1a1aa" />
+                          <stop offset="0%" stopColor="#10b981" />
+                          <stop offset={`${pathFillPercentage}%`} stopColor="#10b981" />
+                          <stop offset={`${pathFillPercentage}%`} stopColor="#d1d5db" />
+                          <stop offset="100%" stopColor="#d1d5db" />
                         </linearGradient>
                       </defs>
                       <path
                         className="skyward-journey-polyline skyward-journey-polyline--rim"
                         fill="none"
                         d={solidPathD}
-                        stroke="var(--skyward-path-rim, #e4e4e7)"
+                        stroke="#e5e7eb"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth="20"

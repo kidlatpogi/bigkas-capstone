@@ -71,8 +71,10 @@ body.register-page-active {
   overflow: hidden;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   width: 100%;
-  max-height: 94dvh;
+  max-height: 92dvh;
+  height: min(800px, 92dvh);
   margin: auto;
+  position: relative;
 }
 
 .auth-visual-side {
@@ -89,20 +91,32 @@ body.register-page-active {
   align-items: center;
   text-align: center;
   color: #ffffff;
-  gap: clamp(24px, 5vh, 48px);
+  gap: clamp(20px, 4vh, 40px);
 }
 
 .auth-brand-logo {
+  position: absolute;
+  top: clamp(20px, 4vh, 40px);
+  left: clamp(20px, 4vw, 40px);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   font-family: 'Fredoka', sans-serif;
   font-size: 2rem;
   font-weight: 700;
-  margin-bottom: auto;
-  align-self: flex-start;
+  color: #ffffff;
+}
+
+.auth-logo-img {
+  height: clamp(32px, 4vh, 48px);
+  width: auto;
+  object-fit: contain;
 }
 
 .auth-robot-img-wrap {
-  width: min(95%, 460px);
-  max-height: 48vh;
+  width: min(95%, 420px);
+  max-height: 45vh;
   margin: 0 auto;
   filter: drop-shadow(0 30px 60px rgba(0,0,0,0.35));
   position: relative;
@@ -153,7 +167,7 @@ body.register-page-active {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   width: 100%;
   margin-top: 20px;
   margin-bottom: auto;
@@ -175,7 +189,7 @@ body.register-page-active {
   font-size: clamp(0.9rem, 1.8vh, 1.1rem);
   opacity: 0.9;
   line-height: 1.5;
-  max-width: 320px;
+  max-width: 300px;
   margin: 0;
 }
 
@@ -291,7 +305,8 @@ body.register-page-active {
 .input-field-wrap input:focus {
   border-color: var(--emerald-500);
   background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+  outline: none;
 }
 
 .input-field-wrap input.is-invalid {

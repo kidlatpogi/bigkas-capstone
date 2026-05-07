@@ -36,6 +36,18 @@
   border-bottom: 0 !important;
 }
 
+.sm-brand-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sm-brand-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
 .sm-brand-container {
   display: flex;
   flex-direction: column;
@@ -111,6 +123,10 @@
 .staggered-menu-wrapper[data-open] .sm-brand-name,
 .staggered-menu-wrapper[data-open] .sm-user-name {
   color: #ffffff;
+}
+
+.staggered-menu-wrapper[data-open] .sm-brand-logo {
+  filter: brightness(0) invert(1);
 }
 
 .sm-toggle:focus-visible {

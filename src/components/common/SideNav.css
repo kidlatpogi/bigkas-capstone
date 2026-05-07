@@ -15,6 +15,7 @@
   box-shadow: 0 10px 30px rgba(1, 18, 33, 0.28);
   backdrop-filter: blur(12px) saturate(140%);
   -webkit-backdrop-filter: blur(12px) saturate(140%);
+  scrollbar-gutter: auto !important;
 }
 
 body.activity-tutorial-open .side-nav {
@@ -92,7 +93,19 @@ body.activity-tutorial-open .side-nav {
 .side-nav-brand-main {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0;
+}
+
+.side-nav-brand-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.side-nav-brand-logo {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
 }
 
 .side-nav-brand-text {
@@ -100,6 +113,7 @@ body.activity-tutorial-open .side-nav {
   line-height: 1;
   font-weight: 800;
   letter-spacing: -0.05em;
+  color: #FFFFFF;
 }
 
 .side-nav-brand-subtitle {

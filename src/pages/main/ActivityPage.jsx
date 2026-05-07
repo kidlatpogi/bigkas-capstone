@@ -7,7 +7,7 @@ import { useSessions } from '../../hooks/useSessions';
 import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import PushButton from '../../components/common/PushButton';
-import { IoChatbubbleEllipsesOutline, IoSend } from 'react-icons/io5';
+import { IoChatbubbleEllipsesOutline, IoSend, IoFlame } from 'react-icons/io5';
 import TutorialOverlay from '../../components/main/TutorialOverlay';
 import {
   GLOBAL_ACTIVITY_SCOPE,
@@ -74,7 +74,7 @@ const FREE_SPEECH_TUTORIAL_STEPS = [
     robotClassName: 'is-activity-home-step-1',
     button: 'Next',
     targetElementId: null,
-    text: 'Welcome aboard! You made it, and I know you are going to do great things here. Let me give you a quick, guided tour of your Home screen so you know exactly where everything is.',
+    text: "Welcome aboard! You made it, and I know you're going to do great things here. Let me give you a quick, guided tour of your Home screen so you know exactly where everything is.",
   },
   {
     id: 'step-companion',
@@ -83,7 +83,7 @@ const FREE_SPEECH_TUTORIAL_STEPS = [
     robotClassName: 'is-activity-home-step-2',
     button: 'Next',
     targetElementId: 'tutorial-target-home-banner',
-    text: "Your AI Companion, hey that's me! See my panel right at the top? I will be checking in with you from time to time. Depending on your progress, I'll drop by with daily greetings, personalized tips, and a little extra encouragement to keep your momentum going.",
+    text: "Your AI Companion—hey, that's me! See my panel right at the top? I'll be checking in with you from time to time. Depending on your progress, I'll drop by with daily greetings, personalized tips, and a little extra encouragement to keep your momentum going.",
   },
   {
     id: 'step-streak',
@@ -161,19 +161,70 @@ function buildStreakStats(sessions = [], historyEntries = []) {
     const parsed = new Date(dateInput);
     if (!Number.isNaN(parsed.getTime())) dayIndexes.add(getLocalDayIndex(parsed));
   };
-  sessions.forEach((s) => { if (!isPreTestSession(s)) { const d = getSessionDate(s); if (d) addDate(d); } });
-  historyEntries.forEach((e) => { if (e?.completedAt) addDate(e.completedAt); });
+  sessions.forEach((s) => {
+    if (!isPreTestSession(s)) {
+      const d = getSessionDate(s);
+      if (d) addDate(d);
+    }
+  });
+  historyEntries.forEach((e) => {
+    if (e?.completedAt) addDate(e.completedAt);
+  });
   const activeDays = [...dayIndexes].sort((a, b) => a - b);
-  if (!activeDays.length) return { currentStreak: 0 };
+  if (!activeDays.length) return { currentStreak: 0, canRecover: false };
   const todayIndex = getLocalDayIndex(new Date());
   const last = activeDays[activeDays.length - 1];
+  
+  const hasRecoveryToday = sessions.some((s) => {
+    const d = getSessionDate(s);
+    const entry = s?.entry_point ?? s?.entryPoint;
+    return d && getLocalDayIndex(d) === todayIndex && entry === 'streak-recovery';
+  });
+
   let currentStreak = 0;
+  let canRecover = false;
+  let potentialStreak = 0;
+
+  const daySet = new Set(activeDays);
+
   if (todayIndex - last <= 1) {
-    const set = new Set(activeDays);
     let cursor = last;
-    while (set.has(cursor)) { currentStreak += 1; cursor -= 1; }
+    while (daySet.has(cursor) || (hasRecoveryToday && cursor === todayIndex - 1)) {
+      currentStreak += 1;
+      cursor -= 1;
+    }
+
+    if (todayIndex === last && !daySet.has(todayIndex - 1) && !hasRecoveryToday) {
+      let prevStreak = 0;
+      let pCursor = todayIndex - 2;
+      while (daySet.has(pCursor)) {
+        prevStreak += 1;
+        pCursor -= 1;
+      }
+      if (prevStreak > 0) {
+        canRecover = true;
+        potentialStreak = prevStreak + 1;
+      }
+    }
+  } else if (todayIndex - last === 2 && !hasRecoveryToday) {
+    let potentialStreakVal = 0;
+    let cursor = last;
+    while (daySet.has(cursor)) {
+      potentialStreakVal += 1;
+      cursor -= 1;
+    }
+
+    if (potentialStreakVal > 0) {
+      canRecover = true;
+      potentialStreak = potentialStreakVal;
+    }
   }
-  return { currentStreak };
+
+  return { 
+    currentStreak, 
+    canRecover: canRecover && potentialStreak > 0, 
+    potentialStreak 
+  };
 }
 
 function getWeekdayPills(activeDayKeys = new Set()) {
@@ -893,6 +944,19 @@ function ActivityPage() {
     });
   }, [navigate, randomizerTopic]);
 
+  const handleRecoverStreak = useCallback(() => {
+    navigate(`${ROUTES.TRAINING}?autostart=1`, {
+      state: {
+        focus: 'free',
+        freeTopic: 'Reflecting on my speaking journey',
+        objective: 'Complete this session to recover your daily streak!',
+        sessionType: 'practice',
+        entryPoint: 'streak-recovery',
+        autoStartCountdown: true,
+      },
+    });
+  }, [navigate]);
+
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
     const isAnyOverlayOpen = showRandomizerOverlay || showFreeSpeechOverlay || isRankModalOpen || isAskB01ModalOpen || isStreakModalOpen;
@@ -1248,14 +1312,34 @@ function ActivityPage() {
                 aria-label="Daily streak"
                 onClick={() => setIsStreakModalOpen(true)}
               >
-                 <div className="new-streak-top">
-                   <div className="new-streak-fire">
-                     {lottieFireNode}
+                 <div className="new-streak-top" style={{ justifyContent: 'space-between', width: '100%' }}>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                     <div className="new-streak-fire">
+                       {lottieFireNode}
+                     </div>
+                     <div className="new-streak-headline">
+                       <div className="new-streak-value">
+                         {streakStats.canRecover ? streakStats.potentialStreak : streakStats.currentStreak}
+                       </div>
+                       <p className="new-streak-label">day streak</p>
+                     </div>
                    </div>
-                   <div className="new-streak-headline">
-                     <div className="new-streak-value">{streakStats.currentStreak}</div>
-                     <p className="new-streak-label">day streak</p>
-                   </div>
+
+                   {streakStats.canRecover && (
+                     <Button 
+                       variant="practice"
+                       className="ask-b01-trigger streak-recovery-trigger" 
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         handleRecoverStreak();
+                       }}
+                       aria-label={`Recover your ${streakStats.potentialStreak} day streak`}
+                       style={{ margin: 0, width: 'auto', padding: '0 12px', height: '36px', fontSize: '0.8rem' }}
+                     >
+                       <IoFlame />
+                       <span>Recover Streak</span>
+                     </Button>
+                   )}
                  </div>
                  <div className="new-streak-week" aria-label="This week streak activity">
                    {weekPills.map((pill, idx) => (
@@ -1304,7 +1388,7 @@ function ActivityPage() {
                 </div>
               </div>
               <p className="new-widget-caption">
-                {completedTaskCount}/{Math.max(tasks.length, 1)} Tasks Complete
+                {completedTaskCount}/{Math.max(tasks.length, 1)} Stages Completed
                 <span className="new-widget-caption-sep"> - </span>
                 {sidebarProgressPct}% Cleared
               </p>

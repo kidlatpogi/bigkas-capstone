@@ -1,9 +1,10 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { IoChevronForward, IoLockClosedOutline, IoEyeOutline, IoEyeOffOutline, IoArrowBackOutline } from 'react-icons/io5';
+import { IoChevronForward, IoLockClosedOutline, IoArrowBackOutline } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
+import PasswordToggle from '../../components/common/PasswordToggle';
 import './SettingsProfilePage.css';
 import './ChangePasswordPage.css';
 
@@ -29,24 +30,19 @@ function PwdField({ label, value, onChange, show, onToggle, placeholder }) {
   return (
     <div className="form-group">
       <label className="form-label">{label}</label>
-      <div style={{ position: 'relative' }}>
+      <div className="input-field-wrap">
         <input
           className="form-input"
           type={show ? 'text' : 'password'}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          style={{ paddingRight: 48 }}
         />
-        <button
-          type="button"
-          onClick={onToggle}
-          className="cp-visibility-toggle"
-          tabIndex={-1}
-          aria-label={show ? 'Hide password' : 'Show password'}
-        >
-          {show ? <IoEyeOffOutline /> : <IoEyeOutline />}
-        </button>
+        <PasswordToggle
+          isVisible={show}
+          onToggle={onToggle}
+          label={label.toLowerCase()}
+        />
       </div>
     </div>
   );

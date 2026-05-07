@@ -37,7 +37,6 @@ import AchievementsPageMobile from '../pages/main/AchievementsPageMobile';
 
 // Session Pages
 import SessionDetailPage from '../pages/session/SessionDetailPage';
-import SessionResultPage from '../pages/session/SessionResultPage';
 import DetailedFeedbackPage from '../pages/session/DetailedFeedbackPage';
 
 // Main Pages (continued)
@@ -46,7 +45,7 @@ import PracticePage from '../pages/main/PracticePage';
 // Components
 import SideNav from '../components/common/SideNav';
 import BottomNav from '../components/common/BottomNav';
-import bigkasLogo from '../assets/Temporary Logo.png';
+import bigkasLogo from '../assets/logos/0015.png';
 
 /**
  * ActivityPageWrapper - Conditionally renders desktop or mobile version
@@ -233,6 +232,7 @@ function ProtectedRoute() {
   if (
     user?.onboardingStage === 'analyzing' &&
     pathname !== ROUTES.USER_ANALYZING &&
+    !pathname.startsWith(ROUTES.TRAINING) &&
     !pathname.startsWith('/session')
   ) {
     return <Navigate to={ROUTES.USER_ANALYZING} replace />;
@@ -390,8 +390,8 @@ function AppRouter() {
 
         {/* Session */}
         <Route path={ROUTES.SESSION_DETAIL} element={<SessionDetailPage />} />
-        <Route path={ROUTES.SESSION_RESULT} element={<SessionResultPage />} />
-        <Route path={ROUTES.DETAILED_FEEDBACK} element={<DetailedFeedbackPage />} />
+        <Route path={ROUTES.SESSION_RESULT} element={<DetailedFeedbackPage initialShowDetailed={false} />} />
+        <Route path={ROUTES.DETAILED_FEEDBACK} element={<DetailedFeedbackPage initialShowDetailed={true} />} />
       </Route>
 
       <Route element={<AdminRoute />}>

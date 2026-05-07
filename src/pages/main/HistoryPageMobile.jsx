@@ -9,7 +9,6 @@ import { getSpriteUrl } from '../../utils/assetUtils';
 const verbalSprite = getSpriteUrl('common/Verbal.png');
 const visualSprite = getSpriteUrl('common/Visual.png');
 const vocalSprite = getSpriteUrl('common/Vocal.png');
-import SessionResultPage from '../session/SessionResultPage';
 import DetailedFeedbackPage from '../session/DetailedFeedbackPage';
 import './HistoryPage.css';
 import './HistoryPageMobile.css';
@@ -28,8 +27,7 @@ function toFivePointScore(rawScore) {
 }
 
 function getScoreTier15(score) {
-  if (score >= 4.0) return { label: 'Stellar', color: '#10B981' };
-  if (score >= 3.0) return { label: 'Strong', color: '#0D9488' };
+  if (score >= 3.0) return { label: 'Strong', color: '#10B981' };
   if (score >= 2.0) return { label: 'Developing', color: '#3B82F6' };
   return { label: 'Rising', color: '#F59E0B' };
 }
@@ -257,7 +255,7 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
                       {pillars.map(p => (
                         <div 
                           key={p.key} 
-                          className={`history-mobile-pillar-chip ${p.score <= 2.0 ? 'history-mobile-pillar-chip--rising' : p.score <= 3.0 ? 'history-mobile-pillar-chip--developing' : 'history-mobile-pillar-chip--stellar'}`}
+                          className={`history-mobile-pillar-chip ${p.score <= 2.0 ? 'history-mobile-pillar-chip--rising' : p.score <= 3.0 ? 'history-mobile-pillar-chip--developing' : 'history-mobile-pillar-chip--strong'}`}
                         >
                           <img src={p.sprite} alt="" className="history-mobile-pillar-icon" />
                           <span className="history-mobile-pillar-label">{p.label}</span>
@@ -307,11 +305,19 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
                 </button>
              </div>
              <div className="history-mobile-session-view-content">
-                {innerViewMode === 'results' ? (
-                  <SessionResultPage sessionIdProp={selectedSessionId} isInnerView={true} onCloseInner={() => setSelectedSessionId(null)} onViewDetailed={() => setInnerViewMode('detailed')} />
-                ) : (
-                  <DetailedFeedbackPage sessionIdProp={selectedSessionId} isInnerView={true} onCloseInner={() => setInnerViewMode('results')} />
-                )}
+                <DetailedFeedbackPage 
+                  sessionIdProp={selectedSessionId} 
+                  isInnerView={true} 
+                  initialShowDetailed={innerViewMode === 'detailed'}
+                  onCloseInner={() => {
+                    if (innerViewMode === 'detailed') {
+                      setInnerViewMode('results');
+                    } else {
+                      setSelectedSessionId(null);
+                    }
+                  }}
+                  onViewDetailed={() => setInnerViewMode('detailed')}
+                />
              </div>
           </div>
         )}

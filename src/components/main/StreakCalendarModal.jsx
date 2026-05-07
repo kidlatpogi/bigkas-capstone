@@ -11,12 +11,18 @@ import './StreakCalendarModal.css';
 // Heatmap color scale: Dark (less) -> Light (more)
 function getSessionIntensityColor(count) {
   if (count <= 0) return '#e2e8f0'; // Default empty
-  if (count === 1) return '#064e3b'; // Darkest green
-  if (count === 2) return '#065f46';
-  if (count === 3) return '#059669';
+  if (count === 1) return '#d1fae5'; // Very light emerald
+  if (count === 2) return '#a7f3d0';
+  if (count === 3) return '#34d399';
   if (count === 4) return '#10b981';
-  return '#34d399'; // Lightest/Brighter green
+  return '#059669'; // Solid emerald
 }
+
+const DayFireIcon = () => (
+  <div className="streak-fire-icon-lottie">
+    <Lottie animationData={fireAnimationData} loop={true} />
+  </div>
+);
 
 export default function StreakCalendarModal({ isOpen, onClose, sessionCountsByDay, streakStats }) {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -166,8 +172,8 @@ export default function StreakCalendarModal({ isOpen, onClose, sessionCountsByDa
                   className={`streak-calendar-day ${isActive ? 'active' : ''} ${isPartOfStreak ? 'streak' : ''}`}
                   style={{ backgroundColor: isActive ? getSessionIntensityColor(count) : undefined }}
                 >
-                  {isPartOfStreak ? (
-                    <img src={iconFire} alt="fire" className="streak-fire-icon" />
+                  {isActive ? (
+                    <DayFireIcon />
                   ) : (
                     <span className="streak-day-text">{day}</span>
                   )}

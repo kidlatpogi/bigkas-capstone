@@ -10,11 +10,16 @@ const verbalSprite = getSpriteUrl('common/Verbal.png');
 const visualSprite = getSpriteUrl('common/Visual.png');
 const vocalSprite = getSpriteUrl('common/Vocal.png');
 import './HistoryPage.css';
-import SessionResultPage from '../session/SessionResultPage';
 import DetailedFeedbackPage from '../session/DetailedFeedbackPage';
 
 const HISTORY_FILTERS = ['All', 'Today', 'This Week', 'This Month'];
-const HISTORY_SCORE_SORT_OPTIONS = [5, 4, 3, 2, 1];
+const HISTORY_SCORE_SORT_OPTIONS = [
+  { label: '81-100%', value: '4.2' },
+  { label: '61-80%', value: '3.4' },
+  { label: '41-60%', value: '2.6' },
+  { label: '21-40%', value: '1.8' },
+  { label: '0-20%', value: '1.0' },
+];
 const HISTORY_SCORE_SORT_NONE = '';
 
 function toFivePointScore(rawScore) {
@@ -26,8 +31,7 @@ function toFivePointScore(rawScore) {
 }
 
 function getScoreTier15(score) {
-  if (score >= 4.0) return { label: 'Stellar', color: '#10B981' };
-  if (score >= 3.0) return { label: 'Strong', color: '#0D9488' };
+  if (score >= 3.0) return { label: 'Strong', color: '#10B981' };
   if (score >= 2.0) return { label: 'Developing', color: '#3B82F6' };
   return { label: 'Rising', color: '#F59E0B' };
 }
@@ -89,10 +93,9 @@ function sortSessionsByTargetScore(sessions, scoreTarget) {
 
 function getScoreBandBounds(scoreTarget) {
   const target = Number(scoreTarget);
-  if (!Number.isFinite(target)) return { min: 1, max: 1.9 };
+  if (!Number.isFinite(target)) return { min: 1, max: 1.8 };
   const clamped = Math.max(1, Math.min(5, target));
-  if (clamped >= 5) return { min: 5, max: 5 };
-  return { min: clamped, max: Math.min(5, clamped + 0.9) };
+  return { min: clamped, max: Math.min(5, clamped + 0.8) };
 }
 
 function buildSessionTitleOrTopic(session) {
@@ -236,9 +239,9 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
             aria-label="Sort history by score target"
           >
             <option value={HISTORY_SCORE_SORT_NONE}>---</option>
-            {HISTORY_SCORE_SORT_OPTIONS.map((scoreOption) => (
-              <option key={`score-sort-${scoreOption.toFixed(1)}`} value={scoreOption.toFixed(1)}>
-                {scoreOption.toFixed(1)}
+            {HISTORY_SCORE_SORT_OPTIONS.map((opt) => (
+              <option key={`score-sort-${opt.value}`} value={opt.value}>
+                {opt.label}
               </option>
             ))}
           </select>
@@ -306,9 +309,9 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                       aria-label="Sort history by score target"
                     >
                       <option value={HISTORY_SCORE_SORT_NONE}>---</option>
-                      {HISTORY_SCORE_SORT_OPTIONS.map((scoreOption) => (
-                        <option key={`score-sort-${scoreOption.toFixed(1)}`} value={scoreOption.toFixed(1)}>
-                          {scoreOption.toFixed(1)}
+                      {HISTORY_SCORE_SORT_OPTIONS.map((opt) => (
+                        <option key={`score-sort-${opt.value}`} value={opt.value}>
+                          {opt.label}
                         </option>
                       ))}
                     </select>
@@ -379,7 +382,7 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                                   ? 'history-item-pillar-chip--rising'
                                   : pillar.score <= 3.0
                                     ? 'history-item-pillar-chip--developing'
-                                    : 'history-item-pillar-chip--stellar'
+                                    : 'history-item-pillar-chip--strong'
                               }`}
                             >
                               <img src={pillar.sprite} alt={pillar.label} className="history-item-pillar-sprite" />
@@ -486,7 +489,7 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
 
         {selectedSessionId && (
           <div className="history-session-view slide-in-right">
-             <div className="history-session-view-header">
+             <div className="history-session-view-header dashboard-anim-top">
                 <button
                   type="button"
                   className="history-back-to-list-btn"
@@ -501,21 +504,20 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                    <IoChevronBack /> {innerViewMode === 'detailed' ? 'Back to Results' : 'Back to History'}
                 </button>
              </div>
-             <div className="history-session-view-content">
-                {innerViewMode === 'results' ? (
-                  <SessionResultPage 
-                    sessionIdProp={selectedSessionId} 
-                    isInnerView={true} 
-                    onCloseInner={() => setSelectedSessionId(null)}
-                    onViewDetailed={() => setInnerViewMode('detailed')}
-                  />
-                ) : (
-                  <DetailedFeedbackPage 
-                    sessionIdProp={selectedSessionId} 
-                    isInnerView={true} 
-                    onCloseInner={() => setInnerViewMode('results')}
-                  />
-                )}
+             <div className="history-session-view-content dashboard-anim-bottom dashboard-anim-delay-1">
+                <DetailedFeedbackPage 
+                  sessionIdProp={selectedSessionId} 
+                  isInnerView={true} 
+                  initialShowDetailed={innerViewMode === 'detailed'}
+                  onCloseInner={() => {
+                    if (innerViewMode === 'detailed') {
+                      setInnerViewMode('results');
+                    } else {
+                      setSelectedSessionId(null);
+                    }
+                  }}
+                  onViewDetailed={() => setInnerViewMode('detailed')}
+                />
              </div>
           </div>
         )}

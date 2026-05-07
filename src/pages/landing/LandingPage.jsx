@@ -4,6 +4,7 @@ import { scroller } from 'react-scroll';
 import { ROUTES } from '../../utils/constants';
 import './LandingPage.css';
 import './sections/LandingSections.css';
+import bigkasLogo from '../../assets/logos/0015.png';
 import Button from '../../components/common/Button';
 import StaggeredMenu from '../../components/common/StaggeredMenu';
 import LandingHeroSection from './sections/LandingHeroSection';
@@ -354,7 +355,10 @@ export default function LandingPage({ managePageClass = true }) {
             onClick={() => scrollToSectionById('hero', setMenuOpen)}
             aria-label="Go to hero section"
           >
-            <span className="logo-text">Bigkas</span>
+            <div className="landing-logo-wrapper">
+              <img src={bigkasLogo} alt="Bigkas" className="landing-logo-img" />
+              <span className="logo-text">Bigkas</span>
+            </div>
           </button>
 
           <ul className="figma-nav-links">

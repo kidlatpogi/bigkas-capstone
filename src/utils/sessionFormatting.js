@@ -17,6 +17,7 @@ export function getSessionMode(session) {
         .toLowerCase();
 
     if (raw.includes('pre-test') || raw.includes('pretest')) return 'Pre-Test';
+    if (raw.includes('post-test') || raw.includes('posttest')) return 'Post-Test';
     if (raw.includes('practice')) return 'Practice';
     if (raw.includes('train')) return 'Training';
     return 'Training';

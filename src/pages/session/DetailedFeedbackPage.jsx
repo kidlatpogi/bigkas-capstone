@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { IoChevronForward } from 'react-icons/io5';
+import { IoChevronForward, IoChevronBack } from 'react-icons/io5';
 import { 
   ResponsiveContainer, 
   LineChart, 
@@ -11,6 +11,7 @@ import {
   Tooltip, 
   Legend 
 } from 'recharts';
+import Confetti from 'react-confetti';
 import { useSessionContext } from '../../context/useSessionContext';
 import { supabase } from '../../lib/supabase';
 import { ROUTES } from '../../utils/constants';
@@ -54,8 +55,7 @@ function getTripleVScores(result) {
 }
 
 function getScoreTier15(score) {
-  if (score >= 4.0) return { label: 'Stellar', color: '#10B981' };
-  if (score >= 3.0) return { label: 'Strong', color: '#0D9488' };
+  if (score >= 3.0) return { label: 'Strong', color: '#10B981' };
   if (score >= 2.0) return { label: 'Developing', color: '#3B82F6' };
   return { label: 'Rising', color: '#F59E0B' };
 }
@@ -233,7 +233,7 @@ function buildReplayAction(session, navigate, isFree) {
   };
 }
 
-function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
+function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initialShowDetailed = false }) {
   const navigate = useNavigate();
   const { sessionId: paramSessionId } = useParams();
   const sessionId = sessionIdProp || paramSessionId;
@@ -241,10 +241,19 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
   const { currentSession, fetchSessionById, isLoading } = useSessionContext();
   const [recordingMedia, setRecordingMedia] = useState({ audioUrl: null, videoUrl: null, transcript: '' });
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [showDetailed, setShowDetailed] = useState(initialShowDetailed || isInnerView === false);
   const avoidSectionRef = useRef(null);
 
+  const [windowSize, setWindowSize] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 1200,
+    height: typeof window !== 'undefined' ? window.innerHeight : 800,
+  });
+
   useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+      setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -279,9 +288,9 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
     ].filter((m) => m.score !== null);
 
     return [
-      { key: 'visual', label: 'Visual', desc: 'Eye contact, facial expressions, and body gestures', score: tripleV.visualAvg, subMetrics: visualSubMetrics },
-      { key: 'vocal', label: 'Vocal', desc: 'Voice pitch stability, volume consistency, and clarity', score: tripleV.vocalAvg, subMetrics: vocalSubMetrics },
-      { key: 'verbal', label: 'Verbal', desc: 'Pronunciation accuracy and topical relevance', score: tripleV.verbalAvg, subMetrics: [] },
+      { key: 'visual', label: 'Visual', desc: 'Overall consistency', score: tripleV.visualAvg, subMetrics: visualSubMetrics },
+      { key: 'vocal', label: 'Vocal', desc: 'Overall consistency', score: tripleV.vocalAvg, subMetrics: vocalSubMetrics },
+      { key: 'verbal', label: 'Verbal', desc: 'Overall consistency', score: tripleV.verbalAvg, subMetrics: [] },
     ];
   }, [session, tripleV]);
 
@@ -419,6 +428,17 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
     return () => { isMounted = false; };
   }, [session?.created_at, session?.user_id, sessionId]);
 
+  const mode = getSessionMode(session);
+  const isPreTest = mode === 'Pre-Test';
+  const isPostTest = mode === 'Post-Test';
+  const isFreeSession = getSessionSpeechType(session) === 'Free Speech';
+  const replayAction = useMemo(() => buildReplayAction(session, navigate, isFreeSession), [session, navigate, isFreeSession]);
+
+  const shouldCelebrateScore = (res) => {
+    const score = Number(res?.confidence_score);
+    return Number.isFinite(score) && score >= 80;
+  };
+
   const scrollToAvoid = () => avoidSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
 
   if (windowWidth < 768) {
@@ -453,8 +473,6 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
   }
 
   const overallTier = getScoreTier15(tripleV.entryPoint);
-  const mode = getSessionMode(session);
-  const isFreeSession = getSessionSpeechType(session) === 'Free Speech';
   const practicedText = sanitizeTranscriptForDisplay(
     recordingMedia.transcript
       || session?.transcript
@@ -469,8 +487,23 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
   const videoUrl = recordingMedia.videoUrl || buildBucketPublicUrl(session?.video_storage_url) || buildBucketPublicUrl(session?.video_url) || null;
 
   const sourceNav = locationState?.source;
-  let breadcrumbParent = mode === 'Practice' ? 'Practice' : 'Training';
-  let breadcrumbRoute = mode === 'Practice' ? ROUTES.PRACTICE : ROUTES.TRAINING_SETUP;
+  let breadcrumbParent = mode;
+  let breadcrumbRoute = ROUTES.DASHBOARD;
+
+  if (mode === 'Practice') {
+    breadcrumbParent = 'Practice';
+    breadcrumbRoute = ROUTES.PRACTICE;
+  } else if (mode === 'Training') {
+    breadcrumbParent = 'Training';
+    breadcrumbRoute = ROUTES.TRAINING_SETUP;
+  } else if (mode === 'Pre-Test') {
+    breadcrumbParent = 'Pre-Test';
+    breadcrumbRoute = ROUTES.USER_ANALYZING;
+  } else if (mode === 'Post-Test') {
+    breadcrumbParent = 'Post-Test';
+    breadcrumbRoute = ROUTES.PROGRESS;
+  }
+
   if (sourceNav === 'progress') {
     breadcrumbParent = 'Progress';
     breadcrumbRoute = ROUTES.PROGRESS;
@@ -482,9 +515,20 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
   const pillarIcons = { visual: visualSprite, vocal: vocalSprite, verbal: verbalSprite };
 
   return (
-    <div className={`df-page ${isInnerView ? 'df-page--inner' : ''} activity-page--skyward-entrance`}>
+    <div className={`sr-page-root ${isInnerView ? 'sr-page--inner' : ''} activity-page--skyward-entrance`}>
+      {shouldCelebrateScore(session) && !isInnerView && (
+        <Confetti
+          width={windowSize.width}
+          height={windowSize.height}
+          recycle={false}
+          numberOfPieces={260}
+          gravity={0.25}
+          className="score-confetti"
+        />
+      )}
 
-      <div className="df-content-layout">
+
+      <div className="sr-content-layout">
         {/* AI Coach Hero Banner */}
         <section className="new-banner dashboard-anim-top dashboard-anim-delay-2" id="sr-hero-section">
           <div className="new-banner-left is-full-width">
@@ -510,35 +554,13 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
                     </li>
                   ))}
                 </ul>
-                <button 
-                  onClick={scrollToAvoid}
-                  style={{ 
-                    marginTop: '12px', 
-                    background: '#10b98115', 
-                    color: '#059669', 
-                    border: 'none', 
-                    padding: '8px 16px', 
-                    borderRadius: '10px', 
-                    fontSize: '0.75rem', 
-                    fontWeight: 800, 
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    transition: 'all 0.2s ease',
-                    boxShadow: '0 2px 8px rgba(16, 185, 129, 0.1)'
-                  }}
-                  className="df-avoid-btn"
-                >
-                  GROWTH FOCUS ↓
-                </button>
               </div>
             </div>
           </div>
         </section>
 
         {/* Overview Widgets */}
-        <div className="sr-overview-row dashboard-anim-bottom dashboard-anim-delay-3" style={{ marginBottom: '40px' }}>
+        <div className="sr-overview-row dashboard-anim-bottom dashboard-anim-delay-3">
           <div className="progress-stat-card new-banner-widget overall-score-card">
             <div className="widget-content">
               <div className="new-widget-head">
@@ -584,36 +606,40 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
           </div>
         </div>
 
-        {/* Performance Timeline */}
-        <section className="df-timeline-section dashboard-anim-bottom dashboard-anim-delay-2">
-          <div className="sr-section-header">
-            <h2 className="sr-section-title">Performance Timeline</h2>
-            <p className="sr-section-subtitle">Real-time fluctuations in your Triple V performance metrics throughout the session</p>
-          </div>
-          <div className="df-card" style={{ height: '400px', padding: '24px 16px 16px' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={timelineData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
-                <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 600, fill: '#94a3b8' }} dy={10} interval={Math.ceil(durationSec / 6)} />
-                <YAxis 
-                  domain={[0, 100]} 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 11, fontWeight: 600, fill: '#94a3b8' }} 
-                  tickFormatter={(val) => `${val}%`}
-                />
-                <Tooltip 
-                  formatter={(value) => `${value}%`}
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', fontWeight: 700 }} 
-                />
-                <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '12px' }} />
-                <Line type="monotone" dataKey="Visual" stroke="#059669" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
-                <Line type="monotone" dataKey="Vocal" stroke="#10b981" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
-                <Line type="monotone" dataKey="Verbal" stroke="#F97316" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
+        {showDetailed && (
+          <>
+            {/* Performance Timeline */}
+            <section className="df-timeline-section dashboard-anim-bottom dashboard-anim-delay-2">
+              <div className="sr-section-header">
+                <h2 className="sr-section-title">Performance Timeline</h2>
+                <p className="sr-section-subtitle">Real-time fluctuations in your Triple V performance metrics throughout the session</p>
+              </div>
+              <div className="df-card" style={{ height: '400px', padding: '24px 16px 16px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={timelineData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
+                    <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 600, fill: '#94a3b8' }} dy={10} interval={Math.ceil(durationSec / 6)} />
+                    <YAxis 
+                      domain={[0, 100]} 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fontSize: 11, fontWeight: 600, fill: '#94a3b8' }} 
+                      tickFormatter={(val) => `${val}%`}
+                    />
+                    <Tooltip 
+                      formatter={(value) => `${value}%`}
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', fontWeight: 700 }} 
+                    />
+                    <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '12px' }} />
+                    <Line type="monotone" dataKey="Visual" stroke="#059669" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                    <Line type="monotone" dataKey="Vocal" stroke="#10b981" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                    <Line type="monotone" dataKey="Verbal" stroke="#F97316" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </section>
+          </>
+        )}
 
         {/* Pillars Breakdown */}
         <section className="df-pillars-section">
@@ -645,7 +671,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
                   <div className="progress-pillar-track">
                     <div className="progress-pillar-track-fill" style={{ width: `${scorePercent}%`, background: tier.color }} />
                   </div>
-                  {p.subMetrics.length > 0 && (
+                  {showDetailed && p.subMetrics.length > 0 && (
                     <div className="df-pillar-subs" style={{ marginTop: '16px' }}>
                       <div className="df-pillar-subs-grid" style={{ gridTemplateColumns: '1fr' }}>
                         {p.subMetrics.map((sub) => {
@@ -671,68 +697,110 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
           </div>
         </section>
 
-        {/* Media & Transcript */}
-        <div className="df-media-info-container dashboard-anim-bottom dashboard-anim-delay-7" style={{ marginTop: '48px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <div className="df-card" style={{ padding: '0', overflow: 'hidden' }}>
-            <div style={{ padding: '24px', borderBottom: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
-              <h3 className="df-section-title" style={{ fontSize: '1.1rem', margin: 0 }}>Session Recording</h3>
-              <div style={{ display: 'flex', gap: '32px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>Date</span>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{formatDate(session?.created_at)}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>Duration</span>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{formatDuration(durationSec)}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>Mode</span>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{mode}</span>
-                </div>
-              </div>
-            </div>
-            <div style={{ padding: '24px', background: '#fff' }}>
-              <div className="df-recording-content">
-                {videoUrl && (
-                  <div className="df-video-wrap" style={{ borderRadius: '16px', overflow: 'hidden', background: '#000', maxWidth: '800px', margin: '0 auto' }}>
-                    <video className="df-video" controls preload="metadata" src={videoUrl} style={{ width: '100%', display: 'block' }}>Your browser does not support video playback.</video>
+        {showDetailed && (
+          <>
+            {/* Media & Transcript */}
+            <div className="df-media-info-container dashboard-anim-bottom dashboard-anim-delay-7" style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div className="df-card" style={{ padding: '0', overflow: 'hidden' }}>
+                <div style={{ padding: '24px', borderBottom: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+                  <h3 className="df-section-title" style={{ fontSize: '1.1rem', margin: 0 }}>Session Recording</h3>
+                  <div style={{ display: 'flex', gap: '32px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>Date</span>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{formatDate(session?.created_at)}</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>Duration</span>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{formatDuration(durationSec)}</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>Mode</span>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{mode}</span>
+                    </div>
                   </div>
-                )}
-                {audioUrl && (
-                  <div className="df-audio-wrap" style={{ marginTop: videoUrl ? '24px' : '0', maxWidth: '800px', margin: videoUrl ? '24px auto 0' : '0 auto' }}>
-                    <audio className="df-audio" controls preload="metadata" src={audioUrl} style={{ width: '100%' }}>Your browser does not support audio playback.</audio>
-                  </div>
-                )}
-                {!videoUrl && !audioUrl && <p className="df-recordings-empty">No recording available for this session.</p>}
-              </div>
-            </div>
-          </div>
-
-          <div className="df-card" style={{ padding: '24px' }}>
-            <h3 className="df-section-title" style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Session Transcript</h3>
-            <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.03)' }}>
-              <p className="df-practiced-text" style={{ fontSize: '0.9rem', lineHeight: '1.7', margin: 0, color: '#1e293b' }}>{practicedText}</p>
-            </div>
-          </div>
-
-          <div className="df-card" ref={avoidSectionRef} style={{ padding: '32px', borderLeft: '4px solid #0d9488', background: 'linear-gradient(to right, #f0fdfa, #ffffff)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-
-              <div>
-                <h3 className="df-section-title" style={{ fontSize: '1.2rem', margin: 0, color: '#134e4a' }}>Growth Focus: Areas to Refine</h3>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>Be mindful of these points in your next session</p>
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
-              {deRecommendations.map((tip, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: '16px', background: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid #f0fdfa', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
-                  <span style={{ color: '#0d9488', fontWeight: 900, fontSize: '1.1rem' }}>•</span>
-                  <p style={{ margin: 0, fontSize: '0.95rem', lineHeight: '1.6', fontWeight: 500, color: '#334155' }}>{tip}</p>
                 </div>
-              ))}
+                <div style={{ padding: '24px', background: '#fff' }}>
+                  <div className="df-recording-content">
+                    {videoUrl && (
+                      <div className="df-video-wrap" style={{ borderRadius: '16px', overflow: 'hidden', background: '#000', maxWidth: '800px', margin: '0 auto' }}>
+                        <video className="df-video" controls preload="metadata" src={videoUrl} style={{ width: '100%', display: 'block' }}>Your browser does not support video playback.</video>
+                      </div>
+                    )}
+                    {audioUrl && (
+                      <div className="df-audio-wrap" style={{ marginTop: videoUrl ? '24px' : '0', maxWidth: '800px', margin: videoUrl ? '24px auto 0' : '0 auto' }}>
+                        <audio className="df-audio" controls preload="metadata" src={audioUrl} style={{ width: '100%' }}>Your browser does not support audio playback.</audio>
+                      </div>
+                    )}
+                    {!videoUrl && !audioUrl && <p className="df-recordings-empty">No recording available for this session.</p>}
+                  </div>
+                </div>
+              </div>
+
+              <div className="df-card" style={{ padding: '24px' }}>
+                <h3 className="df-section-title" style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Session Transcript</h3>
+                <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.03)' }}>
+                  <p className="df-practiced-text" style={{ fontSize: '0.9rem', lineHeight: '1.7', margin: 0, color: '#1e293b' }}>{practicedText}</p>
+                </div>
+              </div>
+
+              <div className="df-card" ref={avoidSectionRef} style={{ padding: '32px', borderLeft: '4px solid #0d9488', background: 'linear-gradient(to right, #f0fdfa, #ffffff)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                  <div>
+                    <h3 className="df-section-title" style={{ fontSize: '1.2rem', margin: 0, color: '#134e4a' }}>Growth Focus: Areas to Refine</h3>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>Be mindful of these points in your next session</p>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+                  {deRecommendations.map((tip, idx) => (
+                    <div key={idx} style={{ display: 'flex', gap: '16px', background: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid #f0fdfa', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                      <span style={{ color: '#0d9488', fontWeight: 900, fontSize: '1.1rem' }}>•</span>
+                      <p style={{ margin: 0, fontSize: '0.95rem', lineHeight: '1.6', fontWeight: 500, color: '#334155' }}>{tip}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
+
+        {/* Footer Actions */}
+        <footer className="sr-footer-layout dashboard-anim-bottom dashboard-anim-delay-8" style={{ display: 'flex', gap: '16px' }}>
+          <button
+            type="button"
+            className="sr-detailed-feedback-card-v2"
+            onClick={() => {
+              setShowDetailed(!showDetailed);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            style={{ flex: 1 }}
+          >
+            <div className="sr-detailed-card-icon">
+              {showDetailed ? <IoChevronBack /> : <IoChevronForward />}
+            </div>
+            <div className="sr-detailed-card-content">
+              <span className="sr-detailed-card-kicker">ANALYTICS INSIGHTS</span>
+              <h3 className="sr-detailed-card-title">
+                {showDetailed ? 'Performance Overview' : 'Detailed Feedback'}
+              </h3>
+            </div>
+          </button>
+
+          <button
+            className="sr-btn-action sr-btn-primary-v2"
+            onClick={() => {
+              if (isPreTest) {
+                navigate(ROUTES.USER_ANALYZING);
+              } else if (isPostTest) {
+                navigate(ROUTES.PROGRESS);
+              } else {
+                replayAction.onClick();
+              }
+            }}
+            style={{ minWidth: '200px' }}
+          >
+            {isPreTest ? 'Finish Onboarding' : isPostTest ? 'Next Stage' : replayAction.label}
+          </button>
+        </footer>
       </div>
     </div>
   );

@@ -20,6 +20,7 @@ import {
   claimAchievement,
 } from '../../utils/achievementClaims';
 import './SideNav.css';
+import bigkasLogo from '../../assets/logos/0015.png';
 
 const PRIMARY_NAV_ITEMS = [
   { to: ROUTES.ACTIVITY, label: 'Home', icon: IoHomeOutline },
@@ -157,7 +158,10 @@ export default function SideNav() {
     <aside className="side-nav" aria-label="Main navigation">
       <div className="side-nav-brand">
         <div className="side-nav-brand-main">
-          <span className="side-nav-brand-text">Bigkas</span>
+          <div className="side-nav-brand-top">
+            <img src={bigkasLogo} alt="Bigkas" className="side-nav-brand-logo" />
+            <span className="side-nav-brand-text">Bigkas</span>
+          </div>
           <span className="side-nav-brand-subtitle">{displayName}</span>
         </div>
         <div className="side-nav-notif-wrapper">
@@ -327,7 +331,7 @@ export default function SideNav() {
       <button type="button" className="side-nav-link side-nav-link--tutorial-launch" onClick={handleLaunchTutorial}>
         <span className="side-nav-link-label">Launch Tutorial (Temp)</span>
       </button>
-
+      
       <button type="button" className="side-nav-logout" onClick={handleLogoutClick}>
         <IoLogOutOutline aria-hidden="true" />
         <span>Log Out</span>

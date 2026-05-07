@@ -10,6 +10,7 @@ import {
 import { ROUTES } from '../../utils/constants';
 import ProfileModal from './ProfileModal';
 import './BottomNav.css';
+import bigkasLogo from '../../assets/logos/0015.png';
 
 const NAV_ITEMS = [
   { label: 'Home', to: ROUTES.ACTIVITY, icon: IoHomeOutline, type: 'link' },
@@ -62,7 +63,11 @@ function BottomNav() {
             >
               <div className="bottom-nav__pill">
                 <div className="bottom-nav__icon-wrapper">
-                  <Icon aria-hidden="true" />
+                  {label === 'Home' ? (
+                    <img src={bigkasLogo} alt="Bigkas" className="bottom-nav-logo" />
+                  ) : (
+                    <Icon aria-hidden="true" />
+                  )}
                 </div>
                 <span>{label}</span>
               </div>

@@ -943,8 +943,9 @@ html {
 }
 
 .free-speech-overlay-topic-input:focus {
-  outline: 2px solid rgba(5, 150, 105, 0.22);
-  border-color: #059669;
+  outline: none;
+  border-color: #10B981;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
 }
 
 .randomizer-overlay-actions {
@@ -1326,9 +1327,9 @@ html {
 }
 
 .ask-b01-input-wrapper:focus-within {
-  border-color: #059669;
+  border-color: #10B981;
   background: white;
-  box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.15);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
   outline: none !important;
 }
 

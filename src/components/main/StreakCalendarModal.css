@@ -207,7 +207,7 @@
   bottom: 10%;
   left: -4px;
   right: -4px;
-  background-color: #fef3c7; /* Pale yellow */
+  background-color: #ecfdf5; /* Light emerald */
   z-index: 1;
 }
 
@@ -234,11 +234,13 @@
   background-color: #f59e0b; /* Streak orange */
 }
 
-.streak-fire-icon {
-  width: 50%;
-  height: 50%;
-  object-fit: contain;
-  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
+.streak-fire-icon-lottie {
+  width: 110%;
+  height: 110%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: -4px; /* Adjust to center the flame better */
 }
 
 .streak-day-text {

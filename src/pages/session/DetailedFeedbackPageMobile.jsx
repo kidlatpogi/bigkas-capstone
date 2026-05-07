@@ -50,10 +50,9 @@ function getTripleVScores(result) {
 }
 
 function getScoreTier15(score) {
-  if (score >= 4.0) return { label: 'Excellent', color: '#059669' };
-  if (score >= 3.0) return { label: 'Good', color: '#059669' };
-  if (score >= 2.0) return { label: 'Fair', color: '#F97316' };
-  return { label: 'Needs Work', color: '#FF0000' };
+  if (score >= 3.0) return { label: 'Strong', color: '#10B981' };
+  if (score >= 2.0) return { label: 'Developing', color: '#3B82F6' };
+  return { label: 'Rising', color: '#F59E0B' };
 }
 
 function scoreBarPercent(score) {
@@ -197,13 +196,14 @@ function buildBucketPublicUrl(pathOrUrl) {
 }
 
 // --- Component ---
-function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }) {
+function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, initialShowDetailed = false }) {
   const navigate = useNavigate();
   const { sessionId: paramSessionId } = useParams();
   const sessionId = sessionIdProp || paramSessionId;
   const { state: locationState } = useLocation();
   const { currentSession, fetchSessionById, isLoading } = useSessionContext();
   const [recordingMedia, setRecordingMedia] = useState({ audioUrl: null, videoUrl: null, transcript: '' });
+  const [showDetailed, setShowDetailed] = useState(initialShowDetailed || isInnerView === false);
 
   const session = useMemo(() => {
     if (locationState?.id === sessionId) return locationState;
@@ -305,9 +305,9 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
   ].filter(m => m.score !== null);
 
   const pillars = [
-    { key: 'visual', label: 'Visual', desc: 'Eye contact, facial expressions, and body gestures', score: tripleV.visualAvg, image: visualSprite, subMetrics: visualSubMetrics },
-    { key: 'vocal', label: 'Vocal', desc: 'Voice pitch stability, volume consistency, and clarity', score: tripleV.vocalAvg, image: vocalSprite, subMetrics: vocalSubMetrics },
-    { key: 'verbal', label: 'Verbal', desc: 'Pronunciation accuracy and topical relevance', score: tripleV.verbalAvg, image: verbalSprite, subMetrics: [] },
+    { key: 'visual', label: 'Visual', desc: 'Overall consistency', score: tripleV.visualAvg, image: visualSprite, subMetrics: visualSubMetrics },
+    { key: 'vocal', label: 'Vocal', desc: 'Overall consistency', score: tripleV.vocalAvg, image: vocalSprite, subMetrics: vocalSubMetrics },
+    { key: 'verbal', label: 'Verbal', desc: 'Overall consistency', score: tripleV.verbalAvg, image: verbalSprite, subMetrics: [] },
   ];
 
   const timelineData = useMemo(() => {
@@ -363,9 +363,18 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
     <div className="df-mobile-root no-scrollbar">
       {!isInnerView && (
         <nav className="df-mobile-breadcrumb">
-          <button type="button" className="df-mobile-breadcrumb-btn" onClick={() => navigate(-1)}>Back</button>
+          <button 
+            type="button" 
+            className="df-mobile-breadcrumb-btn" 
+            onClick={() => {
+              if (showDetailed) setShowDetailed(false);
+              else navigate(-1);
+            }}
+          >
+            {showDetailed ? 'Back to Overview' : 'Back'}
+          </button>
           <IoChevronForward className="df-mobile-breadcrumb-sep" />
-          <span className="df-mobile-breadcrumb-current">Detailed Feedback</span>
+          <span className="df-mobile-breadcrumb-current">{showDetailed ? 'Detailed Feedback' : 'Session Overview'}</span>
         </nav>
       )}
 
@@ -414,86 +423,91 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
           </div>
         </section>
 
-        {/* Overview Widgets */}
-        <div className="sr-mobile-overview-grid dashboard-anim-bottom">
-          <div className="sr-mobile-widget">
-            <div className="sr-mobile-widget-header">
-              <span className="sr-mobile-widget-title">Overall Score</span>
-              <span className="sr-mobile-widget-badge" style={{ background: '#f1f5f9', color: '#64748b' }}>PERFORMANCE</span>
+        {!showDetailed && (
+          <div className="sr-mobile-overview-grid dashboard-anim-bottom">
+            <div className="sr-mobile-widget">
+              <div className="sr-mobile-widget-header">
+                <span className="sr-mobile-widget-title">Overall Score</span>
+                <span className="sr-mobile-widget-badge" style={{ background: '#f1f5f9', color: '#64748b' }}>PERFORMANCE</span>
+              </div>
+              <div className="sr-mobile-score-row">
+                <span className="sr-mobile-score-value" style={{ color: overallTier.color }}>{Math.round(scoreBarPercent(tripleV.entryPoint))}%</span>
+                <span className="sr-mobile-score-max">Confidence</span>
+              </div>
+              <div className="sr-mobile-tier-row">
+                <span className="sr-mobile-tier-dot" style={{ background: overallTier.color }} />
+                <span className="sr-mobile-tier-label" style={{ color: overallTier.color }}>{overallTier.label}</span>
+              </div>
             </div>
-            <div className="sr-mobile-score-row">
-              <span className="sr-mobile-score-value" style={{ color: overallTier.color }}>{Math.round(scoreBarPercent(tripleV.entryPoint))}%</span>
-              <span className="sr-mobile-score-max">Confidence</span>
-            </div>
-            <div className="sr-mobile-tier-row">
-              <span className="sr-mobile-tier-dot" style={{ background: overallTier.color }} />
-              <span className="sr-mobile-tier-label" style={{ color: overallTier.color }}>{overallTier.label}</span>
-            </div>
-          </div>
 
-          <div className="sr-mobile-widget">
-            <div className="sr-mobile-widget-header">
-              <span className="sr-mobile-widget-title">Primary Strength</span>
-              <span className="sr-mobile-widget-badge" style={{ background: '#f0fdf4', color: '#059669' }}>ANALYSIS</span>
+            <div className="sr-mobile-widget">
+              <div className="sr-mobile-widget-header">
+                <span className="sr-mobile-widget-title">Primary Strength</span>
+                <span className="sr-mobile-widget-badge" style={{ background: '#f0fdf4', color: '#059669' }}>ANALYSIS</span>
+              </div>
+              <div className="sr-mobile-strength-row">
+                {(() => {
+                  const topPillar = [...pillars].sort((a, b) => b.score - a.score)[0];
+                  return (
+                    <>
+                      <img src={topPillar.image} alt="" className="sr-mobile-strength-sprite" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+                      <span className="sr-mobile-strength-name" style={{ fontSize: '1.2rem', fontWeight: 800 }}>{topPillar.label}</span>
+                    </>
+                  );
+                })()}
+              </div>
+              <div className="sr-mobile-strength-kicker">TOP PERFORMANCE AREA</div>
             </div>
-            <div className="sr-mobile-strength-row">
-              {(() => {
-                const topPillar = [...pillars].sort((a, b) => b.score - a.score)[0];
-                return (
-                  <>
-                    <img src={topPillar.image} alt="" className="sr-mobile-strength-sprite" />
-                    <span className="sr-mobile-strength-name">{topPillar.label}</span>
-                  </>
-                );
-              })()}
-            </div>
-            <div className="sr-mobile-strength-kicker">TOP PERFORMANCE AREA</div>
           </div>
-        </div>
+        )}
         
-        {/* Timeline Chart */}
-        <section className="df-mobile-section dashboard-anim-bottom">
-          <div className="df-mobile-section-header">
-            <h2 className="df-mobile-section-title">Performance Timeline</h2>
-            <p className="df-mobile-section-subtitle">Real-time fluctuations during your session</p>
-          </div>
-          <div className="df-mobile-card" style={{ padding: '24px 16px 12px' }}>
-            <div className="df-mobile-chart-container" style={{ height: '240px' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={timelineData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
-                  <XAxis 
-                    dataKey="time" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 10, fontWeight: 600, fill: '#94a3b8' }} 
-                    interval={Math.ceil(durationSec / 5)}
-                  />
-                  <YAxis 
-                    domain={[0, 100]} 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 9, fontWeight: 600, fill: '#94a3b8' }}
-                    tickFormatter={(val) => `${val}%`}
-                  />
-                  <Tooltip 
-                    formatter={(value) => `${value}%`}
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', fontWeight: 700, fontSize: '12px' }} 
-                  />
-                  <Legend 
-                    verticalAlign="top" 
-                    height={32} 
-                    iconType="circle" 
-                    wrapperStyle={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '10px', paddingBottom: '10px' }} 
-                  />
-                  <Line type="monotone" dataKey="Visual" stroke="#059669" strokeWidth={3} dot={false} activeDot={{ r: 5, strokeWidth: 0 }} />
-                  <Line type="monotone" dataKey="Vocal" stroke="#10b981" strokeWidth={3} dot={false} activeDot={{ r: 5, strokeWidth: 0 }} />
-                  <Line type="monotone" dataKey="Verbal" stroke="#F97316" strokeWidth={3} dot={false} activeDot={{ r: 5, strokeWidth: 0 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </section>
+        {showDetailed && (
+          <>
+            {/* Timeline Chart */}
+            <section className="df-mobile-section dashboard-anim-bottom">
+              <div className="df-mobile-section-header">
+                <h2 className="df-mobile-section-title">Performance Timeline</h2>
+                <p className="df-mobile-section-subtitle">Real-time fluctuations during your session</p>
+              </div>
+              <div className="df-mobile-card" style={{ padding: '24px 16px 12px' }}>
+                <div className="df-mobile-chart-container" style={{ height: '240px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={timelineData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
+                      <XAxis 
+                        dataKey="time" 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ fontSize: 10, fontWeight: 600, fill: '#94a3b8' }} 
+                        interval={Math.ceil(durationSec / 5)}
+                      />
+                      <YAxis 
+                        domain={[0, 100]} 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ fontSize: 9, fontWeight: 600, fill: '#94a3b8' }}
+                        tickFormatter={(val) => `${val}%`}
+                      />
+                      <Tooltip 
+                        formatter={(value) => `${value}%`}
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', fontWeight: 700, fontSize: '12px' }} 
+                      />
+                      <Legend 
+                        verticalAlign="top" 
+                        height={32} 
+                        iconType="circle" 
+                        wrapperStyle={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '10px', paddingBottom: '10px' }} 
+                      />
+                      <Line type="monotone" dataKey="Visual" stroke="#059669" strokeWidth={3} dot={false} activeDot={{ r: 5, strokeWidth: 0 }} />
+                      <Line type="monotone" dataKey="Vocal" stroke="#10b981" strokeWidth={3} dot={false} activeDot={{ r: 5, strokeWidth: 0 }} />
+                      <Line type="monotone" dataKey="Verbal" stroke="#F97316" strokeWidth={3} dot={false} activeDot={{ r: 5, strokeWidth: 0 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </section>
+          </>
+        )}
 
         {/* Pillars & Submetrics */}
         <section className="df-mobile-section dashboard-anim-bottom">
@@ -532,69 +546,105 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner }
           })}
         </section>
 
-        {/* Media Recording */}
-        <section className="df-mobile-section dashboard-anim-bottom">
-          <div className="df-mobile-section-header">
-            <h2 className="df-mobile-section-title">Session Recording</h2>
-          </div>
-          <div className="df-mobile-card" style={{ padding: 0 }}>
-            <div className="df-mobile-media-header">
-              <div className="df-mobile-media-info-bit">
-                <span className="df-mobile-media-bit-label">Duration</span>
-                <span className="df-mobile-media-bit-value">{formatDuration(durationSec)}</span>
+        {showDetailed && (
+          <>
+            {/* Media Recording */}
+            <section className="df-mobile-section dashboard-anim-bottom">
+              <div className="df-mobile-section-header">
+                <h2 className="df-mobile-section-title">Session Recording</h2>
               </div>
-              <div className="df-mobile-media-info-bit">
-                <span className="df-mobile-media-bit-label">Mode</span>
-                <span className="df-mobile-media-bit-value">{mode}</span>
+              <div className="df-mobile-card" style={{ padding: 0 }}>
+                <div className="df-mobile-media-header">
+                  <div className="df-mobile-media-info-bit">
+                    <span className="df-mobile-media-bit-label">Date</span>
+                    <span className="df-mobile-media-bit-value">{formatDate(session?.created_at)}</span>
+                  </div>
+                  <div className="df-mobile-media-info-bit">
+                    <span className="df-mobile-media-bit-label">Duration</span>
+                    <span className="df-mobile-media-bit-value">{formatDuration(durationSec)}</span>
+                  </div>
+                  <div className="df-mobile-media-info-bit">
+                    <span className="df-mobile-media-bit-label">Mode</span>
+                    <span className="df-mobile-media-bit-value">{mode}</span>
+                  </div>
+                </div>
+                <div className="df-mobile-recording-stack" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {recordingMedia.videoUrl && (
+                    <div className="df-mobile-video-box" style={{ borderRadius: '16px', overflow: 'hidden', background: '#000' }}>
+                      <video src={recordingMedia.videoUrl} controls className="df-mobile-video" style={{ width: '100%', display: 'block' }} />
+                    </div>
+                  )}
+                  {recordingMedia.audioUrl && (
+                    <div className="df-mobile-audio-box" style={{ padding: recordingMedia.videoUrl ? '0 16px 16px' : '16px' }}>
+                      <audio src={recordingMedia.audioUrl} controls className="df-mobile-audio" style={{ width: '100%' }} />
+                    </div>
+                  )}
+                  {!recordingMedia.videoUrl && !recordingMedia.audioUrl && (
+                    <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8', fontWeight: 600 }}>No recording available</div>
+                  )}
+                </div>
               </div>
-            </div>
-            <div className="df-mobile-recording-stack" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {recordingMedia.videoUrl && (
-                <div className="df-mobile-video-box" style={{ borderRadius: '16px', overflow: 'hidden', background: '#000' }}>
-                  <video src={recordingMedia.videoUrl} controls className="df-mobile-video" style={{ width: '100%', display: 'block' }} />
-                </div>
-              )}
-              {recordingMedia.audioUrl && (
-                <div className="df-mobile-audio-box" style={{ padding: recordingMedia.videoUrl ? '0 16px 16px' : '16px' }}>
-                  <audio src={recordingMedia.audioUrl} controls className="df-mobile-audio" style={{ width: '100%' }} />
-                </div>
-              )}
-              {!recordingMedia.videoUrl && !recordingMedia.audioUrl && (
-                <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8', fontWeight: 600 }}>No recording available</div>
-              )}
-            </div>
-          </div>
-        </section>
+            </section>
 
-        {/* Transcript */}
-        <section className="df-mobile-section dashboard-anim-bottom">
-          <div className="df-mobile-section-header">
-            <h2 className="df-mobile-section-title">Transcript</h2>
-          </div>
-          <div className="df-mobile-transcript-box">
-            <p className="df-mobile-transcript-text">{practicedText || 'No transcript generated.'}</p>
-          </div>
-        </section>
+            {/* Transcript */}
+            <section className="df-mobile-section dashboard-anim-bottom">
+              <div className="df-mobile-section-header">
+                <h2 className="df-mobile-section-title">Transcript</h2>
+              </div>
+              <div className="df-mobile-transcript-box">
+                <p className="df-mobile-transcript-text">{practicedText || 'No transcript generated.'}</p>
+              </div>
+            </section>
 
-        <section className="df-mobile-section dashboard-anim-bottom" ref={avoidSectionRef}>
-          <div className="df-mobile-section-header">
-            <h2 className="df-mobile-section-title" style={{ color: '#0d9488' }}>Growth Focus</h2>
-          </div>
-          <div className="df-mobile-card" style={{ borderLeft: '4px solid #0d9488', background: 'linear-gradient(to right, #f0fdfa, #ffffff)' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
-              <p style={{ margin: '0 0 4px', fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Be mindful of these points to level up:</p>
-              {deRecommendations.map((tip, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: '12px', background: '#fff', padding: '16px', borderRadius: '12px', border: '1px solid #f0fdfa', boxShadow: '0 2px 8px rgba(0,0,0,0.01)' }}>
-                  <span style={{ color: '#0d9488', fontWeight: 900 }}>•</span>
-                  <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: '#334155', lineHeight: '1.5' }}>{tip}</p>
+            <section className="df-mobile-section dashboard-anim-bottom" ref={avoidSectionRef}>
+              <div className="df-mobile-section-header">
+                <h2 className="df-mobile-section-title" style={{ color: '#0d9488' }}>Growth Focus</h2>
+              </div>
+              <div className="df-mobile-card" style={{ borderLeft: '4px solid #0d9488', background: 'linear-gradient(to right, #f0fdfa, #ffffff)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
+                  <p style={{ margin: '0 0 4px', fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Be mindful of these points to level up:</p>
+                  {deRecommendations.map((tip, idx) => (
+                    <div key={idx} style={{ display: 'flex', gap: '12px', background: '#fff', padding: '16px', borderRadius: '12px', border: '1px solid #f0fdfa', boxShadow: '0 2px 8px rgba(0,0,0,0.01)' }}>
+                      <span style={{ color: '#0d9488', fontWeight: 900 }}>•</span>
+                      <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: '#334155', lineHeight: '1.5' }}>{tip}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
+              </div>
+            </section>
+          </>
+        )}
 
-        <button type="button" className="df-mobile-back-btn" onClick={onCloseInner}>
-          Back to Analysis
+        <footer className="sr-mobile-footer dashboard-anim-bottom">
+          <button
+            type="button"
+            className="sr-mobile-detailed-card"
+            onClick={() => {
+              setShowDetailed(!showDetailed);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          >
+            <div className="sr-mobile-detailed-icon-box">
+              {showDetailed ? <IoChevronBack /> : <IoChevronForward />}
+            </div>
+            <div className="sr-mobile-detailed-text">
+              <span className="sr-mobile-detailed-kicker">ANALYTICS INSIGHTS</span>
+              <h3 className="sr-mobile-detailed-title">
+                {showDetailed ? 'Performance Overview' : 'Detailed Feedback'}
+              </h3>
+            </div>
+          </button>
+        </footer>
+
+        <button 
+          type="button" 
+          className="df-mobile-back-btn" 
+          onClick={() => {
+            if (isInnerView && onCloseInner) onCloseInner();
+            else navigate(ROUTES.DASHBOARD);
+          }}
+        >
+          Return to Dashboard
         </button>
       </div>
     </div>

@@ -85,7 +85,7 @@ const SCORE_BREAKDOWN_VARIANTS = [
 
 const LEVEL_CONTENT = {
   1: {
-    text: "Yay, you made that look so easy! All the setup is done. Your journey begins right here at LEVEL 1. Don't sweat the small stuff-every great speaker you've ever seen started exactly where you are right now! We're going to build your confidence brick by brick. Get ready to transform that 'stage fright' into 'stage might'!",
+    text: "Yay, you made that look so easy! All the setup is done. Your journey begins right here at LEVEL 1. Don't sweat the small stuff—every great speaker you've ever seen started exactly where you are right now! We're going to build your confidence brick by brick. Get ready to transform that 'stage fright' into 'stage might'!",
     voice: analyzingLevel1Voice,
   },
   2: {
@@ -93,15 +93,15 @@ const LEVEL_CONTENT = {
     voice: analyzingLevel2Voice,
   },
   3: {
-    text: "Whoa, nice job! Setup is completely done. My sensors picked up some seriously good speaking habits, so you're diving right in at LEVEL 3! We're halfway to the top already-let's keep this momentum going!",
+    text: "Whoa, nice job! Setup is completely done. My sensors picked up some seriously good speaking habits, so you're diving right in at LEVEL 3! We're halfway to the top already—let's keep this momentum going!",
     voice: analyzingLevel3Voice,
   },
   4: {
-    text: 'Wowzers! Setup is clear! Your speech was so smooth it almost blew my circuits! You are starting way up at LEVEL 4. You\'re practically a pro already. Let\'s polish those skills to absolute perfection!',
+    text: "Wowzers! Setup is clear! Your speech was so smooth it almost blew my circuits! You're starting way up at LEVEL 4. You're practically a pro already. Let's polish those skills to absolute perfection!",
     voice: analyzingLevel4Voice,
   },
   5: {
-    text: 'Mind... blown! Setup is completely done. Your speaking skills are off the charts! You are starting at the very top-LEVEL 5! We are going straight into masterclass mode. I might need to take notes from you!',
+    text: "Mind... blown! Setup is completely done. Your speaking skills are off the charts! You're starting at the very top—LEVEL 5! We're going straight into masterclass mode. I might need to take notes from you!",
     voice: analyzingLevel5Voice,
   },
 };
@@ -570,7 +570,15 @@ function UserAnalyzingPage() {
                 <button
                   type="button"
                   className="analyzing-action-btn analyzing-action-btn--secondary"
-                  onClick={() => setShowScoreBreakdown(true)}
+                  onClick={() => {
+                    if (userPretestFreeSessionId) {
+                      navigate(ROUTES.DETAILED_FEEDBACK.replace(':sessionId', userPretestFreeSessionId), {
+                        state: { fromResult: true, source: 'pre-test' }
+                      });
+                    } else {
+                      setShowScoreBreakdown(true);
+                    }
+                  }}
                 >
                   Score Breakdown
                 </button>

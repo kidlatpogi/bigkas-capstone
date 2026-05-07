@@ -90,7 +90,7 @@ body.register-page-active {
   align-items: center;
   text-align: center;
   color: #ffffff;
-  gap: clamp(24px, 5vh, 48px);
+  gap: clamp(20px, 4vh, 40px);
 }
 
 .auth-brand-logo {
@@ -105,8 +105,8 @@ body.register-page-active {
 }
 
 .auth-robot-img-wrap {
-  width: min(95%, 460px);
-  max-height: 48vh;
+  width: min(95%, 420px);
+  max-height: 45vh;
   margin: 0 auto;
   filter: drop-shadow(0 30px 60px rgba(0,0,0,0.35));
   position: relative;
@@ -157,7 +157,7 @@ body.register-page-active {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   width: 100%;
   margin-top: 20px;
   margin-bottom: auto;
@@ -179,7 +179,7 @@ body.register-page-active {
   font-size: clamp(0.9rem, 1.8vh, 1.1rem);
   opacity: 0.9;
   line-height: 1.5;
-  max-width: 320px;
+  max-width: 300px;
   margin: 0;
 }
 

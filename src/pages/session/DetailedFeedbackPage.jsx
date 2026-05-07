@@ -289,9 +289,9 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
     ].filter((m) => m.score !== null);
 
     return [
-      { key: 'visual', label: 'Visual', desc: 'Eye contact, facial expressions, and body gestures', score: tripleV.visualAvg, subMetrics: visualSubMetrics },
-      { key: 'vocal', label: 'Vocal', desc: 'Voice pitch stability, volume consistency, and clarity', score: tripleV.vocalAvg, subMetrics: vocalSubMetrics },
-      { key: 'verbal', label: 'Verbal', desc: 'Pronunciation accuracy and topical relevance', score: tripleV.verbalAvg, subMetrics: [] },
+      { key: 'visual', label: 'Visual', desc: 'Overall consistency', score: tripleV.visualAvg, subMetrics: visualSubMetrics },
+      { key: 'vocal', label: 'Vocal', desc: 'Overall consistency', score: tripleV.vocalAvg, subMetrics: vocalSubMetrics },
+      { key: 'verbal', label: 'Verbal', desc: 'Overall consistency', score: tripleV.verbalAvg, subMetrics: [] },
     ];
   }, [session, tripleV]);
 

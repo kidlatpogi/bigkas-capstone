@@ -512,13 +512,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
 
           <button
             type="button"
-            className="history-back-to-list-btn"
-            style={{ 
-              background: '#F97316', 
-              color: '#ffffff', 
-              boxShadow: '0 5px 0 #C2410C',
-              border: 'none'
-            }}
+            className="history-back-to-list-btn btn-orange"
             onClick={() => navigate(ROUTES.DASHBOARD)}
           >
             Back to Home

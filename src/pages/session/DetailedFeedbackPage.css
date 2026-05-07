@@ -44,6 +44,47 @@
   display: none;
 }
 
+/* Orange Button Style - Synced with history-back-to-list-btn feel */
+.btn-orange {
+  background: #F97316 !important;
+  box-shadow: 0 5px 0 #C2410C !important;
+  border: none !important;
+  color: white !important;
+  border-radius: 12px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-orange:hover {
+  background: #F97316 !important;
+  box-shadow: 0 3px 0 #C2410C !important;
+  transform: translateY(2px);
+}
+
+.btn-orange:active {
+  box-shadow: 0 0 0 #C2410C !important;
+  transform: translateY(5px);
+}
+
+.history-back-to-list-btn.btn-orange {
+  background: #F97316 !important;
+  box-shadow: 0 5px 0 #C2410C !important;
+  border: none !important;
+  color: white !important;
+}
+
+.history-back-to-list-btn.btn-orange:hover {
+  background: #F97316 !important;
+  box-shadow: 0 3px 0 #C2410C !important;
+  transform: translateY(2px);
+}
+
+.history-back-to-list-btn.btn-orange:active {
+  box-shadow: 0 0 0 #C2410C !important;
+  transform: translateY(5px);
+}
+
 .df-page--inner {
   padding: 16px 24px !important;
   background: transparent !important;

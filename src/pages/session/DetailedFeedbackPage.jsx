@@ -13,7 +13,7 @@ import {
 } from 'recharts';
 import { useSessionContext } from '../../context/useSessionContext';
 import { supabase } from '../../lib/supabase';
-import { ROUTES } from '../../utils/constants';
+import { buildRoute, ROUTES } from '../../utils/constants';
 import { formatDate, formatDuration } from '../../utils/formatters';
 import { getSessionMode, getSessionSpeechType } from '../../utils/sessionFormatting';
 import { sanitizeRecommendationLines, sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
@@ -488,7 +488,13 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
           <button
             type="button"
             className="history-back-to-list-btn"
-            onClick={() => navigate(-1)}
+            onClick={() => {
+              if (sessionId) {
+                navigate(buildRoute.sessionResult(sessionId));
+              } else {
+                navigate(-1);
+              }
+            }}
           >
             <IoChevronBack /> Back to Results
           </button>

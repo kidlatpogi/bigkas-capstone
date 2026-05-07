@@ -349,7 +349,7 @@ function LoginPage({ managePageClass = true }) {
         onClick={() => navigate(ROUTES.HOME)}
         aria-label="Back to Home"
       >
-        <IoChevronBack /> Back
+        <IoChevronBack /> Back to Home
       </button>
 
       <div className="auth-container">

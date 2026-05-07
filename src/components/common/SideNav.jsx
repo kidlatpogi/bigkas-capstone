@@ -122,20 +122,42 @@ export default function SideNav() {
       const raw = window.localStorage.getItem(historyKey);
       const history = raw ? JSON.parse(raw) : [];
       
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayKey = yesterday.toISOString().split('T')[0];
+      const getLocalDateStr = (d) => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      let targetDate = new Date();
+      let foundGap = false;
       
-      const hasYesterday = history.some(e => e.completedAt?.startsWith(yesterdayKey));
-      
-      const targetDate = new Date();
-      if (hasYesterday) {
-        targetDate.setDate(targetDate.getDate() - 2);
-        alert('Yesterday found. Adding mock session for 2 days ago.');
-      } else {
-        targetDate.setDate(targetDate.getDate() - 1);
-        alert('Adding mock session for yesterday.');
+      // Look back up to 10 days to find a gap
+      for (let i = 0; i < 10; i++) {
+        const checkDate = new Date();
+        checkDate.setDate(checkDate.getDate() - i);
+        const checkKey = getLocalDateStr(checkDate);
+        
+        const hasDate = history.some(e => {
+          if (!e.completedAt) return false;
+          const d = new Date(e.completedAt);
+          return getLocalDateStr(d) === checkKey;
+        });
+        
+        if (!hasDate) {
+          targetDate = checkDate;
+          foundGap = true;
+          break;
+        }
       }
+
+      if (!foundGap) {
+        alert('No gaps found in the last 10 days!');
+        return;
+      }
+
+      const dateStr = getLocalDateStr(targetDate);
+      alert(`Adding mock session for ${dateStr}`);
       
       history.push({
         taskId: `debug-mock-${Date.now()}`,

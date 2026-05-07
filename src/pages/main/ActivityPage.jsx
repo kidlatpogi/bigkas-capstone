@@ -74,7 +74,7 @@ const FREE_SPEECH_TUTORIAL_STEPS = [
     robotClassName: 'is-activity-home-step-1',
     button: 'Next',
     targetElementId: null,
-    text: 'Welcome aboard! You made it, and I know you are going to do great things here. Let me give you a quick, guided tour of your Home screen so you know exactly where everything is.',
+    text: "Welcome aboard! You made it, and I know you're going to do great things here. Let me give you a quick, guided tour of your Home screen so you know exactly where everything is.",
   },
   {
     id: 'step-companion',
@@ -83,7 +83,7 @@ const FREE_SPEECH_TUTORIAL_STEPS = [
     robotClassName: 'is-activity-home-step-2',
     button: 'Next',
     targetElementId: 'tutorial-target-home-banner',
-    text: "Your AI Companion, hey that's me! See my panel right at the top? I will be checking in with you from time to time. Depending on your progress, I'll drop by with daily greetings, personalized tips, and a little extra encouragement to keep your momentum going.",
+    text: "Your AI Companion—hey, that's me! See my panel right at the top? I'll be checking in with you from time to time. Depending on your progress, I'll drop by with daily greetings, personalized tips, and a little extra encouragement to keep your momentum going.",
   },
   {
     id: 'step-streak',

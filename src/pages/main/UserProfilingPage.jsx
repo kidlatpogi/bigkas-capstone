@@ -99,7 +99,7 @@ function UserProfilingPage() {
     "Awesome! Since you're ready, let's jump right into your 10 profiling questions! And don't worry, you can answer every single one with a simple Yes, Sometimes, or No.";
   const outroFirstMessage = "You've made it to the final step! To wrap things up, let's try a quick Free Speech Pre-test.";
   const outroMissionMessage =
-    "Speak for at least 30 seconds on the topic, 'Tell me about yourself.' Don't overthink it-just be you and let your voice lead the way!";
+    "Speak for at least 30 seconds on the topic, 'Tell me about yourself.' Don't overthink it—just be you and let your voice lead the way!";
   const [screen, setScreen] = useState('intro');
   const [introStep, setIntroStep] = useState(0);
   const [typedIntroText, setTypedIntroText] = useState('');

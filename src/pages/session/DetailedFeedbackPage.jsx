@@ -483,19 +483,19 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
 
   return (
     <div className={`df-page ${isInnerView ? 'df-page--inner' : ''} activity-page--skyward-entrance`}>
+      {!isInnerView && (
+        <div className="history-session-view-header" style={{ width: '100%', padding: '1.25rem 1.5rem', background: '#FDFDF9', borderBottom: '1px solid rgba(11, 57, 84, 0.08)', position: 'sticky', top: 0, zIndex: 10 }}>
+          <button
+            type="button"
+            className="history-back-to-list-btn"
+            onClick={() => navigate(-1)}
+          >
+            <IoChevronBack /> Back to Results
+          </button>
+        </div>
+      )}
 
-      <div className="df-content-layout">
-        {!isInnerView && (
-          <div className="history-session-view-header" style={{ width: '100%', marginBottom: '1rem', background: 'transparent', borderBottom: '1px solid rgba(11, 57, 84, 0.05)' }}>
-            <button
-              type="button"
-              className="history-back-to-list-btn"
-              onClick={() => navigate(-1)}
-            >
-              <IoChevronBack /> Back to Results
-            </button>
-          </div>
-        )}
+      <div className="df-content-layout" style={{ marginTop: isInnerView ? '0' : '1.5rem' }}>
         {/* AI Coach Hero Banner */}
         <section className="new-banner dashboard-anim-top dashboard-anim-delay-2" id="sr-hero-section">
           <div className="new-banner-left is-full-width">

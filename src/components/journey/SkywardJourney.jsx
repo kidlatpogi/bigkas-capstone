@@ -27,6 +27,9 @@ import {
   IoCall,
   IoEarth,
   IoPlanet,
+  IoImage,
+  IoBriefcase,
+  IoCafe,
 } from 'react-icons/io5';
 import { FaBrain, FaGhost } from 'react-icons/fa';
 import { GiGoblinHead, GiFishMonster, GiWerewolf, GiVampireDracula } from 'react-icons/gi';
@@ -148,49 +151,59 @@ function getPhaseIcon(step) {
 function getStepTitleIcon(step) {
   const title = getStepActivityTitle(step).toLowerCase();
   
-  if (title.includes('breakfast') || title.includes('food') || title.includes('dinner') || title.includes('lunch') || title.includes('eat') || title.includes('restaurant') || title.includes('cook')) {
+  // High-performance keyword mapping
+  if (title.includes('breakfast') || title.includes('delicacy') || title.includes('food') || title.includes('dinner') || title.includes('lunch') || title.includes('eat') || title.includes('restaurant') || title.includes('cook') || title.includes('meal')) {
     return <IoRestaurant />;
   }
-  if (title.includes('cinema') || title.includes('film') || title.includes('movie') || title.includes('theater') || title.includes('actor') || title.includes('scene')) {
+  if (title.includes('coffee') || title.includes('drink') || title.includes('cafe') || title.includes('snack') || title.includes('beverage')) {
+    return <IoCafe />;
+  }
+  if (title.includes('window') || title.includes('commute') || title.includes('view') || title.includes('scenery') || title.includes('scenic') || title.includes('nature') || title.includes('landscape') || title.includes('outside')) {
+    return <IoImage />;
+  }
+  if (title.includes('movie') || title.includes('series') || title.includes('tv show') || title.includes('anime') || title.includes('visual desc') || title.includes('scene') || title.includes('cinema') || title.includes('film') || title.includes('actor') || title.includes('drama')) {
     return <IoFilm />;
   }
-  if (title.includes('music') || title.includes('sing') || title.includes('audio') || title.includes('song') || title.includes('lyrics') || title.includes('listen')) {
+  if (title.includes('music') || title.includes('sing') || title.includes('audio') || title.includes('song') || title.includes('lyrics') || title.includes('listen') || title.includes('melody') || title.includes('concert')) {
     return <IoMusicalNotes />;
   }
-  if (title.includes('book') || title.includes('read') || title.includes('story') || title.includes('write') || title.includes('author') || title.includes('poetry')) {
+  if (title.includes('school') || title.includes('academic') || title.includes('study') || title.includes('exam') || title.includes('student') || title.includes('teacher') || title.includes('class') || title.includes('university') || title.includes('lesson')) {
+    return <IoSchool />;
+  }
+  if (title.includes('book') || title.includes('read') || title.includes('story') || title.includes('write') || title.includes('author') || title.includes('poetry') || title.includes('literature')) {
     return <IoBook />;
   }
   if (title.includes('health') || title.includes('fitness') || title.includes('workout') || title.includes('gym') || title.includes('exercise') || title.includes('body')) {
     return <IoFitness />;
   }
-  if (title.includes('travel') || title.includes('trip') || title.includes('plane') || title.includes('flight') || title.includes('journey') || title.includes('destination')) {
+  if (title.includes('travel') || title.includes('trip') || title.includes('plane') || title.includes('flight') || title.includes('journey') || title.includes('destination') || title.includes('holiday')) {
     return <IoAirplane />;
   }
-  if (title.includes('code') || title.includes('programming') || title.includes('tech') || title.includes('software') || title.includes('web') || title.includes('dev')) {
+  if (title.includes('code') || title.includes('programming') || title.includes('tech') || title.includes('software') || title.includes('web') || title.includes('dev') || title.includes('digital')) {
     return <IoCodeWorking />;
   }
-  if (title.includes('art') || title.includes('paint') || title.includes('design') || title.includes('color') || title.includes('creative') || title.includes('sketch')) {
+  if (title.includes('art') || title.includes('paint') || title.includes('design') || title.includes('color') || title.includes('creative') || title.includes('sketch') || title.includes('drawing')) {
     return <IoColorPalette />;
-  }
-  if (title.includes('school') || title.includes('study') || title.includes('exam') || title.includes('student') || title.includes('teacher') || title.includes('class')) {
-    return <IoSchool />;
   }
   if (title.includes('home') || title.includes('house') || title.includes('family') || title.includes('stay') || title.includes('living')) {
     return <IoHome />;
   }
-  if (title.includes('chat') || title.includes('conversation') || title.includes('talk') || title.includes('social') || title.includes('friend') || title.includes('meeting')) {
+  if (title.includes('chat') || title.includes('conversation') || title.includes('talk') || title.includes('social') || title.includes('friend') || title.includes('meeting') || title.includes('interview') || title.includes('speech')) {
     return <IoChatbubbles />;
+  }
+  if (title.includes('business') || title.includes('work') || title.includes('office') || title.includes('professional') || title.includes('manager')) {
+    return <IoBriefcase />;
   }
   if (title.includes('time') || title.includes('routine') || title.includes('schedule') || title.includes('clock') || title.includes('habit') || title.includes('daily')) {
     return <IoTime />;
   }
-  if (title.includes('money') || title.includes('finance') || title.includes('cash') || title.includes('bank') || title.includes('earn') || title.includes('business')) {
+  if (title.includes('money') || title.includes('finance') || title.includes('cash') || title.includes('bank') || title.includes('earn')) {
     return <IoCash />;
   }
   if (title.includes('phone') || title.includes('call') || title.includes('mobile') || title.includes('app')) {
     return <IoCall />;
   }
-  if (title.includes('nature') || title.includes('weather') || title.includes('earth') || title.includes('environment') || title.includes('world') || title.includes('global')) {
+  if (title.includes('earth') || title.includes('environment') || title.includes('world') || title.includes('global')) {
     return <IoEarth />;
   }
   if (title.includes('science') || title.includes('lab') || title.includes('discovery') || title.includes('space') || title.includes('planet')) {
@@ -223,27 +236,6 @@ function JourneyNodeIcon({ step, index, className = '' }) {
           'aria-hidden': true,
           className: iconClassName
         })}
-        {isDone && (
-          <div 
-            className="skyward-journey-done-badge"
-            style={{
-              position: 'absolute',
-              bottom: '-4px',
-              right: '-4px',
-              background: '#ffffff',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '18px',
-              height: '18px',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-              zIndex: 2
-            }}
-          >
-            <IoCheckmarkCircle style={{ color: '#10b981', fontSize: '18px' }} />
-          </div>
-        )}
       </div>
     );
   };

@@ -214,29 +214,60 @@ function getStepTitleIcon(step) {
 
 function JourneyNodeIcon({ step, index, className = '' }) {
   const iconClassName = `skyward-journey-node-icon ${className}`.trim();
-  if (isStartNode(step, index)) return <IoStar aria-hidden className={iconClassName} />;
+  const isDone = step.nodeState === 'completed';
+
+  const renderIcon = (IconComponent) => {
+    return (
+      <div className="skyward-journey-icon-stack" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
+        {React.cloneElement(IconComponent, {
+          'aria-hidden': true,
+          className: iconClassName
+        })}
+        {isDone && (
+          <div 
+            className="skyward-journey-done-badge"
+            style={{
+              position: 'absolute',
+              bottom: '-4px',
+              right: '-4px',
+              background: '#ffffff',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '18px',
+              height: '18px',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+              zIndex: 2
+            }}
+          >
+            <IoCheckmarkCircle style={{ color: '#10b981', fontSize: '18px' }} />
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  if (isStartNode(step, index)) return renderIcon(<IoStar />);
 
   const TitleIcon = getStepTitleIcon(step);
   if (TitleIcon) {
-    return React.cloneElement(TitleIcon, {
-      'aria-hidden': true,
-      className: iconClassName
-    });
+    return renderIcon(TitleIcon);
   }
 
   switch (getPhaseIcon(step)) {
     case 'gaze':
-      return <IoEye aria-hidden className={iconClassName} />;
+      return renderIcon(<IoEye />);
     case 'vocal':
-      return <IoMic aria-hidden className={iconClassName} />;
+      return renderIcon(<IoMic />);
     case 'verbal':
-      return <IoChatbubbleEllipses aria-hidden className={iconClassName} />;
+      return renderIcon(<IoChatbubbleEllipses />);
     case 'sync':
-      return <IoSync aria-hidden className={iconClassName} />;
+      return renderIcon(<IoSync />);
     case 'context':
-      return <FaBrain aria-hidden className={iconClassName} />;
+      return renderIcon(<FaBrain />);
     default:
-      return <IoCheckmarkCircle aria-hidden className={iconClassName} />;
+      return renderIcon(<IoCheckmarkCircle />);
   }
 }
 
@@ -1150,8 +1181,6 @@ export default function SkywardJourney({
                         className="skyward-journey-node-icon"
                         aria-hidden
                       />
-                    ) : isDone ? (
-                      <IoCheckmarkCircle className="skyward-journey-node-state-icon" aria-hidden />
                     ) : (
                       <JourneyNodeIcon step={step} index={i} />
                     )}

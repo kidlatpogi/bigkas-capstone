@@ -181,19 +181,21 @@ function buildStreakStats(sessions = [], historyEntries = []) {
     return d && getLocalDayIndex(d) === todayIndex && entry === 'streak-recovery';
   });
 
+  const isDebugAtRisk = typeof window !== 'undefined' && window.localStorage.getItem('__debug_streak_at_risk__') === '1';
+
   let currentStreak = 0;
   let canRecover = false;
   let potentialStreak = 0;
 
-  if (todayIndex - last <= 1) {
+  if (todayIndex - last <= 1 && !isDebugAtRisk) {
     const set = new Set(activeDays);
     let cursor = last;
     while (set.has(cursor) || (hasRecoveryToday && cursor === todayIndex - 1)) {
       currentStreak += 1;
       cursor -= 1;
     }
-  } else if (todayIndex - last === 2 && !hasRecoveryToday) {
-    // Streak reset yesterday, but can still be recovered
+  } else if ((todayIndex - last === 2 || isDebugAtRisk) && !hasRecoveryToday) {
+    // Streak reset yesterday (or debug mode), but can still be recovered
     let potentialStreakVal = 0;
     const set = new Set(activeDays);
     let cursor = last;
@@ -201,6 +203,9 @@ function buildStreakStats(sessions = [], historyEntries = []) {
       potentialStreakVal += 1;
       cursor -= 1;
     }
+    // If no real streak exists but debug is ON, just show a fake potential streak for UI testing
+    if (isDebugAtRisk && potentialStreakVal === 0) potentialStreakVal = 10;
+
     return { currentStreak: 0, canRecover: true, potentialStreak: potentialStreakVal };
   }
 

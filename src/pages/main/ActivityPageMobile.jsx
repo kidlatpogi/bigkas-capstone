@@ -170,24 +170,27 @@ function buildStreakStats(sessions = [], historyEntries = []) {
     return d && getLocalDayIndex(d) === todayIndex && entry === 'streak-recovery';
   });
 
+  const isDebugAtRisk = typeof window !== 'undefined' && window.localStorage.getItem('__debug_streak_at_risk__') === '1';
+
   let currentStreak = 0;
   let canRecover = false;
   let potentialStreak = 0;
 
-  if (todayIndex - last <= 1) {
+  if (todayIndex - last <= 1 && !isDebugAtRisk) {
     const set = new Set(activeDays);
     let cursor = last;
     while (set.has(cursor) || (hasRecoveryToday && cursor === todayIndex - 1)) {
       currentStreak += 1;
       cursor -= 1;
     }
-  } else if (todayIndex - last === 2 && !hasRecoveryToday) {
+  } else if ((todayIndex - last === 2 || isDebugAtRisk) && !hasRecoveryToday) {
     const set = new Set(activeDays);
     let cursor = last;
     while (set.has(cursor)) {
       potentialStreak += 1;
       cursor -= 1;
     }
+    if (isDebugAtRisk && potentialStreak === 0) potentialStreak = 10;
     canRecover = true;
   }
 

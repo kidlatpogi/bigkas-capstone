@@ -100,6 +100,19 @@ export default function SideNav() {
     });
   };
 
+  const handleToggleStreakDebug = () => {
+    if (typeof window === 'undefined') return;
+    const current = window.localStorage.getItem('__debug_streak_at_risk__');
+    if (current === '1') {
+      window.localStorage.removeItem('__debug_streak_at_risk__');
+      alert('Streak Debug: OFF (Natural calculation)');
+    } else {
+      window.localStorage.setItem('__debug_streak_at_risk__', '1');
+      alert('Streak Debug: ON (Simulating 1-day gap / At-risk state)');
+    }
+    window.location.reload();
+  };
+
   const handleClaim = (id) => {
     claimAchievement(id);
     setClaimables(getClaimableAchievements());
@@ -326,6 +339,15 @@ export default function SideNav() {
 
       <button type="button" className="side-nav-link side-nav-link--tutorial-launch" onClick={handleLaunchTutorial}>
         <span className="side-nav-link-label">Launch Tutorial (Temp)</span>
+      </button>
+      
+      <button 
+        type="button" 
+        className="side-nav-link" 
+        onClick={handleToggleStreakDebug}
+        style={{ color: '#f59e0b', fontSize: '0.8rem', opacity: 0.8 }}
+      >
+        <span className="side-nav-link-label">Test Streak (Debug)</span>
       </button>
 
       <button type="button" className="side-nav-logout" onClick={handleLogoutClick}>

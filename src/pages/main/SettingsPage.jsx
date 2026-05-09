@@ -17,24 +17,19 @@ import { TERMS_AND_CONDITIONS } from '../../constants/legal/terms';
 import { PRIVACY_POLICY } from '../../constants/legal/privacy';
 import './SettingsProfilePage.css';
 import './SettingsPage.css';
+import { getSpriteUrl } from '../../utils/assetUtils';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
 
-// Import decorative assets
-import mascotSprite from '../../assets/Sprites/Robot/0001.webp';
-import bronzeRank from '../../assets/Sprites/Rank/rank-bronze.png';
-import silverRank from '../../assets/Sprites/Rank/rank-silver.png';
-import goldRank from '../../assets/Sprites/Rank/rank-gold.png';
-import mythrilRank from '../../assets/Sprites/Rank/rank-mythril.png';
-import legendaryRank from '../../assets/Sprites/Rank/rank-legendary.png';
+const mascotSprite = getSpriteUrl('Robot/0001.webp');
 
 const THEME_CONFIG = [
   { id: 'emerald', label: 'Default', requires: 0, decoration: null, className: 'emerald' },
-  { id: 'mascot', label: 'B-01', requires: 0, decoration: mascotSprite, className: 'mascot' },
-  { id: 'bronze', label: 'Bronze', requires: 1, decoration: bronzeRank, className: 'bronze' },
-  { id: 'silver', label: 'Silver', requires: 2, decoration: silverRank, className: 'silver' },
-  { id: 'gold', label: 'Gold', requires: 3, decoration: goldRank, className: 'gold' },
-  { id: 'mythril', label: 'Mythril', requires: 4, decoration: mythrilRank, className: 'mythril' },
-  { id: 'trophy', label: 'Legend', requires: 5, decoration: legendaryRank, className: 'trophy' },
+  { id: 'mascot', label: 'B-01', requires: 0, decoration: getSpriteUrl('Robot/0001.webp'), className: 'mascot' },
+  { id: 'bronze', label: 'Bronze', requires: 1, decoration: getSpriteUrl('Rank/rank-bronze.png'), className: 'bronze' },
+  { id: 'silver', label: 'Silver', requires: 2, decoration: getSpriteUrl('Rank/rank-silver.png'), className: 'silver' },
+  { id: 'gold', label: 'Gold', requires: 3, decoration: getSpriteUrl('Rank/rank-gold.png'), className: 'gold' },
+  { id: 'mythril', label: 'Mythril', requires: 4, decoration: getSpriteUrl('Rank/rank-mythril.png'), className: 'mythril' },
+  { id: 'trophy', label: 'Legend', requires: 5, decoration: getSpriteUrl('Rank/rank-legendary.png'), className: 'trophy' },
 ];
 
 const MIC_SENSITIVITY_KEY = 'pref_mic_sensitivity';

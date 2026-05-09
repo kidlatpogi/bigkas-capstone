@@ -8,13 +8,14 @@ import PasswordToggle from '../../components/common/PasswordToggle';
 import './SettingsProfilePage.css';
 import './ChangePasswordPage.css';
 
-// Import decorative assets
-import mascotSprite from '../../assets/Sprites/Robot/0002.webp';
-import bronzeRank from '../../assets/Sprites/Rank/rank-bronze.png';
-import silverRank from '../../assets/Sprites/Rank/rank-silver.png';
-import goldRank from '../../assets/Sprites/Rank/rank-gold.png';
-import mythrilRank from '../../assets/Sprites/Rank/rank-mythril.png';
-import legendaryRank from '../../assets/Sprites/Rank/rank-legendary.png';
+import { getSpriteUrl } from '../../utils/assetUtils';
+
+const mascotSprite = getSpriteUrl('Robot/0002.webp');
+const bronzeRank = getSpriteUrl('Rank/rank-bronze.png');
+const silverRank = getSpriteUrl('Rank/rank-silver.png');
+const goldRank = getSpriteUrl('Rank/rank-gold.png');
+const mythrilRank = getSpriteUrl('Rank/rank-mythril.png');
+const legendaryRank = getSpriteUrl('Rank/rank-legendary.png');
 
 const THEME_CONFIG = [
   { id: 'emerald', label: 'Default', requires: 0, decoration: null, className: 'emerald' },

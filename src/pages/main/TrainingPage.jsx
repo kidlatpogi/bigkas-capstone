@@ -261,6 +261,13 @@ function TrainingPage() {
   const [showMicWarning, setShowMicWarning] = useState(false);
   const [isFreeCompactLayout, setIsFreeCompactLayout] = useState(false);
   const [isTutorialOverlayOpen, setIsTutorialOverlayOpen] = useState(isFreePretestSession);
+  const isTutorialOverlayOpenRef = useRef(isTutorialOverlayOpen);
+  const isInitializingPreviewRef = useRef(false);
+
+  useEffect(() => {
+    isTutorialOverlayOpenRef.current = isTutorialOverlayOpen;
+  }, [isTutorialOverlayOpen]);
+
   const [showLowLightWarning, setShowLowLightWarning] = useState(false);
   const [resumeCountdown, setResumeCountdown] = useState(0);
   const [isResumingVisual, setIsResumingVisual] = useState(false);
@@ -621,7 +628,8 @@ function TrainingPage() {
 
   /* ── Waveform animation loop (shared by startRecording + resume) ── */
   const startWaveformLoop = useCallback(() => {
-    if (isTutorialOverlayOpen) {
+    // Check ref instead of state to avoid re-creating this callback
+    if (isTutorialOverlayOpenRef.current) {
       if (animRef.current) cancelAnimationFrame(animRef.current);
       return;
     }
@@ -629,7 +637,7 @@ function TrainingPage() {
     const sensitivity = getMicSensitivityProfile();
 
     const tick = () => {
-      if (isTutorialOverlayOpen || !analyserRef.current || !audioCtxRef.current) {
+      if (isTutorialOverlayOpenRef.current || !analyserRef.current || !audioCtxRef.current) {
         if (animRef.current) cancelAnimationFrame(animRef.current);
         return;
       }
@@ -663,12 +671,26 @@ function TrainingPage() {
 
     if (animRef.current) cancelAnimationFrame(animRef.current);
     tick();
-  }, [isTutorialOverlayOpen]);
+  }, []); // No dependencies on tutorial state to keep this callback stable
 
   /* ── Initialize Camera/Mic Preview ── */
   const initPreview = useCallback(async () => {
-    if (!isMountedRef.current) return;
+    if (!isMountedRef.current || isInitializingPreviewRef.current) return;
+    
+    // If we already have a live stream, don't re-initialize everything (prevents flicker/AbortError)
+    const currentStream = streamRef.current;
+    if (currentStream && currentStream.active && currentStream.getTracks().every(t => t.readyState === 'live')) {
+      // Just ensure the video is playing
+      if (videoRef.current && videoRef.current.paused) {
+        videoRef.current.play().catch(e => {
+          if (e.name !== 'AbortError') console.warn('[TrainingPage] Preview play resumed:', e);
+        });
+      }
+      return;
+    }
+
     try {
+      isInitializingPreviewRef.current = true;
       const selectedMic = typeof window !== 'undefined'
         ? window.localStorage.getItem('pref_mic') || ''
         : '';
@@ -704,7 +726,9 @@ function TrainingPage() {
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play().catch(e => console.warn('[TrainingPage] Preview play failed:', e));
+        videoRef.current.play().catch(e => {
+          if (e.name !== 'AbortError') console.warn('[TrainingPage] Preview play failed:', e);
+        });
       }
 
       /* Audio analyser setup (for preview waveform) */
@@ -737,6 +761,8 @@ function TrainingPage() {
       } else {
         setErrorMsg(`Camera/Mic Error: ${err.message || 'Check permissions'}`);
       }
+    } finally {
+      isInitializingPreviewRef.current = false;
     }
   }, [startWaveformLoop]);
 
@@ -744,7 +770,9 @@ function TrainingPage() {
   useEffect(() => {
     if (videoRef.current && streamRef.current && videoRef.current.srcObject !== streamRef.current) {
       videoRef.current.srcObject = streamRef.current;
-      videoRef.current.play().catch(e => console.warn('[TrainingPage] Sync play failed:', e));
+      videoRef.current.play().catch(e => {
+        if (e.name !== 'AbortError') console.warn('[TrainingPage] Sync play failed:', e);
+      });
     }
   }, [status]); // Only re-sync when status changes, not on every render
 
@@ -753,7 +781,7 @@ function TrainingPage() {
     if (status === 'idle' || status === 'permission-denied') {
       initPreview();
     }
-  }, [initPreview, status, isTutorialOverlayOpen]);
+  }, [initPreview, status]); // Removed isTutorialOverlayOpen to avoid redundant re-init
 
   /* ── Start recording ── */
   const startRecording = useCallback(async () => {
@@ -1620,9 +1648,7 @@ function TrainingPage() {
               <article className="analyzing-bubble" aria-label="Analyzing session">
                 <p className="analyzing-bubble-kicker">B-01:</p>
                 <p className="analyzing-bubble-title">Analyzing your session...</p>
-                <p className="analyzing-bubble-copy">
-                  Hold tight while I review your speech patterns, gestures, and tone.
-                </p>
+
 
                 <div className="analyzing-loader" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(analysisProgress)}>
                   <span className="analyzing-loader-fill" style={{ width: `${Math.round(analysisProgress)}%` }} />

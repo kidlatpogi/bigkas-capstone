@@ -415,7 +415,8 @@ function UserAnalyzingPage() {
     const audio = analyzingAudioRef.current;
     if (!audio) return;
     audio.currentTime = 0;
-    audio.play().catch(() => {});
+    // Analysis voice removed as requested
+    // audio.play().catch(() => {});
   }, [isMuted, showLevelReveal]);
 
   useEffect(() => {
@@ -501,7 +502,7 @@ function UserAnalyzingPage() {
         revealAudioRef.current.play().catch(() => {});
       } else if (!showLevelReveal && analyzingAudioRef.current) {
         analyzingAudioRef.current.currentTime = 0;
-        analyzingAudioRef.current.play().catch(() => {});
+        // audio.play().catch(() => {});
       }
       return next;
     });

@@ -92,41 +92,47 @@
   background: #F97316;
   color: #FFFFFF;
   font-family: 'Fredoka', sans-serif;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s;
-  box-shadow: #C2410C 0 4px 0 0;
+  box-shadow: #C2410C 0 5px 0 0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .cm-btn-cancel:hover:not(:disabled) {
-  opacity: 0.9;
-  transform: translateY(-1px);
+  box-shadow: #C2410C 0 3px 0 0;
+  transform: translateY(2px);
 }
 
 .cm-btn-cancel:active:not(:disabled) {
-  transform: translateY(2px);
+  box-shadow: #C2410C 0 0 0 0;
+  transform: translateY(5px);
 }
 
 .cm-btn-confirm {
   flex: 1.2;
-  height: 52px;
+  height: 56px;
   border-radius: 999px;
   border: none;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 500;
   font-family: 'Fredoka', sans-serif;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .cm-btn-confirm:hover:not(:disabled) {
-  opacity: 0.9;
-  transform: translateY(-1px);
+  transform: translateY(2px);
 }
 
+.cm-btn-confirm.danger:hover:not(:disabled) { box-shadow: #B91C1C 0 3px 0 0; }
+.cm-btn-confirm.warning:hover:not(:disabled) { box-shadow: #C2410C 0 3px 0 0; }
+.cm-btn-confirm.info:hover:not(:disabled) { box-shadow: #047857 0 3px 0 0; }
+.cm-btn-confirm.default:hover:not(:disabled) { box-shadow: #047857 0 3px 0 0; }
+
 .cm-btn-confirm:active:not(:disabled) {
-  transform: translateY(2px);
+  transform: translateY(5px);
+  box-shadow: 0 0 0 0 !important;
 }
 
 .cm-btn-confirm:disabled {
@@ -136,27 +142,33 @@
 
 /* type variants */
 .cm-btn-confirm.danger {
-  background: linear-gradient(135deg, #FF3B30 0%, #FF2D55 100%);
+  background: #FF3B30;
   color: #FFFFFF;
-  box-shadow: 0 4px 12px rgba(255, 59, 48, 0.2);
+  box-shadow: #B91C1C 0 5px 0 0;
+}
+.cm-btn-confirm.danger:hover:not(:disabled) {
+  box-shadow: #B91C1C 0 3px 0 0;
 }
 
 .cm-btn-confirm.warning {
-  background: linear-gradient(135deg, #F18F01 0%, #FFB347 100%);
+  background: #F97316;
   color: #FFFFFF;
-  box-shadow: 0 4px 12px rgba(241, 143, 1, 0.2);
+  box-shadow: #C2410C 0 5px 0 0;
+}
+.cm-btn-confirm.warning:hover:not(:disabled) {
+  box-shadow: #C2410C 0 3px 0 0;
 }
 
 .cm-btn-confirm.info {
-  background: #0d9a72;
+  background: #059669;
   color: #FFFFFF;
-  box-shadow: #0a7f5e 0 4px 0 0;
-  height: 56px;
+  box-shadow: #047857 0 5px 0 0;
 }
 
 .cm-btn-confirm.default {
-  background: linear-gradient(135deg, #1A1A1A 0%, #333333 100%);
+  background: #059669;
   color: #FFFFFF;
+  box-shadow: #047857 0 5px 0 0;
 }
 
 /* ── Dark mode ── */

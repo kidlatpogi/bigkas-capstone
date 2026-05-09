@@ -257,7 +257,7 @@ body.training-page-active {
 .tp-cam-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 8px;
 }
 
@@ -565,15 +565,30 @@ body.training-page-active {
   align-self: center;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 10px;
+  gap: 12px;
+  padding: 8px 16px;
   border-radius: 999px;
-  background: rgba(90, 120, 99, 0.12);
-  border: 1px solid rgba(90, 120, 99, 0.3);
+  background: #ffffff;
+  border: 1px solid rgba(11, 57, 84, 0.1);
   color: #1f3528;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.02em;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.tp-live-timer-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #dc2626;
+  font-variant-numeric: tabular-nums;
+}
+
+.tp-live-debug-sep {
+  width: 1px;
+  height: 14px;
+  background: rgba(11, 57, 84, 0.15);
 }
 
 .tp-mic-warning {
@@ -683,7 +698,6 @@ body.training-page-active {
 
 .tp-page--free-pretest .tp-status-label,
 .tp-page--free-pretest .tp-min-duration,
-.tp-page--free-pretest .tp-cam-header,
 .tp-page--free-pretest .tp-record-tooltip {
   display: none;
 }
@@ -923,24 +937,31 @@ body.training-page-active {
 
 /* Small circular button (Pause / Restart) */
 .tp-ctrl-btn {
-  width: 56px;
+  width: 125px;
   height: 56px;
-  border-radius: 50%;
-  border: 2px solid #5A7863;
-  background: #5A7863;
+  border-radius: 999px;
+  border: none;
+  background: #059669;
   color: #FFFFFF;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, transform 0.1s;
-  box-shadow: 0 8px 20px rgba(63,95,73,0.26);
+  font-family: 'Fredoka', sans-serif;
+  font-size: 0.98rem;
+  font-weight: 500;
+  box-shadow: #047857 0 5px 0 0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .tp-ctrl-btn:hover:not(:disabled) {
-  border-color: #4b6954;
-  background: #4b6954;
-  transform: translateY(-1px);
+  box-shadow: #047857 0 3px 0 0;
+  transform: translateY(2px);
+}
+
+.tp-ctrl-btn:active:not(:disabled) {
+  box-shadow: #047857 0 0 0 0;
+  transform: translateY(5px);
 }
 
 .tp-ctrl-btn:disabled {
@@ -948,39 +969,50 @@ body.training-page-active {
   cursor: not-allowed;
 }
 
-/* Large record button (80Ã—80) */
+/* Large record button (80×80) */
 .tp-record-btn {
-  width: 80px;
-  height: 80px;
+  width: 83px;
+  height: 83px;
   border-radius: 50%;
-  border: 4px solid #E0E0E0;
-  background: #FFFFFF;
+  border: none;
+  background: #059669;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: border-color 0.15s, transform 0.1s;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  box-shadow: #047857 0 5px 0 0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .tp-record-btn--active {
-  border-color: #FF3B30;
+  background: #F97316;
+  box-shadow: #C2410C 0 5px 0 0;
 }
 
-.tp-record-btn--hint {
-  border-color: #5A7863;
-  animation: none;
+.tp-record-btn:hover:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: #047857 0 3px 0 0;
+}
+.tp-record-btn--active:hover:not(:disabled) {
+  box-shadow: #C2410C 0 3px 0 0;
+}
+
+.tp-record-btn:active:not(:disabled) {
+  transform: translateY(5px);
+  box-shadow: 0 0 0 0 !important;
 }
 
 .tp-record-btn--start {
   width: 130px;
-  height: 64px;
+  height: 58px;
   border-radius: 999px;
-  border: 2px solid #5A7863;
-  background: #5A7863;
+  background: #059669;
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: #047857 0 5px 0 0;
 }
-
-.tp-record-btn:hover { transform: scale(1.04); }
 
 .tp-record-inner {
   width: 56px;
@@ -1175,11 +1207,11 @@ body.training-page-active {
 .tp-analysing-status-text {
   margin: 0;
   font-family: 'Inter', sans-serif;
-  font-size: 0.82rem;
-  font-weight: 700;
+  font-size: 0.65rem;
+  font-weight: 600;
   color: #5a7863;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
 }
 
 /* Porta-styles from UserAnalyzingPage.css */

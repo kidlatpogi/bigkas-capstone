@@ -22,6 +22,7 @@ type LiveVisualScores = {
 type StartAnalysisArgs = {
   videoElement: HTMLVideoElement;
   canvasElement?: HTMLCanvasElement | null;
+  isTutorialMode?: boolean;
 };
 
 const VISION_WASM_PATH = "/models/wasm";
@@ -77,7 +78,13 @@ function drawHandConnections(
 
 export function useVisualAnalysis() {
   const [isReady, setIsReady] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const isAnalyzingRef = useRef(false);
+  const [isAnalyzing, setIsAnalyzingState] = useState(false);
+
+  const setIsAnalyzing = useCallback((val: boolean) => {
+    isAnalyzingRef.current = val;
+    setIsAnalyzingState(val);
+  }, []);
   const [error, setError] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<VisualAnalysisResult | null>(null);
   const [liveScores, setLiveScores] = useState<LiveVisualScores>({
@@ -98,6 +105,8 @@ export function useVisualAnalysis() {
     eyeContactAccum: 0,
     gestureAccum: 0,
     prevHandCenter: null as { x: number; y: number } | null,
+    lastProcessedTime: 0,
+    isTutorialMode: false,
   });
 
   const closeTasks = useCallback(() => {
@@ -130,6 +139,13 @@ export function useVisualAnalysis() {
     }
 
     const vision = await FilesetResolver.forVisionTasks(VISION_WASM_PATH);
+    
+    // Check if we were stopped while waiting for the resolver
+    if (!isAnalyzingRef.current && !faceLandmarkerRef.current) {
+      setIsReady(false);
+      return;
+    }
+
     const initErrors: string[] = [];
 
     try {
@@ -139,6 +155,9 @@ export function useVisualAnalysis() {
         },
         runningMode: "VIDEO",
         numFaces: 1,
+        minFaceDetectionConfidence: 0.5,
+        minFacePresenceConfidence: 0.5,
+        minTrackingConfidence: 0.5,
         outputFaceBlendshapes: false,
         outputFacialTransformationMatrixes: false,
       });
@@ -154,6 +173,9 @@ export function useVisualAnalysis() {
         },
         runningMode: "VIDEO",
         numHands: 2,
+        minHandDetectionConfidence: 0.5,
+        minHandPresenceConfidence: 0.5,
+        minTrackingConfidence: 0.5,
       });
     } catch (err) {
       initErrors.push(`Gesture tracker failed: ${err instanceof Error ? err.message : "Unknown error"}`);
@@ -174,7 +196,8 @@ export function useVisualAnalysis() {
 
   const stopLoop = useCallback(() => {
     if (rafRef.current != null) {
-      cancelAnimationFrame(rafRef.current);
+      cancelAnimationFrame(rafRef.current as any);
+      clearTimeout(rafRef.current as any);
       rafRef.current = null;
     }
     setIsAnalyzing(false);
@@ -186,7 +209,7 @@ export function useVisualAnalysis() {
     const faceLandmarker = faceLandmarkerRef.current;
     const gestureRecognizer = gestureRecognizerRef.current;
 
-    if (!videoElement || (!faceLandmarker && !gestureRecognizer)) {
+    if (!isAnalyzingRef.current || !videoElement || (!faceLandmarker && !gestureRecognizer)) {
       stopLoop();
       return;
     }
@@ -197,6 +220,13 @@ export function useVisualAnalysis() {
     }
 
     const nowMs = performance.now();
+    
+    // Dynamic throttling: 
+    // 5 FPS during tutorial (200ms) to save CPU for animations.
+    // 25 FPS during training (40ms) for smooth tracking.
+    const THROTTLE_MS = metricsRef.current.isTutorialMode ? 200 : 40;
+
+    metricsRef.current.lastProcessedTime = nowMs;
     const faceResult = faceLandmarker
       ? faceLandmarker.detectForVideo(videoElement, nowMs)
       : null;
@@ -241,10 +271,16 @@ export function useVisualAnalysis() {
     metricsRef.current.frameCount += 1;
     metricsRef.current.eyeContactAccum += eyeContactFrameScore;
     metricsRef.current.gestureAccum += gestureFrameScore;
-    setLiveScores({
-      eye_contact_score: eyeContactFrameScore,
-      gesture_score: gestureFrameScore,
-    });
+
+    // Only update React state for live scores every 500ms to avoid excessive re-renders
+    const lastScoreUpdate = (metricsRef.current as any).lastScoreUpdate || 0;
+    if (nowMs - lastScoreUpdate > 500) {
+      setLiveScores({
+        eye_contact_score: eyeContactFrameScore,
+        gesture_score: gestureFrameScore,
+      });
+      (metricsRef.current as any).lastScoreUpdate = nowMs;
+    }
 
     if (canvasElement && canvasCtxRef.current) {
       const ctx = canvasCtxRef.current;
@@ -264,18 +300,13 @@ export function useVisualAnalysis() {
 
       if (faceResult?.faceLandmarks?.length) {
         faceResult.faceLandmarks.forEach((landmarks) => {
-          // Draw face mesh for visual debugging.
-          // FACE_LANDMARKS_TESSELATION is exposed by the FaceLandmarker task bundle.
+          // Draw contours (eyes, lips, face outline) instead of the full 478-point mesh.
+          // This is much lighter for the CPU/main thread but still shows tracking is working perfectly.
           drawingUtils.drawConnectors(
             landmarks,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (FaceLandmarker as any).FACE_LANDMARKS_TESSELATION || [],
-            { color: "rgba(90,120,99,0.85)", lineWidth: 1 },
+            (FaceLandmarker as any).FACE_LANDMARKS_CONTOURS || [],
+            { color: "rgba(80,200,120,0.7)", lineWidth: 1 },
           );
-          drawingUtils.drawLandmarks(landmarks, {
-            color: "rgba(80,200,120,0.9)",
-            radius: 1.1,
-          });
         });
       }
 
@@ -290,12 +321,20 @@ export function useVisualAnalysis() {
       }
     }
 
-    rafRef.current = requestAnimationFrame(analyzeFrame);
+    // Use setTimeout for throttling instead of requestAnimationFrame polling.
+    // This lets the thread rest completely until the next frame is needed.
+    const elapsed = performance.now() - nowMs;
+    const delay = Math.max(0, THROTTLE_MS - elapsed);
+    (rafRef.current as any) = setTimeout(() => {
+      requestAnimationFrame(analyzeFrame);
+    }, delay);
   }, [stopLoop]);
 
-  const startAnalysis = useCallback(async ({ videoElement, canvasElement }: StartAnalysisArgs) => {
+  const startAnalysis = useCallback(async ({ videoElement, canvasElement, isTutorialMode = false }: StartAnalysisArgs) => {
     try {
       setError(null);
+      stopLoop();
+      setIsAnalyzing(true);
       await init();
       videoElementRef.current = videoElement;
       canvasElementRef.current = canvasElement || null;
@@ -305,9 +344,9 @@ export function useVisualAnalysis() {
         eyeContactAccum: 0,
         gestureAccum: 0,
         prevHandCenter: null,
+        lastProcessedTime: 0,
+        isTutorialMode,
       };
-      stopLoop();
-      setIsAnalyzing(true);
       rafRef.current = requestAnimationFrame(analyzeFrame);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to start visual analysis.");
@@ -329,9 +368,9 @@ export function useVisualAnalysis() {
       eye_contact_score: eyeAvg,
       gesture_score: gestureAvg,
     };
-    setLiveScores({
-      eye_contact_score: 0,
-      gesture_score: 0,
+    setLiveScores((prev) => {
+      if (prev.eye_contact_score === 0 && prev.gesture_score === 0) return prev;
+      return { eye_contact_score: 0, gesture_score: 0 };
     });
     setLastResult(result);
     return result;

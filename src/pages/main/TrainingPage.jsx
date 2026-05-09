@@ -205,6 +205,7 @@ function TrainingPage() {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   const [showPausedModal, setShowPausedModal] = useState(false);
+  const [showMinDurationModal, setShowMinDurationModal] = useState(false);
   const [showOneMinWarning, setShowOneMinWarning] = useState(false);
 
   const trainingSettingsScope = user?.id || 'guest';
@@ -242,6 +243,7 @@ function TrainingPage() {
   const audioCtxRef = useRef(null);
   const animRef = useRef(null);
   const waveHistRef = useRef(Array(50).fill(0));
+  const lastWaveUpdateRef = useRef(0);
   const wpmTimerRef = useRef(null);
   const silenceStartRef = useRef(null);
   const hintDismissRef = useRef(null);
@@ -258,11 +260,12 @@ function TrainingPage() {
   const [hintContent, setHintContent] = useState('');
   const [showMicWarning, setShowMicWarning] = useState(false);
   const [isFreeCompactLayout, setIsFreeCompactLayout] = useState(false);
-  const [isTutorialOverlayOpen, setIsTutorialOverlayOpen] = useState(false);
+  const [isTutorialOverlayOpen, setIsTutorialOverlayOpen] = useState(isFreePretestSession);
   const [showLowLightWarning, setShowLowLightWarning] = useState(false);
   const [resumeCountdown, setResumeCountdown] = useState(0);
   const [isResumingVisual, setIsResumingVisual] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [analysisStatusMessage, setAnalysisStatusMessage] = useState('Initializing analysis...');
   const [isPreviewActive, setIsPreviewActive] = useState(false);
   const { startAnalysis, stopAnalysis, liveScores, error: visualError, isReady: isVisualReady } = useVisualAnalysis();
 
@@ -334,7 +337,7 @@ function TrainingPage() {
 
   /* Lighting detection logic */
   useEffect(() => {
-    if (!isActive || !videoRef.current) {
+    if (!isPreviewActive || !videoRef.current || isTutorialOverlayOpen) {
       setShowLowLightWarning(false);
       return undefined;
     }
@@ -395,9 +398,6 @@ function TrainingPage() {
     return () => observer.disconnect();
   }, [isFreePretestSession]);
 
-  useEffect(() => {
-    setIsTutorialOverlayOpen(isFreePretestSession);
-  }, [isFreePretestSession]);
 
   /** ── Simulated progress for AI analysis ── */
   useEffect(() => {
@@ -621,10 +621,19 @@ function TrainingPage() {
 
   /* ── Waveform animation loop (shared by startRecording + resume) ── */
   const startWaveformLoop = useCallback(() => {
+    if (isTutorialOverlayOpen) {
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+      return;
+    }
+    
     const sensitivity = getMicSensitivityProfile();
 
     const tick = () => {
-      if (!analyserRef.current || !audioCtxRef.current) return;
+      if (isTutorialOverlayOpen || !analyserRef.current || !audioCtxRef.current) {
+        if (animRef.current) cancelAnimationFrame(animRef.current);
+        return;
+      }
+      
       if (audioCtxRef.current.state === 'suspended') {
         audioCtxRef.current.resume().catch(() => {});
       }
@@ -640,58 +649,21 @@ function TrainingPage() {
       const rms = Math.sqrt(power / data.length);
       const measured = Math.min(1, rms * sensitivity.analyserGain);
       const visualLevel = Math.min(1, measured * sensitivity.visualGain);
-      const lowPickupThreshold = Math.max(0.02, sensitivity.silenceThreshold * 1.4);
 
       waveHistRef.current = [...waveHistRef.current.slice(1), visualLevel];
-      setWaveformBars([...waveHistRef.current]);
 
-      /*
-      if (measured < lowPickupThreshold) {
-        if (!micLowStartRef.current) {
-          micLowStartRef.current = Date.now();
-        } else if (
-          !micWarningVisibleRef.current &&
-          Date.now() - micLowStartRef.current >= MIC_LOW_PICKUP_TRIGGER_MS
-        ) {
-          micWarningVisibleRef.current = true;
-          setShowMicWarning(true);
-        }
-      } else {
-        micLowStartRef.current = null;
-        if (micWarningVisibleRef.current) {
-          micWarningVisibleRef.current = false;
-          setShowMicWarning(false);
-        }
+      const now = performance.now();
+      if (!lastWaveUpdateRef.current || now - lastWaveUpdateRef.current > 32) {
+        setWaveformBars([...waveHistRef.current]);
+        lastWaveUpdateRef.current = now;
       }
-      */
-
-      // Silence hints disabled per user request
-      /*
-      if (measured < sensitivity.silenceThreshold) {
-        if (!silenceStartRef.current) {
-          silenceStartRef.current = Date.now();
-        } else if (Date.now() - silenceStartRef.current >= SILENCE_TRIGGER_MS) {
-          silenceStartRef.current = null;
-          const fw = frameworksRef.current;
-          if (Array.isArray(fw) && fw.length) {
-            const pick = fw[Math.floor(Math.random() * fw.length)];
-            setHintContent(`💡 Stuck? Try the ${pick.name}: "${pick.steps[0]}"`);
-            setShowHint(true);
-            clearTimeout(hintDismissRef.current);
-            hintDismissRef.current = setTimeout(() => setShowHint(false), 5000);
-          }
-        }
-      } else {
-        silenceStartRef.current = null;
-      }
-      */
 
       animRef.current = requestAnimationFrame(tick);
     };
 
     if (animRef.current) cancelAnimationFrame(animRef.current);
     tick();
-  }, []);
+  }, [isTutorialOverlayOpen]);
 
   /* ── Initialize Camera/Mic Preview ── */
   const initPreview = useCallback(async () => {
@@ -771,18 +743,17 @@ function TrainingPage() {
   /* Ensure video element is synced with stream when it appears in DOM */
   useEffect(() => {
     if (videoRef.current && streamRef.current && videoRef.current.srcObject !== streamRef.current) {
-      console.log('[TrainingPage] Re-syncing stream to video element');
       videoRef.current.srcObject = streamRef.current;
       videoRef.current.play().catch(e => console.warn('[TrainingPage] Sync play failed:', e));
     }
-  });
+  }, [status]); // Only re-sync when status changes, not on every render
 
-  /* Start preview on mount or when returning from error/idle */
+  /* Start preview when idle */
   useEffect(() => {
     if (status === 'idle' || status === 'permission-denied') {
       initPreview();
     }
-  }, [initPreview, status]);
+  }, [initPreview, status, isTutorialOverlayOpen]);
 
   /* ── Start recording ── */
   const startRecording = useCallback(async () => {
@@ -916,16 +887,16 @@ function TrainingPage() {
     const videoRecorder = visualMediaRef.current;
 
     // 3. Validation Check (Early)
-    const recordingDurationSec = recordingDurationSecRef.current;
-    const minSeconds = isPreTestSession ? 10 : 5; // Lowered for testing
-    
-    if (recordingDurationSec < minSeconds) {
-      console.warn('[TrainingPage] Session too short:', recordingDurationSec);
-      setHintContent(`Your recording is too short! Please speak for at least ${minSeconds} seconds.`);
-      setShowHint(true);
-      setTimeout(() => setShowHint(false), 5000);
-      setStatus('idle');
-      handleRestart(); // Reset to allow re-recording
+    // We require at least 20 seconds of recording for the AI to provide accurate feedback.
+    if (elapsedSec < MIN_RECORDING_SECONDS) {
+      console.warn('[TrainingPage] Session too short:', elapsedSec);
+      
+      // Reset state so user can continue or try again
+      setStatus('recording');
+      setAnalysisProgress(0);
+      
+      // Show the heads-up modal
+      setShowMinDurationModal(true);
       return;
     }
 
@@ -995,7 +966,10 @@ function TrainingPage() {
           visualAnalysis: visualScoresRef.current,
           topic: focus === 'scripted' ? (script?.title || 'Scripted Speech') : (freeTopic || 'General Speaking'),
           profilingAnswers,
-          onProgress: (p) => setAnalysisProgress(p), // Real-time feedback
+          onProgress: (p, msg) => {
+            setAnalysisProgress(p);
+            if (msg) setAnalysisStatusMessage(msg);
+          },
         });
 
         if (!result?.success || !(result?.data?.id || result?.data?.session_id)) {
@@ -1093,7 +1067,16 @@ function TrainingPage() {
         }
         // Set status to idle to clear any overlays before we actually leave
         setStatus('idle');
-        navigate(buildRoute.detailedFeedback(finalSessionId), { state: result.data });
+
+        if (sessionType === 'pre-test') {
+          console.log('[TrainingPage] Pre-test detected. Navigating to onboarding result reveal...');
+          navigate(ROUTES.USER_ANALYZING, { replace: true, state: { sessionId: finalSessionId } });
+        } else {
+          // Default to "Performance Overview" (summary view) for regular sessions
+          navigate(buildRoute.detailedFeedback(finalSessionId), { 
+            state: { ...result.data, showDetailed: false } 
+          });
+        }
       } else {
         console.warn('[TrainingPage] Component unmounted before navigation could trigger.');
       }
@@ -1323,11 +1306,25 @@ function TrainingPage() {
   useEffect(() => {
     if (!videoRef.current || !visualCanvasRef.current) return;
 
+    // Strict suspension: Fully stop AI analysis and waveform while tutorial is open
+    // to ensure 100% smooth UI thread for typing animations.
+    if (isTutorialOverlayOpen) {
+      stopAnalysis();
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+      return;
+    }
+
     startAnalysis({
       videoElement: videoRef.current,
       canvasElement: visualCanvasRef.current,
+      isTutorialMode: false,
     });
-  }, [isRecording, startAnalysis]);
+
+    // Resume waveform loop if preview is active
+    if (analyserRef.current) {
+      startWaveformLoop();
+    }
+  }, [isRecording, startAnalysis, isTutorialOverlayOpen, stopAnalysis, startWaveformLoop]);
 
   return (
     <div className="tp-page tp-page--free-pretest" ref={freeLayoutObserverRef}>
@@ -1399,18 +1396,7 @@ function TrainingPage() {
             </section>
           )}
 
-          {/* Mode label + REC badge */}
-          {!isFreePretestSession && (
-            <div className="tp-cam-header">
-              <span className="tp-mode-label">{modeLabel}</span>
-              {isActive && (
-                <span className="tp-rec-badge">
-                  <span className="tp-rec-dot" />
-                  REC {formatTime(elapsedSec)}
-                </span>
-              )}
-            </div>
-          )}
+
 
           {isActive && (
             <div
@@ -1480,11 +1466,6 @@ function TrainingPage() {
                 <div key={i} className="tp-wave-bar" style={{ height: '4px', opacity: 0.3 }} />
               ))
             )}
-            {isFreePretestSession && (
-              <span className="tp-free-pretest-timer" aria-live="polite">
-                {formatMinuteSecond(elapsedSec)}
-              </span>
-            )}
           </div>
 
           {/* Status label */}
@@ -1494,8 +1475,13 @@ function TrainingPage() {
             {status === 'idle' && <span className="tp-idle-label">Press Start to begin</span>}
           </div>
 
-          {isRecording && (
+          {(isRecording || isPaused) && (
             <div className="tp-live-debug-badge" role="status" aria-live="polite">
+              <div className="tp-live-timer-pill">
+                <span className="tp-rec-dot" />
+                <span>{formatTime(elapsedSec)}</span>
+              </div>
+              <span className="tp-live-debug-sep" />
               <span>Eye {Math.round(liveScores.eye_contact_score)}%</span>
               <span>Gesture {Math.round(liveScores.gesture_score)}%</span>
             </div>
@@ -1645,9 +1631,7 @@ function TrainingPage() {
                 <div className="tp-analysing-status-wrap">
                   <p className="analyzing-loader-text">{Math.round(analysisProgress)}%</p>
                   <p className="tp-analysing-status-text">
-                    {analysisProgress < 30 ? 'Uploading media...' : 
-                     analysisProgress < 60 ? 'Processing speech...' : 
-                     analysisProgress < 85 ? 'Calculating metrics...' : 'Finalizing feedback...'}
+                    {analysisStatusMessage}
                   </p>
                 </div>
               </article>
@@ -1853,6 +1837,17 @@ function TrainingPage() {
           </div>
         </div>
       )}
+
+      <ConfirmationModal
+        isOpen={showMinDurationModal}
+        title="Recording Too Short"
+        message={`To provide accurate AI feedback, your recording needs to be at least ${MIN_RECORDING_SECONDS} seconds long. Keep going, you're doing great!`}
+        onConfirm={() => setShowMinDurationModal(false)}
+        onCancel={() => setShowMinDurationModal(false)}
+        confirmLabel="Understood"
+        cancelLabel=""
+        type="default"
+      />
 
       <ConfirmationModal
         isOpen={showPausedModal}

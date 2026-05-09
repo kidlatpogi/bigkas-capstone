@@ -1489,4 +1489,110 @@ html {
   max-width: calc(100% - 50px);
 }
 
+.activity-loading-overlay-root {
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 24px;
+}
+
+.activity-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  animation: loading-fade-in 0.5s ease-out;
+}
+
+@keyframes loading-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Suppress entrance animations when tutorial is active to prevent jitter */
+.activity-page-root.is-tutorial-active [class*="dashboard-anim-"] {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* Randomizer Recovery Progress Styles */
+.randomizer-recovery-progress {
+  width: 100%;
+  margin: 12px 0 20px;
+  padding: 14px;
+  background: rgba(5, 150, 105, 0.04);
+  border: 1px solid rgba(5, 150, 105, 0.12);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.randomizer-recovery-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.randomizer-recovery-progress-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #059669; /* Emerald Green */
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.randomizer-recovery-progress-requirement {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #059669;
+  background: rgba(5, 150, 105, 0.08);
+  padding: 4px 10px;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(5, 150, 105, 0.15);
+  box-shadow: 0 2px 4px rgba(5, 150, 105, 0.05);
+  animation: recovery-requirement-pulse 2.5s infinite ease-in-out;
+}
+
+.randomizer-recovery-progress-requirement .requirement-icon {
+  font-size: 0.9rem;
+}
+
+@keyframes recovery-requirement-pulse {
+  0% { transform: scale(1); box-shadow: 0 2px 4px rgba(5, 150, 105, 0.05); }
+  50% { transform: scale(1.02); box-shadow: 0 4px 10px rgba(5, 150, 105, 0.12); }
+  100% { transform: scale(1); box-shadow: 0 2px 4px rgba(5, 150, 105, 0.05); }
+}
+
+.randomizer-recovery-progress-bar-wrap {
+  width: 100%;
+  height: 8px;
+  background: rgba(5, 150, 105, 0.08);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.randomizer-recovery-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+  border-radius: inherit;
+  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.randomizer-recovery-progress-count {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #334155;
+  text-align: right;
+}
+
 

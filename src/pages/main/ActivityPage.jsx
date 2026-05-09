@@ -7,7 +7,7 @@ import { useSessions } from '../../hooks/useSessions';
 import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import PushButton from '../../components/common/PushButton';
-import { IoChatbubbleEllipsesOutline, IoSend, IoFlame } from 'react-icons/io5';
+import { IoChatbubbleEllipsesOutline, IoSend, IoFlame, IoTrophyOutline } from 'react-icons/io5';
 import TutorialOverlay from '../../components/main/TutorialOverlay';
 import {
   GLOBAL_ACTIVITY_SCOPE,
@@ -171,59 +171,66 @@ function buildStreakStats(sessions = [], historyEntries = []) {
     if (e?.completedAt) addDate(e.completedAt);
   });
   const activeDays = [...dayIndexes].sort((a, b) => a - b);
-  if (!activeDays.length) return { currentStreak: 0, canRecover: false };
+  if (!activeDays.length) return { currentStreak: 0, canRecover: false, potentialStreak: 0, recoverySessionsToday: 0, requiredRecoveryTasks: 1 };
+  
   const todayIndex = getLocalDayIndex(new Date());
   const last = activeDays[activeDays.length - 1];
-  
-  const hasRecoveryToday = sessions.some((s) => {
+  const daySet = new Set(activeDays);
+
+  const recoverySessionsToday = sessions.filter((s) => {
     const d = getSessionDate(s);
     const entry = s?.entry_point ?? s?.entryPoint;
-    return d && getLocalDayIndex(d) === todayIndex && entry === 'streak-recovery';
-  });
+    const score = s?.overall_score ?? s?.score ?? s?.overallScore ?? 0;
+    return d && getLocalDayIndex(d) === todayIndex && entry === 'streak-recovery' && score >= 45;
+  }).length;
+
+  // Determine potential streak and required tasks
+  let potentialStreak = 0;
+  if (todayIndex === last && !daySet.has(todayIndex - 1)) {
+    let pCursor = todayIndex - 2;
+    while (daySet.has(pCursor)) {
+      potentialStreak += 1;
+      pCursor -= 1;
+    }
+  } else if (todayIndex - last === 2) {
+    let pCursor = last;
+    while (daySet.has(pCursor)) {
+      potentialStreak += 1;
+      pCursor -= 1;
+    }
+  }
+
+  const requiredRecoveryTasks = Math.min(5, Math.max(1, Math.floor((potentialStreak - 1) / 3) + 1));
+  const hasFinishedRecovery = recoverySessionsToday >= requiredRecoveryTasks;
 
   let currentStreak = 0;
   let canRecover = false;
-  let potentialStreak = 0;
-
-  const daySet = new Set(activeDays);
 
   if (todayIndex - last <= 1) {
     let cursor = last;
-    while (daySet.has(cursor) || (hasRecoveryToday && cursor === todayIndex - 1)) {
+    // Current streak includes today if today is done, and incorporates the recovery if finished
+    while (daySet.has(cursor) || (hasFinishedRecovery && cursor === todayIndex - 1)) {
       currentStreak += 1;
       cursor -= 1;
     }
 
-    if (todayIndex === last && !daySet.has(todayIndex - 1) && !hasRecoveryToday) {
-      let prevStreak = 0;
-      let pCursor = todayIndex - 2;
-      while (daySet.has(pCursor)) {
-        prevStreak += 1;
-        pCursor -= 1;
-      }
-      if (prevStreak > 0) {
+    if (todayIndex === last && !daySet.has(todayIndex - 1) && !hasFinishedRecovery) {
+      if (potentialStreak > 0) {
         canRecover = true;
-        potentialStreak = prevStreak + 1;
       }
     }
-  } else if (todayIndex - last === 2 && !hasRecoveryToday) {
-    let potentialStreakVal = 0;
-    let cursor = last;
-    while (daySet.has(cursor)) {
-      potentialStreakVal += 1;
-      cursor -= 1;
-    }
-
-    if (potentialStreakVal > 0) {
+  } else if (todayIndex - last === 2 && !hasFinishedRecovery) {
+    if (potentialStreak > 0) {
       canRecover = true;
-      potentialStreak = potentialStreakVal;
     }
   }
 
   return { 
     currentStreak, 
     canRecover: canRecover && potentialStreak > 0, 
-    potentialStreak 
+    potentialStreak,
+    recoverySessionsToday,
+    requiredRecoveryTasks
   };
 }
 
@@ -309,6 +316,7 @@ function ActivityPage() {
   const chatScrollRef = useRef(null);
 
   const [randomizerTopic, setRandomizerTopic] = useState(null);
+  const [isStreakRecoveryMode, setIsStreakRecoveryMode] = useState(false);
   const [bannerMessage, setBannerMessage] = useState("You're on a roll. Keep doing your activities and improve your speaking.");
   const [isBannerLoading, setIsBannerLoading] = useState(false);
   const [isRandomizingTopic, setIsRandomizingTopic] = useState(false);
@@ -335,9 +343,10 @@ function ActivityPage() {
 
   useEffect(() => {
     if (!user?.id) return;
-    if (Array.isArray(sessions) && sessions.length > 0) return;
+    // We always call fetchAllSessions to ensure the AI coach (B-01) has a complete context.
+    // The SessionContext internal caching will prevent redundant network requests.
     fetchAllSessions?.();
-  }, [fetchAllSessions, sessions, user?.id]);
+  }, [fetchAllSessions, user?.id]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -415,6 +424,7 @@ function ActivityPage() {
   }, [sessions, activityHistory]);
 
   const streakStats = useMemo(() => buildStreakStats(sessions, activityHistory), [sessions, activityHistory]);
+  const { currentStreak, canRecover, potentialStreak, recoverySessionsToday, requiredRecoveryTasks } = streakStats;
 
   const getProgressContext = useCallback(() => {
     // Sort sessions by date to find the most recent ones
@@ -425,17 +435,18 @@ function ActivityPage() {
     const latest = sortedSessions[0];
     const first = sortedSessions[sortedSessions.length - 1];
 
-    const latestScore = latest?.overall_score || latest?.overallScore || 0;
-    const firstScore = first?.overall_score || first?.overallScore || 0;
+    const latestScore = Math.floor(latest?.score || latest?.overall_score || latest?.overallScore || 0);
+    const firstScore = Math.floor(first?.score || first?.overall_score || first?.overallScore || 0);
     const totalGrowth = latestScore - firstScore;
 
     return {
-      sessionsCount: sortedSessions.length,
+      totalSessionCount: (sessions || []).length, // Absolute count of ALL sessions
+      analyzedSessionsCount: sortedSessions.length, // Count of sessions excluding pre-tests
       averageScore: activityMetrics?.averageScore || "N/A",
       currentLevel: levelProgress.levelNumber,
       levelName: levelProgress.levelName,
       
-      // Pre-calculated Math for B-01
+      // Pre-calculated Math for B-01 to ensure accurate summaries
       growthSummary: {
         firstSessionScore: firstScore,
         latestSessionScore: latestScore,
@@ -446,20 +457,15 @@ function ActivityPage() {
       // Comparison Points
       latestSession: latest ? {
         score: latestScore,
-        topic: latest.topic,
+        topic: latest.topic || latest.script_title || latest.activity_title,
         date: latest.created_at
       } : null,
-      firstSession: first ? {
-        score: firstScore,
-        topic: first.topic,
-        date: first.created_at
-      } : null,
       
-      fullTimeline: sortedSessions.map(s => ({
-        date: new Date(s.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-        time: new Date(s.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-        score: s.overall_score || s.overallScore,
-        topic: s.topic
+      // Recent history (Truncated to avoid token limits, but enough for trends)
+      recentTimeline: sortedSessions.slice(0, 15).map(s => ({
+        date: new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        score: `${Math.floor(s.score || s.overall_score || s.overallScore || 0)}%`,
+        topic: s.topic || s.script_title || s.activity_title
       }))
     };
   }, [sessions, activityMetrics, levelProgress, streakStats.currentStreak, completedTaskCount, tasks]);
@@ -666,6 +672,17 @@ function ActivityPage() {
       }
     }
   }, [user?.id, user?.onboardingStage, user?.profilingCompleted, user?.pretestCompleted, user?.isProfilingCompleted, user?.isPreTestCompleted, activitiesLoading]);
+
+  const assessmentTutorialSteps = useMemo(() => [
+    {
+      id: 'assessment-notice',
+      title: 'B-01:',
+      text: `We assessed your speaking level as Level ${levelProgress?.levelNumber || 1}, so we fast-tracked earlier lessons and placed you where your growth is most meaningful.`,
+      button: 'Got it!',
+      targetElementId: null,
+      robot: tutorialRobotStep1,
+    },
+  ], [levelProgress?.levelNumber]);
 
   const handleActiveTaskIdChange = useCallback((id) => {
     setActiveTaskId(id);
@@ -894,10 +911,12 @@ function ActivityPage() {
   }, [freeSpeechDraftTopic, navigate]);
 
   const handleRandomizerClick = useCallback(() => {
+    setIsStreakRecoveryMode(false);
     setShowRandomizerOverlay(true);
   }, []);
 
   const handleCloseRandomizerOverlay = useCallback(() => {
+    setIsStreakRecoveryMode(false);
     setShowRandomizerOverlay(false);
   }, []);
 
@@ -932,30 +951,31 @@ function ActivityPage() {
 
   const handleStartRandomizerTopic = useCallback(() => {
     if (!randomizerTopic?.title) return;
+    const isRecovery = isStreakRecoveryMode;
+    
     navigate(`${ROUTES.TRAINING}?autostart=1`, {
       state: {
         freeTopic: randomizerTopic.title,
         freeSpeechContext: randomizerTopic.body || '',
         focus: 'free',
         sessionType: 'practice',
-        entryPoint: 'practice',
+        entryPoint: isRecovery ? 'streak-recovery' : 'practice',
+        objective: isRecovery 
+          ? `Recover your ${potentialStreak} day streak by completing this Level 1-5 Randomizer session!` 
+          : 'Complete this session to improve your public speaking skills.',
         autoStartCountdown: true,
       },
     });
-  }, [navigate, randomizerTopic]);
+  }, [navigate, randomizerTopic, isStreakRecoveryMode, potentialStreak]);
 
   const handleRecoverStreak = useCallback(() => {
-    navigate(`${ROUTES.TRAINING}?autostart=1`, {
-      state: {
-        focus: 'free',
-        freeTopic: 'Reflecting on my speaking journey',
-        objective: 'Complete this session to recover your daily streak!',
-        sessionType: 'practice',
-        entryPoint: 'streak-recovery',
-        autoStartCountdown: true,
-      },
-    });
-  }, [navigate]);
+    setIsStreakRecoveryMode(true);
+    setShowRandomizerOverlay(true);
+    // Optionally trigger randomization immediately for a better UX
+    if (!randomizerTopic) {
+      handleRandomizeTopic();
+    }
+  }, [handleRandomizeTopic, randomizerTopic]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
@@ -1093,43 +1113,8 @@ function ActivityPage() {
     );
   };
 
-  if (activitiesLoading) {
-    return (
-      <div className="activity-page-root">
-        <TutorialOverlay
-          isOpen={showFreeSpeechTutorial}
-          steps={FREE_SPEECH_TUTORIAL_STEPS}
-          showAudioToggle
-          onClose={() => setShowFreeSpeechTutorial(false)}
-          onFinish={handleTutorialFinish}
-        />
-        <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
-          <p className="section-label">Loading journey…</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (activitiesError) {
-    return (
-      <div className="activity-page-root">
-        <TutorialOverlay
-          isOpen={showFreeSpeechTutorial}
-          steps={FREE_SPEECH_TUTORIAL_STEPS}
-          showAudioToggle
-          onClose={() => setShowFreeSpeechTutorial(false)}
-          onFinish={handleTutorialFinish}
-        />
-        <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
-          <p className="activity-task-lock-note">Could not load activities: {activitiesError}</p>
-          <p className="activity-task-detail">Ensure the `activities` table exists and RLS allows read for authenticated users.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="activity-page-root activity-page--skyward-entrance">
+    <div className={`activity-page-root ${!activitiesLoading ? 'activity-page--skyward-entrance' : ''} ${(showFreeSpeechTutorial || showAssessmentModal) ? 'is-tutorial-active' : ''}`}>
       <TutorialOverlay
         isOpen={showFreeSpeechTutorial}
         steps={FREE_SPEECH_TUTORIAL_STEPS}
@@ -1137,36 +1122,59 @@ function ActivityPage() {
         onClose={() => setShowFreeSpeechTutorial(false)}
         onFinish={handleTutorialFinish}
       />
-      {showCompletionCelebration && (
-        <Confetti
-          width={viewportSize.width}
-          height={viewportSize.height}
-          recycle
-          numberOfPieces={280}
-          gravity={0.24}
-        />
-      )}
-      {showCompletionCelebration && (
-        <div className="activity-clear-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="activity-clear-modal-title">
-          <div className="activity-clear-modal">
-            <h3 id="activity-clear-modal-title" className="activity-clear-modal-title">
-              Congratulations, you've cleared: {completionModalTaskTitle || 'This stage'}
-            </h3>
-            <PushButton
-              className="activity-clear-modal-continue-btn"
-              bgColor="#2d5a27"
-              shadowColor="#1a3b16"
-              textColor="#ffffff"
-              onClick={() => {
-                setShowCompletionCelebration(false);
-                setCompletionModalTaskTitle('');
-              }}
-            >
-              Continue
-            </PushButton>
+
+      <div className="activity-page-grid">
+        {/* Loading Overlay (Only if no data yet) */}
+        {activitiesLoading && tasks.length === 0 && (
+          <div className="activity-loading-overlay-root">
+            <div className="activity-loading-content">
+              <div className="loading-spinner" style={{ width: '50px', height: '50px', borderWidth: '4px', marginBottom: '1.5rem' }} />
+              <p className="section-label" style={{ margin: 0, color: '#059669', letterSpacing: '0.1em' }}>Loading your journey…</p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Error Overlay */}
+        {activitiesError && tasks.length === 0 && (
+          <div className="activity-loading-overlay-root">
+            <div className="activity-content-wrap" style={{ padding: '4rem', textAlign: 'center' }}>
+              <p className="activity-task-lock-note">Could not load activities: {activitiesError}</p>
+              <p className="activity-task-detail">Please try refreshing the page.</p>
+            </div>
+          </div>
+        )}
+
+        {showCompletionCelebration && (
+          <Confetti
+            width={viewportSize.width}
+            height={viewportSize.height}
+            recycle
+            numberOfPieces={280}
+            gravity={0.24}
+          />
+        )}
+        
+        {showCompletionCelebration && (
+          <div className="activity-clear-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="activity-clear-modal-title">
+            <div className="activity-clear-modal">
+              <h3 id="activity-clear-modal-title" className="activity-clear-modal-title">
+                Congratulations, you've cleared: {completionModalTaskTitle || 'This stage'}
+              </h3>
+              <PushButton
+                className="activity-clear-modal-continue-btn"
+                bgColor="#2d5a27"
+                shadowColor="#1a3b16"
+                textColor="#ffffff"
+                onClick={() => {
+                  setShowCompletionCelebration(false);
+                  setCompletionModalTaskTitle('');
+                }}
+              >
+                Continue
+              </PushButton>
+            </div>
+          </div>
+        )}
 
       {showRandomizerOverlay && (
         <section className="randomizer-overlay-wrapper" aria-label="Randomizer overlay">
@@ -1174,7 +1182,9 @@ function ActivityPage() {
           <div className="randomizer-overlay-content">
             <div className="randomizer-overlay-card">
               <div className="randomizer-overlay-card-top">
-                <h2 className="randomizer-overlay-title">Randomizer</h2>
+                <h2 className="randomizer-overlay-title">
+                  {isStreakRecoveryMode ? 'Streak Recovery Task' : 'Randomizer × B-01'}
+                </h2>
                 <button
                   type="button"
                   className="randomizer-overlay-close-btn"
@@ -1186,8 +1196,32 @@ function ActivityPage() {
               </div>
               <p className="randomizer-overlay-copy">
                 <span className="randomizer-overlay-copy-kicker">B-01:</span>
-                Ready to put your skills to the test? Click the 'Generate' button for a random topic, and whenever you're ready, hit 'Start' to begin your speaking practice!
+                {isStreakRecoveryMode 
+                  ? `Ready to put your skills to the test? To recover your streak, you'll need to complete ${requiredRecoveryTasks} randomizer tasks with a score of 45% or higher. Whenever you're ready, hit 'Start' to begin!`
+                  : "Ready to put your skills to the test? Click the 'Generate' button for a random topic, and whenever you're ready, hit 'Start' to begin your speaking practice!"
+                }
               </p>
+
+              {isStreakRecoveryMode && (
+                <div className="randomizer-recovery-progress">
+                  <div className="randomizer-recovery-progress-header">
+                    <div className="randomizer-recovery-progress-label">Recovery Progress</div>
+                    <div className="randomizer-recovery-progress-requirement">
+                      <IoTrophyOutline className="requirement-icon" />
+                      <span>Target: 45%+ Score</span>
+                    </div>
+                  </div>
+                  <div className="randomizer-recovery-progress-bar-wrap">
+                    <div 
+                      className="randomizer-recovery-progress-bar-fill" 
+                      style={{ width: `${(recoverySessionsToday / requiredRecoveryTasks) * 100}%` }}
+                    />
+                  </div>
+                  <div className="randomizer-recovery-progress-count">
+                    {recoverySessionsToday} / {requiredRecoveryTasks} Tasks Completed
+                  </div>
+                </div>
+              )}
               <p className="randomizer-overlay-topic">
                 <span className="randomizer-overlay-topic-label">Topic:</span>
                 {' '}
@@ -1202,7 +1236,7 @@ function ActivityPage() {
                   onClick={handleRandomizeTopic}
                   disabled={isRandomizingTopic}
                 >
-                  {isRandomizingTopic ? 'Randomizing...' : 'Randomize Topic'}
+                  {isRandomizingTopic ? 'Randomizing...' : 'Generate'}
                 </Button>
                 <Button
                   variant="practice"
@@ -1210,7 +1244,10 @@ function ActivityPage() {
                   onClick={handleStartRandomizerTopic}
                   disabled={!randomizerTopic?.title || isRandomizingTopic}
                 >
-                  Start
+                  {isStreakRecoveryMode 
+                    ? `Start Task ${Math.min(requiredRecoveryTasks, recoverySessionsToday + 1)} of ${requiredRecoveryTasks}` 
+                    : 'Start'
+                  }
                 </Button>
               </div>
             </div>
@@ -1282,7 +1319,6 @@ function ActivityPage() {
         </section>
       )}
 
-      <div className="activity-page-grid">
         {/* Banner */}
         <section className="new-banner dashboard-anim-top dashboard-anim-delay-2">
            <div className="new-banner-left" id="tutorial-target-home-banner">
@@ -1319,7 +1355,7 @@ function ActivityPage() {
                      </div>
                      <div className="new-streak-headline">
                        <div className="new-streak-value">
-                         {streakStats.canRecover ? streakStats.potentialStreak : streakStats.currentStreak}
+                         {streakStats.currentStreak}
                        </div>
                        <p className="new-streak-label">day streak</p>
                      </div>
@@ -1337,7 +1373,7 @@ function ActivityPage() {
                        style={{ margin: 0, width: 'auto', padding: '0 12px', height: '36px', fontSize: '0.8rem' }}
                      >
                        <IoFlame />
-                       <span>Recover Streak</span>
+                       <span>Recover {streakStats.potentialStreak} Day Streak</span>
                      </Button>
                    )}
                  </div>
@@ -1435,8 +1471,6 @@ function ActivityPage() {
               </div>
             </section>
           </div>
-
-
       </div>
       <StreakCalendarModal 
         isOpen={isStreakModalOpen} 
@@ -1454,16 +1488,7 @@ function ActivityPage() {
         isOpen={showAssessmentModal}
         onClose={() => setShowAssessmentModal(false)}
         onFinish={() => setShowAssessmentModal(false)}
-        steps={[
-          {
-            id: 'assessment-notice',
-            title: 'B-01:',
-            text: `We assessed your speaking level as Level ${levelProgress?.levelNumber || 1}, so we fast-tracked earlier lessons and placed you where your growth is most meaningful.`,
-            button: 'Got it!',
-            targetElementId: null,
-            robot: tutorialRobotStep1,
-          },
-        ]}
+        steps={assessmentTutorialSteps}
       />
       
       {/* Ask B-01 Modal */}

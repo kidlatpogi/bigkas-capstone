@@ -36,6 +36,7 @@ export function useActivitiesJourneyTasks(level = 1) {
       const cachedRows = activitiesTasksCache.get(cacheKey);
       setRows(Array.isArray(cachedRows) ? cachedRows : []);
       setError(null);
+      // Only set loading to false if it was true, but don't set to true first
       setLoading(false);
       return;
     }

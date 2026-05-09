@@ -18,14 +18,12 @@ const SESSIONS_SELECT_QUERY = `
   id,
   user_id,
   status,
-  error_message,
-  difficulty,
   session_mode,
   session_origin,
   speaking_mode,
   source,
+  topic,
   duration,
-  synced_to_mobile_at,
   created_at,
   activity_id,
   activities (
@@ -39,37 +37,24 @@ const SESSIONS_SELECT_QUERY = `
   ),
   session_metrics (
     overall_score,
-    verbal_score,
-    fluency_score,
-    vocabulary_score,
-    filler_words_count,
     vocal_score,
-    pronunciation_score,
-    pitch_stability,
-    speaking_pace,
-    voice_quality,
-    jitter,
-    shimmer,
     visual_score,
+    verbal_score,
     visual_avg,
     vocal_avg,
     verbal_avg,
     confidence_score,
-    total_score,
+    pronunciation_score,
+    jitter,
+    shimmer,
     eye_contact_score,
-    facial_expression_score,
-    gesture_score,
-    snr_db,
-    low_confidence
+    gesture_score
   ),
   session_feedback (
-    general_feedback,
-    detailed_feedback
+    general_feedback
   ),
   session_recommendations (
-    recommendation_text,
-    timestamp_offset,
-    created_at
+    recommendation_text
   )
 `;
 
@@ -227,7 +212,7 @@ function normalizeSessionRow(session) {
     speech_type: normalizedSpeechType || null,
     speaking_mode: session.speaking_mode || normalizedSpeechType || null,
     session_origin: normalizedSessionOrigin || null,
-    script_title: session.script_title ?? session.title ?? activityTitle ?? cachedTitle ?? null,
+    script_title: session.topic ?? session.script_title ?? session.title ?? activityTitle ?? cachedTitle ?? null,
     score: toNumeric(metrics?.overall_score ?? confidenceScore, 0),
     confidence_score: confidenceScore,
     acoustic_score: toNumeric(metrics?.vocal_score ?? 0, 0),
@@ -798,6 +783,17 @@ export function SessionProvider({ children }) {
         
         let attempts = 0;
         const maxAttempts = 200; 
+        let currentProgressPercent = 0;
+
+        const updateProgress = (p, msg = null) => {
+          if (typeof p === 'number' && p > currentProgressPercent) {
+            currentProgressPercent = p;
+            if (onProgress) onProgress(p, msg);
+          }
+        };
+
+        // Initial progress after POST success
+        updateProgress(20, "Server acknowledged. Starting analysis pipeline...");
         
         while (attempts < maxAttempts) {
           attempts += 1;
@@ -841,16 +837,14 @@ export function SessionProvider({ children }) {
             continue; 
           }
           
-          if (onProgress) {
-            // Priority 1: Use actual internal progress from backend if available
-            if (typeof sData.progress === 'number') {
-              onProgress(Math.min(95, sData.progress));
-            } else {
-              // Priority 2: Smooth crawl fallback
-              const baseProgress = 30;
-              const crawl = attempts <= 10 ? attempts * 2 : 20 + (attempts * 0.4);
-              onProgress(Math.min(95, baseProgress + crawl));
-            }
+          // Detect HTML (Hugging Face Starting/Restarting page)
+
+          if (sData.progress != null && typeof sData.progress === 'number') {
+            updateProgress(Math.min(95, sData.progress), sData.message);
+          } else {
+            const baseProgress = 30;
+            const crawl = attempts <= 10 ? attempts * 2 : 20 + (attempts * 0.4);
+            updateProgress(Math.min(95, baseProgress + crawl), "Processing speech patterns...");
           }
 
           if (sData.status === 'completed') {
@@ -906,6 +900,12 @@ export function SessionProvider({ children }) {
       if (!analysisResult.created_at) {
         analysisResult.created_at = new Date().toISOString();
       }
+
+      // Ensure the new session is immediately available in the global state
+      const normalized = normalizeSessionRow(analysisResult);
+      dispatch({ type: 'ADD_SESSION', payload: normalized });
+      setCachedEntry(sessionDetailCache, makeSessionDetailCacheKey(normalized.id), normalized);
+      invalidateSessionCaches();
 
       return {
         success: true,

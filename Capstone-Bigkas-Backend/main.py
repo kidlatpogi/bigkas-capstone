@@ -432,6 +432,7 @@ def persist_to_supabase(
     profiling_answers: List[str],
     session_origin: str = "training",
     speaking_mode: str = "",
+    topic: str = "",
 ) -> Dict[str, Any]:
     supabase_client = get_supabase_client()
     origin = normalize_session_origin(session_origin)
@@ -486,6 +487,7 @@ def persist_to_supabase(
         "source": "web",
         "session_origin": origin,
         "session_mode": session_mode,
+        "topic": (topic or "").strip(),
     }
     if speak_mode:
         session_payload["speaking_mode"] = speak_mode
@@ -517,7 +519,6 @@ def persist_to_supabase(
 
     metrics_payload = {
         "session_id": session_id,
-        "total_score": total_score_value,
         "overall_score": entry_100,
         "confidence_score": entry_100,
         "visual_avg": float(diagnostic["visual_avg"]),
@@ -526,15 +527,11 @@ def persist_to_supabase(
         "verbal_score": verbal_100,
         "vocal_score": vocal_100,
         "visual_score": visual_100,
-        "filler_words_count": filler_count,
-        "pitch_stability": vocal.get("pitch_stability", 0),
-        "speaking_pace": vocal.get("speaking_pace_estimate_spm", 0),
+        "pronunciation_score": verbal_100,
         "jitter": vocal.get("jitter_percent", 0),
         "shimmer": vocal.get("shimmer_db", 0),
         "eye_contact_score": visual.get("eye_contact_score", 0),
         "gesture_score": visual.get("gesture_score", 0),
-        "total_rms": total_rms,
-        "face_detection_count": face_detection_count,
     }
     try:
         supabase_client.table("session_metrics").insert(metrics_payload).execute()
@@ -614,7 +611,11 @@ async def get_analysis_status(job_id: str):
         raise HTTPException(status_code=404, detail="Analysis job not found.")
     
     if job["status"] == "processing":
-        return {"status": "processing", "progress": job.get("progress", 50)}
+        return {
+            "status": "processing", 
+            "progress": job.get("progress", 10),
+            "message": job.get("message", "Initializing analysis...")
+        }
     
     if job["status"] == "error":
         return {"status": "error", "error": job.get("error")}
@@ -633,16 +634,18 @@ async def run_analysis_task(
 ):
     try:
         # 1. EXTRACT METRICS
-        print(f"[Job] {job_id} - Step 1/4: Extracting vocal metrics...")
-        analysis_jobs[job_id]["progress"] = 15
+        msg = "Step 1/4: Analyzing vocal dynamics (pitch, jitter, pace)..."
+        print(f"[Job] {job_id} - {msg}")
+        analysis_jobs[job_id].update({"progress": 15, "message": msg})
         vocal_metrics, duration_seconds = await asyncio.to_thread(
             extract_vocal_metrics, audio_bytes, "recording.wav"
         )
         print(f"[Job] {job_id} - Vocal metrics extracted ({duration_seconds}s).")
         
         # 2. COMPRESS AUDIO (MP3)
-        print(f"[Job] {job_id} - Step 2/4: Compressing audio for AI...")
-        analysis_jobs[job_id]["progress"] = 35
+        msg = "Step 2/4: Optimizing audio for cloud AI processing..."
+        print(f"[Job] {job_id} - {msg}")
+        analysis_jobs[job_id].update({"progress": 35, "message": msg})
         def _compress_audio():
             import subprocess
             cmd = ['ffmpeg', '-y', '-i', 'pipe:0', '-t', '305', '-acodec', 'libmp3lame', '-ab', '32k', '-ac', '1', '-ar', '16000', '-f', 'mp3', 'pipe:1']
@@ -658,8 +661,9 @@ async def run_analysis_task(
         del audio_bytes
 
         # 3. CLOUDFLARE (Whisper + Llama)
-        print(f"[Job] {job_id} - Step 3/4: Calling Cloudflare AI (Whisper/Llama)...")
-        analysis_jobs[job_id]["progress"] = 55
+        msg = "Step 3/4: Processing speech with Cloudflare AI (Whisper/Llama)..."
+        print(f"[Job] {job_id} - {msg}")
+        analysis_jobs[job_id].update({"progress": 55, "message": msg})
         verbal_payload = await analyze_with_cloudflare(clean_audio_bytes, topic)
         print(f"[Job] {job_id} - Cloudflare analysis complete.")
         
@@ -667,8 +671,9 @@ async def run_analysis_task(
         del clean_audio_bytes
 
         # 4. PERSIST TO SUPABASE
-        print(f"[Job] {job_id} - Step 4/4: Persisting results to Supabase...")
-        analysis_jobs[job_id]["progress"] = 90
+        msg = "Step 4/4: Finalizing results and generating feedback..."
+        print(f"[Job] {job_id} - {msg}")
+        analysis_jobs[job_id].update({"progress": 90, "message": msg})
         combined_analysis = {
             "visual": visual_payload,
             "vocal": vocal_metrics,
@@ -685,6 +690,7 @@ async def run_analysis_task(
             profiling_answers=parsed_answers,
             session_origin=session_origin,
             speaking_mode=speaking_mode,
+            topic=topic,
         )
         print(f"[Job] {job_id} - Persisted successfully.")
 
@@ -708,6 +714,7 @@ async def run_analysis_task(
             "transcript": _sanitize_transcript_text(combined_analysis.get("transcript_exact", "")),
             "summary": combined_analysis.get("feedback_summary", ""),
             "duration_sec": float(vocal.get("duration_seconds") or 0),
+            "topic": topic,
             "recommendations": combined_analysis.get("recommendations", []),
         }
 

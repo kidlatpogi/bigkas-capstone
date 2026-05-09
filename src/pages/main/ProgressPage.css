@@ -421,18 +421,11 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   width: 130px !important;
   height: 110px !important;
   box-sizing: border-box !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: none !important;
   transform: none !important;
   flex-shrink: 0 !important;
-  cursor: default;
-}
-
-.progress-stat-card.new-widget-rank-card:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 
-    0 12px 32px -12px rgba(0, 0, 0, 0.15),
-    rgba(11, 57, 84, 0.12) 0 6px 0 0 !important;
-  background: #ffffff !important;
+  cursor: default !important;
+  pointer-events: none; /* Disable all interactions including clicks */
 }
 
 .new-widget-rank-content {

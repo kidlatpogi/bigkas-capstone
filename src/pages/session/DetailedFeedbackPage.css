@@ -57,6 +57,23 @@
   gap: 16px;
 }
 
+/* ── Page Header ── */
+.sr-page-header {
+  margin-bottom: 4px;
+  width: 100%;
+}
+
+.sr-page-main-title {
+  font-family: 'Fredoka', sans-serif;
+  font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+  font-weight: 800;
+  color: var(--sr-text-dark);
+  margin: 0;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  word-break: break-word;
+}
+
 /* ── Hero Banner ── */
 .new-banner {
   background: linear-gradient(180deg, #34D399 0%, #059669 100%);

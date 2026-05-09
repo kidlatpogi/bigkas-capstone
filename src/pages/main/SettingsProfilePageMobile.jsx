@@ -6,10 +6,12 @@ import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import './SettingsProfilePageMobile.css';
 
-// Import decorative assets
-import mascotSprite from '../../assets/Sprites/Robot/0001.webp';
-import goldRank from '../../assets/Sprites/Rank/rank-gold.png';
-import legendaryRank from '../../assets/Sprites/Rank/rank-legendary.png';
+import { getSpriteUrl } from '../../utils/assetUtils';
+
+// Define decorative asset URLs
+const mascotSprite = getSpriteUrl('Robot/0001.webp');
+const goldRank = getSpriteUrl('Rank/rank-gold.png');
+const legendaryRank = getSpriteUrl('Rank/rank-legendary.png');
 
 function SettingsProfilePageMobile() {
   const navigate = useNavigate();

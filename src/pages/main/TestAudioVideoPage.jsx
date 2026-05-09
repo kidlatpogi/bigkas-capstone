@@ -12,12 +12,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import TutorialOverlay from '../../components/main/TutorialOverlay';
-import mascotSprite from '../../assets/Sprites/Robot/0002.webp';
-import bronzeRank from '../../assets/Sprites/Rank/rank-bronze.png';
-import silverRank from '../../assets/Sprites/Rank/rank-silver.png';
-import goldRank from '../../assets/Sprites/Rank/rank-gold.png';
-import mythrilRank from '../../assets/Sprites/Rank/rank-mythril.png';
-import legendaryRank from '../../assets/Sprites/Rank/rank-legendary.png';
+import { getSpriteUrl } from '../../utils/assetUtils';
+
+const mascotSprite = getSpriteUrl('Robot/0002.webp');
+const bronzeRank = getSpriteUrl('Rank/rank-bronze.png');
+const silverRank = getSpriteUrl('Rank/rank-silver.png');
+const goldRank = getSpriteUrl('Rank/rank-gold.png');
+const mythrilRank = getSpriteUrl('Rank/rank-mythril.png');
+const legendaryRank = getSpriteUrl('Rank/rank-legendary.png');
 import './TestAudioVideoPage.css';
 
 const THEME_CONFIG = [

@@ -12,15 +12,24 @@ const ADMIN_SESSION_KEY = 'bigkas_admin_session';
 const LOGIN_GUARD_NOT_CONFIGURED_CODES = ['42883', 'PGRST202', '42P01'];
 const LOGIN_GUARD_PREFIX = 'bigkas_login_guard_v1';
 const MAX_LOGIN_ATTEMPTS = 3;
-const LOGIN_COOLDOWN_SCHEDULE_SECONDS = [60, 300, 900, 1800, 3600];
+const LOGIN_COOLDOWN_SCHEDULE_SECONDS = [30, 120, 900];
 const LOGIN_GUARD_RESET_WINDOW_MS = 24 * 60 * 60 * 1000;
 let loginGuardRpcDisabled = false;
 
-function buildLockoutMessage(waitSeconds) {
+function buildLockoutMessage(waitSeconds, failedAttempts = 0) {
   const seconds = Math.max(1, Number(waitSeconds) || 1);
-  if (seconds < 60) return `Too many failed attempts. Try again in ${seconds}s.`;
-  const minutes = Math.ceil(seconds / 60);
-  return `Too many failed attempts. Try again in ${minutes}m.`;
+  
+  // Differentiate message based on duration (matching the scale)
+  if (seconds <= 60) {
+    return `Temporary cooldown active. Please wait ${seconds}s before trying again.`;
+  }
+  
+  if (seconds < 3600) {
+    const minutes = Math.ceil(seconds / 60);
+    return `Account temporarily locked due to multiple failed attempts. Try again in ${minutes}m.`;
+  }
+  
+  return `Account locked for security reasons. Please try again later or contact support.`;
 }
 
 function isLoginGuardNotConfigured(error) {
@@ -185,6 +194,8 @@ async function getLoginLockStatus(scope, email) {
   return {
     isLocked: !!row?.is_locked,
     remainingSeconds: Math.max(0, Number(row?.remaining_seconds || 0)),
+    failedAttempts: Number(row?.failed_attempts || 0),
+    unlockTime: row?.unlock_time || (row?.is_locked ? new Date(Date.now() + Number(row.remaining_seconds) * 1000).toISOString() : null),
     error: null,
     guardNotConfigured: false,
   };
@@ -222,6 +233,8 @@ async function registerLoginFailure(scope, email) {
   return {
     locked: !!row?.locked,
     lockoutSeconds: Math.max(0, Number(row?.lockout_seconds || 0)),
+    failedAttempts: Number(row?.failed_attempts || 0),
+    unlockTime: row?.unlock_time,
     error: null,
     guardNotConfigured: false,
   };
@@ -718,7 +731,7 @@ export function AuthProvider({ children }) {
     }
 
     if (lockStatus.isLocked) {
-      const message = buildLockoutMessage(lockStatus.remainingSeconds);
+      const message = buildLockoutMessage(lockStatus.remainingSeconds, lockStatus.failedAttempts);
       setIsLoading(false);
       setError(message);
       return {
@@ -727,6 +740,7 @@ export function AuthProvider({ children }) {
         error: message,
         requiresEmailConfirmation: false,
         lockoutSeconds: lockStatus.remainingSeconds,
+        unlockTime: lockStatus.unlockTime,
       };
     }
 
@@ -756,7 +770,7 @@ export function AuthProvider({ children }) {
           }
 
           if (failureResult.locked) {
-            const message = buildLockoutMessage(failureResult.lockoutSeconds);
+            const message = buildLockoutMessage(failureResult.lockoutSeconds, failureResult.failedAttempts);
             setError(message);
             return {
               success: false,
@@ -764,6 +778,7 @@ export function AuthProvider({ children }) {
               error: message,
               requiresEmailConfirmation: false,
               lockoutSeconds: failureResult.lockoutSeconds,
+              unlockTime: failureResult.unlockTime,
             };
           }
         }
@@ -840,7 +855,7 @@ export function AuthProvider({ children }) {
     }
 
     if (lockStatus.isLocked) {
-      const message = buildLockoutMessage(lockStatus.remainingSeconds);
+      const message = buildLockoutMessage(lockStatus.remainingSeconds, lockStatus.failedAttempts);
       setIsLoading(false);
       setError(message);
       return {
@@ -848,6 +863,7 @@ export function AuthProvider({ children }) {
         code: 'account_locked',
         error: message,
         lockoutSeconds: lockStatus.remainingSeconds,
+        unlockTime: lockStatus.unlockTime,
       };
     }
 
@@ -875,13 +891,14 @@ export function AuthProvider({ children }) {
           }
 
           if (failureResult.locked) {
-            const message = buildLockoutMessage(failureResult.lockoutSeconds);
+            const message = buildLockoutMessage(failureResult.lockoutSeconds, failureResult.failedAttempts);
             setError(message);
             return {
               success: false,
               code: 'account_locked',
               error: message,
               lockoutSeconds: failureResult.lockoutSeconds,
+              unlockTime: failureResult.unlockTime,
             };
           }
         }

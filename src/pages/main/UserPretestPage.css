@@ -4,11 +4,13 @@
   width: 100vw;
   margin-left: -50vw;
   margin-right: -50vw;
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px 18px;
+  padding-top: calc(24px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
   background:
     radial-gradient(circle at top left, rgba(90, 120, 99, 0.12), transparent 30%),
     #ffffff;

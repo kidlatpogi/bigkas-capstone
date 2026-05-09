@@ -137,7 +137,7 @@
 .analyzing-audio-action {
   position: fixed;
   right: clamp(1rem, 3vw, 2.5rem);
-  bottom: clamp(1rem, 3vh, 2.5rem);
+  bottom: calc(clamp(1rem, 3vh, 2.5rem) + env(safe-area-inset-bottom, 0px));
   width: auto;
   display: flex;
   justify-content: center;

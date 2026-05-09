@@ -5,7 +5,7 @@
   height: 100dvh;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-bottom: 80px;
+  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
   background-color: #FDFDF9;
   background-image: 
     radial-gradient(rgba(11, 57, 84, 0.1) 1px, transparent 0),
@@ -332,7 +332,7 @@
 /* Footer Action */
 .progress-mobile-footer {
   margin-top: 40px;
-  padding-bottom: 40px;
+  padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
   display: flex;
   justify-content: center;
   width: 100%;

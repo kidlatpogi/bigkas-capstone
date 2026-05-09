@@ -28,7 +28,7 @@
   background-attachment: fixed;
   font-family: 'Fredoka', 'SF Pro Display', sans-serif;
   color: var(--sr-text-dark);
-  padding: clamp(20px, 4vh, 40px) 24px 80px;
+  padding: clamp(20px, 4vh, 40px) 24px calc(80px + env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
   display: flex;
   flex-direction: column;

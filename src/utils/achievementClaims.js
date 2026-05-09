@@ -11,7 +11,12 @@ function readRawList() {
     const raw = window.localStorage.getItem(CLAIMABLE_ACHIEVEMENTS_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    const list = Array.isArray(parsed) ? parsed : [];
+    // Surgical removal of legacy/mock notifications as requested
+    return list.filter(item => 
+      item.title !== 'Breakfast Routine' && 
+      item.source !== 'activity-task'
+    );
   } catch {
     return [];
   }

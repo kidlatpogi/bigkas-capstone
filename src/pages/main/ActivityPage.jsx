@@ -18,7 +18,6 @@ import {
   getTaskXp,
   isActivityTaskCompleted,
 } from '../../utils/activityProgress';
-import { addClaimableAchievement } from '../../utils/achievementClaims';
 import SkywardJourneyShell from '../../components/journey/SkywardJourneyShell';
 import StreakCalendarModal from '../../components/main/StreakCalendarModal';
 import RankListModal from '../../components/main/RankListModal';
@@ -751,13 +750,6 @@ function ActivityPage() {
     if (!newlyCompletedTask) return;
 
     setRecentStampedTaskId(newlyCompletedTask.id);
-    addClaimableAchievement({
-      id: newlyCompletedTask.id,
-      title: newlyCompletedTask.title || 'Activity achievement',
-      source: 'activity-task',
-      description: "You've earned a new achievement! Claim your reward now.",
-      createdAt: Date.now(),
-    });
 
     if (stampResetTimeoutRef.current) {
       window.clearTimeout(stampResetTimeoutRef.current);

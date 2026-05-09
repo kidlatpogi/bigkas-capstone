@@ -4,7 +4,7 @@
    ══════════════════════════════════════════════════════ */
 
 .practice-page {
-  min-height: 100vh;
+  min-height: 100dvh;
   background: #ffffff; /* White Background */
   padding: 64px 24px 340px;
   display: flex;

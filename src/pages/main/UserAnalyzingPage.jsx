@@ -570,15 +570,7 @@ function UserAnalyzingPage() {
                 <button
                   type="button"
                   className="analyzing-action-btn analyzing-action-btn--secondary"
-                  onClick={() => {
-                    if (userPretestFreeSessionId) {
-                      navigate(ROUTES.DETAILED_FEEDBACK.replace(':sessionId', userPretestFreeSessionId), {
-                        state: { fromResult: true, source: 'pre-test' }
-                      });
-                    } else {
-                      setShowScoreBreakdown(true);
-                    }
-                  }}
+                  onClick={() => setShowScoreBreakdown(true)}
                 >
                   Score Breakdown
                 </button>

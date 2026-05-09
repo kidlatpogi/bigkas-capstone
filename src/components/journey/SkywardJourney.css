@@ -1261,6 +1261,10 @@
 }
 
 /* activity-action-btn is now globally standardized in ActivityPage.css */
+.skyward-journey-overlay-task-inject .activity-action-btn {
+  width: 100% !important;
+  margin-top: 8px !important;
+}
 
 @media (max-width: 1100px) {
   .skyward-journey-overlay-content {

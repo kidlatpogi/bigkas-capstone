@@ -17,7 +17,6 @@ import {
   getTaskXp,
   isActivityTaskCompleted,
 } from '../../utils/activityProgress';
-import { addClaimableAchievement } from '../../utils/achievementClaims';
 import SkywardJourneyShell from '../../components/journey/SkywardJourneyShell';
 import StreakCalendarModal from '../../components/main/StreakCalendarModal';
 import RankListModal from '../../components/main/RankListModal';

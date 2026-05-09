@@ -475,6 +475,7 @@
   background: rgba(245, 158, 11, 0.06);
 }
 
+.history-item-pillar-chip--rising .history-item-pillar-label,
 .history-item-pillar-chip--rising .history-item-pillar-score {
   color: #F59E0B;
 }
@@ -484,16 +485,18 @@
   background: rgba(59, 130, 246, 0.08);
 }
 
+.history-item-pillar-chip--developing .history-item-pillar-label,
 .history-item-pillar-chip--developing .history-item-pillar-score {
   color: #3B82F6;
 }
 
-.history-item-pillar-chip--stellar {
+.history-item-pillar-chip--strong {
   border-color: rgba(16, 185, 129, 0.45);
   background: rgba(16, 185, 129, 0.08);
 }
 
-.history-item-pillar-chip--stellar .history-item-pillar-score {
+.history-item-pillar-chip--strong .history-item-pillar-label,
+.history-item-pillar-chip--strong .history-item-pillar-score {
   color: #10B981;
 }
 

@@ -213,6 +213,7 @@ function buildReplayAction(session, navigate, isFree) {
     sessionType: isPractice ? 'practice' : 'training',
     entryPoint: isPractice ? 'practice' : 'training',
     autoStartCountdown: true,
+    objective: session?.topic || session?.objective_name || '',
   };
 
   if (focus === 'scripted') {
@@ -220,11 +221,12 @@ function buildReplayAction(session, navigate, isFree) {
     if (!content.trim()) return { label, onClick: () => navigate(setupRoute) };
     replayState.script = {
       id: session?.script_id || `replay-${session?.id || 'session'}`,
-      title: session?.script_title || session?.title || `${mode} Script`,
+      title: session?.script_title || session?.topic || session?.title || `${mode} Script`,
       content,
     };
   } else {
-    replayState.freeTopic = session?.transcript || 'Free speech session';
+    // Fix: Use session.topic for the free speech topic, NOT the transcript (spoken words)
+    replayState.freeTopic = session?.topic || session?.objective_name || 'Free speech session';
   }
 
   return {
@@ -241,7 +243,10 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
   const { currentSession, fetchSessionById, isLoading } = useSessionContext();
   const [recordingMedia, setRecordingMedia] = useState({ audioUrl: null, videoUrl: null, transcript: '' });
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  const [showDetailed, setShowDetailed] = useState(initialShowDetailed || isInnerView === false);
+  const [showDetailed, setShowDetailed] = useState(() => {
+    if (locationState?.showDetailed !== undefined) return !!locationState.showDetailed;
+    return initialShowDetailed || isInnerView === false;
+  });
   const avoidSectionRef = useRef(null);
 
   const [windowSize, setWindowSize] = useState({
@@ -529,6 +534,13 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
 
 
       <div className="sr-content-layout">
+        {/* Session Title Header */}
+        <header className="sr-page-header dashboard-anim-top">
+          <h1 className="sr-page-main-title">
+            {session?.script_title || session?.topic || (isPreTest ? 'Diagnostic Analysis' : 'Session Analysis')}
+          </h1>
+        </header>
+
         {/* AI Coach Hero Banner */}
         <section className="new-banner dashboard-anim-top dashboard-anim-delay-2" id="sr-hero-section">
           <div className="new-banner-left is-full-width">

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, memo } from 'react';
 import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import { getSpriteUrl, getVoiceUrl } from '../../utils/assetUtils';
 
@@ -11,6 +11,30 @@ const tutorialVoice5 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutori
 const tutorialVoiceFinal = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial FINAL.mp3');
 const defaultFinalRobotImage = getSpriteUrl('Robot/0002.webp');
 import './TutorialOverlay.css';
+
+/**
+ * Isolated typing component to prevent parent re-renders on every character
+ */
+const TypingText = memo(({ text, fullText, isDone, emphasis }) => {
+  if (!isDone) return <>{text}</>;
+  if (!emphasis) return <>{fullText}</>;
+
+  const idx = fullText.indexOf(emphasis);
+  if (idx < 0) return <>{fullText}</>;
+
+  const before = fullText.slice(0, idx);
+  const after = fullText.slice(idx + emphasis.length);
+
+  return (
+    <>
+      {before}
+      <strong className="tutorial-bubble-emphasis">{emphasis}</strong>
+      {after}
+    </>
+  );
+});
+
+TypingText.displayName = 'TypingText';
 
 function TutorialOverlay({
   isOpen,
@@ -73,14 +97,17 @@ function TutorialOverlay({
     ],
     []
   );
+
   const tutorialSteps = useMemo(
     () => (Array.isArray(steps) && steps.length > 0 ? steps : defaultSteps),
     [defaultSteps, steps],
   );
+
   const shouldUseAudio = useMemo(
     () => !(Array.isArray(steps) && steps.length > 0),
     [steps],
   );
+
   const [currentStep, setCurrentStep] = useState(0);
   const [typedText, setTypedText] = useState('');
   const [isTypingDone, setIsTypingDone] = useState(false);
@@ -88,11 +115,19 @@ function TutorialOverlay({
     if (typeof window === 'undefined') return false;
     return window.localStorage.getItem(GLOBAL_MUTE_KEY) === '1';
   });
+
   const activeSpotlightRef = useRef(null);
   const companionContainerRef = useRef(null);
   const stepAudioRefs = useRef([]);
   const typingIntervalRef = useRef(null);
   const [anchoredCompanionStyle, setAnchoredCompanionStyle] = useState(null);
+
+  const activeStep = useMemo(() => tutorialSteps[currentStep], [tutorialSteps, currentStep]);
+
+  const robotSrc = useMemo(() => {
+    if (!activeStep) return robotImage;
+    return activeStep.robot || (activeStep.id === 'step-final' ? finalRobotImage : robotImage);
+  }, [activeStep, finalRobotImage, robotImage]);
 
   const clearAllSpotlights = () => {
     if (typeof document === 'undefined') return;
@@ -177,7 +212,7 @@ function TutorialOverlay({
   }, [isOpen]);
 
   useEffect(() => {
-    if (!isOpen) return undefined;
+    if (!isOpen || !activeStep) return undefined;
 
     clearAllSpotlights();
     if (activeSpotlightRef.current) {
@@ -185,8 +220,7 @@ function TutorialOverlay({
       activeSpotlightRef.current = null;
     }
 
-    const step = tutorialSteps[currentStep];
-    const targetId = step?.targetElementId;
+    const targetId = activeStep.targetElementId;
     const isCustomTutorial = Array.isArray(steps) && steps.length > 0;
     const spotlightZIndex =
       isCustomTutorial && targetId === 'tutorial-target-home-journey' ? '4600' : '4500';
@@ -210,23 +244,21 @@ function TutorialOverlay({
       if (retryTimer) {
         window.clearTimeout(retryTimer);
       }
-      clearAllSpotlights();
       if (activeSpotlightRef.current) {
         activeSpotlightRef.current.classList.remove('tutorial-spotlight-active');
         activeSpotlightRef.current.style.removeProperty('z-index');
         activeSpotlightRef.current = null;
       }
     };
-  }, [currentStep, isOpen, steps, tutorialSteps]);
+  }, [activeStep, isOpen]);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (!isOpen || !activeStep) {
       setAnchoredCompanionStyle(null);
       return undefined;
     }
 
-    const step = tutorialSteps[currentStep];
-    const shouldAnchorToTarget = step?.id === 'step-controls' || step?.id === 'step-soundbar' || step?.id === 'step-roadmap' || step?.id === 'step-practice';
+    const shouldAnchorToTarget = activeStep.id === 'step-controls' || activeStep.id === 'step-soundbar' || activeStep.id === 'step-roadmap' || activeStep.id === 'step-practice';
     if (!shouldAnchorToTarget) {
       setAnchoredCompanionStyle(null);
       return undefined;
@@ -236,14 +268,14 @@ function TutorialOverlay({
     let retryTimer = 0;
 
     const updateAnchoredPosition = () => {
-      const targetEl = step?.targetElementId ? document.getElementById(step.targetElementId) : null;
+      const targetEl = activeStep.targetElementId ? document.getElementById(activeStep.targetElementId) : null;
       const companionEl = companionContainerRef.current;
       if (!targetEl || !companionEl) return false;
 
       const targetRect = targetEl.getBoundingClientRect();
       const companionRect = companionEl.getBoundingClientRect();
       const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
-      const extraGap = step?.id === 'step-roadmap' ? rootFontSize : 0;
+      const extraGap = activeStep.id === 'step-roadmap' ? rootFontSize : 0;
       const gapPx = (rootFontSize * 2) + extraGap;
       const top = Math.max(8, targetRect.top - companionRect.height - gapPx);
 
@@ -278,12 +310,10 @@ function TutorialOverlay({
       window.removeEventListener('resize', scheduleUpdate);
       window.removeEventListener('orientationchange', scheduleUpdate);
     };
-  }, [currentStep, isOpen, tutorialSteps]);
+  }, [activeStep, isOpen]);
 
   useEffect(() => {
-    if (!isOpen) return undefined;
-    const activeStep = tutorialSteps[currentStep];
-    if (!activeStep) return undefined;
+    if (!isOpen || !activeStep) return undefined;
 
     setTypedText('');
     setIsTypingDone(false);
@@ -293,17 +323,18 @@ function TutorialOverlay({
     }
 
     let charIndex = 0;
+    const fullText = activeStep.text;
     typingIntervalRef.current = window.setInterval(() => {
       charIndex += 1;
-      setTypedText(activeStep.text.slice(0, charIndex));
-      if (charIndex >= activeStep.text.length) {
+      setTypedText(fullText.slice(0, charIndex));
+      if (charIndex >= fullText.length) {
         if (typingIntervalRef.current) {
           window.clearInterval(typingIntervalRef.current);
           typingIntervalRef.current = null;
         }
         setIsTypingDone(true);
       }
-    }, 8);
+    }, 12);
 
     if (shouldUseAudio && !isMuted) {
       stopAllAudios();
@@ -323,19 +354,15 @@ function TutorialOverlay({
         stopAllAudios();
       }
     };
-  }, [currentStep, isMuted, isOpen, shouldUseAudio, tutorialSteps]);
+  }, [currentStep, isMuted, isOpen, shouldUseAudio, activeStep]);
 
-  if (!isOpen) return null;
-
-  const activeStep = tutorialSteps[currentStep];
-  if (!activeStep) return null;
+  if (!isOpen || !activeStep) return null;
 
   const handleNext = () => {
     stopAllAudios();
 
     if (!isTypingDone) {
-      const currentText = tutorialSteps[currentStep]?.text || '';
-      setTypedText(currentText);
+      setTypedText(activeStep.text);
       setIsTypingDone(true);
       if (typingIntervalRef.current) {
         window.clearInterval(typingIntervalRef.current);
@@ -357,25 +384,6 @@ function TutorialOverlay({
     setCurrentStep((prev) => prev + 1);
   };
 
-  const renderBubbleText = () => {
-    if (!isTypingDone) return typedText;
-
-    const emphasis = activeStep?.emphasis;
-    if (!emphasis) return typedText;
-    const idx = typedText.indexOf(emphasis);
-    if (idx < 0) return typedText;
-
-    const before = typedText.slice(0, idx);
-    const after = typedText.slice(idx + emphasis.length);
-    return (
-      <>
-        {before}
-        <strong className="tutorial-bubble-emphasis">{emphasis}</strong>
-        {after}
-      </>
-    );
-  };
-
   return (
     <>
       <div className="tutorial-dark-bg" aria-hidden="true" />
@@ -385,14 +393,21 @@ function TutorialOverlay({
       >
         <div className="tutorial-companion-container" ref={companionContainerRef} style={anchoredCompanionStyle ?? undefined}>
           <img
-            src={activeStep.robot || (activeStep.id === 'step-final' ? finalRobotImage : robotImage)}
+            src={robotSrc}
             alt=""
             className="tutorial-robot-img"
             aria-hidden="true"
           />
           <article className="tutorial-speech-bubble">
             <div className="tutorial-bubble-title">{activeStep.title}</div>
-            <p className="tutorial-bubble-text">{renderBubbleText()}</p>
+            <p className="tutorial-bubble-text">
+              <TypingText 
+                text={typedText} 
+                fullText={activeStep.text} 
+                isDone={isTypingDone} 
+                emphasis={activeStep.emphasis} 
+              />
+            </p>
             <button type="button" className="tutorial-bubble-btn" onClick={handleNext} disabled={!isTypingDone}>
               {activeStep.button}
             </button>
@@ -416,4 +431,4 @@ function TutorialOverlay({
   );
 }
 
-export default TutorialOverlay;
+export default memo(TutorialOverlay);

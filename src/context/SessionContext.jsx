@@ -225,7 +225,6 @@ function normalizeSessionRow(session) {
     pronunciation_score: metrics?.pronunciation_score == null ? null : toInt(metrics.pronunciation_score, 0),
     jitter_score: metrics?.jitter == null ? null : toInt(metrics.jitter, 0),
     shimmer_score: metrics?.shimmer == null ? null : toInt(metrics.shimmer, 0),
-    facial_expression_score: metrics?.facial_expression_score == null ? null : toInt(metrics.facial_expression_score, 0),
     gesture_score: metrics?.gesture_score == null ? null : toInt(metrics.gesture_score, 0),
     duration_sec: session.duration ?? 0,
     target_text: sanitizeTranscriptForDisplay(media?.transcript, ''),

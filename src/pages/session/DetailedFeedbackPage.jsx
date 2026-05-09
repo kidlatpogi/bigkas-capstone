@@ -284,7 +284,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
   const tripleV = useMemo(() => getTripleVScores(session || {}), [session]);
   const pillars = useMemo(() => {
     const visualSubMetrics = [
-      { label: 'Eye Contact', score: subMetric100to15(session?.facial_expression_score ?? session?.eye_contact_score) ?? tripleV.visualAvg },
+      { label: 'Eye Contact', score: subMetric100to15(session?.eye_contact_score) ?? tripleV.visualAvg },
       { label: 'Gestures', score: subMetric100to15(session?.gesture_score) ?? tripleV.visualAvg },
     ];
     const vocalSubMetrics = [

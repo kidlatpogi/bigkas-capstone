@@ -377,11 +377,10 @@ function ActivityPage() {
   }, []);
 
   const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
+  const currentJourneyNumber = Number(user?.progressLevelNumber || 1);
   const recommendedLevel = useMemo(() => {
-    const level = Number(levelProgress?.levelNumber || 1);
-    if (!Number.isFinite(level)) return 1;
-    return Math.max(1, Math.min(5, Math.round(level)));
-  }, [levelProgress?.levelNumber]);
+    return Math.max(1, Math.min(5, Math.round(currentJourneyNumber)));
+  }, [currentJourneyNumber]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -1430,8 +1429,8 @@ function ActivityPage() {
               >
                 <img src={rankSpriteImage} alt="" className="new-widget-rank-sprite" />
                 <div className="new-widget-rank-content">
-                  <p className="new-widget-kicker">Current Level</p>
-                  <p className="new-widget-value">LEVEL {levelProgress.levelNumber}</p>
+                  <p className="new-widget-kicker">Current Journey</p>
+                  <p className="new-widget-value">JOURNEY {currentJourneyNumber}</p>
                 </div>
               </div>
               <p className="new-widget-caption">

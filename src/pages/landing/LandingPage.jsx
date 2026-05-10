@@ -4,9 +4,7 @@ import { scroller } from 'react-scroll';
 import { ROUTES } from '../../utils/constants';
 import './LandingPage.css';
 import './sections/LandingSections.css';
-import { getSpriteUrl } from '../../utils/assetUtils';
-import bigkasLogoAsset from '../../assets/logos/0015.png'; // Fallback
-const bigkasLogo = getSpriteUrl('Robot/0015.webp');
+import bigkasLogo from '../../assets/logos/0015.png';
 import Button from '../../components/common/Button';
 import StaggeredMenu from '../../components/common/StaggeredMenu';
 import LandingHeroSection from './sections/LandingHeroSection';

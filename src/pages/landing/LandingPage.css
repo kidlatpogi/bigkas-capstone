@@ -266,7 +266,7 @@ body.landing-page-active .figma-nav.nav-visible {
 }
 
 .figma-nav.nav-on-hero .landing-logo-img {
-  filter: none;
+  filter: brightness(0) invert(1);
 }
 
 .figma-nav.nav-on-hero .logo-text {
@@ -278,7 +278,7 @@ body.landing-page-active .figma-nav.nav-on-green-sections {
 }
 
 body.landing-page-active .figma-nav.nav-on-green-sections .landing-logo-img {
-  filter: none;
+  filter: brightness(0) invert(1);
 }
 
 body.landing-page-active .figma-nav.nav-on-green-sections .logo-text {
@@ -290,7 +290,7 @@ body.landing-page-active .figma-nav.nav-on-last-section {
 }
 
 body.landing-page-active .figma-nav.nav-on-last-section .landing-logo-img {
-  filter: none;
+  filter: brightness(0) invert(1);
 }
 
 body.landing-page-active .figma-nav.nav-on-last-section .logo-text {

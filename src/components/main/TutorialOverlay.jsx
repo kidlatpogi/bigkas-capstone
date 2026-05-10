@@ -116,9 +116,9 @@ function TutorialOverlay({
     return window.localStorage.getItem(GLOBAL_MUTE_KEY) === '1';
   });
 
-  const activeSpotlightRef = useRef(null);
   const companionContainerRef = useRef(null);
   const stepAudioRefs = useRef([]);
+  const customVoiceRef = useRef(null);
   const typingIntervalRef = useRef(null);
   const [anchoredCompanionStyle, setAnchoredCompanionStyle] = useState(null);
 
@@ -142,6 +142,11 @@ function TutorialOverlay({
       audio.pause();
       audio.currentTime = 0;
     });
+    if (customVoiceRef.current) {
+      customVoiceRef.current.pause();
+      customVoiceRef.current.currentTime = 0;
+      customVoiceRef.current = null;
+    }
   };
 
   const handleToggleMute = () => {
@@ -336,12 +341,23 @@ function TutorialOverlay({
       }
     }, 12);
 
-    if (shouldUseAudio && !isMuted) {
+    if (!isMuted) {
       stopAllAudios();
-      const stepAudio = stepAudioRefs.current[currentStep];
-      if (stepAudio) {
-        stepAudio.currentTime = 0;
-        stepAudio.play().catch(() => {});
+      
+      // 1. Check for step-specific voice (highest priority)
+      if (activeStep.voice) {
+        const audio = new Audio(activeStep.voice);
+        audio.muted = false;
+        customVoiceRef.current = audio;
+        audio.play().catch((err) => console.warn('[TutorialOverlay] Custom voice play failed:', err));
+      } 
+      // 2. Fallback to hardcoded pre-test tutorial voices
+      else if (shouldUseAudio) {
+        const stepAudio = stepAudioRefs.current[currentStep];
+        if (stepAudio) {
+          stepAudio.currentTime = 0;
+          stepAudio.play().catch(() => {});
+        }
       }
     }
 
@@ -350,9 +366,7 @@ function TutorialOverlay({
         window.clearInterval(typingIntervalRef.current);
         typingIntervalRef.current = null;
       }
-      if (shouldUseAudio) {
-        stopAllAudios();
-      }
+      stopAllAudios();
     };
   }, [currentStep, isMuted, isOpen, shouldUseAudio, activeStep]);
 

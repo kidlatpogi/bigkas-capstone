@@ -33,7 +33,8 @@ const SESSIONS_SELECT_QUERY = `
   session_media (
     audio_url,
     transcript,
-    video_storage_url
+    video_storage_url,
+    analysis
   ),
   session_metrics (
     overall_score,
@@ -229,6 +230,7 @@ function normalizeSessionRow(session) {
     duration_sec: session.duration ?? 0,
     target_text: sanitizeTranscriptForDisplay(media?.transcript, ''),
     transcript: sanitizeTranscriptForDisplay(media?.transcript, ''),
+    analysis: media?.analysis || null,
     feedback: feedback?.general_feedback || '',
     detailed_feedback: feedback?.detailed_feedback || '',
     objective_name: session.objective_name ?? activity?.objective ?? null,

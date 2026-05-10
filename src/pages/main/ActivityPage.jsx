@@ -8,6 +8,7 @@ import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import PushButton from '../../components/common/PushButton';
 import { IoChatbubbleEllipsesOutline, IoSend, IoFlame, IoTrophyOutline } from 'react-icons/io5';
+import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import TutorialOverlay from '../../components/main/TutorialOverlay';
 import {
   GLOBAL_ACTIVITY_SCOPE,
@@ -794,6 +795,18 @@ function ActivityPage() {
     }
   }, [showRandomizerOverlay, showFreeSpeechOverlay]);
 
+  const handleToggleMute = async () => {
+    const nextMute = !user?.isAudioMuted;
+    await updateUserMetadata({ is_audio_muted: nextMute });
+    localStorage.setItem('bigkas_global_audio_muted_v1', nextMute ? '1' : '0');
+  };
+
+  const handleToggleMute = async () => {
+    const nextMute = !user?.isAudioMuted;
+    await updateUserMetadata({ is_audio_muted: nextMute });
+    localStorage.setItem('bigkas_global_audio_muted_v1', nextMute ? '1' : '0');
+  };
+
   const handleActiveTaskIdChange = useCallback((id) => {
     setActiveTaskId(id);
     if (user?.id) {
@@ -1367,6 +1380,18 @@ function ActivityPage() {
                 fetchPriority="high"
               />
             </div>
+            <div className="tutorial-audio-action" style={{ position: 'absolute', bottom: '24px', right: '24px', zIndex: 10 }}>
+              <button
+                type="button"
+                aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
+                onClick={handleToggleMute}
+                style={{ width: '50px', height: '50px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                {user?.isAudioMuted ? <FaVolumeMute /> : <FaVolumeUp />}
+              </button>
+            </div>
           </div>
         </section>
       )}
@@ -1420,6 +1445,18 @@ function ActivityPage() {
                 loading="eager"
                 fetchPriority="high"
               />
+            </div>
+            <div className="tutorial-audio-action" style={{ position: 'absolute', bottom: '24px', right: '24px', zIndex: 10 }}>
+              <button
+                type="button"
+                aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
+                onClick={handleToggleMute}
+                style={{ width: '50px', height: '50px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                {user?.isAudioMuted ? <FaVolumeMute /> : <FaVolumeUp />}
+              </button>
             </div>
           </div>
         </section>

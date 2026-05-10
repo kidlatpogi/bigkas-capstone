@@ -879,9 +879,9 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
           <button
             className="sr-btn-action sr-btn-primary-v2"
             onClick={() => {
-              if (isPreTest) {
+              if (isPreTest && !isInnerView) {
                 navigate(ROUTES.USER_ANALYZING);
-              } else if (isPostTest) {
+              } else if (isPostTest && !isInnerView) {
                 navigate(ROUTES.PROGRESS);
               } else {
                 replayAction.onClick();
@@ -889,7 +889,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
             }}
             style={{ minWidth: '200px' }}
           >
-            {isPreTest ? 'Finish Onboarding' : isPostTest ? 'Next Stage' : replayAction.label}
+            {(isPreTest && !isInnerView) ? 'Finish Onboarding' : (isPostTest && !isInnerView) ? 'Next Stage' : replayAction.label}
           </button>
         </footer>
       </div>

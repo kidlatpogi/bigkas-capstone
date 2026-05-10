@@ -1777,15 +1777,15 @@ function TrainingPage() {
         isOpen={showExitConfirm}
         title="Quit session?"
         message="You have an ongoing recording. If you leave now, this recording will be discarded."
-        confirmLabel="Quit"
-        cancelLabel="Stay"
-        type="warning"
-        onCancel={() => setShowExitConfirm(false)}
-        onConfirm={() => {
+        confirmLabel="Stay"
+        cancelLabel="Quit"
+        type="info"
+        onCancel={() => {
           handleRestart();
           setShowExitConfirm(false);
           navigate(ROUTES.ACTIVITY);
         }}
+        onConfirm={() => setShowExitConfirm(false)}
       />
 
       <ConfirmationModal

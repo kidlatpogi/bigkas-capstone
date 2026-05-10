@@ -2208,6 +2208,23 @@ body.training-page-active .theme-toggle-wrap {
 }
 
 /* ── Back to History Button (TrainingPage specific) ── */
+.history-session-view-header {
+  padding: 12px 24px;
+  width: 100%;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  box-sizing: border-box;
+  background: rgba(253, 253, 249, 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  margin-bottom: 20px;
+}
+
 .history-back-to-list-btn {
   display: flex;
   align-items: center;
@@ -2215,7 +2232,7 @@ body.training-page-active .theme-toggle-wrap {
   gap: 8px;
   background: #059669;
   border: none;
-  font-family: 'Fredoka', sans-serif;
+  font-family: inherit;
   font-size: clamp(0.9rem, 0.86rem + 0.20vw, 0.98rem);
   font-weight: 500;
   color: #fff;
@@ -2225,7 +2242,7 @@ body.training-page-active .theme-toggle-wrap {
   border-radius: 999px;
   box-shadow: 0 5px 0 #047857;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 2000;
+  text-decoration: none;
 }
 
 .history-back-to-list-btn:hover {
@@ -2237,14 +2254,5 @@ body.training-page-active .theme-toggle-wrap {
 .history-back-to-list-btn:active {
   box-shadow: 0 0 0 #047857;
   transform: translateY(5px);
-}
-
-.tp-back-to-history-btn {
-  position: absolute;
-  top: 8px;
-  left: 20px;
-  width: 176px !important;
-  height: 48px !important;
-  z-index: 2005;
 }
 

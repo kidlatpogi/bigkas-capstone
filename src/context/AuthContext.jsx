@@ -401,6 +401,18 @@ function hasSpeakerProfileData(value) {
   return !!(value && typeof value === 'object' && Object.keys(value).length > 0);
 }
 
+function isBlockedByClient(error) {
+  if (!error) return false;
+  const msg = String(error.message || error || '').toLowerCase();
+  return (
+    msg.includes('failed to fetch') ||
+    msg.includes('networkerror') ||
+    msg.includes('load failed') ||
+    msg.includes('blocked by client') ||
+    msg.includes('net::err_blocked_by_client')
+  );
+}
+
 function getAccountBlockedMessage(meta = {}) {
   if (parseMetadataBoolean(meta.account_deleted)) {
     return {
@@ -538,7 +550,7 @@ export function AuthProvider({ children }) {
       progressLevelNumber: Number(meta.progress_level_number ?? 1) || 1,
       speakerPointsHistory: normalizeSpeakerPointsHistory(meta.speaker_points_history),
       onboardingLevelAnalysis: meta.onboarding_level_analysis || null,
-      dashboardTutorialSeen: parseMetadataBoolean(meta.dashboard_tutorial_seen) || parseMetadataBoolean(meta.is_tutorial_completed),
+      dashboardTutorialSeen: parseMetadataBoolean(profile.dashboard_tutorial_seen) || parseMetadataBoolean(meta.dashboard_tutorial_seen) || parseMetadataBoolean(meta.is_tutorial_completed),
       activeBannerId: meta.active_banner_id || 'default_skyward',
       unlockedBanners: Array.isArray(meta.unlocked_banners) ? meta.unlocked_banners : ['default_skyward'],
       isAudioMuted: typeof window !== 'undefined' && window.localStorage.getItem('bigkas_global_audio_muted_v1') === '1',
@@ -551,7 +563,7 @@ export function AuthProvider({ children }) {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('is_profiling_completed, is_pre_test_completed, current_level, speaker_level, diagnostic_score, diagnostic_completed_at')
+        .select('is_profiling_completed, is_pre_test_completed, dashboard_tutorial_seen, current_level, speaker_level, diagnostic_score, diagnostic_completed_at')
         .eq('id', userId)
         .single();
       
@@ -570,6 +582,7 @@ export function AuthProvider({ children }) {
 
           const profilingCompleted = prev.profilingCompleted || !!profile.is_profiling_completed;
           const pretestCompleted = prev.pretestCompleted || !!profile.is_pre_test_completed;
+          const dashboardTutorialSeen = prev.dashboardTutorialSeen || !!profile.dashboard_tutorial_seen;
 
           // Recalculate stage using the same logic as deriveOnboardingStage but with derived flags
           let nextStage = prev.onboardingStage;
@@ -585,6 +598,7 @@ export function AuthProvider({ children }) {
             ...prev,
             isProfilingCompleted: !!profile.is_profiling_completed,
             isPreTestCompleted: !!profile.is_pre_test_completed,
+            dashboardTutorialSeen,
             profilingCompleted,
             pretestCompleted,
             onboardingStage: nextStage,
@@ -862,6 +876,11 @@ export function AuthProvider({ children }) {
       return { success: true, user: buildUser(data.session) };
     } catch (networkError) {
       setIsLoading(false);
+      if (isBlockedByClient(networkError)) {
+        const msg = 'Login blocked by your browser. Please disable ad-blockers or privacy extensions for this site and try again.';
+        setError(msg);
+        return { success: false, error: msg, code: 'blocked_by_client' };
+      }
       const message = networkError?.message || 'An unexpected error occurred during login. Please try again.';
       setError(message);
       return { success: false, error: message };
@@ -1124,6 +1143,11 @@ export function AuthProvider({ children }) {
       return { success: true, user: buildUser(data.session) };
     } catch (networkError) {
       setIsLoading(false);
+      if (isBlockedByClient(networkError)) {
+        const msg = 'Registration blocked by your browser. Please disable ad-blockers for this site to receive the verification email.';
+        setError(msg);
+        return { success: false, error: msg, code: 'blocked_by_client' };
+      }
       const message = networkError?.message || '';
 
       // Signup request timed out — SMTP is likely hanging
@@ -1160,11 +1184,17 @@ export function AuthProvider({ children }) {
       provider: 'google',
       options: {
         redirectTo,
+        skipBrowserRedirect: false,
       },
     });
 
     if (err) {
       setIsLoading(false);
+      if (isBlockedByClient(err)) {
+        const msg = 'Google sign-in was blocked by your browser or an ad-blocker. Please disable extensions and try again.';
+        setError(msg);
+        return { success: false, error: msg, code: 'blocked_by_client' };
+      }
       setError(err.message);
       return { success: false, error: err.message };
     }
@@ -1189,6 +1219,9 @@ export function AuthProvider({ children }) {
     });
 
     if (err) {
+      if (isBlockedByClient(err)) {
+        return { success: false, error: 'Resend blocked by your browser. Please disable ad-blockers for this site and try again.' };
+      }
       const msg = (err.message || '').toLowerCase();
       if (msg.includes('rate limit') || msg.includes('too many') || err.status === 429) {
         return { success: false, error: 'Please wait before requesting another verification email.' };

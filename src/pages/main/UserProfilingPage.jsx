@@ -111,7 +111,7 @@ function isQuestionAnswered(question, value) {
 
 function UserProfilingPage() {
   const navigate = useNavigate();
-  const { updateUserMetadata, isAdminAuthenticated } = useAuthContext();
+  const { updateUserMetadata, user, isAdminAuthenticated } = useAuthContext();
   const introFirstMessage =
     "Hello! I'm B-01, your personal guide on this exciting journey to master public speaking.";
   const introSecondMessage =
@@ -121,8 +121,9 @@ function UserProfilingPage() {
   const outroFirstMessage = "You've made it to the final step! To wrap things up, let's try a quick Free Speech Pre-test.";
   const outroMissionMessage =
     "Speak for at least 30 seconds on the topic, 'Tell me about yourself.' Don't overthink it—just be you and let your voice lead the way!";
-  const [screen, setScreen] = useState('intro');
-  const [introStep, setIntroStep] = useState(0);
+
+  const [screen, setScreen] = useState(() => (user?.profilingCompleted ? 'outro' : 'intro'));
+  const [introStep, setIntroStep] = useState(() => (user?.profilingCompleted ? 2 : 0));
   const [typedIntroText, setTypedIntroText] = useState('');
   const [isIntroTypingDone, setIsIntroTypingDone] = useState(false);
   const [typedReadyText, setTypedReadyText] = useState('');
@@ -439,17 +440,50 @@ function UserProfilingPage() {
 
   const handleSubmit = async ({ nextForm = null } = {}) => {
     if (isSubmitting) return;
+    
+    // Use the provided form (for immediate updates) or the current state
     const workingForm = nextForm || form;
-    const pendingProfiling = QUESTIONS.filter((question) => !isQuestionAnswered(question, workingForm[question.key]));
-    const pendingDemographics = DEMOGRAPHIC_QUESTIONS.filter((question) => !isQuestionAnswered(question, workingForm[question.key]));
+    
+    // Identify exactly what is missing for better debugging and user feedback
+    const pendingProfiling = QUESTIONS.filter((q) => !isQuestionAnswered(q, workingForm[q.key]));
+    const pendingDemographics = DEMOGRAPHIC_QUESTIONS.filter((q) => !isQuestionAnswered(q, workingForm[q.key]));
 
     if (pendingProfiling.length > 0 || pendingDemographics.length > 0) {
-      setError(`Please answer all questions before finishing profiling.`);
+      console.warn('[Profiling] Validation failed. Missing data:', {
+        profiling: pendingProfiling.map(q => q.key),
+        demographics: pendingDemographics.map(q => q.key),
+        currentForm: workingForm
+      });
+
+      const missingLabels = [
+        ...pendingDemographics.map(q => q.label.split('?')[0] + '?'),
+        ...pendingProfiling.map(q => `Question ${QUESTIONS.findIndex(pq => pq.key === q.key) + 1}`)
+      ];
+      
+      setError(`Please answer all questions before finishing. Missing: ${missingLabels.join(', ')}`);
+      
+      // If profiling questions are missing, jump to the first missing one
+      if (pendingProfiling.length > 0) {
+        const firstMissingIdx = QUESTIONS.findIndex(q => q.key === pendingProfiling[0].key);
+        if (firstMissingIdx !== -1) {
+          setCurrentIndex(firstMissingIdx);
+          setScreen('questions');
+        }
+      } else if (pendingDemographics.length > 0) {
+        // If demographics are missing, jump there
+        const firstMissingDemIdx = DEMOGRAPHIC_QUESTIONS.findIndex(q => q.key === pendingDemographics[0].key);
+        if (firstMissingDemIdx !== -1) {
+          setDemographicIndex(firstMissingDemIdx);
+          setScreen('demographics');
+        }
+      }
+      
       return;
     }
 
     setError('');
     setIsSubmitting(true);
+    console.log('[Profiling] Validation passed. Submitting profile...');
 
     const payload = {
       speaker_profile: {
@@ -522,7 +556,8 @@ function UserProfilingPage() {
     }
 
     if (currentIndex >= totalSteps - 1) {
-      await handleSubmit();
+      // Pass the current form explicitly to avoid stale state issues during quick clicks
+      await handleSubmit({ nextForm: form });
       return;
     }
     setError('');

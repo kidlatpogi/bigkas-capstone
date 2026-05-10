@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Routes, Route, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { useAuthContext } from '../context/useAuthContext';
@@ -8,7 +8,7 @@ import { ROUTES } from '../utils/constants';
 // Auth Pages
 import AdminLoginPage from '../pages/auth/AdminLoginPage';
 import LoginPage from '../pages/auth/LoginPage';
-import LandingPage from '../pages/landing/LandingPage';
+const LandingPage = lazy(() => import('../pages/landing/LandingPage'));
 import RegisterPage from '../pages/auth/RegisterPage';
 import VerifyEmailPage from '../pages/auth/VerifyEmailPage';
 import ForgotPasswordPage from '../pages/auth/ForgotPasswordPage';
@@ -232,7 +232,6 @@ function ProtectedRoute() {
   if (
     user?.onboardingStage === 'analyzing' &&
     pathname !== ROUTES.USER_ANALYZING &&
-    !pathname.startsWith(ROUTES.TRAINING) &&
     !pathname.startsWith('/session')
   ) {
     return <Navigate to={ROUTES.USER_ANALYZING} replace />;
@@ -342,7 +341,11 @@ function AppRouter() {
       <Route element={<PublicRoute />}>
         <Route
           path={ROUTES.HOME}
-          element={isNative ? <Navigate to={ROUTES.LOGIN} replace /> : <LandingPage />}
+          element={isNative ? <Navigate to={ROUTES.LOGIN} replace /> : (
+            <Suspense fallback={null}>
+              <LandingPage />
+            </Suspense>
+          )}
         />
         <Route path={ROUTES.LOGIN} element={<LoginPage />} />
         <Route path={ROUTES.ADMIN_LOGIN_BASE} element={<AdminLoginPage />} />

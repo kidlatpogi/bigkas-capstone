@@ -1,333 +1,296 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { authApi } from '@session/api/authApi';
 import { ROUTES } from '../../utils/constants';
-import Button from '../../components/common/Button';
 import PushButton from '../../components/common/PushButton';
-import BackButton from '../../components/common/BackButton';
+import bigkasLogo from '../../assets/logos/0015.png';
+import { getSpriteUrl } from '../../utils/assetUtils';
 import './VerifyEmailPage.css';
 
 const OTP_LENGTH = 6;
 const RESEND_COOLDOWN_SECS = 60;
 const PENDING_EMAIL_KEY = 'bigkas_pending_verification_email';
 
-/**
- * Normalise Supabase OTP error messages into user-friendly strings.
- */
 function mapOtpError(error) {
   if (!error) return 'An unexpected error occurred. Please try again.';
   const msg = (error.message || '').toLowerCase();
-
-  if (msg.includes('token has expired') || msg.includes('otp expired') || msg.includes('expired')) {
-    return 'This code has expired. Please request a new one below.';
-  }
-  if (msg.includes('invalid') || msg.includes('incorrect') || msg.includes('does not match') || msg.includes('token')) {
-    return 'Incorrect code. Please double-check and try again.';
-  }
-  if (msg.includes('rate') || msg.includes('too many')) {
-    return 'Too many attempts. Please wait a moment before trying again.';
-  }
-  if (msg.includes('network') || msg.includes('fetch') || msg.includes('failed to fetch')) {
-    return 'Network error. Please check your connection and try again.';
-  }
-  return error.message || 'Verification failed. Please try again.'; 
+  if (msg.includes('expired')) return 'This code has expired. Please request a new one.';
+  if (msg.includes('invalid') || msg.includes('incorrect') || msg.includes('token')) return 'Incorrect code. Please check and try again.';
+  if (msg.includes('rate') || msg.includes('too many')) return 'Too many attempts. Please wait a moment.';
+  return error.message || 'Verification failed. Please try again.';
 }
 
-/**
- * VerifyEmailPage â€” 6-Digit OTP entry after registration.
- *
- * Email resolution priority:
- *  1. React Router navigation state  (navigate(ROUTES.VERIFY_EMAIL, { state: { email } }))
- *  2. localStorage key  bigkas_pending_verification_email  (written by RegisterPage)
- */
-function VerifyEmailPage() {
+export default function VerifyEmailPage() {
   const navigate = useNavigate();
   const location = useLocation();
-
-  // â”€â”€ Resolve the email â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const resolvedEmail = (
-    location.state?.email ||
-    window.localStorage.getItem(PENDING_EMAIL_KEY) ||
-    ''
-  ).trim();
-
-  // â”€â”€ OTP digit state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const layoutRef = useRef(null);
+  const resolvedEmail = (location.state?.email || window.localStorage.getItem(PENDING_EMAIL_KEY) || '').trim();
+  
   const [digits, setDigits] = useState(Array(OTP_LENGTH).fill(''));
   const inputRefs = useRef([]);
-
-  // â”€â”€ Async / UI state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState('');
   const [resendMessage, setResendMessage] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [layoutMode, setLayoutMode] = useState('split');
 
-  // Focus first box on mount
   useEffect(() => {
     inputRefs.current[0]?.focus();
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.classList.add('verify-page-active');
-    document.body.classList.add('verify-page-active');
+    document.documentElement.classList.add('login-page-active');
+    document.body.classList.add('login-page-active');
     return () => {
-      document.documentElement.classList.remove('verify-page-active');
-      document.body.classList.remove('verify-page-active');
+      document.documentElement.classList.remove('login-page-active');
+      document.body.classList.remove('login-page-active');
     };
   }, []);
 
-  // Resend countdown
+  useEffect(() => {
+    if (!layoutRef.current || typeof ResizeObserver === 'undefined') return undefined;
+
+    const observer = new ResizeObserver(([entry]) => {
+      const width = entry.contentRect?.width || window.innerWidth;
+      setLayoutMode(width < 960 ? 'stack' : 'split');
+    });
+
+    observer.observe(layoutRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   useEffect(() => {
     if (resendCooldown <= 0) return;
-    const id = setInterval(() => {
-      setResendCooldown((prev) => {
-        if (prev <= 1) {
-          clearInterval(id);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    const id = setInterval(() => setResendCooldown((prev) => prev - 1), 1000);
     return () => clearInterval(id);
   }, [resendCooldown]);
 
-  // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const focusBox = (index) => {
-    inputRefs.current[index]?.focus();
-  };
-
   const handleChange = (e, index) => {
-    const raw = e.target.value;
-    // Only accept digits; take the last character typed to handle rapid input
-    const digit = raw.replace(/\D/g, '').slice(-1);
-
-    if (!digit) return; // non-digit â€” ignore (keyDown handles backspace)
-
+    const digit = e.target.value.replace(/\D/g, '').slice(-1);
+    if (!digit) return;
     const updated = [...digits];
     updated[index] = digit;
     setDigits(updated);
     setError('');
-
-    // Advance focus
-    if (index < OTP_LENGTH - 1) {
-      focusBox(index + 1);
-    }
+    if (index < OTP_LENGTH - 1) inputRefs.current[index + 1]?.focus();
   };
 
   const handleKeyDown = (e, index) => {
     if (e.key === 'Backspace') {
-      e.preventDefault();
+      const updated = [...digits];
       if (digits[index]) {
-        // Clear current box content
-        const updated = [...digits];
         updated[index] = '';
-        setDigits(updated);
       } else if (index > 0) {
-        // Move back and clear previous box
-        const updated = [...digits];
         updated[index - 1] = '';
-        setDigits(updated);
-        focusBox(index - 1);
+        inputRefs.current[index - 1]?.focus();
       }
-    } else if (e.key === 'ArrowLeft' && index > 0) {
-      focusBox(index - 1);
-    } else if (e.key === 'ArrowRight' && index < OTP_LENGTH - 1) {
-      focusBox(index + 1);
+      setDigits(updated);
+    } else if (e.key === 'Enter' && digits.every(Boolean)) {
+      handleVerify();
     }
   };
 
-  const handlePaste = (e) => {
-    e.preventDefault();
-    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, OTP_LENGTH);
-    if (!pasted) return;
-
-    const updated = Array(OTP_LENGTH).fill('');
-    for (let i = 0; i < pasted.length; i++) {
-      updated[i] = pasted[i];
-    }
-    setDigits(updated);
-    setError('');
-    // Focus the box after the last pasted digit (or last box)
-    focusBox(Math.min(pasted.length, OTP_LENGTH - 1));
-  };
-
-  // â”€â”€ Submit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleVerify = async () => {
     const token = digits.join('');
-    if (token.length < OTP_LENGTH) {
-      setError('Please enter all 6 digits.');
-      focusBox(digits.findIndex((d) => !d));
-      return;
-    }
-    if (!resolvedEmail) {
-      setError('Could not determine your email. Please go back and register again.');
-      return;
-    }
-
+    if (token.length < OTP_LENGTH || !resolvedEmail) return;
     setIsVerifying(true);
     setError('');
-
     const { error: otpError } = await authApi.verifyEmailOtp(resolvedEmail, token);
-
-    setIsVerifying(false);
-
+    
     if (otpError) {
+      setIsVerifying(false);
       setError(mapOtpError(otpError));
-      // Clear the boxes so the user can re-enter
       setDigits(Array(OTP_LENGTH).fill(''));
-      focusBox(0);
+      inputRefs.current[0]?.focus();
       return;
     }
 
-    // Success â€” clean up localStorage and go to login
+    await authApi.logout();
+    
+    setIsVerifying(false);
     window.localStorage.removeItem(PENDING_EMAIL_KEY);
-    navigate(ROUTES.LOGIN, {
-      state: { accountVerified: true },
-      replace: true,
-    });
+    navigate(ROUTES.LOGIN, { state: { accountVerified: true }, replace: true });
   };
 
-  // Allow Enter key to submit when all digits are filled
-  const handleBoxKeyDown = (e, index) => {
-    if (e.key === 'Enter') {
-      handleVerify();
-      return;
-    }
-    handleKeyDown(e, index);
-  };
-
-  // â”€â”€ Resend â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleResend = async () => {
     if (!resolvedEmail || resendCooldown > 0 || isResending) return;
-
     setIsResending(true);
-    setResendMessage('');
     setError('');
-
     const { error: resendError } = await authApi.resendSignupOtp(resolvedEmail);
-
     setIsResending(false);
-
     if (resendError) {
-      const msg = (resendError.message || '').toLowerCase();
-      if (msg.includes('rate') || msg.includes('too many')) {
-        setError('Too many resend requests. Please wait a few minutes.');
-      } else {
-        setError(resendError.message || 'Failed to resend code. Please try again.');
-      }
+      setError(resendError.message || 'Failed to resend code.');
       return;
     }
-
-    setResendMessage(`A new code was sent to ${resolvedEmail}.`);
+    setResendMessage('A new code was sent!');
     setResendCooldown(RESEND_COOLDOWN_SECS);
-    setDigits(Array(OTP_LENGTH).fill(''));
-    focusBox(0);
+    setTimeout(() => setResendMessage(''), 5000);
   };
 
-  // â”€â”€ Derived â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const allFilled = digits.every(Boolean);
-  const maskedEmail = resolvedEmail
-    ? resolvedEmail.replace(/(.{2})(.*)(@.*)/, (_, a, b, c) => a + '*'.repeat(b.length) + c)
-    : 'your email';
+  const maskedEmail = resolvedEmail.replace(/(.{2})(.*)(@.*)/, (_, a, b, c) => a + '*'.repeat(Math.min(b.length, 8)) + c);
 
-  // â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+  };
+
+  const insightWords = [
+    { text: 'Visual', size: '1rem', opacity: 0.8, top: '15%', left: '12%', delay: 0 },
+    { text: 'Vocal', size: '0.95rem', opacity: 0.7, top: '22%', left: '80%', delay: 1 },
+    { text: 'Verbal', size: '0.9rem', opacity: 0.6, top: '68%', left: '8%', delay: 0.5 },
+    { text: 'Gesture', size: '1.1rem', opacity: 0.9, top: '12%', left: '65%', delay: 2 },
+    { text: 'Eye Contact', size: '1rem', opacity: 0.75, top: '55%', left: '82%', delay: 1.5 },
+    { text: 'Jitter', size: '0.8rem', opacity: 0.5, top: '78%', left: '70%', delay: 3 },
+    { text: 'Shimmer', size: '0.9rem', opacity: 0.65, top: '38%', left: '6%', delay: 2.5 },
+    { text: 'Confidence', size: '1.15rem', opacity: 0.95, top: '50%', left: '10%', delay: 0 },
+    { text: 'Clarity', size: '1rem', opacity: 0.8, top: '82%', left: '22%', delay: 4 },
+    { text: 'Presence', size: '1.1rem', opacity: 0.85, top: '18%', left: '42%', delay: 1.2 },
+    { text: 'Empower', size: '0.9rem', opacity: 0.6, top: '72%', left: '48%', delay: 2.2 },
+    { text: 'Growth', size: '1.05rem', opacity: 0.8, top: '8%', left: '85%', delay: 0.8 },
+    { text: 'Flow', size: '1rem', opacity: 0.7, top: '48%', left: '88%', delay: 3.5 },
+    { text: 'Impact', size: '1.1rem', opacity: 0.9, top: '30%', left: '18%', delay: 4.5 },
+    { text: 'Authentic', size: '0.95rem', opacity: 0.75, top: '62%', left: '60%', delay: 5 },
+  ];
+
   return (
-    <div className="auth-page">
-      <BackButton className="auth-login-back" to={ROUTES.REGISTER} fallbackTo={ROUTES.HOME} />
-      <div className="auth-form-panel">
-        <div className="auth-form-container floating-card verify-email-card">
-          <h2 className="auth-form-title">VERIFY YOUR EMAIL</h2>
+    <div ref={layoutRef} className="auth-page-v2" data-layout={layoutMode}>
+      <div className="auth-container">
+        <motion.div 
+          className="auth-card"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {/* Left Side: Branding & Visuals (1:1 with Login) */}
+          <div className="auth-visual-side">
+            <motion.div variants={itemVariants} className="auth-brand-logo">
+              <img src={bigkasLogo} alt="Bigkas" className="auth-logo-img" />
+              <span>Bigkas</span>
+            </motion.div>
+            
+            <div className="auth-visual-content">
+              <motion.div 
+                className="auth-robot-img-wrap"
+                initial={{ opacity: 1, y: 0 }}
+                animate={{ y: [0, -15, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <div className="auth-robot-glow" />
+                <img src={getSpriteUrl('Robot/0001.webp')} alt="AI Companion" className="auth-robot-img" />
+              </motion.div>
 
-          <p className="otp-instructions">
-            We sent a 6-digit code to{' '}
-            <strong className="otp-email-highlight">{maskedEmail}</strong>.
-            Enter it below to activate your account.
-          </p>
-
-          {/* â”€â”€ Split-box OTP input â”€â”€ */}
-          <div
-            className="otp-boxes"
-            onPaste={handlePaste}
-            role="group"
-            aria-label="One-time password input"
-          >
-            {digits.map((digit, i) => (
-              <input
-                key={i}
-                ref={(el) => { inputRefs.current[i] = el; }}
-                className={`otp-box${error ? ' otp-box-error' : ''}`}
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={1}
-                value={digit}
-                autoComplete={i === 0 ? 'one-time-code' : 'off'}
-                aria-label={`Digit ${i + 1} of ${OTP_LENGTH}`}
-                onChange={(e) => handleChange(e, i)}
-                onKeyDown={(e) => handleBoxKeyDown(e, i)}
-              />
-            ))}
+              {insightWords.map((word, i) => (
+                <motion.div 
+                  key={i}
+                  className="insight-chip"
+                  style={{ top: word.top, left: word.left, fontSize: word.size, opacity: word.opacity }}
+                  animate={{ y: [0, -20, 0], x: [0, 15, 0] }}
+                  transition={{ duration: 6 + (i % 4), repeat: Infinity, delay: word.delay, ease: "easeInOut" }}
+                >
+                  {word.text}
+                </motion.div>
+              ))}
+              <motion.h2 variants={itemVariants} className="auth-hero-tagline">
+                Master <span>Public Speaking</span>
+              </motion.h2>
+              <motion.p variants={itemVariants} className="auth-hero-desc">
+                Your AI-powered journey to public speaking excellence starts here.
+              </motion.p>
+            </div>
+            
+            <div className="auth-visual-waves">
+              {[...Array(24)].map((_, i) => (
+                <div key={i} className={`auth-visual-wave auth-visual-wave-${(i % 6) + 1}`} />
+              ))}
+            </div>
           </div>
 
-          {/* â”€â”€ Error banner â”€â”€ */}
-          {error && (
-            <p className="auth-error-banner otp-error-banner" role="alert">
-              {error}
-            </p>
-          )}
+          {/* Right Side: Verification Form */}
+          <div className="auth-form-side">
+            <div className="auth-form-inner">
+              <motion.h3 variants={itemVariants} className="auth-form-headline">Verify Your Email</motion.h3>
+              <motion.p variants={itemVariants} className="auth-form-subline">
+                We sent a code to <span className="verify-email-accent">{maskedEmail}</span>. Enter it below to activate your account.
+              </motion.p>
 
-          {/* â”€â”€ Success resend banner â”€â”€ */}
-          {resendMessage && !error && (
-            <p className="auth-success-banner otp-resend-success" role="status">
-              {resendMessage}
-            </p>
-          )}
+              <div className="auth-form">
+                <AnimatePresence mode="wait">
+                  {error && (
+                    <motion.div 
+                      className="auth-status-banner is-error"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                    >
+                      {error}
+                    </motion.div>
+                  )}
+                  {resendMessage && (
+                    <motion.div 
+                      className="auth-status-banner is-success"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                    >
+                      {resendMessage}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
-          {/* â”€â”€ Verify button â”€â”€ */}
-          <PushButton
-            type="button"
-            className="verify-submit-btn"
-            onClick={handleVerify}
-            disabled={isVerifying || !allFilled}
-            bgColor="#5A7863"
-            shadowColor="#3E5646"
-            textColor="#ffffff"
-          >
-            {isVerifying ? <span className="btn-loader"></span> : 'VERIFY EMAIL'}
-          </PushButton>
+                <motion.div variants={itemVariants} className="otp-inputs-v2">
+                  {digits.map((digit, i) => (
+                    <input
+                      key={i}
+                      ref={(el) => (inputRefs.current[i] = el)}
+                      className={`otp-digit-v2 ${error ? 'is-invalid' : ''}`}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleChange(e, i)}
+                      onKeyDown={(e) => handleKeyDown(e, i)}
+                      disabled={isVerifying}
+                    />
+                  ))}
+                </motion.div>
 
-          {/* ── Resend section ── */}
-          <div className="otp-resend-row">
-            <span className="otp-resend-label">Didn&rsquo;t receive a code?</span>
-            <Button
-              type="button"
-              variant="ghost"
-              className="otp-resend-btn"
-              onClick={handleResend}
-              disabled={resendCooldown > 0 || isResending || !resolvedEmail}
-              isLoading={isResending}
-            >
-              {resendCooldown > 0
-                ? `Resend Code in ${resendCooldown}s`
-                : 'Resend Code'}
-            </Button>
+                <motion.div variants={itemVariants} className="form-actions-v2">
+                  <PushButton
+                    className="verify-submit-btn"
+                    onClick={handleVerify}
+                    disabled={isVerifying || !digits.every(Boolean)}
+                    bgColor="#059669"
+                    shadowColor="#047857"
+                  >
+                    {isVerifying ? <span className="loading-spinner" /> : 'Verify Account'}
+                  </PushButton>
+                </motion.div>
+
+                <motion.div variants={itemVariants} className="verify-footer-v2">
+                  <p>Didn&apos;t receive a code?</p>
+                  <button 
+                    className="resend-btn-v2"
+                    onClick={handleResend}
+                    disabled={resendCooldown > 0 || isResending}
+                  >
+                    {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
+                  </button>
+                </motion.div>
+
+                <motion.div variants={itemVariants} className="signup-prompt-v2">
+                  <button className="back-btn-v2" onClick={() => navigate(ROUTES.REGISTER)}>
+                    Wrong email? Go back
+                  </button>
+                </motion.div>
+              </div>
+            </div>
           </div>
-
-          {/* ── Back to register link ── */}
-          <div className="otp-back-row">
-            <Button
-              type="button"
-              variant="ghost"
-              className="auth-forgot-link"
-              onClick={() => navigate(ROUTES.REGISTER)}
-            >
-              Wrong email? Go back
-            </Button>
-          </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
 }
-
-export default VerifyEmailPage;

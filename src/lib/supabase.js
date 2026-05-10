@@ -25,6 +25,11 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
     autoRefreshToken: true,
     detectSessionInUrl: true,
   },
+  global: {
+    headers: {
+      'x-client-info': 'supabase-js-optimized', // Override default telemetry to avoid ad-blocker filters
+    },
+  },
 });
 
 export default supabase;

@@ -21,7 +21,6 @@ const SESSIONS_SELECT_QUERY = `
   session_mode,
   session_origin,
   speaking_mode,
-  source,
   topic,
   duration,
   created_at,
@@ -32,23 +31,15 @@ const SESSIONS_SELECT_QUERY = `
   ),
   session_media (
     audio_url,
-    transcript,
-    video_storage_url
+    transcript
   ),
   session_metrics (
     overall_score,
     vocal_score,
     visual_score,
     verbal_score,
-    visual_avg,
-    vocal_avg,
-    verbal_avg,
-    confidence_score,
     pronunciation_score,
-    fluency_score,
-    jitter,
-    shimmer,
-    gesture_score
+    fluency_score
   ),
   session_feedback (
     general_feedback

@@ -228,7 +228,7 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
 
       const { data: richMedia, error: richMediaErr } = await supabase
         .from('session_media')
-        .select('audio_url, video_storage_url, transcript')
+        .select('audio_url, transcript')
         .eq('session_id', sessionId)
         .maybeSingle();
 

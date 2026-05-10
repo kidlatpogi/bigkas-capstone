@@ -801,12 +801,6 @@ function ActivityPage() {
     localStorage.setItem('bigkas_global_audio_muted_v1', nextMute ? '1' : '0');
   };
 
-  const handleToggleMute = async () => {
-    const nextMute = !user?.isAudioMuted;
-    await updateUserMetadata({ is_audio_muted: nextMute });
-    localStorage.setItem('bigkas_global_audio_muted_v1', nextMute ? '1' : '0');
-  };
-
   const handleActiveTaskIdChange = useCallback((id) => {
     setActiveTaskId(id);
     if (user?.id) {

@@ -419,14 +419,27 @@ function getAccountBlockedMessage(meta = {}) {
   return null;
 }
 
-function deriveOnboardingStage(meta = {}) {
+function deriveOnboardingStage(meta = {}, profile = {}) {
   const explicitStage = ['profiling', 'pretest', 'analyzing', 'completed'].includes(meta.onboarding_stage)
     ? meta.onboarding_stage
     : null;
-  const profilingCompleted = parseMetadataBoolean(meta.profiling_completed) || hasSpeakerProfileData(meta.speaker_profile);
-  const pretestCompleted = parseMetadataBoolean(meta.pretest_completed);
-  const pretestFreeCompleted = parseMetadataBoolean(meta.pretest_free_completed);
-  const onboardingCompleted = parseMetadataBoolean(meta.onboarding_completed);
+
+  // Prioritize database columns if available, fall back to metadata
+  const profilingCompleted = 
+    parseMetadataBoolean(profile.is_profiling_completed) || 
+    parseMetadataBoolean(meta.profiling_completed) || 
+    hasSpeakerProfileData(meta.speaker_profile);
+
+  const pretestCompleted = 
+    parseMetadataBoolean(profile.is_pre_test_completed) || 
+    parseMetadataBoolean(meta.pretest_completed);
+
+  const pretestFreeCompleted = 
+    parseMetadataBoolean(meta.pretest_free_completed);
+
+  const onboardingCompleted = 
+    parseMetadataBoolean(meta.onboarding_completed) || 
+    (profilingCompleted && pretestCompleted);
 
   if (pretestCompleted && pretestFreeCompleted) {
     if (explicitStage === 'analyzing') {
@@ -490,11 +503,11 @@ export function AuthProvider({ children }) {
   }, []);
 
   /* ── Build user object from Supabase session ── */
-  const buildUser = useCallback((supaSession) => {
+  const buildUser = useCallback((supaSession, profile = {}) => {
     if (!supaSession) return null;
     const u = supaSession.user || supaSession;
     const meta = u?.user_metadata || {};
-    const onboardingStage = deriveOnboardingStage(meta);
+    const onboardingStage = deriveOnboardingStage(meta, profile);
     const fullName = meta.full_name || meta.name || u.email?.split('@')[0] || 'User';
     const fallbackFirst = fullName.split(' ')[0] || '';
     const fallbackLast = fullName.split(' ').slice(1).join(' ');
@@ -509,8 +522,8 @@ export function AuthProvider({ children }) {
       avatarUrl: resolveAvatarUrl(meta.avatar_url),
       avatar_url: resolveAvatarUrl(meta.avatar_url),
       onboardingStage,
-      profilingCompleted: parseMetadataBoolean(meta.is_profiling_completed) || parseMetadataBoolean(meta.profiling_completed) || hasSpeakerProfileData(meta.speaker_profile),
-      pretestCompleted: parseMetadataBoolean(meta.is_pre_test_completed) || parseMetadataBoolean(meta.pretest_completed),
+      profilingCompleted: parseMetadataBoolean(profile.is_profiling_completed) || parseMetadataBoolean(meta.is_profiling_completed) || parseMetadataBoolean(meta.profiling_completed) || hasSpeakerProfileData(meta.speaker_profile),
+      pretestCompleted: parseMetadataBoolean(profile.is_pre_test_completed) || parseMetadataBoolean(meta.is_pre_test_completed) || parseMetadataBoolean(meta.pretest_completed),
       pretestScriptedCompleted: parseMetadataBoolean(meta.pretest_scripted_completed) || parseMetadataBoolean(meta.pretest_completed),
       pretestFreeCompleted: parseMetadataBoolean(meta.pretest_free_completed),
       pretestScriptedSessionId: meta.pretest_scripted_session_id || null,
@@ -522,11 +535,13 @@ export function AuthProvider({ children }) {
       speakerEntryScore: Number(meta.speaker_entry_score) || null,
       speakerLevel: String(meta.speaker_level || 'Novice'),
       speakerLevelNumber: Number(meta.speaker_level_number ?? 1) || 1,
+      progressLevelNumber: Number(meta.progress_level_number ?? 1) || 1,
       speakerPointsHistory: normalizeSpeakerPointsHistory(meta.speaker_points_history),
       onboardingLevelAnalysis: meta.onboarding_level_analysis || null,
       dashboardTutorialSeen: parseMetadataBoolean(meta.dashboard_tutorial_seen) || parseMetadataBoolean(meta.is_tutorial_completed),
       activeBannerId: meta.active_banner_id || 'default_skyward',
       unlockedBanners: Array.isArray(meta.unlocked_banners) ? meta.unlocked_banners : ['default_skyward'],
+      isAudioMuted: typeof window !== 'undefined' && window.localStorage.getItem('bigkas_global_audio_muted_v1') === '1',
       createdAt: u.created_at,
     };
   }, [resolveAvatarUrl]);
@@ -536,29 +551,47 @@ export function AuthProvider({ children }) {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('is_profiling_completed, is_pre_test_completed, current_level, diagnostic_score, diagnostic_completed_at')
+        .select('is_profiling_completed, is_pre_test_completed, current_level, speaker_level, diagnostic_score, diagnostic_completed_at')
         .eq('id', userId)
         .single();
       
       if (error) {
         if (error.code !== 'PGRST116') { // PGRST116 is 'no rows found'
           console.error('Bigkas Auth: failed to fetch profile:', error);
+          return;
+        } else {
+          return;
         }
-        return;
       }
 
       if (profile) {
         setUser(prev => {
           if (prev?.id !== userId) return prev;
+
+          const profilingCompleted = prev.profilingCompleted || !!profile.is_profiling_completed;
+          const pretestCompleted = prev.pretestCompleted || !!profile.is_pre_test_completed;
+
+          // Recalculate stage using the same logic as deriveOnboardingStage but with derived flags
+          let nextStage = prev.onboardingStage;
+          if (pretestCompleted && prev.pretestFreeCompleted) {
+             if (nextStage !== 'analyzing') nextStage = 'completed';
+          } else if (pretestCompleted && !prev.pretestFreeCompleted) {
+             nextStage = 'pretest';
+          } else if (profilingCompleted) {
+             if (nextStage === 'profiling' || !nextStage) nextStage = 'pretest';
+          }
+
           return {
             ...prev,
             isProfilingCompleted: !!profile.is_profiling_completed,
             isPreTestCompleted: !!profile.is_pre_test_completed,
-            // Ensure these match the buildUser mapped keys too
-            profilingCompleted: prev.profilingCompleted || !!profile.is_profiling_completed,
-            pretestCompleted: prev.pretestCompleted || !!profile.is_pre_test_completed,
-            speakerLevelNumber: profile.current_level || prev.speakerLevelNumber,
+            profilingCompleted,
+            pretestCompleted,
+            onboardingStage: nextStage,
+            progressLevelNumber: profile.current_level || prev.progressLevelNumber || 1,
+            speakerLevelNumber: profile.speaker_level || prev.speakerLevelNumber || 1,
             speakerEntryScore: profile.diagnostic_score || prev.speakerEntryScore,
+            isAudioMuted: typeof window !== 'undefined' && window.localStorage.getItem('bigkas_global_audio_muted_v1') === '1',
           };
         });
       }
@@ -637,7 +670,7 @@ export function AuthProvider({ children }) {
         setError(blockedAccount.message);
         setUser(null);
         clearAdminSession();
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
         isBootstrapped = true;
         clearTimeout(bootstrapTimeout);
         setIsLoading(false);
@@ -676,7 +709,7 @@ export function AuthProvider({ children }) {
         setPendingEmail(null);
         setUser(null);
         clearAdminSession();
-        void supabase.auth.signOut();
+        void supabase.auth.signOut({ scope: 'local' });
         return;
       }
 
@@ -688,7 +721,7 @@ export function AuthProvider({ children }) {
         setPendingEmail(session.user.email || null);
         setUser(null);
         clearAdminSession();
-        void supabase.auth.signOut();
+        void supabase.auth.signOut({ scope: 'local' });
         return;
       }
 
@@ -799,7 +832,7 @@ export function AuthProvider({ children }) {
         setPendingEmail(email);
         const message = 'Verify your email address first. Then click resend email below if you need a new link.';
         setError(message);
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
         return {
           success: false,
           code: 'email_not_confirmed',
@@ -811,7 +844,7 @@ export function AuthProvider({ children }) {
       // Block deactivated / deleted accounts
       const meta = data.user?.user_metadata || {};
       if (parseMetadataBoolean(meta.account_deactivated) || parseMetadataBoolean(meta.account_deleted)) {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
         const blockedMessage = parseMetadataBoolean(meta.account_deleted)
           ? 'Account deleted. Contact admin for assistance.'
           : 'Account deactivated. Contact admin for assistance.';
@@ -918,7 +951,7 @@ export function AuthProvider({ children }) {
         setPendingEmail(email);
         const message = 'Verify your email address first. Then click resend email below if you need a new link.';
         setError(message);
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
         return {
           success: false,
           code: 'email_not_confirmed',
@@ -936,7 +969,7 @@ export function AuthProvider({ children }) {
 
       if (profileError || !profile || !profile.role) {
         clearAdminSession();
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
         const message = 'Admin profile not found.';
         setError(message);
         return {
@@ -948,7 +981,7 @@ export function AuthProvider({ children }) {
 
       if (profile.role !== 'admin' && profile.role !== 'superadmin') {
         clearAdminSession();
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
         const message = 'Access Denied: Admin privileges required.';
         setError(message);
         return {
@@ -1213,6 +1246,11 @@ export function AuthProvider({ children }) {
     }
     if (updates.dashboard_tutorial_seen !== undefined) {
       profileUpdates.dashboard_tutorial_seen = !!updates.dashboard_tutorial_seen;
+    }
+    if (updates.is_audio_muted !== undefined) {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('bigkas_global_audio_muted_v1', updates.is_audio_muted ? '1' : '0');
+      }
     }
 
     if (Object.keys(profileUpdates).length > 0 && data.user?.id) {

@@ -25,6 +25,8 @@ const visualSprite = getSpriteUrl('common/Visual.png');
 const vocalSprite = getSpriteUrl('common/Vocal.png');
 import './DetailedFeedbackPageMobile.css';
 
+const FILLER_WORDS = ['um', 'uh', 'ah', 'like', 'err', 'uhm', 'well', 'basically', 'actually', 'literally'];
+
 const SESSION_MEDIA_BUCKET = 'session-recordings';
 
 // --- Helpers ---
@@ -292,7 +294,68 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
   const overallTier = getScoreTier15(tripleV.entryPoint);
   const mode = getSessionMode(session);
   const durationSec = Math.max(1, Math.round(session?.duration_sec ?? session?.duration ?? 1));
-  const practicedText = sanitizeTranscriptForDisplay(recordingMedia.transcript || session?.transcript || '', '');
+  const rawTranscript = recordingMedia.transcript || session?.transcript || '';
+  const practicedText = sanitizeTranscriptForDisplay(rawTranscript, '');
+
+  // Extraction of mispronunciations and filler data
+  const analysisData = useMemo(() => {
+    try {
+      if (typeof session?.analysis === 'object' && session.analysis !== null) return session.analysis;
+      if (typeof session?.analysis === 'string') return JSON.parse(session.analysis);
+    } catch (e) {
+      console.warn('Failed to parse mobile session analysis for highlighting:', e);
+    }
+    return {};
+  }, [session?.analysis]);
+
+  const mispronunciations = analysisData?.mispronunciations || [];
+  
+  const fillerCount = useMemo(() => {
+    if (analysisData?.filler_count !== undefined) return analysisData.filler_count;
+    const words = rawTranscript.toLowerCase().split(/\s+/);
+    return words.filter(w => FILLER_WORDS.includes(w.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ""))).length;
+  }, [rawTranscript, analysisData?.filler_count]);
+
+  const renderHighlightedTranscript = () => {
+    if (!rawTranscript) return <p className="df-mobile-transcript-text">No transcript generated.</p>;
+
+    const words = rawTranscript.split(/\s+/);
+    const fillerWordsFromAnalysis = Array.isArray(analysisData?.filler_words) 
+      ? analysisData.filler_words.map(w => w.toLowerCase()) 
+      : [];
+
+    return (
+      <div className="df-mobile-transcript-text">
+        {words.map((word, idx) => {
+          const cleanWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").toLowerCase();
+          
+          // Check if it's a filler: either in our global list OR specifically identified by analysis
+          const isFiller = FILLER_WORDS.includes(cleanWord) || fillerWordsFromAnalysis.includes(cleanWord);
+          
+          const mis = mispronunciations.find(m => m.word.toLowerCase() === cleanWord || m.heard?.toLowerCase() === cleanWord);
+
+          if (isFiller) {
+            return (
+              <span key={idx} className="transcript-word transcript-word--filler">
+                {word}
+              </span>
+            );
+          }
+
+          if (mis) {
+            return (
+              <span key={idx} className="transcript-word transcript-word--mispronounced">
+                {word}
+                <span className="transcript-word-correction">({mis.suggestion || mis.correction})</span>
+              </span>
+            );
+          }
+
+          return <span key={idx}>{word} </span>;
+        })}
+      </div>
+    );
+  };
 
   const visualSubMetrics = [
     { label: 'Eye Contact', score: subMetric100to15(session?.eye_contact_score) ?? tripleV.visualAvg },
@@ -588,11 +651,25 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
 
             {/* Transcript */}
             <section className="df-mobile-section dashboard-anim-bottom">
-              <div className="df-mobile-section-header">
+              <div className="df-mobile-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h2 className="df-mobile-section-title">Transcript</h2>
+                <div className="filler-counter-badge">
+                  <strong>{fillerCount}</strong> Fillers
+                </div>
               </div>
               <div className="df-mobile-transcript-box">
-                <p className="df-mobile-transcript-text">{practicedText || 'No transcript generated.'}</p>
+                {renderHighlightedTranscript()}
+                
+                <div className="transcript-legend">
+                  <div className="legend-item">
+                    <div className="legend-color legend-color--mispronounced" />
+                    <span>Mispronunciation (Blue)</span>
+                  </div>
+                  <div className="legend-item">
+                    <div className="legend-color legend-color--filler" />
+                    <span>Filler Word (Green)</span>
+                  </div>
+                </div>
               </div>
             </section>
 

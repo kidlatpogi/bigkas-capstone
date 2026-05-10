@@ -8,6 +8,7 @@ import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import PushButton from '../../components/common/PushButton';
 import { IoChatbubbleEllipsesOutline, IoSend, IoFlame, IoTrophyOutline } from 'react-icons/io5';
+import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import TutorialOverlay from '../../components/main/TutorialOverlay';
 import {
   GLOBAL_ACTIVITY_SCOPE,
@@ -23,9 +24,10 @@ import StreakCalendarModal from '../../components/main/StreakCalendarModal';
 import RankListModal from '../../components/main/RankListModal';
 import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 import { useJourneyRemoteState } from '../../hooks/useJourneyRemoteState';
-import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../services/journeyProgressService';
+import { ensureJourneyStarted, updateJourneyCurrentActivity, updateUserProgressLevel } from '../../services/journeyProgressService';
 import { RANDOM_TOPICS } from '../../utils/practiceData';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
+import { filterActivitiesForJourney, JOURNEY_STAGE_LIMITS } from '../../utils/journeyFiltering';
 
 const iconFire = getAssetUrl('icons/Icon-Fire.svg');
 const robotMorningImage = getSpriteUrl('Robot/0018.webp');
@@ -37,7 +39,7 @@ const tutorialRobotStep3 = getSpriteUrl('Robot/0018.webp');
 const tutorialRobotStep4 = getSpriteUrl('Robot/0001.webp');
 const tutorialRobotStep5 = getSpriteUrl('Robot/0002.webp');
 const tutorialRobotStep6 = getSpriteUrl('Robot/0004.webp');
-const randomizerRobotImage = getSpriteUrl('Robot/0005.webp');
+const randomizerRobotImage = getSpriteUrl('Robot/0002.webp');
 const rankBronzeImage = getSpriteUrl('Rank/rank-bronze.png');
 const rankSilverImage = getSpriteUrl('Rank/rank-silver.png');
 const rankGoldImage = getSpriteUrl('Rank/rank-gold.png');
@@ -47,6 +49,7 @@ const crystalBallImage = getSpriteUrl('common/crystal-ball.png');
 const crownImage = getSpriteUrl('common/crown.png');
 import b01ChatHead from '../../assets/logos/0015.png';
 import fireAnimationData from '../../assets/Lottie/fire.json';
+import { generateCoachInsights } from '../../utils/coachInsights';
 import './InnerPages.css';
 import './ActivityPage.css';
 
@@ -65,61 +68,7 @@ const B01_SUGGESTIONS = [
   "What should I practice next?"
 ];
 
-const FREE_SPEECH_TUTORIAL_STEPS = [
-  {
-    id: 'step-intro',
-    title: 'B-01:',
-    robot: tutorialRobotStep1,
-    robotClassName: 'is-activity-home-step-1',
-    button: 'Next',
-    targetElementId: null,
-    text: "Welcome aboard! You made it, and I know you're going to do great things here. Let me give you a quick, guided tour of your Home screen so you know exactly where everything is.",
-  },
-  {
-    id: 'step-companion',
-    title: 'B-01:',
-    robot: tutorialRobotStep2,
-    robotClassName: 'is-activity-home-step-2',
-    button: 'Next',
-    targetElementId: 'tutorial-target-home-banner',
-    text: "Your AI Companion—hey, that's me! See my panel right at the top? I'll be checking in with you from time to time. Depending on your progress, I'll drop by with daily greetings, personalized tips, and a little extra encouragement to keep your momentum going.",
-  },
-  {
-    id: 'step-streak',
-    title: 'B-01:',
-    robot: tutorialRobotStep3,
-    robotClassName: 'is-activity-home-step-3',
-    button: 'Next',
-    targetElementId: 'tutorial-target-home-streak',
-    text: 'Up in the top right is your Streak counter. Consistency is the true secret to mastering public speaking! Log in and complete a daily activity to keep the fire burning and watch that number grow.',
-  },
-  {
-    id: 'step-rank',
-    title: 'B-01:',
-    robot: tutorialRobotStep4,
-    button: 'Next',
-    targetElementId: 'tutorial-target-home-rank',
-    text: 'To keep an eye on the big picture, check out the Journey Progression card on the right! This handy panel lets you quickly track your current speaking Rank and see exactly how many tasks you have conquered so far.',
-  },
-  {
-    id: 'step-roadmap',
-    title: 'B-01:',
-    robot: tutorialRobotStep5,
-    robotClassName: 'is-roadmap-step',
-    button: 'Next',
-    targetElementId: 'tutorial-target-home-journey',
-    text: 'This path is your customized learning roadmap! You will start at your first stage and unlock the next ones as you move forward. The activities gradually become more challenging, and once you complete all tasks on your path, you unlock a final Post-test challenge to advance.',
-  },
-  {
-    id: 'step-practice',
-    title: 'B-01:',
-    robot: tutorialRobotStep6,
-    robotClassName: 'is-practice-step',
-    button: 'Finish!',
-    targetElementId: 'tutorial-target-home-practice',
-    text: 'Need extra training? The Practice card gives you two ways to sharpen your skills anytime: Randomizer for surprise prompts, and Free Speech for open-topic confidence building. Ready? Let us start your Free Speech session now!',
-  },
-];
+
 
 
 function getLocalDateKey(date = new Date()) {
@@ -284,7 +233,16 @@ function ActivityPage() {
   const [entranceFromNav] = useState(() => location.state?.skywardEntrance === true);
   const scopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
   /** Activities are filtered by `target_level` = Bigkas rank (same as dashboard `levelProgress.levelName`). */
-  const { tasks, loading: activitiesLoading, error: activitiesError } = useActivitiesJourneyTasks(user?.speakerLevelNumber || 1);
+  const { tasks: allTasks, loading: activitiesLoading, error: activitiesError } = useActivitiesJourneyTasks(user?.progressLevelNumber || 1);
+
+  const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
+  const currentJourneyNumber = Math.max(1, Math.min(5, Number(user?.progressLevelNumber || user?.progress_level_number || 1) || 1));
+  const tasks = useMemo(() => {
+    // We use the derived level number (from getBigkasLevelFromUser) to ensure 
+    // the filtering matches the rank shown in the UI (e.g. Silver = Level 2).
+    const sLevel = levelProgress?.levelNumber || 1;
+    return filterActivitiesForJourney(allTasks, sLevel, user?.progressLevelNumber || 1);
+  }, [allTasks, levelProgress?.levelNumber, user?.progressLevelNumber]);
   const { metricsSyncKey, refreshJourney } = useJourneyRemoteState(user);
   const stampResetTimeoutRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -313,6 +271,7 @@ function ActivityPage() {
     { role: 'assistant', content: "Hello! I'm B-01, your AI speaking coach. What would you like to know about public speaking or your progress today?", id: 'initial-greeting' }
   ]);
   const chatScrollRef = useRef(null);
+  const overlayAudioRef = useRef(null);
 
   const [randomizerTopic, setRandomizerTopic] = useState(null);
   const [isStreakRecoveryMode, setIsStreakRecoveryMode] = useState(false);
@@ -336,6 +295,10 @@ function ActivityPage() {
       }
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
         audioContextRef.current.close().catch(() => {});
+      }
+      if (overlayAudioRef.current) {
+        overlayAudioRef.current.pause();
+        overlayAudioRef.current = null;
       }
     };
   }, []);
@@ -371,12 +334,9 @@ function ActivityPage() {
     };
   }, []);
 
-  const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
   const recommendedLevel = useMemo(() => {
-    const level = Number(levelProgress?.levelNumber || 1);
-    if (!Number.isFinite(level)) return 1;
-    return Math.max(1, Math.min(5, Math.round(level)));
-  }, [levelProgress?.levelNumber]);
+    return Math.max(1, Math.min(5, Math.round(currentJourneyNumber)));
+  }, [currentJourneyNumber]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -401,6 +361,39 @@ function ActivityPage() {
   const sidebarProgressPct = tasks.length
     ? Math.round((completedTaskCount / tasks.length) * 100)
     : 0;
+
+  // Auto-advance journey level when all stages are completed
+  const isAdvancingRef = useRef(null);
+  useEffect(() => {
+    if (!user?.id || tasks.length === 0 || activitiesLoading) return;
+    
+    if (completedTaskCount === tasks.length) {
+      const currentLevel = Number(user.progressLevelNumber || 1);
+      if (currentLevel < 5) {
+        const nextLevel = currentLevel + 1;
+        
+        if (isAdvancingRef.current === nextLevel) return;
+        isAdvancingRef.current = nextLevel;
+
+        console.log(`[Journey] All ${tasks.length} stages done in Level ${currentLevel}. Advancing to ${nextLevel}.`);
+        
+        // Update both profiles table and auth metadata for consistency
+        updateUserProgressLevel(user.id, nextLevel).catch(err => {
+          console.error('Failed to update profile level:', err);
+          isAdvancingRef.current = null;
+        });
+
+        updateUserMetadata({ progress_level_number: nextLevel })
+          .catch(err => {
+            console.error('Failed to update auth metadata level:', err);
+            isAdvancingRef.current = null;
+          });
+      }
+    } else {
+      // Reset if user somehow goes back (e.g. data sync)
+      isAdvancingRef.current = null;
+    }
+  }, [completedTaskCount, tasks.length, user?.id, user?.progressLevelNumber, activitiesLoading, updateUserMetadata]);
 
   const sessionCountsByDay = useMemo(() => {
     const counts = new Map();
@@ -428,7 +421,10 @@ function ActivityPage() {
   const getProgressContext = useCallback(() => {
     // Sort sessions by date to find the most recent ones
     const sortedSessions = [...sessions]
-      .filter(s => !isPreTestSession(s)) // Exclude pre-tests for growth comparison
+      .filter(s => {
+        const isError = s.status === 'error' || s.is_error === true;
+        return !isPreTestSession(s) && !isError;
+      })
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     const latest = sortedSessions[0];
@@ -436,10 +432,11 @@ function ActivityPage() {
 
     const latestScore = Math.floor(latest?.score || latest?.overall_score || latest?.overallScore || 0);
     const firstScore = Math.floor(first?.score || first?.overall_score || first?.overallScore || 0);
-    const totalGrowth = latestScore - firstScore;
+    
+    const insights = generateCoachInsights(sessions);
 
     return {
-      totalSessionCount: (sessions || []).length, // Absolute count of ALL sessions
+      totalSessionCount: (sessions || []).filter(s => s.status !== 'error' && s.is_error !== true).length,
       analyzedSessionsCount: sortedSessions.length, // Count of sessions excluding pre-tests
       averageScore: activityMetrics?.averageScore || "N/A",
       currentLevel: levelProgress.levelNumber,
@@ -449,8 +446,11 @@ function ActivityPage() {
       growthSummary: {
         firstSessionScore: firstScore,
         latestSessionScore: latestScore,
-        totalPercentagePointGrowth: totalGrowth.toFixed(1),
-        status: totalGrowth > 0 ? "Improving" : totalGrowth < 0 ? "Declining" : "Stable"
+        growthPercentage: insights.growth.toFixed(1),
+        strongestPillar: insights.strongestPillar,
+        coachNarrative: insights.growthUpdate,
+        positiveQuote: insights.positiveQuote,
+        status: insights.growth > 0 ? "Improving" : insights.growth < 0 ? "Declining" : "Stable"
       },
 
       // Comparison Points
@@ -473,23 +473,27 @@ function ActivityPage() {
     const fetchBannerMessage = async () => {
       if (!user?.id) return;
 
-      // 1. Check Cache
+      // 1. Generate Local Insights (Immediate & Accurate)
+      const insights = generateCoachInsights(sessions);
+      setBannerMessage(insights.positiveQuote);
+
+      // 2. Update Cache
+      window.localStorage.setItem(AI_BANNER_CACHE_KEY, JSON.stringify({
+        message: insights.positiveQuote,
+        timestamp: Date.now()
+      }));
+
+      // 3. Optional: Fetch from AI for variety
+      setIsBannerLoading(true);
       try {
         const cached = window.localStorage.getItem(AI_BANNER_CACHE_KEY);
         if (cached) {
-          const { message, timestamp } = JSON.parse(cached);
+          const { timestamp } = JSON.parse(cached);
           if (Date.now() - timestamp < EIGHT_HOURS_MS) {
-            setBannerMessage(message);
             return;
           }
         }
-      } catch (e) {
-        console.warn('Failed to read banner cache', e);
-      }
-
-      // 2. Fetch New if expired or missing
-      setIsBannerLoading(true);
-      try {
+        
         const response = await fetch('https://b01-ai-worker.dzeref4000.workers.dev/banner-message', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -499,7 +503,6 @@ function ActivityPage() {
           const data = await response.json();
           if (data.message) {
             setBannerMessage(data.message);
-            // 3. Update Cache
             window.localStorage.setItem(AI_BANNER_CACHE_KEY, JSON.stringify({
               message: data.message,
               timestamp: Date.now()
@@ -672,16 +675,144 @@ function ActivityPage() {
     }
   }, [user?.id, user?.onboardingStage, user?.profilingCompleted, user?.pretestCompleted, user?.isProfilingCompleted, user?.isPreTestCompleted, activitiesLoading]);
 
-  const assessmentTutorialSteps = useMemo(() => [
-    {
-      id: 'assessment-notice',
-      title: 'B-01:',
-      text: `We assessed your speaking level as Level ${levelProgress?.levelNumber || 1}, so we fast-tracked earlier lessons and placed you where your growth is most meaningful.`,
-      button: 'Got it!',
-      targetElementId: null,
-      robot: tutorialRobotStep1,
-    },
-  ], [levelProgress?.levelNumber]);
+  const freeSpeechTutorialSteps = useMemo(() => {
+    const level = user?.speakerLevelNumber || 1;
+    let welcomeText = "Welcome aboard! You made it, and I know you're going to do great things here. Let me give you a quick, guided tour of your Home screen so you know exactly where everything is.";
+    let welcomeVoice = null;
+    
+    if (level === 1) {
+      welcomeText = "Welcome! I’ve analyzed your profile and we’re starting from the ground up. You’ll be taking the full 30-stage path for Journey 1 to ensure your vocal and visual foundations are unbreakable. Let’s build your mastery, stage by stage.";
+      welcomeVoice = "https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Welcome/Level%201.mp3";
+    } else if (level === 2) {
+      welcomeText = "Welcome! Based on your level, I’ve optimized your curriculum. Since you already show solid potential, I’ve trimmed Journey 1 down to 20 essential stages. We’ll move faster through the basics so you can reach the advanced challenges sooner. Let’s begin.";
+      welcomeVoice = "https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Welcome/Level%202.mp3";
+    } else if (level === 3) {
+      welcomeText = "Welcome. Your experience allows us to skip the fluff. I’ve recalibrated your Journey 1 to just 15 high-impact stages, and Journey 2 to 20. We’re focusing only on the core essentials before we dive into the deep technical training. Systems ready?";
+      welcomeVoice = "https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Welcome/Level%203.mp3";
+    } else if (level === 4) {
+      welcomeText = "Welcome! Your skills are advanced, so I’ve streamlined your training. I’ve cut Journeys 1, 2, and 3 down to the bare essentials, removing over 40 stages of repetitive drills. We’re moving fast through the basics to get you straight to the Specialist training. Let’s get to work.";
+      welcomeVoice = "https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Welcome/Level%204.mp3";
+    } else if (level >= 5) {
+      welcomeText = "Welcome, Expert. We’re skipping the grind. I’ve compressed Journeys 1 through 4 into a rapid-fire calibration to respect your expertise. We’re fast-forwarding past the basics so you can focus entirely on the high-stakes challenges of the final Journey. Mastery starts here.";
+      welcomeVoice = "https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Welcome/Level%205.mp3";
+    }
+
+    return [
+      {
+        id: 'step-intro',
+        title: 'B-01:',
+        robot: tutorialRobotStep1,
+        robotClassName: 'is-activity-home-step-1',
+        button: 'Next',
+        targetElementId: null,
+        text: welcomeText,
+        voice: welcomeVoice,
+      },
+      {
+        id: 'step-companion',
+        title: 'B-01:',
+        robot: tutorialRobotStep2,
+        robotClassName: 'is-activity-home-step-2',
+        button: 'Next',
+        targetElementId: 'tutorial-target-home-banner',
+        text: "Your AI Companion—hey, that's me! See my panel right at the top? I'll be checking in with you from time to time. Depending on your progress, I'll drop by with daily greetings, personalized tips, and a little extra encouragement to keep your momentum going.",
+        voice: "https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%201.mp3",
+      },
+      {
+        id: 'step-streak',
+        title: 'B-01:',
+        robot: tutorialRobotStep3,
+        robotClassName: 'is-activity-home-step-3',
+        button: 'Next',
+        targetElementId: 'tutorial-target-home-streak',
+        text: 'Up in the top right is your Streak counter. Consistency is the true secret to mastering public speaking! Log in and complete a daily activity to keep the fire burning and watch that number grow.',
+        voice: "https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%202.mp3",
+      },
+      {
+        id: 'step-rank',
+        title: 'B-01:',
+        robot: tutorialRobotStep4,
+        button: 'Next',
+        targetElementId: 'tutorial-target-home-rank',
+        text: 'To keep an eye on the big picture, check out the Journey Progression card on the right! This handy panel lets you quickly track your current speaking Rank and see exactly how many tasks you have conquered so far.',
+        voice: "https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%204.mp3",
+      },
+      {
+        id: 'step-roadmap',
+        title: 'B-01:',
+        robot: tutorialRobotStep5,
+        robotClassName: 'is-roadmap-step',
+        button: 'Next',
+        targetElementId: 'tutorial-target-home-journey',
+        text: 'This path is your customized learning roadmap! You will start at your first stage and unlock the next ones as you move forward. The activities gradually become more challenging, and once you complete all tasks on your path, you unlock a final Post-test challenge to advance.',
+        voice: "https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%203.mp3",
+      },
+      {
+        id: 'step-practice',
+        title: 'B-01:',
+        robot: tutorialRobotStep6,
+        robotClassName: 'is-practice-step',
+        button: 'Finish!',
+        targetElementId: 'tutorial-target-home-practice',
+        text: 'Need extra training? The Practice card gives you two ways to sharpen your skills anytime: Randomizer for surprise prompts, and Free Speech for open-topic confidence building. Ready? Let us start your Free Speech session now!',
+        voice: "https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%205.mp3",
+      },
+    ];
+  }, [user?.speakerLevelNumber]);
+
+  const assessmentTutorialSteps = useMemo(() => {
+    const sLevel = user?.speakerLevelNumber || 1;
+    const pLevel = user?.progressLevelNumber || 1;
+    const reducedTo = JOURNEY_STAGE_LIMITS[sLevel]?.[pLevel] ?? 30;
+
+    let text = `We noticed that you are a level ${sLevel} speaker, so we reduced Journey ${pLevel} to ${reducedTo} stages for you!`;
+    if (reducedTo >= 30) {
+      text = `Welcome to Journey ${pLevel}! You have ${reducedTo} stages to complete. Let's get started!`;
+    }
+
+    return [
+      {
+        id: 'assessment-notice',
+        title: 'B-01:',
+        text,
+        button: 'Got it!',
+        targetElementId: null,
+        robot: tutorialRobotStep1,
+      },
+    ];
+  }, [user?.speakerLevelNumber, user?.progressLevelNumber]);
+
+  useEffect(() => {
+    if (user?.isAudioMuted) return;
+
+    if (showRandomizerOverlay) {
+      if (overlayAudioRef.current) overlayAudioRef.current.pause();
+      const audio = new Audio("https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Randomizer%20and%20Free%20Speech%20Button/Randomizer.mp3");
+      overlayAudioRef.current = audio;
+      audio.play().catch(() => {});
+    } else if (showFreeSpeechOverlay) {
+      if (overlayAudioRef.current) overlayAudioRef.current.pause();
+      const audio = new Audio("https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Randomizer%20and%20Free%20Speech%20Button/Free%20Speech.mp3");
+      overlayAudioRef.current = audio;
+      audio.play().catch(() => {});
+    } else {
+      if (overlayAudioRef.current) {
+        overlayAudioRef.current.pause();
+        overlayAudioRef.current = null;
+      }
+    }
+  }, [showRandomizerOverlay, showFreeSpeechOverlay, user?.isAudioMuted]);
+
+  const handleToggleMute = async () => {
+    const nextMute = !user?.isAudioMuted;
+    await updateUserMetadata({ is_audio_muted: nextMute });
+    localStorage.setItem('bigkas_global_audio_muted_v1', nextMute ? '1' : '0');
+    
+    // Immediate feedback: pause if muting
+    if (nextMute && overlayAudioRef.current) {
+      overlayAudioRef.current.pause();
+    }
+  };
 
   const handleActiveTaskIdChange = useCallback((id) => {
     setActiveTaskId(id);
@@ -796,9 +927,10 @@ function ActivityPage() {
   }, [maybeShowCompletionCelebration, taskState, taskTitleById, tasks.length]);
 
   const handleTaskAction = useCallback((task) => {
+    const activityPromptTopic = String(task.detail || task.objective || task.title || '').trim();
     navigate(`${ROUTES.TRAINING}?autostart=1`, {
       state: {
-        freeTopic: task.title,
+        freeTopic: activityPromptTopic,
         objective: task.objective || task.detail,
         focus: 'free',
         sessionType: 'training',
@@ -876,9 +1008,12 @@ function ActivityPage() {
       updateUserMetadata({ dashboard_tutorial_seen: true }).catch(() => {});
     }
 
-    const curLevel = Number(levelProgress?.levelNumber || 1);
-    const recLevel = Number(recommendedLevel || 1);
-    if (curLevel > 1 && curLevel === recLevel) {
+    const sLevel = Number(user?.speakerLevelNumber || 1);
+    const pLevel = Number(user?.progressLevelNumber || 1);
+    const reducedTo = JOURNEY_STAGE_LIMITS[sLevel]?.[pLevel] ?? 30;
+
+    // Show assessment modal if the current journey has reduced stages for this user
+    if (reducedTo < 30) {
       setShowAssessmentModal(true);
     }
   }, [user?.id, levelProgress?.levelNumber, recommendedLevel, updateUserMetadata]);
@@ -954,7 +1089,7 @@ function ActivityPage() {
         entryPoint: isRecovery ? 'streak-recovery' : 'practice',
         objective: isRecovery 
           ? `Recover your ${potentialStreak} day streak by completing this Level 1-5 Randomizer session!` 
-          : 'Complete this session to improve your public speaking skills.',
+          : randomizerTopic.title,
         autoStartCountdown: true,
       },
     });
@@ -980,10 +1115,10 @@ function ActivityPage() {
     return () => document.body.classList.remove('randomizer-overlay-open');
   }, [showRandomizerOverlay, showFreeSpeechOverlay, isRankModalOpen, isAskB01ModalOpen, isStreakModalOpen]);
 
-  const renderTaskCardForShell = useCallback(({ task, animationClass = '' }) => {
+  const renderTaskCardForShell = useCallback(({ task, isLocked: shellLocked, animationClass = '' }) => {
     const done = taskState[task.id] === true;
     const isUnlocked = taskUnlockState[task.id] === true;
-    const isLocked = !done && !isUnlocked;
+    const isLocked = shellLocked ?? (!done && !isUnlocked);
     const shouldAnimateStamp = done && recentStampedTaskId === task.id;
     const progress = taskProgress[task.id] || { current: 0, target: 1 };
     const canShowProgress = !isLocked && progress.target > 1;
@@ -1109,7 +1244,7 @@ function ActivityPage() {
     <div className={`activity-page-root ${!activitiesLoading ? 'activity-page--skyward-entrance' : ''} ${(showFreeSpeechTutorial || showAssessmentModal) ? 'is-tutorial-active' : ''}`}>
       <TutorialOverlay
         isOpen={showFreeSpeechTutorial}
-        steps={FREE_SPEECH_TUTORIAL_STEPS}
+        steps={freeSpeechTutorialSteps}
         showAudioToggle
         onClose={() => setShowFreeSpeechTutorial(false)}
         onFinish={handleTutorialFinish}
@@ -1253,6 +1388,17 @@ function ActivityPage() {
                 fetchPriority="high"
               />
             </div>
+            <div className="tutorial-audio-action">
+              <button
+                type="button"
+                aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
+                onClick={handleToggleMute}
+              >
+                {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+              </button>
+            </div>
           </div>
         </section>
       )}
@@ -1306,6 +1452,17 @@ function ActivityPage() {
                 loading="eager"
                 fetchPriority="high"
               />
+            </div>
+            <div className="tutorial-audio-action">
+              <button
+                type="button"
+                aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
+                onClick={handleToggleMute}
+              >
+                {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+              </button>
             </div>
           </div>
         </section>
@@ -1402,7 +1559,7 @@ function ActivityPage() {
         <div className="new-right-col no-scrollbar">
             <section className="new-widget dashboard-anim-left dashboard-anim-delay-2" id="tutorial-target-home-rank">
               <div className="new-widget-head">
-                <h2 className="new-widget-title">Journey Progression</h2>
+                <h2 className="new-widget-title">Speaker Level Progression</h2>
                 <span className="new-widget-chip">Level</span>
               </div>
               <div 
@@ -1411,15 +1568,21 @@ function ActivityPage() {
               >
                 <img src={rankSpriteImage} alt="" className="new-widget-rank-sprite" />
                 <div className="new-widget-rank-content">
-                  <p className="new-widget-kicker">Current Level</p>
-                  <p className="new-widget-value">LEVEL {levelProgress.levelNumber}</p>
+                  <p className="new-widget-kicker">Current Mastery</p>
+                  <p className="new-widget-value">LEVEL {currentJourneyNumber}</p>
                 </div>
               </div>
-              <p className="new-widget-caption">
-                {completedTaskCount}/{Math.max(tasks.length, 1)} Stages Completed
-                <span className="new-widget-caption-sep"> - </span>
-                {sidebarProgressPct}% Cleared
-              </p>
+                <p className="new-widget-caption">
+                  {tasks.length > 0 ? (
+                    <>
+                      {completedTaskCount}/{tasks.length} Stages Completed
+                      <span className="new-widget-caption-sep"> - </span>
+                      {sidebarProgressPct}% Cleared
+                    </>
+                  ) : (
+                    'No activities found for this level.'
+                  )}
+                </p>
             </section>
 
             <section className="new-widget new-widget--practice dashboard-anim-bottom dashboard-anim-delay-4" id="tutorial-target-home-practice">
@@ -1571,6 +1734,7 @@ function ActivityPage() {
                   <IoSend />
                 </button>
               </form>
+              <p className="ask-b01-disclaimer">B-01 can make mistakes. Please verify important information.</p>
             </div>
           </div>
         </section>

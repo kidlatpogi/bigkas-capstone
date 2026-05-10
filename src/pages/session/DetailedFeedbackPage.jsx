@@ -28,6 +28,8 @@ import DetailedFeedbackPageMobile from './DetailedFeedbackPageMobile';
 import '../main/InnerPages.css';
 import './DetailedFeedbackPage.css';
 
+const FILLER_WORDS = ['um', 'uh', 'ah', 'like', 'err', 'uhm', 'well', 'basically', 'actually', 'literally'];
+
 const FOREST_GREEN = '#059669';
 const SOFT_SAGE = '#059669';
 const VIBRANT_ORANGE = '#F97316';
@@ -87,8 +89,13 @@ function buildBucketPublicUrl(pathOrUrl) {
   const value = String(pathOrUrl || '').trim();
   if (!value) return null;
   
-  // If it's already a full R2 URL or other external URL, return as is
-  if (/^https?:\/\//i.test(value) && !value.includes('/storage/v1/object/')) {
+  // If it's already a full URL
+  if (/^https?:\/\//i.test(value)) {
+    // If it's a Supabase storage URL, return it as is
+    if (value.includes('/storage/v1/object/')) {
+      return value;
+    }
+    // For other external URLs, return as is
     return value;
   }
 
@@ -446,6 +453,36 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
 
   const scrollToAvoid = () => avoidSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
 
+  const overallTier = getScoreTier15(tripleV.entryPoint);
+  const rawTranscript = recordingMedia.transcript
+    || session?.transcript
+    || session?.target_text
+    || session?.analysis?.transcript_exact
+    || session?.analysis?.transcript
+    || '';
+
+  const practicedText = sanitizeTranscriptForDisplay(rawTranscript, '') || 'No recorded text available.';
+
+  // Extraction of mispronunciations and filler data
+  const analysisData = useMemo(() => {
+    try {
+      if (typeof session?.analysis === 'object' && session.analysis !== null) return session.analysis;
+      if (typeof session?.analysis === 'string') return JSON.parse(session.analysis);
+    } catch (e) {
+      console.warn('Failed to parse session analysis for highlighting:', e);
+    }
+    return {};
+  }, [session?.analysis]);
+
+  const mispronunciations = analysisData?.mispronunciations || [];
+  
+  const fillerCount = useMemo(() => {
+    if (analysisData?.filler_count !== undefined) return analysisData.filler_count;
+    // Fallback: count manually from transcript
+    const words = rawTranscript.toLowerCase().split(/\s+/);
+    return words.filter(w => FILLER_WORDS.includes(w.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ""))).length;
+  }, [rawTranscript, analysisData?.filler_count]);
+
   if (windowWidth < 768) {
     return (
       <DetailedFeedbackPageMobile 
@@ -477,16 +514,46 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
     );
   }
 
-  const overallTier = getScoreTier15(tripleV.entryPoint);
-  const practicedText = sanitizeTranscriptForDisplay(
-    recordingMedia.transcript
-      || session?.transcript
-      || session?.target_text
-      || session?.analysis?.transcript_exact
-      || session?.analysis?.transcript
-      || '',
-    '',
-  ) || 'No recorded text available.';
+  const renderHighlightedTranscript = () => {
+    if (!rawTranscript) return <p className="df-practiced-text">No recorded text available.</p>;
+
+    const words = rawTranscript.split(/\s+/);
+    const fillerWordsFromAnalysis = Array.isArray(analysisData?.filler_words) 
+      ? analysisData.filler_words.map(w => w.toLowerCase()) 
+      : [];
+
+    return (
+      <div className="df-practiced-text">
+        {words.map((word, idx) => {
+          const cleanWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").toLowerCase();
+          
+          // Check if it's a filler: either in our global list OR specifically identified by analysis
+          const isFiller = FILLER_WORDS.includes(cleanWord) || fillerWordsFromAnalysis.includes(cleanWord);
+          
+          const mis = mispronunciations.find(m => m.word.toLowerCase() === cleanWord || m.heard?.toLowerCase() === cleanWord);
+
+          if (isFiller) {
+            return (
+              <span key={idx} className="transcript-word transcript-word--filler">
+                {word}
+              </span>
+            );
+          }
+
+          if (mis) {
+            return (
+              <span key={idx} className="transcript-word transcript-word--mispronounced" title={`Heard: ${mis.heard || mis.word}, Correct: ${mis.suggestion || mis.correction}`}>
+                {word}
+                <span className="transcript-word-correction">({mis.suggestion || mis.correction})</span>
+              </span>
+            );
+          }
+
+          return <span key={idx}>{word} </span>;
+        })}
+      </div>
+    );
+  };
   
   const audioUrl = recordingMedia.audioUrl || buildBucketPublicUrl(session?.audio_url) || null;
   const videoUrl = recordingMedia.videoUrl || buildBucketPublicUrl(session?.video_storage_url) || buildBucketPublicUrl(session?.video_url) || null;
@@ -532,6 +599,18 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
         />
       )}
 
+
+      {!isInnerView && (
+        <div className="history-session-view-header dashboard-anim-top">
+          <button
+            type="button"
+            className="history-back-to-list-btn"
+            onClick={() => navigate(ROUTES.DASHBOARD)}
+          >
+            <IoChevronBack /> Back to Dashboard
+          </button>
+        </div>
+      )}
 
       <div className="sr-content-layout">
         {/* Session Title Header */}
@@ -749,9 +828,26 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
               </div>
 
               <div className="df-card" style={{ padding: '24px' }}>
-                <h3 className="df-section-title" style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Session Transcript</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h3 className="df-section-title" style={{ fontSize: '1.1rem', margin: 0 }}>Session Transcript</h3>
+                  <div className="filler-counter-badge">
+                    <strong>{fillerCount}</strong> Filler Words Detected
+                  </div>
+                </div>
+                
                 <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.03)' }}>
-                  <p className="df-practiced-text" style={{ fontSize: '0.9rem', lineHeight: '1.7', margin: 0, color: '#1e293b' }}>{practicedText}</p>
+                  {renderHighlightedTranscript()}
+                  
+                  <div className="transcript-legend">
+                    <div className="legend-item">
+                      <div className="legend-color legend-color--mispronounced" />
+                      <span>Mispronunciation (Blue)</span>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-color legend-color--filler" />
+                      <span>Filler Word (Green)</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -800,9 +896,9 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
           <button
             className="sr-btn-action sr-btn-primary-v2"
             onClick={() => {
-              if (isPreTest) {
+              if (isPreTest && !isInnerView) {
                 navigate(ROUTES.USER_ANALYZING);
-              } else if (isPostTest) {
+              } else if (isPostTest && !isInnerView) {
                 navigate(ROUTES.PROGRESS);
               } else {
                 replayAction.onClick();
@@ -810,7 +906,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
             }}
             style={{ minWidth: '200px' }}
           >
-            {isPreTest ? 'Finish Onboarding' : isPostTest ? 'Next Stage' : replayAction.label}
+            {(isPreTest && !isInnerView) ? 'Finish Onboarding' : (isPostTest && !isInnerView) ? 'Next Stage' : replayAction.label}
           </button>
         </footer>
       </div>

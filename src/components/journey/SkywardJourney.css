@@ -1506,3 +1506,73 @@
   border-color: #71717a;
   color: #d4d4d8;
 }
+
+/* Purpose Box in Overlay - Subtly Redesigned */
+.skyward-journey-purpose-box {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(248, 250, 252, 0.5) 100%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(11, 57, 84, 0.08);
+  padding: 14px 18px;
+  border-radius: 18px;
+  margin-top: 18px;
+  margin-bottom: 22px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    0 4px 12px rgba(11, 57, 84, 0.03),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+}
+
+.skyward-journey-purpose-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(to bottom, #10b981, #3b82f6);
+  opacity: 0.8;
+}
+
+.skyward-journey-purpose-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #1e293b;
+  margin-bottom: 8px;
+  opacity: 0.8;
+}
+
+.skyward-journey-purpose-label::before {
+  content: '✦';
+  color: #10b981;
+  font-size: 14px;
+}
+
+.skyward-journey-purpose-text {
+  margin: 0;
+  font-size: 0.925rem;
+  line-height: 1.6;
+  color: #334155;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+[data-theme='dark'] .skyward-journey-purpose-box {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.5) 100%);
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme='dark'] .skyward-journey-purpose-label {
+  color: #f1f5f9;
+}
+
+[data-theme='dark'] .skyward-journey-purpose-text {
+  color: #cbd5e1;
+}

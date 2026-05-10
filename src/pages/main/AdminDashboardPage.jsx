@@ -245,10 +245,10 @@ function AdminDashboardPage() {
   const levelDistribution = useMemo(() => {
     const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     visibleUsers.forEach((p) => {
-      const lv = Number(p.current_level || 1);
+      const lv = Number(p.speaker_level || p.current_level || 1);
       if (counts[lv] != null) counts[lv] += 1;
     });
-    return Object.entries(counts).map(([lv, value]) => ({ label: `Level ${lv}`, value }));
+    return Object.entries(counts).map(([lv, value]) => ({ label: `Proficiency Lvl ${lv}`, value }));
   }, [visibleUsers]);
 
   const kpis = useMemo(() => {
@@ -847,12 +847,12 @@ function AdminDashboardPage() {
                   value={userLevelFilter}
                   onChange={(e) => setUserLevelFilter(e.target.value)}
                 >
-                  <option value="all">All Levels</option>
-                  <option value="1">Level 1</option>
-                  <option value="2">Level 2</option>
-                  <option value="3">Level 3</option>
-                  <option value="4">Level 4</option>
-                  <option value="5">Level 5</option>
+                  <option value="all">All Journeys</option>
+                  <option value="1">Journey 1</option>
+                  <option value="2">Journey 2</option>
+                  <option value="3">Journey 3</option>
+                  <option value="4">Journey 4</option>
+                  <option value="5">Journey 5</option>
                 </select>
               </div>
             </div>
@@ -868,7 +868,8 @@ function AdminDashboardPage() {
                         <th>Name</th>
                         <th>Username</th>
                         <th>Role</th>
-                        <th>Level</th>
+                        <th>Journey</th>
+                        <th>Proficiency</th>
                         <th>Points</th>
                         <th>Status</th>
                         <th>Actions</th>
@@ -884,7 +885,8 @@ function AdminDashboardPage() {
                               {u.role || 'user'}
                             </span>
                           </td>
-                          <td>{u.current_level || 1}</td>
+                          <td>J-{u.current_level || 1}</td>
+                          <td>L-{u.speaker_level || 1}</td>
                           <td>{u.speaker_points || 0}</td>
                           <td>
                             <span className={`admin-status-badge ${u.archived_at ? 'is-archived' : 'is-active'}`}>

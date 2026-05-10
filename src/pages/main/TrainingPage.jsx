@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LuRotateCcw } from 'react-icons/lu';
 import { FiAlertCircle } from 'react-icons/fi';
+import { IoChevronBack } from 'react-icons/io5';
 import { useSessionContext } from '../../context/useSessionContext';
 import { useAuthContext } from '../../context/useAuthContext';
 import { buildRoute, ROUTES } from '../../utils/constants';
@@ -279,7 +280,7 @@ function TrainingPage() {
   const isRecording = status === 'recording';
   const isPaused = status === 'paused';
   const isActive = isRecording || isPaused;
-  const hasActivePretestTutorial = isFreePretestSession && isTutorialOverlayOpen;
+  const hasActivePretestTutorial = isFreePretestSession && isTutorialOverlayOpen && status === 'idle';
   const isStartBlockedByTutorial = hasActivePretestTutorial && !isActive && status !== 'countdown';
 
 
@@ -873,6 +874,7 @@ function TrainingPage() {
 
   /* ── Countdown → start ── */
   const startCountdown = useCallback(() => {
+    setIsTutorialOverlayOpen(false);
     setStatus('countdown');
     setCountdown(3);
     setHighlightIdx(-1);
@@ -1094,7 +1096,7 @@ function TrainingPage() {
           return;
         }
         // Set status to idle to clear any overlays before we actually leave
-        setStatus('idle');
+        // setStatus('idle'); // Removed to prevent potential tutorial popup before navigation
 
         if (sessionType === 'pre-test') {
           console.log('[TrainingPage] Pre-test detected. Navigating to onboarding result reveal...');
@@ -1195,6 +1197,17 @@ function TrainingPage() {
       }
     }, 1000);
   }, [bumpElapsedSec, focus, highlightIdx, status, startScriptHighlightLoop, startWaveformLoop, playCountdownCue]);
+
+  const handleContinueFromShortModal = useCallback(() => {
+    setShowMinDurationModal(false);
+    // Restart logic after stop attempt was blocked for being too short
+    clearInterval(timerRef.current);
+    timerRef.current = setInterval(bumpElapsedSec, 1000);
+    startWaveformLoop();
+    if (focus === 'scripted') {
+      startScriptHighlightLoop(Math.max(highlightIdx, 0));
+    }
+  }, [bumpElapsedSec, focus, highlightIdx, startScriptHighlightLoop, startWaveformLoop]);
 
   /* ── Restart ── */
   const handleRestart = () => {
@@ -1356,51 +1369,20 @@ function TrainingPage() {
 
   return (
     <div className="tp-page tp-page--free-pretest" ref={freeLayoutObserverRef}>
-      {/* ── Standardized Header ── */}
-      <div className="tp-header tp-header--free-pretest">
-        <div className="tp-free-pretest-header-actions">
+      {!isPreTestSession && (
+        <div className="history-session-view-header dashboard-anim-top">
           <button
             type="button"
-            className="tp-free-pretest-back-btn"
-            onClick={handleFreePretestBack}
-            aria-label="Go back"
+            className="history-back-to-list-btn"
+            onClick={() => {
+              setShowExitConfirm(true);
+            }}
           >
-            Back
+            <IoChevronBack /> Back to Dashboard
           </button>
-
-          {isFreePretestSession && (
-            <>
-              <button
-                type="button"
-                className="tp-free-pretest-logout-btn"
-                onClick={handleTemporaryLogout}
-                aria-label="Log out"
-              >
-                Logout
-              </button>
-              <button
-                type="button"
-                className="tp-free-pretest-skip-btn"
-                onClick={handleSkipPretestForDev}
-                aria-label="Skip pre-test for development"
-              >
-                Skip Pre-test
-              </button>
-            </>
-          )}
-
-          {focus === 'scripted' && !isFreePretestSession && (
-            <button
-              type="button"
-              className="tp-free-pretest-logout-btn" // Reuse same style as logout
-              onClick={() => setShowSettings(true)}
-              aria-label="Settings"
-            >
-              Settings
-            </button>
-          )}
         </div>
-      </div>
+      )}
+
 
       {/* ── Main Content ── */}
       <div
@@ -1419,7 +1401,7 @@ function TrainingPage() {
               aria-label="Topic"
             >
               <p className="tp-topic-title tp-topic-title--inline">
-                <strong>Topic:</strong> {objectiveText || freeTopic}.
+                <strong>Topic:</strong> {freeTopic || objectiveText}.
               </p>
             </section>
           )}
@@ -1809,15 +1791,15 @@ function TrainingPage() {
         isOpen={showExitConfirm}
         title="Quit session?"
         message="You have an ongoing recording. If you leave now, this recording will be discarded."
-        confirmLabel="Quit"
-        cancelLabel="Stay"
-        type="warning"
-        onCancel={() => setShowExitConfirm(false)}
-        onConfirm={() => {
+        confirmLabel="Stay"
+        cancelLabel="Quit"
+        type="info"
+        onCancel={() => {
           handleRestart();
           setShowExitConfirm(false);
-          navigate(-1);
+          navigate(ROUTES.ACTIVITY);
         }}
+        onConfirm={() => setShowExitConfirm(false)}
       />
 
       <ConfirmationModal
@@ -1868,8 +1850,8 @@ function TrainingPage() {
         isOpen={showMinDurationModal}
         title="Recording Too Short"
         message={`To provide accurate AI feedback, your recording needs to be at least ${MIN_RECORDING_SECONDS} seconds long. Keep going, you're doing great!`}
-        onConfirm={() => setShowMinDurationModal(false)}
-        onCancel={() => setShowMinDurationModal(false)}
+        onConfirm={handleContinueFromShortModal}
+        onCancel={handleContinueFromShortModal}
         confirmLabel="Understood"
         cancelLabel=""
         type="default"

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, memo } from 'react';
 import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import { getSpriteUrl, getVoiceUrl } from '../../utils/assetUtils';
+import { useAuthContext } from '../../context/useAuthContext';
 
 const defaultRobotImage = getSpriteUrl('Robot/0008-noBulb-inverted.png');
 const tutorialVoice1 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 1.mp3');
@@ -45,6 +46,7 @@ function TutorialOverlay({
   finalRobotImage = defaultFinalRobotImage,
   showAudioToggle = false,
 }) {
+  const { user, updateUserMetadata } = useAuthContext();
   const GLOBAL_MUTE_KEY = 'bigkas_global_audio_muted_v1';
   const defaultSteps = useMemo(
     () => [
@@ -74,10 +76,10 @@ function TutorialOverlay({
       {
         id: 'step-soundbar',
         title: 'B-01:',
-        text: "'Voice and Time' This is for your Vocal analysis! Watch the soundbar dance as you speak to see your projection and emotional expression.",
+        text: "'Voice Meter' This is for your Vocal analysis! Watch the soundbar dance as you speak to see your projection and emotional expression.",
         button: 'Next',
         targetElementId: 'tutorial-target-soundbar',
-        emphasis: "'Voice and Time'",
+        emphasis: "'Voice Meter'",
       },
       {
         id: 'step-controls',
@@ -113,12 +115,21 @@ function TutorialOverlay({
   const [isTypingDone, setIsTypingDone] = useState(false);
   const [isMuted, setIsMuted] = useState(() => {
     if (typeof window === 'undefined') return false;
+    // Prioritize context/user preference if available
+    if (user && typeof user.isAudioMuted === 'boolean') return user.isAudioMuted;
     return window.localStorage.getItem(GLOBAL_MUTE_KEY) === '1';
   });
+
+  useEffect(() => {
+    if (user && typeof user.isAudioMuted === 'boolean') {
+      setIsMuted(user.isAudioMuted);
+    }
+  }, [user?.isAudioMuted]);
 
   const activeSpotlightRef = useRef(null);
   const companionContainerRef = useRef(null);
   const stepAudioRefs = useRef([]);
+  const customVoiceRef = useRef(null);
   const typingIntervalRef = useRef(null);
   const [anchoredCompanionStyle, setAnchoredCompanionStyle] = useState(null);
 
@@ -142,6 +153,11 @@ function TutorialOverlay({
       audio.pause();
       audio.currentTime = 0;
     });
+    if (customVoiceRef.current) {
+      customVoiceRef.current.pause();
+      customVoiceRef.current.currentTime = 0;
+      customVoiceRef.current = null;
+    }
   };
 
   const handleToggleMute = () => {
@@ -149,6 +165,9 @@ function TutorialOverlay({
       const next = !prev;
       if (typeof window !== 'undefined') {
         window.localStorage.setItem(GLOBAL_MUTE_KEY, next ? '1' : '0');
+      }
+      if (user?.id) {
+        updateUserMetadata({ is_audio_muted: next }).catch(() => {});
       }
       if (next) {
         stopAllAudios();
@@ -336,12 +355,23 @@ function TutorialOverlay({
       }
     }, 12);
 
-    if (shouldUseAudio && !isMuted) {
+    if (!isMuted) {
       stopAllAudios();
-      const stepAudio = stepAudioRefs.current[currentStep];
-      if (stepAudio) {
-        stepAudio.currentTime = 0;
-        stepAudio.play().catch(() => {});
+      
+      // 1. Check for step-specific voice (highest priority)
+      if (activeStep.voice) {
+        const audio = new Audio(activeStep.voice);
+        audio.muted = false;
+        customVoiceRef.current = audio;
+        audio.play().catch((err) => console.warn('[TutorialOverlay] Custom voice play failed:', err));
+      } 
+      // 2. Fallback to hardcoded pre-test tutorial voices
+      else if (shouldUseAudio) {
+        const stepAudio = stepAudioRefs.current[currentStep];
+        if (stepAudio) {
+          stepAudio.currentTime = 0;
+          stepAudio.play().catch(() => {});
+        }
       }
     }
 
@@ -350,9 +380,7 @@ function TutorialOverlay({
         window.clearInterval(typingIntervalRef.current);
         typingIntervalRef.current = null;
       }
-      if (shouldUseAudio) {
-        stopAllAudios();
-      }
+      stopAllAudios();
     };
   }, [currentStep, isMuted, isOpen, shouldUseAudio, activeStep]);
 

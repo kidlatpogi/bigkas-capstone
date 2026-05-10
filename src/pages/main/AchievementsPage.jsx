@@ -50,7 +50,7 @@ export default function AchievementsPage() {
       const isUnlocked = lvl <= currentLevelNumber;
       
       // Real data for current level, fallback to mock for others
-      let total = lvl === 1 ? 31 : lvl === 2 ? 50 : lvl === 3 ? 100 : lvl === 4 ? 200 : 500;
+      let total = 30;
       let current = isUnlocked ? total : 0;
 
       if (isCurrentLevel) {

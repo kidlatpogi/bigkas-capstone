@@ -39,6 +39,7 @@ import {
   IoPeople,
   IoList,
   IoSparkles,
+  IoLockClosed,
 } from 'react-icons/io5';
 import { FaBrain, FaGhost } from 'react-icons/fa';
 import { GiGoblinHead, GiFishMonster, GiWerewolf, GiVampireDracula } from 'react-icons/gi';
@@ -52,6 +53,7 @@ import SkywardJourneyNodeButton from './SkywardJourneyNodeButton';
 import { getSpriteUrl } from '../../utils/assetUtils';
 
 const safetyBarrierImage = getSpriteUrl('common/safety-barrier.png');
+const randomizerRobotImage = getSpriteUrl('Robot/0002.webp');
 const rankBronzeImage = getSpriteUrl('Rank/rank-bronze.png');
 const rankSilverImage = getSpriteUrl('Rank/rank-silver.png');
 const rankGoldImage = getSpriteUrl('Rank/rank-gold.png');
@@ -715,14 +717,18 @@ function getStepPhaseName(step) {
     step?.task?.pillarName ??
     step?.pillarName ??
     '';
-  const s = String(raw).trim();
+  let s = String(raw).trim();
+  // Strip "Module 01: " prefix if present
+  s = s.replace(/^Module\s+\d+:\s*/i, '');
   return s || 'Training';
 }
 
 /** Node row primary label: `public.activities.title` */
 function getStepActivityTitle(step) {
   const raw = step?.title ?? step?.task?.title ?? '';
-  const s = String(raw).trim();
+  let s = String(raw).trim();
+  // Strip "Stage 01: " prefix if present
+  s = s.replace(/^Stage\s+\d+:\s*/i, '');
   return s || String(step?.id ?? 'Activity');
 }
 
@@ -763,7 +769,13 @@ export default function SkywardJourney({
     () => steps.findIndex((s) => s.nodeState === NODE_STATE.ACTIVE),
     [steps],
   );
-  const isLockedLevel = steps.length === 0;
+  
+  // A level is locked if the user's progress hasn't reached it yet.
+  const isLockedLevel = useMemo(() => {
+    const curr = Number(currentLevel) || 1;
+    const rec = Number(recommendedLevel) || 1;
+    return curr > rec;
+  }, [currentLevel, recommendedLevel]);
 
   const completedCount = useMemo(() => steps.filter(s => s.nodeState === NODE_STATE.COMPLETED).length, [steps]);
 
@@ -779,14 +791,7 @@ export default function SkywardJourney({
     mapRef.current = map;
   }, [map]);
 
-  useEffect(() => {
-    if (!isLockedLevel) return;
-    const neutralMap = { tx: 0, ty: 0 };
-    pointerPanRef.current = null;
-    pinchRef.current = null;
-    mapRef.current = neutralMap;
-    setMap(neutralMap);
-  }, [isLockedLevel, currentLevel]);
+  // Removed map reset effect for locked levels to allow persistent centering logic.
 
   const requestClosePanel = useCallback(() => {
     setPanelOpenId(null);
@@ -874,8 +879,12 @@ export default function SkywardJourney({
   /** Hero focus: Mathematically pan the map to center the active node using CSS transforms. */
   useLayoutEffect(() => {
     const targetIndex =
-      scrollToStepIndex != null && scrollToStepIndex >= 0 ? scrollToStepIndex : activeIndex;
-    if (targetIndex < 0) return undefined;
+      scrollToStepIndex != null && scrollToStepIndex >= 0 
+        ? scrollToStepIndex 
+        : (activeIndex >= 0 ? activeIndex : 0);
+    
+    // Always proceed if steps exist
+    if (steps.length === 0) return undefined;
 
     const fromDashboard = scrollToStepIndex != null && scrollToStepIndex >= 0;
     const delay = entranceFromNav || fromDashboard ? 200 : 80;
@@ -916,7 +925,7 @@ export default function SkywardJourney({
     if (!vp || !content) return undefined;
 
     const onWheel = (e) => {
-      if (panelOpenId || isLockedLevel) return;
+      if (panelOpenId) return;
       const dominantDelta = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
       if (Math.abs(dominantDelta) < 0.5) return;
       const panStep = dominantDelta * 0.8;
@@ -936,7 +945,7 @@ export default function SkywardJourney({
 
   const onPointerDownViewport = useCallback(
     (e) => {
-      if (panelOpenId || isLockedLevel) return;
+      if (panelOpenId) return;
       if (pinchRef.current) return;
       if (tooltipNodeId) setTooltipNodeId(null);
       if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -955,7 +964,7 @@ export default function SkywardJourney({
   );
 
   const onPointerMoveViewport = useCallback((e) => {
-    if (isLockedLevel) return;
+    // Removed isLockedLevel restriction to allow users to view locked maps.
     const p = pointerPanRef.current;
     if (!p || p.pid !== e.pointerId) return;
     const dy = e.clientY - p.sy;
@@ -979,7 +988,7 @@ export default function SkywardJourney({
   }, []);
 
   const onTouchStartPinch = useCallback((e) => {
-    if (isLockedLevel) return;
+    // Removed isLockedLevel restriction to allow users to view locked maps.
     if (e.touches.length === 2) {
       pointerPanRef.current = null;
       pinchRef.current = { active: true };
@@ -1090,7 +1099,8 @@ export default function SkywardJourney({
 
   if (groupedTasks && groupedTasks.length > 0) {
     groupedTasks.forEach((section) => {
-      const sectionTitle = section.phaseName || 'Training';
+      const rawTitle = section.phaseName || 'Training';
+      const sectionTitle = rawTitle.replace(/^Module\s+\d+:\s*/i, '');
       const sectionIndex = sectionMeta.length;
       const sectionStartIndex = globalNodeIndex;
       const currentSectionRows = section.tasks.map((step, sectionTaskIndex) => {
@@ -1106,13 +1116,13 @@ export default function SkywardJourney({
         const nextLevel = nextStep ? getStepLevel(nextStep) : currentLevel;
 
         const isGlobalEnd = i === steps.length - 1;
-        const isStage31 = Number(step.stageNumber) === 31 || Number(step.task?.activity_order) === 31;
+        const isStage30 = Number(step.stageNumber) === 30 || Number(step.task?.activity_order) === 30;
 
         // The Ultimate Boss (Circle/Ghost) is ONLY at the end of Level 5
-        const isUltimateBoss = (isGlobalEnd || isStage31) && currentLevel === 5;
+        const isUltimateBoss = (isGlobalEnd || isStage30) && currentLevel === 5;
 
-        // A Level End (Square/Monster) triggers if it's Stage 31 of Levels 1-4, OR if the next step jumps to a new level
-        const isLevelEnd = !isUltimateBoss && (isStage31 || (!nextStep || nextLevel !== currentLevel));
+        // A Level End (Square/Monster) triggers if it's Stage 30 of Levels 1-4, OR if the next step jumps to a new level
+        const isLevelEnd = !isUltimateBoss && (isStage30 || (!nextStep || nextLevel !== currentLevel));
 
         const BossMonsterIcon = getBossMonsterIcon(currentLevel);
         const startStage = sectionTaskIndex === 0;
@@ -1154,7 +1164,7 @@ export default function SkywardJourney({
                         BOSS
                       </span>
                     </div>
-                  ) : startStage && !isDone && !isActive ? (
+                  ) : startStage && !isDone && !isActive && !isLockedLevel ? (
                     <div className="skyward-journey-start-callout" aria-hidden>
                       <span className="skyward-journey-start-badge">START</span>
                     </div>
@@ -1349,11 +1359,10 @@ export default function SkywardJourney({
           style={{ cursor: 'default' }}
         >
           <div className="skyward-journey-header-title-row">
-            <HeaderTitle>{steps.length > 0 ? currentPillarText : `Level ${currentLevel}`}</HeaderTitle>
+            <HeaderTitle>{steps.length > 0 ? currentPillarText : `Journey ${currentLevel}`}</HeaderTitle>
           </div>
           <HeaderRankBadge>
-            <HeaderRankSprite src={rank.image} alt="" />
-            <HeaderRankWord>LEVEL {currentLevel}</HeaderRankWord>
+            <HeaderRankWord>JOURNEY {currentLevel}</HeaderRankWord>
           </HeaderRankBadge>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', width: '100%', justifyContent: 'center' }}>
             <button
@@ -1413,7 +1422,7 @@ export default function SkywardJourney({
             </button>
           </div>
 
-          {steps.length > 0 ? (
+          {!isLockedLevel && steps.length > 0 ? (
             <HeaderProgressWrap>
               <HeaderProgressTrack>
                 <HeaderProgressFill
@@ -1423,6 +1432,23 @@ export default function SkywardJourney({
                 />
               </HeaderProgressTrack>
               <HeaderProgressText>{completedCount} / {steps.length} Stages Completed</HeaderProgressText>
+            </HeaderProgressWrap>
+          ) : isLockedLevel ? (
+            <HeaderProgressWrap style={{ opacity: 0.85, padding: '4px 0' }}>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                gap: '8px', 
+                color: '#64748b', 
+                fontWeight: 700, 
+                fontSize: '0.8rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em'
+              }}>
+                <IoLockClosed style={{ fontSize: '1rem', color: '#94a3b8' }} />
+                <span>Journey Locked</span>
+              </div>
             </HeaderProgressWrap>
           ) : null}
         </MapHeaderCard>
@@ -1444,9 +1470,7 @@ export default function SkywardJourney({
               className="skyward-journey-map-layer"
               ref={mapLayerRef}
               style={{
-                transform: isLockedLevel
-                  ? `translate(0px, 0px) scale(${MAP_SCALE})`
-                  : `translate(${map.tx}px, ${map.ty}px) scale(${MAP_SCALE})`,
+                transform: `translate(${map.tx}px, ${map.ty}px) scale(${MAP_SCALE})`,
               }}
             >
               <div className="skyward-journey-map-content">
@@ -1499,19 +1523,6 @@ export default function SkywardJourney({
                   ) : null}
                   {steps.length > 0 && sections}
                 </div>
-
-                {steps.length === 0 && (
-                  <div className="skyward-journey-locked-state-container">
-                    <div className="skyward-journey-locked-state">                      <img
-                        src={safetyBarrierImage}
-                        alt=""
-                        className="skyward-journey-locked-image"
-                      />
-                      <h2 className="skyward-journey-locked-title">Level {currentLevel} is locked</h2>
-                      <p className="skyward-journey-locked-copy">Please complete previous levels first!</p>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -1547,13 +1558,20 @@ export default function SkywardJourney({
                     <div className="skyward-journey-overlay-inner-body">
                       <p className="randomizer-overlay-copy">
                         <span className="randomizer-overlay-copy-kicker">B-01:</span>
-                        {selectedStep?.task?.detail || selectedStep?.task?.objective || 'Ready to start your next challenge?'}
+                        Ready for your next stage? Here is what we'll focus on: <strong>{selectedStep?.title || 'General Speaking'}</strong>
                       </p>
+
+                      {selectedStep?.task?.purpose && (
+                        <div className="skyward-journey-purpose-box">
+                          <span className="skyward-journey-purpose-label">B-01's Purpose:</span>
+                          <p className="skyward-journey-purpose-text">{selectedStep.task.purpose}</p>
+                        </div>
+                      )}
                       
                       <div className="randomizer-overlay-topic">
                         <span className="randomizer-overlay-topic-label">Topic:</span>
                         {' '}
-                        {selectedStep?.title || 'General Speaking'}
+                        {selectedStep?.task?.detail || selectedStep?.task?.objective || 'Ready to start your next challenge?'}
                       </div>
 
                       <div className="skyward-journey-overlay-task-inject">
@@ -1564,7 +1582,7 @@ export default function SkywardJourney({
 
                   <div className="randomizer-overlay-robot-wrap">
                     <img 
-                      src={getSpriteUrl('Robot/0005.webp')} 
+                      src={getSpriteUrl('Robot/0002.webp')} 
                       alt="" 
                       className="randomizer-overlay-robot"
                       aria-hidden="true"

@@ -42,21 +42,12 @@ const verbalSprite = getSpriteUrl('common/Verbal.png');
 const vocalSprite = getSpriteUrl('common/Vocal.png');
 import HistoryPage from './HistoryPage';
 import HistoryPageMobile from './HistoryPageMobile';
+import { generateCoachInsights } from '../../utils/coachInsights';
 import './ProgressPage.css';
 
 const TIME_RANGES = ['All', 'Daily', 'Weekly', 'Monthly', 'Yearly'];
 
-function toFivePointScore(rawScore) {
-  const numeric = Number(rawScore);
-  if (!Number.isFinite(numeric)) return 1;
-
-  if (numeric <= 5) {
-    return Math.round(Math.max(1, Math.min(5, numeric)) * 10) / 10;
-  }
-
-  const normalized = Math.max(0, Math.min(100, numeric));
-  return Math.round((1 + (normalized / 100) * 4) * 10) / 10;
-}
+import { toFivePointScore } from '../../utils/sessionFormatting';
 
 function formatFivePointScore(rawScore) {
   return toFivePointScore(rawScore).toFixed(1);
@@ -428,6 +419,8 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
     });
   }, [pillarRange, userSessions]);
 
+  const coachInsights = useMemo(() => generateCoachInsights(userSessions), [userSessions]);
+
 /* history session logic removed */
 
   return (
@@ -448,7 +441,7 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
                 <div className="progress-mobile-banner-bubble">
                   <p className="progress-mobile-banner-kicker">B-01:</p>
                   <p className="progress-mobile-banner-copy">
-                    You&apos;re on a roll. Keep doing your activities and improve your speaking.
+                    {coachInsights.growthUpdate}
                   </p>
                 </div>
               </div>
@@ -461,7 +454,7 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
               <img src={heroRobotImage} alt="" className="new-banner-robot" />
               <div className="new-banner-bubble" aria-label="Coach message">
                 <p className="new-banner-kicker">B-01:</p>
-                <p className="new-banner-copy">These are your weekly report. You're improving fast, keep up the good work</p>
+                <p className="new-banner-copy">{coachInsights.growthUpdate}</p>
               </div>
             </div>
 

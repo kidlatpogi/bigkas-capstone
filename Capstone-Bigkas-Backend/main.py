@@ -249,6 +249,28 @@ def extract_vocal_metrics(audio_bytes: bytes, _filename: str):
 
 import httpx
 import asyncio
+import re
+
+# Dictionary for common Whisper misinterpretations of Philippine places/names
+PHILIPPINES_PLACE_CORRECTIONS = {
+    "bollyhan silampabite": "Bulihan Silang",
+    "bollyhan": "Bulihan",
+    "tasmarines": "Dasmarinas",
+    "tasmarinas": "Dasmarinas",
+    "dasmarinas": "Dasmariñas",
+    "dasma": "Dasma",
+}
+
+def auto_correct_transcript(text: str) -> str:
+    if not text:
+        return text
+    
+    corrected = text
+    for wrong, right in PHILIPPINES_PLACE_CORRECTIONS.items():
+        # Case insensitive replacement with word boundaries to avoid partial matches
+        pattern = re.compile(re.escape(wrong), re.IGNORECASE)
+        corrected = pattern.sub(right, corrected)
+    return corrected
 
 async def analyze_with_cloudflare(audio_bytes: bytes, topic: str) -> Dict[str, Any]:
     """
@@ -288,15 +310,20 @@ async def analyze_with_cloudflare(audio_bytes: bytes, topic: str) -> Dict[str, A
                 data = response.json()
                 print(f"[AI] Cloudflare Worker response received. Transcript length: {len(data.get('transcript', ''))}")
                 
+                raw_transcript = data.get("transcript", "")
+                corrected_transcript = auto_correct_transcript(raw_transcript)
+
                 # Map worker response to pipeline expected format
                 return {
-                    "transcript_exact": data.get("transcript", ""),
+                    "transcript_exact": corrected_transcript,
                     "verbal_metrics": {
                         "context_score": float(data.get("relevance_score", 3.0)),
                         "filler_words_count": int(data.get("filler_count", 0)),
                     },
-                    "feedback_summary": f"Transcript: {data.get('transcript', 'N/A')}",
+                    "feedback_summary": f"Transcript: {corrected_transcript}",
                     "recommendations": data.get("recommendations", []),
+                    "mispronunciations": data.get("mispronunciations", []),
+                    "filler_words": data.get("filler_words", []),
                 }
                 
             except Exception as e:
@@ -578,6 +605,7 @@ def persist_to_supabase(
     feedback_payload = {
         "session_id": session_id,
         "general_feedback": feedback_summary,
+        "detailed_feedback": json.dumps(combined_analysis),
     }
     try:
         supabase_client.table("session_feedback").insert(feedback_payload).execute()
@@ -681,6 +709,8 @@ async def run_analysis_task(
             "verbal": verbal_payload.get("verbal_metrics", {}),
             "feedback_summary": verbal_payload.get("feedback_summary", ""),
             "recommendations": verbal_payload.get("recommendations", []),
+            "mispronunciations": verbal_payload.get("mispronunciations", []),
+            "filler_words": verbal_payload.get("filler_words", []),
         }
 
         persistence = await asyncio.to_thread(

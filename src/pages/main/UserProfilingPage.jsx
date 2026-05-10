@@ -25,14 +25,35 @@ const profilingQuestion7Voice = getVoiceUrl('Profiling and Pre-Testing/Profiling
 const profilingQuestion8Voice = getVoiceUrl('Profiling and Pre-Testing/Profiling Questions/Profiling Question 8.mp3');
 const profilingQuestion9Voice = getVoiceUrl('Profiling and Pre-Testing/Profiling Questions/Profiling Question 9.mp3');
 const profilingQuestion10Voice = getVoiceUrl('Profiling and Pre-Testing/Profiling Questions/Profiling Question 10.mp3');
+const demographicGenderVoice = getVoiceUrl('Demographic/Gender.mp3');
+const demographicAgeVoice = getVoiceUrl('Demographic/Age.mp3');
 import './UserProfilingPage.css';
 
 const QUESTIONS = questionsData;
 
-const INITIAL_FORM = QUESTIONS.reduce((acc, question) => {
-  acc[question.key] = question.type === 'multi' ? [] : '';
-  return acc;
-}, {});
+const DEMOGRAPHIC_QUESTIONS = [
+  {
+    key: 'gender',
+    label: 'Please specify your gender identity.',
+    type: 'single',
+    options: ['Male', 'Female', 'Others', 'Prefer not to say'],
+  },
+  {
+    key: 'age_range',
+    label: 'Which age group do you currently belong to?',
+    type: 'single',
+    options: ['16-17', '18-22', '23 and above'],
+  },
+];
+
+const INITIAL_FORM = {
+  gender: '',
+  age_range: '',
+  ...QUESTIONS.reduce((acc, question) => {
+    acc[question.key] = question.type === 'multi' ? [] : '';
+    return acc;
+  }, {}),
+};
 
 const INTRO_MUTE_KEY = 'bigkas_profiling_intro_muted';
 const QUESTION_VOICE_SOURCES = [
@@ -94,7 +115,7 @@ function UserProfilingPage() {
   const introFirstMessage =
     "Hello! I'm B-01, your personal guide on this exciting journey to master public speaking.";
   const introSecondMessage =
-    'Before we begin, we need to assess your current Public Speaking Level. This includes 10 short profiling questions and one small speaking pre-test. These tests ensure I can customize your experience and guide you smoothly throughout your entire journey!';
+    'Before we begin, we need to assess your current Public Speaking Level. This includes 2 demographic questions, 10 short profiling questions and one small speaking pre-test. These tests ensure I can customize your experience and guide you smoothly throughout your entire journey!';
   const readyMessage =
     "Awesome! Since you're ready, let's jump right into your 10 profiling questions! And don't worry, you can answer every single one with a simple Yes, Sometimes, or No.";
   const outroFirstMessage = "You've made it to the final step! To wrap things up, let's try a quick Free Speech Pre-test.";
@@ -110,6 +131,7 @@ function UserProfilingPage() {
   const [typedOutroMissionText, setTypedOutroMissionText] = useState('');
   const [isOutroTypingDone, setIsOutroTypingDone] = useState(false);
   const [form, setForm] = useState(INITIAL_FORM);
+  const [demographicIndex, setDemographicIndex] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -120,16 +142,24 @@ function UserProfilingPage() {
   });
   const introAudioRef = useRef(null);
   const stepTwoAudioRef = useRef(null);
+  const genderAudioRef = useRef(null);
+  const ageAudioRef = useRef(null);
   const readyAudioRef = useRef(null);
   const outroAudioRef = useRef(null);
+
   const questionAudioRefs = useRef([]);
 
   const totalSteps = QUESTIONS.length;
-  const currentQuestion = QUESTIONS[currentIndex];
+  const currentQuestion = QUESTIONS[currentIndex] || QUESTIONS[0];
   const progress = Math.round(((currentIndex + 1) / totalSteps) * 100);
 
   const baselineScore = useMemo(() => computeBaselineScore(form), [form]);
   const baselineLevelNumber = useMemo(() => getSpeakerLevelNumber(baselineScore), [baselineScore]);
+
+  const currentDemographicQuestion = DEMOGRAPHIC_QUESTIONS[demographicIndex] || DEMOGRAPHIC_QUESTIONS[0];
+  const canProceedDemographic = currentDemographicQuestion
+    ? isQuestionAnswered(currentDemographicQuestion, form[currentDemographicQuestion.key])
+    : false;
   useEffect(() => {
     if (isAdminAuthenticated) {
       navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
@@ -222,6 +252,8 @@ function UserProfilingPage() {
 
     introAudioRef.current = new Audio(introVoice1);
     stepTwoAudioRef.current = new Audio(introVoice2);
+    genderAudioRef.current = new Audio(demographicGenderVoice);
+    ageAudioRef.current = new Audio(demographicAgeVoice);
     readyAudioRef.current = new Audio(introVoice3);
     outroAudioRef.current = new Audio(beforePretestingVoice);
     questionAudioRefs.current = QUESTION_VOICE_SOURCES.map((src) => new Audio(src));
@@ -229,6 +261,8 @@ function UserProfilingPage() {
     const refs = [
       introAudioRef.current,
       stepTwoAudioRef.current,
+      genderAudioRef.current,
+      ageAudioRef.current,
       readyAudioRef.current,
       outroAudioRef.current,
       ...questionAudioRefs.current,
@@ -255,6 +289,8 @@ function UserProfilingPage() {
     const refs = [
       introAudioRef.current,
       stepTwoAudioRef.current,
+      genderAudioRef.current,
+      ageAudioRef.current,
       readyAudioRef.current,
       outroAudioRef.current,
       ...questionAudioRefs.current,
@@ -276,6 +312,8 @@ function UserProfilingPage() {
       [
         introAudioRef.current,
         stepTwoAudioRef.current,
+        genderAudioRef.current,
+        ageAudioRef.current,
         readyAudioRef.current,
         outroAudioRef.current,
         ...questionAudioRefs.current,
@@ -293,12 +331,14 @@ function UserProfilingPage() {
       playClip(introAudioRef);
     } else if (screen === 'intro' && introStep === 1) {
       playClip(stepTwoAudioRef);
+    } else if (screen === 'demographics') {
+      playClip(demographicIndex === 0 ? genderAudioRef : ageAudioRef);
     } else if (screen === 'ready') {
       playClip(readyAudioRef);
     } else if (screen === 'outro') {
       playClip(outroAudioRef);
     }
-  }, [introStep, isMuted, screen]);
+  }, [introStep, isMuted, screen, demographicIndex]);
 
   useEffect(() => {
     if (screen !== 'questions' || isMuted) return;
@@ -308,6 +348,8 @@ function UserProfilingPage() {
     [
       introAudioRef.current,
       stepTwoAudioRef.current,
+      genderAudioRef.current,
+      ageAudioRef.current,
       readyAudioRef.current,
       outroAudioRef.current,
       ...questionAudioRefs.current,
@@ -362,6 +404,27 @@ function UserProfilingPage() {
     setForm(nextForm);
     if (error) setError('');
 
+    if (screen === 'demographics') {
+      if (demographicIndex >= DEMOGRAPHIC_QUESTIONS.length - 1) {
+        setTimeout(() => {
+          setIsTransitioning(true);
+          setTimeout(() => {
+            setScreen('questions');
+            setIsTransitioning(false);
+          }, 400);
+        }, 450);
+        return;
+      }
+      setTimeout(() => {
+        setIsTransitioning(true);
+        setTimeout(() => {
+          setDemographicIndex((prev) => prev + 1);
+          setIsTransitioning(false);
+        }, 400);
+      }, 450);
+      return;
+    }
+
     if (currentIndex >= totalSteps - 1) {
       setTimeout(async () => {
         await handleSubmit({ nextForm });
@@ -377,12 +440,11 @@ function UserProfilingPage() {
   const handleSubmit = async ({ nextForm = null } = {}) => {
     if (isSubmitting) return;
     const workingForm = nextForm || form;
-    const pendingQuestions = QUESTIONS.filter((question) => !isQuestionAnswered(question, workingForm[question.key]));
+    const pendingProfiling = QUESTIONS.filter((question) => !isQuestionAnswered(question, workingForm[question.key]));
+    const pendingDemographics = DEMOGRAPHIC_QUESTIONS.filter((question) => !isQuestionAnswered(question, workingForm[question.key]));
 
-    if (pendingQuestions.length > 0) {
-      const missingKeys = pendingQuestions.map(q => q.key).join(', ');
-      console.warn("Missing profiling questions:", missingKeys, "Form state:", workingForm);
-      setError(`Please answer all questions before finishing profiling. Missing: ${missingKeys}`);
+    if (pendingProfiling.length > 0 || pendingDemographics.length > 0) {
+      setError(`Please answer all questions before finishing profiling.`);
       return;
     }
 
@@ -423,12 +485,28 @@ function UserProfilingPage() {
     }
     navigate(ROUTES.USER_PRETEST, { replace: true });
   };
-  const canProceedQuestion = isQuestionAnswered(currentQuestion, form[currentQuestion.key]);
+  const canProceedQuestion = currentQuestion 
+    ? isQuestionAnswered(currentQuestion, form[currentQuestion.key])
+    : false;
 
   const handleQuestionBack = () => {
     if (isSubmitting) return;
+    if (screen === 'demographics') {
+      if (demographicIndex === 0) {
+        setScreen('intro');
+        setIntroStep(1);
+        return;
+      }
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setDemographicIndex((prev) => prev - 1);
+        setIsTransitioning(false);
+      }, 400);
+      return;
+    }
     if (currentIndex === 0) {
-      setScreen('ready');
+      setScreen('demographics');
+      setDemographicIndex(DEMOGRAPHIC_QUESTIONS.length - 1);
       return;
     }
     goToPreviousQuestion();
@@ -458,7 +536,14 @@ function UserProfilingPage() {
         window.localStorage.setItem(INTRO_MUTE_KEY, next ? '1' : '0');
       }
       if (next) {
-        [introAudioRef.current, stepTwoAudioRef.current, readyAudioRef.current, outroAudioRef.current].forEach((audio) => {
+        [
+          introAudioRef.current,
+          stepTwoAudioRef.current,
+          genderAudioRef.current,
+          ageAudioRef.current,
+          readyAudioRef.current,
+          outroAudioRef.current,
+        ].forEach((audio) => {
           if (!audio) return;
           audio.pause();
           audio.currentTime = 0;
@@ -477,6 +562,8 @@ function UserProfilingPage() {
     [
       introAudioRef.current,
       stepTwoAudioRef.current,
+      genderAudioRef.current,
+      ageAudioRef.current,
       readyAudioRef.current,
       outroAudioRef.current,
       ...questionAudioRefs.current,
@@ -500,7 +587,8 @@ function UserProfilingPage() {
       return;
     }
 
-    setScreen('ready');
+    setScreen('demographics');
+    setDemographicIndex(0);
   };
 
   const handleBackToIntro = () => {
@@ -603,6 +691,71 @@ function UserProfilingPage() {
                   <source src={waveWebm} type="video/webm" />
                   <source src={waveMp4} type="video/mp4" />
                 </video>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {screen === 'demographics' && (
+        <section className={`profiling-question-stage profiling-gate--pop ${isTransitioning ? 'is-transitioning' : ''}`}>
+          <div className="profiling-unit">
+            <article className="profiling-question-bubble">
+              <h2 className="profiling-question-count">
+                <span>Step:</span> {demographicIndex + 1}/{DEMOGRAPHIC_QUESTIONS.length}
+              </h2>
+              <p className="profiling-question-text">
+                <strong>B-01:</strong>
+                <br />
+                {currentDemographicQuestion.label}
+              </p>
+              <div className="profiling-intro-actions profiling-intro-actions--split">
+                <button
+                  type="button"
+                  className="profiling-ready-btn profiling-ready-btn--back"
+                  onClick={handleQuestionBack}
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  className="profiling-ready-btn profiling-ready-btn--next"
+                  onClick={() => {
+                    if (demographicIndex >= DEMOGRAPHIC_QUESTIONS.length - 1) {
+                      setScreen('ready');
+                      return;
+                    }
+                    setDemographicIndex((prev) => prev + 1);
+                  }}
+                  disabled={!canProceedDemographic}
+                >
+                  Next
+                </button>
+              </div>
+            </article>
+
+            <div className="profiling-question-lower">
+              <div className="profiling-question-robot-wrap" aria-hidden="true">
+                <img src={robotQuestionImage} alt="" className="profiling-question-robot-image" />
+              </div>
+
+              <div className={`profiling-question-options-wrap ${currentDemographicQuestion.options.length > 3 ? 'is-demographics' : ''}`}>
+                <div className={`profiling-question-options ${currentDemographicQuestion.options.length > 3 ? 'is-demographics' : ''}`}>
+                  {currentDemographicQuestion.options.map((option) => {
+                    const isActive = form[currentDemographicQuestion.key] === option;
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        className={`profiling-question-option ${isActive ? 'is-active' : ''}`}
+                        onClick={() => handleSingleAnswerAndAdvance(currentDemographicQuestion.key, option)}
+                      >
+                        {option}
+                      </button>
+                    );
+                  })}
+                </div>
+                {error && <p className="profiling-error">{error}</p>}
               </div>
             </div>
           </div>

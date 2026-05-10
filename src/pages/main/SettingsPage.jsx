@@ -8,7 +8,9 @@ import {
   IoLogOutOutline,
   IoAlertCircleOutline,
   IoVideocamOutline,
-  IoColorPalette
+  IoColorPalette,
+  IoVolumeMuteOutline,
+  IoVolumeHighOutline
 } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
@@ -37,7 +39,7 @@ const AUTO_NEXT_KEY = 'pref_auto_next';
 
 function SettingsPage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuthContext();
+  const { user, updateProfile, updateUserMetadata, uploadAvatar, logout } = useAuthContext();
   
   const [micSensitivity, setMicSensitivity] = useState(() => {
     return localStorage.getItem(MIC_SENSITIVITY_KEY) || '80';
@@ -72,6 +74,13 @@ function SettingsPage() {
     } catch (error) {
       console.error('Logout error:', error);
     }
+  };
+
+  const handleToggleMute = async () => {
+    const nextMute = !user?.isAudioMuted;
+    // Update locally and in DB
+    await updateUserMetadata({ is_audio_muted: nextMute });
+    localStorage.setItem('bigkas_global_audio_muted_v1', nextMute ? '1' : '0');
   };
 
   const openLegal = (type) => {

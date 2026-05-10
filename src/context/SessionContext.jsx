@@ -40,18 +40,19 @@ const SESSIONS_SELECT_QUERY = `
     vocal_score,
     visual_score,
     verbal_score,
-    visual_avg,
-    vocal_avg,
-    verbal_avg,
     confidence_score,
     pronunciation_score,
     jitter,
     shimmer,
     eye_contact_score,
-    gesture_score
+    gesture_score,
+    visual_avg,
+    vocal_avg,
+    verbal_avg
   ),
   session_feedback (
-    general_feedback
+    general_feedback,
+    detailed_feedback
   ),
   session_recommendations (
     recommendation_text
@@ -225,10 +226,12 @@ function normalizeSessionRow(session) {
     pronunciation_score: metrics?.pronunciation_score == null ? null : toInt(metrics.pronunciation_score, 0),
     jitter_score: metrics?.jitter == null ? null : toInt(metrics.jitter, 0),
     shimmer_score: metrics?.shimmer == null ? null : toInt(metrics.shimmer, 0),
+    eye_contact_score: metrics?.eye_contact_score == null ? null : toInt(metrics.eye_contact_score, 0),
     gesture_score: metrics?.gesture_score == null ? null : toInt(metrics.gesture_score, 0),
     duration_sec: session.duration ?? 0,
     target_text: sanitizeTranscriptForDisplay(media?.transcript, ''),
     transcript: sanitizeTranscriptForDisplay(media?.transcript, ''),
+    analysis: media?.analysis || (feedback?.detailed_feedback ? feedback.detailed_feedback : null),
     feedback: feedback?.general_feedback || '',
     detailed_feedback: feedback?.detailed_feedback || '',
     objective_name: session.objective_name ?? activity?.objective ?? null,
@@ -683,7 +686,12 @@ export function SessionProvider({ children }) {
       const apiUrl = ENV.PYTHON_SERVICE_URL;
       // 0. Ensure session is fresh (prevents "exp" claim errors after long waits)
       const { data: { session: currentSession }, error: sessionErr } = await supabase.auth.refreshSession();
-      if (sessionErr) console.warn('[SessionContext] Session refresh warning:', sessionErr.message);
+      if (sessionErr) {
+        console.warn('[SessionContext] Session refresh warning:', sessionErr.message);
+        if (sessionErr.message?.includes('expired') || sessionErr.status === 401 || sessionErr.status === 403) {
+           await supabase.auth.signOut({ scope: 'local' });
+        }
+      }
       const authSession = currentSession;
       const baseVisualMetrics = {
         overall_score: toNumeric(visualAnalysis?.overall_score, 0),

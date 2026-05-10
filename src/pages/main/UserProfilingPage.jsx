@@ -140,16 +140,10 @@ function UserProfilingPage() {
   });
   const introAudioRef = useRef(null);
   const stepTwoAudioRef = useRef(null);
+  const genderAudioRef = useRef(null);
+  const ageAudioRef = useRef(null);
   const readyAudioRef = useRef(null);
   const outroAudioRef = useRef(null);
-  const genderAudioRef = useAudio(
-    'https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Demographic/Gender.mp3',
-    isMuted
-  );
-  const ageAudioRef = useAudio(
-    'https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Demographic/Age.mp3',
-    isMuted
-  );
 
   const questionAudioRefs = useRef([]);
 
@@ -254,6 +248,8 @@ function UserProfilingPage() {
 
     introAudioRef.current = new Audio(introVoice1);
     stepTwoAudioRef.current = new Audio(introVoice2);
+    genderAudioRef.current = new Audio('https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Demographic/Gender.mp3');
+    ageAudioRef.current = new Audio('https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Demographic/Age.mp3');
     readyAudioRef.current = new Audio(introVoice3);
     outroAudioRef.current = new Audio(beforePretestingVoice);
     questionAudioRefs.current = QUESTION_VOICE_SOURCES.map((src) => new Audio(src));
@@ -261,6 +257,8 @@ function UserProfilingPage() {
     const refs = [
       introAudioRef.current,
       stepTwoAudioRef.current,
+      genderAudioRef.current,
+      ageAudioRef.current,
       readyAudioRef.current,
       outroAudioRef.current,
       ...questionAudioRefs.current,

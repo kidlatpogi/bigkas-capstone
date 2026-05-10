@@ -541,7 +541,9 @@ export function AuthProvider({ children }) {
       dashboardTutorialSeen: parseMetadataBoolean(meta.dashboard_tutorial_seen) || parseMetadataBoolean(meta.is_tutorial_completed),
       activeBannerId: meta.active_banner_id || 'default_skyward',
       unlockedBanners: Array.isArray(meta.unlocked_banners) ? meta.unlocked_banners : ['default_skyward'],
-      isAudioMuted: parseMetadataBoolean(profile.is_audio_muted) || parseMetadataBoolean(meta.is_audio_muted) || false,
+      isAudioMuted: parseMetadataBoolean(profile.is_audio_muted) || 
+                    parseMetadataBoolean(meta.is_audio_muted) || 
+                    (typeof window !== 'undefined' && window.localStorage.getItem('bigkas_global_audio_muted_v1') === '1'),
       createdAt: u.created_at,
     };
   }, [resolveAvatarUrl]);

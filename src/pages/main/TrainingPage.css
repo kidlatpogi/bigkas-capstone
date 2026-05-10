@@ -2231,14 +2231,10 @@ body.training-page-active .theme-toggle-wrap {
 
 .tp-back-to-history-btn {
   position: absolute;
-  top: 22px;
-  left: 296px;
+  top: 8px;
+  left: 20px;
   width: 176px !important;
   height: 48px !important;
+  z-index: 2005;
 }
 
-@media (max-width: 1024px) {
-  .tp-back-to-history-btn {
-    left: 20px; /* Adjust for smaller screens */
-  }
-}

@@ -409,7 +409,11 @@ function isBlockedByClient(error) {
     msg.includes('networkerror') ||
     msg.includes('load failed') ||
     msg.includes('blocked by client') ||
-    msg.includes('net::err_blocked_by_client')
+    msg.includes('net::err_blocked_by_client') ||
+    msg.includes('unexpected end of input') ||
+    msg.includes('aborterror') ||
+    msg.includes('extension') ||
+    msg.includes('not allowed')
   );
 }
 
@@ -1191,7 +1195,7 @@ export function AuthProvider({ children }) {
     if (err) {
       setIsLoading(false);
       if (isBlockedByClient(err)) {
-        const msg = 'Google sign-in was blocked by your browser or an ad-blocker. Please disable extensions and try again.';
+        const msg = 'Google sign-in was blocked by your browser (common with Brave Shields or aggressive ad-blockers). Please disable Brave Shields for this site and try again.';
         setError(msg);
         return { success: false, error: msg, code: 'blocked_by_client' };
       }

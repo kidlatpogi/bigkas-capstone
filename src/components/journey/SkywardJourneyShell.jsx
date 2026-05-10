@@ -98,7 +98,11 @@ function SkywardJourneyShell({
    * Cross-level sequence check:
    * Node 1 of Journey N should be locked until the LAST node of Journey N-1 is finished.
    */
-  const [isPrevLevelDone, setIsPrevLevelDone] = useState(true);
+  const [isPrevLevelDone, setIsPrevLevelDone] = useState(false);
+
+  useEffect(() => {
+    setIsPrevLevelDone(selectedLevel <= 1);
+  }, [selectedLevel]);
 
   useEffect(() => {
     if (selectedLevel <= 1) {
@@ -134,11 +138,6 @@ function SkywardJourneyShell({
 
   const taskUnlockState = useMemo(() => {
     const state = {};
-    // If we've already passed this level, everything is unlocked.
-    if (isPassedLevel) {
-      tasks.forEach(t => { state[t.id] = true; });
-      return state;
-    }
     
     // Start with true if level 1, or if the previous level's last node is completed.
     let previousCompleted = isPrevLevelDone;

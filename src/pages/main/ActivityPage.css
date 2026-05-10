@@ -793,7 +793,7 @@ html {
 .randomizer-overlay-wrapper {
   position: fixed;
   inset: 0;
-  z-index: 1300;
+  z-index: 12000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1423,7 +1423,7 @@ html {
 /* Updated Chat Heads & Centering */
 .ask-b01-modal-wrapper {
   padding-left: calc(280px + 20px);
-  z-index: 10000; /* Ensure it's above everything */
+  z-index: 12000; /* Ensure it's above everything */
 }
 
 @media (max-width: 1100px) {
@@ -1434,7 +1434,7 @@ html {
 
 .ask-b01-scrim {
   background: rgba(15, 23, 42, 0.65);
-  z-index: 9999;
+  z-index: 1100;
 }
 
 .ask-b01-chat-row {

@@ -1558,7 +1558,7 @@ export default function SkywardJourney({
                     <div className="skyward-journey-overlay-inner-body">
                       <p className="randomizer-overlay-copy">
                         <span className="randomizer-overlay-copy-kicker">B-01:</span>
-                        {selectedStep?.task?.detail || selectedStep?.task?.objective || 'Ready to start your next challenge?'}
+                        Ready for your next stage? Here is what we'll focus on: <strong>{selectedStep?.title || 'General Speaking'}</strong>
                       </p>
 
                       {selectedStep?.task?.purpose && (
@@ -1571,7 +1571,7 @@ export default function SkywardJourney({
                       <div className="randomizer-overlay-topic">
                         <span className="randomizer-overlay-topic-label">Topic:</span>
                         {' '}
-                        {selectedStep?.title || 'General Speaking'}
+                        {selectedStep?.task?.detail || selectedStep?.task?.objective || 'Ready to start your next challenge?'}
                       </div>
 
                       <div className="skyward-journey-overlay-task-inject">

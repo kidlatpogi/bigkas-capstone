@@ -142,6 +142,15 @@ function UserProfilingPage() {
   const stepTwoAudioRef = useRef(null);
   const readyAudioRef = useRef(null);
   const outroAudioRef = useRef(null);
+  const genderAudioRef = useAudio(
+    'https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Demographic/Gender.mp3',
+    isMuted
+  );
+  const ageAudioRef = useAudio(
+    'https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Demographic/Age.mp3',
+    isMuted
+  );
+
   const questionAudioRefs = useRef([]);
 
   const totalSteps = QUESTIONS.length;
@@ -278,6 +287,8 @@ function UserProfilingPage() {
     const refs = [
       introAudioRef.current,
       stepTwoAudioRef.current,
+      genderAudioRef.current,
+      ageAudioRef.current,
       readyAudioRef.current,
       outroAudioRef.current,
       ...questionAudioRefs.current,
@@ -299,6 +310,8 @@ function UserProfilingPage() {
       [
         introAudioRef.current,
         stepTwoAudioRef.current,
+        genderAudioRef.current,
+        ageAudioRef.current,
         readyAudioRef.current,
         outroAudioRef.current,
         ...questionAudioRefs.current,
@@ -316,6 +329,8 @@ function UserProfilingPage() {
       playClip(introAudioRef);
     } else if (screen === 'intro' && introStep === 1) {
       playClip(stepTwoAudioRef);
+    } else if (screen === 'demographics') {
+      playClip(demographicIndex === 0 ? genderAudioRef : ageAudioRef);
     } else if (screen === 'ready') {
       playClip(readyAudioRef);
     } else if (screen === 'outro') {
@@ -331,6 +346,8 @@ function UserProfilingPage() {
     [
       introAudioRef.current,
       stepTwoAudioRef.current,
+      genderAudioRef.current,
+      ageAudioRef.current,
       readyAudioRef.current,
       outroAudioRef.current,
       ...questionAudioRefs.current,
@@ -515,7 +532,14 @@ function UserProfilingPage() {
         window.localStorage.setItem(INTRO_MUTE_KEY, next ? '1' : '0');
       }
       if (next) {
-        [introAudioRef.current, stepTwoAudioRef.current, readyAudioRef.current, outroAudioRef.current].forEach((audio) => {
+        [
+          introAudioRef.current,
+          stepTwoAudioRef.current,
+          genderAudioRef.current,
+          ageAudioRef.current,
+          readyAudioRef.current,
+          outroAudioRef.current,
+        ].forEach((audio) => {
           if (!audio) return;
           audio.pause();
           audio.currentTime = 0;
@@ -534,6 +558,8 @@ function UserProfilingPage() {
     [
       introAudioRef.current,
       stepTwoAudioRef.current,
+      genderAudioRef.current,
+      ageAudioRef.current,
       readyAudioRef.current,
       outroAudioRef.current,
       ...questionAudioRefs.current,

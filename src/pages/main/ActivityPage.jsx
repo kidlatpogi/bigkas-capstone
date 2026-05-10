@@ -49,6 +49,7 @@ const crystalBallImage = getSpriteUrl('common/crystal-ball.png');
 const crownImage = getSpriteUrl('common/crown.png');
 import b01ChatHead from '../../assets/logos/0015.png';
 import fireAnimationData from '../../assets/Lottie/fire.json';
+import { generateCoachInsights } from '../../utils/coachInsights';
 import './InnerPages.css';
 import './ActivityPage.css';
 
@@ -431,7 +432,8 @@ function ActivityPage() {
 
     const latestScore = Math.floor(latest?.score || latest?.overall_score || latest?.overallScore || 0);
     const firstScore = Math.floor(first?.score || first?.overall_score || first?.overallScore || 0);
-    const totalGrowth = latestScore - firstScore;
+    
+    const insights = generateCoachInsights(sessions);
 
     return {
       totalSessionCount: (sessions || []).filter(s => s.status !== 'error' && s.is_error !== true).length,
@@ -444,8 +446,10 @@ function ActivityPage() {
       growthSummary: {
         firstSessionScore: firstScore,
         latestSessionScore: latestScore,
-        totalPercentagePointGrowth: totalGrowth.toFixed(1),
-        status: totalGrowth > 0 ? "Improving" : totalGrowth < 0 ? "Declining" : "Stable"
+        growthPercentage: insights.growth.toFixed(1),
+        strongestPillar: insights.strongestPillar,
+        coachNarrative: insights.message,
+        status: insights.growth > 0 ? "Improving" : insights.growth < 0 ? "Declining" : "Stable"
       },
 
       // Comparison Points
@@ -468,39 +472,28 @@ function ActivityPage() {
     const fetchBannerMessage = async () => {
       if (!user?.id) return;
 
-      // 1. Check Cache
+      // 1. Generate Local Insights (Immediate & Accurate)
+      const insights = generateCoachInsights(sessions);
+      setBannerMessage(insights.message);
+
+      // 2. Update Cache
+      window.localStorage.setItem(AI_BANNER_CACHE_KEY, JSON.stringify({
+        message: insights.message,
+        timestamp: Date.now()
+      }));
+
+      // 3. Optional: Fetch from AI for variety, but we already have the core stats
       try {
         const cached = window.localStorage.getItem(AI_BANNER_CACHE_KEY);
         if (cached) {
-          const { message, timestamp } = JSON.parse(cached);
+          const { timestamp } = JSON.parse(cached);
           if (Date.now() - timestamp < EIGHT_HOURS_MS) {
-            setBannerMessage(message);
             return;
           }
         }
       } catch (e) {
         console.warn('Failed to read banner cache', e);
       }
-
-      // 2. Fetch New if expired or missing
-      setIsBannerLoading(true);
-      try {
-        const response = await fetch('https://b01-ai-worker.dzeref4000.workers.dev/banner-message', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ context: getProgressContext() }),
-        });
-        if (response.ok) {
-          const data = await response.json();
-          if (data.message) {
-            setBannerMessage(data.message);
-            // 3. Update Cache
-            window.localStorage.setItem(AI_BANNER_CACHE_KEY, JSON.stringify({
-              message: data.message,
-              timestamp: Date.now()
-            }));
-          }
-        }
       } catch (error) {
         console.error('Failed to fetch AI banner:', error);
       } finally {

@@ -1369,15 +1369,17 @@ function TrainingPage() {
   return (
     <div className="tp-page tp-page--free-pretest" ref={freeLayoutObserverRef}>
       {!isPreTestSession && (
-        <button
-          type="button"
-          className="history-back-to-list-btn tp-back-to-history-btn"
-          onClick={() => {
-            setShowExitConfirm(true);
-          }}
-        >
-          <IoChevronBack /> Back to Dashboard
-        </button>
+        <div className="history-session-view-header tp-nav-header dashboard-anim-top">
+          <button
+            type="button"
+            className="history-back-to-list-btn tp-back-to-history-btn-v2"
+            onClick={() => {
+              setShowExitConfirm(true);
+            }}
+          >
+            <IoChevronBack /> Back to Dashboard
+          </button>
+        </div>
       )}
 
 

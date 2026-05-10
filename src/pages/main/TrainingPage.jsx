@@ -1360,9 +1360,9 @@ function TrainingPage() {
         <button
           type="button"
           className="history-back-to-list-btn tp-back-to-history-btn"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate(ROUTES.ACTIVITY)}
         >
-          Back to History
+          Back to Dashboard
         </button>
       )}
 

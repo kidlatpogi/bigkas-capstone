@@ -1197,6 +1197,17 @@ function TrainingPage() {
     }, 1000);
   }, [bumpElapsedSec, focus, highlightIdx, status, startScriptHighlightLoop, startWaveformLoop, playCountdownCue]);
 
+  const handleContinueFromShortModal = useCallback(() => {
+    setShowMinDurationModal(false);
+    // Restart logic after stop attempt was blocked for being too short
+    clearInterval(timerRef.current);
+    timerRef.current = setInterval(bumpElapsedSec, 1000);
+    startWaveformLoop();
+    if (focus === 'scripted') {
+      startScriptHighlightLoop(Math.max(highlightIdx, 0));
+    }
+  }, [bumpElapsedSec, focus, highlightIdx, startScriptHighlightLoop, startWaveformLoop]);
+
   /* ── Restart ── */
   const handleRestart = () => {
     clearInterval(timerRef.current);
@@ -1836,8 +1847,8 @@ function TrainingPage() {
         isOpen={showMinDurationModal}
         title="Recording Too Short"
         message={`To provide accurate AI feedback, your recording needs to be at least ${MIN_RECORDING_SECONDS} seconds long. Keep going, you're doing great!`}
-        onConfirm={() => setShowMinDurationModal(false)}
-        onCancel={() => setShowMinDurationModal(false)}
+        onConfirm={handleContinueFromShortModal}
+        onCancel={handleContinueFromShortModal}
         confirmLabel="Understood"
         cancelLabel=""
         type="default"

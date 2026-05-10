@@ -40,15 +40,15 @@ const SESSIONS_SELECT_QUERY = `
     vocal_score,
     visual_score,
     verbal_score,
-    visual_avg,
-    vocal_avg,
-    verbal_avg,
     confidence_score,
     pronunciation_score,
     jitter,
     shimmer,
     eye_contact_score,
-    gesture_score
+    gesture_score,
+    visual_avg,
+    vocal_avg,
+    verbal_avg
   ),
   session_feedback (
     general_feedback,
@@ -686,7 +686,12 @@ export function SessionProvider({ children }) {
       const apiUrl = ENV.PYTHON_SERVICE_URL;
       // 0. Ensure session is fresh (prevents "exp" claim errors after long waits)
       const { data: { session: currentSession }, error: sessionErr } = await supabase.auth.refreshSession();
-      if (sessionErr) console.warn('[SessionContext] Session refresh warning:', sessionErr.message);
+      if (sessionErr) {
+        console.warn('[SessionContext] Session refresh warning:', sessionErr.message);
+        if (sessionErr.message?.includes('expired') || sessionErr.status === 401 || sessionErr.status === 403) {
+           await supabase.auth.signOut({ scope: 'local' });
+        }
+      }
       const authSession = currentSession;
       const baseVisualMetrics = {
         overall_score: toNumeric(visualAnalysis?.overall_score, 0),

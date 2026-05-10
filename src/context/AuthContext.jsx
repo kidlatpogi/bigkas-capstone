@@ -639,7 +639,7 @@ export function AuthProvider({ children }) {
         setError(blockedAccount.message);
         setUser(null);
         clearAdminSession();
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
         isBootstrapped = true;
         clearTimeout(bootstrapTimeout);
         setIsLoading(false);
@@ -678,7 +678,7 @@ export function AuthProvider({ children }) {
         setPendingEmail(null);
         setUser(null);
         clearAdminSession();
-        void supabase.auth.signOut();
+        void supabase.auth.signOut({ scope: 'local' });
         return;
       }
 
@@ -690,7 +690,7 @@ export function AuthProvider({ children }) {
         setPendingEmail(session.user.email || null);
         setUser(null);
         clearAdminSession();
-        void supabase.auth.signOut();
+        void supabase.auth.signOut({ scope: 'local' });
         return;
       }
 
@@ -801,7 +801,7 @@ export function AuthProvider({ children }) {
         setPendingEmail(email);
         const message = 'Verify your email address first. Then click resend email below if you need a new link.';
         setError(message);
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
         return {
           success: false,
           code: 'email_not_confirmed',
@@ -813,7 +813,7 @@ export function AuthProvider({ children }) {
       // Block deactivated / deleted accounts
       const meta = data.user?.user_metadata || {};
       if (parseMetadataBoolean(meta.account_deactivated) || parseMetadataBoolean(meta.account_deleted)) {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
         const blockedMessage = parseMetadataBoolean(meta.account_deleted)
           ? 'Account deleted. Contact admin for assistance.'
           : 'Account deactivated. Contact admin for assistance.';
@@ -920,7 +920,7 @@ export function AuthProvider({ children }) {
         setPendingEmail(email);
         const message = 'Verify your email address first. Then click resend email below if you need a new link.';
         setError(message);
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
         return {
           success: false,
           code: 'email_not_confirmed',
@@ -938,7 +938,7 @@ export function AuthProvider({ children }) {
 
       if (profileError || !profile || !profile.role) {
         clearAdminSession();
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
         const message = 'Admin profile not found.';
         setError(message);
         return {
@@ -950,7 +950,7 @@ export function AuthProvider({ children }) {
 
       if (profile.role !== 'admin' && profile.role !== 'superadmin') {
         clearAdminSession();
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
         const message = 'Access Denied: Admin privileges required.';
         setError(message);
         return {

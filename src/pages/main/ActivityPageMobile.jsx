@@ -36,7 +36,7 @@ const tutorialRobotStep3 = getSpriteUrl('Robot/0018.webp');
 const tutorialRobotStep4 = getSpriteUrl('Robot/0001.webp');
 const tutorialRobotStep5 = getSpriteUrl('Robot/0002.webp');
 const tutorialRobotStep6 = getSpriteUrl('Robot/0004.webp');
-const randomizerRobotImage = getSpriteUrl('Robot/0005.webp');
+const randomizerRobotImage = getSpriteUrl('Robot/0002.webp');
 const rankBronze = getSpriteUrl('Rank/rank-bronze.png');
 const rankSilverImage = getSpriteUrl('Rank/rank-silver.png');
 const rankGoldImage = getSpriteUrl('Rank/rank-gold.png');
@@ -283,9 +283,11 @@ function ActivityPageMobile() {
     refresh: refreshJourney,
   } = useActivitiesJourneyTasks(user?.progressLevelNumber || 1);
 
+  const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
   const tasks = useMemo(() => {
-    return filterActivitiesForJourney(allTasks, user?.speakerLevelNumber || 1, user?.progressLevelNumber || 1);
-  }, [allTasks, user?.speakerLevelNumber, user?.progressLevelNumber]);
+    const sLevel = levelProgress?.levelNumber || 1;
+    return filterActivitiesForJourney(allTasks, sLevel, user?.progressLevelNumber || 1);
+  }, [allTasks, levelProgress?.levelNumber, user?.progressLevelNumber]);
 
   // State
   const [activeTaskId, setActiveTaskId] = useState(null);
@@ -345,12 +347,10 @@ function ActivityPageMobile() {
     };
   }, []);
 
-  const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
   const recommendedLevel = useMemo(() => {
-    const level = Number(levelProgress?.levelNumber || 1);
-    if (!Number.isFinite(level)) return 1;
-    return Math.max(1, Math.min(5, Math.round(level)));
-  }, [levelProgress?.levelNumber]);
+    const pLevel = Number(user?.progressLevelNumber || 1);
+    return Math.max(1, Math.min(5, Math.round(pLevel)));
+  }, [user?.progressLevelNumber]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -647,10 +647,10 @@ function ActivityPageMobile() {
     }
   }, [user?.id, user?.speakerLevelNumber, user?.progressLevelNumber, updateUserMetadata]);
 
-  const renderTaskCardForShell = useCallback(({ task, animationClass = '' }) => {
+  const renderTaskCardForShell = useCallback(({ task, isLocked: shellLocked, animationClass = '' }) => {
     const done = taskState[task.id] === true;
     const isUnlocked = taskUnlockState[task.id] === true;
-    const isLocked = !done && !isUnlocked;
+    const isLocked = shellLocked ?? (!done && !isUnlocked);
     const shouldAnimateStamp = done && recentStampedTaskId === task.id;
     const progress = taskProgress[task.id] || { current: 0, target: 1 };
     const canShowProgress = !isLocked && progress.target > 1;
@@ -960,7 +960,7 @@ function ActivityPageMobile() {
               {/* Rank Widget */}
               <section className="new-widget" id="tutorial-target-home-rank">
                 <div className="new-widget-head">
-                  <h2 className="new-widget-title">Journey Progression</h2>
+                  <h2 className="new-widget-title">Speaker Level Progression</h2>
                   <span className="new-widget-chip">Level</span>
                 </div>
                 <div 
@@ -972,14 +972,20 @@ function ActivityPageMobile() {
                 >
                   <img src={rankSpriteImage} alt="" className="new-widget-rank-sprite" />
                   <div className="new-widget-rank-content">
-                    <p className="new-widget-kicker">Current Journey</p>
-                    <p className="new-widget-value">JOURNEY {user?.progressLevelNumber || 1}</p>
+                    <p className="new-widget-kicker">Current Mastery</p>
+                    <p className="new-widget-value">LEVEL {user?.progressLevelNumber || 1}</p>
                   </div>
                 </div>
                 <p className="new-widget-caption">
-                  {completedTaskCount}/{Math.max(tasks.length, 1)} Stages Completed
-                  <span className="new-widget-caption-sep"> - </span>
-                  {sidebarProgressPct}% Cleared
+                  {tasks.length > 0 ? (
+                    <>
+                      {completedTaskCount}/{tasks.length} Stages Completed
+                      <span className="new-widget-caption-sep"> - </span>
+                      {sidebarProgressPct}% Cleared
+                    </>
+                  ) : (
+                    'No activities found for this level.'
+                  )}
                 </p>
               </section>
 

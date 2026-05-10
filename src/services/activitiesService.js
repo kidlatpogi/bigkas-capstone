@@ -7,7 +7,7 @@ import { ROUTES } from '../utils/constants';
 export async function fetchActivities(currentLevel = 1) {
   const { data, error } = await supabase
     .from('activities')
-    .select('id, target_level, activity_order, title, phase_name, objective, created_at')
+    .select('id, target_level, activity_order, title, phase_name, objective, purpose')
     .eq('target_level', currentLevel)
     .order('activity_order', { ascending: true });
 
@@ -17,7 +17,7 @@ export async function fetchActivities(currentLevel = 1) {
       if (sessionData?.session) {
         const retry = await supabase
           .from('activities')
-          .select('id, target_level, activity_order, title, phase_name, objective, created_at')
+          .select('id, target_level, activity_order, title, phase_name, objective, purpose')
           .eq('target_level', currentLevel)
           .order('activity_order', { ascending: true });
         if (!retry.error) return Array.isArray(retry.data) ? retry.data : [];
@@ -44,6 +44,7 @@ export function buildJourneyTasksFromActivities(rows) {
       pillarName: phaseName || 'Training',
       phase_name: phaseName,
       objective,
+      purpose: row.purpose,
       detail: objective,
       actionLabel: 'Start training',
       actionRoute: ROUTES.TRAINING_SETUP,

@@ -38,7 +38,7 @@ const tutorialRobotStep3 = getSpriteUrl('Robot/0018.webp');
 const tutorialRobotStep4 = getSpriteUrl('Robot/0001.webp');
 const tutorialRobotStep5 = getSpriteUrl('Robot/0002.webp');
 const tutorialRobotStep6 = getSpriteUrl('Robot/0004.webp');
-const randomizerRobotImage = getSpriteUrl('Robot/0005.webp');
+const randomizerRobotImage = getSpriteUrl('Robot/0002.webp');
 const rankBronzeImage = getSpriteUrl('Rank/rank-bronze.png');
 const rankSilverImage = getSpriteUrl('Rank/rank-silver.png');
 const rankGoldImage = getSpriteUrl('Rank/rank-gold.png');
@@ -287,9 +287,14 @@ function ActivityPage() {
   /** Activities are filtered by `target_level` = Bigkas rank (same as dashboard `levelProgress.levelName`). */
   const { tasks: allTasks, loading: activitiesLoading, error: activitiesError } = useActivitiesJourneyTasks(user?.progressLevelNumber || 1);
 
+  const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
+  const currentJourneyNumber = Math.max(1, Math.min(5, Number(user?.progressLevelNumber || user?.progress_level_number || 1) || 1));
   const tasks = useMemo(() => {
-    return filterActivitiesForJourney(allTasks, user?.speakerLevelNumber || 1, user?.progressLevelNumber || 1);
-  }, [allTasks, user?.speakerLevelNumber, user?.progressLevelNumber]);
+    // We use the derived level number (from getBigkasLevelFromUser) to ensure 
+    // the filtering matches the rank shown in the UI (e.g. Silver = Level 2).
+    const sLevel = levelProgress?.levelNumber || 1;
+    return filterActivitiesForJourney(allTasks, sLevel, user?.progressLevelNumber || 1);
+  }, [allTasks, levelProgress?.levelNumber, user?.progressLevelNumber]);
   const { metricsSyncKey, refreshJourney } = useJourneyRemoteState(user);
   const stampResetTimeoutRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -376,8 +381,6 @@ function ActivityPage() {
     };
   }, []);
 
-  const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
-  const currentJourneyNumber = Number(user?.progressLevelNumber || 1);
   const recommendedLevel = useMemo(() => {
     return Math.max(1, Math.min(5, Math.round(currentJourneyNumber)));
   }, [currentJourneyNumber]);
@@ -1001,10 +1004,10 @@ function ActivityPage() {
     return () => document.body.classList.remove('randomizer-overlay-open');
   }, [showRandomizerOverlay, showFreeSpeechOverlay, isRankModalOpen, isAskB01ModalOpen, isStreakModalOpen]);
 
-  const renderTaskCardForShell = useCallback(({ task, animationClass = '' }) => {
+  const renderTaskCardForShell = useCallback(({ task, isLocked: shellLocked, animationClass = '' }) => {
     const done = taskState[task.id] === true;
     const isUnlocked = taskUnlockState[task.id] === true;
-    const isLocked = !done && !isUnlocked;
+    const isLocked = shellLocked ?? (!done && !isUnlocked);
     const shouldAnimateStamp = done && recentStampedTaskId === task.id;
     const progress = taskProgress[task.id] || { current: 0, target: 1 };
     const canShowProgress = !isLocked && progress.target > 1;
@@ -1423,7 +1426,7 @@ function ActivityPage() {
         <div className="new-right-col no-scrollbar">
             <section className="new-widget dashboard-anim-left dashboard-anim-delay-2" id="tutorial-target-home-rank">
               <div className="new-widget-head">
-                <h2 className="new-widget-title">Journey Progression</h2>
+                <h2 className="new-widget-title">Speaker Level Progression</h2>
                 <span className="new-widget-chip">Level</span>
               </div>
               <div 
@@ -1432,15 +1435,21 @@ function ActivityPage() {
               >
                 <img src={rankSpriteImage} alt="" className="new-widget-rank-sprite" />
                 <div className="new-widget-rank-content">
-                  <p className="new-widget-kicker">Current Journey</p>
-                  <p className="new-widget-value">JOURNEY {currentJourneyNumber}</p>
+                  <p className="new-widget-kicker">Current Mastery</p>
+                  <p className="new-widget-value">LEVEL {currentJourneyNumber}</p>
                 </div>
               </div>
-              <p className="new-widget-caption">
-                {completedTaskCount}/{Math.max(tasks.length, 1)} Stages Completed
-                <span className="new-widget-caption-sep"> - </span>
-                {sidebarProgressPct}% Cleared
-              </p>
+                <p className="new-widget-caption">
+                  {tasks.length > 0 ? (
+                    <>
+                      {completedTaskCount}/{tasks.length} Stages Completed
+                      <span className="new-widget-caption-sep"> - </span>
+                      {sidebarProgressPct}% Cleared
+                    </>
+                  ) : (
+                    'No activities found for this level.'
+                  )}
+                </p>
             </section>
 
             <section className="new-widget new-widget--practice dashboard-anim-bottom dashboard-anim-delay-4" id="tutorial-target-home-practice">

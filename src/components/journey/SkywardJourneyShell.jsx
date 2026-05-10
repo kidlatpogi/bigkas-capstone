@@ -1,9 +1,11 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import SkywardJourney from './SkywardJourney';
 import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
+import { fetchActivities } from '../../services/activitiesService';
 import {
   getActivityMetrics,
   getActivityTaskProgress,
+  getBigkasLevelFromUser,
   getTaskXp,
   isActivityTaskCompleted,
   GLOBAL_ACTIVITY_SCOPE,
@@ -11,13 +13,11 @@ import {
 import { getActiveTaskId, getNodeStateForTask } from './journeyConstants';
 import { useAuthContext } from '../../context/useAuthContext';
 import { useJourneyRemoteState } from '../../hooks/useJourneyRemoteState';
+import { filterActivitiesForJourney } from '../../utils/journeyFiltering';
 
 /**
  * Isolates level‑switching state + data fetching so that pressing
  * Prev / Next only re‑renders the journey map — NOT the entire ActivityPage.
- *
- * ActivityPage passes down the initial level and a stable renderStepContent
- * callback; everything else is self‑contained here.
  */
 function SkywardJourneyShell({
   initialLevel,
@@ -32,27 +32,39 @@ function SkywardJourneyShell({
   const { metricsSyncKey } = useJourneyRemoteState(user);
 
   /* ── Level state lives here, not in ActivityPage ── */
-  const [selectedLevel, setSelectedLevel] = useState(initialLevel);
+  const [selectedLevel, setSelectedLevel] = useState(initialLevel || 1);
   const [isPending, startTransition] = useTransition();
 
-  // If the parent's recommended level changes (e.g. on first mount),
-  // adopt it only when we're still at the default.
-  const initializedRef = useRef(false);
-  useEffect(() => {
-    if (!initializedRef.current && recommendedLevel > 1 && selectedLevel === 1) {
-      setSelectedLevel(recommendedLevel);
-    }
-    initializedRef.current = true;
-  }, [recommendedLevel, selectedLevel]);
+  // If the recommended level changed from outside, and we haven't manually switched yet,
+  // follow the recommended level to keep the map in sync with the user's progress.
+  const hasManuallySwitchedRef = useRef(false);
+  /* 
+     REMOVED: Automatic redirection to recommendedLevel.
+     The user requested to stay on their current view even if their level progresses.
+  */
+  // useEffect(() => {
+  //   if (!hasManuallySwitchedRef.current && recommendedLevel && recommendedLevel !== selectedLevel) {
+  //     setSelectedLevel(recommendedLevel);
+  //   }
+  // }, [recommendedLevel, selectedLevel]);
 
   const handleLevelChange = useCallback((nextLevel) => {
+    hasManuallySwitchedRef.current = true;
     startTransition(() => {
       setSelectedLevel(nextLevel);
     });
   }, []);
 
   /* ── Data fetching scoped to this component ── */
-  const { tasks, loading, error } = useActivitiesJourneyTasks(selectedLevel);
+  const { tasks: allTasks, loading, error } = useActivitiesJourneyTasks(selectedLevel);
+
+  // Apply the same filtering as the sidebar to ensure the map shows the correct number of stages.
+  const tasks = useMemo(() => {
+    const levelProgress = getBigkasLevelFromUser(user);
+    const sLevel = Math.max(1, Math.min(5, Number(levelProgress?.levelNumber) || 1));
+    const pLevel = Math.max(1, Math.min(5, Number(selectedLevel) || 1));
+    return filterActivitiesForJourney(allTasks, sLevel, pLevel);
+  }, [allTasks, user, selectedLevel]);
 
   const activityMetrics = useMemo(
     () => getActivityMetrics(scopeKey),
@@ -66,22 +78,83 @@ function SkywardJourneyShell({
     }, {});
   }, [tasks, activityMetrics]);
 
+
+
+  const isLockedLevel = useMemo(() => {
+    const curr = Number(selectedLevel);
+    const rec = Number(recommendedLevel);
+    if (Number.isNaN(curr) || Number.isNaN(rec)) return false;
+    return curr > rec;
+  }, [selectedLevel, recommendedLevel]);
+
+  // A level is "passed" if the user's recommended level is higher than this level.
+  const isPassedLevel = useMemo(() => {
+    const curr = Number(selectedLevel);
+    const rec = Number(recommendedLevel);
+    return rec > curr;
+  }, [selectedLevel, recommendedLevel]);
+  
+  /**
+   * Cross-level sequence check:
+   * Node 1 of Journey N should be locked until the LAST node of Journey N-1 is finished.
+   */
+  const [isPrevLevelDone, setIsPrevLevelDone] = useState(true);
+
+  useEffect(() => {
+    if (selectedLevel <= 1) {
+      setIsPrevLevelDone(true);
+      return;
+    }
+    
+    let cancelled = false;
+    const checkPrev = async () => {
+      try {
+        const prevLevel = selectedLevel - 1;
+        // Fetch previous level's tasks to find the last node
+        const prevRows = await fetchActivities(prevLevel);
+        if (cancelled) return;
+        
+        if (!prevRows || prevRows.length === 0) {
+          setIsPrevLevelDone(true);
+          return;
+        }
+        
+        const lastTask = prevRows[prevRows.length - 1];
+        const isDone = isActivityTaskCompleted(lastTask.id, activityMetrics);
+        setIsPrevLevelDone(isDone);
+      } catch (e) {
+        console.error('Failed to check cross-level sequence:', e);
+        setIsPrevLevelDone(false);
+      }
+    };
+    
+    checkPrev();
+    return () => { cancelled = true; };
+  }, [selectedLevel, activityMetrics]);
+
   const taskUnlockState = useMemo(() => {
-    return tasks.reduce((state, task) => {
-      const prerequisites = Array.isArray(task.prerequisiteIds) ? task.prerequisiteIds : [];
-      const isUnlocked = prerequisites.every((pid) => taskState[pid] === true);
-      state[task.id] = isUnlocked;
+    const state = {};
+    // If we've already passed this level, everything is unlocked.
+    if (isPassedLevel) {
+      tasks.forEach(t => { state[t.id] = true; });
       return state;
-    }, {});
-  }, [taskState, tasks]);
+    }
+    
+    // Start with true if level 1, or if the previous level's last node is completed.
+    let previousCompleted = isPrevLevelDone;
+    for (const task of tasks) {
+      state[task.id] = previousCompleted;
+      previousCompleted = taskState[task.id] === true;
+    }
+    return state;
+  }, [tasks, taskState, isPassedLevel]);
 
   const activeTaskId = useMemo(
     () => getActiveTaskId(tasks, taskState, taskUnlockState),
     [tasks, taskState, taskUnlockState],
   );
 
-  // Report activeTaskId up so ActivityPage can persist it, without triggering
-  // a full re-render of the parent (the parent just writes to a ref / service).
+  // Report activeTaskId up so ActivityPage can persist it
   useEffect(() => {
     onActiveTaskIdChange?.(activeTaskId);
   }, [activeTaskId, onActiveTaskIdChange]);
@@ -94,13 +167,15 @@ function SkywardJourneyShell({
         id: task.id,
         task,
         title: task.title,
-        pillarName: task.phase_name,
+        pillarName: String(task.phase_name || '').replace(/^Module\s+\d+:\s*/i, '').trim(),
         stageNumber: task.activity_order,
         totalStages,
-        isRankUp: task.activity_order === 31,
-        nodeState: getNodeStateForTask(task.id, taskState, taskUnlockState, activeTaskId),
+        isRankUp: Number(task.activity_order) === 30,
+        nodeState: isLockedLevel 
+          ? 'locked' 
+          : getNodeStateForTask(task.id, taskState, taskUnlockState, activeTaskId),
       })),
-    [tasks, taskState, taskUnlockState, activeTaskId, totalStages],
+    [tasks, taskState, taskUnlockState, activeTaskId, totalStages, isLockedLevel],
   );
 
   const groupedTasks = useMemo(() => {
@@ -121,6 +196,7 @@ function SkywardJourneyShell({
     (step, meta) =>
       renderTaskCard({
         task: step.task,
+        isLocked: step.nodeState === 'locked',
         animationClass: `dashboard-anim-bottom dashboard-anim-delay-${Math.min(meta.stepIndex + 2, 9)}`,
       }),
     [renderTaskCard],

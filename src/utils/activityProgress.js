@@ -95,10 +95,10 @@ export function resolveSpeakerEntryScore(user) {
   if (Number.isFinite(fs) && fs > 0) {
     return mapPercentToEntryScore(fs);
   }
-  const ln = Number(meta.speakerLevelNumber);
+  const ln = Number(meta.speakerLevelNumber ?? meta.speaker_level_number);
   if (Number.isFinite(ln) && ln >= 1 && ln <= 5) {
     const band = BIGKAS_LEVELS[ln - 1];
-    return band ? band.min : 1.0;
+    return band ? (Number(band.number) || 1.0) : 1.0;
   }
   return 1.0;
 }

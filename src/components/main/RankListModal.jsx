@@ -64,7 +64,9 @@ export default function RankListModal({ isOpen, onClose, currentLevelNumber }) {
                       />
                     </div>
                     <div className="rank-modal-item-info">
-                      <p className="rank-modal-item-label">Journey {level.number}</p>
+                      <p className="rank-modal-item-label">
+                        {isCurrent ? 'Current Level' : `Level ${level.number}`}
+                      </p>
                       <h3 className="rank-modal-item-name">{level.name}</h3>
                     </div>
                     {isCurrent && (

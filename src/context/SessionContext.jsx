@@ -33,8 +33,7 @@ const SESSIONS_SELECT_QUERY = `
   session_media (
     audio_url,
     transcript,
-    video_storage_url,
-    analysis
+    video_storage_url
   ),
   session_metrics (
     overall_score,
@@ -46,9 +45,9 @@ const SESSIONS_SELECT_QUERY = `
     verbal_avg,
     confidence_score,
     pronunciation_score,
+    fluency_score,
     jitter,
     shimmer,
-    eye_contact_score,
     gesture_score
   ),
   session_feedback (

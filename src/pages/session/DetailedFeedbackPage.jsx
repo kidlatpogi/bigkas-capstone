@@ -364,7 +364,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
       let videoUrl = null;
       const { data: richMedia, error: richMediaErr } = await supabase
         .from('session_media')
-        .select('audio_url, video_storage_url, transcript, analysis')
+        .select('audio_url, video_storage_url, transcript')
         .eq('session_id', sessionId)
         .maybeSingle();
 

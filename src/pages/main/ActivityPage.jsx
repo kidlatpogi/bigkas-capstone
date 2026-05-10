@@ -482,7 +482,8 @@ function ActivityPage() {
         timestamp: Date.now()
       }));
 
-      // 3. Optional: Fetch from AI for variety, but we already have the core stats
+      // 3. Optional: Fetch from AI for variety
+      setIsBannerLoading(true);
       try {
         const cached = window.localStorage.getItem(AI_BANNER_CACHE_KEY);
         if (cached) {
@@ -491,9 +492,22 @@ function ActivityPage() {
             return;
           }
         }
-      } catch (e) {
-        console.warn('Failed to read banner cache', e);
-      }
+        
+        const response = await fetch('https://b01-ai-worker.dzeref4000.workers.dev/banner-message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ context: getProgressContext() }),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.message) {
+            setBannerMessage(data.message);
+            window.localStorage.setItem(AI_BANNER_CACHE_KEY, JSON.stringify({
+              message: data.message,
+              timestamp: Date.now()
+            }));
+          }
+        }
       } catch (error) {
         console.error('Failed to fetch AI banner:', error);
       } finally {

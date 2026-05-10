@@ -17,7 +17,13 @@ export default function LandingHeroSection({
     >
       <div className="section-shell hero-shell">
         <div className="hero-visual">
-          <img src="https://assets.bigkas.site/Images/GraduationSpeech.jpeg" alt="Bigkas coach" className="hero-character" fetchpriority="high" />
+          <img 
+            src="https://assets.bigkas.site/Images/GraduationSpeech.jpeg" 
+            alt="Bigkas coach" 
+            className="hero-character" 
+            fetchpriority="high" 
+            loading="lazy" 
+          />
         </div>
 
         <div className="hero-copy">

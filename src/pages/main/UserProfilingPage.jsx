@@ -38,14 +38,9 @@ const DEMOGRAPHIC_QUESTIONS = [
   },
   {
     key: 'age_range',
-    label: 'And which age group do you currently belong to?',
+    label: 'Which age group do you currently belong to?',
     type: 'single',
-    options: [
-      '16-17 (Senior High School)',
-      '18-19 (College)',
-      '20-21 (College)',
-      '22 and above (College/Graduate)',
-    ],
+    options: ['16-17', '18-22', '23 and above'],
   },
 ];
 

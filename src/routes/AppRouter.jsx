@@ -232,7 +232,6 @@ function ProtectedRoute() {
   if (
     user?.onboardingStage === 'analyzing' &&
     pathname !== ROUTES.USER_ANALYZING &&
-    !pathname.startsWith(ROUTES.TRAINING) &&
     !pathname.startsWith('/session')
   ) {
     return <Navigate to={ROUTES.USER_ANALYZING} replace />;

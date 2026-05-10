@@ -550,7 +550,7 @@ export function AuthProvider({ children }) {
       progressLevelNumber: Number(meta.progress_level_number ?? 1) || 1,
       speakerPointsHistory: normalizeSpeakerPointsHistory(meta.speaker_points_history),
       onboardingLevelAnalysis: meta.onboarding_level_analysis || null,
-      dashboardTutorialSeen: parseMetadataBoolean(meta.dashboard_tutorial_seen) || parseMetadataBoolean(meta.is_tutorial_completed),
+      dashboardTutorialSeen: parseMetadataBoolean(profile.dashboard_tutorial_seen) || parseMetadataBoolean(meta.dashboard_tutorial_seen) || parseMetadataBoolean(meta.is_tutorial_completed),
       activeBannerId: meta.active_banner_id || 'default_skyward',
       unlockedBanners: Array.isArray(meta.unlocked_banners) ? meta.unlocked_banners : ['default_skyward'],
       isAudioMuted: typeof window !== 'undefined' && window.localStorage.getItem('bigkas_global_audio_muted_v1') === '1',
@@ -563,7 +563,7 @@ export function AuthProvider({ children }) {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('is_profiling_completed, is_pre_test_completed, current_level, speaker_level, diagnostic_score, diagnostic_completed_at')
+        .select('is_profiling_completed, is_pre_test_completed, dashboard_tutorial_seen, current_level, speaker_level, diagnostic_score, diagnostic_completed_at')
         .eq('id', userId)
         .single();
       
@@ -582,6 +582,7 @@ export function AuthProvider({ children }) {
 
           const profilingCompleted = prev.profilingCompleted || !!profile.is_profiling_completed;
           const pretestCompleted = prev.pretestCompleted || !!profile.is_pre_test_completed;
+          const dashboardTutorialSeen = prev.dashboardTutorialSeen || !!profile.dashboard_tutorial_seen;
 
           // Recalculate stage using the same logic as deriveOnboardingStage but with derived flags
           let nextStage = prev.onboardingStage;
@@ -597,6 +598,7 @@ export function AuthProvider({ children }) {
             ...prev,
             isProfilingCompleted: !!profile.is_profiling_completed,
             isPreTestCompleted: !!profile.is_pre_test_completed,
+            dashboardTutorialSeen,
             profilingCompleted,
             pretestCompleted,
             onboardingStage: nextStage,

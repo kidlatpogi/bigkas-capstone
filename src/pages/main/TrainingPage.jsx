@@ -261,7 +261,31 @@ function TrainingPage() {
   const [hintContent, setHintContent] = useState('');
   const [showMicWarning, setShowMicWarning] = useState(false);
   const [isFreeCompactLayout, setIsFreeCompactLayout] = useState(false);
-  const [isTutorialOverlayOpen, setIsTutorialOverlayOpen] = useState(isFreePretestSession);
+  const [isTutorialOverlayOpen, setIsTutorialOverlayOpen] = useState(() => {
+    // Only consider showing for free pre-test sessions
+    if (!isFreePretestSession) return false;
+    
+    // Guard: If the database/auth state says they've already done it, don't show it again
+    const isAlreadyDone = 
+      user?.isPreTestCompleted || 
+      user?.pretestCompleted || 
+      user?.onboardingStage === 'completed' || 
+      user?.onboardingStage === 'analyzing';
+      
+    if (isAlreadyDone) return false;
+
+    // Session Guard: Don't show again if they dismissed it in this session (prevents reload loop)
+    const hasSeenInSession = typeof window !== 'undefined' && window.sessionStorage.getItem('bigkas_pretest_tutorial_seen') === '1';
+    return !hasSeenInSession;
+  });
+
+  const handleCloseTutorial = () => {
+    setIsTutorialOverlayOpen(false);
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem('bigkas_pretest_tutorial_seen', '1');
+    }
+  };
+
   const isTutorialOverlayOpenRef = useRef(isTutorialOverlayOpen);
   const isInitializingPreviewRef = useRef(false);
 
@@ -280,7 +304,13 @@ function TrainingPage() {
   const isRecording = status === 'recording';
   const isPaused = status === 'paused';
   const isActive = isRecording || isPaused;
-  const hasActivePretestTutorial = isFreePretestSession && isTutorialOverlayOpen && status === 'idle';
+  const hasActivePretestTutorial = 
+    isFreePretestSession && 
+    isTutorialOverlayOpen && 
+    status === 'idle' && 
+    user?.onboardingStage !== 'analyzing' &&
+    user?.onboardingStage !== 'completed';
+
   const isStartBlockedByTutorial = hasActivePretestTutorial && !isActive && status !== 'countdown';
 
 
@@ -1602,7 +1632,7 @@ function TrainingPage() {
       <TutorialOverlay
         isOpen={hasActivePretestTutorial}
         showAudioToggle={hasActivePretestTutorial}
-        onClose={() => setIsTutorialOverlayOpen(false)}
+        onClose={handleCloseTutorial}
       />
 
       {/* ── Countdown Overlay ── */}

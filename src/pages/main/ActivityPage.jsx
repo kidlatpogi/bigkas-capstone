@@ -1374,16 +1374,15 @@ function ActivityPage() {
                 fetchPriority="high"
               />
             </div>
-            <div className="tutorial-audio-action" style={{ position: 'absolute', bottom: '24px', right: '24px', zIndex: 10 }}>
+            <div className="tutorial-audio-action">
               <button
                 type="button"
                 aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
                 title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
                 className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
                 onClick={handleToggleMute}
-                style={{ width: '50px', height: '50px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
-                {user?.isAudioMuted ? <FaVolumeMute /> : <FaVolumeUp />}
+                {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
               </button>
             </div>
           </div>
@@ -1440,16 +1439,15 @@ function ActivityPage() {
                 fetchPriority="high"
               />
             </div>
-            <div className="tutorial-audio-action" style={{ position: 'absolute', bottom: '24px', right: '24px', zIndex: 10 }}>
+            <div className="tutorial-audio-action">
               <button
                 type="button"
                 aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
                 title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
                 className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
                 onClick={handleToggleMute}
-                style={{ width: '50px', height: '50px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
-                {user?.isAudioMuted ? <FaVolumeMute /> : <FaVolumeUp />}
+                {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
               </button>
             </div>
           </div>

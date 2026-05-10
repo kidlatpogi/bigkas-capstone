@@ -478,7 +478,7 @@ function UserProfilingPage() {
     if (screen === 'demographics') {
       if (demographicIndex === 0) {
         setScreen('intro');
-        setIntroStep(0);
+        setIntroStep(1);
         return;
       }
       setIsTransitioning(true);
@@ -552,8 +552,7 @@ function UserProfilingPage() {
   const handleIntroContinue = () => {
     stopAllIntroAudios();
     if (introStep === 0) {
-      setScreen('demographics');
-      setDemographicIndex(0);
+      setIntroStep(1);
       return;
     }
 
@@ -563,7 +562,8 @@ function UserProfilingPage() {
       return;
     }
 
-    setScreen('ready');
+    setScreen('demographics');
+    setDemographicIndex(0);
   };
 
   const handleBackToIntro = () => {
@@ -719,8 +719,7 @@ function UserProfilingPage() {
                   style={{ minWidth: '100px' }}
                   onClick={() => {
                     if (demographicIndex >= DEMOGRAPHIC_QUESTIONS.length - 1) {
-                      setScreen('intro');
-                      setIntroStep(1);
+                      setScreen('ready');
                       return;
                     }
                     setDemographicIndex((prev) => prev + 1);

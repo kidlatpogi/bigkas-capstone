@@ -1,5 +1,24 @@
 [
   {
+    "key": "gender",
+    "label": "What is your gender?",
+    "type": "single",
+    "options": ["Male", "Female", "Others", "Prefer not to say"],
+    "isDemographic": true
+  },
+  {
+    "key": "age_range",
+    "label": "Which age group do you belong to?",
+    "type": "single",
+    "options": [
+      "16-17 (Senior High School)",
+      "18-19 (College)",
+      "20-21 (College)",
+      "22 and above (College/Graduate)"
+    ],
+    "isDemographic": true
+  },
+  {
     "key": "visual_eye_contact",
     "label": "Do you find it difficult to maintain consistent eye contact with your audience while presenting?",
     "type": "single",

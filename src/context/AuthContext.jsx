@@ -606,7 +606,9 @@ export function AuthProvider({ children }) {
             progressLevelNumber: profile.current_level || prev.progressLevelNumber || 1,
             speakerLevelNumber: profile.speaker_level || prev.speakerLevelNumber || 1,
             speakerEntryScore: profile.diagnostic_score || prev.speakerEntryScore,
-            isAudioMuted: profile.is_audio_muted ?? prev.isAudioMuted ?? false,
+            isAudioMuted: !!profile.is_audio_muted || 
+                          !!prev.isAudioMuted || 
+                          (typeof window !== 'undefined' && window.localStorage.getItem('bigkas_global_audio_muted_v1') === '1'),
           };
         });
       }

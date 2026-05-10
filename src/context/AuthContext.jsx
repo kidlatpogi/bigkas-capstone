@@ -419,14 +419,27 @@ function getAccountBlockedMessage(meta = {}) {
   return null;
 }
 
-function deriveOnboardingStage(meta = {}) {
+function deriveOnboardingStage(meta = {}, profile = {}) {
   const explicitStage = ['profiling', 'pretest', 'analyzing', 'completed'].includes(meta.onboarding_stage)
     ? meta.onboarding_stage
     : null;
-  const profilingCompleted = parseMetadataBoolean(meta.profiling_completed) || hasSpeakerProfileData(meta.speaker_profile);
-  const pretestCompleted = parseMetadataBoolean(meta.pretest_completed);
-  const pretestFreeCompleted = parseMetadataBoolean(meta.pretest_free_completed);
-  const onboardingCompleted = parseMetadataBoolean(meta.onboarding_completed);
+
+  // Prioritize database columns if available, fall back to metadata
+  const profilingCompleted = 
+    parseMetadataBoolean(profile.is_profiling_completed) || 
+    parseMetadataBoolean(meta.profiling_completed) || 
+    hasSpeakerProfileData(meta.speaker_profile);
+
+  const pretestCompleted = 
+    parseMetadataBoolean(profile.is_pre_test_completed) || 
+    parseMetadataBoolean(meta.pretest_completed);
+
+  const pretestFreeCompleted = 
+    parseMetadataBoolean(meta.pretest_free_completed);
+
+  const onboardingCompleted = 
+    parseMetadataBoolean(meta.onboarding_completed) || 
+    (profilingCompleted && pretestCompleted);
 
   if (pretestCompleted && pretestFreeCompleted) {
     if (explicitStage === 'analyzing') {
@@ -490,11 +503,11 @@ export function AuthProvider({ children }) {
   }, []);
 
   /* ── Build user object from Supabase session ── */
-  const buildUser = useCallback((supaSession) => {
+  const buildUser = useCallback((supaSession, profile = {}) => {
     if (!supaSession) return null;
     const u = supaSession.user || supaSession;
     const meta = u?.user_metadata || {};
-    const onboardingStage = deriveOnboardingStage(meta);
+    const onboardingStage = deriveOnboardingStage(meta, profile);
     const fullName = meta.full_name || meta.name || u.email?.split('@')[0] || 'User';
     const fallbackFirst = fullName.split(' ')[0] || '';
     const fallbackLast = fullName.split(' ').slice(1).join(' ');
@@ -509,8 +522,8 @@ export function AuthProvider({ children }) {
       avatarUrl: resolveAvatarUrl(meta.avatar_url),
       avatar_url: resolveAvatarUrl(meta.avatar_url),
       onboardingStage,
-      profilingCompleted: parseMetadataBoolean(meta.is_profiling_completed) || parseMetadataBoolean(meta.profiling_completed) || hasSpeakerProfileData(meta.speaker_profile),
-      pretestCompleted: parseMetadataBoolean(meta.is_pre_test_completed) || parseMetadataBoolean(meta.pretest_completed),
+      profilingCompleted: parseMetadataBoolean(profile.is_profiling_completed) || parseMetadataBoolean(meta.is_profiling_completed) || parseMetadataBoolean(meta.profiling_completed) || hasSpeakerProfileData(meta.speaker_profile),
+      pretestCompleted: parseMetadataBoolean(profile.is_pre_test_completed) || parseMetadataBoolean(meta.is_pre_test_completed) || parseMetadataBoolean(meta.pretest_completed),
       pretestScriptedCompleted: parseMetadataBoolean(meta.pretest_scripted_completed) || parseMetadataBoolean(meta.pretest_completed),
       pretestFreeCompleted: parseMetadataBoolean(meta.pretest_free_completed),
       pretestScriptedSessionId: meta.pretest_scripted_session_id || null,
@@ -551,13 +564,27 @@ export function AuthProvider({ children }) {
       if (profile) {
         setUser(prev => {
           if (prev?.id !== userId) return prev;
+
+          const profilingCompleted = prev.profilingCompleted || !!profile.is_profiling_completed;
+          const pretestCompleted = prev.pretestCompleted || !!profile.is_pre_test_completed;
+
+          // Recalculate stage using the same logic as deriveOnboardingStage but with derived flags
+          let nextStage = prev.onboardingStage;
+          if (pretestCompleted && prev.pretestFreeCompleted) {
+             if (nextStage !== 'analyzing') nextStage = 'completed';
+          } else if (pretestCompleted && !prev.pretestFreeCompleted) {
+             nextStage = 'pretest';
+          } else if (profilingCompleted) {
+             if (nextStage === 'profiling' || !nextStage) nextStage = 'pretest';
+          }
+
           return {
             ...prev,
             isProfilingCompleted: !!profile.is_profiling_completed,
             isPreTestCompleted: !!profile.is_pre_test_completed,
-            // Ensure these match the buildUser mapped keys too
-            profilingCompleted: prev.profilingCompleted || !!profile.is_profiling_completed,
-            pretestCompleted: prev.pretestCompleted || !!profile.is_pre_test_completed,
+            profilingCompleted,
+            pretestCompleted,
+            onboardingStage: nextStage,
             progressLevelNumber: profile.current_level || prev.progressLevelNumber || 1,
             speakerLevelNumber: profile.speaker_level || prev.speakerLevelNumber || 1,
             speakerEntryScore: profile.diagnostic_score || prev.speakerEntryScore,

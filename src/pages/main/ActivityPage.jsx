@@ -66,61 +66,7 @@ const B01_SUGGESTIONS = [
   "What should I practice next?"
 ];
 
-const FREE_SPEECH_TUTORIAL_STEPS = [
-  {
-    id: 'step-intro',
-    title: 'B-01:',
-    robot: tutorialRobotStep1,
-    robotClassName: 'is-activity-home-step-1',
-    button: 'Next',
-    targetElementId: null,
-    text: "Welcome aboard! You made it, and I know you're going to do great things here. Let me give you a quick, guided tour of your Home screen so you know exactly where everything is.",
-  },
-  {
-    id: 'step-companion',
-    title: 'B-01:',
-    robot: tutorialRobotStep2,
-    robotClassName: 'is-activity-home-step-2',
-    button: 'Next',
-    targetElementId: 'tutorial-target-home-banner',
-    text: "Your AI Companion—hey, that's me! See my panel right at the top? I'll be checking in with you from time to time. Depending on your progress, I'll drop by with daily greetings, personalized tips, and a little extra encouragement to keep your momentum going.",
-  },
-  {
-    id: 'step-streak',
-    title: 'B-01:',
-    robot: tutorialRobotStep3,
-    robotClassName: 'is-activity-home-step-3',
-    button: 'Next',
-    targetElementId: 'tutorial-target-home-streak',
-    text: 'Up in the top right is your Streak counter. Consistency is the true secret to mastering public speaking! Log in and complete a daily activity to keep the fire burning and watch that number grow.',
-  },
-  {
-    id: 'step-rank',
-    title: 'B-01:',
-    robot: tutorialRobotStep4,
-    button: 'Next',
-    targetElementId: 'tutorial-target-home-rank',
-    text: 'To keep an eye on the big picture, check out the Journey Progression card on the right! This handy panel lets you quickly track your current speaking Rank and see exactly how many tasks you have conquered so far.',
-  },
-  {
-    id: 'step-roadmap',
-    title: 'B-01:',
-    robot: tutorialRobotStep5,
-    robotClassName: 'is-roadmap-step',
-    button: 'Next',
-    targetElementId: 'tutorial-target-home-journey',
-    text: 'This path is your customized learning roadmap! You will start at your first stage and unlock the next ones as you move forward. The activities gradually become more challenging, and once you complete all tasks on your path, you unlock a final Post-test challenge to advance.',
-  },
-  {
-    id: 'step-practice',
-    title: 'B-01:',
-    robot: tutorialRobotStep6,
-    robotClassName: 'is-practice-step',
-    button: 'Finish!',
-    targetElementId: 'tutorial-target-home-practice',
-    text: 'Need extra training? The Practice card gives you two ways to sharpen your skills anytime: Randomizer for surprise prompts, and Free Speech for open-topic confidence building. Ready? Let us start your Free Speech session now!',
-  },
-];
+
 
 
 function getLocalDateKey(date = new Date()) {
@@ -715,6 +661,86 @@ function ActivityPage() {
     }
   }, [user?.id, user?.onboardingStage, user?.profilingCompleted, user?.pretestCompleted, user?.isProfilingCompleted, user?.isPreTestCompleted, activitiesLoading]);
 
+  const freeSpeechTutorialSteps = useMemo(() => {
+    const level = user?.speakerLevelNumber || 1;
+    let welcomeText = "Welcome aboard! You made it, and I know you're going to do great things here. Let me give you a quick, guided tour of your Home screen so you know exactly where everything is.";
+    let welcomeVoice = null;
+    
+    if (level === 1) {
+      welcomeText = "Welcome! I’ve analyzed your profile and we’re starting from the ground up. You’ll be taking the full 30-stage path for Journey 1 to ensure your vocal and visual foundations are unbreakable. Let’s build your mastery, stage by stage.";
+      welcomeVoice = "https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Welcome/Level%201.mp3";
+    } else if (level === 2) {
+      welcomeText = "Welcome! Based on your level, I’ve optimized your curriculum. Since you already show solid potential, I’ve trimmed Journey 1 down to 20 essential stages. We’ll move faster through the basics so you can reach the advanced challenges sooner. Let’s begin.";
+      welcomeVoice = "https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Welcome/Level%202.mp3";
+    } else if (level === 3) {
+      welcomeText = "Welcome. Your experience allows us to skip the fluff. I’ve recalibrated your Journey 1 to just 15 high-impact stages, and Journey 2 to 20. We’re focusing only on the core essentials before we dive into the deep technical training. Systems ready?";
+      welcomeVoice = "https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Welcome/Level%203.mp3";
+    } else if (level === 4) {
+      welcomeText = "Welcome! Your skills are advanced, so I’ve streamlined your training. I’ve cut Journeys 1, 2, and 3 down to the bare essentials, removing over 40 stages of repetitive drills. We’re moving fast through the basics to get you straight to the Specialist training. Let’s get to work.";
+      welcomeVoice = "https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Welcome/Level%204.mp3";
+    } else if (level >= 5) {
+      welcomeText = "Welcome, Expert. We’re skipping the grind. I’ve compressed Journeys 1 through 4 into a rapid-fire calibration to respect your expertise. We’re fast-forwarding past the basics so you can focus entirely on the high-stakes challenges of the final Journey. Mastery starts here.";
+      welcomeVoice = "https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Welcome/Level%205.mp3";
+    }
+
+    return [
+      {
+        id: 'step-intro',
+        title: 'B-01:',
+        robot: tutorialRobotStep1,
+        robotClassName: 'is-activity-home-step-1',
+        button: 'Next',
+        targetElementId: null,
+        text: welcomeText,
+        voice: welcomeVoice,
+      },
+      {
+        id: 'step-companion',
+        title: 'B-01:',
+        robot: tutorialRobotStep2,
+        robotClassName: 'is-activity-home-step-2',
+        button: 'Next',
+        targetElementId: 'tutorial-target-home-banner',
+        text: "Your AI Companion—hey, that's me! See my panel right at the top? I'll be checking in with you from time to time. Depending on your progress, I'll drop by with daily greetings, personalized tips, and a little extra encouragement to keep your momentum going.",
+      },
+      {
+        id: 'step-streak',
+        title: 'B-01:',
+        robot: tutorialRobotStep3,
+        robotClassName: 'is-activity-home-step-3',
+        button: 'Next',
+        targetElementId: 'tutorial-target-home-streak',
+        text: 'Up in the top right is your Streak counter. Consistency is the true secret to mastering public speaking! Log in and complete a daily activity to keep the fire burning and watch that number grow.',
+      },
+      {
+        id: 'step-rank',
+        title: 'B-01:',
+        robot: tutorialRobotStep4,
+        button: 'Next',
+        targetElementId: 'tutorial-target-home-rank',
+        text: 'To keep an eye on the big picture, check out the Journey Progression card on the right! This handy panel lets you quickly track your current speaking Rank and see exactly how many tasks you have conquered so far.',
+      },
+      {
+        id: 'step-roadmap',
+        title: 'B-01:',
+        robot: tutorialRobotStep5,
+        robotClassName: 'is-roadmap-step',
+        button: 'Next',
+        targetElementId: 'tutorial-target-home-journey',
+        text: 'This path is your customized learning roadmap! You will start at your first stage and unlock the next ones as you move forward. The activities gradually become more challenging, and once you complete all tasks on your path, you unlock a final Post-test challenge to advance.',
+      },
+      {
+        id: 'step-practice',
+        title: 'B-01:',
+        robot: tutorialRobotStep6,
+        robotClassName: 'is-practice-step',
+        button: 'Finish!',
+        targetElementId: 'tutorial-target-home-practice',
+        text: 'Need extra training? The Practice card gives you two ways to sharpen your skills anytime: Randomizer for surprise prompts, and Free Speech for open-topic confidence building. Ready? Let us start your Free Speech session now!',
+      },
+    ];
+  }, [user?.speakerLevelNumber]);
+
   const assessmentTutorialSteps = useMemo(() => {
     const sLevel = user?.speakerLevelNumber || 1;
     const pLevel = user?.progressLevelNumber || 1;
@@ -1166,7 +1192,7 @@ function ActivityPage() {
     <div className={`activity-page-root ${!activitiesLoading ? 'activity-page--skyward-entrance' : ''} ${(showFreeSpeechTutorial || showAssessmentModal) ? 'is-tutorial-active' : ''}`}>
       <TutorialOverlay
         isOpen={showFreeSpeechTutorial}
-        steps={FREE_SPEECH_TUTORIAL_STEPS}
+        steps={freeSpeechTutorialSteps}
         showAudioToggle
         onClose={() => setShowFreeSpeechTutorial(false)}
         onFinish={handleTutorialFinish}

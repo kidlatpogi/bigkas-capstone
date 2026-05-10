@@ -874,6 +874,7 @@ function TrainingPage() {
 
   /* ── Countdown → start ── */
   const startCountdown = useCallback(() => {
+    setIsTutorialOverlayOpen(false);
     setStatus('countdown');
     setCountdown(3);
     setHighlightIdx(-1);
@@ -1095,7 +1096,7 @@ function TrainingPage() {
           return;
         }
         // Set status to idle to clear any overlays before we actually leave
-        setStatus('idle');
+        // setStatus('idle'); // Removed to prevent potential tutorial popup before navigation
 
         if (sessionType === 'pre-test') {
           console.log('[TrainingPage] Pre-test detected. Navigating to onboarding result reveal...');

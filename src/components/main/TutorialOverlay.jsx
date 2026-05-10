@@ -74,10 +74,10 @@ function TutorialOverlay({
       {
         id: 'step-soundbar',
         title: 'B-01:',
-        text: "'Voice and Time' This is for your Vocal analysis! Watch the soundbar dance as you speak to see your projection and emotional expression.",
+        text: "'Voice Meter' This is for your Vocal analysis! Watch the soundbar dance as you speak to see your projection and emotional expression.",
         button: 'Next',
         targetElementId: 'tutorial-target-soundbar',
-        emphasis: "'Voice and Time'",
+        emphasis: "'Voice Meter'",
       },
       {
         id: 'step-controls',

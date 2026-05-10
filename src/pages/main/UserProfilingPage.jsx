@@ -25,6 +25,8 @@ const profilingQuestion7Voice = getVoiceUrl('Profiling and Pre-Testing/Profiling
 const profilingQuestion8Voice = getVoiceUrl('Profiling and Pre-Testing/Profiling Questions/Profiling Question 8.mp3');
 const profilingQuestion9Voice = getVoiceUrl('Profiling and Pre-Testing/Profiling Questions/Profiling Question 9.mp3');
 const profilingQuestion10Voice = getVoiceUrl('Profiling and Pre-Testing/Profiling Questions/Profiling Question 10.mp3');
+const demographicGenderVoice = getVoiceUrl('Demographic/Gender.mp3');
+const demographicAgeVoice = getVoiceUrl('Demographic/Age.mp3');
 import './UserProfilingPage.css';
 
 const QUESTIONS = questionsData;
@@ -148,14 +150,16 @@ function UserProfilingPage() {
   const questionAudioRefs = useRef([]);
 
   const totalSteps = QUESTIONS.length;
-  const currentQuestion = QUESTIONS[currentIndex];
+  const currentQuestion = QUESTIONS[currentIndex] || QUESTIONS[0];
   const progress = Math.round(((currentIndex + 1) / totalSteps) * 100);
 
   const baselineScore = useMemo(() => computeBaselineScore(form), [form]);
   const baselineLevelNumber = useMemo(() => getSpeakerLevelNumber(baselineScore), [baselineScore]);
 
-  const currentDemographicQuestion = DEMOGRAPHIC_QUESTIONS[demographicIndex];
-  const canProceedDemographic = isQuestionAnswered(currentDemographicQuestion, form[currentDemographicQuestion.key]);
+  const currentDemographicQuestion = DEMOGRAPHIC_QUESTIONS[demographicIndex] || DEMOGRAPHIC_QUESTIONS[0];
+  const canProceedDemographic = currentDemographicQuestion
+    ? isQuestionAnswered(currentDemographicQuestion, form[currentDemographicQuestion.key])
+    : false;
   useEffect(() => {
     if (isAdminAuthenticated) {
       navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
@@ -248,8 +252,8 @@ function UserProfilingPage() {
 
     introAudioRef.current = new Audio(introVoice1);
     stepTwoAudioRef.current = new Audio(introVoice2);
-    genderAudioRef.current = new Audio('https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Demographic/Gender.mp3');
-    ageAudioRef.current = new Audio('https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Demographic/Age.mp3');
+    genderAudioRef.current = new Audio(demographicGenderVoice);
+    ageAudioRef.current = new Audio(demographicAgeVoice);
     readyAudioRef.current = new Audio(introVoice3);
     outroAudioRef.current = new Audio(beforePretestingVoice);
     questionAudioRefs.current = QUESTION_VOICE_SOURCES.map((src) => new Audio(src));
@@ -481,7 +485,9 @@ function UserProfilingPage() {
     }
     navigate(ROUTES.USER_PRETEST, { replace: true });
   };
-  const canProceedQuestion = isQuestionAnswered(currentQuestion, form[currentQuestion.key]);
+  const canProceedQuestion = currentQuestion 
+    ? isQuestionAnswered(currentQuestion, form[currentQuestion.key])
+    : false;
 
   const handleQuestionBack = () => {
     if (isSubmitting) return;

@@ -85,23 +85,23 @@ const SCORE_BREAKDOWN_VARIANTS = [
 
 const LEVEL_CONTENT = {
   1: {
-    text: "Yay, you made that look so easy! All the setup is done. Your journey begins right here at Journey 1. Don't sweat the small stuff—every great speaker you've ever seen started exactly where you are right now! We're going to build your confidence brick by brick. Get ready to transform that 'stage fright' into 'stage might'!",
+    text: "Yay, you made that look so easy! All the setup is done. Your journey begins right here at Level 1. Don't sweat the small stuff—every great speaker you've ever seen started exactly where you are right now! We're going to build your confidence brick by brick. Get ready to transform that 'stage fright' into 'stage might'!",
     voice: analyzingLevel1Voice,
   },
   2: {
-    text: "Beep! That was great! Setup is officially complete. You're a Level 2 speaker, so you'll start at Journey 1 but with fewer stages to complete. You've already got some great skills to work with! Remember, every pro started as a beginner. Let's build on this foundation and transform that 'stage fright' into 'stage might'!",
+    text: "Beep! That was great! Setup is officially complete. You're a Level 2 speaker, so you'll start at Level 1 but with fewer stages to complete. You've already got some great skills to work with! Remember, every pro started as a beginner. Let's build on this foundation and transform that 'stage fright' into 'stage might'!",
     voice: analyzingLevel2Voice,
   },
   3: {
-    text: "Whoa, nice job! Setup is completely done. My sensors picked up some seriously good speaking habits, so you're a Level 3 speaker! You'll start at Journey 1 with a fast-track through the basics. We're going to keep this momentum going!",
+    text: "Whoa, nice job! Setup is completely done. My sensors picked up some seriously good speaking habits, so you're a Level 3 speaker! You'll start at Level 1 with a fast-track through the basics. We're going to keep this momentum going!",
     voice: analyzingLevel3Voice,
   },
   4: {
-    text: "Wowzers! Setup is clear! Your speech was so smooth it almost blew my circuits! You're a Level 4 speaker. You'll start at Journey 1, but you'll fly through it in no time. You're practically a pro already. Let's polish those skills to absolute perfection!",
+    text: "Wowzers! Setup is clear! Your speech was so smooth it almost blew my circuits! You're a Level 4 speaker. You'll start at Level 1, but you'll fly through it in no time. You're practically a pro already. Let's polish those skills to absolute perfection!",
     voice: analyzingLevel4Voice,
   },
   5: {
-    text: "Mind... blown! Setup is completely done. Your speaking skills are off the charts! You're a Level 5 speaker! Even though you're starting at Journey 1, you'll only have a few stages before you reach masterclass mode. I might need to take notes from you!",
+    text: "Mind... blown! Setup is completely done. Your speaking skills are off the charts! You're a Level 5 speaker! Even though you're starting at Level 1, you'll only have a few stages before you reach masterclass mode. I might need to take notes from you!",
     voice: analyzingLevel5Voice,
   },
 };
@@ -323,7 +323,7 @@ function UserAnalyzingPage() {
       if (result?.success && user?.id) {
         const { error: profileError } = await supabase
           .from('profiles')
-          .update({ 
+          .update({
             current_level: 1,
             speaker_level: analysis.levelNumber,
             is_pre_test_completed: true
@@ -457,7 +457,7 @@ function UserAnalyzingPage() {
     revealAudioRef.current = audio;
     if (!isMuted) {
       audio.currentTime = 0;
-      audio.play().catch(() => {});
+      audio.play().catch(() => { });
     }
 
     return () => {
@@ -481,7 +481,7 @@ function UserAnalyzingPage() {
 
     if (!isMuted) {
       audio.currentTime = 0;
-      audio.play().catch(() => {});
+      audio.play().catch(() => { });
     }
 
     return () => {
@@ -502,10 +502,10 @@ function UserAnalyzingPage() {
         });
       } else if (showScoreBreakdown && scoreBreakdownAudioRef.current) {
         scoreBreakdownAudioRef.current.currentTime = 0;
-        scoreBreakdownAudioRef.current.play().catch(() => {});
+        scoreBreakdownAudioRef.current.play().catch(() => { });
       } else if (showLevelReveal && revealAudioRef.current) {
         revealAudioRef.current.currentTime = 0;
-        revealAudioRef.current.play().catch(() => {});
+        revealAudioRef.current.play().catch(() => { });
       } else if (!showLevelReveal && analyzingAudioRef.current) {
         analyzingAudioRef.current.currentTime = 0;
         // audio.play().catch(() => {});

@@ -209,4 +209,3 @@ export default function VerifyEmailPage() {
   );
 }
 
-export default VerifyEmailPage;

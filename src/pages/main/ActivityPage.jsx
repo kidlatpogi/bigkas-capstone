@@ -954,7 +954,7 @@ function ActivityPage() {
         entryPoint: isRecovery ? 'streak-recovery' : 'practice',
         objective: isRecovery 
           ? `Recover your ${potentialStreak} day streak by completing this Level 1-5 Randomizer session!` 
-          : 'Complete this session to improve your public speaking skills.',
+          : randomizerTopic.title,
         autoStartCountdown: true,
       },
     });

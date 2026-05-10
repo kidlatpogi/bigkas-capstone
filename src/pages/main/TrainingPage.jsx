@@ -1387,7 +1387,7 @@ function TrainingPage() {
               aria-label="Topic"
             >
               <p className="tp-topic-title tp-topic-title--inline">
-                <strong>Topic:</strong> {objectiveText || freeTopic}.
+                <strong>Topic:</strong> {freeTopic || objectiveText}.
               </p>
             </section>
           )}

@@ -280,7 +280,7 @@ function TrainingPage() {
   const isRecording = status === 'recording';
   const isPaused = status === 'paused';
   const isActive = isRecording || isPaused;
-  const hasActivePretestTutorial = isFreePretestSession && isTutorialOverlayOpen;
+  const hasActivePretestTutorial = isFreePretestSession && isTutorialOverlayOpen && status === 'idle';
   const isStartBlockedByTutorial = hasActivePretestTutorial && !isActive && status !== 'countdown';
 
 

@@ -24,6 +24,7 @@ import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks
 import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../services/journeyProgressService';
 import { RANDOM_TOPICS } from '../../utils/practiceData';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
+import { filterActivitiesForJourney, JOURNEY_STAGE_LIMITS } from '../../utils/journeyFiltering';
 
 const iconFire = getAssetUrl('icons/Icon-Fire.svg');
 const robotMorningImage = getSpriteUrl('Robot/0018.webp');
@@ -277,10 +278,14 @@ function ActivityPageMobile() {
 
   // Journey & tasks
   const {
-    tasks = [],
+    tasks: allTasks,
     loading: activitiesLoading,
     refresh: refreshJourney,
-  } = useActivitiesJourneyTasks(user?.id, Qa);
+  } = useActivitiesJourneyTasks(user?.progressLevelNumber || 1);
+
+  const tasks = useMemo(() => {
+    return filterActivitiesForJourney(allTasks, user?.speakerLevelNumber || 1, user?.progressLevelNumber || 1);
+  }, [allTasks, user?.speakerLevelNumber, user?.progressLevelNumber]);
 
   // State
   const [activeTaskId, setActiveTaskId] = useState(null);
@@ -295,6 +300,7 @@ function ActivityPageMobile() {
   const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
   const [isRankModalOpen, setIsRankModalOpen] = useState(false);
   const [showDashboardOverlay, setShowDashboardOverlay] = useState(false);
+  const [showAssessmentModal, setShowAssessmentModal] = useState(false);
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const [entranceFromNav, setEntranceFromNav] = useState(false);
   const stampResetTimeoutRef = useRef(null);
@@ -590,6 +596,28 @@ function ActivityPageMobile() {
     return () => document.body.classList.remove('activity-tutorial-open');
   }, [showFreeSpeechTutorial]);
 
+  const assessmentTutorialSteps = useMemo(() => {
+    const sLevel = user?.speakerLevelNumber || 1;
+    const pLevel = user?.progressLevelNumber || 1;
+    const reducedTo = JOURNEY_STAGE_LIMITS[sLevel]?.[pLevel] ?? 30;
+
+    let text = `We noticed that you are a level ${sLevel} speaker, so we reduced Journey ${pLevel} to ${reducedTo} stages for you!`;
+    if (reducedTo >= 30) {
+      text = `Welcome to Journey ${pLevel}! You have ${reducedTo} stages to complete. Let's get started!`;
+    }
+
+    return [
+      {
+        id: 'assessment-notice',
+        title: 'B-01:',
+        text,
+        button: 'Got it!',
+        targetElementId: null,
+        robot: tutorialRobotStep1,
+      },
+    ];
+  }, [user?.speakerLevelNumber, user?.progressLevelNumber]);
+
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
     if (showDashboardOverlay) {
@@ -609,7 +637,15 @@ function ActivityPageMobile() {
     if (user?.id) {
       updateUserMetadata({ dashboard_tutorial_seen: true }).catch(() => {});
     }
-  }, [user?.id, updateUserMetadata]);
+
+    const sLevel = Number(user?.speakerLevelNumber || 1);
+    const pLevel = Number(user?.progressLevelNumber || 1);
+    const reducedTo = JOURNEY_STAGE_LIMITS[sLevel]?.[pLevel] ?? 30;
+    
+    if (reducedTo < 30) {
+      setShowAssessmentModal(true);
+    }
+  }, [user?.id, user?.speakerLevelNumber, user?.progressLevelNumber, updateUserMetadata]);
 
   const renderTaskCardForShell = useCallback(({ task, animationClass = '' }) => {
     const done = taskState[task.id] === true;
@@ -676,6 +712,12 @@ function ActivityPageMobile() {
         showAudioToggle
         onClose={() => setShowFreeSpeechTutorial(false)}
         onFinish={handleTutorialFinish}
+      />
+      <TutorialOverlay
+        isOpen={showAssessmentModal}
+        onClose={() => setShowAssessmentModal(false)}
+        onFinish={() => setShowAssessmentModal(false)}
+        steps={assessmentTutorialSteps}
       />
       {showCompletionCelebration && (
         <Confetti
@@ -930,8 +972,8 @@ function ActivityPageMobile() {
                 >
                   <img src={rankSpriteImage} alt="" className="new-widget-rank-sprite" />
                   <div className="new-widget-rank-content">
-                    <p className="new-widget-kicker">Current Level</p>
-                    <p className="new-widget-value">LEVEL {levelProgress.levelNumber}</p>
+                    <p className="new-widget-kicker">Current Journey</p>
+                    <p className="new-widget-value">JOURNEY {user?.progressLevelNumber || 1}</p>
                   </div>
                 </div>
                 <p className="new-widget-caption">

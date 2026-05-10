@@ -894,9 +894,12 @@ function ActivityPage() {
       updateUserMetadata({ dashboard_tutorial_seen: true }).catch(() => {});
     }
 
-    const curLevel = Number(levelProgress?.levelNumber || 1);
-    const recLevel = Number(recommendedLevel || 1);
-    if (curLevel > 1 && curLevel === recLevel) {
+    const sLevel = Number(user?.speakerLevelNumber || 1);
+    const pLevel = Number(user?.progressLevelNumber || 1);
+    const reducedTo = JOURNEY_STAGE_LIMITS[sLevel]?.[pLevel] ?? 30;
+
+    // Show assessment modal if the current journey has reduced stages for this user
+    if (reducedTo < 30) {
       setShowAssessmentModal(true);
     }
   }, [user?.id, levelProgress?.levelNumber, recommendedLevel, updateUserMetadata]);

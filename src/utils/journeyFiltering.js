@@ -25,6 +25,7 @@ export function filterActivitiesForJourney(activities, speakerLevel, progressLev
   
   const limit = JOURNEY_STAGE_LIMITS[sLevel]?.[pLevel] ?? 30;
   
-  // Activities are usually sorted by activity_order. We just take the first N.
-  return activities.slice(0, limit);
+  // Advanced speakers take the "upper" part of the curriculum (the most challenging stages).
+  // E.g., if limit is 15 and there are 30 total, we take 16-30.
+  return activities.slice(-limit);
 }

@@ -1356,6 +1356,16 @@ function TrainingPage() {
 
   return (
     <div className="tp-page tp-page--free-pretest" ref={freeLayoutObserverRef}>
+      {!isPreTestSession && (
+        <button
+          type="button"
+          className="history-back-to-list-btn tp-back-to-history-btn"
+          onClick={() => navigate(-1)}
+        >
+          Back to History
+        </button>
+      )}
+
       {/* ── Standardized Header ── */}
       <div className="tp-header tp-header--free-pretest">
         <div className="tp-free-pretest-header-actions">

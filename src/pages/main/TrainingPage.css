@@ -102,7 +102,17 @@ body.training-page-active {
 .tp-header-spacer { width: 38px; flex-shrink: 0; }
 
 .tp-page--free-pretest {
-  background: #e5e5e5;
+  display: flex;
+  flex-direction: column;
+  background-color: #FDFDF9;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.tp-back-to-history-btn {
+  margin: 16px 24px 0;
+  align-self: flex-start;
+  z-index: 10;
 }
 
 .tp-header--free-pretest {
@@ -2229,26 +2239,12 @@ body.training-page-active .theme-toggle-wrap {
   transform: translateY(5px);
 }
 
-.tp-nav-header {
-  padding: 12px 24px;
-  width: 100%;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  box-sizing: border-box;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(0,0,0,0.06);
-  position: sticky;
-  top: 0;
-  z-index: 2100;
-}
-
-.tp-back-to-history-btn-v2 {
-  position: static !important;
-  width: auto !important;
-  height: 44px !important;
-  margin: 0 !important;
+.tp-back-to-history-btn {
+  position: absolute;
+  top: 8px;
+  left: 20px;
+  width: 176px !important;
+  height: 48px !important;
+  z-index: 2005;
 }
 

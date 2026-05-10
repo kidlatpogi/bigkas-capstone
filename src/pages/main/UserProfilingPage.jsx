@@ -477,7 +477,8 @@ function UserProfilingPage() {
     if (isSubmitting) return;
     if (screen === 'demographics') {
       if (demographicIndex === 0) {
-        setScreen('ready');
+        setScreen('intro');
+        setIntroStep(0);
         return;
       }
       setIsTransitioning(true);
@@ -551,9 +552,12 @@ function UserProfilingPage() {
   const handleIntroContinue = () => {
     stopAllIntroAudios();
     if (introStep === 0) {
-      setIntroStep(1);
+      setScreen('demographics');
+      setDemographicIndex(0);
       return;
     }
+    setIntroStep(1);
+  };
 
     if (!isIntroTypingDone) {
       setTypedIntroText(introSecondMessage);
@@ -648,7 +652,7 @@ function UserProfilingPage() {
                     type="button"
                     onClick={() => {
                       stopAllIntroAudios();
-                      setScreen('demographics');
+                      setScreen('questions');
                     }}
                     disabled={!isReadyTypingDone}
                   >
@@ -717,7 +721,8 @@ function UserProfilingPage() {
                   style={{ minWidth: '100px' }}
                   onClick={() => {
                     if (demographicIndex >= DEMOGRAPHIC_QUESTIONS.length - 1) {
-                      setScreen('questions');
+                      setScreen('intro');
+                      setIntroStep(1);
                       return;
                     }
                     setDemographicIndex((prev) => prev + 1);

@@ -192,186 +192,273 @@ body.landing-page-active .hero-actions .hero-cta--forest-outline.bigkas-btn.land
 
 /* Section 2: How It Works */
 .how-it-works-section {
-  background: linear-gradient(180deg, #90ab8b 0%, #5a7863 90%);
+  background: #50C878;
   position: relative;
   scroll-snap-align: start;
 }
+/* Redesigned Section 2: How It Works (Login Page Inspiration) */
+.how-it-works-redesign {
+  position: relative;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 80px 24px;
+  background-color: #059669; /* Solid Emerald 600 */
+  background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1.5px, transparent 0);
+  background-size: 32px 32px;
+}
 
-.how-grainient-bg {
+.how-bg-overlay {
   position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, transparent 0%, rgba(0, 0, 0, 0.15) 100%);
 }
 
-.how-it-works-shell {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 0 clamp(40px, 5vw, 80px);
-  min-height: 400vh;
-}
-
-.how-copy-overlay {
-  position: absolute;
-  top: 50vh;
-  left: max(28px, calc(45% - 760px));
-  transform: translateY(-50%);
-  width: clamp(340px, 32vw, 480px);
-  z-index: 5;
-  pointer-events: none;
-}
-
-.how-copy-title {
-  margin: 0;
-}
-
-.how-copy-title :nth-child(1) {
-  margin: 0;
-  color: #f18f01;
-  font-family: 'Nunito', sans-serif;
-  font-size: clamp(1.55rem, 4vw, 3.35rem);
-  font-weight: 900;
-  line-height: 1.12;
-  letter-spacing: -0.03em;
-  white-space: normal;
-  text-wrap: balance;
-  max-width: 22ch;
-}
-
-.how-copy-title :nth-child(2) {
-  margin: 0.12em 0 0;
-  color: #0f3958;
-  font-family: 'Nunito', sans-serif;
-  font-size: clamp(1.45rem, 3.6vw, 3.35rem);
-  font-weight: 900;
-  line-height: 1.12;
-  letter-spacing: -0.03em;
-  text-wrap: balance;
-  max-width: 22ch;
-}
-
-@media (min-width: 1100px) {
-  .how-copy-title :nth-child(1) {
-    white-space: nowrap;
-    max-width: none;
-  }
-}
-
-.how-copy-title span {
-  display: block;
-}
-
-.how-copy-body {
-  margin: 1.25rem 0 0;
-  max-width: 100%;
-  color: rgba(255, 255, 255, 0.96);
-  font-family: 'Nunito Sans', sans-serif;
-  font-size: clamp(1rem, 1.2vw, 1.35rem);
-  font-weight: 600;
-  line-height: 1.55;
-  letter-spacing: -0.015em;
-}
-
-.how-phone-column {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: sticky;
-  top: 50%;
-  transform: translateY(-50%);
-  width: clamp(280px, 24vw, 390px);
-  height: fit-content;
-  z-index: 10;
-}
-
-.how-phone {
-  width: 100%;
-  height: auto;
-  object-fit: contain;
-  filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.28));
+.how-redesign-container {
   position: relative;
   z-index: 10;
+  width: min(100%, 1280px);
+  margin: 0 auto;
 }
 
-.how-phone-copy {
-  display: none;
-}
-
-.how-cards-stack {
-  position: absolute;
-  top: 60%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 95%;
-  height: 100%;
+.how-redesign-content {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  justify-content: center;
   align-items: center;
-  z-index: 25;
+  text-align: center;
+  gap: clamp(40px, 8vh, 80px);
 }
 
-.process-card {
-  position: relative;
-  border-radius: 18px;
-  padding: 16px 18px;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.12);
-  width: calc(100% - 2rem);
-  height: auto;
-  min-height: auto;
-  margin: 0 auto;
-  transform: translateX(0);
-  overflow: hidden;
-  pointer-events: none;
-  will-change: transform, width, opacity;
-  transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+.how-header {
+  max-width: min(90%, 900px);
 }
 
-.process-card:nth-child(odd).is-active,
-.process-card:nth-child(even).is-active {
-  width: clamp(400px, 40vw, 626px);
-  transform: translateX(-90%);
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.process-card:nth-child(even).is-active {
-  transform: translateX(50%);
-}
-
-.process-card h3 {
+.how-headline {
+  font-family: 'Fredoka', sans-serif;
+  font-size: clamp(2.2rem, 8vw, 4.2rem);
+  font-weight: 700;
+  color: #ffffff;
   margin: 0;
-  color: #587b63;
-  font-family: 'Nunito', sans-serif;
-  font-size: 17px;
-  font-weight: 900;
-  line-height: 1.22;
+  line-height: 1.05;
   letter-spacing: -0.02em;
 }
 
-.process-card p {
-  margin: 10px 0 0;
-  color: #2a2a2a;
-  font-family: 'Nunito Sans', sans-serif;
+.how-headline span {
+  color: #f97316;
+}
+
+.how-subheadline {
+  font-size: clamp(1rem, 2vw, 1.35rem);
+  color: rgba(255, 255, 255, 0.95);
+  margin-top: clamp(12px, 2vh, 20px);
   line-height: 1.5;
-  font-size: 13px;
   font-weight: 500;
-  letter-spacing: -0.01em;
+  max-width: 60ch;
+  margin-inline: auto;
 }
 
-.process-card.is-active h3 {
-  font-size: clamp(1.65rem, 2.4vw, 1.85rem);
+.how-visual-center {
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  height: clamp(500px, 60vh, 700px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
 }
 
-.process-card.is-active p {
-  font-size: clamp(0.94rem, 1.15vw, 1.02rem);
+.how-robot-wrap {
+  width: clamp(280px, 30vw, 420px);
+  height: auto;
+  position: relative;
+  z-index: 5;
+  filter: drop-shadow(0 40px 80px rgba(0,0,0,0.5));
+}
+
+.how-robot-glow {
+  position: absolute;
+  width: 150%;
+  height: 150%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.4) 0%, transparent 72%);
+  z-index: -1;
+  filter: blur(40px);
+}
+
+.how-robot-img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.how-floating-cards {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.how-step-card {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: clamp(16px, 3vw, 24px);
+  padding: clamp(16px, 2.5vw, 24px);
+  width: clamp(280px, 26vw, 360px);
+  display: flex;
+  gap: 16px;
+  text-align: left;
+  pointer-events: auto;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.how-step-card:hover {
+  transform: scale(1.02) !important;
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.step-number {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  background: #f18f01; /* Orange for better visibility on emerald */
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: #fff;
+}
+
+.step-card-content h3 {
+  margin: 0;
+  font-family: 'Fredoka', sans-serif;
+  font-size: clamp(1.15rem, 1.8vw, 1.35rem);
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.step-card-content p {
+  margin: 8px 0 0;
+  font-size: clamp(0.85rem, 1.1vw, 0.98rem);
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 400;
+}
+
+/* Optimized Card Desktop Positioning - More margin from edges */
+.step-card-1 { top: 2%; left: 2%; }
+.step-card-2 { top: 2%; right: 2%; }
+.step-card-3 { bottom: 2%; left: 2%; }
+.step-card-4 { bottom: 2%; right: 2%; }
+
+/* Soundwaves animation from Login Page */
+.how-visual-waves {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 140px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 0;
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.how-visual-wave {
+  flex: 1;
+  background: #ffffff;
+  border-radius: 999px 999px 0 0;
+  animation: howWaveAnim 1.8s ease-in-out infinite;
+  min-width: 4px;
+}
+
+@keyframes howWaveAnim {
+  0%, 100% { height: 20px; }
+  50% { height: 80px; }
+}
+
+.how-visual-wave-1 { animation-delay: 0.1s; }
+.how-visual-wave-2 { animation-delay: 0.3s; }
+.how-visual-wave-3 { animation-delay: 0.5s; }
+.how-visual-wave-4 { animation-delay: 0.2s; }
+.how-visual-wave-5 { animation-delay: 0.4s; }
+.how-visual-wave-6 { animation-delay: 0.6s; }
+
+/* Mobile Adaptations */
+@media (max-width: 1024px) {
+  .how-it-works-redesign {
+    height: auto;
+    min-height: 100dvh;
+    padding: 100px 24px env(safe-area-inset-bottom);
+    padding-top: calc(80px + env(safe-area-inset-top));
+  }
+
+  .how-visual-center {
+    height: auto;
+    flex-direction: column;
+    gap: 48px;
+    margin-top: 40px;
+  }
+
+  .how-floating-cards {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    max-width: 500px;
+    pointer-events: auto;
+  }
+
+  .how-step-card {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+  }
+
+  .how-robot-wrap {
+    width: clamp(200px, 40vw, 280px);
+    margin: 0;
+  }
+
+  .how-visual-waves {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .how-headline {
+    font-size: 2.2rem;
+  }
+  
+  .how-step-card {
+    width: 100%;
+    padding: 20px;
+  }
 }
 
 /* Section 3: Features 2x2 Bento */
@@ -586,7 +673,7 @@ body.landing-page-active .hero-actions .hero-cta--forest-outline.bigkas-btn.land
 /* Section 5: Blank */
 .section-five-section {
   position: relative;
-  background-image: url('../../../assets/landing/GraduationSpeech.jpeg');
+  background-image: url('https://assets.bigkas.site/Images/GraduationSpeech.jpeg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

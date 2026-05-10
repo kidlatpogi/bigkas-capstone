@@ -33,7 +33,7 @@ export default function LandingFooterSection({ navigateTo, onScrollToSection }) 
         <div className="landing-footer-main">
           <div className="landing-footer-brand">
             <div className="footer-logo-wrapper">
-              <img src={bigkasLogo} alt="Bigkas" className="footer-logo-img" />
+              <img src={bigkasLogo} alt="Bigkas" className="footer-logo-img" loading="lazy" />
               <h4 className="footer-logo-text">Bigkas</h4>
             </div>
             <p>

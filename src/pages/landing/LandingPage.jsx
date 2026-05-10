@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { scroller } from 'react-scroll';
 import { ROUTES } from '../../utils/constants';
@@ -8,11 +8,12 @@ import bigkasLogo from '../../assets/logos/0015.png';
 import Button from '../../components/common/Button';
 import StaggeredMenu from '../../components/common/StaggeredMenu';
 import LandingHeroSection from './sections/LandingHeroSection';
-import LandingHowItWorksSection from './sections/LandingHowItWorksSection';
-import LandingFeaturesSection from './sections/LandingFeaturesSection';
-import LandingScienceSection from './sections/LandingScienceSection';
-import LandingSectionFive from './sections/LandingSectionFive';
-import LandingFooterSection from './sections/LandingFooterSection';
+
+const LandingHowItWorksSection = lazy(() => import('./sections/LandingHowItWorksSection'));
+const LandingFeaturesSection = lazy(() => import('./sections/LandingFeaturesSection'));
+const LandingScienceSection = lazy(() => import('./sections/LandingScienceSection'));
+const LandingSectionFive = lazy(() => import('./sections/LandingSectionFive'));
+const LandingFooterSection = lazy(() => import('./sections/LandingFooterSection'));
 
 const SCROLL_OFFSET = 0;
 
@@ -192,30 +193,15 @@ export default function LandingPage({ managePageClass = true }) {
 
   useEffect(() => {
     if (!howSectionRef.current) return undefined;
-    revealStepRef.current = revealStep;
 
     const handleScrollVisibility = () => {
-      const isMobileViewport = window.matchMedia('(max-width: 1024px)').matches;
-      if (isMobileViewport) {
-        setShowScrollIndicator(false);
-        document.documentElement.classList.remove('how-lock-active');
-        return;
-      }
-
       const section = howSectionRef.current;
-      if (!section) {
-        return;
-      }
+      if (!section) return;
 
       const rect = section.getBoundingClientRect();
       const windowHeight = window.innerHeight;
       const sectionVisible = rect.top < windowHeight * 0.75 && rect.bottom > windowHeight * 0.25;
-      setShowScrollIndicator(sectionVisible && revealStepRef.current === 0);
-
-      const shouldKeepSnapUnlocked = revealStepRef.current === 0
-        && rect.top <= windowHeight * 0.12
-        && rect.bottom > windowHeight * 0.4;
-      document.documentElement.classList.toggle('how-lock-active', shouldKeepSnapUnlocked);
+      setShowScrollIndicator(sectionVisible);
     };
 
     handleScrollVisibility();
@@ -225,38 +211,20 @@ export default function LandingPage({ managePageClass = true }) {
     return () => {
       window.removeEventListener('scroll', handleScrollVisibility);
       window.removeEventListener('resize', handleScrollVisibility);
-      document.documentElement.classList.remove('how-lock-active');
     };
-  }, [revealStep]);
+  }, []);
 
 
   useEffect(() => {
-    if (!howSectionRef.current) return undefined;
-
-    if (window.matchMedia('(max-width: 1024px)').matches) {
-      document.documentElement.classList.remove('how-lock-active');
-      return undefined;
-    }
-
     const handleWheel = (event) => {
       if (window.matchMedia('(max-width: 1024px)').matches) {
-        return;
-      }
-
-      const direction = Math.sign(event.deltaY);
-      if (direction === 0) {
-        return;
-      }
-
-      const section = howSectionRef.current;
-      if (!section) {
         return;
       }
 
       const windowHeight = window.innerHeight;
       const instantLockSectionIds = ['features', 'science'];
 
-      // Section 3 onwards: apply a one-wheel "instant" viewport lock before allowing normal scroll.
+      // Apply a one-wheel "instant" viewport lock before allowing normal scroll.
       for (const sectionId of instantLockSectionIds) {
         const targetSection = document.getElementById(sectionId);
         if (!targetSection) {
@@ -277,40 +245,11 @@ export default function LandingPage({ managePageClass = true }) {
           instantSectionLocksRef.current[sectionId] = false;
         }
       }
-
-      const rect = section.getBoundingClientRect();
-      // Use a tolerance band so fast wheel + snap can't skip the exact top edge.
-      const inLockZone = rect.top <= windowHeight * 0.12 && rect.bottom > windowHeight * 0.4;
-      const currentStep = revealStepRef.current;
-
-      if (!inLockZone || currentStep > 0) {
-        document.documentElement.classList.remove('how-lock-active');
-      } else {
-        document.documentElement.classList.add('how-lock-active');
-      }
-
-      if (!inLockZone) {
-        return;
-      }
-
-      if (direction > 0 && currentStep === 0) {
-        event.preventDefault();
-        setRevealStep(4);
-        window.scrollTo({ top: window.scrollY + rect.top, left: 0, behavior: 'auto' });
-        return;
-      }
-
-      if (direction < 0 && currentStep > 0) {
-        event.preventDefault();
-        setRevealStep(0);
-        window.scrollTo({ top: window.scrollY + rect.top, left: 0, behavior: 'auto' });
-      }
     };
 
     window.addEventListener('wheel', handleWheel, { passive: false });
     return () => {
       window.removeEventListener('wheel', handleWheel);
-      document.documentElement.classList.remove('how-lock-active');
     };
   }, []);
 
@@ -356,7 +295,7 @@ export default function LandingPage({ managePageClass = true }) {
             aria-label="Go to hero section"
           >
             <div className="landing-logo-wrapper">
-              <img src={bigkasLogo} alt="Bigkas" className="landing-logo-img" />
+              <img src={bigkasLogo} alt="Bigkas" className="landing-logo-img" fetchpriority="high" />
               <span className="logo-text">Bigkas</span>
             </div>
           </button>
@@ -419,28 +358,38 @@ export default function LandingPage({ managePageClass = true }) {
         onSeeHowItWorks={() => scrollToSectionById('how-it-works', setMenuOpen)}
       />
 
-      <LandingHowItWorksSection
-        howSectionRef={howSectionRef}
-        revealStep={revealStep}
-        showScrollIndicator={showScrollIndicator}
-      />
+      <Suspense fallback={<div className="landing-section-loading how-loading" />}>
+        <LandingHowItWorksSection
+          howSectionRef={howSectionRef}
+          revealStep={revealStep}
+          showScrollIndicator={showScrollIndicator}
+        />
+      </Suspense>
 
-      <LandingFeaturesSection
-        featuresGridRef={featuresGridRef}
-        featureCardIndex={featureCardIndex}
-        goToPreviousFeatureCard={goToPreviousFeatureCard}
-        goToNextFeatureCard={goToNextFeatureCard}
-        goToFeatureCard={goToFeatureCard}
-      />
+      <Suspense fallback={<div className="landing-section-loading features-loading" />}>
+        <LandingFeaturesSection
+          featuresGridRef={featuresGridRef}
+          featureCardIndex={featureCardIndex}
+          goToPreviousFeatureCard={goToPreviousFeatureCard}
+          goToNextFeatureCard={goToNextFeatureCard}
+          goToFeatureCard={goToFeatureCard}
+        />
+      </Suspense>
 
-      <LandingScienceSection />
+      <Suspense fallback={<div className="landing-section-loading science-loading" />}>
+        <LandingScienceSection />
+      </Suspense>
 
-      <LandingSectionFive navigateTo={navigateTo} />
+      <Suspense fallback={<div className="landing-section-loading s5-loading" />}>
+        <LandingSectionFive navigateTo={navigateTo} />
+      </Suspense>
 
-      <LandingFooterSection
-        navigateTo={navigateTo}
-        onScrollToSection={(sectionId) => scrollToSectionById(sectionId, setMenuOpen)}
-      />
+      <Suspense fallback={<div className="landing-section-loading footer-loading" />}>
+        <LandingFooterSection
+          navigateTo={navigateTo}
+          onScrollToSection={(sectionId) => scrollToSectionById(sectionId, setMenuOpen)}
+        />
+      </Suspense>
     </div>
   );
 }

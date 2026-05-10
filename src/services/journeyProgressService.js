@@ -123,3 +123,22 @@ export async function updateJourneyCurrentActivity(userId, activityId) {
     throw new Error(error.message);
   }
 }
+
+export async function updateUserProgressLevel(userId, level) {
+  const uid = String(userId || '').trim();
+  if (!uid) return;
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      current_level: Math.max(1, Math.min(5, Number(level) || 1)),
+    })
+    .eq('id', uid);
+
+  if (error) {
+    if (error.message?.includes('JWT expired')) {
+      await supabase.auth.signOut({ scope: 'local' });
+    }
+    throw new Error(error.message);
+  }
+}

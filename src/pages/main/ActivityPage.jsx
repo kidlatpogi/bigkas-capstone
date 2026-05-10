@@ -23,7 +23,7 @@ import StreakCalendarModal from '../../components/main/StreakCalendarModal';
 import RankListModal from '../../components/main/RankListModal';
 import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 import { useJourneyRemoteState } from '../../hooks/useJourneyRemoteState';
-import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../services/journeyProgressService';
+import { ensureJourneyStarted, updateJourneyCurrentActivity, updateUserProgressLevel } from '../../services/journeyProgressService';
 import { RANDOM_TOPICS } from '../../utils/practiceData';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import { filterActivitiesForJourney, JOURNEY_STAGE_LIMITS } from '../../utils/journeyFiltering';
@@ -408,6 +408,39 @@ function ActivityPage() {
   const sidebarProgressPct = tasks.length
     ? Math.round((completedTaskCount / tasks.length) * 100)
     : 0;
+
+  // Auto-advance journey level when all stages are completed
+  const isAdvancingRef = useRef(null);
+  useEffect(() => {
+    if (!user?.id || tasks.length === 0 || activitiesLoading) return;
+    
+    if (completedTaskCount === tasks.length) {
+      const currentLevel = Number(user.progressLevelNumber || 1);
+      if (currentLevel < 5) {
+        const nextLevel = currentLevel + 1;
+        
+        if (isAdvancingRef.current === nextLevel) return;
+        isAdvancingRef.current = nextLevel;
+
+        console.log(`[Journey] All ${tasks.length} stages done in Level ${currentLevel}. Advancing to ${nextLevel}.`);
+        
+        // Update both profiles table and auth metadata for consistency
+        updateUserProgressLevel(user.id, nextLevel).catch(err => {
+          console.error('Failed to update profile level:', err);
+          isAdvancingRef.current = null;
+        });
+
+        updateUserMetadata({ progress_level_number: nextLevel })
+          .catch(err => {
+            console.error('Failed to update auth metadata level:', err);
+            isAdvancingRef.current = null;
+          });
+      }
+    } else {
+      // Reset if user somehow goes back (e.g. data sync)
+      isAdvancingRef.current = null;
+    }
+  }, [completedTaskCount, tasks.length, user?.id, user?.progressLevelNumber, activitiesLoading, updateUserMetadata]);
 
   const sessionCountsByDay = useMemo(() => {
     const counts = new Map();

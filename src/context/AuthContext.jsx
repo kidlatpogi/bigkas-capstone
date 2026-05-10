@@ -556,10 +556,25 @@ export function AuthProvider({ children }) {
         .single();
       
       if (error) {
-        if (error.code !== 'PGRST116') { // PGRST116 is 'no rows found'
+        if (error.code === '42703') {
+           console.warn('Bigkas Auth: profiles table is missing the is_audio_muted column. Please run the SQL migration.');
+           // Retry without the problematic column to keep the app working
+           const { data: retryProfile, error: retryError } = await supabase
+            .from('profiles')
+            .select('is_profiling_completed, is_pre_test_completed, current_level, speaker_level, diagnostic_score, diagnostic_completed_at')
+            .eq('id', userId)
+            .single();
+           if (!retryError && retryProfile) {
+             profile = retryProfile;
+           } else {
+             return;
+           }
+        } else if (error.code !== 'PGRST116') { // PGRST116 is 'no rows found'
           console.error('Bigkas Auth: failed to fetch profile:', error);
+          return;
+        } else {
+          return;
         }
-        return;
       }
 
       if (profile) {

@@ -32,7 +32,7 @@ const QUESTIONS = questionsData;
 const DEMOGRAPHIC_QUESTIONS = [
   {
     key: 'gender',
-    label: 'To help me personalize your coaching experience, may I ask for your gender identity?',
+    label: 'Please specify your gender identity.',
     type: 'single',
     options: ['Male', 'Female', 'Others', 'Prefer not to say'],
   },

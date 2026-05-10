@@ -32,13 +32,13 @@ const QUESTIONS = questionsData;
 const DEMOGRAPHIC_QUESTIONS = [
   {
     key: 'gender',
-    label: 'What is your gender?',
+    label: 'To help me personalize your coaching experience, may I ask for your gender identity?',
     type: 'single',
     options: ['Male', 'Female', 'Others', 'Prefer not to say'],
   },
   {
     key: 'age_range',
-    label: 'Which age group do you belong to?',
+    label: 'And which age group do you currently belong to?',
     type: 'single',
     options: [
       '16-17 (Senior High School)',
@@ -673,42 +673,21 @@ function UserProfilingPage() {
       )}
 
       {screen === 'demographics' && (
-        <section className={`profiling-intro profiling-gate--pop ${isTransitioning ? 'is-transitioning' : ''}`}>
+        <section className={`profiling-question-stage profiling-gate--pop ${isTransitioning ? 'is-transitioning' : ''}`}>
           <div className="profiling-unit">
-            <article className="profiling-intro-bubble profiling-intro-bubble--demographics">
-              <h2 className="profiling-question-count" style={{ marginTop: 0, fontSize: '0.85em', opacity: 0.8 }}>
-                <span>Before we start:</span> {demographicIndex + 1}/{DEMOGRAPHIC_QUESTIONS.length}
+            <article className="profiling-question-bubble">
+              <h2 className="profiling-question-count">
+                <span>Step:</span> {demographicIndex + 1}/{DEMOGRAPHIC_QUESTIONS.length}
               </h2>
-              <p className="profiling-ready-text">
+              <p className="profiling-question-text">
                 <strong>B-01:</strong>
                 <br />
                 {currentDemographicQuestion.label}
               </p>
-
-              <div className="profiling-question-options-wrap" style={{ marginTop: '1.5rem', marginBottom: '1.5rem' }}>
-                <div className="profiling-question-options" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
-                  {currentDemographicQuestion.options.map((option) => {
-                    const isActive = form[currentDemographicQuestion.key] === option;
-                    return (
-                      <button
-                        key={option}
-                        type="button"
-                        className={`profiling-question-option ${isActive ? 'is-active' : ''}`}
-                        style={{ padding: '0.75rem', fontSize: '0.9em' }}
-                        onClick={() => handleSingleAnswerAndAdvance(currentDemographicQuestion.key, option)}
-                      >
-                        {option}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
               <div className="profiling-intro-actions profiling-intro-actions--split">
                 <button
                   type="button"
                   className="profiling-ready-btn profiling-ready-btn--back"
-                  style={{ minWidth: '100px' }}
                   onClick={handleQuestionBack}
                 >
                   Previous
@@ -716,7 +695,6 @@ function UserProfilingPage() {
                 <button
                   type="button"
                   className="profiling-ready-btn profiling-ready-btn--next"
-                  style={{ minWidth: '100px' }}
                   onClick={() => {
                     if (demographicIndex >= DEMOGRAPHIC_QUESTIONS.length - 1) {
                       setScreen('ready');
@@ -731,12 +709,28 @@ function UserProfilingPage() {
               </div>
             </article>
 
-            <div className="profiling-intro-robot">
-              <div className="profiling-intro-robot-media profiling-intro-robot-media--ready" aria-hidden="true">
-                <video className="profiling-intro-video" autoPlay loop muted playsInline>
-                  <source src={waveWebm} type="video/webm" />
-                  <source src={waveMp4} type="video/mp4" />
-                </video>
+            <div className="profiling-question-lower">
+              <div className="profiling-question-robot-wrap" aria-hidden="true">
+                <img src={robotQuestionImage} alt="" className="profiling-question-robot-image" />
+              </div>
+
+              <div className="profiling-question-options-wrap">
+                <div className="profiling-question-options">
+                  {currentDemographicQuestion.options.map((option) => {
+                    const isActive = form[currentDemographicQuestion.key] === option;
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        className={`profiling-question-option ${isActive ? 'is-active' : ''}`}
+                        onClick={() => handleSingleAnswerAndAdvance(currentDemographicQuestion.key, option)}
+                      >
+                        {option}
+                      </button>
+                    );
+                  })}
+                </div>
+                {error && <p className="profiling-error">{error}</p>}
               </div>
             </div>
           </div>

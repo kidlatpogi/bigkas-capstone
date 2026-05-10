@@ -89,8 +89,13 @@ function buildBucketPublicUrl(pathOrUrl) {
   const value = String(pathOrUrl || '').trim();
   if (!value) return null;
   
-  // If it's already a full R2 URL or other external URL, return as is
-  if (/^https?:\/\//i.test(value) && !value.includes('/storage/v1/object/')) {
+  // If it's already a full URL
+  if (/^https?:\/\//i.test(value)) {
+    // If it's a Supabase storage URL, return it as is
+    if (value.includes('/storage/v1/object/')) {
+      return value;
+    }
+    // For other external URLs, return as is
     return value;
   }
 

@@ -556,8 +556,6 @@ function UserProfilingPage() {
       setDemographicIndex(0);
       return;
     }
-    setIntroStep(1);
-  };
 
     if (!isIntroTypingDone) {
       setTypedIntroText(introSecondMessage);

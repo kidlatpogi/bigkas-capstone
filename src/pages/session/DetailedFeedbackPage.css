@@ -748,3 +748,44 @@
     height: 60px;
   }
 }
+
+/* ── Added Navigation Header (Copied from HistoryPage) ── */
+.history-session-view-header {
+  padding: 16px 0;
+  width: min(100%, 1200px);
+  margin: 0 auto 12px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.history-back-to-list-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #059669;
+  border: none;
+  font-family: inherit;
+  font-size: clamp(0.9rem, 0.86rem + 0.20vw, 0.98rem);
+  font-weight: 500;
+  color: #fff;
+  cursor: pointer;
+  padding: 0 16px;
+  height: 44px;
+  border-radius: 999px;
+  box-shadow: 0 5px 0 #047857;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+}
+
+.history-back-to-list-btn:hover {
+  background: #059669;
+  box-shadow: 0 3px 0 #047857;
+  transform: translateY(2px);
+}
+
+.history-back-to-list-btn:active {
+  box-shadow: 0 0 0 #047857;
+  transform: translateY(5px);
+}

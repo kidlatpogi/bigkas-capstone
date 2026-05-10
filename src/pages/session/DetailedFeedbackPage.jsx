@@ -600,6 +600,18 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
       )}
 
 
+      {!isInnerView && (
+        <div className="history-session-view-header dashboard-anim-top">
+          <button
+            type="button"
+            className="history-back-to-list-btn"
+            onClick={() => navigate(ROUTES.DASHBOARD)}
+          >
+            <IoChevronBack /> Back to Dashboard
+          </button>
+        </div>
+      )}
+
       <div className="sr-content-layout">
         {/* Session Title Header */}
         <header className="sr-page-header dashboard-anim-top">

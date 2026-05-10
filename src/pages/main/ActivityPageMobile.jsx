@@ -455,7 +455,7 @@ function ActivityPageMobile() {
         overlayAudioRef.current = null;
       }
     }
-  }, [showRandomizerOverlay, showFreeSpeechOverlay]);
+  }, [showRandomizerOverlay, showFreeSpeechOverlay, user?.isAudioMuted]);
 
   const handleActiveTaskIdChange = useCallback((id) => {
     setActiveTaskId(id);
@@ -491,6 +491,11 @@ function ActivityPageMobile() {
     const nextMute = !user?.isAudioMuted;
     await updateUserMetadata({ is_audio_muted: nextMute });
     localStorage.setItem('bigkas_global_audio_muted_v1', nextMute ? '1' : '0');
+
+    // Immediate feedback: pause if muting
+    if (nextMute && overlayAudioRef.current) {
+      overlayAudioRef.current.pause();
+    }
   };
 
   const handleRandomizeTopic = useCallback(() => {

@@ -21,6 +21,7 @@ const SESSIONS_SELECT_QUERY = `
   session_mode,
   session_origin,
   speaking_mode,
+  source,
   topic,
   duration,
   created_at,
@@ -31,18 +32,27 @@ const SESSIONS_SELECT_QUERY = `
   ),
   session_media (
     audio_url,
-    transcript
+    transcript,
+    video_storage_url
   ),
   session_metrics (
     overall_score,
     vocal_score,
     visual_score,
     verbal_score,
+    visual_avg,
+    vocal_avg,
+    verbal_avg,
+    confidence_score,
     pronunciation_score,
-    fluency_score
+    jitter,
+    shimmer,
+    eye_contact_score,
+    gesture_score
   ),
   session_feedback (
-    general_feedback
+    general_feedback,
+    detailed_feedback
   ),
   session_recommendations (
     recommendation_text
@@ -216,6 +226,7 @@ function normalizeSessionRow(session) {
     pronunciation_score: metrics?.pronunciation_score == null ? null : toInt(metrics.pronunciation_score, 0),
     jitter_score: metrics?.jitter == null ? null : toInt(metrics.jitter, 0),
     shimmer_score: metrics?.shimmer == null ? null : toInt(metrics.shimmer, 0),
+    eye_contact_score: metrics?.eye_contact_score == null ? null : toInt(metrics.eye_contact_score, 0),
     gesture_score: metrics?.gesture_score == null ? null : toInt(metrics.gesture_score, 0),
     duration_sec: session.duration ?? 0,
     target_text: sanitizeTranscriptForDisplay(media?.transcript, ''),

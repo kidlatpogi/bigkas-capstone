@@ -26,6 +26,7 @@ import { useJourneyRemoteState } from '../../hooks/useJourneyRemoteState';
 import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../services/journeyProgressService';
 import { RANDOM_TOPICS } from '../../utils/practiceData';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
+import { filterActivitiesForJourney, JOURNEY_STAGE_LIMITS } from '../../utils/journeyFiltering';
 
 const iconFire = getAssetUrl('icons/Icon-Fire.svg');
 const robotMorningImage = getSpriteUrl('Robot/0018.webp');
@@ -284,7 +285,11 @@ function ActivityPage() {
   const [entranceFromNav] = useState(() => location.state?.skywardEntrance === true);
   const scopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
   /** Activities are filtered by `target_level` = Bigkas rank (same as dashboard `levelProgress.levelName`). */
-  const { tasks, loading: activitiesLoading, error: activitiesError } = useActivitiesJourneyTasks(user?.speakerLevelNumber || 1);
+  const { tasks: allTasks, loading: activitiesLoading, error: activitiesError } = useActivitiesJourneyTasks(user?.progressLevelNumber || 1);
+
+  const tasks = useMemo(() => {
+    return filterActivitiesForJourney(allTasks, user?.speakerLevelNumber || 1, user?.progressLevelNumber || 1);
+  }, [allTasks, user?.speakerLevelNumber, user?.progressLevelNumber]);
   const { metricsSyncKey, refreshJourney } = useJourneyRemoteState(user);
   const stampResetTimeoutRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -675,16 +680,27 @@ function ActivityPage() {
     }
   }, [user?.id, user?.onboardingStage, user?.profilingCompleted, user?.pretestCompleted, user?.isProfilingCompleted, user?.isPreTestCompleted, activitiesLoading]);
 
-  const assessmentTutorialSteps = useMemo(() => [
-    {
-      id: 'assessment-notice',
-      title: 'B-01:',
-      text: `We assessed your speaking level as Level ${levelProgress?.levelNumber || 1}, so we fast-tracked earlier lessons and placed you where your growth is most meaningful.`,
-      button: 'Got it!',
-      targetElementId: null,
-      robot: tutorialRobotStep1,
-    },
-  ], [levelProgress?.levelNumber]);
+  const assessmentTutorialSteps = useMemo(() => {
+    const sLevel = user?.speakerLevelNumber || 1;
+    const pLevel = user?.progressLevelNumber || 1;
+    const reducedTo = JOURNEY_STAGE_LIMITS[sLevel]?.[pLevel] ?? 30;
+
+    let text = `We noticed that you are a level ${sLevel} speaker, so we reduced Journey ${pLevel} to ${reducedTo} stages for you!`;
+    if (reducedTo >= 30) {
+      text = `Welcome to Journey ${pLevel}! You have ${reducedTo} stages to complete. Let's get started!`;
+    }
+
+    return [
+      {
+        id: 'assessment-notice',
+        title: 'B-01:',
+        text,
+        button: 'Got it!',
+        targetElementId: null,
+        robot: tutorialRobotStep1,
+      },
+    ];
+  }, [user?.speakerLevelNumber, user?.progressLevelNumber]);
 
   const handleActiveTaskIdChange = useCallback((id) => {
     setActiveTaskId(id);

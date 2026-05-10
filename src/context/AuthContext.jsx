@@ -522,6 +522,7 @@ export function AuthProvider({ children }) {
       speakerEntryScore: Number(meta.speaker_entry_score) || null,
       speakerLevel: String(meta.speaker_level || 'Novice'),
       speakerLevelNumber: Number(meta.speaker_level_number ?? 1) || 1,
+      progressLevelNumber: Number(meta.progress_level_number ?? 1) || 1,
       speakerPointsHistory: normalizeSpeakerPointsHistory(meta.speaker_points_history),
       onboardingLevelAnalysis: meta.onboarding_level_analysis || null,
       dashboardTutorialSeen: parseMetadataBoolean(meta.dashboard_tutorial_seen) || parseMetadataBoolean(meta.is_tutorial_completed),
@@ -536,7 +537,7 @@ export function AuthProvider({ children }) {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('is_profiling_completed, is_pre_test_completed, current_level, diagnostic_score, diagnostic_completed_at')
+        .select('is_profiling_completed, is_pre_test_completed, current_level, speaker_level, diagnostic_score, diagnostic_completed_at')
         .eq('id', userId)
         .single();
       
@@ -557,7 +558,8 @@ export function AuthProvider({ children }) {
             // Ensure these match the buildUser mapped keys too
             profilingCompleted: prev.profilingCompleted || !!profile.is_profiling_completed,
             pretestCompleted: prev.pretestCompleted || !!profile.is_pre_test_completed,
-            speakerLevelNumber: profile.current_level || prev.speakerLevelNumber,
+            progressLevelNumber: profile.current_level || prev.progressLevelNumber || 1,
+            speakerLevelNumber: profile.speaker_level || prev.speakerLevelNumber || 1,
             speakerEntryScore: profile.diagnostic_score || prev.speakerEntryScore,
           };
         });

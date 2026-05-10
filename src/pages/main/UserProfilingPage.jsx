@@ -334,7 +334,7 @@ function UserProfilingPage() {
     } else if (screen === 'outro') {
       playClip(outroAudioRef);
     }
-  }, [introStep, isMuted, screen]);
+  }, [introStep, isMuted, screen, demographicIndex]);
 
   useEffect(() => {
     if (screen !== 'questions' || isMuted) return;

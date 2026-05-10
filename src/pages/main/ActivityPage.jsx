@@ -428,7 +428,10 @@ function ActivityPage() {
   const getProgressContext = useCallback(() => {
     // Sort sessions by date to find the most recent ones
     const sortedSessions = [...sessions]
-      .filter(s => !isPreTestSession(s)) // Exclude pre-tests for growth comparison
+      .filter(s => {
+        const isError = s.status === 'error' || s.is_error === true;
+        return !isPreTestSession(s) && !isError;
+      })
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     const latest = sortedSessions[0];
@@ -439,7 +442,7 @@ function ActivityPage() {
     const totalGrowth = latestScore - firstScore;
 
     return {
-      totalSessionCount: (sessions || []).length, // Absolute count of ALL sessions
+      totalSessionCount: (sessions || []).filter(s => s.status !== 'error' && s.is_error !== true).length,
       analyzedSessionsCount: sortedSessions.length, // Count of sessions excluding pre-tests
       averageScore: activityMetrics?.averageScore || "N/A",
       currentLevel: levelProgress.levelNumber,

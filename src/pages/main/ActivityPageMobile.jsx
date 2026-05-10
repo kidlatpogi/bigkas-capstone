@@ -253,6 +253,7 @@ function ActivityPageMobile() {
   const [entranceFromNav, setEntranceFromNav] = useState(false);
   const stampResetTimeoutRef = useRef(null);
   const audioContextRef = useRef(null);
+  const overlayAudioRef = useRef(null);
 
   // Clean up effects
   useEffect(() => {
@@ -262,6 +263,10 @@ function ActivityPageMobile() {
       }
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
         audioContextRef.current.close().catch(() => {});
+      }
+      if (overlayAudioRef.current) {
+        overlayAudioRef.current.pause();
+        overlayAudioRef.current = null;
       }
     };
   }, []);
@@ -429,6 +434,28 @@ function ActivityPageMobile() {
 
     return () => clearTimeout(t);
   }, [location.pathname, location.state, navigate, FREE_SPEECH_TUTORIAL_SEEN_KEY]);
+
+  useEffect(() => {
+    const isMuted = window.localStorage.getItem('bigkas_global_audio_muted_v1') === '1';
+    if (isMuted) return;
+
+    if (showRandomizerOverlay) {
+      if (overlayAudioRef.current) overlayAudioRef.current.pause();
+      const audio = new Audio("https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Randomizer%20and%20Free%20Speech%20Button/Randomizer.mp3");
+      overlayAudioRef.current = audio;
+      audio.play().catch(() => {});
+    } else if (showFreeSpeechOverlay) {
+      if (overlayAudioRef.current) overlayAudioRef.current.pause();
+      const audio = new Audio("https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Randomizer%20and%20Free%20Speech%20Button/Free%20Speech.mp3");
+      overlayAudioRef.current = audio;
+      audio.play().catch(() => {});
+    } else {
+      if (overlayAudioRef.current) {
+        overlayAudioRef.current.pause();
+        overlayAudioRef.current = null;
+      }
+    }
+  }, [showRandomizerOverlay, showFreeSpeechOverlay]);
 
   const handleActiveTaskIdChange = useCallback((id) => {
     setActiveTaskId(id);

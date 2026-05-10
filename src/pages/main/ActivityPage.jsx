@@ -269,6 +269,7 @@ function ActivityPage() {
     { role: 'assistant', content: "Hello! I'm B-01, your AI speaking coach. What would you like to know about public speaking or your progress today?", id: 'initial-greeting' }
   ]);
   const chatScrollRef = useRef(null);
+  const overlayAudioRef = useRef(null);
 
   const [randomizerTopic, setRandomizerTopic] = useState(null);
   const [isStreakRecoveryMode, setIsStreakRecoveryMode] = useState(false);
@@ -292,6 +293,10 @@ function ActivityPage() {
       }
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
         audioContextRef.current.close().catch(() => {});
+      }
+      if (overlayAudioRef.current) {
+        overlayAudioRef.current.pause();
+        overlayAudioRef.current = null;
       }
     };
   }, []);
@@ -767,6 +772,28 @@ function ActivityPage() {
       },
     ];
   }, [user?.speakerLevelNumber, user?.progressLevelNumber]);
+
+  useEffect(() => {
+    const isMuted = window.localStorage.getItem('bigkas_global_audio_muted_v1') === '1';
+    if (isMuted) return;
+
+    if (showRandomizerOverlay) {
+      if (overlayAudioRef.current) overlayAudioRef.current.pause();
+      const audio = new Audio("https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Randomizer%20and%20Free%20Speech%20Button/Randomizer.mp3");
+      overlayAudioRef.current = audio;
+      audio.play().catch(() => {});
+    } else if (showFreeSpeechOverlay) {
+      if (overlayAudioRef.current) overlayAudioRef.current.pause();
+      const audio = new Audio("https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Randomizer%20and%20Free%20Speech%20Button/Free%20Speech.mp3");
+      overlayAudioRef.current = audio;
+      audio.play().catch(() => {});
+    } else {
+      if (overlayAudioRef.current) {
+        overlayAudioRef.current.pause();
+        overlayAudioRef.current = null;
+      }
+    }
+  }, [showRandomizerOverlay, showFreeSpeechOverlay]);
 
   const handleActiveTaskIdChange = useCallback((id) => {
     setActiveTaskId(id);

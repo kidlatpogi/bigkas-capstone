@@ -1366,51 +1366,6 @@ function TrainingPage() {
         </button>
       )}
 
-      {/* ── Standardized Header ── */}
-      <div className="tp-header tp-header--free-pretest">
-        <div className="tp-free-pretest-header-actions">
-          <button
-            type="button"
-            className="tp-free-pretest-back-btn"
-            onClick={handleFreePretestBack}
-            aria-label="Go back"
-          >
-            Back
-          </button>
-
-          {isFreePretestSession && (
-            <>
-              <button
-                type="button"
-                className="tp-free-pretest-logout-btn"
-                onClick={handleTemporaryLogout}
-                aria-label="Log out"
-              >
-                Logout
-              </button>
-              <button
-                type="button"
-                className="tp-free-pretest-skip-btn"
-                onClick={handleSkipPretestForDev}
-                aria-label="Skip pre-test for development"
-              >
-                Skip Pre-test
-              </button>
-            </>
-          )}
-
-          {focus === 'scripted' && !isFreePretestSession && (
-            <button
-              type="button"
-              className="tp-free-pretest-logout-btn" // Reuse same style as logout
-              onClick={() => setShowSettings(true)}
-              aria-label="Settings"
-            >
-              Settings
-            </button>
-          )}
-        </div>
-      </div>
 
       {/* ── Main Content ── */}
       <div

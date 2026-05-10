@@ -401,6 +401,18 @@ function hasSpeakerProfileData(value) {
   return !!(value && typeof value === 'object' && Object.keys(value).length > 0);
 }
 
+function isBlockedByClient(error) {
+  if (!error) return false;
+  const msg = String(error.message || error || '').toLowerCase();
+  return (
+    msg.includes('failed to fetch') ||
+    msg.includes('networkerror') ||
+    msg.includes('load failed') ||
+    msg.includes('blocked by client') ||
+    msg.includes('net::err_blocked_by_client')
+  );
+}
+
 function getAccountBlockedMessage(meta = {}) {
   if (parseMetadataBoolean(meta.account_deleted)) {
     return {
@@ -862,6 +874,11 @@ export function AuthProvider({ children }) {
       return { success: true, user: buildUser(data.session) };
     } catch (networkError) {
       setIsLoading(false);
+      if (isBlockedByClient(networkError)) {
+        const msg = 'Login blocked by your browser. Please disable ad-blockers or privacy extensions for this site and try again.';
+        setError(msg);
+        return { success: false, error: msg, code: 'blocked_by_client' };
+      }
       const message = networkError?.message || 'An unexpected error occurred during login. Please try again.';
       setError(message);
       return { success: false, error: message };
@@ -1124,6 +1141,11 @@ export function AuthProvider({ children }) {
       return { success: true, user: buildUser(data.session) };
     } catch (networkError) {
       setIsLoading(false);
+      if (isBlockedByClient(networkError)) {
+        const msg = 'Registration blocked by your browser. Please disable ad-blockers for this site to receive the verification email.';
+        setError(msg);
+        return { success: false, error: msg, code: 'blocked_by_client' };
+      }
       const message = networkError?.message || '';
 
       // Signup request timed out — SMTP is likely hanging
@@ -1160,11 +1182,17 @@ export function AuthProvider({ children }) {
       provider: 'google',
       options: {
         redirectTo,
+        skipBrowserRedirect: false,
       },
     });
 
     if (err) {
       setIsLoading(false);
+      if (isBlockedByClient(err)) {
+        const msg = 'Google sign-in was blocked by your browser or an ad-blocker. Please disable extensions and try again.';
+        setError(msg);
+        return { success: false, error: msg, code: 'blocked_by_client' };
+      }
       setError(err.message);
       return { success: false, error: err.message };
     }
@@ -1189,6 +1217,9 @@ export function AuthProvider({ children }) {
     });
 
     if (err) {
+      if (isBlockedByClient(err)) {
+        return { success: false, error: 'Resend blocked by your browser. Please disable ad-blockers for this site and try again.' };
+      }
       const msg = (err.message || '').toLowerCase();
       if (msg.includes('rate limit') || msg.includes('too many') || err.status === 429) {
         return { success: false, error: 'Please wait before requesting another verification email.' };

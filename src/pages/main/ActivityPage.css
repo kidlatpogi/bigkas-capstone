@@ -1390,6 +1390,15 @@ html {
   margin-left: 2px;
 }
 
+.ask-b01-disclaimer {
+  margin: 8px 0 0;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  text-align: center;
+  font-weight: 500;
+  width: 100%;
+}
+
 .ask-b01-modal-close {
   width: 28px;
   height: 28px;

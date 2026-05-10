@@ -1601,6 +1601,7 @@ function ActivityPage() {
                   <IoSend />
                 </button>
               </form>
+              <p className="ask-b01-disclaimer">B-01 can make mistakes. Please verify important information.</p>
             </div>
           </div>
         </section>

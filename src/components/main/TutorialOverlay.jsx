@@ -116,6 +116,7 @@ function TutorialOverlay({
     return window.localStorage.getItem(GLOBAL_MUTE_KEY) === '1';
   });
 
+  const activeSpotlightRef = useRef(null);
   const companionContainerRef = useRef(null);
   const stepAudioRefs = useRef([]);
   const customVoiceRef = useRef(null);

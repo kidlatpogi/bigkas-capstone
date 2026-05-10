@@ -714,8 +714,8 @@ function UserProfilingPage() {
                 <img src={robotQuestionImage} alt="" className="profiling-question-robot-image" />
               </div>
 
-              <div className="profiling-question-options-wrap">
-                <div className="profiling-question-options">
+              <div className="profiling-question-options-wrap is-demographics">
+                <div className="profiling-question-options is-demographics">
                   {currentDemographicQuestion.options.map((option) => {
                     const isActive = form[currentDemographicQuestion.key] === option;
                     return (

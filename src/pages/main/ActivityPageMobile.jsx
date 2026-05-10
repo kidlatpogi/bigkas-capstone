@@ -465,9 +465,10 @@ function ActivityPageMobile() {
   }, [user?.id]);
 
   const handleTaskAction = useCallback((task) => {
+    const activityPromptTopic = String(task.detail || task.objective || task.title || '').trim();
     navigate(`${ROUTES.TRAINING}?autostart=1`, {
       state: {
-        freeTopic: task.title,
+        freeTopic: activityPromptTopic,
         objective: task.objective || task.detail,
         focus: 'free',
         sessionType: 'training',

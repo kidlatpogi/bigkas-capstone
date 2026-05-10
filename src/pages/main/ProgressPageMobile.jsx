@@ -335,44 +335,6 @@ function ProgressPageMobile() {
     });
   }, [pillarRange, userSessions]);
 
-  const growthMessage = useMemo(() => {
-    if (userSessions.length < 2) return "You're improving fast! Keep up the good work and check your progress below.";
-
-    const now = new Date();
-    const last7DaysStart = new Date(now);
-    last7DaysStart.setDate(now.getDate() - 7);
-    
-    const prev7DaysStart = new Date(now);
-    prev7DaysStart.setDate(now.getDate() - 14);
-
-    const last7DaysSessions = userSessions.filter(s => new Date(s.created_at) >= last7DaysStart);
-    const prev7DaysSessions = userSessions.filter(s => {
-      const d = new Date(s.created_at);
-      return d >= prev7DaysStart && d < last7DaysStart;
-    });
-
-    if (last7DaysSessions.length === 0) return "Ready to start your practice for this week? I'm here to help!";
-
-    const lastAvg = last7DaysSessions.reduce((a, b) => a + (b.confidence_score || 0), 0) / last7DaysSessions.length;
-    
-    if (prev7DaysSessions.length === 0) {
-      return `You've completed ${last7DaysSessions.length} sessions this week! Great start to your journey!`;
-    }
-
-    const prevAvg = prev7DaysSessions.reduce((a, b) => a + (b.confidence_score || 0), 0) / prev7DaysSessions.length;
-    
-    const diff = lastAvg - prevAvg;
-    const pct = prevAvg === 0 ? 0 : Math.round((diff / prevAvg) * 100);
-
-    if (pct > 0) {
-      return `You've grown ${pct}% since last week! Your speaking performance is reaching new heights!`;
-    } else if (pct === 0 && diff >= 0) {
-      return "You're maintaining a consistent performance this week. Keep pushing for that extra 1%!";
-    } else {
-      return "Every session is a step forward. You're building the muscle memory for great speaking!";
-    }
-  }, [userSessions]);
-
   return (
     <div className="progress-page-mobile-root no-scrollbar">
       <div className="progress-mobile-layout">
@@ -385,7 +347,7 @@ function ProgressPageMobile() {
               <div className="activity-mobile-banner-bubble">
                 <p className="activity-mobile-banner-kicker">B-01:</p>
                 <p className="activity-mobile-banner-copy">
-                  {growthMessage}
+                  You're improving fast! Keep up the good work and check your progress below.
                 </p>
               </div>
             </div>

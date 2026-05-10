@@ -150,7 +150,15 @@ function SettingsPageMobile() {
                 </div>
               </div>
 
-                 <IoChevronForward className="stg-item-chevron" />
+              <button className="stg-mobile-item" onClick={() => navigate(ROUTES.AUDIO_TEST)}>
+                <div className="stg-item-icon voice">
+                  <IoVideocamOutline />
+                </div>
+                <div className="stg-item-content">
+                  <span className="stg-item-label">Test Audio/ Video</span>
+                  <span className="stg-item-hint">Verify camera and microphone</span>
+                </div>
+                <IoChevronForward className="stg-item-chevron" />
               </button>
 
               <div className="stg-mobile-item no-click">

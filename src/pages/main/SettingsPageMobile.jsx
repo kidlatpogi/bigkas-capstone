@@ -155,7 +155,6 @@ function SettingsPageMobile() {
                     </select>
                 </div>
               </div>
-
               <button className="stg-mobile-item" onClick={() => navigate(ROUTES.AUDIO_TEST)}>
                 <div className="stg-item-icon voice">
                   <IoVideocamOutline />
@@ -166,26 +165,6 @@ function SettingsPageMobile() {
                 </div>
                 <IoChevronForward className="stg-item-chevron" />
               </button>
-
-              <div className="stg-mobile-item no-click">
-                <div className="stg-item-icon voice">
-                  {user?.isAudioMuted ? <IoVolumeMuteOutline /> : <IoVolumeHighOutline />}
-                </div>
-                <div className="stg-item-content">
-                  <span className="stg-item-label">Mute B-01 Voice</span>
-                  <span className="stg-item-hint">Silence character voice-overs</span>
-                </div>
-                <div className="sp-toggle">
-                  <input 
-                    type="checkbox" 
-                    id="mute-voice-toggle-mobile"
-                    className="sp-toggle-input"
-                    checked={!!user?.isAudioMuted}
-                    onChange={handleToggleMute}
-                  />
-                  <label htmlFor="mute-voice-toggle-mobile" className="sp-toggle-slider" />
-                </div>
-              </div>
             </div>
           </section>
 

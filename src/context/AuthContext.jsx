@@ -541,9 +541,7 @@ export function AuthProvider({ children }) {
       dashboardTutorialSeen: parseMetadataBoolean(meta.dashboard_tutorial_seen) || parseMetadataBoolean(meta.is_tutorial_completed),
       activeBannerId: meta.active_banner_id || 'default_skyward',
       unlockedBanners: Array.isArray(meta.unlocked_banners) ? meta.unlocked_banners : ['default_skyward'],
-      isAudioMuted: parseMetadataBoolean(profile.is_audio_muted) || 
-                    parseMetadataBoolean(meta.is_audio_muted) || 
-                    (typeof window !== 'undefined' && window.localStorage.getItem('bigkas_global_audio_muted_v1') === '1'),
+      isAudioMuted: typeof window !== 'undefined' && window.localStorage.getItem('bigkas_global_audio_muted_v1') === '1',
       createdAt: u.created_at,
     };
   }, [resolveAvatarUrl]);
@@ -553,25 +551,12 @@ export function AuthProvider({ children }) {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('is_profiling_completed, is_pre_test_completed, current_level, speaker_level, diagnostic_score, diagnostic_completed_at, is_audio_muted')
+        .select('is_profiling_completed, is_pre_test_completed, current_level, speaker_level, diagnostic_score, diagnostic_completed_at')
         .eq('id', userId)
         .single();
       
       if (error) {
-        if (error.code === '42703') {
-           console.warn('Bigkas Auth: profiles table is missing the is_audio_muted column. Please run the SQL migration.');
-           // Retry without the problematic column to keep the app working
-           const { data: retryProfile, error: retryError } = await supabase
-            .from('profiles')
-            .select('is_profiling_completed, is_pre_test_completed, current_level, speaker_level, diagnostic_score, diagnostic_completed_at')
-            .eq('id', userId)
-            .single();
-           if (!retryError && retryProfile) {
-             profile = retryProfile;
-           } else {
-             return;
-           }
-        } else if (error.code !== 'PGRST116') { // PGRST116 is 'no rows found'
+        if (error.code !== 'PGRST116') { // PGRST116 is 'no rows found'
           console.error('Bigkas Auth: failed to fetch profile:', error);
           return;
         } else {
@@ -606,9 +591,7 @@ export function AuthProvider({ children }) {
             progressLevelNumber: profile.current_level || prev.progressLevelNumber || 1,
             speakerLevelNumber: profile.speaker_level || prev.speakerLevelNumber || 1,
             speakerEntryScore: profile.diagnostic_score || prev.speakerEntryScore,
-            isAudioMuted: !!profile.is_audio_muted || 
-                          !!prev.isAudioMuted || 
-                          (typeof window !== 'undefined' && window.localStorage.getItem('bigkas_global_audio_muted_v1') === '1'),
+            isAudioMuted: typeof window !== 'undefined' && window.localStorage.getItem('bigkas_global_audio_muted_v1') === '1',
           };
         });
       }
@@ -1265,7 +1248,9 @@ export function AuthProvider({ children }) {
       profileUpdates.dashboard_tutorial_seen = !!updates.dashboard_tutorial_seen;
     }
     if (updates.is_audio_muted !== undefined) {
-      profileUpdates.is_audio_muted = !!updates.is_audio_muted;
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('bigkas_global_audio_muted_v1', updates.is_audio_muted ? '1' : '0');
+      }
     }
 
     if (Object.keys(profileUpdates).length > 0 && data.user?.id) {

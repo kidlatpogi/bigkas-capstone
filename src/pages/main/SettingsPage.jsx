@@ -202,26 +202,6 @@ function SettingsPage() {
                   <IoChevronForward className="sp-list-chevron" />
                 </button>
 
-                <div className="sp-list-item sp-list-item--interactive">
-                  <div className="sp-list-icon">
-                    {user?.isAudioMuted ? <IoVolumeMuteOutline /> : <IoVolumeHighOutline />}
-                  </div>
-                  <div className="sp-list-content">
-                    <span className="sp-list-label">Mute B-01 Voice</span>
-                    <span className="sp-list-hint">Silence all character voice-overs</span>
-                  </div>
-                  <div className="sp-toggle">
-                    <input 
-                      type="checkbox" 
-                      id="mute-voice-toggle"
-                      className="sp-toggle-input"
-                      checked={!!user?.isAudioMuted}
-                      onChange={handleToggleMute}
-                    />
-                    <label htmlFor="mute-voice-toggle" className="sp-toggle-slider" />
-                  </div>
-                </div>
-
               </div>
             </div>
 

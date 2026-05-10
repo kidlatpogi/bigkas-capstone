@@ -791,14 +791,7 @@ export default function SkywardJourney({
     mapRef.current = map;
   }, [map]);
 
-  useEffect(() => {
-    if (!isLockedLevel) return;
-    const neutralMap = { tx: 0, ty: 0 };
-    pointerPanRef.current = null;
-    pinchRef.current = null;
-    mapRef.current = neutralMap;
-    setMap(neutralMap);
-  }, [isLockedLevel, currentLevel]);
+  // Removed map reset effect for locked levels to allow persistent centering logic.
 
   const requestClosePanel = useCallback(() => {
     setPanelOpenId(null);
@@ -886,8 +879,12 @@ export default function SkywardJourney({
   /** Hero focus: Mathematically pan the map to center the active node using CSS transforms. */
   useLayoutEffect(() => {
     const targetIndex =
-      scrollToStepIndex != null && scrollToStepIndex >= 0 ? scrollToStepIndex : activeIndex;
-    if (targetIndex < 0) return undefined;
+      scrollToStepIndex != null && scrollToStepIndex >= 0 
+        ? scrollToStepIndex 
+        : (activeIndex >= 0 ? activeIndex : 0);
+    
+    // Always proceed if steps exist
+    if (steps.length === 0) return undefined;
 
     const fromDashboard = scrollToStepIndex != null && scrollToStepIndex >= 0;
     const delay = entranceFromNav || fromDashboard ? 200 : 80;
@@ -967,7 +964,7 @@ export default function SkywardJourney({
   );
 
   const onPointerMoveViewport = useCallback((e) => {
-    if (isLockedLevel) return;
+    // Removed isLockedLevel restriction to allow users to view locked maps.
     const p = pointerPanRef.current;
     if (!p || p.pid !== e.pointerId) return;
     const dy = e.clientY - p.sy;
@@ -991,7 +988,7 @@ export default function SkywardJourney({
   }, []);
 
   const onTouchStartPinch = useCallback((e) => {
-    if (isLockedLevel) return;
+    // Removed isLockedLevel restriction to allow users to view locked maps.
     if (e.touches.length === 2) {
       pointerPanRef.current = null;
       pinchRef.current = { active: true };

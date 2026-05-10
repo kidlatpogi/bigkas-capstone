@@ -702,6 +702,7 @@ function ActivityPage() {
         button: 'Next',
         targetElementId: 'tutorial-target-home-banner',
         text: "Your AI Companion—hey, that's me! See my panel right at the top? I'll be checking in with you from time to time. Depending on your progress, I'll drop by with daily greetings, personalized tips, and a little extra encouragement to keep your momentum going.",
+        voice: "https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%201.mp3",
       },
       {
         id: 'step-streak',
@@ -711,6 +712,7 @@ function ActivityPage() {
         button: 'Next',
         targetElementId: 'tutorial-target-home-streak',
         text: 'Up in the top right is your Streak counter. Consistency is the true secret to mastering public speaking! Log in and complete a daily activity to keep the fire burning and watch that number grow.',
+        voice: "https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%202.mp3",
       },
       {
         id: 'step-rank',
@@ -719,6 +721,7 @@ function ActivityPage() {
         button: 'Next',
         targetElementId: 'tutorial-target-home-rank',
         text: 'To keep an eye on the big picture, check out the Journey Progression card on the right! This handy panel lets you quickly track your current speaking Rank and see exactly how many tasks you have conquered so far.',
+        voice: "https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%204.mp3",
       },
       {
         id: 'step-roadmap',
@@ -728,6 +731,7 @@ function ActivityPage() {
         button: 'Next',
         targetElementId: 'tutorial-target-home-journey',
         text: 'This path is your customized learning roadmap! You will start at your first stage and unlock the next ones as you move forward. The activities gradually become more challenging, and once you complete all tasks on your path, you unlock a final Post-test challenge to advance.',
+        voice: "https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%203.mp3",
       },
       {
         id: 'step-practice',
@@ -737,6 +741,7 @@ function ActivityPage() {
         button: 'Finish!',
         targetElementId: 'tutorial-target-home-practice',
         text: 'Need extra training? The Practice card gives you two ways to sharpen your skills anytime: Randomizer for surprise prompts, and Free Speech for open-topic confidence building. Ready? Let us start your Free Speech session now!',
+        voice: "https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%205.mp3",
       },
     ];
   }, [user?.speakerLevelNumber]);

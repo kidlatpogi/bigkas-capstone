@@ -448,6 +448,36 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
 
   const scrollToAvoid = () => avoidSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
 
+  const overallTier = getScoreTier15(tripleV.entryPoint);
+  const rawTranscript = recordingMedia.transcript
+    || session?.transcript
+    || session?.target_text
+    || session?.analysis?.transcript_exact
+    || session?.analysis?.transcript
+    || '';
+
+  const practicedText = sanitizeTranscriptForDisplay(rawTranscript, '') || 'No recorded text available.';
+
+  // Extraction of mispronunciations and filler data
+  const analysisData = useMemo(() => {
+    try {
+      if (typeof session?.analysis === 'object' && session.analysis !== null) return session.analysis;
+      if (typeof session?.analysis === 'string') return JSON.parse(session.analysis);
+    } catch (e) {
+      console.warn('Failed to parse session analysis for highlighting:', e);
+    }
+    return {};
+  }, [session?.analysis]);
+
+  const mispronunciations = analysisData?.mispronunciations || [];
+  
+  const fillerCount = useMemo(() => {
+    if (analysisData?.filler_count !== undefined) return analysisData.filler_count;
+    // Fallback: count manually from transcript
+    const words = rawTranscript.toLowerCase().split(/\s+/);
+    return words.filter(w => FILLER_WORDS.includes(w.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ""))).length;
+  }, [rawTranscript, analysisData?.filler_count]);
+
   if (windowWidth < 768) {
     return (
       <DetailedFeedbackPageMobile 
@@ -478,36 +508,6 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
       </div>
     );
   }
-
-  const overallTier = getScoreTier15(tripleV.entryPoint);
-  const rawTranscript = recordingMedia.transcript
-    || session?.transcript
-    || session?.target_text
-    || session?.analysis?.transcript_exact
-    || session?.analysis?.transcript
-    || '';
-
-  const practicedText = sanitizeTranscriptForDisplay(rawTranscript, '') || 'No recorded text available.';
-
-  // Extraction of mispronunciations and filler data
-  const analysisData = useMemo(() => {
-    try {
-      if (typeof session?.analysis === 'object' && session.analysis !== null) return session.analysis;
-      if (typeof session?.analysis === 'string') return JSON.parse(session.analysis);
-    } catch (e) {
-      console.warn('Failed to parse session analysis for highlighting:', e);
-    }
-    return {};
-  }, [session?.analysis]);
-
-  const mispronunciations = analysisData?.mispronunciations || [];
-  
-  const fillerCount = useMemo(() => {
-    if (analysisData?.filler_count !== undefined) return analysisData.filler_count;
-    // Fallback: count manually from transcript
-    const words = rawTranscript.toLowerCase().split(/\s+/);
-    return words.filter(w => FILLER_WORDS.includes(w.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ""))).length;
-  }, [rawTranscript, analysisData?.filler_count]);
 
   const renderHighlightedTranscript = () => {
     if (!rawTranscript) return <p className="df-practiced-text">No recorded text available.</p>;

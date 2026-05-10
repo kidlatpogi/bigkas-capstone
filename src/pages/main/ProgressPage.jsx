@@ -441,7 +441,7 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
                 <div className="progress-mobile-banner-bubble">
                   <p className="progress-mobile-banner-kicker">B-01:</p>
                   <p className="progress-mobile-banner-copy">
-                    {coachInsights.message}
+                    {coachInsights.growthUpdate}
                   </p>
                 </div>
               </div>
@@ -454,7 +454,7 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
               <img src={heroRobotImage} alt="" className="new-banner-robot" />
               <div className="new-banner-bubble" aria-label="Coach message">
                 <p className="new-banner-kicker">B-01:</p>
-                <p className="new-banner-copy">{coachInsights.message}</p>
+                <p className="new-banner-copy">{coachInsights.growthUpdate}</p>
               </div>
             </div>
 

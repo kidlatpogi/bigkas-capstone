@@ -1,15 +1,31 @@
 import { toFivePointScore } from './sessionFormatting';
 
+const POSITIVE_QUOTES = [
+  "Believe in your voice; it has the power to inspire and lead.",
+  "Public speaking is the art of giving your thoughts a platform.",
+  "Your potential is endless. Keep practicing and watch your confidence soar!",
+  "Great speakers aren't born; they are trained through persistence.",
+  "Every session is a step closer to becoming a master communicator.",
+  "Stay focused, stay vocal, and let your message shine.",
+  "Confidence comes from preparation and a willingness to grow.",
+  "You're not just speaking; you're connecting. Keep building those bridges!",
+  "The more you speak, the more natural it becomes. Keep up the momentum!",
+  "Your journey to excellence is unique—enjoy every milestone along the way."
+];
+
 /**
  * Generates dynamic coach insights based on user session history.
  * 
  * @param {Array} sessions - Array of session objects
- * @returns {Object} - { message: string, growth: number, strongestPillar: string }
+ * @returns {Object} - { growthUpdate: string, positiveQuote: string, growth: number, strongestPillar: string }
  */
 export function generateCoachInsights(sessions) {
+  const defaultQuote = POSITIVE_QUOTES[0];
+  
   if (!Array.isArray(sessions) || sessions.length === 0) {
     return {
-      message: "Welcome! Start your first session to see your progress insights here.",
+      growthUpdate: "Welcome! Start your first session to see your progress insights here.",
+      positiveQuote: "Welcome to Bigkas! Ready to unlock your speaking potential?",
       growth: 0,
       strongestPillar: null
     };
@@ -22,7 +38,8 @@ export function generateCoachInsights(sessions) {
 
   if (validSessions.length === 0) {
     return {
-      message: "Ready to start? Complete your first training session to unlock performance tracking!",
+      growthUpdate: "Ready to start? Complete your first training session to unlock performance tracking!",
+      positiveQuote: "Let's get started! Your first session is just a click away.",
       growth: 0,
       strongestPillar: null
     };
@@ -36,7 +53,6 @@ export function generateCoachInsights(sessions) {
   let growthValue = 0;
 
   if (validSessions.length >= 2) {
-    // Weekly comparison
     const now = new Date();
     const lastWeekStart = new Date(now);
     lastWeekStart.setDate(now.getDate() - 7);
@@ -65,7 +81,6 @@ export function generateCoachInsights(sessions) {
         growthMessage = "Your performance is rock-solid and stable since last week! ";
       }
     } else {
-      // Overall growth (latest vs first)
       const first = validSessions[validSessions.length - 1];
       const firstScore = toFivePointScore(first.confidence_score || first.overall_score || first.score || 0);
       
@@ -92,8 +107,14 @@ export function generateCoachInsights(sessions) {
   const strongest = pillars.sort((a, b) => b.score - a.score)[0];
   const strongestPillarMsg = strongest.score > 0 ? `Your ${strongest.name} skills are looking particularly strong.` : "Keep up the hard work!";
 
+  // 3. Select Positive Quote
+  // Use session count to rotate through quotes
+  const quoteIndex = validSessions.length % POSITIVE_QUOTES.length;
+  const quote = POSITIVE_QUOTES[quoteIndex];
+
   return {
-    message: `${growthMessage}${strongestPillarMsg}`,
+    growthUpdate: `${growthMessage}${strongestPillarMsg}`,
+    positiveQuote: quote,
     growth: growthValue,
     strongestPillar: strongest.name
   };

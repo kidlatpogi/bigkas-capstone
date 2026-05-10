@@ -448,7 +448,8 @@ function ActivityPage() {
         latestSessionScore: latestScore,
         growthPercentage: insights.growth.toFixed(1),
         strongestPillar: insights.strongestPillar,
-        coachNarrative: insights.message,
+        coachNarrative: insights.growthUpdate,
+        positiveQuote: insights.positiveQuote,
         status: insights.growth > 0 ? "Improving" : insights.growth < 0 ? "Declining" : "Stable"
       },
 
@@ -474,11 +475,11 @@ function ActivityPage() {
 
       // 1. Generate Local Insights (Immediate & Accurate)
       const insights = generateCoachInsights(sessions);
-      setBannerMessage(insights.message);
+      setBannerMessage(insights.positiveQuote);
 
       // 2. Update Cache
       window.localStorage.setItem(AI_BANNER_CACHE_KEY, JSON.stringify({
-        message: insights.message,
+        message: insights.positiveQuote,
         timestamp: Date.now()
       }));
 

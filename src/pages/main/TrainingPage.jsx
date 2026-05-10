@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LuRotateCcw } from 'react-icons/lu';
 import { FiAlertCircle } from 'react-icons/fi';
+import { IoChevronBack } from 'react-icons/io5';
 import { useSessionContext } from '../../context/useSessionContext';
 import { useAuthContext } from '../../context/useAuthContext';
 import { buildRoute, ROUTES } from '../../utils/constants';
@@ -1360,9 +1361,15 @@ function TrainingPage() {
         <button
           type="button"
           className="history-back-to-list-btn tp-back-to-history-btn"
-          onClick={() => navigate(ROUTES.ACTIVITY)}
+          onClick={() => {
+            if (isActive) {
+              setShowExitConfirm(true);
+            } else {
+              navigate(ROUTES.ACTIVITY);
+            }
+          }}
         >
-          Back to Dashboard
+          <IoChevronBack /> Back to Dashboard
         </button>
       )}
 
@@ -1781,7 +1788,7 @@ function TrainingPage() {
         onConfirm={() => {
           handleRestart();
           setShowExitConfirm(false);
-          navigate(-1);
+          navigate(ROUTES.ACTIVITY);
         }}
       />
 

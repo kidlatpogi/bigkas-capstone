@@ -541,6 +541,7 @@ export function AuthProvider({ children }) {
       dashboardTutorialSeen: parseMetadataBoolean(meta.dashboard_tutorial_seen) || parseMetadataBoolean(meta.is_tutorial_completed),
       activeBannerId: meta.active_banner_id || 'default_skyward',
       unlockedBanners: Array.isArray(meta.unlocked_banners) ? meta.unlocked_banners : ['default_skyward'],
+      isAudioMuted: parseMetadataBoolean(profile.is_audio_muted) || parseMetadataBoolean(meta.is_audio_muted) || false,
       createdAt: u.created_at,
     };
   }, [resolveAvatarUrl]);
@@ -550,7 +551,7 @@ export function AuthProvider({ children }) {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('is_profiling_completed, is_pre_test_completed, current_level, speaker_level, diagnostic_score, diagnostic_completed_at')
+        .select('is_profiling_completed, is_pre_test_completed, current_level, speaker_level, diagnostic_score, diagnostic_completed_at, is_audio_muted')
         .eq('id', userId)
         .single();
       
@@ -588,6 +589,7 @@ export function AuthProvider({ children }) {
             progressLevelNumber: profile.current_level || prev.progressLevelNumber || 1,
             speakerLevelNumber: profile.speaker_level || prev.speakerLevelNumber || 1,
             speakerEntryScore: profile.diagnostic_score || prev.speakerEntryScore,
+            isAudioMuted: profile.is_audio_muted ?? prev.isAudioMuted ?? false,
           };
         });
       }
@@ -1242,6 +1244,9 @@ export function AuthProvider({ children }) {
     }
     if (updates.dashboard_tutorial_seen !== undefined) {
       profileUpdates.dashboard_tutorial_seen = !!updates.dashboard_tutorial_seen;
+    }
+    if (updates.is_audio_muted !== undefined) {
+      profileUpdates.is_audio_muted = !!updates.is_audio_muted;
     }
 
     if (Object.keys(profileUpdates).length > 0 && data.user?.id) {

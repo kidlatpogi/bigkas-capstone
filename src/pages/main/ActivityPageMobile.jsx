@@ -436,8 +436,7 @@ function ActivityPageMobile() {
   }, [location.pathname, location.state, navigate, FREE_SPEECH_TUTORIAL_SEEN_KEY]);
 
   useEffect(() => {
-    const isMuted = window.localStorage.getItem('bigkas_global_audio_muted_v1') === '1';
-    if (isMuted) return;
+    if (user?.isAudioMuted) return;
 
     if (showRandomizerOverlay) {
       if (overlayAudioRef.current) overlayAudioRef.current.pause();

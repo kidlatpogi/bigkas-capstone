@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, memo } from 'react';
 import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import { getSpriteUrl, getVoiceUrl } from '../../utils/assetUtils';
+import { useAuthContext } from '../../context/useAuthContext';
 
 const defaultRobotImage = getSpriteUrl('Robot/0008-noBulb-inverted.png');
 const tutorialVoice1 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 1.mp3');
@@ -45,6 +46,7 @@ function TutorialOverlay({
   finalRobotImage = defaultFinalRobotImage,
   showAudioToggle = false,
 }) {
+  const { user, updateUserMetadata } = useAuthContext();
   const GLOBAL_MUTE_KEY = 'bigkas_global_audio_muted_v1';
   const defaultSteps = useMemo(
     () => [
@@ -113,8 +115,16 @@ function TutorialOverlay({
   const [isTypingDone, setIsTypingDone] = useState(false);
   const [isMuted, setIsMuted] = useState(() => {
     if (typeof window === 'undefined') return false;
+    // Prioritize context/user preference if available
+    if (user && typeof user.isAudioMuted === 'boolean') return user.isAudioMuted;
     return window.localStorage.getItem(GLOBAL_MUTE_KEY) === '1';
   });
+
+  useEffect(() => {
+    if (user && typeof user.isAudioMuted === 'boolean') {
+      setIsMuted(user.isAudioMuted);
+    }
+  }, [user?.isAudioMuted]);
 
   const activeSpotlightRef = useRef(null);
   const companionContainerRef = useRef(null);
@@ -155,6 +165,9 @@ function TutorialOverlay({
       const next = !prev;
       if (typeof window !== 'undefined') {
         window.localStorage.setItem(GLOBAL_MUTE_KEY, next ? '1' : '0');
+      }
+      if (user?.id) {
+        updateUserMetadata({ is_audio_muted: next }).catch(() => {});
       }
       if (next) {
         stopAllAudios();

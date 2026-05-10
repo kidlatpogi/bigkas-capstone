@@ -7,7 +7,9 @@ import {
   IoLogOutOutline,
   IoAlertCircleOutline,
   IoArrowBack,
-  IoVideocamOutline
+  IoVideocamOutline,
+  IoVolumeMuteOutline,
+  IoVolumeHighOutline
 } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
@@ -28,7 +30,7 @@ const MIC_SENSITIVITY_KEY = 'pref_mic_sensitivity';
 
 function SettingsPageMobile() {
   const navigate = useNavigate();
-  const { logout } = useAuthContext();
+  const { user, logout, updateUserMetadata } = useAuthContext();
   
   const [micSensitivity, setMicSensitivity] = useState(() => {
     return localStorage.getItem(MIC_SENSITIVITY_KEY) || '80';
@@ -148,16 +150,32 @@ function SettingsPageMobile() {
                 </div>
               </div>
 
-              <button className="stg-mobile-item" onClick={() => navigate(ROUTES.AUDIO_TEST)}>
+                 <IoChevronForward className="stg-item-chevron" />
+              </button>
+
+              <div className="stg-mobile-item no-click">
                 <div className="stg-item-icon voice">
-                  <IoVideocamOutline />
+                  {user?.isAudioMuted ? <IoVolumeMuteOutline /> : <IoVolumeHighOutline />}
                 </div>
                 <div className="stg-item-content">
-                  <span className="stg-item-label">Test Audio/ Video</span>
-                  <span className="stg-item-hint">Verify camera and microphone</span>
+                  <span className="stg-item-label">Mute B-01 Voice</span>
+                  <span className="stg-item-hint">Silence character voice-overs</span>
                 </div>
-                <IoChevronForward className="stg-item-chevron" />
-              </button>
+                <div className="sp-toggle">
+                  <input 
+                    type="checkbox" 
+                    id="mute-voice-toggle-mobile"
+                    className="sp-toggle-input"
+                    checked={!!user?.isAudioMuted}
+                    onChange={async () => {
+                      const nextMute = !user?.isAudioMuted;
+                      await updateUserMetadata({ is_audio_muted: nextMute });
+                      localStorage.setItem('bigkas_global_audio_muted_v1', nextMute ? '1' : '0');
+                    }}
+                  />
+                  <label htmlFor="mute-voice-toggle-mobile" className="sp-toggle-slider" />
+                </div>
+              </div>
             </div>
           </section>
 

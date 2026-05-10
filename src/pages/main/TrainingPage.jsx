@@ -1362,11 +1362,7 @@ function TrainingPage() {
           type="button"
           className="history-back-to-list-btn tp-back-to-history-btn"
           onClick={() => {
-            if (isActive) {
-              setShowExitConfirm(true);
-            } else {
-              navigate(ROUTES.ACTIVITY);
-            }
+            setShowExitConfirm(true);
           }}
         >
           <IoChevronBack /> Back to Dashboard

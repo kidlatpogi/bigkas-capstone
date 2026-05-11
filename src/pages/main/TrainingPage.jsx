@@ -199,7 +199,13 @@ function TrainingPage() {
   }, [objectiveText]);
 
   /* Recording state */
-  const [status, setStatus] = useState('idle'); // idle | countdown | recording | paused | analysing | error
+  const [status, setStatus] = useState(() => {
+    // Detect missing navigation state on mount (e.g. refresh)
+    if (!state || (!state.script && focus === 'scripted' && !isPreTestSession)) {
+      return 'missing-data';
+    }
+    return 'idle';
+  });
   const [countdown, setCountdown] = useState(3);
   const [elapsedSec, setElapsedSec] = useState(0);
   const [errorMsg, setErrorMsg] = useState('');
@@ -1685,10 +1691,46 @@ function TrainingPage() {
       )}
 
       {/* ── Error Banner ── */}
-      {status === 'error' && (
-        <div className="tp-error-banner">
-          <span>{errorMsg}</span>
-          <button className="tp-error-retry" onClick={handleRestart}>Retry</button>
+      {/* ── Error / Missing Data View ── */}
+      {(status === 'error' || status === 'missing-data') && (
+        <div className="tp-overlay">
+          <section className="tp-analysing-view tp-error-view">
+            <div className="profiling-unit">
+              <article className="analyzing-bubble analyzing-bubble--error" aria-label="Error message">
+                <p className="analyzing-bubble-kicker">B-01:</p>
+                <p className="analyzing-bubble-title">
+                  {status === 'missing-data' ? 'Session Interrupted!' : 'Something went wrong!'}
+                </p>
+                
+                <p className="analyzing-bubble-text">
+                  {status === 'missing-data' 
+                    ? "It looks like your session was lost during a refresh. Let's head back to the Journey to pick a topic and start fresh!"
+                    : (errorMsg || "I encountered an unexpected hiccup while processing your session. Don't worry, your progress is safe—let's try again!")}
+                </p>
+
+                <div className="tp-permission-actions tp-error-actions">
+                  {status === 'error' ? (
+                    <button className="tp-permission-retry" onClick={handleRestart}>
+                      Try Again
+                    </button>
+                  ) : (
+                    <button className="tp-permission-retry" onClick={() => navigate(ROUTES.ACTIVITY)}>
+                      Go to Journey
+                    </button>
+                  )}
+                  <button className="tp-permission-back" onClick={() => navigate(-1)}>
+                    Go Back
+                  </button>
+                </div>
+              </article>
+
+              <div className="analyzing-robot-wrap">
+                <div className="analyzing-robot-media" aria-hidden="true">
+                  <img src={getSpriteUrl('Robot/0012.webp')} alt="" className="analyzing-robot-image" />
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       )}
 

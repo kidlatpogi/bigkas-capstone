@@ -8,8 +8,10 @@ import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import { isValidEmail } from '../../utils/validators';
 import { motion } from 'framer-motion';
+import { getAssetUrl } from '../../utils/assetUtils';
 import './AdminLoginPage.css';
-import bigkasLogo from '../../assets/logos/0015.png';
+
+const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 
 const ADMIN_LOGIN_LOCKOUT_UNTIL_KEY = 'bigkas_admin_login_lockout_until';
 

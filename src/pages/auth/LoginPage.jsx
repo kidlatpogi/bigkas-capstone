@@ -1,19 +1,39 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { IoChevronBack } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
 import { isValidEmail } from '../../utils/validators';
 import { ROUTES } from '../../utils/constants';
 import PasswordToggle from '../../components/common/PasswordToggle';
-import googleLogo from '../../assets/logos/Google-Logo.png';
 import { motion, AnimatePresence } from 'framer-motion';
-import Grainient from './Grainient';
 import PushButton from '../../components/common/PushButton';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import './LoginPage.css';
-import bigkasLogo from '../../assets/logos/0015.png';
+
+// Lazy load the specialized mobile version
+const LoginPageMobile = lazy(() => import('./LoginPageMobile'));
+
+const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 
 const LOGIN_LOCKOUT_UNTIL_KEY = 'bigkas_login_lockout_until';
+
+const INSIGHT_WORDS = [
+  { text: 'Visual', size: '1rem', opacity: 0.8, top: '15%', left: '12%', delay: 0 },
+  { text: 'Vocal', size: '0.95rem', opacity: 0.7, top: '22%', left: '80%', delay: 1 },
+  { text: 'Verbal', size: '0.9rem', opacity: 0.6, top: '68%', left: '8%', delay: 0.5 },
+  { text: 'Gesture', size: '1.1rem', opacity: 0.9, top: '12%', left: '65%', delay: 2 },
+  { text: 'Eye Contact', size: '1rem', opacity: 0.75, top: '55%', left: '82%', delay: 1.5 },
+  { text: 'Jitter', size: '0.8rem', opacity: 0.5, top: '78%', left: '70%', delay: 3 },
+  { text: 'Shimmer', size: '0.9rem', opacity: 0.65, top: '38%', left: '6%', delay: 2.5 },
+  { text: 'Confidence', size: '1.15rem', opacity: 0.95, top: '50%', left: '10%', delay: 0 },
+  { text: 'Clarity', size: '1rem', opacity: 0.8, top: '82%', left: '22%', delay: 4 },
+  { text: 'Presence', size: '1.1rem', opacity: 0.85, top: '18%', left: '42%', delay: 1.2 },
+  { text: 'Empower', size: '0.9rem', opacity: 0.6, top: '72%', left: '48%', delay: 2.2 },
+  { text: 'Growth', size: '1.05rem', opacity: 0.8, top: '8%', left: '85%', delay: 0.8 },
+  { text: 'Flow', size: '1rem', opacity: 0.7, top: '48%', left: '88%', delay: 3.5 },
+  { text: 'Impact', size: '1.1rem', opacity: 0.9, top: '30%', left: '18%', delay: 4.5 },
+  { text: 'Authentic', size: '0.95rem', opacity: 0.75, top: '62%', left: '60%', delay: 5 },
+];
 
 function getStoredLockoutSeconds() {
   const storedUnlockTime = window.localStorage.getItem(LOGIN_LOCKOUT_UNTIL_KEY);
@@ -52,7 +72,10 @@ function resolvePostLoginRoute(user) {
  * Login Page — 1:1 from Figma screenshot
  * Split layout: left branding panel + right form panel
  */
-function LoginPage({ managePageClass = true }) {
+/**
+ * Desktop-optimized version of the Login Page
+ */
+function LoginPageDesktop({ managePageClass = true }) {
   const layoutRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -136,6 +159,15 @@ function LoginPage({ managePageClass = true }) {
       }
     };
   }, [managePageClass]);
+
+  // SEO Metadata
+  useEffect(() => {
+    document.title = 'Login | Bigkas — Master Public Speaking';
+    const metaDesc = document.querySelector('meta[name="description"]') || document.createElement('meta');
+    metaDesc.name = 'description';
+    metaDesc.content = 'Log in to Bigkas and continue your AI-powered journey to public speaking excellence. Analyze your voice, master your presence, and empower your communication.';
+    if (!metaDesc.parentNode) document.head.appendChild(metaDesc);
+  }, []);
 
   useEffect(() => {
     if (!layoutRef.current || typeof ResizeObserver === 'undefined') return undefined;
@@ -318,26 +350,6 @@ function LoginPage({ managePageClass = true }) {
     visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
   };
 
-  const robotSprite = getSpriteUrl('Robot/0001.webp');
-
-  const insightWords = [
-    { text: 'Visual', size: '1rem', opacity: 0.8, top: '15%', left: '12%', delay: 0 },
-    { text: 'Vocal', size: '0.95rem', opacity: 0.7, top: '22%', left: '80%', delay: 1 },
-    { text: 'Verbal', size: '0.9rem', opacity: 0.6, top: '68%', left: '8%', delay: 0.5 },
-    { text: 'Gesture', size: '1.1rem', opacity: 0.9, top: '12%', left: '65%', delay: 2 },
-    { text: 'Eye Contact', size: '1rem', opacity: 0.75, top: '55%', left: '82%', delay: 1.5 },
-    { text: 'Jitter', size: '0.8rem', opacity: 0.5, top: '78%', left: '70%', delay: 3 },
-    { text: 'Shimmer', size: '0.9rem', opacity: 0.65, top: '38%', left: '6%', delay: 2.5 },
-    { text: 'Confidence', size: '1.15rem', opacity: 0.95, top: '50%', left: '10%', delay: 0 },
-    { text: 'Clarity', size: '1rem', opacity: 0.8, top: '82%', left: '22%', delay: 4 },
-    { text: 'Presence', size: '1.1rem', opacity: 0.85, top: '18%', left: '42%', delay: 1.2 },
-    { text: 'Empower', size: '0.9rem', opacity: 0.6, top: '72%', left: '48%', delay: 2.2 },
-    { text: 'Growth', size: '1.05rem', opacity: 0.8, top: '8%', left: '85%', delay: 0.8 },
-    { text: 'Flow', size: '1rem', opacity: 0.7, top: '48%', left: '88%', delay: 3.5 },
-    { text: 'Impact', size: '1.1rem', opacity: 0.9, top: '30%', left: '18%', delay: 4.5 },
-    { text: 'Authentic', size: '0.95rem', opacity: 0.75, top: '62%', left: '60%', delay: 5 },
-  ];
-
   return (
     <div
       ref={layoutRef}
@@ -354,51 +366,52 @@ function LoginPage({ managePageClass = true }) {
           {/* Left Side: Branding & Visuals */}
           <div className="auth-visual-side">
             <motion.div variants={itemVariants} className="auth-brand-logo">
-              <img src={bigkasLogo} alt="Bigkas" className="auth-logo-img" />
+              <img 
+                src={bigkasLogo} 
+                alt="Bigkas" 
+                className="auth-logo-img" 
+                width="48" 
+                height="48" 
+                loading="eager" 
+              />
               <span>Bigkas</span>
             </motion.div>
             
             <div className="auth-visual-content">
               <motion.div 
-                className="auth-robot-img-wrap"
-                initial={{ opacity: 1, y: 0 }}
-                animate={{ 
-                  y: [0, -15, 0],
-                }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
+                className="auth-robot-img-wrap auth-robot-floating"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
               >
                 <div className="auth-robot-glow" />
-                <img src={getSpriteUrl('Robot/0001.webp')} alt="AI Companion" className="auth-robot-img" />
+                <img 
+                  src="https://assets.bigkas.site/Sprites/Robot/0001.webp" 
+                  alt="AI Companion" 
+                  className="auth-robot-img" 
+                  fetchpriority="high"
+                  loading="eager"
+                  width="460"
+                  height="460"
+                />
               </motion.div>
 
               {/* Floating Insight Cloud */}
-              {insightWords.map((word, i) => (
-                <motion.div 
+              {INSIGHT_WORDS.map((word, i) => (
+                <div 
                   key={i}
-                  className="insight-chip"
+                  className="insight-chip insight-chip-floating"
                   style={{ 
                     top: word.top, 
                     left: word.left, 
                     fontSize: word.size,
-                    opacity: word.opacity
-                  }}
-                  animate={{ 
-                    y: [0, -20, 0],
-                    x: [0, 15, 0],
-                  }}
-                  transition={{ 
-                    duration: 6 + (i % 4), 
-                    repeat: Infinity, 
-                    delay: word.delay,
-                    ease: "easeInOut"
+                    opacity: word.opacity,
+                    animationDelay: `${word.delay}s`,
+                    animationDuration: `${6 + (i % 4)}s`
                   }}
                 >
                   {word.text}
-                </motion.div>
+                </div>
               ))}
               <motion.h2 variants={itemVariants} className="auth-hero-tagline">
                 Master <span>Public Speaking</span>
@@ -419,7 +432,7 @@ function LoginPage({ managePageClass = true }) {
           {/* Right Side: Login Form */}
           <div className="auth-form-side">
             <div className="auth-form-inner">
-              <motion.h3 variants={itemVariants} className="auth-form-headline">Welcome Back</motion.h3>
+              <motion.h1 variants={itemVariants} className="auth-form-headline">Welcome Back</motion.h1>
               <motion.p variants={itemVariants} className="auth-form-subline">Please enter your credentials to continue</motion.p>
 
               <form className="auth-form" onSubmit={handleLogin}>
@@ -500,6 +513,7 @@ function LoginPage({ managePageClass = true }) {
                       onChange={handleChange}
                       placeholder="your@email.com"
                       disabled={isLoading || lockoutSeconds > 0}
+                      enterKeyHint="next"
                     />
                   </div>
                   {errors.email && <span className="field-error">{errors.email}</span>}
@@ -518,6 +532,7 @@ function LoginPage({ managePageClass = true }) {
                       placeholder="••••••••"
                       disabled={isLoading || lockoutSeconds > 0}
                       autoComplete="current-password"
+                      enterKeyHint="done"
                     />
                     <PasswordToggle
                       isVisible={showPassword}
@@ -539,6 +554,7 @@ function LoginPage({ managePageClass = true }) {
                     bgColor="#059669"
                     shadowColor="#047857"
                     className="login-submit-btn"
+                    aria-label="Log in to your account"
                   >
                     {isLoading ? (
                       <span className="loading-spinner" />
@@ -558,8 +574,9 @@ function LoginPage({ managePageClass = true }) {
                     className="google-signin-btn-v2"
                     onClick={handleGoogleSignIn}
                     disabled={isLoading}
+                    aria-label="Continue with Google"
                   >
-                    <img src={googleLogo} alt="" />
+                    <img src="https://assets.bigkas.site/Images/Google-Logo.webp" alt="" width="20" height="20" />
                     Continue with Google
                   </button>
                 </motion.div>
@@ -573,6 +590,29 @@ function LoginPage({ managePageClass = true }) {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+
+/**
+ * Main Responsive Wrapper for Login Page
+ * Switches between Desktop and Mobile/Tablet specialized versions
+ */
+function LoginPage() {
+  const [isMobileOrTablet, setIsMobileOrTablet] = useState(() => window.innerWidth < 1024);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileOrTablet(window.innerWidth < 1024);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return (
+    <Suspense fallback={null}>
+      {isMobileOrTablet ? <LoginPageMobile /> : <LoginPageDesktop />}
+    </Suspense>
   );
 }
 

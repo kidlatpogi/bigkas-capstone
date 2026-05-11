@@ -4,7 +4,9 @@ import LegalModal from '../../../components/Legal/LegalModal';
 import { TERMS_AND_CONDITIONS } from '../../../constants/legal/terms';
 import { PRIVACY_POLICY } from '../../../constants/legal/privacy';
 import { ROUTES } from '../../../utils/constants';
-import bigkasLogo from '../../../assets/logos/0015.png';
+import { getAssetUrl } from '../../../utils/assetUtils';
+
+const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 
 export default function LandingFooterSection({ navigateTo, onScrollToSection }) {
   const [legalModal, setLegalModal] = useState({ isOpen: false, title: '', content: '' });

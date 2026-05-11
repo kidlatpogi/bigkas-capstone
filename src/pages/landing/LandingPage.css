@@ -265,10 +265,6 @@ body.landing-page-active .figma-nav.nav-visible {
   color: #ffffff;
 }
 
-.figma-nav.nav-on-hero .landing-logo-img {
-  filter: brightness(0) invert(1);
-}
-
 .figma-nav.nav-on-hero .logo-text {
   color: #ffffff;
 }
@@ -277,20 +273,12 @@ body.landing-page-active .figma-nav.nav-on-green-sections {
   color: #ffffff;
 }
 
-body.landing-page-active .figma-nav.nav-on-green-sections .landing-logo-img {
-  filter: brightness(0) invert(1);
-}
-
 body.landing-page-active .figma-nav.nav-on-green-sections .logo-text {
   color: #ffffff;
 }
 
 body.landing-page-active .figma-nav.nav-on-last-section {
   color: #ffffff;
-}
-
-body.landing-page-active .figma-nav.nav-on-last-section .landing-logo-img {
-  filter: brightness(0) invert(1);
 }
 
 body.landing-page-active .figma-nav.nav-on-last-section .logo-text {

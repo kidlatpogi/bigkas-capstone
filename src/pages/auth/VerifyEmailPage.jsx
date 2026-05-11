@@ -4,9 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { authApi } from '@session/api/authApi';
 import { ROUTES } from '../../utils/constants';
 import PushButton from '../../components/common/PushButton';
-import bigkasLogo from '../../assets/logos/0015.png';
-import { getSpriteUrl } from '../../utils/assetUtils';
+import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import './VerifyEmailPage.css';
+
+const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 
 const OTP_LENGTH = 6;
 const RESEND_COOLDOWN_SECS = 60;
@@ -180,7 +181,15 @@ export default function VerifyEmailPage() {
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
               >
                 <div className="auth-robot-glow" />
-                <img src={getSpriteUrl('Robot/0001.webp')} alt="AI Companion" className="auth-robot-img" />
+                <img 
+                  src="https://assets.bigkas.site/Sprites/Robot/0001.webp" 
+                  alt="AI Companion" 
+                  className="auth-robot-img" 
+                  fetchpriority="high"
+                  loading="eager"
+                  width="460"
+                  height="460"
+                />
               </motion.div>
 
               {insightWords.map((word, i) => (

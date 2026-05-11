@@ -9,9 +9,10 @@ import { TERMS_AND_CONDITIONS } from '../../constants/legal/terms';
 import { PRIVACY_POLICY } from '../../constants/legal/privacy';
 import { motion, AnimatePresence } from 'framer-motion';
 import PushButton from '../../components/common/PushButton';
-import { getSpriteUrl } from '../../utils/assetUtils';
+import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import './RegisterPage.css';
-import bigkasLogo from '../../assets/logos/0015.png';
+
+const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 
 function RegisterPage({ managePageClass = true }) {
   const layoutRef = useRef(null);
@@ -210,7 +211,15 @@ function RegisterPage({ managePageClass = true }) {
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
               >
                 <div className="auth-robot-glow" />
-                <img src={getSpriteUrl('Robot/0001.webp')} alt="AI Companion" className="auth-robot-img" />
+                <img 
+                  src="https://assets.bigkas.site/Sprites/Robot/0001.webp" 
+                  alt="AI Companion" 
+                  className="auth-robot-img" 
+                  fetchpriority="high"
+                  loading="eager"
+                  width="460"
+                  height="460"
+                />
               </motion.div>
 
               {/* Floating Insight Cloud */}

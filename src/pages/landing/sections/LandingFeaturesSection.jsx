@@ -45,11 +45,11 @@ export default function LandingFeaturesSection({
               key={card.title}
               className={`feature-card-item ${featureCardIndex === index ? 'is-mobile-active' : ''}`}
             >
-              <Feature3DCard 
-                tone={card.tone} 
-                title={card.title} 
-                text={card.text} 
-                imageUrl={card.imageUrl} 
+              <Feature3DCard
+                tone={card.tone}
+                title={card.title}
+                text={card.text}
+                imageUrl={card.imageUrl}
                 srcSet={card.srcSet}
               />
             </div>

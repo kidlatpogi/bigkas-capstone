@@ -87,7 +87,7 @@ export default function LandingHowItWorksSection({ howSectionRef, showScrollIndi
                 alt="Bigkas on Laptop" 
                 className="how-visual-img" 
                 loading="lazy"
-                fetchpriority="high"
+                fetchPriority="high"
               />
             </motion.div>
 

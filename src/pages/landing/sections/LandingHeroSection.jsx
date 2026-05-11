@@ -22,7 +22,7 @@ export default function LandingHeroSection({
             srcSet="https://assets.bigkas.site/Images/GraduationSpeech.webp"
             alt="Bigkas coach" 
             className="hero-character" 
-            fetchpriority="high" 
+            fetchPriority="high" 
           />
         </div>
 

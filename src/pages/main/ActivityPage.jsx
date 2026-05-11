@@ -47,7 +47,7 @@ const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.png');
 const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.png');
 const crystalBallImage = getSpriteUrl('common/crystal-ball.png');
 const crownImage = getSpriteUrl('common/crown.png');
-import b01ChatHead from '../../assets/logos/0015.png';
+const b01ChatHead = getAssetUrl('Images/Bigkas-Logo.webp');
 import fireAnimationData from '../../assets/Lottie/fire.json';
 import { generateCoachInsights } from '../../utils/coachInsights';
 import './InnerPages.css';

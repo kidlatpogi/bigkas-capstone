@@ -1,7 +1,9 @@
 import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
-import bigkasLogo from '../../assets/logos/0015.png';
+import { getAssetUrl } from '../../utils/assetUtils';
 import './StaggeredMenu.css';
+
+const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 
 export const StaggeredMenu = ({
   position = 'right',

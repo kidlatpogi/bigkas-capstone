@@ -6,9 +6,10 @@ import { ROUTES } from '../../utils/constants';
 import PasswordToggle from '../../components/common/PasswordToggle';
 import PushButton from '../../components/common/PushButton';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getSpriteUrl } from '../../utils/assetUtils';
+import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import './ForgotPasswordPage.css';
-import bigkasLogo from '../../assets/logos/0015.png';
+
+const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 
 const OTP_LENGTH = 6;
 const RESEND_COOLDOWN_SECS = 60;
@@ -243,7 +244,15 @@ function ForgotPasswordPage({ managePageClass = true }) {
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
               >
                 <div className="auth-robot-glow" />
-                <img src={getSpriteUrl('Robot/0001.webp')} alt="AI Companion" className="auth-robot-img" />
+                <img 
+                  src="https://assets.bigkas.site/Sprites/Robot/0001.webp" 
+                  alt="AI Companion" 
+                  className="auth-robot-img" 
+                  fetchpriority="high"
+                  loading="eager"
+                  width="460"
+                  height="460"
+                />
               </motion.div>
 
               {insightWords.map((word, i) => (

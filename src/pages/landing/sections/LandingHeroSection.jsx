@@ -1,4 +1,4 @@
-import Button from '../../../components/common/Button';
+import PushButton from '../../../components/common/PushButton';
 import ScrollDownIndicator from '../../../components/common/ScrollDownIndicator';
 import { ROUTES } from '../../../utils/constants';
 
@@ -17,7 +17,13 @@ export default function LandingHeroSection({
     >
       <div className="section-shell hero-shell">
         <div className="hero-visual">
-          <img src="https://assets.bigkas.site/Images/GraduationSpeech.jpeg" alt="Bigkas coach" className="hero-character" fetchpriority="high" />
+          <img 
+            src="https://assets.bigkas.site/Images/GraduationSpeech.jpeg" 
+            srcSet="https://assets.bigkas.site/Images/GraduationSpeech.webp"
+            alt="Bigkas coach" 
+            className="hero-character" 
+            fetchpriority="high" 
+          />
         </div>
 
         <div className="hero-copy">
@@ -30,20 +36,22 @@ export default function LandingHeroSection({
               Bigkas provides a private, judgment-free space for Filipino learners to practice speaking through acoustic biomarkers and computer vision.
             </p>
             <div className="hero-actions">
-              <Button
-                variant="ink"
-                className="landing-btn--pill hero-cta hero-cta--forest-solid"
+              <PushButton
+                bgColor="#059669"
+                shadowColor="#047857"
+                className="hero-cta hero-cta--push-primary"
                 onClick={() => navigateTo(ROUTES.REGISTER)}
               >
                 Start Practicing - It&apos;s Free
-              </Button>
-              <Button
-                variant="outline"
-                className="landing-btn--pill hero-cta hero-cta--forest-outline"
+              </PushButton>
+              <PushButton
+                bgColor="#f18f01"
+                shadowColor="#d97706"
+                className="hero-cta hero-cta--push-secondary"
                 onClick={onSeeHowItWorks}
               >
                 See How it Works
-              </Button>
+              </PushButton>
             </div>
           </div>
         </div>

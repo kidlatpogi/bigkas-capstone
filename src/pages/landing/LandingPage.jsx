@@ -295,7 +295,13 @@ export default function LandingPage({ managePageClass = true }) {
             aria-label="Go to hero section"
           >
             <div className="landing-logo-wrapper">
-              <img src={bigkasLogo} alt="Bigkas" className="landing-logo-img" fetchpriority="high" />
+              <img 
+                src={bigkasLogo} 
+                srcSet={bigkasLogo}
+                alt="Bigkas" 
+                className="landing-logo-img" 
+                fetchpriority="high" 
+              />
               <span className="logo-text">Bigkas</span>
             </div>
           </button>

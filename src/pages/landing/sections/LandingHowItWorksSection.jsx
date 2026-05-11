@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion';
-import { getSpriteUrl } from '../../../utils/assetUtils';
 import ScrollDownIndicator from '../../../components/common/ScrollDownIndicator';
 
 export default function LandingHowItWorksSection({ howSectionRef, showScrollIndicator }) {
@@ -69,20 +68,27 @@ export default function LandingHowItWorksSection({ howSectionRef, showScrollIndi
           </motion.div>
 
           <div className="how-visual-center">
-            {/* Center Robot - Mirroring Login Page */}
+            {/* Center Visual - Laptop */}
             <motion.div 
-              className="how-robot-wrap"
+              className="how-visual-wrap"
               animate={{ 
-                y: [0, -20, 0],
+                y: [0, -12, 0],
               }}
               transition={{
-                duration: 5,
+                duration: 6,
                 repeat: Infinity,
                 ease: "easeInOut"
               }}
             >
-              <div className="how-robot-glow" />
-              <img src={getSpriteUrl('Robot/0001.webp')} alt="AI Coach" className="how-robot-img" loading="lazy" />
+              <div className="how-visual-glow" />
+              <img 
+                src="https://assets.bigkas.site/Images/Laptop.webp" 
+                srcSet="https://assets.bigkas.site/Images/Laptop.webp 1x"
+                alt="Bigkas on Laptop" 
+                className="how-visual-img" 
+                loading="lazy"
+                fetchpriority="high"
+              />
             </motion.div>
 
             {/* Floating Cards */}
@@ -115,13 +121,6 @@ export default function LandingHowItWorksSection({ howSectionRef, showScrollIndi
           </div>
         </div>
       </motion.div>
-
-      {/* Decorative soundwaves from Login Page */}
-      <div className="how-visual-waves">
-        {[...Array(24)].map((_, i) => (
-          <div key={i} className={`how-visual-wave how-visual-wave-${(i % 6) + 1}`} />
-        ))}
-      </div>
 
       <ScrollDownIndicator hidden={!showScrollIndicator} white={true} />
     </section>

@@ -701,7 +701,7 @@ body.landing-page-active .figma-nav.nav-on-last-section .figma-nav-actions .nav-
 
 .hero-shell {
   display: grid;
-  grid-template-rows: 82% 18%;
+  grid-template-rows: 1fr auto;
   align-items: start;
   margin: 0;
   width: 100%;
@@ -739,7 +739,7 @@ body.landing-page-active .figma-nav.nav-on-last-section .figma-nav-actions .nav-
   gap: 36px;
   width: 100%;
   margin-top: calc(-220px * var(--hero-progress));
-  padding: 14px 140px 0;
+  padding: 14px clamp(24px, 8vw, 140px) 0;
   box-sizing: border-box;
   text-align: left;
   position: relative;
@@ -833,10 +833,24 @@ body.landing-page-active .figma-nav.nav-on-last-section .figma-nav-actions .nav-
 }
 
 .hero-actions {
-  margin-top: 16px;
+  margin-top: 0.5rem;
   display: flex;
-  gap: 12px;
+  gap: clamp(8px, 2vw, 16px);
   flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.hero-actions .hero-cta button {
+  font-family: 'Fredoka', sans-serif !important;
+  font-size: clamp(0.85rem, 1.2vw, 1rem) !important;
+  font-weight: 500 !important;
+  height: clamp(48px, 5vh, 52px) !important;
+  border-radius: 999px !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  padding: 0 clamp(20px, 2.5vw, 32px) !important;
+  white-space: nowrap;
 }
 
 body.landing-page-active .hero-actions .hero-cta--forest-solid.bigkas-btn.landing-btn--pill {

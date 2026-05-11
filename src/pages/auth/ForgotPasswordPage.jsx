@@ -5,20 +5,270 @@ import { isValidEmail, validatePassword } from '../../utils/validators';
 import { ROUTES } from '../../utils/constants';
 import PasswordToggle from '../../components/common/PasswordToggle';
 import PushButton from '../../components/common/PushButton';
-import { motion, AnimatePresence } from 'framer-motion';
-import { getSpriteUrl } from '../../utils/assetUtils';
+import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
+import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import './ForgotPasswordPage.css';
-import bigkasLogo from '../../assets/logos/0015.png';
 
-const OTP_LENGTH = 6;
-const RESEND_COOLDOWN_SECS = 60;
+import ForgotPasswordPageMobile from './ForgotPasswordPageMobile';
 
-function mapOtpError(error) {
-  if (!error) return 'Something went wrong. Please try again.';
-  const msg = String(error.message || '').toLowerCase();
-  if (msg.includes('expired')) return 'This code has expired. Request a new one.';
-  if (msg.includes('invalid') || msg.includes('incorrect')) return 'Incorrect code. Please check again.';
-  return error.message || 'Verification failed.';
+const robotImgUrl = "https://assets.bigkas.site/Sprites/Robot/0001.webp";
+const bigkasLogoUrl = "https://assets.bigkas.site/Images/Bigkas-Logo.webp";
+
+// Module-level preloading for LCP optimization
+if (typeof window !== 'undefined') {
+  const p1 = new Image(); p1.src = robotImgUrl;
+  const p2 = new Image(); p2.src = bigkasLogoUrl;
+}
+
+function ForgotPasswordPageDesktop({
+  email,
+  setEmail,
+  digits,
+  inputRefs,
+  newPassword,
+  setNewPassword,
+  confirmPassword,
+  setConfirmPassword,
+  showPassword,
+  setShowPassword,
+  showConfirm,
+  setShowConfirm,
+  error,
+  infoMessage,
+  step,
+  isLoading,
+  resendCooldown,
+  handleDigitChange,
+  handleKeyDown,
+  handleRequestCode,
+  handleSubmit,
+  passwordStrength,
+  strengthLabel,
+  strengthColor,
+  layoutRef,
+  layoutMode,
+  navigate
+}) {
+  const isRequestStep = step === 'request';
+  const isVerifyStep = step === 'verify';
+  const isResetStep = step === 'reset';
+  const isDoneStep = step === 'done';
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+  };
+
+  const insightWords = [
+    { text: 'Visual', size: '1rem', opacity: 0.8, top: '15%', left: '12%', delay: 0 },
+    { text: 'Vocal', size: '0.95rem', opacity: 0.7, top: '22%', left: '80%', delay: 1 },
+    { text: 'Verbal', size: '0.9rem', opacity: 0.6, top: '68%', left: '8%', delay: 0.5 },
+    { text: 'Gesture', size: '1.1rem', opacity: 0.9, top: '12%', left: '65%', delay: 2 },
+    { text: 'Eye Contact', size: '1rem', opacity: 0.75, top: '55%', left: '82%', delay: 1.5 },
+    { text: 'Confidence', size: '1.15rem', opacity: 0.95, top: '50%', left: '10%', delay: 0 },
+    { text: 'Presence', size: '1.1rem', opacity: 0.85, top: '18%', left: '42%', delay: 1.2 },
+  ];
+
+  return (
+    <LazyMotion features={domAnimation}>
+      <div ref={layoutRef} className="auth-page-v2" data-layout={layoutMode}>
+        <div className="auth-container">
+          <m.div
+            className="auth-card"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            <div className="auth-visual-side">
+              <div className="auth-brand-logo">
+                <img 
+                  src={bigkasLogoUrl} 
+                  alt="Bigkas" 
+                  className="auth-logo-img" 
+                  width="48" 
+                  height="48" 
+                  loading="eager" 
+                  fetchpriority="high"
+                />
+                <span>Bigkas</span>
+              </div>
+              <div className="auth-visual-content">
+                <div className="auth-robot-img-wrap">
+                  <div className="auth-robot-glow" />
+                  <img 
+                    src={robotImgUrl} 
+                    alt="AI Companion" 
+                    className="auth-robot-img" 
+                    fetchpriority="high"
+                    loading="eager"
+                    width="460"
+                    height="460"
+                  />
+                </div>
+
+                {insightWords.map((word, i) => (
+                  <m.div 
+                    key={i}
+                    className="insight-chip"
+                    style={{ top: word.top, left: word.left, fontSize: word.size, opacity: word.opacity }}
+                    animate={{ y: [0, -20, 0], x: [0, 15, 0] }}
+                    transition={{ duration: 6 + (i % 4), repeat: Infinity, delay: word.delay, ease: "easeInOut" }}
+                  >
+                    {word.text}
+                  </m.div>
+                ))}
+
+                <m.h2 variants={itemVariants} className="auth-hero-tagline">
+                  Master <span>Public Speaking</span>
+                </m.h2>
+                <m.p variants={itemVariants} className="auth-hero-desc">
+                  Recovery journey starts here. Let's get you back in.
+                </m.p>
+              </div>
+            </div>
+
+            <div className="auth-form-side">
+              <div className="auth-form-inner">
+                <m.h1 variants={itemVariants} className="auth-form-headline">
+                  {isDoneStep ? 'Success!' : 'Forgot Password'}
+                </m.h1>
+                <m.p variants={itemVariants} className="auth-form-subline">
+                  {isRequestStep && 'Enter your email to receive a reset code.'}
+                  {isVerifyStep && 'We sent a 6-digit code to your email.'}
+                  {isResetStep && 'Create a strong new password.'}
+                  {isDoneStep && 'Your password has been updated.'}
+                </m.p>
+
+                <form className="auth-form" onSubmit={handleSubmit}>
+                  <AnimatePresence mode="wait">
+                    {(error || infoMessage) && !isDoneStep && (
+                      <m.div 
+                        key={error ? 'err' : 'info'}
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className={`auth-status-banner ${error ? 'is-error' : 'is-success'}`}
+                      >
+                        {error || infoMessage}
+                      </m.div>
+                    )}
+                  </AnimatePresence>
+
+                  {isRequestStep && (
+                    <m.div variants={itemVariants} className="form-group-v2">
+                      <label>Email Address</label>
+                      <div className="input-field-wrap">
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="name@gmail.com"
+                          disabled={isLoading}
+                          autoFocus
+                        />
+                      </div>
+                    </m.div>
+                  )}
+
+                  {isVerifyStep && (
+                    <m.div variants={itemVariants} className="form-group-v2">
+                      <label>6-Digit Code</label>
+                      <div className="otp-container-v2">
+                        {digits.map((digit, i) => (
+                          <input
+                            key={i}
+                            ref={(el) => (inputRefs.current[i] = el)}
+                            className="otp-box-v2"
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={1}
+                            value={digit}
+                            onChange={(e) => handleDigitChange(e, i)}
+                            onKeyDown={(e) => handleKeyDown(e, i)}
+                          />
+                        ))}
+                      </div>
+                      <div className="form-footer-row" style={{ justifyContent: 'flex-end', display: 'flex' }}>
+                        {resendCooldown > 0 ? (
+                          <span className="resend-timer-v2">Resend in {resendCooldown}s</span>
+                        ) : (
+                          <button type="button" className="resend-link-v2" onClick={handleRequestCode}>Resend Code</button>
+                        )}
+                      </div>
+                    </m.div>
+                  )}
+
+                  {isResetStep && (
+                    <>
+                      <m.div variants={itemVariants} className="form-group-v2">
+                        <label>New Password</label>
+                        <div className="input-field-wrap">
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            placeholder="••••••••"
+                          />
+                          <PasswordToggle isVisible={showPassword} onToggle={() => setShowPassword(!showPassword)} />
+                        </div>
+                        {newPassword && (
+                          <div className="pw-strength-v2">
+                            <div className="pw-strength-track">
+                              <div className="pw-strength-fill" style={{ width: `${(passwordStrength / 4) * 100}%`, background: strengthColor }} />
+                            </div>
+                            <span style={{ color: strengthColor }}>{strengthLabel}</span>
+                          </div>
+                        )}
+                      </m.div>
+                      <m.div variants={itemVariants} className="form-group-v2">
+                        <label>Confirm Password</label>
+                        <div className="input-field-wrap">
+                          <input
+                            type={showConfirm ? 'text' : 'password'}
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="••••••••"
+                          />
+                          <PasswordToggle isVisible={showConfirm} onToggle={() => setShowConfirm(!showConfirm)} />
+                        </div>
+                      </m.div>
+                    </>
+                  )}
+
+                  {!isDoneStep && (
+                    <m.div variants={itemVariants} className="form-actions-v2">
+                      <PushButton type="submit" disabled={isLoading} bgColor="#059669" shadowColor="#047857">
+                        {isLoading ? <span className="loading-spinner" /> : (
+                          isRequestStep ? 'Send Code' : isVerifyStep ? 'Verify Code' : 'Reset Password'
+                        )}
+                      </PushButton>
+                    </m.div>
+                  )}
+
+                  {isDoneStep && (
+                    <m.div variants={itemVariants} className="form-actions-v2">
+                      <PushButton type="button" onClick={() => navigate(ROUTES.LOGIN)} bgColor="#059669" shadowColor="#047857">
+                        Back to Login
+                      </PushButton>
+                    </m.div>
+                  )}
+
+                  <m.div variants={itemVariants} className="signup-prompt-v2">
+                    <Link to={ROUTES.LOGIN}>Return to Login</Link>
+                  </m.div>
+                </form>
+              </div>
+            </div>
+          </m.div>
+        </div>
+      </div>
+    </LazyMotion>
+  );
 }
 
 function ForgotPasswordPage({ managePageClass = true }) {
@@ -201,211 +451,39 @@ function ForgotPasswordPage({ managePageClass = true }) {
     else if (isResetStep) handleSetNewPassword();
   };
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+  const commonProps = {
+    email, setEmail, digits, inputRefs, newPassword, setNewPassword,
+    confirmPassword, setConfirmPassword, showPassword, setShowPassword,
+    showConfirm, setShowConfirm, error, infoMessage, step, isLoading,
+    resendCooldown, handleDigitChange, handleKeyDown, handleRequestCode,
+    handleSubmit, passwordStrength, strengthLabel, strengthColor,
+    layoutRef, layoutMode, navigate, bigkasLogo: bigkasLogoUrl
   };
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
-  };
+  const [isMobileOrTablet, setIsMobileOrTablet] = useState(() => window.innerWidth < 1024);
 
-  const insightWords = [
-    { text: 'Visual', size: '1rem', opacity: 0.8, top: '15%', left: '12%', delay: 0 },
-    { text: 'Vocal', size: '0.95rem', opacity: 0.7, top: '22%', left: '80%', delay: 1 },
-    { text: 'Verbal', size: '0.9rem', opacity: 0.6, top: '68%', left: '8%', delay: 0.5 },
-    { text: 'Gesture', size: '1.1rem', opacity: 0.9, top: '12%', left: '65%', delay: 2 },
-    { text: 'Eye Contact', size: '1rem', opacity: 0.75, top: '55%', left: '82%', delay: 1.5 },
-    { text: 'Confidence', size: '1.15rem', opacity: 0.95, top: '50%', left: '10%', delay: 0 },
-    { text: 'Presence', size: '1.1rem', opacity: 0.85, top: '18%', left: '42%', delay: 1.2 },
-  ];
+  useEffect(() => {
+    const handleResize = () => setIsMobileOrTablet(window.innerWidth < 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  return (
-    <div ref={layoutRef} className="auth-page-v2" data-layout={layoutMode}>
-      <div className="auth-container">
-        <motion.div
-          className="auth-card"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <div className="auth-visual-side">
-            <motion.div variants={itemVariants} className="auth-brand-logo">
-              <img src={bigkasLogo} alt="Bigkas" className="auth-logo-img" />
-              <span>Bigkas</span>
-            </motion.div>
-            <div className="auth-visual-content">
-              <motion.div 
-                className="auth-robot-img-wrap"
-                initial={{ opacity: 1, y: 0 }}
-                animate={{ y: [0, -15, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              >
-                <div className="auth-robot-glow" />
-                <img src={getSpriteUrl('Robot/0001.webp')} alt="AI Companion" className="auth-robot-img" />
-              </motion.div>
-
-              {insightWords.map((word, i) => (
-                <motion.div 
-                  key={i}
-                  className="insight-chip"
-                  style={{ top: word.top, left: word.left, fontSize: word.size, opacity: word.opacity }}
-                  animate={{ y: [0, -20, 0], x: [0, 15, 0] }}
-                  transition={{ duration: 6 + (i % 4), repeat: Infinity, delay: word.delay, ease: "easeInOut" }}
-                >
-                  {word.text}
-                </motion.div>
-              ))}
-
-              <motion.h2 variants={itemVariants} className="auth-hero-tagline">
-                Master <span>Public Speaking</span>
-              </motion.h2>
-              <motion.p variants={itemVariants} className="auth-hero-desc">
-                Recovery journey starts here. Let's get you back in.
-              </motion.p>
-            </div>
-            <div className="auth-visual-waves">
-              {[...Array(24)].map((_, i) => (
-                <div key={i} className={`auth-visual-wave auth-visual-wave-${(i % 6) + 1}`} />
-              ))}
-            </div>
-          </div>
-
-          <div className="auth-form-side">
-            <div className="auth-form-inner">
-              <motion.h3 variants={itemVariants} className="auth-form-headline">
-                {isDoneStep ? 'Success!' : 'Forgot Password'}
-              </motion.h3>
-              <motion.p variants={itemVariants} className="auth-form-subline">
-                {isRequestStep && 'Enter your email to receive a reset code.'}
-                {isVerifyStep && 'We sent a 6-digit code to your email.'}
-                {isResetStep && 'Create a strong new password.'}
-                {isDoneStep && 'Your password has been updated.'}
-              </motion.p>
-
-              <form className="auth-form" onSubmit={handleSubmit}>
-                <AnimatePresence mode="wait">
-                  {(error || infoMessage) && !isDoneStep && (
-                    <motion.div 
-                      key={error ? 'err' : 'info'}
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className={`auth-status-banner ${error ? 'is-error' : 'is-success'}`}
-                    >
-                      {error || infoMessage}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {isRequestStep && (
-                  <motion.div variants={itemVariants} className="form-group-v2">
-                    <label>Email Address</label>
-                    <div className="input-field-wrap">
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="name@gmail.com"
-                        disabled={isLoading}
-                        autoFocus
-                      />
-                    </div>
-                  </motion.div>
-                )}
-
-                {isVerifyStep && (
-                  <motion.div variants={itemVariants} className="form-group-v2">
-                    <label>6-Digit Code</label>
-                    <div className="otp-container-v2">
-                      {digits.map((digit, i) => (
-                        <input
-                          key={i}
-                          ref={(el) => (inputRefs.current[i] = el)}
-                          className="otp-box-v2"
-                          type="text"
-                          inputMode="numeric"
-                          maxLength={1}
-                          value={digit}
-                          onChange={(e) => handleDigitChange(e, i)}
-                          onKeyDown={(e) => handleKeyDown(e, i)}
-                        />
-                      ))}
-                    </div>
-                    {resendCooldown > 0 ? (
-                      <span className="resend-timer-v2">Resend in {resendCooldown}s</span>
-                    ) : (
-                      <button type="button" className="resend-link-v2" onClick={handleRequestCode}>Resend Code</button>
-                    )}
-                  </motion.div>
-                )}
-
-                {isResetStep && (
-                  <>
-                    <motion.div variants={itemVariants} className="form-group-v2">
-                      <label>New Password</label>
-                      <div className="input-field-wrap">
-                        <input
-                          type={showPassword ? 'text' : 'password'}
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          placeholder="••••••••"
-                        />
-                        <PasswordToggle isVisible={showPassword} onToggle={() => setShowPassword(!showPassword)} />
-                      </div>
-                      {newPassword && (
-                        <div className="pw-strength-v2">
-                          <div className="pw-strength-track">
-                            <div className="pw-strength-fill" style={{ width: `${(passwordStrength / 4) * 100}%`, background: strengthColor }} />
-                          </div>
-                          <span style={{ color: strengthColor }}>{strengthLabel}</span>
-                        </div>
-                      )}
-                    </motion.div>
-                    <motion.div variants={itemVariants} className="form-group-v2">
-                      <label>Confirm Password</label>
-                      <div className="input-field-wrap">
-                        <input
-                          type={showConfirm ? 'text' : 'password'}
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          placeholder="••••••••"
-                        />
-                        <PasswordToggle isVisible={showConfirm} onToggle={() => setShowConfirm(!showConfirm)} />
-                      </div>
-                    </motion.div>
-                  </>
-                )}
-
-                {!isDoneStep && (
-                  <motion.div variants={itemVariants} className="form-actions-v2">
-                    <PushButton type="submit" disabled={isLoading} bgColor="#059669" shadowColor="#047857">
-                      {isLoading ? <span className="loading-spinner" /> : (
-                        isRequestStep ? 'Send Code' : isVerifyStep ? 'Verify Code' : 'Reset Password'
-                      )}
-                    </PushButton>
-                  </motion.div>
-                )}
-
-                {isDoneStep && (
-                  <motion.div variants={itemVariants} className="form-actions-v2">
-                    <PushButton type="button" onClick={() => navigate(ROUTES.LOGIN)} bgColor="#059669" shadowColor="#047857">
-                      Back to Login
-                    </PushButton>
-                  </motion.div>
-                )}
-
-                <motion.div variants={itemVariants} className="signup-prompt-v2">
-                  <Link to={ROUTES.LOGIN}>Return to Login</Link>
-                </motion.div>
-              </form>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    </div>
+  return isMobileOrTablet ? (
+    <ForgotPasswordPageMobile {...commonProps} />
+  ) : (
+    <ForgotPasswordPageDesktop {...commonProps} />
   );
+}
+
+const OTP_LENGTH = 6;
+const RESEND_COOLDOWN_SECS = 60;
+
+function mapOtpError(error) {
+  if (!error) return 'Something went wrong. Please try again.';
+  const msg = String(error.message || '').toLowerCase();
+  if (msg.includes('expired')) return 'This code has expired. Request a new one.';
+  if (msg.includes('invalid') || msg.includes('incorrect')) return 'Incorrect code. Please check again.';
+  return error.message || 'Verification failed.';
 }
 
 export default ForgotPasswordPage;

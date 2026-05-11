@@ -132,6 +132,7 @@ body.login-page-active {
   text-align: center;
   color: #ffffff;
   gap: clamp(24px, 5vh, 48px);
+  contain: content; /* Isolate this heavy visual side from rest of layout */
 }
 
 .auth-visual-side::before,
@@ -259,7 +260,7 @@ body.login-page-active {
 }
 
 .auth-hero-tagline span {
-  color: #f97316; /* Vibrant brand orange for high visibility */
+  color: #f18f01; /* Vibrant brand orange for high visibility */
 }
 
 .auth-hero-desc {
@@ -292,11 +293,13 @@ body.login-page-active {
   border-radius: 999px 999px 0 0;
   animation: visualWaveAnim 1.8s ease-in-out infinite;
   min-width: 4px;
+  transform-origin: bottom;
+  will-change: transform;
 }
 
 @keyframes visualWaveAnim {
-  0%, 100% { height: 20px; }
-  50% { height: 80px; }
+  0%, 100% { transform: scaleY(0.25); }
+  50% { transform: scaleY(1); }
 }
 
 .auth-visual-wave-1 { animation-delay: 0.1s; }
@@ -305,6 +308,27 @@ body.login-page-active {
 .auth-visual-wave-4 { animation-delay: 0.2s; }
 .auth-visual-wave-5 { animation-delay: 0.4s; }
 .auth-visual-wave-6 { animation-delay: 0.6s; }
+
+/* Optimized Floating Animations */
+@keyframes floatRobot {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+
+@keyframes floatChip {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(15px, -20px); }
+}
+
+.auth-robot-floating {
+  animation: floatRobot 4s ease-in-out infinite;
+  will-change: transform;
+}
+
+.insight-chip-floating {
+  animation: floatChip 6s ease-in-out infinite;
+  will-change: transform;
+}
 
 /* Form Side */
 .auth-form-side {
@@ -315,6 +339,7 @@ body.login-page-active {
   justify-content: center;
   overflow-y: auto;
   min-height: 0;
+  contain: layout; /* Isolate form side layout */
 }
 
 .auth-form-inner {
@@ -402,6 +427,29 @@ body.login-page-active {
   outline: none !important;
 }
 
+/* Password Toggle specific padding */
+.form-group-v2 .input-field-wrap input[type="password"],
+.form-group-v2 .input-field-wrap input[type="text"] {
+  padding-right: 65px;
+}
+
+.pw-toggle-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--emerald-700);
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 10px;
+  z-index: 10;
+  text-transform: capitalize;
+}
+
 .input-field-wrap input.is-invalid {
   border-color: #ef4444;
 }
@@ -412,11 +460,7 @@ body.login-page-active {
   margin-top: 4px;
 }
 
-.form-actions-v2 {
-  margin-top: 10px;
-}
-
-.login-submit-btn button {
+.form-actions-v2 button {
   font-family: 'Fredoka', sans-serif !important;
   font-size: 1.05rem !important;
   height: 56px !important;

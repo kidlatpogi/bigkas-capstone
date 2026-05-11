@@ -9,8 +9,10 @@ import {
 } from 'react-icons/io5';
 import { ROUTES } from '../../utils/constants';
 import ProfileModal from './ProfileModal';
+import { getAssetUrl } from '../../utils/assetUtils';
 import './BottomNav.css';
-import bigkasLogo from '../../assets/logos/0015.png';
+
+const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 
 const NAV_ITEMS = [
   { label: 'Home', to: ROUTES.ACTIVITY, icon: IoHomeOutline, type: 'link' },

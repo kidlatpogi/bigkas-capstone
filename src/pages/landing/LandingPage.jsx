@@ -4,9 +4,11 @@ import { scroller } from 'react-scroll';
 import { ROUTES } from '../../utils/constants';
 import './LandingPage.css';
 import './sections/LandingSections.css';
-import bigkasLogo from '../../assets/logos/0015.png';
+import { getAssetUrl } from '../../utils/assetUtils';
 import Button from '../../components/common/Button';
 import StaggeredMenu from '../../components/common/StaggeredMenu';
+
+const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 import LandingHeroSection from './sections/LandingHeroSection';
 
 const LandingHowItWorksSection = lazy(() => import('./sections/LandingHowItWorksSection'));
@@ -284,7 +286,19 @@ export default function LandingPage({ managePageClass = true }) {
   return (
     <div className="figma-landing">
       <nav
-        className={`figma-nav ${activeTheme === 'dark' ? 'nav-theme-dark' : ''} ${activeSection === 'hero' ? 'nav-on-hero' : ''} ${activeSection === 'how-it-works' || activeSection === 'science' ? 'nav-on-green-sections' : ''} ${activeSection === 'features' ? 'nav-menu-black' : ''} ${activeSection === 'section-5' ? 'nav-on-last-section' : ''} ${menuOpen ? 'menu-open' : ''} ${isNavVisible ? 'nav-visible' : 'nav-hidden'}`}
+        className={[
+          'figma-nav',
+          activeTheme === 'dark' && 'nav-theme-dark',
+          activeSection === 'hero' && 'nav-on-hero',
+          (activeSection === 'how-it-works' || activeSection === 'science') &&
+            'nav-on-green-sections',
+          activeSection === 'features' && 'nav-menu-black',
+          activeSection === 'section-5' && 'nav-on-last-section',
+          menuOpen && 'menu-open',
+          isNavVisible ? 'nav-visible' : 'nav-hidden',
+        ]
+          .filter(Boolean)
+          .join(' ')}
         aria-label="Primary landing navigation"
       >
         <div className="figma-nav-inner">
@@ -295,7 +309,13 @@ export default function LandingPage({ managePageClass = true }) {
             aria-label="Go to hero section"
           >
             <div className="landing-logo-wrapper">
-              <img src={bigkasLogo} alt="Bigkas" className="landing-logo-img" fetchpriority="high" />
+              <img 
+                src={bigkasLogo} 
+                srcSet={bigkasLogo}
+                alt="Bigkas" 
+                className="landing-logo-img" 
+                fetchPriority="high"
+              />
               <span className="logo-text">Bigkas</span>
             </div>
           </button>

@@ -5,18 +5,21 @@ const FEATURE_CARDS = [
     tone: 'visual',
     title: 'Visual',
     imageUrl: 'https://assets.bigkas.site/Sprites/common/Visual.png',
+    srcSet: 'https://assets.bigkas.site/Sprites/common/Visual.webp',
     text: 'Uses computer vision to read your expressions, posture, and gestures. Bigkas helps your nonverbal signals match what you say so you look steady and intentional—not stiff or closed off.',
   },
   {
     tone: 'vocal',
     title: 'Vocal',
     imageUrl: 'https://assets.bigkas.site/Sprites/common/Vocal.png',
+    srcSet: 'https://assets.bigkas.site/Sprites/common/Vocal.webp',
     text: 'Detects shakiness and uneven volume tied to anxiety. By tracking these acoustic cues, Bigkas steadies your pitch and loudness for a clearer, more grounded delivery.',
   },
   {
     tone: 'verbal',
     title: 'Verbal',
     imageUrl: 'https://assets.bigkas.site/Sprites/common/Verbal.png',
+    srcSet: 'https://assets.bigkas.site/Sprites/common/Verbal.webp',
     text: 'Scores how clearly you pronounce words and phrases. You get specific feedback on sounds to tighten so listeners can follow you without strain.',
   },
 ];
@@ -42,11 +45,12 @@ export default function LandingFeaturesSection({
               key={card.title}
               className={`feature-card-item ${featureCardIndex === index ? 'is-mobile-active' : ''}`}
             >
-              <Feature3DCard 
-                tone={card.tone} 
-                title={card.title} 
-                text={card.text} 
-                imageUrl={card.imageUrl} 
+              <Feature3DCard
+                tone={card.tone}
+                title={card.title}
+                text={card.text}
+                imageUrl={card.imageUrl}
+                srcSet={card.srcSet}
               />
             </div>
           ))}

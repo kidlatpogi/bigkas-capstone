@@ -51,7 +51,7 @@ const toneMap = {
   },
 };
 
-export default function Feature3DCard({ title, text, tone = 'visual', imageUrl }) {
+export default function Feature3DCard({ title, text, tone = 'visual', imageUrl, srcSet }) {
   const palette = toneMap[tone] || toneMap.visual;
 
   return (
@@ -67,7 +67,15 @@ export default function Feature3DCard({ title, text, tone = 'visual', imageUrl }
     >
       <article className="card">
         <div className="top-section">
-          {imageUrl && <img src={imageUrl} alt={title} className="card-top-img" loading="lazy" />}
+          {imageUrl && (
+            <img 
+              src={imageUrl} 
+              srcSet={srcSet}
+              alt={title} 
+              className="card-top-img" 
+              loading="lazy" 
+            />
+          )}
           <div className="icons">
             <span className="logo-text">Bigkas</span>
           </div>

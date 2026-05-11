@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
-import bigkasLogo from '../../assets/logos/0015.png';
+import { getAssetUrl } from '../../utils/assetUtils';
 import './MobileTopBar.css';
+
+const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 
 function getUserInitials(user) {
   const fullName = String(user?.user_metadata?.full_name || user?.name || '').trim();

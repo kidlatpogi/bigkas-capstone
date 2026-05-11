@@ -19,8 +19,10 @@ import {
   getClaimableAchievements,
   claimAchievement,
 } from '../../utils/achievementClaims';
+import { getAssetUrl } from '../../utils/assetUtils';
 import './SideNav.css';
-import bigkasLogo from '../../assets/logos/0015.png';
+
+const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 
 const PRIMARY_NAV_ITEMS = [
   { to: ROUTES.ACTIVITY, label: 'Home', icon: IoHomeOutline },

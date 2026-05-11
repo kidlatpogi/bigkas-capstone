@@ -309,6 +309,29 @@ body.register-page-active {
   outline: none;
 }
 
+/* Password Toggle specific padding */
+.form-group-v2 .input-field-wrap input[type="password"],
+.form-group-v2 .input-field-wrap input[type="text"] {
+  padding-right: 65px;
+}
+
+.pw-toggle-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--emerald-700);
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 10px;
+  z-index: 10;
+  text-transform: capitalize;
+}
+
 .input-field-wrap input.is-invalid {
   border-color: #ef4444;
 }
@@ -418,6 +441,9 @@ body.register-page-active {
 }
 
 .form-actions-v2 button {
+  font-family: 'Fredoka', sans-serif !important;
+  font-size: 1.05rem !important;
+  height: 56px !important;
   border-radius: 999px !important;
 }
 

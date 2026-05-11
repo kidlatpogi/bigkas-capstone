@@ -62,7 +62,13 @@ export default function LandingScienceSection() {
             transition={{ duration: 1, ease: "easeOut" }}
           >
             <div className="robot-aura"></div>
-            <img src={robotAnalyst} alt="B-01 Analyst" className="robot-hero-img" />
+            <img 
+              src={robotAnalyst} 
+              srcSet={robotAnalyst.replace('.webp', '.png')}
+              alt="B-01 Analyst" 
+              className="robot-hero-img" 
+              loading="lazy"
+            />
             
             {/* Pulsing Data Waves */}
             <div className="data-wave wave-1"></div>

@@ -1,19 +1,28 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../context/useAuthContext';
 import { isValidEmail, validatePassword } from '../../utils/validators';
 import { ROUTES } from '../../utils/constants';
+import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
 import PasswordToggle from '../../components/common/PasswordToggle';
 import LegalModal from '../../components/Legal/LegalModal';
 import { TERMS_AND_CONDITIONS } from '../../constants/legal/terms';
 import { PRIVACY_POLICY } from '../../constants/legal/privacy';
-import { motion, AnimatePresence } from 'framer-motion';
 import PushButton from '../../components/common/PushButton';
-import { getSpriteUrl } from '../../utils/assetUtils';
+import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import './RegisterPage.css';
-import bigkasLogo from '../../assets/logos/0015.png';
 
-function RegisterPage({ managePageClass = true }) {
+// Lazy load the specialized mobile version
+const robotImgUrl = "https://assets.bigkas.site/Sprites/Robot/0001.webp";
+const bigkasLogoUrl = "https://assets.bigkas.site/Images/Bigkas-Logo.webp";
+
+// Module-level preloading to trigger early discovery by the browser's preload scanner
+if (typeof window !== 'undefined') {
+  const p1 = new Image(); p1.src = robotImgUrl;
+  const p2 = new Image(); p2.src = bigkasLogoUrl;
+}
+
+function RegisterPageDesktop({ managePageClass = true }) {
   const layoutRef = useRef(null);
   const navigate = useNavigate();
   const { register, isLoading } = useAuthContext();
@@ -44,6 +53,15 @@ function RegisterPage({ managePageClass = true }) {
       }
     };
   }, [managePageClass]);
+
+  // SEO Metadata
+  useEffect(() => {
+    document.title = 'Create Account | Bigkas — Master Public Speaking';
+    const metaDesc = document.querySelector('meta[name="description"]') || document.createElement('meta');
+    metaDesc.name = 'description';
+    metaDesc.content = 'Join Bigkas today and start your AI-powered journey to public speaking excellence. Analyze your voice, master your presence, and empower your communication.';
+    if (!metaDesc.parentNode) document.head.appendChild(metaDesc);
+  }, []);
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -166,7 +184,7 @@ function RegisterPage({ managePageClass = true }) {
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+    visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
   };
 
   const insightWords = [
@@ -188,204 +206,238 @@ function RegisterPage({ managePageClass = true }) {
   ];
 
   return (
-    <div ref={layoutRef} className="auth-page-v2" data-layout={layoutMode}>
-      <div className="auth-container">
-        <motion.div
-          className="auth-card"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          {/* Left Side: Visuals */}
-          <div className="auth-visual-side">
-            <motion.div variants={itemVariants} className="auth-brand-logo">
-              <img src={bigkasLogo} alt="Bigkas" className="auth-logo-img" />
+    <LazyMotion features={domAnimation}>
+      <div ref={layoutRef} className="auth-page-v2" data-layout={layoutMode}>
+        <div className="auth-container">
+          <m.div
+            className="auth-card"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            {/* Left Side: Visuals */}
+            <div className="auth-visual-side">
+            <div className="auth-brand-logo">
+              <img 
+                src={bigkasLogoUrl} 
+                alt="Bigkas" 
+                className="auth-logo-img" 
+                width="48" 
+                height="48" 
+                loading="eager" 
+                fetchPriority="high"
+              />
               <span>Bigkas</span>
-            </motion.div>
-            <div className="auth-visual-content">
-              <motion.div 
-                className="auth-robot-img-wrap"
-                initial={{ opacity: 1, y: 0 }}
-                animate={{ y: [0, -15, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              >
+            </div>
+              <div className="auth-visual-content">
+              <div className="auth-robot-img-wrap">
                 <div className="auth-robot-glow" />
-                <img src={getSpriteUrl('Robot/0001.webp')} alt="AI Companion" className="auth-robot-img" />
-              </motion.div>
+                <img 
+                  src={robotImgUrl} 
+                  alt="AI Companion" 
+                  className="auth-robot-img" 
+                  fetchPriority="high"
+                  loading="eager"
+                  width="460"
+                  height="460"
+                />
+              </div>
 
-              {/* Floating Insight Cloud */}
-              {insightWords.map((word, i) => (
-                <motion.div 
-                  key={i}
-                  className="insight-chip"
-                  style={{ top: word.top, left: word.left, fontSize: word.size, opacity: word.opacity }}
-                  animate={{ y: [0, -20, 0], x: [0, 15, 0] }}
-                  transition={{ duration: 6 + (i % 4), repeat: Infinity, delay: word.delay, ease: "easeInOut" }}
-                >
-                  {word.text}
-                </motion.div>
-              ))}
-
-              <motion.h2 variants={itemVariants} className="auth-hero-tagline">
-                Master <span>Public Speaking</span>
-              </motion.h2>
-              <motion.p variants={itemVariants} className="auth-hero-desc">
-                Your AI-powered journey to public speaking excellence starts here.
-              </motion.p>
-            </div>
-            <div className="auth-visual-waves">
-              {[...Array(24)].map((_, i) => (
-                <div key={i} className={`auth-visual-wave auth-visual-wave-${(i % 6) + 1}`} />
-              ))}
-            </div>
-          </div>
-
-          {/* Right Side: Form */}
-          <div className="auth-form-side">
-            <div className="auth-form-inner">
-              <motion.h3 variants={itemVariants} className="auth-form-headline">Create Account</motion.h3>
-              <motion.p variants={itemVariants} className="auth-form-subline">Join Bigkas and start your speaking journey</motion.p>
-
-              <form className="auth-form" onSubmit={handleSubmit}>
-                <AnimatePresence>
-                  {errors.submit && (
-                    <motion.div 
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="auth-status-banner is-error"
-                    >
-                      {errors.submit}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <motion.div variants={itemVariants} className="form-row-v2">
-                  <div className="form-group-v2">
-                    <label>First Name</label>
-                    <div className="input-field-wrap">
-                      <input
-                        name="firstName"
-                        className={errors.firstName ? 'is-invalid' : ''}
-                        value={formData.firstName}
-                        onChange={handleChange}
-                        placeholder="Juan"
-                        disabled={isLoading}
-                      />
-                    </div>
-                  </div>
-                  <div className="form-group-v2">
-                    <label>Last Name</label>
-                    <div className="input-field-wrap">
-                      <input
-                        name="lastName"
-                        className={errors.lastName ? 'is-invalid' : ''}
-                        value={formData.lastName}
-                        onChange={handleChange}
-                        placeholder="Dela Cruz"
-                        disabled={isLoading}
-                      />
-                    </div>
-                  </div>
-                </motion.div>
-
-                <motion.div variants={itemVariants} className="form-group-v2">
-                  <label>Email</label>
-                  <div className="input-field-wrap">
-                    <input
-                      type="email"
-                      name="email"
-                      className={errors.email ? 'is-invalid' : ''}
-                      value={formData.email}
-                      onChange={handleChange}
-                      placeholder="name@gmail.com"
-                      disabled={isLoading}
-                    />
-                  </div>
-                  {errors.email && <span className="field-error">{errors.email}</span>}
-                </motion.div>
-
-                <motion.div variants={itemVariants} className="form-group-v2">
-                  <label>Password</label>
-                  <div className="input-field-wrap">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      name="password"
-                      className={errors.password ? 'is-invalid' : ''}
-                      value={formData.password}
-                      onChange={handleChange}
-                      placeholder="••••••••"
-                      disabled={isLoading}
-                      autoComplete="new-password"
-                    />
-                    <PasswordToggle isVisible={showPassword} onToggle={() => setShowPassword(!showPassword)} label="password" />
-                  </div>
-                  {formData.password && (
-                    <div className="pw-strength-v2">
-                      <div className="pw-strength-track">
-                        <div className="pw-strength-fill" style={{ width: `${(passwordStrength / 4) * 100}%`, background: strengthColor }} />
-                      </div>
-                      <span style={{ color: strengthColor }}>{strengthLabel}</span>
-                    </div>
-                  )}
-                  {errors.password && <span className="field-error">{errors.password}</span>}
-                </motion.div>
-
-                <motion.div variants={itemVariants} className="form-group-v2">
-                  <label>Confirm Password</label>
-                  <div className="input-field-wrap">
-                    <input
-                      type={showConfirm ? 'text' : 'password'}
-                      name="confirmPassword"
-                      className={errors.confirmPassword ? 'is-invalid' : ''}
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      placeholder="••••••••"
-                      disabled={isLoading}
-                      autoComplete="new-password"
-                    />
-                    <PasswordToggle isVisible={showConfirm} onToggle={() => setShowConfirm(!showConfirm)} label="confirm password" />
-                  </div>
-                  {errors.confirmPassword && <span className="field-error">{errors.confirmPassword}</span>}
-                </motion.div>
-
-                <motion.div variants={itemVariants} className="consent-group-v2">
-                  <label className="checkbox-wrap-v2">
-                    <input type="checkbox" checked={consentChecked} onChange={(e) => setConsentChecked(e.target.checked)} />
-                    <span className="checkmark-v2"></span>
-                    <span className="consent-text">
-                      I agree to the <a href="#" onClick={showTerms}>Terms</a> and <a href="#" onClick={showPrivacy}>Privacy Policy</a>.
-                    </span>
-                  </label>
-                </motion.div>
-
-                <motion.div variants={itemVariants} className="form-actions-v2">
-                  <PushButton
-                    type="submit"
-                    disabled={isLoading || !consentChecked}
-                    bgColor="#059669"
-                    shadowColor="#047857"
+                {/* Floating Insight Cloud */}
+                {insightWords.map((word, i) => (
+                  <m.div 
+                    key={i}
+                    className="insight-chip"
+                    style={{ top: word.top, left: word.left, fontSize: word.size, opacity: word.opacity }}
+                    animate={{ y: [0, -20, 0], x: [0, 15, 0] }}
+                    transition={{ duration: 6 + (i % 4), repeat: Infinity, delay: word.delay, ease: "easeInOut" }}
                   >
-                    {isLoading ? <span className="loading-spinner" /> : 'Create Account'}
-                  </PushButton>
-                </motion.div>
+                    {word.text}
+                  </m.div>
+                ))}
 
-                <motion.div variants={itemVariants} className="signup-prompt-v2">
-                  Already have an account? <Link to={ROUTES.LOGIN}>Login here</Link>
-                </motion.div>
-              </form>
+                <m.h2 variants={itemVariants} className="auth-hero-tagline">
+                  Master <span>Public Speaking</span>
+                </m.h2>
+                <m.p variants={itemVariants} className="auth-hero-desc">
+                  Your AI-powered journey to public speaking excellence starts here.
+                </m.p>
+              </div>
             </div>
-          </div>
-        </motion.div>
-      </div>
 
-      <LegalModal
-        isOpen={legalModal.isOpen}
-        onClose={closeLegal}
-        title={legalModal.title}
-        content={legalModal.content}
-      />
-    </div>
+            {/* Right Side: Form */}
+            <div className="auth-form-side">
+              <div className="auth-form-inner">
+                <m.h1 variants={itemVariants} className="auth-form-headline">Create Account</m.h1>
+                <m.p variants={itemVariants} className="auth-form-subline">Join Bigkas and start your speaking journey</m.p>
+
+                <form className="auth-form" onSubmit={handleSubmit}>
+                  <AnimatePresence>
+                    {errors.submit && (
+                      <m.div 
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="auth-status-banner is-error"
+                      >
+                        {errors.submit}
+                      </m.div>
+                    )}
+                  </AnimatePresence>
+
+                  <m.div variants={itemVariants} className="form-row-v2">
+                    <div className="form-group-v2">
+                      <label>First Name</label>
+                      <div className="input-field-wrap">
+                        <input
+                          name="firstName"
+                          className={errors.firstName ? 'is-invalid' : ''}
+                          value={formData.firstName}
+                          onChange={handleChange}
+                          placeholder="Juan"
+                          disabled={isLoading}
+                        />
+                      </div>
+                    </div>
+                    <div className="form-group-v2">
+                      <label>Last Name</label>
+                      <div className="input-field-wrap">
+                        <input
+                          name="lastName"
+                          className={errors.lastName ? 'is-invalid' : ''}
+                          value={formData.lastName}
+                          onChange={handleChange}
+                          placeholder="Dela Cruz"
+                          disabled={isLoading}
+                        />
+                      </div>
+                    </div>
+                  </m.div>
+
+                  <m.div variants={itemVariants} className="form-group-v2">
+                    <label>Email</label>
+                    <div className="input-field-wrap">
+                      <input
+                        type="email"
+                        name="email"
+                        className={errors.email ? 'is-invalid' : ''}
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="name@gmail.com"
+                        disabled={isLoading}
+                      />
+                    </div>
+                    {errors.email && <span className="field-error">{errors.email}</span>}
+                  </m.div>
+
+                  <m.div variants={itemVariants} className="form-group-v2">
+                    <label>Password</label>
+                    <div className="input-field-wrap">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        className={errors.password ? 'is-invalid' : ''}
+                        value={formData.password}
+                        onChange={handleChange}
+                        placeholder="••••••••"
+                        disabled={isLoading}
+                        autoComplete="new-password"
+                      />
+                      <PasswordToggle isVisible={showPassword} onToggle={() => setShowPassword(!showPassword)} label="password" />
+                    </div>
+                    {formData.password && (
+                      <div className="pw-strength-v2">
+                        <div className="pw-strength-track">
+                          <div className="pw-strength-fill" style={{ width: `${(passwordStrength / 4) * 100}%`, background: strengthColor }} />
+                        </div>
+                        <span style={{ color: strengthColor }}>{strengthLabel}</span>
+                      </div>
+                    )}
+                    {errors.password && <span className="field-error">{errors.password}</span>}
+                  </m.div>
+
+                  <m.div variants={itemVariants} className="form-group-v2">
+                    <label>Confirm Password</label>
+                    <div className="input-field-wrap">
+                      <input
+                        type={showConfirm ? 'text' : 'password'}
+                        name="confirmPassword"
+                        className={errors.confirmPassword ? 'is-invalid' : ''}
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        placeholder="••••••••"
+                        disabled={isLoading}
+                        autoComplete="new-password"
+                      />
+                      <PasswordToggle isVisible={showConfirm} onToggle={() => setShowConfirm(!showConfirm)} label="confirm password" />
+                    </div>
+                    {errors.confirmPassword && <span className="field-error">{errors.confirmPassword}</span>}
+                  </m.div>
+
+                  <m.div variants={itemVariants} className="consent-group-v2">
+                    <label className="checkbox-wrap-v2">
+                      <input type="checkbox" checked={consentChecked} onChange={(e) => setConsentChecked(e.target.checked)} />
+                      <span className="checkmark-v2"></span>
+                      <span className="consent-text">
+                        I agree to the <a href="#" onClick={showTerms}>Terms</a> and <a href="#" onClick={showPrivacy}>Privacy Policy</a>.
+                      </span>
+                    </label>
+                  </m.div>
+
+                  <m.div variants={itemVariants} className="form-actions-v2">
+                    <PushButton
+                      type="submit"
+                      disabled={isLoading || !consentChecked}
+                      bgColor="#047857"
+                      shadowColor="#065f46"
+                    >
+                      {isLoading ? <span className="loading-spinner" /> : 'Create Account'}
+                    </PushButton>
+                  </m.div>
+
+                  <m.div variants={itemVariants} className="signup-prompt-v2">
+                    Already have an account? <Link to={ROUTES.LOGIN}>Login here</Link>
+                  </m.div>
+                </form>
+              </div>
+            </div>
+          </m.div>
+        </div>
+
+        <LegalModal
+          isOpen={legalModal.isOpen}
+          onClose={closeLegal}
+          title={legalModal.title}
+          content={legalModal.content}
+        />
+      </div>
+    </LazyMotion>
+  );
+}
+
+const RegisterPageMobile = lazy(() => import('./RegisterPageMobile'));
+
+export { RegisterPageDesktop };
+
+/**
+ * Main Responsive Wrapper for Register Page
+ * Switches between Desktop and Mobile/Tablet specialized versions
+ */
+function RegisterPage() {
+  const [isMobileOrTablet, setIsMobileOrTablet] = useState(() => window.innerWidth < 1024);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileOrTablet(window.innerWidth < 1024);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return (
+    <Suspense fallback={null}>
+      {isMobileOrTablet ? <RegisterPageMobile /> : <RegisterPageDesktop />}
+    </Suspense>
   );
 }
 

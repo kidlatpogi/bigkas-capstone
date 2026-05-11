@@ -142,6 +142,14 @@ function getMicSensitivityProfile() {
   return { analyserGain: 4.4, visualGain: 2.2, silenceThreshold: 0.012 };
 }
 
+const SESSION_CACHE_KEY = 'bigkas_current_training_session';
+
+function clearSessionCache() {
+  if (typeof window !== 'undefined') {
+    window.localStorage.removeItem(SESSION_CACHE_KEY);
+  }
+}
+
 /* ─── Icons ────────────────────────────────────────────────────────────────── */
 function PauseIcon() {
   return (
@@ -181,11 +189,24 @@ function TrainingPage() {
   const { user, updateUserMetadata, logout } = useAuthContext();
   const activityScopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
 
-  const script = state?.script || null;
-  const focus = state?.focus || 'scripted';
-  const sessionType = state?.sessionType || focus;
-  const freeTopic = (state?.freeTopic || '').trim();
-  const objectiveText = (state?.objective || state?.step?.objective || '').trim();
+  // Recovery logic for variables that depend on location.state
+  const recoveredState = useMemo(() => {
+    if (state) return state;
+    if (typeof window === 'undefined') return null;
+    const saved = window.localStorage.getItem(SESSION_CACHE_KEY);
+    if (!saved) return null;
+    try {
+      return JSON.parse(saved);
+    } catch {
+      return null;
+    }
+  }, [state]);
+
+  const script = state?.script || recoveredState?.script || null;
+  const focus = state?.focus || recoveredState?.focus || 'scripted';
+  const sessionType = state?.sessionType || recoveredState?.sessionType || focus;
+  const freeTopic = (state?.freeTopic || recoveredState?.freeTopic || '').trim();
+  const objectiveText = (state?.objective || state?.step?.objective || recoveredState?.objective || recoveredState?.step?.objective || '').trim();
   const isPreTestSession = String(sessionType || '').toLowerCase().includes('pre-test') || String(sessionType || '').toLowerCase().includes('pretest');
   const hidePermissionRetry = isPreTestSession && focus === 'scripted';
   const isFreePretestSession = isPreTestSession && focus === 'free';
@@ -200,12 +221,32 @@ function TrainingPage() {
 
   /* Recording state */
   const [status, setStatus] = useState(() => {
+    // 1. Try to recover state from localStorage if location.state is missing
+    let effectiveState = state;
+    if (!effectiveState && typeof window !== 'undefined') {
+      const saved = window.localStorage.getItem(SESSION_CACHE_KEY);
+      if (saved) {
+        try {
+          effectiveState = JSON.parse(saved);
+        } catch (e) {
+          console.error('Failed to parse saved session:', e);
+        }
+      }
+    }
+
     // Detect missing navigation state on mount (e.g. refresh)
-    if (!state || (!state.script && focus === 'scripted' && !isPreTestSession)) {
+    if (!effectiveState || (!effectiveState.script && focus === 'scripted' && !isPreTestSession)) {
       return 'missing-data';
     }
     return 'idle';
   });
+
+  // State persistence: save to localStorage on mount or state change
+  useEffect(() => {
+    if (state && typeof window !== 'undefined') {
+      window.localStorage.setItem(SESSION_CACHE_KEY, JSON.stringify(state));
+    }
+  }, [state]);
   const [countdown, setCountdown] = useState(3);
   const [elapsedSec, setElapsedSec] = useState(0);
   const [errorMsg, setErrorMsg] = useState('');
@@ -1134,6 +1175,9 @@ function TrainingPage() {
         // Set status to idle to clear any overlays before we actually leave
         // setStatus('idle'); // Removed to prevent potential tutorial popup before navigation
 
+        // Clear session cache upon successful analysis/completion
+        clearSessionCache();
+        
         if (sessionType === 'pre-test') {
           console.log('[TrainingPage] Pre-test detected. Navigating to onboarding result reveal...');
           navigate(ROUTES.USER_ANALYZING, { replace: true, state: { sessionId: finalSessionId } });
@@ -1274,6 +1318,7 @@ function TrainingPage() {
     visualMediaRef.current = null;
     visualChunksRef.current = [];
     visualMimeRef.current = '';
+    clearSessionCache();
   };
 
 
@@ -1340,42 +1385,6 @@ function TrainingPage() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isActive]);
 
-  /* ── Guard: no script in scripted mode ── */
-  if (!script && focus !== 'free') {
-    return (
-      <div className="tp-page">
-        <div className="tp-header">
-          <BackButton className="tp-back-btn" onClick={() => navigate(-1)} aria-label="Go Back" />
-          <span className="tp-header-title">Training</span>
-          <div className="tp-header-spacer" />
-        </div>
-        <div className="tp-empty">
-          <span className="tp-empty-icon">⚠️</span>
-          <p className="tp-empty-title">No script selected</p>
-          <p className="tp-empty-desc">Go back and select a script to start training.</p>
-          <button className="tp-go-back-btn" onClick={() => navigate(-1)}>Go Back</button>
-        </div>
-      </div>
-    );
-  }
-
-  if (focus === 'free' && !freeTopic) {
-    return (
-      <div className="tp-page">
-        <div className="tp-header">
-          <BackButton className="tp-back-btn" onClick={() => navigate(-1)} aria-label="Go Back" />
-          <span className="tp-header-title">Free Speech</span>
-          <div className="tp-header-spacer" />
-        </div>
-        <div className="tp-empty">
-          <span className="tp-empty-icon">⚠️</span>
-          <p className="tp-empty-title">Topic is required</p>
-          <p className="tp-empty-desc">Go back and enter a topic before starting Free Speech.</p>
-          <button className="tp-go-back-btn" onClick={() => navigate(ROUTES.TRAINING_SETUP)}>Go Back</button>
-        </div>
-      </div>
-    );
-  }
 
   const title = focus === 'scripted' ? (script?.title || 'Training') : 'Free Speech';
   const modeLabel = focus === 'scripted' ? 'Scripted Mode' : 'Free Speech Mode';

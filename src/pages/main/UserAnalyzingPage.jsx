@@ -7,7 +7,6 @@ import { ROUTES } from '../../utils/constants';
 import { getBigkasLevelFromScore, mapPercentToEntryScore } from '../../utils/activityProgress';
 import { getSpriteUrl, getVoiceUrl } from '../../utils/assetUtils';
 
-const analyzingRobotImage = getSpriteUrl('Robot/0010.webp');
 const resultRobotImage = getSpriteUrl('Robot/0013.webp');
 const robotImage0001 = getSpriteUrl('Robot/0001.webp');
 const robotImage0002 = getSpriteUrl('Robot/0002.webp');
@@ -55,12 +54,11 @@ function calculateMehrabianTotal({ verbalScore = 0, vocalScore = 0, visualScore 
   return clampScore((verbalScore * 0.07) + (vocalScore * 0.38) + (visualScore * 0.55));
 }
 
-/** Display Triple V / aggregate scores on the Bigkas 1.0–5.0 entry scale (from raw 0–100 metrics). */
 function formatEntryScale(percent0to100) {
-  return mapPercentToEntryScore(percent0to100).toFixed(1);
+  return Math.floor(mapPercentToEntryScore(percent0to100)).toString();
 }
 
-const ANALYZING_MUTE_KEY = 'bigkas_analyzing_muted';
+const GLOBAL_MUTE_KEY = 'bigkas_global_audio_muted_v1';
 const RESULT_ROBOT_POOL = [
   robotImage0001,
   robotImage0002,
@@ -87,23 +85,23 @@ const SCORE_BREAKDOWN_VARIANTS = [
 
 const LEVEL_CONTENT = {
   1: {
-    text: "Yay, you made that look so easy! All the setup is done. Your journey begins right here at LEVEL 1. Don't sweat the small stuff-every great speaker you've ever seen started exactly where you are right now! We're going to build your confidence brick by brick. Get ready to transform that 'stage fright' into 'stage might'!",
+    text: "Yay, you made that look so easy! All the setup is done. Your journey begins right here at Level 1. Don't sweat the small stuff—every great speaker you've ever seen started exactly where you are right now! We're going to build your confidence brick by brick. Get ready to transform that 'stage fright' into 'stage might'!",
     voice: analyzingLevel1Voice,
   },
   2: {
-    text: "Beep! That was great! Setup is officially complete. You're skipping the basics to start right at LEVEL 2. You've already got some great skills to work with! Remember, every pro started as a beginner. Let's build on this foundation and transform that 'stage fright' into 'stage might'!",
+    text: "Beep! That was great! Setup is officially complete. You're a Level 2 speaker, so you'll start at Level 1 but with fewer stages to complete. You've already got some great skills to work with! Remember, every pro started as a beginner. Let's build on this foundation and transform that 'stage fright' into 'stage might'!",
     voice: analyzingLevel2Voice,
   },
   3: {
-    text: "Whoa, nice job! Setup is completely done. My sensors picked up some seriously good speaking habits, so you're diving right in at LEVEL 3! We're halfway to the top already-let's keep this momentum going!",
+    text: "Whoa, nice job! Setup is completely done. My sensors picked up some seriously good speaking habits, so you're a Level 3 speaker! You'll start at Level 1 with a fast-track through the basics. We're going to keep this momentum going!",
     voice: analyzingLevel3Voice,
   },
   4: {
-    text: 'Wowzers! Setup is clear! Your speech was so smooth it almost blew my circuits! You are starting way up at LEVEL 4. You\'re practically a pro already. Let\'s polish those skills to absolute perfection!',
+    text: "Wowzers! Setup is clear! Your speech was so smooth it almost blew my circuits! You're a Level 4 speaker. You'll start at Level 1, but you'll fly through it in no time. You're practically a pro already. Let's polish those skills to absolute perfection!",
     voice: analyzingLevel4Voice,
   },
   5: {
-    text: 'Mind... blown! Setup is completely done. Your speaking skills are off the charts! You are starting at the very top-LEVEL 5! We are going straight into masterclass mode. I might need to take notes from you!',
+    text: "Mind... blown! Setup is completely done. Your speaking skills are off the charts! You're a Level 5 speaker! Even though you're starting at Level 1, you'll only have a few stages before you reach masterclass mode. I might need to take notes from you!",
     voice: analyzingLevel5Voice,
   },
 };
@@ -117,12 +115,11 @@ function UserAnalyzingPage() {
   const [isPersisted, setIsPersisted] = useState(false);
   const [showLevelReveal, setShowLevelReveal] = useState(false);
   const [showScoreBreakdown, setShowScoreBreakdown] = useState(false);
-  const [loaderPct, setLoaderPct] = useState(1);
   const [typedResultText, setTypedResultText] = useState('');
   const [isTypingDone, setIsTypingDone] = useState(false);
   const [isMuted, setIsMuted] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem(ANALYZING_MUTE_KEY) === '1';
+    return window.localStorage.getItem(GLOBAL_MUTE_KEY) === '1';
   });
   const [analysis, setAnalysis] = useState({
     verbalScore: 0,
@@ -155,7 +152,7 @@ function UserAnalyzingPage() {
   }, []);
   const profilingEntryScore = useMemo(() => {
     const rawProfileScore = clampScore(user?.speakerProfile?.baseline_score ?? 0);
-    return mapPercentToEntryScore(rawProfileScore).toFixed(1);
+    return formatEntryScale(rawProfileScore);
   }, [user?.speakerProfile?.baseline_score]);
   const pretestEntryScore = useMemo(
     () => formatEntryScale(analysis.freePretestScore),
@@ -307,6 +304,7 @@ function UserAnalyzingPage() {
         speaker_entry_score: mapPercentToEntryScore(analysis.finalScore),
         speaker_level: analysis.levelName,
         speaker_level_number: analysis.levelNumber,
+        progress_level_number: 1,
         speaker_points: userSpeakerPoints,
         onboarding_level_analysis: {
           analyzed_at: new Date().toISOString(),
@@ -320,11 +318,16 @@ function UserAnalyzingPage() {
         },
       });
 
-      // Update the profiles table with the new current_level
+      // Update the profiles table: User always starts at Journey Level 1, 
+      // but their proficiency is stored in speaker_level
       if (result?.success && user?.id) {
         const { error: profileError } = await supabase
           .from('profiles')
-          .update({ current_level: analysis.levelNumber })
+          .update({
+            current_level: 1,
+            speaker_level: analysis.levelNumber,
+            is_pre_test_completed: true
+          })
           .eq('id', user.id);
 
         if (profileError) {
@@ -366,6 +369,12 @@ function UserAnalyzingPage() {
   ]);
 
   useEffect(() => {
+    if (isReady && !showLevelReveal && !isPersisting && !isPersisted) {
+      persistAndReveal();
+    }
+  }, [isReady, showLevelReveal, isPersisting, isPersisted, persistAndReveal]);
+
+  useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     const audio = new Audio(analyzingProgressVoice);
     audio.preload = 'auto';
@@ -378,22 +387,10 @@ function UserAnalyzingPage() {
     };
   }, []);
 
-  useEffect(() => {
-    if (showLevelReveal) return undefined;
-    const timer = window.setInterval(() => {
-      setLoaderPct((prev) => {
-        if (!isReady) {
-          return Math.min(94, prev + 1);
-        }
-        return Math.min(100, prev + 2);
-      });
-    }, 90);
-    return () => window.clearInterval(timer);
-  }, [isReady, showLevelReveal]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    window.localStorage.setItem(ANALYZING_MUTE_KEY, isMuted ? '1' : '0');
+    window.localStorage.setItem(GLOBAL_MUTE_KEY, isMuted ? '1' : '0');
   }, [isMuted]);
 
   useEffect(() => {
@@ -424,7 +421,8 @@ function UserAnalyzingPage() {
     const audio = analyzingAudioRef.current;
     if (!audio) return;
     audio.currentTime = 0;
-    audio.play().catch(() => {});
+    // Analysis voice removed as requested
+    // audio.play().catch(() => {});
   }, [isMuted, showLevelReveal]);
 
   useEffect(() => {
@@ -459,7 +457,7 @@ function UserAnalyzingPage() {
     revealAudioRef.current = audio;
     if (!isMuted) {
       audio.currentTime = 0;
-      audio.play().catch(() => {});
+      audio.play().catch(() => { });
     }
 
     return () => {
@@ -483,7 +481,7 @@ function UserAnalyzingPage() {
 
     if (!isMuted) {
       audio.currentTime = 0;
-      audio.play().catch(() => {});
+      audio.play().catch(() => { });
     }
 
     return () => {
@@ -504,161 +502,117 @@ function UserAnalyzingPage() {
         });
       } else if (showScoreBreakdown && scoreBreakdownAudioRef.current) {
         scoreBreakdownAudioRef.current.currentTime = 0;
-        scoreBreakdownAudioRef.current.play().catch(() => {});
+        scoreBreakdownAudioRef.current.play().catch(() => { });
       } else if (showLevelReveal && revealAudioRef.current) {
         revealAudioRef.current.currentTime = 0;
-        revealAudioRef.current.play().catch(() => {});
+        revealAudioRef.current.play().catch(() => { });
       } else if (!showLevelReveal && analyzingAudioRef.current) {
         analyzingAudioRef.current.currentTime = 0;
-        analyzingAudioRef.current.play().catch(() => {});
+        // audio.play().catch(() => {});
       }
       return next;
     });
   };
 
   const handleGoToDashboard = () => {
-    navigate(ROUTES.DASHBOARD, { replace: true });
+    navigate(ROUTES.ACTIVITY, {
+      replace: true,
+      state: {
+        skywardEntrance: true,
+        launchFreeSpeechTutorial: true,
+        t: Date.now(),
+      },
+    });
   };
 
   return (
     <div className="user-analyzing-page">
-      {!showLevelReveal ? (
+      {!showLevelReveal ? null : showScoreBreakdown ? (
         <section className="analyzing-intro">
-          <article className="analyzing-bubble" aria-label="Analyzing onboarding level">
-            <p className="analyzing-bubble-kicker">B-01:</p>
-            <p className="analyzing-bubble-title">Analyzing your level...</p>
-            <p className="analyzing-bubble-copy">
-              Hold tight while I process your Triple V metrics and calibrate your starting level.
-            </p>
+          <div className="profiling-unit">
+            <article className="analyzing-bubble analyzing-bubble--result" aria-label="Score breakdown">
+              <p className="analyzing-bubble-kicker">B-01:</p>
+              <p className="analyzing-result-text">{scoreBreakdownContent.text}</p>
 
-            <div className="analyzing-loader" role="progressbar" aria-valuemin={1} aria-valuemax={100} aria-valuenow={loaderPct}>
-              <span className="analyzing-loader-fill" style={{ width: `${loaderPct}%` }} />
-            </div>
-            <p className="analyzing-loader-text">{loaderPct}%</p>
-            {!error && (
+              <div className="analyzing-breakdown-score-page">
+                <p>
+                  Profiling (<strong className="analyzing-score-value">{profilingEntryScore}/5</strong>): Your personal comfort and confidence levels.
+                </p>
+                <p>
+                  AI Pre-test (<strong className="analyzing-score-value">{pretestEntryScore}/5</strong>): An objective look at your Triple V:
+                </p>
+                <ul className="analyzing-breakdown-list">
+                  <li>Visual (55%): <strong className="analyzing-score-value">{visualEntryScore}/5</strong> - Eye contact and gestures.</li>
+                  <li>Vocal (38%): <strong className="analyzing-score-value">{vocalEntryScore}/5</strong> - Pitch and Projection.</li>
+                  <li>Verbal (7%): <strong className="analyzing-score-value">{verbalEntryScore}/5</strong> - Vocabulary and filler use.</li>
+                </ul>
+              </div>
+
               <div className="analyzing-actions">
                 <button
                   type="button"
                   className="analyzing-action-btn analyzing-action-btn--primary"
-                  onClick={() => void persistAndReveal()}
-                  disabled={loaderPct < 100 || !isReady || isPersisting}
+                  onClick={handleGoToDashboard}
                 >
-                  {isPersisting ? 'Saving...' : 'Continue'}
+                  Next
                 </button>
               </div>
-            )}
-            {error && <p className="analyzing-error">{error}</p>}
-          </article>
+            </article>
 
-          <div className="analyzing-robot-wrap">
-            <div className="analyzing-robot-media" aria-hidden="true">
-              <img src={analyzingRobotImage} alt="" className="analyzing-robot-image" />
-            </div>
-            <div className="analyzing-audio-action">
-              <button
-                type="button"
-                onClick={handleToggleMute}
-                aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                className={`analyzing-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
-              >
-                {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-              </button>
-            </div>
-          </div>
-        </section>
-      ) : showScoreBreakdown ? (
-        <section className="analyzing-intro">
-          <article className="analyzing-bubble analyzing-bubble--result" aria-label="Score breakdown">
-            <p className="analyzing-bubble-kicker">B-01:</p>
-            <p className="analyzing-result-text">{scoreBreakdownContent.text}</p>
-
-            <div className="analyzing-breakdown-score-page">
-              <p>
-                Profiling (<strong className="analyzing-score-value">{profilingEntryScore}/5.0</strong>): Your personal comfort and confidence levels.
-              </p>
-              <p>
-                AI Pre-test (<strong className="analyzing-score-value">{pretestEntryScore}/5.0</strong>): An objective look at your Triple V:
-              </p>
-              <ul className="analyzing-breakdown-list">
-                <li>Visual (55%): <strong className="analyzing-score-value">{visualEntryScore}/5.0</strong> - Eye contact and gestures.</li>
-                <li>Vocal (38%): <strong className="analyzing-score-value">{vocalEntryScore}/5.0</strong> - Projection and expression.</li>
-                <li>Verbal (7%): <strong className="analyzing-score-value">{verbalEntryScore}/5.0</strong> - Vocabulary and filler use.</li>
-              </ul>
-            </div>
-
-            <div className="analyzing-actions">
-              <button
-                type="button"
-                className="analyzing-action-btn analyzing-action-btn--primary"
-                onClick={handleGoToDashboard}
-              >
-                Next
-              </button>
-            </div>
-          </article>
-
-          <div className="analyzing-robot-wrap">
-            <div className="analyzing-robot-media analyzing-robot-media--result" aria-hidden="true">
-              <img src={robotImage0015} alt="" className="analyzing-robot-image" />
-            </div>
-            <div className="analyzing-audio-action">
-              <button
-                type="button"
-                onClick={handleToggleMute}
-                aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                className={`analyzing-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
-              >
-                {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-              </button>
+            <div className="analyzing-robot-wrap">
+              <div className="analyzing-robot-media analyzing-robot-media--result" aria-hidden="true">
+                <img src={robotImage0015} alt="" className="analyzing-robot-image" />
+              </div>
             </div>
           </div>
         </section>
       ) : (
         <section className="analyzing-intro">
-          <article className="analyzing-bubble analyzing-bubble--result" aria-label="Your level result">
-            <p className="analyzing-bubble-kicker">B-01:</p>
-            <p className="analyzing-result-text">{typedResultText}</p>
+          <div className="profiling-unit">
+            <article className="analyzing-bubble analyzing-bubble--result" aria-label="Your level result">
+              <p className="analyzing-bubble-kicker">B-01:</p>
+              <p className="analyzing-result-text">{typedResultText}</p>
 
-            <div className="analyzing-actions">
-              <button
-                type="button"
-                className="analyzing-action-btn analyzing-action-btn--secondary"
-                onClick={() => setShowScoreBreakdown(true)}
-              >
-                Score Breakdown
-              </button>
-              <button
-                type="button"
-                className="analyzing-action-btn analyzing-action-btn--primary"
-                onClick={handleGoToDashboard}
-                disabled={!isTypingDone}
-              >
-                Next
-              </button>
-            </div>
+              <div className="analyzing-actions">
+                <button
+                  type="button"
+                  className="analyzing-action-btn analyzing-action-btn--secondary"
+                  onClick={() => setShowScoreBreakdown(true)}
+                >
+                  Score Breakdown
+                </button>
+                <button
+                  type="button"
+                  className="analyzing-action-btn analyzing-action-btn--primary"
+                  onClick={handleGoToDashboard}
+                  disabled={!isTypingDone}
+                >
+                  Next
+                </button>
+              </div>
 
-          </article>
+            </article>
 
-          <div className="analyzing-robot-wrap">
-            <div className="analyzing-robot-media analyzing-robot-media--result" aria-hidden="true">
-              <img src={staticRandomResultRobot} alt="" className="analyzing-robot-image" />
-            </div>
-            <div className="analyzing-audio-action">
-              <button
-                type="button"
-                onClick={handleToggleMute}
-                aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                className={`analyzing-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
-              >
-                {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-              </button>
+            <div className="analyzing-robot-wrap">
+              <div className="analyzing-robot-media analyzing-robot-media--result" aria-hidden="true">
+                <img src={staticRandomResultRobot} alt="" className="analyzing-robot-image" />
+              </div>
             </div>
           </div>
         </section>
       )}
+
+      <div className="analyzing-audio-action">
+        <button
+          type="button"
+          onClick={handleToggleMute}
+          aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+          title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+          className={`analyzing-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
+        >
+          {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+        </button>
+      </div>
     </div>
   );
 }

@@ -22,4 +22,27 @@ export default defineConfig({
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom'],
   },
+  build: {
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-icons-core': ['react-icons/io5'],
+          'vendor-icons-extra': [
+            'react-icons/fa',
+            'react-icons/gi',
+            'react-icons/si',
+            'react-icons/lu',
+            'react-icons/hi2',
+            'react-icons/fi'
+          ],
+          'vendor-charts': ['recharts'],
+          'vendor-lottie': ['lottie-react'],
+          'vendor-motion': ['framer-motion'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+          'vendor-framework': ['react', 'react-dom', 'react-router-dom'],
+        },
+      },
+    },
+  },
 })

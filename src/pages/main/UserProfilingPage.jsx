@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
+import { Volume2, VolumeX } from 'lucide-react';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import questionsData from '../../assets/data/profiling_questions.json';
@@ -24,14 +24,36 @@ const profilingQuestion6Voice = getVoiceUrl('Profiling and Pre-Testing/Profiling
 const profilingQuestion7Voice = getVoiceUrl('Profiling and Pre-Testing/Profiling Questions/Profiling Question 7.mp3');
 const profilingQuestion8Voice = getVoiceUrl('Profiling and Pre-Testing/Profiling Questions/Profiling Question 8.mp3');
 const profilingQuestion9Voice = getVoiceUrl('Profiling and Pre-Testing/Profiling Questions/Profiling Question 9.mp3');
+const profilingQuestion10Voice = getVoiceUrl('Profiling and Pre-Testing/Profiling Questions/Profiling Question 10.mp3');
+const demographicGenderVoice = getVoiceUrl('Demographic/Gender.mp3');
+const demographicAgeVoice = getVoiceUrl('Demographic/Age.mp3');
 import './UserProfilingPage.css';
 
 const QUESTIONS = questionsData;
 
-const INITIAL_FORM = QUESTIONS.reduce((acc, question) => {
-  acc[question.key] = question.type === 'multi' ? [] : '';
-  return acc;
-}, {});
+const DEMOGRAPHIC_QUESTIONS = [
+  {
+    key: 'gender',
+    label: 'Please specify your gender identity.',
+    type: 'single',
+    options: ['Male', 'Female', 'Others', 'Prefer not to say'],
+  },
+  {
+    key: 'age_range',
+    label: 'Which age group do you currently belong to?',
+    type: 'single',
+    options: ['16-17', '18-22', '23 and above'],
+  },
+];
+
+const INITIAL_FORM = {
+  gender: '',
+  age_range: '',
+  ...QUESTIONS.reduce((acc, question) => {
+    acc[question.key] = question.type === 'multi' ? [] : '';
+    return acc;
+  }, {}),
+};
 
 const INTRO_MUTE_KEY = 'bigkas_profiling_intro_muted';
 const QUESTION_VOICE_SOURCES = [
@@ -44,6 +66,7 @@ const QUESTION_VOICE_SOURCES = [
   profilingQuestion7Voice,
   profilingQuestion8Voice,
   profilingQuestion9Voice,
+  profilingQuestion10Voice,
 ];
 
 function getSpeakerLevelNumber(score) {
@@ -60,26 +83,20 @@ function scoreMap(answer, values = {}) {
 }
 
 function computeBaselineScore(form) {
-  const ageScore = scoreMap(form.age, { 'Under 18': 0, '18–24': 2, '25–34': 2, '35–44': 2, '45–54': 2, '55 and above': 2 });
-  const socialAnxietyScore = scoreMap(form.social_anxiety, { No: 12, Sometimes: 6, Yes: 0 });
-  const vocalFluencyScore = scoreMap(form.vocal_fluency, { No: 14, Sometimes: 7, Yes: 0 });
-  const vocalPresenceScore = scoreMap(form.vocal_presence, { No: 12, Sometimes: 6, Yes: 0 });
-  const externalDynamicsScore = scoreMap(form.external_dynamics, { No: 12, Sometimes: 6, Yes: 0 });
-  const adaptabilityScore = scoreMap(form.adaptability, { Yes: 10, Sometimes: 6, No: 2 });
-  const nativeScore = scoreMap(form.native_speaker, { Yes: 8, No: 4 });
+  const scoring = { Yes: 2, Sometimes: 6, No: 10 };
+  let total = 0;
+  
+  const keys = [
+    'visual_eye_contact', 'visual_gestures', 'visual_energy', 'visual_posture',
+    'vocal_projection', 'vocal_expression', 'vocal_pacing',
+    'verbal_fillers', 'verbal_vocabulary', 'verbal_anxiety'
+  ];
 
-  const raw =
-    15 +
-    ageScore +
-    socialAnxietyScore +
-    vocalFluencyScore +
-    vocalPresenceScore +
-    externalDynamicsScore +
-    adaptabilityScore +
-    nativeScore +
-    (form.gender === 'Prefer not to say' ? 0 : 1);
+  keys.forEach((key) => {
+    total += scoring[form[key]] || 0;
+  });
 
-  return Math.max(20, Math.min(100, Math.round(raw)));
+  return Math.max(20, Math.min(100, Math.round(total)));
 }
 
 function isQuestionAnswered(question, value) {
@@ -94,175 +111,163 @@ function isQuestionAnswered(question, value) {
 
 function UserProfilingPage() {
   const navigate = useNavigate();
-  const { updateUserMetadata, isAdminAuthenticated } = useAuthContext();
+  const { updateUserMetadata, user, isAdminAuthenticated } = useAuthContext();
   const introFirstMessage =
     "Hello! I'm B-01, your personal guide on this exciting journey to master public speaking.";
   const introSecondMessage =
-    'Before we begin, we need to assess your current speaking level. This includes 9 short profiling questions and one small speaking pre-test. These tests ensure I can customize your experience and guide you smoothly throughout your entire journey!';
+    'Before we begin, we need to assess your current Public Speaking Level. This includes 2 demographic questions, 10 short profiling questions and one small speaking pre-test. These tests ensure I can customize your experience and guide you smoothly throughout your entire journey!';
   const readyMessage =
-    "Awesome! Since you're ready, let's jump right into your 9 profiling questions! And don't worry, you can answer every single one with a simple Yes, Sometimes, or No.";
+    "Awesome! Since you're ready, let's jump right into your 10 profiling questions! And don't worry, you can answer every single one with a simple Yes, Sometimes, or No.";
   const outroFirstMessage = "You've made it to the final step! To wrap things up, let's try a quick Free Speech Pre-test.";
   const outroMissionMessage =
-    "Speak for at least 30 seconds on the topic, 'Tell me about yourself.' Don't overthink it-just be you and let your voice lead the way!";
-  const [screen, setScreen] = useState('intro');
-  const [introStep, setIntroStep] = useState(0);
-  const [typedIntroText, setTypedIntroText] = useState('');
+    "Speak for at least 30 seconds on the topic, 'Tell me about yourself.' Don't overthink it—just be you and let your voice lead the way!";
+
+  const [screen, setScreen] = useState(() => (user?.profilingCompleted ? 'outro' : 'intro'));
+  const [introStep, setIntroStep] = useState(() => (user?.profilingCompleted ? 2 : 0));
   const [isIntroTypingDone, setIsIntroTypingDone] = useState(false);
-  const [typedReadyText, setTypedReadyText] = useState('');
   const [isReadyTypingDone, setIsReadyTypingDone] = useState(false);
-  const [typedOutroFirstText, setTypedOutroFirstText] = useState('');
-  const [typedOutroMissionText, setTypedOutroMissionText] = useState('');
   const [isOutroTypingDone, setIsOutroTypingDone] = useState(false);
   const [form, setForm] = useState(INITIAL_FORM);
+  const [demographicIndex, setDemographicIndex] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [error, setError] = useState('');
   const [isMuted, setIsMuted] = useState(() => {
     if (typeof window === 'undefined') return false;
     return window.localStorage.getItem(INTRO_MUTE_KEY) === '1';
   });
-  const introAudioRef = useRef(null);
-  const stepTwoAudioRef = useRef(null);
-  const readyAudioRef = useRef(null);
-  const outroAudioRef = useRef(null);
-  const questionAudioRefs = useRef([]);
+  const audioMap = useRef({});
 
   const totalSteps = QUESTIONS.length;
-  const currentQuestion = QUESTIONS[currentIndex];
+  const currentQuestion = QUESTIONS[currentIndex] || QUESTIONS[0];
   const progress = Math.round(((currentIndex + 1) / totalSteps) * 100);
 
   const baselineScore = useMemo(() => computeBaselineScore(form), [form]);
   const baselineLevelNumber = useMemo(() => getSpeakerLevelNumber(baselineScore), [baselineScore]);
+
+  const currentDemographicQuestion = DEMOGRAPHIC_QUESTIONS[demographicIndex] || DEMOGRAPHIC_QUESTIONS[0];
+  const canProceedDemographic = currentDemographicQuestion
+    ? isQuestionAnswered(currentDemographicQuestion, form[currentDemographicQuestion.key])
+    : false;
   useEffect(() => {
     if (isAdminAuthenticated) {
       navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
     }
   }, [isAdminAuthenticated, navigate]);
 
-  useEffect(() => {
-    if (screen !== 'intro' || introStep !== 1) {
-      return undefined;
-    }
-
-    setTypedIntroText('');
-    setIsIntroTypingDone(false);
-
-    let charIndex = 0;
-    const typingInterval = window.setInterval(() => {
-      charIndex += 1;
-      setTypedIntroText(introSecondMessage.slice(0, charIndex));
-      if (charIndex >= introSecondMessage.length) {
-        window.clearInterval(typingInterval);
-        setIsIntroTypingDone(true);
-      }
-    }, 12);
-
-    return () => {
-      window.clearInterval(typingInterval);
-    };
-  }, [introSecondMessage, introStep, screen]);
-
-  useEffect(() => {
-    if (screen !== 'ready') {
-      return undefined;
-    }
-
-    setTypedReadyText('');
-    setIsReadyTypingDone(false);
-
-    let charIndex = 0;
-    const typingInterval = window.setInterval(() => {
-      charIndex += 1;
-      setTypedReadyText(readyMessage.slice(0, charIndex));
-      if (charIndex >= readyMessage.length) {
-        window.clearInterval(typingInterval);
-        setIsReadyTypingDone(true);
-      }
-    }, 12);
-
-    return () => {
-      window.clearInterval(typingInterval);
-    };
-  }, [readyMessage, screen]);
-
-  useEffect(() => {
-    if (screen !== 'outro') {
-      return undefined;
-    }
-
-    setTypedOutroFirstText('');
-    setTypedOutroMissionText('');
-    setIsOutroTypingDone(false);
-
-    let firstIndex = 0;
-    let missionIndex = 0;
-    let isFirstDone = false;
-    const typingInterval = window.setInterval(() => {
-      if (!isFirstDone) {
-        firstIndex += 1;
-        setTypedOutroFirstText(outroFirstMessage.slice(0, firstIndex));
-        if (firstIndex >= outroFirstMessage.length) {
-          isFirstDone = true;
+  /**
+   * Internal Typewriter Component to handle animated text reveals
+   */
+  const Typewriter = ({ text, onComplete, delay = 8 }) => {
+    const [displayed, setDisplayed] = useState('');
+    useEffect(() => {
+      let index = 0;
+      setDisplayed('');
+      const timer = setInterval(() => {
+        index++;
+        setDisplayed(text.slice(0, index));
+        if (index >= text.length) {
+          clearInterval(timer);
+          onComplete?.();
         }
-        return;
-      }
+      }, delay);
+      return () => clearInterval(timer);
+    }, [text, onComplete, delay]);
+    return <>{displayed}</>;
+  };
 
-      missionIndex += 1;
-      setTypedOutroMissionText(outroMissionMessage.slice(0, missionIndex));
-      if (missionIndex >= outroMissionMessage.length) {
-        window.clearInterval(typingInterval);
-        setIsOutroTypingDone(true);
-      }
-    }, 12);
-
-    return () => {
-      window.clearInterval(typingInterval);
-    };
-  }, [outroFirstMessage, outroMissionMessage, screen]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-
-    introAudioRef.current = new Audio(introVoice1);
-    stepTwoAudioRef.current = new Audio(introVoice2);
-    readyAudioRef.current = new Audio(introVoice3);
-    outroAudioRef.current = new Audio(beforePretestingVoice);
-    questionAudioRefs.current = QUESTION_VOICE_SOURCES.map((src) => new Audio(src));
-
-    const refs = [
-      introAudioRef.current,
-      stepTwoAudioRef.current,
-      readyAudioRef.current,
-      outroAudioRef.current,
-      ...questionAudioRefs.current,
-    ];
-    refs.forEach((audio) => {
+  /**
+   * Helper to get or create an audio instance for a source
+   */
+  const getAudio = (src) => {
+    if (!src) return null;
+    if (!audioMap.current[src]) {
+      const audio = new Audio(src);
       audio.preload = 'auto';
-      audio.muted = false;
-    });
+      audio.muted = isMuted;
+      audioMap.current[src] = audio;
+    }
+    return audioMap.current[src];
+  };
+
+  /**
+   * Preload audios for the current and next screen
+   */
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const toPreload = [];
+    
+    // Initial intro audios
+    if (screen === 'intro') {
+      toPreload.push(introVoice1, introVoice2);
+      // Next potential step
+      toPreload.push(demographicGenderVoice);
+    } 
+    else if (screen === 'demographics') {
+      toPreload.push(demographicGenderVoice, demographicAgeVoice);
+      // Next potential step
+      toPreload.push(introVoice3);
+    }
+    else if (screen === 'ready') {
+      toPreload.push(introVoice3);
+      // Preload first few questions
+      toPreload.push(QUESTION_VOICE_SOURCES[0], QUESTION_VOICE_SOURCES[1]);
+    }
+    else if (screen === 'questions') {
+      toPreload.push(QUESTION_VOICE_SOURCES[currentIndex]);
+      if (currentIndex + 1 < QUESTION_VOICE_SOURCES.length) {
+        toPreload.push(QUESTION_VOICE_SOURCES[currentIndex + 1]);
+      }
+      // Preload outro when nearing the end
+      if (currentIndex >= QUESTION_VOICE_SOURCES.length - 2) {
+        toPreload.push(beforePretestingVoice);
+      }
+    }
+    else if (screen === 'outro') {
+      toPreload.push(beforePretestingVoice);
+    }
+
+    toPreload.forEach(src => getAudio(src));
 
     return () => {
-      refs.forEach((audio) => {
+      Object.values(audioMap.current).forEach((audio) => {
+        if (!audio) return;
         audio.pause();
-        audio.currentTime = 0;
+        audio.src = '';
+        audio.load();
       });
-      introAudioRef.current = null;
-      stepTwoAudioRef.current = null;
-      readyAudioRef.current = null;
-      outroAudioRef.current = null;
-      questionAudioRefs.current = [];
+      audioMap.current = {};
     };
-  }, [beforePretestingVoice]);
+  }, [screen, currentIndex, isMuted]);
 
+  /**
+   * BF-Cache & Resource Cleanup
+   * Pauses all media when the page is hidden to allow the browser to cache the state.
+   */
   useEffect(() => {
-    const refs = [
-      introAudioRef.current,
-      stepTwoAudioRef.current,
-      readyAudioRef.current,
-      outroAudioRef.current,
-      ...questionAudioRefs.current,
-    ];
-    refs.forEach((audio) => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        Object.values(audioMap.current).forEach(audio => audio?.pause());
+        // Also find and pause any video elements
+        const videos = document.querySelectorAll('video');
+        videos.forEach(v => v.pause());
+      }
+    };
+
+    window.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handleVisibilityChange);
+    };
+  }, []);
+
+  // Handle mute state across all active audios
+  useEffect(() => {
+    Object.values(audioMap.current).forEach((audio) => {
       if (!audio) return;
       audio.muted = isMuted;
       if (isMuted) {
@@ -274,55 +279,49 @@ function UserProfilingPage() {
   useEffect(() => {
     if (isMuted) return;
 
-    const playClip = (audioRef) => {
-      if (!audioRef?.current) return;
-      [
-        introAudioRef.current,
-        stepTwoAudioRef.current,
-        readyAudioRef.current,
-        outroAudioRef.current,
-        ...questionAudioRefs.current,
-      ].forEach((audio) => {
-        if (audio && audio !== audioRef.current) {
-          audio.pause();
-          audio.currentTime = 0;
+    const playClip = (src) => {
+      const audio = getAudio(src);
+      if (!audio) return;
+
+      Object.values(audioMap.current).forEach((a) => {
+        if (a && a !== audio) {
+          a.pause();
+          a.currentTime = 0;
         }
       });
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => {});
+
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
     };
 
     if (screen === 'intro' && introStep === 0) {
-      playClip(introAudioRef);
+      playClip(introVoice1);
     } else if (screen === 'intro' && introStep === 1) {
-      playClip(stepTwoAudioRef);
+      playClip(introVoice2);
+    } else if (screen === 'demographics') {
+      playClip(demographicIndex === 0 ? demographicGenderVoice : demographicAgeVoice);
     } else if (screen === 'ready') {
-      playClip(readyAudioRef);
+      playClip(introVoice3);
     } else if (screen === 'outro') {
-      playClip(outroAudioRef);
+      playClip(beforePretestingVoice);
     }
-  }, [introStep, isMuted, screen]);
+  }, [introStep, isMuted, screen, demographicIndex]);
 
   useEffect(() => {
     if (screen !== 'questions' || isMuted) return;
-    const currentQuestionAudio = questionAudioRefs.current[currentIndex];
-    if (!currentQuestionAudio) return;
+    const currentQuestionVoice = QUESTION_VOICE_SOURCES[currentIndex];
+    const audio = getAudio(currentQuestionVoice);
+    if (!audio) return;
 
-    [
-      introAudioRef.current,
-      stepTwoAudioRef.current,
-      readyAudioRef.current,
-      outroAudioRef.current,
-      ...questionAudioRefs.current,
-    ].forEach((audio) => {
-      if (audio && audio !== currentQuestionAudio) {
-        audio.pause();
-        audio.currentTime = 0;
+    Object.values(audioMap.current).forEach((a) => {
+      if (a && a !== audio) {
+        a.pause();
+        a.currentTime = 0;
       }
     });
 
-    currentQuestionAudio.currentTime = 0;
-    currentQuestionAudio.play().catch(() => {});
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
   }, [currentIndex, isMuted, screen]);
 
   const updateField = (key, value) => {
@@ -342,38 +341,108 @@ function UserProfilingPage() {
   };
 
   const goToPreviousQuestion = () => {
-    setCurrentIndex((prev) => Math.max(0, prev - 1));
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentIndex((prev) => Math.max(0, prev - 1));
+      setIsTransitioning(false);
+    }, 400);
   };
 
   const goToNextQuestion = () => {
-    setCurrentIndex((prev) => Math.min(totalSteps - 1, prev + 1));
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentIndex((prev) => Math.min(totalSteps - 1, prev + 1));
+      setIsTransitioning(false);
+    }, 400);
   };
 
   const handleSingleAnswerAndAdvance = async (questionKey, option) => {
-    if (isSubmitting) return;
+    if (isSubmitting || isTransitioning) return;
     const nextForm = { ...form, [questionKey]: option };
     setForm(nextForm);
     if (error) setError('');
 
-    if (currentIndex >= totalSteps - 1) {
-      await handleSubmit({ nextForm });
+    if (screen === 'demographics') {
+      if (demographicIndex >= DEMOGRAPHIC_QUESTIONS.length - 1) {
+        setTimeout(() => {
+          setIsTransitioning(true);
+          setTimeout(() => {
+            setScreen('questions');
+            setIsTransitioning(false);
+          }, 400);
+        }, 450);
+        return;
+      }
+      setTimeout(() => {
+        setIsTransitioning(true);
+        setTimeout(() => {
+          setDemographicIndex((prev) => prev + 1);
+          setIsTransitioning(false);
+        }, 400);
+      }, 450);
       return;
     }
-    goToNextQuestion();
+
+    if (currentIndex >= totalSteps - 1) {
+      setTimeout(async () => {
+        await handleSubmit({ nextForm });
+      }, 500);
+      return;
+    }
+
+    setTimeout(() => {
+      goToNextQuestion();
+    }, 450);
   };
 
   const handleSubmit = async ({ nextForm = null } = {}) => {
     if (isSubmitting) return;
+    
+    // Use the provided form (for immediate updates) or the current state
     const workingForm = nextForm || form;
-    const pendingQuestions = QUESTIONS.filter((question) => !isQuestionAnswered(question, workingForm[question.key]));
+    
+    // Identify exactly what is missing for better debugging and user feedback
+    const pendingProfiling = QUESTIONS.filter((q) => !isQuestionAnswered(q, workingForm[q.key]));
+    const pendingDemographics = DEMOGRAPHIC_QUESTIONS.filter((q) => !isQuestionAnswered(q, workingForm[q.key]));
 
-    if (pendingQuestions.length > 0) {
-      setError('Please answer all questions before finishing profiling.');
+    if (pendingProfiling.length > 0 || pendingDemographics.length > 0) {
+      console.warn('[Profiling] Validation failed. Missing data:', {
+        profiling: pendingProfiling.map(q => q.key),
+        demographics: pendingDemographics.map(q => q.key),
+        currentForm: workingForm
+      });
+
+      const missingLabels = [
+        ...pendingDemographics.map(q => q.label.split('?')[0] + '?'),
+        ...pendingProfiling.map(q => `Question ${QUESTIONS.findIndex(pq => pq.key === q.key) + 1}`)
+      ];
+      
+      setError(`Please answer all questions before finishing. Missing: ${missingLabels.join(', ')}`);
+      
+      // If profiling questions are missing, jump to the first missing one
+      if (pendingProfiling.length > 0) {
+        const firstMissingIdx = QUESTIONS.findIndex(q => q.key === pendingProfiling[0].key);
+        if (firstMissingIdx !== -1) {
+          setCurrentIndex(firstMissingIdx);
+          setScreen('questions');
+        }
+      } else if (pendingDemographics.length > 0) {
+        // If demographics are missing, jump there
+        const firstMissingDemIdx = DEMOGRAPHIC_QUESTIONS.findIndex(q => q.key === pendingDemographics[0].key);
+        if (firstMissingDemIdx !== -1) {
+          setDemographicIndex(firstMissingDemIdx);
+          setScreen('demographics');
+        }
+      }
+      
       return;
     }
 
     setError('');
     setIsSubmitting(true);
+    console.log('[Profiling] Validation passed. Submitting profile...');
 
     const payload = {
       speaker_profile: {
@@ -409,12 +478,28 @@ function UserProfilingPage() {
     }
     navigate(ROUTES.USER_PRETEST, { replace: true });
   };
-  const canProceedQuestion = isQuestionAnswered(currentQuestion, form[currentQuestion.key]);
+  const canProceedQuestion = currentQuestion 
+    ? isQuestionAnswered(currentQuestion, form[currentQuestion.key])
+    : false;
 
   const handleQuestionBack = () => {
     if (isSubmitting) return;
+    if (screen === 'demographics') {
+      if (demographicIndex === 0) {
+        setScreen('intro');
+        setIntroStep(1);
+        return;
+      }
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setDemographicIndex((prev) => prev - 1);
+        setIsTransitioning(false);
+      }, 400);
+      return;
+    }
     if (currentIndex === 0) {
-      setScreen('ready');
+      setScreen('demographics');
+      setDemographicIndex(DEMOGRAPHIC_QUESTIONS.length - 1);
       return;
     }
     goToPreviousQuestion();
@@ -430,7 +515,8 @@ function UserProfilingPage() {
     }
 
     if (currentIndex >= totalSteps - 1) {
-      await handleSubmit();
+      // Pass the current form explicitly to avoid stale state issues during quick clicks
+      await handleSubmit({ nextForm: form });
       return;
     }
     setError('');
@@ -444,12 +530,7 @@ function UserProfilingPage() {
         window.localStorage.setItem(INTRO_MUTE_KEY, next ? '1' : '0');
       }
       if (next) {
-        [introAudioRef.current, stepTwoAudioRef.current, readyAudioRef.current, outroAudioRef.current].forEach((audio) => {
-          if (!audio) return;
-          audio.pause();
-          audio.currentTime = 0;
-        });
-        questionAudioRefs.current.forEach((audio) => {
+        Object.values(audioMap.current).forEach((audio) => {
           if (!audio) return;
           audio.pause();
           audio.currentTime = 0;
@@ -460,13 +541,7 @@ function UserProfilingPage() {
   };
 
   const stopAllIntroAudios = () => {
-    [
-      introAudioRef.current,
-      stepTwoAudioRef.current,
-      readyAudioRef.current,
-      outroAudioRef.current,
-      ...questionAudioRefs.current,
-    ].forEach((audio) => {
+    Object.values(audioMap.current).forEach((audio) => {
       if (!audio) return;
       audio.pause();
       audio.currentTime = 0;
@@ -480,24 +555,20 @@ function UserProfilingPage() {
       return;
     }
 
-    if (!isIntroTypingDone) {
-      setTypedIntroText(introSecondMessage);
+    if (!isIntroTypingDone && introStep === 1) {
       setIsIntroTypingDone(true);
       return;
     }
 
-    setScreen('ready');
+    setScreen('demographics');
+    setDemographicIndex(0);
   };
 
   const handleBackToIntro = () => {
     stopAllIntroAudios();
     setIntroStep(0);
-    setTypedIntroText('');
     setIsIntroTypingDone(false);
-    setTypedReadyText('');
     setIsReadyTypingDone(false);
-    setTypedOutroFirstText('');
-    setTypedOutroMissionText('');
     setIsOutroTypingDone(false);
     setScreen('intro');
   };
@@ -508,36 +579,40 @@ function UserProfilingPage() {
     <div className={`user-profiling-page ${screen !== 'questions' ? 'is-gate-screen' : ''}`}>
       {screen === 'intro' && (
         <section className="profiling-intro profiling-gate--pop">
-          <article
-            className={`profiling-intro-bubble ${introStep === 1 ? 'profiling-intro-bubble--intro-typing' : ''}`}
-            aria-label="Welcome message"
-          >
-            {introStep === 0 ? (
-              <p>
-                Hello! I&apos;m <strong>B-01</strong>, your personal guide on this exciting journey to master public
-                speaking.
-              </p>
-            ) : (
-              <p>{typedIntroText}</p>
-            )}
-            <div className="profiling-intro-actions">
-              <div className="profiling-submit-btn">
-                <button
-                  type="button"
-                  onClick={handleIntroContinue}
-                  disabled={introStep === 1 && !isIntroTypingDone}
-                >
-                  Continue
-                </button>
+          <div className="profiling-unit">
+            <article
+              className={`profiling-intro-bubble ${introStep === 1 ? 'profiling-intro-bubble--intro-typing' : ''}`}
+              aria-label="Welcome message"
+            >
+              {introStep === 0 ? (
+                <p>
+                  Hello! I&apos;m <strong>B-01</strong>, your personal guide on this exciting journey to master public
+                  speaking.
+                </p>
+              ) : (
+                <p>
+                  <Typewriter text={introSecondMessage} onComplete={() => setIsIntroTypingDone(true)} />
+                </p>
+              )}
+              <div className="profiling-intro-actions">
+                <div className="profiling-submit-btn">
+                  <button
+                    type="button"
+                    onClick={handleIntroContinue}
+                    disabled={introStep === 1 && !isIntroTypingDone}
+                  >
+                    Continue
+                  </button>
+                </div>
               </div>
-            </div>
-          </article>
-          <div className="profiling-intro-robot">
-            <div className="profiling-intro-robot-media" aria-hidden="true">
-              <video className="profiling-intro-video" autoPlay loop muted playsInline>
-                <source src={waveWebm} type="video/webm" />
-                <source src={waveMp4} type="video/mp4" />
-              </video>
+            </article>
+            <div className="profiling-intro-robot">
+              <div className="profiling-intro-robot-media" aria-hidden="true">
+                <video className="profiling-intro-video" autoPlay loop muted playsInline>
+                  <source src={waveWebm} type="video/webm" />
+                  <source src={waveMp4} type="video/mp4" />
+                </video>
+              </div>
             </div>
           </div>
         </section>
@@ -545,138 +620,208 @@ function UserProfilingPage() {
 
       {screen === 'ready' && (
         <section className="profiling-intro profiling-gate--pop">
-          <article
-            className="profiling-intro-bubble profiling-intro-bubble--ready profiling-intro-bubble--ready-typing"
-            aria-label="Ready message"
-          >
-            <p className="profiling-ready-text">
-              <strong>B-01:</strong>
-              <br />
-              {isReadyTypingDone ? (
-                <>
-                  Awesome! Since you&apos;re ready, let&apos;s jump right into your 9 profiling questions! And
-                  don&apos;t worry, you can answer every single one with a simple{' '}
-                  <strong className="profiling-answer-yes">Yes</strong>,{' '}
-                  <strong className="profiling-answer-sometimes">Sometimes</strong>, or{' '}
-                  <strong className="profiling-answer-no">No</strong>.
-                </>
-              ) : (
-                typedReadyText
-              )}
-            </p>
-            <div className="profiling-intro-actions">
-              <div className="profiling-submit-btn">
-                <button
-                  type="button"
-                  onClick={() => {
-                    stopAllIntroAudios();
-                    setScreen('questions');
-                  }}
-                  disabled={!isReadyTypingDone}
-                >
-                  Continue
-                </button>
+          <div className="profiling-unit">
+            <article
+              className="profiling-intro-bubble profiling-intro-bubble--ready profiling-intro-bubble--ready-typing"
+              aria-label="Ready message"
+            >
+              <p className="profiling-ready-text">
+                <strong>B-01:</strong>
+                <br />
+                {isReadyTypingDone ? (
+                  <>
+                    Awesome! Since you&apos;re ready, let&apos;s jump right into your 10 profiling questions! And
+                    don&apos;t worry, you can answer every single one with a simple{' '}
+                    <strong className="profiling-answer-yes">Yes</strong>,{' '}
+                    <strong className="profiling-answer-sometimes">Sometimes</strong>, or{' '}
+                    <strong className="profiling-answer-no">No</strong>.
+                  </>
+                ) : (
+                  <Typewriter text={readyMessage} onComplete={() => setIsReadyTypingDone(true)} />
+                )}
+              </p>
+              <div className="profiling-intro-actions">
+                <div className="profiling-submit-btn">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      stopAllIntroAudios();
+                      setScreen('questions');
+                    }}
+                    disabled={!isReadyTypingDone}
+                  >
+                    Continue
+                  </button>
+                </div>
+              </div>
+            </article>
+
+            <div className="profiling-intro-robot">
+              <div className="profiling-intro-robot-media profiling-intro-robot-media--ready" aria-hidden="true">
+                <video className="profiling-intro-video" autoPlay loop muted playsInline>
+                  <source src={waveWebm} type="video/webm" />
+                  <source src={waveMp4} type="video/mp4" />
+                </video>
               </div>
             </div>
-          </article>
+          </div>
+        </section>
+      )}
 
-          <div className="profiling-intro-robot">
-            <div className="profiling-intro-robot-media profiling-intro-robot-media--ready" aria-hidden="true">
-              <video className="profiling-intro-video" autoPlay loop muted playsInline>
-                <source src={waveWebm} type="video/webm" />
-                <source src={waveMp4} type="video/mp4" />
-              </video>
+      {screen === 'demographics' && (
+        <section className={`profiling-question-stage profiling-gate--pop ${isTransitioning ? 'is-transitioning' : ''}`}>
+          <div className="profiling-unit">
+            <article className="profiling-question-bubble">
+              <h2 className="profiling-question-count">
+                <span>Step:</span> {demographicIndex + 1}/{DEMOGRAPHIC_QUESTIONS.length}
+              </h2>
+              <p className="profiling-question-text">
+                <strong>B-01:</strong>
+                <br />
+                {currentDemographicQuestion.label}
+              </p>
+              <div className="profiling-intro-actions profiling-intro-actions--split">
+                <button
+                  type="button"
+                  className="profiling-ready-btn profiling-ready-btn--back"
+                  onClick={handleQuestionBack}
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  className="profiling-ready-btn profiling-ready-btn--next"
+                  onClick={() => {
+                    if (demographicIndex >= DEMOGRAPHIC_QUESTIONS.length - 1) {
+                      setScreen('ready');
+                      return;
+                    }
+                    setDemographicIndex((prev) => prev + 1);
+                  }}
+                  disabled={!canProceedDemographic}
+                >
+                  Next
+                </button>
+              </div>
+            </article>
+
+            <div className="profiling-question-lower">
+              <div className="profiling-question-robot-wrap" aria-hidden="true">
+                <img src={robotQuestionImage} alt="" className="profiling-question-robot-image" />
+              </div>
+
+              <div className={`profiling-question-options-wrap ${currentDemographicQuestion.options.length > 3 ? 'is-demographics' : ''}`}>
+                <div className={`profiling-question-options ${currentDemographicQuestion.options.length > 3 ? 'is-demographics' : ''}`}>
+                  {currentDemographicQuestion.options.map((option) => {
+                    const isActive = form[currentDemographicQuestion.key] === option;
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        className={`profiling-question-option ${isActive ? 'is-active' : ''}`}
+                        onClick={() => handleSingleAnswerAndAdvance(currentDemographicQuestion.key, option)}
+                      >
+                        {option}
+                      </button>
+                    );
+                  })}
+                </div>
+                {error && <p className="profiling-error">{error}</p>}
+              </div>
             </div>
           </div>
         </section>
       )}
 
       {screen === 'questions' && (
-        <section className="profiling-question-stage profiling-gate--pop">
-          <article className="profiling-question-bubble">
-            <h2 className="profiling-question-count">
-              <span>Question:</span> {currentIndex + 1}/{totalSteps}
-            </h2>
-            <p className="profiling-question-text">
-              <strong>B-01:</strong>
-              <br />
-              {currentQuestion.label}
-            </p>
-            <div className="profiling-intro-actions profiling-intro-actions--split">
-              <button
-                type="button"
-                className="profiling-ready-btn profiling-ready-btn--back"
-                onClick={handleQuestionBack}
-                disabled={currentIndex === 0}
-              >
-                Previous
-              </button>
-              <button
-                type="button"
-                className="profiling-ready-btn profiling-ready-btn--next"
-                onClick={handleQuestionNext}
-                disabled={!canProceedQuestion || isSubmitting}
-              >
-                {currentIndex >= totalSteps - 1 ? 'Finish' : 'Next'}
-              </button>
-            </div>
-          </article>
+        <section className={`profiling-question-stage profiling-gate--pop ${isTransitioning ? 'is-transitioning' : ''}`}>
+          <div className="profiling-unit">
+            <article className="profiling-question-bubble">
+              <h2 className="profiling-question-count">
+                <span>Question:</span> {currentIndex + 1}/{totalSteps}
+              </h2>
+              <p className="profiling-question-text">
+                <strong>B-01:</strong>
+                <br />
+                {currentQuestion.label}
+              </p>
+              <div className="profiling-intro-actions profiling-intro-actions--split">
+                <button
+                  type="button"
+                  className="profiling-ready-btn profiling-ready-btn--back"
+                  onClick={handleQuestionBack}
+                  disabled={currentIndex === 0}
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  className="profiling-ready-btn profiling-ready-btn--next"
+                  onClick={handleQuestionNext}
+                  disabled={!canProceedQuestion || isSubmitting}
+                >
+                  {currentIndex >= totalSteps - 1 ? 'Finish' : 'Next'}
+                </button>
+              </div>
+            </article>
 
-          <div className="profiling-question-lower">
-            <div className="profiling-question-robot-wrap" aria-hidden="true">
-              <img src={robotQuestionImage} alt="" className="profiling-question-robot-image" />
-            </div>
+            <div className="profiling-question-lower">
+              <div className="profiling-question-robot-wrap" aria-hidden="true">
+                <img src={robotQuestionImage} alt="" className="profiling-question-robot-image" />
+              </div>
 
-            <div className="profiling-question-options-wrap">
-              {currentQuestion.type === 'single' && (
-                <div className="profiling-question-options">
-                  {currentQuestion.options.map((option) => {
-                    const isActive = form[currentQuestion.key] === option;
-                    return (
-                      <button
-                        key={option}
-                        type="button"
-                        className={`profiling-question-option ${isActive ? 'is-active' : ''}`}
-                        onClick={() => handleSingleAnswerAndAdvance(currentQuestion.key, option)}
-                      >
-                        {option}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+              <div className="profiling-question-options-wrap">
+                {currentQuestion.type === 'single' && (
+                  <div className="profiling-question-options">
+                    {currentQuestion.options.map((option) => {
+                      const isActive = form[currentQuestion.key] === option;
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          className={`profiling-question-option ${isActive ? 'is-active' : ''}`}
+                          onClick={() => handleSingleAnswerAndAdvance(currentQuestion.key, option)}
+                        >
+                          {option}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
-              {currentQuestion.type === 'multi' && (
-                <div className="profiling-question-options">
-                  {currentQuestion.options.map((option) => {
-                    const isActive = Array.isArray(form[currentQuestion.key]) && form[currentQuestion.key].includes(option);
-                    return (
-                      <button
-                        key={option}
-                        type="button"
-                        className={`profiling-question-option ${isActive ? 'is-active' : ''}`}
-                        onClick={() => toggleMultiValue(currentQuestion.key, option)}
-                      >
-                        {option}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+                {currentQuestion.type === 'multi' && (
+                  <div className="profiling-question-options">
+                    {currentQuestion.options.map((option) => {
+                      const isActive =
+                        Array.isArray(form[currentQuestion.key]) && form[currentQuestion.key].includes(option);
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          className={`profiling-question-option ${isActive ? 'is-active' : ''}`}
+                          onClick={() => toggleMultiValue(currentQuestion.key, option)}
+                        >
+                          {option}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
-              {currentQuestion.type === 'number' && (
-                <input
-                  className="profiling-input"
-                  type="number"
-                  min="1"
-                  max="120"
-                  value={form[currentQuestion.key]}
-                  onChange={(e) => updateField(currentQuestion.key, e.target.value)}
-                  placeholder={currentQuestion.placeholder}
-                />
-              )}
+                {currentQuestion.type === 'number' && (
+                  <input
+                    className="profiling-input"
+                    type="number"
+                    min="1"
+                    max="120"
+                    value={form[currentQuestion.key]}
+                    onChange={(e) => updateField(currentQuestion.key, e.target.value)}
+                    placeholder={currentQuestion.placeholder}
+                  />
+                )}
 
-              {error && <p className="profiling-error">{error}</p>}
+                {error && <p className="profiling-error">{error}</p>}
+              </div>
             </div>
           </div>
         </section>
@@ -684,35 +829,45 @@ function UserProfilingPage() {
 
       {screen === 'outro' && (
         <section className="profiling-intro profiling-intro--pretest profiling-gate--pop">
-          <article
-            className="profiling-intro-bubble profiling-intro-bubble--pretest profiling-intro-bubble--outro-typing"
-            aria-label="Before pre-testing message"
-          >
-            <p className="profiling-pretest-text">
-              <strong>B-01:</strong>
-              <br />
-              {typedOutroFirstText}
-            </p>
-            <p className="profiling-pretest-text profiling-pretest-text--mission">
-              <strong>Your mission:</strong>
-              <br />
-              {typedOutroMissionText}
-            </p>
-            <div className="profiling-intro-actions profiling-intro-actions--end">
-              <div className="profiling-submit-btn">
-                <button type="button" onClick={continueToPretest} disabled={!isOutroTypingDone}>
-                  Continue
-                </button>
+          <div className="profiling-unit">
+            <article
+              className="profiling-intro-bubble profiling-intro-bubble--pretest profiling-intro-bubble--outro-typing"
+              aria-label="Before pre-testing message"
+            >
+              <p className="profiling-pretest-text">
+                <strong>B-01:</strong>
+                <br />
+                <Typewriter text={outroFirstMessage} />
+              </p>
+              <p className="profiling-pretest-text profiling-pretest-text--mission">
+                <strong>Your mission:</strong>
+                <br />
+                {isOutroTypingDone ? (
+                  <>
+                    Speak for at least <strong>30 seconds</strong> on the topic,{' '}
+                    <strong>&apos;Tell me about yourself.&apos;</strong> Don&apos;t overthink it—just be
+                    you and let your voice lead the way!
+                  </>
+                ) : (
+                  <Typewriter text={outroMissionMessage} onComplete={() => setIsOutroTypingDone(true)} />
+                )}
+              </p>
+              <div className="profiling-intro-actions profiling-intro-actions--end">
+                <div className="profiling-submit-btn">
+                  <button type="button" onClick={continueToPretest} disabled={!isOutroTypingDone}>
+                    Continue
+                  </button>
+                </div>
               </div>
-            </div>
-          </article>
+            </article>
 
-          <div className="profiling-intro-robot">
-            <div className="profiling-intro-robot-media profiling-intro-robot-media--ready" aria-hidden="true">
-              <video className="profiling-intro-video" autoPlay loop muted playsInline>
-                <source src={waveWebm} type="video/webm" />
-                <source src={waveMp4} type="video/mp4" />
-              </video>
+            <div className="profiling-intro-robot">
+              <div className="profiling-intro-robot-media profiling-intro-robot-media--ready" aria-hidden="true">
+                <video className="profiling-intro-video" autoPlay loop muted playsInline>
+                  <source src={waveWebm} type="video/webm" />
+                  <source src={waveMp4} type="video/mp4" />
+                </video>
+              </div>
             </div>
           </div>
         </section>
@@ -725,7 +880,7 @@ function UserProfilingPage() {
           title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
           className={`profiling-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
         >
-          {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+          {isMuted ? <VolumeX aria-hidden="true" /> : <Volume2 aria-hidden="true" />}
         </button>
       </div>
     </div>

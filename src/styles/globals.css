@@ -117,7 +117,7 @@ body {
   color: var(--color-text-primary);
   background-color: var(--color-background);
   min-height: 100vh;
-  overflow-y: scroll;
+  overflow-y: auto;
 }
 
 /* Force a single typography family across the app UI */
@@ -128,17 +128,19 @@ body {
 
 /* Focus styles */
 :focus-visible {
-  outline: 2px solid var(--color-primary-text);
-  outline-offset: 2px;
+  outline: none;
 }
 
 button:focus-visible,
-a:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--color-primary-text) !important;
+  outline-offset: 2px;
+}
+
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-  outline: 2px solid var(--color-primary-text) !important;
-  outline-offset: 2px;
+  outline: none !important;
 }
 
 /* Links */
@@ -225,7 +227,7 @@ img {
 /* Main content area — no top nav, content sits at the top */
 .main-content {
   --app-sidebar-width: 280px;
-  min-height: 100vh;
+  height: 100vh;
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -234,8 +236,16 @@ img {
   padding-bottom: 0;
   background: #F8F9FA;
   overflow-x: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
+  scrollbar-gutter: auto !important;
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;  /* Firefox */
+}
+
+.main-content::-webkit-scrollbar {
+  display: none !important; /* Chrome, Safari and Opera */
 }
 
 .main-content--full {

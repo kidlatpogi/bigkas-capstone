@@ -21,13 +21,9 @@ export default function RankListModal({ isOpen, onClose, currentLevelNumber }) {
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
+        <div
           className="rank-modal-overlay"
           onClick={onClose}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3, ease: 'easeInOut' }}
         >
           <motion.div
             className="rank-modal-card"
@@ -36,7 +32,7 @@ export default function RankListModal({ isOpen, onClose, currentLevelNumber }) {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            style={{ transformZ: 0 }} /* Force GPU acceleration */
+            style={{ transform: 'translateZ(0)' }} /* Force GPU acceleration */
           >
             <div className="rank-modal-header">
               <h2 className="rank-modal-title">Speaker Ranks</h2>
@@ -68,7 +64,9 @@ export default function RankListModal({ isOpen, onClose, currentLevelNumber }) {
                       />
                     </div>
                     <div className="rank-modal-item-info">
-                      <p className="rank-modal-item-label">Level {level.number}</p>
+                      <p className="rank-modal-item-label">
+                        {isCurrent ? 'Current Level' : `Level ${level.number}`}
+                      </p>
                       <h3 className="rank-modal-item-name">{level.name}</h3>
                     </div>
                     {isCurrent && (
@@ -81,7 +79,7 @@ export default function RankListModal({ isOpen, onClose, currentLevelNumber }) {
               })}
             </div>
           </motion.div>
-        </motion.div>
+        </div>
       )}
     </AnimatePresence>
   );

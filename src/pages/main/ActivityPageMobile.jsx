@@ -7,6 +7,7 @@ import { useSessions } from '../../hooks/useSessions';
 import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import PushButton from '../../components/common/PushButton';
+import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import TutorialOverlay from '../../components/main/TutorialOverlay';
 import {
   GLOBAL_ACTIVITY_SCOPE,
@@ -17,7 +18,6 @@ import {
   getTaskXp,
   isActivityTaskCompleted,
 } from '../../utils/activityProgress';
-import { addClaimableAchievement } from '../../utils/achievementClaims';
 import SkywardJourneyShell from '../../components/journey/SkywardJourneyShell';
 import StreakCalendarModal from '../../components/main/StreakCalendarModal';
 import RankListModal from '../../components/main/RankListModal';
@@ -25,6 +25,7 @@ import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks
 import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../services/journeyProgressService';
 import { RANDOM_TOPICS } from '../../utils/practiceData';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
+import { filterActivitiesForJourney, JOURNEY_STAGE_LIMITS } from '../../utils/journeyFiltering';
 
 const iconFire = getAssetUrl('icons/Icon-Fire.svg');
 const robotMorningImage = getSpriteUrl('Robot/0018.webp');
@@ -36,7 +37,7 @@ const tutorialRobotStep3 = getSpriteUrl('Robot/0018.webp');
 const tutorialRobotStep4 = getSpriteUrl('Robot/0001.webp');
 const tutorialRobotStep5 = getSpriteUrl('Robot/0002.webp');
 const tutorialRobotStep6 = getSpriteUrl('Robot/0004.webp');
-const randomizerRobotImage = getSpriteUrl('Robot/0005.webp');
+const randomizerRobotImage = getSpriteUrl('Robot/0002.webp');
 const rankBronze = getSpriteUrl('Rank/rank-bronze.png');
 const rankSilverImage = getSpriteUrl('Rank/rank-silver.png');
 const rankGoldImage = getSpriteUrl('Rank/rank-gold.png');
@@ -53,59 +54,7 @@ const ACTIVITY_CELEBRATION_STORAGE_KEY = 'bigkas_pending_activity_celebration_v1
 const LAST_SHOWN_COMPLETION_EVENT_KEY = 'bigkas_last_completion_event_v1';
 const FREE_SPEECH_TUTORIAL_SEEN_KEY = 'bigkas_free_speech_tutorial_seen_v1';
 
-const FREE_SPEECH_TUTORIAL_STEPS = [
-  {
-    id: 'step-intro',
-    title: 'B-01:',
-    robot: tutorialRobotStep1,
-    robotClassName: 'is-activity-home-step-1',
-    button: 'Next',
-    targetElementId: null,
-    text: 'Welcome aboard! You made it, and I know you are going to do great things here. Let me give you a quick, guided tour of your Home screen so you know exactly where everything is.',
-  },
-  {
-    id: 'step-companion',
-    title: 'B-01:',
-    robot: tutorialRobotStep2,
-    robotClassName: 'is-activity-home-step-2',
-    button: 'Next',
-    targetElementId: 'tutorial-target-home-banner',
-    text: "Your AI Companion, hey that's me! See my panel right at the top? I will be checking in with you from time to time. Depending on your progress, I'll drop by with daily greetings, personalized tips, and a little extra encouragement to keep your momentum going.",
-  },
-  {
-    id: 'step-streak',
-    title: 'B-01:',
-    robot: tutorialRobotStep3,
-    robotClassName: 'is-activity-home-step-3',
-    button: 'Next',
-    targetElementId: 'tutorial-target-home-streak',
-    text: 'Up in the top right is your Streak counter. Consistency is the true secret to mastering public speaking! Log in and complete a daily activity to keep the fire burning and watch that number grow.',
-  },
-  {
-    id: 'step-rank',
-    title: 'B-01:',
-    robot: tutorialRobotStep4,
-    button: 'Next',
-    targetElementId: 'tutorial-target-home-rank',
-    text: 'To keep an eye on the big picture, check out the Journey Progression card on the right! This handy panel lets you quickly track your current speaking Rank and see exactly how many tasks you have conquered so far.',
-  },
-  {
-    id: 'step-roadmap',
-    title: 'B-01:',
-    robot: tutorialRobotStep5,
-    button: 'Next',
-    targetElementId: 'tutorial-target-home-journey',
-    text: 'This path is your customized learning roadmap! You will start at your first stage and unlock the next ones as you move forward. The activities gradually become more challenging, and once you complete all tasks on your path, you unlock a final Post-test challenge to advance.',
-  },
-  {
-    id: 'step-practice',
-    title: 'B-01:',
-    robot: tutorialRobotStep6,
-    button: 'Finish!',
-    targetElementId: 'tutorial-target-home-practice',
-    text: 'Need extra training? The Practice card gives you two ways to sharpen your skills anytime: Randomizer for surprise prompts, and Free Speech for open-topic confidence building. Ready? Let us start your Free Speech session now!',
-  },
-];
+
 
 const RANDOMIZER_DEFAULT_TOPIC = 'How does artificial intelligence impact our everyday lives?';
 
@@ -147,24 +96,86 @@ function buildStreakStats(sessions = [], historyEntries = []) {
     const parsed = new Date(dateInput);
     if (!Number.isNaN(parsed.getTime())) dayIndexes.add(getLocalDayIndex(parsed));
   };
-  sessions.forEach((s) => { if (!isPreTestSession(s)) { const d = getSessionDate(s); if (d) addDate(d); } });
-  historyEntries.forEach((e) => { if (e?.completedAt) addDate(e.completedAt); });
-  const sortedIndexes = Array.from(dayIndexes).sort((a, b) => a - b);
-  if (!sortedIndexes.length) return { currentStreak: 0, longestStreak: 0, activeDays: [] };
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  const todayIndex = getLocalDayIndex(now);
-  const yesterdayIndex = todayIndex - 1;
-  let rl = 0;
-  let nl = 0;
-  let ol = null;
-  sortedIndexes.forEach((ll) => {
-    ol !== null && ll === ol + 1 ? (rl += 1) : (rl = 1), (nl = Math.max(nl, rl)), (ol = ll);
+  sessions.forEach((s) => {
+    if (!isPreTestSession(s)) {
+      const d = getSessionDate(s);
+      if (d) addDate(d);
+    }
   });
-  const isTodayActive = dayIndexes.has(todayIndex);
-  const isYesterdayActive = dayIndexes.has(yesterdayIndex);
-  const currentStreak = isTodayActive || isYesterdayActive ? rl : 0;
-  return { currentStreak, longestStreak: nl, activeDays: sortedIndexes };
+  historyEntries.forEach((e) => {
+    if (e?.completedAt) addDate(e.completedAt);
+  });
+  const activeDays = [...dayIndexes].sort((a, b) => a - b);
+  if (!activeDays.length) return { currentStreak: 0, longestStreak: 0, activeDays: [], canRecover: false };
+
+  const todayIndex = getLocalDayIndex(new Date());
+  const last = activeDays[activeDays.length - 1];
+
+  const hasRecoveryToday = sessions.some((s) => {
+    const d = getSessionDate(s);
+    const entry = s?.entry_point ?? s?.entryPoint;
+    return d && getLocalDayIndex(d) === todayIndex && entry === 'streak-recovery';
+  });
+
+  let currentStreak = 0;
+  let canRecover = false;
+  let potentialStreak = 0;
+
+  const daySet = new Set(activeDays);
+
+  if (todayIndex - last <= 1) {
+    let cursor = last;
+    while (daySet.has(cursor) || (hasRecoveryToday && cursor === todayIndex - 1)) {
+      currentStreak += 1;
+      cursor -= 1;
+    }
+
+    if (todayIndex === last && !daySet.has(todayIndex - 1) && !hasRecoveryToday) {
+      let prevStreak = 0;
+      let pCursor = todayIndex - 2;
+      while (daySet.has(pCursor)) {
+        prevStreak += 1;
+        pCursor -= 1;
+      }
+      if (prevStreak > 0) {
+        canRecover = true;
+        potentialStreak = prevStreak + 1;
+      }
+    }
+  } else if (todayIndex - last === 2 && !hasRecoveryToday) {
+    let potentialStreakVal = 0;
+    let cursor = last;
+    while (daySet.has(cursor)) {
+      potentialStreakVal += 1;
+      cursor -= 1;
+    }
+    if (potentialStreakVal > 0) {
+      canRecover = true;
+      potentialStreak = potentialStreakVal;
+    }
+  }
+
+  // Calculate longest streak
+  let longestStreak = 0;
+  let current = 0;
+  let prev = null;
+  activeDays.forEach((idx) => {
+    if (prev !== null && idx === prev + 1) {
+      current += 1;
+    } else {
+      current = 1;
+    }
+    longestStreak = Math.max(longestStreak, current);
+    prev = idx;
+  });
+
+  return { 
+    currentStreak, 
+    longestStreak, 
+    activeDays, 
+    canRecover: canRecover && potentialStreak > 0, 
+    potentialStreak 
+  };
 }
 
 function getWeekdayPills(qa = new Set()) {
@@ -204,7 +215,7 @@ function getRankSprite(levelNumber, levelName) {
 function ActivityPageMobile() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuthContext();
+  const { user, updateUserMetadata } = useAuthContext();
   const { sessions = [] } = useSessions();
 
   // Activity state
@@ -214,10 +225,16 @@ function ActivityPageMobile() {
 
   // Journey & tasks
   const {
-    tasks = [],
+    tasks: allTasks,
     loading: activitiesLoading,
     refresh: refreshJourney,
-  } = useActivitiesJourneyTasks(user?.id, Qa);
+  } = useActivitiesJourneyTasks(user?.progressLevelNumber || 1);
+
+  const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
+  const tasks = useMemo(() => {
+    const sLevel = levelProgress?.levelNumber || 1;
+    return filterActivitiesForJourney(allTasks, sLevel, user?.progressLevelNumber || 1);
+  }, [allTasks, levelProgress?.levelNumber, user?.progressLevelNumber]);
 
   // State
   const [activeTaskId, setActiveTaskId] = useState(null);
@@ -232,10 +249,12 @@ function ActivityPageMobile() {
   const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
   const [isRankModalOpen, setIsRankModalOpen] = useState(false);
   const [showDashboardOverlay, setShowDashboardOverlay] = useState(false);
+  const [showAssessmentModal, setShowAssessmentModal] = useState(false);
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const [entranceFromNav, setEntranceFromNav] = useState(false);
   const stampResetTimeoutRef = useRef(null);
   const audioContextRef = useRef(null);
+  const overlayAudioRef = useRef(null);
 
   // Clean up effects
   useEffect(() => {
@@ -245,6 +264,10 @@ function ActivityPageMobile() {
       }
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
         audioContextRef.current.close().catch(() => {});
+      }
+      if (overlayAudioRef.current) {
+        overlayAudioRef.current.pause();
+        overlayAudioRef.current = null;
       }
     };
   }, []);
@@ -276,12 +299,10 @@ function ActivityPageMobile() {
     };
   }, []);
 
-  const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
   const recommendedLevel = useMemo(() => {
-    const level = Number(levelProgress?.levelNumber || 1);
-    if (!Number.isFinite(level)) return 1;
-    return Math.max(1, Math.min(5, Math.round(level)));
-  }, [levelProgress?.levelNumber]);
+    const pLevel = Number(user?.progressLevelNumber || 1);
+    return Math.max(1, Math.min(5, Math.round(pLevel)));
+  }, [user?.progressLevelNumber]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -383,15 +404,58 @@ function ActivityPageMobile() {
     if (!user?.id || activitiesLoading) return;
     
     // Condition: finished profiling AND pre-testing
-    const isReadyForTutorial = user.profilingCompleted && user.pretestCompleted;
+    const isReadyForTutorial = 
+      user.onboardingStage === 'completed' || 
+      (user.profilingCompleted && user.pretestCompleted) ||
+      (user.isProfilingCompleted && user.isPreTestCompleted);
     
     if (isReadyForTutorial) {
-      const seen = window.localStorage.getItem(FREE_SPEECH_TUTORIAL_SEEN_KEY);
-      if (seen !== '1') {
+      const localSeen = window.localStorage.getItem(FREE_SPEECH_TUTORIAL_SEEN_KEY);
+      const remoteSeen = !!user.dashboardTutorialSeen;
+
+      if (localSeen !== '1' && !remoteSeen) {
         setShowFreeSpeechTutorial(true);
       }
     }
-  }, [user?.id, user?.profilingCompleted, user?.pretestCompleted, activitiesLoading]);
+  }, [user?.id, user?.onboardingStage, user?.profilingCompleted, user?.pretestCompleted, user?.isProfilingCompleted, user?.isPreTestCompleted, user?.dashboardTutorialSeen, activitiesLoading]);
+
+  useEffect(() => {
+    if (location.state?.launchFreeSpeechTutorial !== true) return undefined;
+    
+    // Explicitly reset the seen flag if we're coming from the onboarding reveal
+    window.localStorage.setItem(FREE_SPEECH_TUTORIAL_SEEN_KEY, '0');
+    setShowFreeSpeechTutorial(true);
+
+    const t = setTimeout(() => {
+      navigate(location.pathname, {
+        replace: true,
+        state: { ...(location.state || {}), launchFreeSpeechTutorial: false },
+      });
+    }, 100);
+
+    return () => clearTimeout(t);
+  }, [location.pathname, location.state, navigate, FREE_SPEECH_TUTORIAL_SEEN_KEY]);
+
+  useEffect(() => {
+    if (user?.isAudioMuted) return;
+
+    if (showRandomizerOverlay) {
+      if (overlayAudioRef.current) overlayAudioRef.current.pause();
+      const audio = new Audio("https://assets.bigkas.site/Voices/Home%20Page/Randomizer%20and%20Free%20Speech%20Button/Randomizer.mp3");
+      overlayAudioRef.current = audio;
+      audio.play().catch(() => {});
+    } else if (showFreeSpeechOverlay) {
+      if (overlayAudioRef.current) overlayAudioRef.current.pause();
+      const audio = new Audio("https://assets.bigkas.site/Voices/Home%20Page/Randomizer%20and%20Free%20Speech%20Button/Free%20Speech.mp3");
+      overlayAudioRef.current = audio;
+      audio.play().catch(() => {});
+    } else {
+      if (overlayAudioRef.current) {
+        overlayAudioRef.current.pause();
+        overlayAudioRef.current = null;
+      }
+    }
+  }, [showRandomizerOverlay, showFreeSpeechOverlay, user?.isAudioMuted]);
 
   const handleActiveTaskIdChange = useCallback((id) => {
     setActiveTaskId(id);
@@ -401,9 +465,10 @@ function ActivityPageMobile() {
   }, [user?.id]);
 
   const handleTaskAction = useCallback((task) => {
+    const activityPromptTopic = String(task.detail || task.objective || task.title || '').trim();
     navigate(`${ROUTES.TRAINING}?autostart=1`, {
       state: {
-        freeTopic: task.title,
+        freeTopic: activityPromptTopic,
         objective: task.objective || task.detail,
         focus: 'free',
         sessionType: 'training',
@@ -422,6 +487,17 @@ function ActivityPageMobile() {
   const handleCloseRandomizerOverlay = useCallback(() => {
     setShowRandomizerOverlay(false);
   }, []);
+
+  const handleToggleMute = async () => {
+    const nextMute = !user?.isAudioMuted;
+    await updateUserMetadata({ is_audio_muted: nextMute });
+    localStorage.setItem('bigkas_global_audio_muted_v1', nextMute ? '1' : '0');
+
+    // Immediate feedback: pause if muting
+    if (nextMute && overlayAudioRef.current) {
+      overlayAudioRef.current.pause();
+    }
+  };
 
   const handleRandomizeTopic = useCallback(() => {
     if (!RANDOM_TOPICS.length) return;
@@ -448,6 +524,19 @@ function ActivityPageMobile() {
       },
     });
   }, [navigate, randomizerTopic]);
+
+  const handleRecoverStreak = useCallback(() => {
+    navigate(`${ROUTES.TRAINING}?autostart=1`, {
+      state: {
+        focus: 'free',
+        freeTopic: 'Reflecting on my speaking journey',
+        objective: 'Complete this session to recover your daily streak!',
+        sessionType: 'practice',
+        entryPoint: 'streak-recovery',
+        autoStartCountdown: true,
+      },
+    });
+  }, [navigate]);
 
   const handleFreeSpeechClick = useCallback(() => {
     setShowFreeSpeechOverlay(true);
@@ -492,6 +581,113 @@ function ActivityPageMobile() {
     return () => document.body.classList.remove('activity-tutorial-open');
   }, [showFreeSpeechTutorial]);
 
+  const freeSpeechTutorialSteps = useMemo(() => {
+    const level = user?.speakerLevelNumber || 1;
+    let welcomeText = "Welcome aboard! You made it, and I know you're going to do great things here. Let me give you a quick, guided tour of your Home screen so you know exactly where everything is.";
+    let welcomeVoice = null;
+    
+    if (level === 1) {
+      welcomeText = "Welcome! I’ve analyzed your profile and we’re starting from the ground up. You’ll be taking the full 30-stage path for Journey 1 to ensure your vocal and visual foundations are unbreakable. Let’s build your mastery, stage by stage.";
+      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%201.mp3";
+    } else if (level === 2) {
+      welcomeText = "Welcome! Based on your level, I’ve optimized your curriculum. Since you already show solid potential, I’ve trimmed Journey 1 down to 20 essential stages. We’ll move faster through the basics so you can reach the advanced challenges sooner. Let’s begin.";
+      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%202.mp3";
+    } else if (level === 3) {
+      welcomeText = "Welcome. Your experience allows us to skip the fluff. I’ve recalibrated your Journey 1 to just 15 high-impact stages, and Journey 2 to 20. We’re focusing only on the core essentials before we dive into the deep technical training. Systems ready?";
+      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%203.mp3";
+    } else if (level === 4) {
+      welcomeText = "Welcome! Your skills are advanced, so I’ve streamlined your training. I’ve cut Journeys 1, 2, and 3 down to the bare essentials, removing over 40 stages of repetitive drills. We’re moving fast through the basics to get you straight to the Specialist training. Let’s get to work.";
+      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%204.mp3";
+    } else if (level >= 5) {
+      welcomeText = "Welcome, Expert. We’re skipping the grind. I’ve compressed Journeys 1 through 4 into a rapid-fire calibration to respect your expertise. We’re fast-forwarding past the basics so you can focus entirely on the high-stakes challenges of the final Journey. Mastery starts here.";
+      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%205.mp3";
+    }
+
+    return [
+      {
+        id: 'step-intro',
+        title: 'B-01:',
+        robot: tutorialRobotStep1,
+        robotClassName: 'is-activity-home-step-1',
+        button: 'Next',
+        targetElementId: null,
+        text: welcomeText,
+        voice: welcomeVoice,
+      },
+      {
+        id: 'step-companion',
+        title: 'B-01:',
+        robot: tutorialRobotStep2,
+        robotClassName: 'is-activity-home-step-2',
+        button: 'Next',
+        targetElementId: 'tutorial-target-home-banner',
+        text: "Your AI Companion—hey, that's me! See my panel right at the top? I'll be checking in with you from time to time. Depending on your progress, I'll drop by with daily greetings, personalized tips, and a little extra encouragement to keep your momentum going.",
+        voice: "https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%201.mp3",
+      },
+      {
+        id: 'step-streak',
+        title: 'B-01:',
+        robot: tutorialRobotStep3,
+        robotClassName: 'is-activity-home-step-3',
+        button: 'Next',
+        targetElementId: 'tutorial-target-home-streak',
+        text: 'Up in the top right is your Streak counter. Consistency is the true secret to mastering public speaking! Log in and complete a daily activity to keep the fire burning and watch that number grow.',
+        voice: "https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%202.mp3",
+      },
+      {
+        id: 'step-rank',
+        title: 'B-01:',
+        robot: tutorialRobotStep4,
+        button: 'Next',
+        targetElementId: 'tutorial-target-home-rank',
+        text: 'To keep an eye on the big picture, check out the Journey Progression card on the right! This handy panel lets you quickly track your current speaking Rank and see exactly how many tasks you have conquered so far.',
+        voice: "https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%204.mp3",
+      },
+      {
+        id: 'step-roadmap',
+        title: 'B-01:',
+        robot: tutorialRobotStep5,
+        robotClassName: 'is-roadmap-step',
+        button: 'Next',
+        targetElementId: 'tutorial-target-home-journey',
+        text: 'This path is your customized learning roadmap! You will start at your first stage and unlock the next ones as you move forward. The activities gradually become more challenging, and once you complete all tasks on your path, you unlock a final Post-test challenge to advance.',
+        voice: "https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%203.mp3",
+      },
+      {
+        id: 'step-practice',
+        title: 'B-01:',
+        robot: tutorialRobotStep6,
+        robotClassName: 'is-practice-step',
+        button: 'Finish!',
+        targetElementId: 'tutorial-target-home-practice',
+        text: 'Need extra training? The Practice card gives you two ways to sharpen your skills anytime: Randomizer for surprise prompts, and Free Speech for open-topic confidence building. Ready? Let us start your Free Speech session now!',
+        voice: "https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%205.mp3",
+      },
+    ];
+  }, [user?.speakerLevelNumber]);
+
+  const assessmentTutorialSteps = useMemo(() => {
+    const sLevel = user?.speakerLevelNumber || 1;
+    const pLevel = user?.progressLevelNumber || 1;
+    const reducedTo = JOURNEY_STAGE_LIMITS[sLevel]?.[pLevel] ?? 30;
+
+    let text = `We noticed that you are a level ${sLevel} speaker, so we reduced Journey ${pLevel} to ${reducedTo} stages for you!`;
+    if (reducedTo >= 30) {
+      text = `Welcome to Journey ${pLevel}! You have ${reducedTo} stages to complete. Let's get started!`;
+    }
+
+    return [
+      {
+        id: 'assessment-notice',
+        title: 'B-01:',
+        text,
+        button: 'Got it!',
+        targetElementId: null,
+        robot: tutorialRobotStep1,
+      },
+    ];
+  }, [user?.speakerLevelNumber, user?.progressLevelNumber]);
+
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
     if (showDashboardOverlay) {
@@ -506,12 +702,25 @@ function ActivityPageMobile() {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(FREE_SPEECH_TUTORIAL_SEEN_KEY, '1');
     }
-  }, []);
 
-  const renderTaskCardForShell = useCallback(({ task, animationClass = '' }) => {
+    // Persist to database so it doesn't show again on other devices
+    if (user?.id) {
+      updateUserMetadata({ dashboard_tutorial_seen: true }).catch(() => {});
+    }
+
+    const sLevel = Number(user?.speakerLevelNumber || 1);
+    const pLevel = Number(user?.progressLevelNumber || 1);
+    const reducedTo = JOURNEY_STAGE_LIMITS[sLevel]?.[pLevel] ?? 30;
+    
+    if (reducedTo < 30) {
+      setShowAssessmentModal(true);
+    }
+  }, [user?.id, user?.speakerLevelNumber, user?.progressLevelNumber, updateUserMetadata]);
+
+  const renderTaskCardForShell = useCallback(({ task, isLocked: shellLocked, animationClass = '' }) => {
     const done = taskState[task.id] === true;
     const isUnlocked = taskUnlockState[task.id] === true;
-    const isLocked = !done && !isUnlocked;
+    const isLocked = shellLocked ?? (!done && !isUnlocked);
     const shouldAnimateStamp = done && recentStampedTaskId === task.id;
     const progress = taskProgress[task.id] || { current: 0, target: 1 };
     const canShowProgress = !isLocked && progress.target > 1;
@@ -549,8 +758,8 @@ function ActivityPageMobile() {
         ) : null}
 
         <div className="activity-task-actions">
-          <button
-            type="button"
+          <Button
+            variant="practice"
             className={`activity-action-btn${isLocked ? ' is-locked' : ''}${canShowProgress ? ' with-progress' : ''}`}
             onClick={() => handleTaskAction(task)}
             disabled={isLocked || done}
@@ -559,7 +768,7 @@ function ActivityPageMobile() {
               <span className="activity-action-progress-fill" style={{ width: `${progressPctForTask}%` }} />
             ) : null}
             <span className="activity-action-btn-text">{ctaLabel}</span>
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -569,10 +778,16 @@ function ActivityPageMobile() {
     <div className="activity-page-mobile-root activity-page--skyward-entrance">
       <TutorialOverlay
         isOpen={showFreeSpeechTutorial}
-        steps={FREE_SPEECH_TUTORIAL_STEPS}
+        steps={freeSpeechTutorialSteps}
         showAudioToggle
         onClose={() => setShowFreeSpeechTutorial(false)}
         onFinish={handleTutorialFinish}
+      />
+      <TutorialOverlay
+        isOpen={showAssessmentModal}
+        onClose={() => setShowAssessmentModal(false)}
+        onFinish={() => setShowAssessmentModal(false)}
+        steps={assessmentTutorialSteps}
       />
       {showCompletionCelebration && (
         <Confetti
@@ -657,6 +872,17 @@ function ActivityPageMobile() {
                 fetchPriority="high"
               />
             </div>
+            <div className="tutorial-audio-action">
+              <button
+                type="button"
+                aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
+                onClick={handleToggleMute}
+              >
+                {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+              </button>
+            </div>
           </div>
         </section>
       )}
@@ -710,6 +936,17 @@ function ActivityPageMobile() {
                 loading="eager"
                 fetchPriority="high"
               />
+            </div>
+            <div className="tutorial-audio-action">
+              <button
+                type="button"
+                aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
+                onClick={handleToggleMute}
+              >
+                {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+              </button>
             </div>
           </div>
         </section>
@@ -794,13 +1031,28 @@ function ActivityPageMobile() {
                     </span>
                   ))}
                 </div>
-                <p className="new-streak-copy">Build a daily speaking habit to keep stacking your streak.</p>
+                {streakStats.canRecover ? (
+                  <Button 
+                    variant="practice"
+                    className="activity-mobile-dashboard-btn streak-recovery-trigger" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRecoverStreak();
+                    }}
+                    aria-label={`Recover your ${streakStats.potentialStreak} day streak`}
+                    style={{ marginTop: '8px', width: '100%', height: '44px' }}
+                  >
+                    Recover Streak
+                  </Button>
+                ) : (
+                  <p className="new-streak-copy">Build a daily speaking habit to keep stacking your streak.</p>
+                )}
               </div>
 
               {/* Rank Widget */}
               <section className="new-widget" id="tutorial-target-home-rank">
                 <div className="new-widget-head">
-                  <h2 className="new-widget-title">Journey Progression</h2>
+                  <h2 className="new-widget-title">Speaker Level Progression</h2>
                   <span className="new-widget-chip">Level</span>
                 </div>
                 <div 
@@ -812,14 +1064,20 @@ function ActivityPageMobile() {
                 >
                   <img src={rankSpriteImage} alt="" className="new-widget-rank-sprite" />
                   <div className="new-widget-rank-content">
-                    <p className="new-widget-kicker">Current Level</p>
-                    <p className="new-widget-value">LEVEL {levelProgress.levelNumber}</p>
+                    <p className="new-widget-kicker">Current Mastery</p>
+                    <p className="new-widget-value">LEVEL {user?.progressLevelNumber || 1}</p>
                   </div>
                 </div>
                 <p className="new-widget-caption">
-                  {completedTaskCount}/{Math.max(tasks.length, 1)} Tasks Complete
-                  <span className="new-widget-caption-sep"> - </span>
-                  {sidebarProgressPct}% Cleared
+                  {tasks.length > 0 ? (
+                    <>
+                      {completedTaskCount}/{tasks.length} Stages Completed
+                      <span className="new-widget-caption-sep"> - </span>
+                      {sidebarProgressPct}% Cleared
+                    </>
+                  ) : (
+                    'No activities found for this level.'
+                  )}
                 </p>
               </section>
 

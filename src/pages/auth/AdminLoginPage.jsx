@@ -8,7 +8,10 @@ import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import { isValidEmail } from '../../utils/validators';
 import { motion } from 'framer-motion';
+import { getAssetUrl } from '../../utils/assetUtils';
 import './AdminLoginPage.css';
+
+const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 
 const ADMIN_LOGIN_LOCKOUT_UNTIL_KEY = 'bigkas_admin_login_lockout_until';
 
@@ -150,7 +153,10 @@ function AdminLoginPage({ managePageClass = true }) {
         <BackButton className="auth-back-btn" onClick={() => navigate(ROUTES.HOME)} />
 
         <div className="auth-brand-content">
-          <h1 className="auth-brand-name">BIGKAS</h1>
+          <div className="admin-logo-wrapper">
+            <img src={bigkasLogo} alt="BIGKAS" className="admin-auth-logo" />
+            <h1 className="auth-brand-name">BIGKAS</h1>
+          </div>
           <p className="auth-brand-tagline">RESTRICTED ADMIN ACCESS</p>
           <div className="auth-brand-line" />
 

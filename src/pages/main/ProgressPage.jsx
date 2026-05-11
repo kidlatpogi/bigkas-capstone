@@ -42,21 +42,12 @@ const verbalSprite = getSpriteUrl('common/Verbal.png');
 const vocalSprite = getSpriteUrl('common/Vocal.png');
 import HistoryPage from './HistoryPage';
 import HistoryPageMobile from './HistoryPageMobile';
+import { generateCoachInsights } from '../../utils/coachInsights';
 import './ProgressPage.css';
 
 const TIME_RANGES = ['All', 'Daily', 'Weekly', 'Monthly', 'Yearly'];
 
-function toFivePointScore(rawScore) {
-  const numeric = Number(rawScore);
-  if (!Number.isFinite(numeric)) return 1;
-
-  if (numeric <= 5) {
-    return Math.round(Math.max(1, Math.min(5, numeric)) * 10) / 10;
-  }
-
-  const normalized = Math.max(0, Math.min(100, numeric));
-  return Math.round((1 + (normalized / 100) * 4) * 10) / 10;
-}
+import { toFivePointScore } from '../../utils/sessionFormatting';
 
 function formatFivePointScore(rawScore) {
   return toFivePointScore(rawScore).toFixed(1);
@@ -71,10 +62,9 @@ function getAverageTrendScore15(sessionsList) {
 }
 
 function getScoreTier15(score) {
-  if (score >= 4.0) return { label: 'Excellent', color: '#059669' };
-  if (score >= 3.0) return { label: 'Good', color: '#059669' };
-  if (score >= 2.0) return { label: 'Fair', color: '#F97316' };
-  return { label: 'Needs Work', color: '#FF0000' };
+  if (score >= 3.0) return { label: 'Strong', color: '#10B981' };
+  if (score >= 2.0) return { label: 'Developing', color: '#3B82F6' };
+  return { label: 'Rising', color: '#F59E0B' };
 }
 
 function clamp15(value) {
@@ -429,6 +419,8 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
     });
   }, [pillarRange, userSessions]);
 
+  const coachInsights = useMemo(() => generateCoachInsights(userSessions), [userSessions]);
+
 /* history session logic removed */
 
   return (
@@ -449,7 +441,7 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
                 <div className="progress-mobile-banner-bubble">
                   <p className="progress-mobile-banner-kicker">B-01:</p>
                   <p className="progress-mobile-banner-copy">
-                    You&apos;re on a roll. Keep doing your activities and improve your speaking.
+                    {coachInsights.growthUpdate}
                   </p>
                 </div>
               </div>
@@ -462,8 +454,7 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
               <img src={heroRobotImage} alt="" className="new-banner-robot" />
               <div className="new-banner-bubble" aria-label="Coach message">
                 <p className="new-banner-kicker">B-01:</p>
-                <p className="new-banner-copy">These are your weekly report. You're improving fast, keep up the good work</p>
-                <span className="progress-banner-signature">Ask B-01</span>
+                <p className="new-banner-copy">{coachInsights.growthUpdate}</p>
               </div>
             </div>
 
@@ -614,11 +605,11 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
                         <img src={pillar.image} alt="" className="new-widget-rank-sprite" />
                         <div className="new-widget-rank-content">
                           <p className="new-widget-kicker">Score</p>
-                          <p className="new-widget-value">{pillar.score.toFixed(1)} / 5.0</p>
+                          <p className="new-widget-value">{Math.round(pillar.value)}%</p>
                         </div>
                       </div>
                       <div className="progress-pillar-track-header">
-                        <span className="progress-pillar-track-label">Consistency Progress</span>
+                        <span className="progress-pillar-track-label">Overall consistency</span>
                         <span className="progress-pillar-track-percent">{Math.round(pillar.value)}%</span>
                       </div>
                       <div className="progress-pillar-track">

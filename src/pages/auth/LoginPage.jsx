@@ -1,15 +1,40 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { IoChevronBack } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
 import { isValidEmail } from '../../utils/validators';
 import { ROUTES } from '../../utils/constants';
 import PasswordToggle from '../../components/common/PasswordToggle';
-import kamayImage from '../../assets/backgrounds/Login/Kamay.png';
-import googleLogo from '../../assets/logos/Google-Logo.png';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence, LazyMotion, domAnimation, m } from 'framer-motion';
+import PushButton from '../../components/common/PushButton';
+import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
+import googleIcon from '../../assets/logos/google-icon.svg';
 import './LoginPage.css';
 
+// Lazy load the specialized mobile version
+const LoginPageMobile = lazy(() => import('./LoginPageMobile'));
+
+const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
+
 const LOGIN_LOCKOUT_UNTIL_KEY = 'bigkas_login_lockout_until';
+
+const INSIGHT_WORDS = [
+  { text: 'Visual', size: '1rem', opacity: 0.8, top: '15%', left: '12%', delay: 0 },
+  { text: 'Vocal', size: '0.95rem', opacity: 0.7, top: '22%', left: '80%', delay: 1 },
+  { text: 'Verbal', size: '0.9rem', opacity: 0.6, top: '68%', left: '8%', delay: 0.5 },
+  { text: 'Gesture', size: '1.1rem', opacity: 0.9, top: '12%', left: '65%', delay: 2 },
+  { text: 'Eye Contact', size: '1rem', opacity: 0.75, top: '55%', left: '82%', delay: 1.5 },
+  { text: 'Jitter', size: '0.8rem', opacity: 0.5, top: '78%', left: '70%', delay: 3 },
+  { text: 'Shimmer', size: '0.9rem', opacity: 0.65, top: '38%', left: '6%', delay: 2.5 },
+  { text: 'Confidence', size: '1.15rem', opacity: 0.95, top: '50%', left: '10%', delay: 0 },
+  { text: 'Clarity', size: '1rem', opacity: 0.8, top: '82%', left: '22%', delay: 4 },
+  { text: 'Presence', size: '1.1rem', opacity: 0.85, top: '18%', left: '42%', delay: 1.2 },
+  { text: 'Empower', size: '0.9rem', opacity: 0.6, top: '72%', left: '48%', delay: 2.2 },
+  { text: 'Growth', size: '1.05rem', opacity: 0.8, top: '8%', left: '85%', delay: 0.8 },
+  { text: 'Flow', size: '1rem', opacity: 0.7, top: '48%', left: '88%', delay: 3.5 },
+  { text: 'Impact', size: '1.1rem', opacity: 0.9, top: '30%', left: '18%', delay: 4.5 },
+  { text: 'Authentic', size: '0.95rem', opacity: 0.75, top: '62%', left: '60%', delay: 5 },
+];
 
 function getStoredLockoutSeconds() {
   const storedUnlockTime = window.localStorage.getItem(LOGIN_LOCKOUT_UNTIL_KEY);
@@ -48,7 +73,10 @@ function resolvePostLoginRoute(user) {
  * Login Page — 1:1 from Figma screenshot
  * Split layout: left branding panel + right form panel
  */
-function LoginPage({ managePageClass = true }) {
+/**
+ * Desktop-optimized version of the Login Page
+ */
+function LoginPageDesktop({ managePageClass = true }) {
   const layoutRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -122,16 +150,25 @@ function LoginPage({ managePageClass = true }) {
 
   useEffect(() => {
     if (managePageClass) {
-      document.documentElement.classList.add('login-page-active');
-      document.body.classList.add('login-page-active');
+      document.documentElement.classList.add('login-page-v2-active');
+      document.body.classList.add('login-page-v2-active');
     }
     return () => {
       if (managePageClass) {
-        document.documentElement.classList.remove('login-page-active');
-        document.body.classList.remove('login-page-active');
+        document.documentElement.classList.remove('login-page-v2-active');
+        document.body.classList.remove('login-page-v2-active');
       }
     };
   }, [managePageClass]);
+
+  // SEO Metadata
+  useEffect(() => {
+    document.title = 'Login | Bigkas — Master Public Speaking';
+    const metaDesc = document.querySelector('meta[name="description"]') || document.createElement('meta');
+    metaDesc.name = 'description';
+    metaDesc.content = 'Log in to Bigkas and continue your AI-powered journey to public speaking excellence. Analyze your voice, master your presence, and empower your communication.';
+    if (!metaDesc.parentNode) document.head.appendChild(metaDesc);
+  }, []);
 
   useEffect(() => {
     if (!layoutRef.current || typeof ResizeObserver === 'undefined') return undefined;
@@ -303,165 +340,221 @@ function LoginPage({ managePageClass = true }) {
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.1 } },
   };
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+    visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
   };
 
   return (
+    <LazyMotion features={domAnimation}>
     <div
       ref={layoutRef}
-      className="auth-page"
+      className="auth-page-v2"
       data-layout={layoutMode}
     >
-      <div className="auth-hero-panel" aria-hidden="true">
-        <p className="auth-hero-subtitle">Just you and the mic. No judgement. Just Data</p>
-        <div className="auth-wave-pattern">
-          {Array.from({ length: 10 }).map((_, index) => (
-            <span key={`bar-${index}`} className={`auth-wave-bar auth-wave-bar-${index + 1}`} />
-          ))}
-        </div>
-        <img src={kamayImage} alt="" className="auth-hero-kamay" />
-        <h1 className="auth-hero-title">
-          Master
-          <br />
-          Speaking
-        </h1>
-      </div>
-
-      <div className="auth-form-panel">
-        <motion.div
-          className="floating-card"
+      <div className="auth-container">
+        <m.div
+          className="auth-card"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
         >
-          <motion.div variants={itemVariants} className="auth-brand">Bigkas</motion.div>
-          <motion.h2 variants={itemVariants} className="auth-form-title">Login</motion.h2>
-
-          <form className="auth-form" onSubmit={handleLogin}>
-            {showAccountCreated && !showUnverified && !errors.submit && (
-              <motion.div variants={itemVariants} className="auth-success-banner">
-                Account created successfully! Please check your email to verify your account before logging in.
-              </motion.div>
-            )}
-
-            {showAccountVerified && !showUnverified && !errors.submit && (
-              <motion.div variants={itemVariants} className="auth-success-banner">
-                ✓ Email verified! You can now log in.
-              </motion.div>
-            )}
-
-            {resendSuccess && (
-              <motion.div variants={itemVariants} className="auth-success-banner">
-                Verification email resent! Please check your inbox.
-              </motion.div>
-            )}
-
-            {(lockoutMessage || errors.submit) && !showUnverified && (
-              <motion.div variants={itemVariants} className="auth-error-banner">{lockoutMessage || errors.submit}</motion.div>
-            )}
-
-            {showUnverified && (
-              <motion.div variants={itemVariants} className="auth-unverified-banner">
-                <p className="auth-unverified-text">
-                  Verify your Email Address. Check your inbox and spam folder for the verification link.
-                </p>
-                <button
-                  type="button"
-                  className="auth-resend-btn"
-                  onClick={handleResendVerification}
-                  disabled={resendLoading || resendCooldown > 0}
-                >
-                  {resendLoading
-                    ? 'Sending...'
-                    : resendCooldown > 0
-                      ? `Resend available in ${resendCooldown}s`
-                      : 'Resend Verification Email'}
-                </button>
-              </motion.div>
-            )}
-
-            <motion.div variants={itemVariants} className="form-group">
-              <label htmlFor="email" className="form-label">Email</label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                className={`form-input ${errors.email ? 'form-input-error' : ''}`}
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="name@gmail.com"
-                disabled={isLoading || lockoutSeconds > 0}
+          {/* Left Side: Branding & Visuals */}
+          <div className="auth-visual-side">
+            <m.div variants={itemVariants} className="auth-brand-logo">
+              <img 
+                src={bigkasLogo} 
+                alt="Bigkas" 
+                className="auth-logo-img" 
+                width="48" 
+                height="48" 
+                loading="eager" 
               />
-              {errors.email && <span className="form-error">{errors.email}</span>}
-            </motion.div>
-
-            <motion.div variants={itemVariants} className="form-group">
-              <label htmlFor="password" className="form-label">Password</label>
-              <div className="pw-input-wrap">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  name="password"
-                  className={`form-input ${errors.password ? 'form-input-error' : ''}`}
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                  disabled={isLoading || lockoutSeconds > 0}
-                  autoComplete="current-password"
+              <span>Bigkas</span>
+            </m.div>
+            
+            <div className="auth-visual-content">
+              <m.div 
+                className="auth-robot-img-wrap auth-robot-floating"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+              >
+                <div className="auth-robot-glow" />
+                <img 
+                  src="https://assets.bigkas.site/Sprites/Robot/0001.webp" 
+                  alt="AI Companion" 
+                  className="auth-robot-img" 
+                  fetchpriority="high"
+                  loading="eager"
+                  width="460"
+                  height="460"
                 />
-                <PasswordToggle
-                  isVisible={showPassword}
-                  onToggle={() => setShowPassword((v) => !v)}
-                  label="password"
-                  disabled={isLoading || lockoutSeconds > 0}
-                />
-              </div>
-              {errors.password && <span className="form-error">{errors.password}</span>}
-            </motion.div>
+              </m.div>
 
-            <motion.div variants={itemVariants}>
-              <Link to={ROUTES.FORGOT_PASSWORD} className="auth-forgot-link">Forgot Password?</Link>
-            </motion.div>
-
-            <motion.div variants={itemVariants}>
-              <div className="auth-submit-btn">
-                <button
-                  type="submit"
-                  disabled={isLoading || lockoutSeconds > 0}
+              {/* Floating Insight Cloud */}
+              {INSIGHT_WORDS.map((word, i) => (
+                <div 
+                  key={i}
+                  className="insight-chip insight-chip-floating"
+                  style={{ 
+                    top: word.top, 
+                    left: word.left, 
+                    fontSize: word.size,
+                    opacity: word.opacity,
+                    animationDelay: `${word.delay}s`,
+                    animationDuration: `${6 + (i % 4)}s`
+                  }}
                 >
-                  {isLoading ? <span className="btn-loader"></span> : (lockoutSeconds > 0 ? `LOCKED (${formatCountdown(lockoutSeconds)})` : 'LOGIN')}
-                </button>
-              </div>
-            </motion.div>
+                  {word.text}
+                </div>
+              ))}
+              <m.h2 variants={itemVariants} className="auth-hero-tagline">
+                Master <span>Public Speaking</span>
+              </m.h2>
+              <m.p variants={itemVariants} className="auth-hero-desc">
+                Your AI-powered journey to public speaking excellence starts here.
+              </m.p>
+            </div>
+            
+          </div>
 
-            <motion.div variants={itemVariants}>
-              <div className="auth-google-btn">
-                <button
-                  type="button"
-                  onClick={handleGoogleSignIn}
-                  disabled={isLoading}
-                >
-                  <img src={googleLogo} alt="Google" className="auth-google-logo" />
-                  <span>LOGIN WITH GOOGLE</span>
-                </button>
-              </div>
-            </motion.div>
+          {/* Right Side: Login Form */}
+          <div className="auth-form-side">
+            <div className="auth-form-inner">
+              <m.h1 variants={itemVariants} className="auth-form-headline">Welcome Back</m.h1>
+              <m.p variants={itemVariants} className="auth-form-subline">Please enter your credentials to continue</m.p>
 
-            <motion.div variants={itemVariants} style={{ width: '100%', textAlign: 'center' }}>
-              <Link to={ROUTES.REGISTER} className="auth-link">Create Account?</Link>
-            </motion.div>
-          </form>
-        </motion.div>
+              <form className="auth-form" onSubmit={handleLogin}>
+                <AnimatePresence mode="wait">
+                  {(showAccountCreated || showAccountVerified || resendSuccess || errors.submit || showUnverified) && (
+                    <m.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className={`auth-status-banner ${errors.submit ? 'is-error' : showUnverified ? 'is-warning' : 'is-success'}`}
+                    >
+                      <div className="banner-content">
+                        {errors.submit || (showUnverified ? 'Please verify your email to continue.' : 'Success!')}
+                        {showUnverified && (
+                          <button 
+                            type="button" 
+                            className="resend-link" 
+                            onClick={handleResendVerification} 
+                            disabled={resendLoading || resendCooldown > 0}
+                          >
+                            {resendLoading ? '...' : resendCooldown > 0 ? `Resend (${resendCooldown}s)` : 'Resend Verification Email'}
+                          </button>
+                        )}
+                      </div>
+                    </m.div>
+                  )}
+                </AnimatePresence>
+
+                <m.div variants={itemVariants} className="form-group-v2">
+                  <label htmlFor="email">Email Address</label>
+                  <div className="input-field-wrap">
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      className={errors.email ? 'is-invalid' : ''}
+                      value={formData.email}
+                      onChange={handleChange}
+                      placeholder="name@gmail.com"
+                      disabled={isLoading || lockoutSeconds > 0}
+                      autoComplete="username"
+                    />
+                  </div>
+                  {errors.email && <span className="field-error">{errors.email}</span>}
+                </m.div>
+
+                <m.div variants={itemVariants} className="form-group-v2">
+                  <label htmlFor="password">Password</label>
+                  <div className="input-field-wrap">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        id="password"
+                        name="password"
+                        className={errors.password ? 'is-invalid' : ''}
+                        value={formData.password}
+                        onChange={handleChange}
+                        placeholder="••••••••"
+                        disabled={isLoading || lockoutSeconds > 0}
+                        autoComplete="current-password"
+                      />
+                      <PasswordToggle isVisible={showPassword} onToggle={() => setShowPassword(!showPassword)} label="password" />
+                    </div>
+                    <div className="form-footer-row">
+                      <Link to={ROUTES.FORGOT_PASSWORD} className="forgot-pw-link">Forgot Password?</Link>
+                    </div>
+                    {errors.password && <span className="field-error">{errors.password}</span>}
+                </m.div>
+
+                <m.div variants={itemVariants} className="form-actions-v2">
+                  <PushButton
+                    type="submit"
+                    disabled={isLoading || lockoutSeconds > 0}
+                    bgColor="#047857"
+                    shadowColor="#065f46"
+                  >
+                    {isLoading ? <span className="loading-spinner" /> : lockoutSeconds > 0 ? `Locked (${lockoutSeconds}s)` : 'LOGIN'}
+                  </PushButton>
+                </m.div>
+
+                <m.div variants={itemVariants} className="divider-v2">
+                  <span>OR</span>
+                </m.div>
+
+                <m.div variants={itemVariants}>
+                  <button 
+                    type="button" 
+                    className="google-signin-btn-v2" 
+                    onClick={handleGoogleSignIn} 
+                    disabled={isLoading}
+                    aria-label="Continue with Google"
+                  >
+                    <img src={googleIcon} alt="" width="20" height="20" loading="eager" />
+                    Continue with Google
+                  </button>
+                </m.div>
+
+                <m.div variants={itemVariants} className="signup-prompt-v2">
+                  Don't have an account? <Link to={ROUTES.REGISTER}>Create one now</Link>
+                </m.div>
+              </form>
+            </div>
+          </div>
+        </m.div>
       </div>
     </div>
+    </LazyMotion>
+  );
+}
+
+
+/**
+ * Main Responsive Wrapper for Login Page
+ * Switches between Desktop and Mobile/Tablet specialized versions
+ */
+function LoginPage() {
+  const [isMobileOrTablet, setIsMobileOrTablet] = useState(() => window.innerWidth < 1024);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileOrTablet(window.innerWidth < 1024);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return (
+    <Suspense fallback={null}>
+      {isMobileOrTablet ? <LoginPageMobile /> : <LoginPageDesktop />}
+    </Suspense>
   );
 }
 

@@ -7,6 +7,8 @@ import { useSessions } from '../../hooks/useSessions';
 import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import PushButton from '../../components/common/PushButton';
+import { IoChatbubbleEllipsesOutline, IoSend, IoFlame, IoTrophyOutline } from 'react-icons/io5';
+import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import TutorialOverlay from '../../components/main/TutorialOverlay';
 import {
   GLOBAL_ACTIVITY_SCOPE,
@@ -17,15 +19,15 @@ import {
   getTaskXp,
   isActivityTaskCompleted,
 } from '../../utils/activityProgress';
-import { addClaimableAchievement } from '../../utils/achievementClaims';
 import SkywardJourneyShell from '../../components/journey/SkywardJourneyShell';
 import StreakCalendarModal from '../../components/main/StreakCalendarModal';
 import RankListModal from '../../components/main/RankListModal';
 import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 import { useJourneyRemoteState } from '../../hooks/useJourneyRemoteState';
-import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../services/journeyProgressService';
+import { ensureJourneyStarted, updateJourneyCurrentActivity, updateUserProgressLevel } from '../../services/journeyProgressService';
 import { RANDOM_TOPICS } from '../../utils/practiceData';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
+import { filterActivitiesForJourney, JOURNEY_STAGE_LIMITS } from '../../utils/journeyFiltering';
 
 const iconFire = getAssetUrl('icons/Icon-Fire.svg');
 const robotMorningImage = getSpriteUrl('Robot/0018.webp');
@@ -37,7 +39,7 @@ const tutorialRobotStep3 = getSpriteUrl('Robot/0018.webp');
 const tutorialRobotStep4 = getSpriteUrl('Robot/0001.webp');
 const tutorialRobotStep5 = getSpriteUrl('Robot/0002.webp');
 const tutorialRobotStep6 = getSpriteUrl('Robot/0004.webp');
-const randomizerRobotImage = getSpriteUrl('Robot/0005.webp');
+const randomizerRobotImage = getSpriteUrl('Robot/0002.webp');
 const rankBronzeImage = getSpriteUrl('Rank/rank-bronze.png');
 const rankSilverImage = getSpriteUrl('Rank/rank-silver.png');
 const rankGoldImage = getSpriteUrl('Rank/rank-gold.png');
@@ -45,7 +47,9 @@ const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.png');
 const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.png');
 const crystalBallImage = getSpriteUrl('common/crystal-ball.png');
 const crownImage = getSpriteUrl('common/crown.png');
+const b01ChatHead = getAssetUrl('Images/Bigkas-Logo.webp');
 import fireAnimationData from '../../assets/Lottie/fire.json';
+import { generateCoachInsights } from '../../utils/coachInsights';
 import './InnerPages.css';
 import './ActivityPage.css';
 
@@ -53,62 +57,19 @@ const DAY_MS = 86_400_000;
 const ACTIVITY_CELEBRATION_STORAGE_KEY = 'bigkas_pending_activity_celebration_v1';
 const LAST_SHOWN_COMPLETION_EVENT_KEY = 'bigkas_last_completion_event_v1';
 const FREE_SPEECH_TUTORIAL_SEEN_KEY = 'bigkas_free_speech_tutorial_seen_v1';
+const AI_BANNER_CACHE_KEY = 'bigkas_ai_banner_cache_v1';
+const EIGHT_HOURS_MS = 8 * 60 * 60 * 1000;
 
-const FREE_SPEECH_TUTORIAL_STEPS = [
-  {
-    id: 'step-intro',
-    title: 'B-01:',
-    robot: tutorialRobotStep1,
-    robotClassName: 'is-activity-home-step-1',
-    button: 'Next',
-    targetElementId: null,
-    text: 'Welcome aboard! You made it, and I know you are going to do great things here. Let me give you a quick, guided tour of your Home screen so you know exactly where everything is.',
-  },
-  {
-    id: 'step-companion',
-    title: 'B-01:',
-    robot: tutorialRobotStep2,
-    robotClassName: 'is-activity-home-step-2',
-    button: 'Next',
-    targetElementId: 'tutorial-target-home-banner',
-    text: "Your AI Companion, hey that's me! See my panel right at the top? I will be checking in with you from time to time. Depending on your progress, I'll drop by with daily greetings, personalized tips, and a little extra encouragement to keep your momentum going.",
-  },
-  {
-    id: 'step-streak',
-    title: 'B-01:',
-    robot: tutorialRobotStep3,
-    robotClassName: 'is-activity-home-step-3',
-    button: 'Next',
-    targetElementId: 'tutorial-target-home-streak',
-    text: 'Up in the top right is your Streak counter. Consistency is the true secret to mastering public speaking! Log in and complete a daily activity to keep the fire burning and watch that number grow.',
-  },
-  {
-    id: 'step-rank',
-    title: 'B-01:',
-    robot: tutorialRobotStep4,
-    button: 'Next',
-    targetElementId: 'tutorial-target-home-rank',
-    text: 'To keep an eye on the big picture, check out the Journey Progression card on the right! This handy panel lets you quickly track your current speaking Rank and see exactly how many tasks you have conquered so far.',
-  },
-  {
-    id: 'step-roadmap',
-    title: 'B-01:',
-    robot: tutorialRobotStep5,
-    button: 'Next',
-    targetElementId: 'tutorial-target-home-journey',
-    text: 'This path is your customized learning roadmap! You will start at your first stage and unlock the next ones as you move forward. The activities gradually become more challenging, and once you complete all tasks on your path, you unlock a final Post-test challenge to advance.',
-  },
-  {
-    id: 'step-practice',
-    title: 'B-01:',
-    robot: tutorialRobotStep6,
-    button: 'Finish!',
-    targetElementId: 'tutorial-target-home-practice',
-    text: 'Need extra training? The Practice card gives you two ways to sharpen your skills anytime: Randomizer for surprise prompts, and Free Speech for open-topic confidence building. Ready? Let us start your Free Speech session now!',
-  },
+const B01_SUGGESTIONS = [
+  "Summarize my progress so far",
+  "How can I improve my confidence?",
+  "Give me tips for vocal variety",
+  "Explain my current rank and growth",
+  "What should I practice next?"
 ];
 
-const RANDOMIZER_DEFAULT_TOPIC = 'How does artificial intelligence impact our everyday lives?';
+
+
 
 function getLocalDateKey(date = new Date()) {
   const year = date.getFullYear();
@@ -148,19 +109,77 @@ function buildStreakStats(sessions = [], historyEntries = []) {
     const parsed = new Date(dateInput);
     if (!Number.isNaN(parsed.getTime())) dayIndexes.add(getLocalDayIndex(parsed));
   };
-  sessions.forEach((s) => { if (!isPreTestSession(s)) { const d = getSessionDate(s); if (d) addDate(d); } });
-  historyEntries.forEach((e) => { if (e?.completedAt) addDate(e.completedAt); });
+  sessions.forEach((s) => {
+    if (!isPreTestSession(s)) {
+      const d = getSessionDate(s);
+      if (d) addDate(d);
+    }
+  });
+  historyEntries.forEach((e) => {
+    if (e?.completedAt) addDate(e.completedAt);
+  });
   const activeDays = [...dayIndexes].sort((a, b) => a - b);
-  if (!activeDays.length) return { currentStreak: 0 };
+  if (!activeDays.length) return { currentStreak: 0, canRecover: false, potentialStreak: 0, recoverySessionsToday: 0, requiredRecoveryTasks: 1 };
+  
   const todayIndex = getLocalDayIndex(new Date());
   const last = activeDays[activeDays.length - 1];
-  let currentStreak = 0;
-  if (todayIndex - last <= 1) {
-    const set = new Set(activeDays);
-    let cursor = last;
-    while (set.has(cursor)) { currentStreak += 1; cursor -= 1; }
+  const daySet = new Set(activeDays);
+
+  const recoverySessionsToday = sessions.filter((s) => {
+    const d = getSessionDate(s);
+    const entry = s?.entry_point ?? s?.entryPoint;
+    const score = s?.overall_score ?? s?.score ?? s?.overallScore ?? 0;
+    return d && getLocalDayIndex(d) === todayIndex && entry === 'streak-recovery' && score >= 45;
+  }).length;
+
+  // Determine potential streak and required tasks
+  let potentialStreak = 0;
+  if (todayIndex === last && !daySet.has(todayIndex - 1)) {
+    let pCursor = todayIndex - 2;
+    while (daySet.has(pCursor)) {
+      potentialStreak += 1;
+      pCursor -= 1;
+    }
+  } else if (todayIndex - last === 2) {
+    let pCursor = last;
+    while (daySet.has(pCursor)) {
+      potentialStreak += 1;
+      pCursor -= 1;
+    }
   }
-  return { currentStreak };
+
+  const requiredRecoveryTasks = Math.min(5, Math.max(1, Math.floor((potentialStreak - 1) / 3) + 1));
+  const hasFinishedRecovery = recoverySessionsToday >= requiredRecoveryTasks;
+
+  let currentStreak = 0;
+  let canRecover = false;
+
+  if (todayIndex - last <= 1) {
+    let cursor = last;
+    // Current streak includes today if today is done, and incorporates the recovery if finished
+    while (daySet.has(cursor) || (hasFinishedRecovery && cursor === todayIndex - 1)) {
+      currentStreak += 1;
+      cursor -= 1;
+    }
+
+    if (todayIndex === last && !daySet.has(todayIndex - 1) && !hasFinishedRecovery) {
+      if (potentialStreak > 0) {
+        canRecover = true;
+      }
+    }
+  } else if (todayIndex - last === 2 && !hasFinishedRecovery) {
+    if (potentialStreak > 0) {
+      canRecover = true;
+    }
+  }
+
+  return { 
+    currentStreak, 
+    canRecover: canRecover && potentialStreak > 0, 
+    potentialStreak,
+    recoverySessionsToday,
+    requiredRecoveryTasks
+  };
 }
 
 function getWeekdayPills(activeDayKeys = new Set()) {
@@ -207,14 +226,23 @@ function getRankSprite(levelNumber, levelName = '') {
 function ActivityPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuthContext();
+  const { user, updateUserMetadata } = useAuthContext();
   const [showDesktopSidebar, setShowDesktopSidebar] = useState(
     typeof window === 'undefined' ? true : window.matchMedia('(min-width: 1025px)').matches,
   );
   const [entranceFromNav] = useState(() => location.state?.skywardEntrance === true);
   const scopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
   /** Activities are filtered by `target_level` = Bigkas rank (same as dashboard `levelProgress.levelName`). */
-  const { tasks, loading: activitiesLoading, error: activitiesError } = useActivitiesJourneyTasks(1);
+  const { tasks: allTasks, loading: activitiesLoading, error: activitiesError } = useActivitiesJourneyTasks(user?.progressLevelNumber || 1);
+
+  const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
+  const currentJourneyNumber = Math.max(1, Math.min(5, Number(user?.progressLevelNumber || user?.progress_level_number || 1) || 1));
+  const tasks = useMemo(() => {
+    // We use the derived level number (from getBigkasLevelFromUser) to ensure 
+    // the filtering matches the rank shown in the UI (e.g. Silver = Level 2).
+    const sLevel = levelProgress?.levelNumber || 1;
+    return filterActivitiesForJourney(allTasks, sLevel, user?.progressLevelNumber || 1);
+  }, [allTasks, levelProgress?.levelNumber, user?.progressLevelNumber]);
   const { metricsSyncKey, refreshJourney } = useJourneyRemoteState(user);
   const stampResetTimeoutRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -235,10 +263,21 @@ function ActivityPage() {
   const [freeSpeechDraftTopic, setFreeSpeechDraftTopic] = useState('');
   const [showRandomizerOverlay, setShowRandomizerOverlay] = useState(false);
   const [isStreakModalOpen, setIsStreakModalOpen] = useState(false);
-  const [randomizerTopic, setRandomizerTopic] = useState(() => {
-    const defaultTopic = RANDOM_TOPICS.find((entry) => entry.title === RANDOMIZER_DEFAULT_TOPIC);
-    return defaultTopic || { title: RANDOMIZER_DEFAULT_TOPIC, body: '' };
-  });
+  const [showAssessmentModal, setShowAssessmentModal] = useState(false);
+  const [isAskB01ModalOpen, setIsAskB01ModalOpen] = useState(false);
+  const [askB01Query, setAskB01Query] = useState('');
+  const [isB01Typing, setIsB01Typing] = useState(false);
+  const [chatMessages, setChatMessages] = useState([
+    { role: 'assistant', content: "Hello! I'm B-01, your AI speaking coach. What would you like to know about public speaking or your progress today?", id: 'initial-greeting' }
+  ]);
+  const chatScrollRef = useRef(null);
+  const overlayAudioRef = useRef(null);
+
+  const [randomizerTopic, setRandomizerTopic] = useState(null);
+  const [isStreakRecoveryMode, setIsStreakRecoveryMode] = useState(false);
+  const [bannerMessage, setBannerMessage] = useState("You're on a roll. Keep doing your activities and improve your speaking.");
+  const [isBannerLoading, setIsBannerLoading] = useState(false);
+  const [isRandomizingTopic, setIsRandomizingTopic] = useState(false);
   const { sessions, fetchAllSessions } = useSessions();
   const activityMetrics = useMemo(
     () => getActivityMetrics(scopeKey),
@@ -257,14 +296,19 @@ function ActivityPage() {
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
         audioContextRef.current.close().catch(() => {});
       }
+      if (overlayAudioRef.current) {
+        overlayAudioRef.current.pause();
+        overlayAudioRef.current = null;
+      }
     };
   }, []);
 
   useEffect(() => {
     if (!user?.id) return;
-    if (Array.isArray(sessions) && sessions.length > 0) return;
+    // We always call fetchAllSessions to ensure the AI coach (B-01) has a complete context.
+    // The SessionContext internal caching will prevent redundant network requests.
     fetchAllSessions?.();
-  }, [fetchAllSessions, sessions, user?.id]);
+  }, [fetchAllSessions, user?.id]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -290,12 +334,9 @@ function ActivityPage() {
     };
   }, []);
 
-  const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
   const recommendedLevel = useMemo(() => {
-    const level = Number(levelProgress?.levelNumber || 1);
-    if (!Number.isFinite(level)) return 1;
-    return Math.max(1, Math.min(5, Math.round(level)));
-  }, [levelProgress?.levelNumber]);
+    return Math.max(1, Math.min(5, Math.round(currentJourneyNumber)));
+  }, [currentJourneyNumber]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -321,23 +362,242 @@ function ActivityPage() {
     ? Math.round((completedTaskCount / tasks.length) * 100)
     : 0;
 
-  const activeDayKeys = useMemo(() => {
-    const keys = new Set();
+  // Auto-advance journey level when all stages are completed
+  const isAdvancingRef = useRef(null);
+  useEffect(() => {
+    if (!user?.id || tasks.length === 0 || activitiesLoading) return;
+    
+    if (completedTaskCount === tasks.length) {
+      const currentLevel = Number(user.progressLevelNumber || 1);
+      if (currentLevel < 5) {
+        const nextLevel = currentLevel + 1;
+        
+        if (isAdvancingRef.current === nextLevel) return;
+        isAdvancingRef.current = nextLevel;
+
+        console.log(`[Journey] All ${tasks.length} stages done in Level ${currentLevel}. Advancing to ${nextLevel}.`);
+        
+        // Update both profiles table and auth metadata for consistency
+        updateUserProgressLevel(user.id, nextLevel).catch(err => {
+          console.error('Failed to update profile level:', err);
+          isAdvancingRef.current = null;
+        });
+
+        updateUserMetadata({ progress_level_number: nextLevel })
+          .catch(err => {
+            console.error('Failed to update auth metadata level:', err);
+            isAdvancingRef.current = null;
+          });
+      }
+    } else {
+      // Reset if user somehow goes back (e.g. data sync)
+      isAdvancingRef.current = null;
+    }
+  }, [completedTaskCount, tasks.length, user?.id, user?.progressLevelNumber, activitiesLoading, updateUserMetadata]);
+
+  const sessionCountsByDay = useMemo(() => {
+    const counts = new Map();
     sessions.forEach((s) => {
       if (isPreTestSession(s)) return;
       const d = getSessionDate(s);
-      if (d) keys.add(getLocalDateKey(d));
+      if (d) {
+        const k = getLocalDateKey(d);
+        counts.set(k, (counts.get(k) || 0) + 1);
+      }
     });
     activityHistory.forEach((e) => {
       if (!e?.completedAt) return;
       const k = getDayKeyFromDate(e.completedAt);
-      if (k) keys.add(k);
+      if (k) {
+        counts.set(k, (counts.get(k) || 0) + 1);
+      }
     });
-    return keys;
+    return counts;
   }, [sessions, activityHistory]);
 
   const streakStats = useMemo(() => buildStreakStats(sessions, activityHistory), [sessions, activityHistory]);
-  const weekPills = useMemo(() => getWeekdayPills(activeDayKeys), [activeDayKeys]);
+  const { currentStreak, canRecover, potentialStreak, recoverySessionsToday, requiredRecoveryTasks } = streakStats;
+
+  const getProgressContext = useCallback(() => {
+    // Sort sessions by date to find the most recent ones
+    const sortedSessions = [...sessions]
+      .filter(s => {
+        const isError = s.status === 'error' || s.is_error === true;
+        return !isPreTestSession(s) && !isError;
+      })
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    const latest = sortedSessions[0];
+    const first = sortedSessions[sortedSessions.length - 1];
+
+    const latestScore = Math.floor(latest?.score || latest?.overall_score || latest?.overallScore || 0);
+    const firstScore = Math.floor(first?.score || first?.overall_score || first?.overallScore || 0);
+    
+    const insights = generateCoachInsights(sessions);
+
+    return {
+      totalSessionCount: (sessions || []).filter(s => s.status !== 'error' && s.is_error !== true).length,
+      analyzedSessionsCount: sortedSessions.length, // Count of sessions excluding pre-tests
+      averageScore: activityMetrics?.averageScore || "N/A",
+      currentLevel: levelProgress.levelNumber,
+      levelName: levelProgress.levelName,
+      
+      // Pre-calculated Math for B-01 to ensure accurate summaries
+      growthSummary: {
+        firstSessionScore: firstScore,
+        latestSessionScore: latestScore,
+        growthPercentage: insights.growth.toFixed(1),
+        strongestPillar: insights.strongestPillar,
+        coachNarrative: insights.growthUpdate,
+        positiveQuote: insights.positiveQuote,
+        status: insights.growth > 0 ? "Improving" : insights.growth < 0 ? "Declining" : "Stable"
+      },
+
+      // Comparison Points
+      latestSession: latest ? {
+        score: latestScore,
+        topic: latest.topic || latest.script_title || latest.activity_title,
+        date: latest.created_at
+      } : null,
+      
+      // Recent history (Truncated to avoid token limits, but enough for trends)
+      recentTimeline: sortedSessions.slice(0, 15).map(s => ({
+        date: new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        score: `${Math.floor(s.score || s.overall_score || s.overallScore || 0)}%`,
+        topic: s.topic || s.script_title || s.activity_title
+      }))
+    };
+  }, [sessions, activityMetrics, levelProgress, streakStats.currentStreak, completedTaskCount, tasks]);
+
+  useEffect(() => {
+    const fetchBannerMessage = async () => {
+      if (!user?.id) return;
+
+      // 1. Generate Local Insights (Immediate & Accurate)
+      const insights = generateCoachInsights(sessions);
+      setBannerMessage(insights.positiveQuote);
+
+      // 2. Update Cache
+      window.localStorage.setItem(AI_BANNER_CACHE_KEY, JSON.stringify({
+        message: insights.positiveQuote,
+        timestamp: Date.now()
+      }));
+
+      // 3. Optional: Fetch from AI for variety
+      setIsBannerLoading(true);
+      try {
+        const cached = window.localStorage.getItem(AI_BANNER_CACHE_KEY);
+        if (cached) {
+          const { timestamp } = JSON.parse(cached);
+          if (Date.now() - timestamp < EIGHT_HOURS_MS) {
+            return;
+          }
+        }
+        
+        const response = await fetch('https://b01-ai-worker.dzeref4000.workers.dev/banner-message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ context: getProgressContext() }),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.message) {
+            setBannerMessage(data.message);
+            window.localStorage.setItem(AI_BANNER_CACHE_KEY, JSON.stringify({
+              message: data.message,
+              timestamp: Date.now()
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch AI banner:', error);
+      } finally {
+        setIsBannerLoading(false);
+      }
+    };
+    fetchBannerMessage();
+  }, [user?.id, getProgressContext]);
+
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [chatMessages, isB01Typing]);
+
+  const handleSendMessage = async (customQuery = null) => {
+    const query = (customQuery || askB01Query).trim();
+    if (!query || isB01Typing) return;
+
+    const userMessage = { role: 'user', content: query };
+    const newMessages = [...chatMessages, userMessage];
+    
+    setChatMessages(newMessages);
+    setAskB01Query('');
+    setIsB01Typing(true);
+
+    const assistantMessageId = Date.now();
+    setChatMessages(prev => [...prev, { role: 'assistant', content: '', id: assistantMessageId }]);
+
+    try {
+      const contextMessage = { 
+        role: 'system', 
+        content: `CONTEXT: User Progress Snapshot: ${JSON.stringify(getProgressContext())}. Reference these specific numbers if asked about progress, growth, or stats.` 
+      };
+
+      const response = await fetch('https://b01-ai-worker.dzeref4000.workers.dev', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          messages: [contextMessage, ...newMessages] 
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to connect to B-01');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+      let accumulatedResponse = '';
+
+      setIsB01Typing(false); // Hide spinner as text starts coming in
+
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        const chunkValue = decoder.decode(value);
+        
+        // Cloudflare Workers AI streaming returns data prefixes like "data: {...}"
+        const lines = chunkValue.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            if (line.includes('[DONE]')) break;
+            try {
+              const data = JSON.parse(line.slice(6));
+              accumulatedResponse += data.response || '';
+              
+              setChatMessages(prev => prev.map(msg => 
+                msg.id === assistantMessageId 
+                  ? { ...msg, content: accumulatedResponse }
+                  : msg
+              ));
+            } catch (e) {
+              console.warn("Chunk parse error", e);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('B-01 Error:', error);
+      setChatMessages(prev => prev.map(msg => 
+        msg.id === assistantMessageId 
+          ? { ...msg, content: "I'm having a little trouble connecting to my brain right now. Please try again in a moment!" }
+          : msg
+      ));
+    } finally {
+      setIsB01Typing(false);
+    }
+  };
+  const weekPills = useMemo(() => getWeekdayPills(sessionCountsByDay), [sessionCountsByDay]);
   const timeOfDay = useMemo(() => getTimeOfDay(), []);
   const heroRobotImage = useMemo(() => {
     if (timeOfDay === 'morning') return robotMorningImage;
@@ -348,6 +608,8 @@ function ActivityPage() {
     () => getRankSprite(levelProgress?.levelNumber, levelProgress?.levelName),
     [levelProgress?.levelNumber, levelProgress?.levelName],
   );
+
+  const lottieFireNode = useMemo(() => <Lottie animationData={fireAnimationData} loop={true} />, []);
 
   useEffect(() => {
     if (!user?.id || activitiesLoading) return undefined;
@@ -397,16 +659,160 @@ function ActivityPage() {
   useEffect(() => {
     if (!user?.id || activitiesLoading) return;
     
-    // Condition: finished profiling AND pre-testing
-    const isReadyForTutorial = user.profilingCompleted && user.pretestCompleted;
+    // Condition: finished profiling AND pre-testing OR finished entire onboarding
+    const isReadyForTutorial = 
+      user.onboardingStage === 'completed' || 
+      (user.isProfilingCompleted && user.isPreTestCompleted) ||
+      (user.profilingCompleted && user.pretestCompleted);
     
     if (isReadyForTutorial) {
-      const seen = window.localStorage.getItem(FREE_SPEECH_TUTORIAL_SEEN_KEY);
-      if (seen !== '1') {
+      const localSeen = window.localStorage.getItem(FREE_SPEECH_TUTORIAL_SEEN_KEY);
+      const remoteSeen = !!user.dashboardTutorialSeen;
+
+      if (localSeen !== '1' && !remoteSeen) {
         setShowFreeSpeechTutorial(true);
       }
     }
-  }, [user?.id, user?.profilingCompleted, user?.pretestCompleted, activitiesLoading]);
+  }, [user?.id, user?.onboardingStage, user?.profilingCompleted, user?.pretestCompleted, user?.isProfilingCompleted, user?.isPreTestCompleted, activitiesLoading]);
+
+  const freeSpeechTutorialSteps = useMemo(() => {
+    const level = user?.speakerLevelNumber || 1;
+    let welcomeText = "Welcome aboard! You made it, and I know you're going to do great things here. Let me give you a quick, guided tour of your Home screen so you know exactly where everything is.";
+    let welcomeVoice = null;
+    
+    if (level === 1) {
+      welcomeText = "Welcome! I’ve analyzed your profile and we’re starting from the ground up. You’ll be taking the full 30-stage path for Journey 1 to ensure your vocal and visual foundations are unbreakable. Let’s build your mastery, stage by stage.";
+      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%201.mp3";
+    } else if (level === 2) {
+      welcomeText = "Welcome! Based on your level, I’ve optimized your curriculum. Since you already show solid potential, I’ve trimmed Journey 1 down to 20 essential stages. We’ll move faster through the basics so you can reach the advanced challenges sooner. Let’s begin.";
+      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%202.mp3";
+    } else if (level === 3) {
+      welcomeText = "Welcome. Your experience allows us to skip the fluff. I’ve recalibrated your Journey 1 to just 15 high-impact stages, and Journey 2 to 20. We’re focusing only on the core essentials before we dive into the deep technical training. Systems ready?";
+      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%203.mp3";
+    } else if (level === 4) {
+      welcomeText = "Welcome! Your skills are advanced, so I’ve streamlined your training. I’ve cut Journeys 1, 2, and 3 down to the bare essentials, removing over 40 stages of repetitive drills. We’re moving fast through the basics to get you straight to the Specialist training. Let’s get to work.";
+      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%204.mp3";
+    } else if (level >= 5) {
+      welcomeText = "Welcome, Expert. We’re skipping the grind. I’ve compressed Journeys 1 through 4 into a rapid-fire calibration to respect your expertise. We’re fast-forwarding past the basics so you can focus entirely on the high-stakes challenges of the final Journey. Mastery starts here.";
+      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%205.mp3";
+    }
+
+    return [
+      {
+        id: 'step-intro',
+        title: 'B-01:',
+        robot: tutorialRobotStep1,
+        robotClassName: 'is-activity-home-step-1',
+        button: 'Next',
+        targetElementId: null,
+        text: welcomeText,
+        voice: welcomeVoice,
+      },
+      {
+        id: 'step-companion',
+        title: 'B-01:',
+        robot: tutorialRobotStep2,
+        robotClassName: 'is-activity-home-step-2',
+        button: 'Next',
+        targetElementId: 'tutorial-target-home-banner',
+        text: "Your AI Companion—hey, that's me! See my panel right at the top? I'll be checking in with you from time to time. Depending on your progress, I'll drop by with daily greetings, personalized tips, and a little extra encouragement to keep your momentum going.",
+        voice: "https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%201.mp3",
+      },
+      {
+        id: 'step-streak',
+        title: 'B-01:',
+        robot: tutorialRobotStep3,
+        robotClassName: 'is-activity-home-step-3',
+        button: 'Next',
+        targetElementId: 'tutorial-target-home-streak',
+        text: 'Up in the top right is your Streak counter. Consistency is the true secret to mastering public speaking! Log in and complete a daily activity to keep the fire burning and watch that number grow.',
+        voice: "https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%202.mp3",
+      },
+      {
+        id: 'step-rank',
+        title: 'B-01:',
+        robot: tutorialRobotStep4,
+        button: 'Next',
+        targetElementId: 'tutorial-target-home-rank',
+        text: 'To keep an eye on the big picture, check out the Journey Progression card on the right! This handy panel lets you quickly track your current speaking Rank and see exactly how many tasks you have conquered so far.',
+        voice: "https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%204.mp3",
+      },
+      {
+        id: 'step-roadmap',
+        title: 'B-01:',
+        robot: tutorialRobotStep5,
+        robotClassName: 'is-roadmap-step',
+        button: 'Next',
+        targetElementId: 'tutorial-target-home-journey',
+        text: 'This path is your customized learning roadmap! You will start at your first stage and unlock the next ones as you move forward. The activities gradually become more challenging, and once you complete all tasks on your path, you unlock a final Post-test challenge to advance.',
+        voice: "https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%203.mp3",
+      },
+      {
+        id: 'step-practice',
+        title: 'B-01:',
+        robot: tutorialRobotStep6,
+        robotClassName: 'is-practice-step',
+        button: 'Finish!',
+        targetElementId: 'tutorial-target-home-practice',
+        text: 'Need extra training? The Practice card gives you two ways to sharpen your skills anytime: Randomizer for surprise prompts, and Free Speech for open-topic confidence building. Ready? Let us start your Free Speech session now!',
+        voice: "https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%205.mp3",
+      },
+    ];
+  }, [user?.speakerLevelNumber]);
+
+  const assessmentTutorialSteps = useMemo(() => {
+    const sLevel = user?.speakerLevelNumber || 1;
+    const pLevel = user?.progressLevelNumber || 1;
+    const reducedTo = JOURNEY_STAGE_LIMITS[sLevel]?.[pLevel] ?? 30;
+
+    let text = `We noticed that you are a level ${sLevel} speaker, so we reduced Journey ${pLevel} to ${reducedTo} stages for you!`;
+    if (reducedTo >= 30) {
+      text = `Welcome to Journey ${pLevel}! You have ${reducedTo} stages to complete. Let's get started!`;
+    }
+
+    return [
+      {
+        id: 'assessment-notice',
+        title: 'B-01:',
+        text,
+        button: 'Got it!',
+        targetElementId: null,
+        robot: tutorialRobotStep1,
+      },
+    ];
+  }, [user?.speakerLevelNumber, user?.progressLevelNumber]);
+
+  useEffect(() => {
+    if (user?.isAudioMuted) return;
+
+    if (showRandomizerOverlay) {
+      if (overlayAudioRef.current) overlayAudioRef.current.pause();
+      const audio = new Audio("https://assets.bigkas.site/Voices/Home%20Page/Randomizer%20and%20Free%20Speech%20Button/Randomizer.mp3");
+      overlayAudioRef.current = audio;
+      audio.play().catch(() => {});
+    } else if (showFreeSpeechOverlay) {
+      if (overlayAudioRef.current) overlayAudioRef.current.pause();
+      const audio = new Audio("https://assets.bigkas.site/Voices/Home%20Page/Randomizer%20and%20Free%20Speech%20Button/Free%20Speech.mp3");
+      overlayAudioRef.current = audio;
+      audio.play().catch(() => {});
+    } else {
+      if (overlayAudioRef.current) {
+        overlayAudioRef.current.pause();
+        overlayAudioRef.current = null;
+      }
+    }
+  }, [showRandomizerOverlay, showFreeSpeechOverlay, user?.isAudioMuted]);
+
+  const handleToggleMute = async () => {
+    const nextMute = !user?.isAudioMuted;
+    await updateUserMetadata({ is_audio_muted: nextMute });
+    localStorage.setItem('bigkas_global_audio_muted_v1', nextMute ? '1' : '0');
+    
+    // Immediate feedback: pause if muting
+    if (nextMute && overlayAudioRef.current) {
+      overlayAudioRef.current.pause();
+    }
+  };
 
   const handleActiveTaskIdChange = useCallback((id) => {
     setActiveTaskId(id);
@@ -475,12 +881,6 @@ function ActivityPage() {
     if (!newlyCompletedTask) return;
 
     setRecentStampedTaskId(newlyCompletedTask.id);
-    addClaimableAchievement({
-      id: newlyCompletedTask.id,
-      title: newlyCompletedTask.title || 'Activity achievement',
-      source: 'activity-task',
-      createdAt: Date.now(),
-    });
 
     if (stampResetTimeoutRef.current) {
       window.clearTimeout(stampResetTimeoutRef.current);
@@ -527,9 +927,10 @@ function ActivityPage() {
   }, [maybeShowCompletionCelebration, taskState, taskTitleById, tasks.length]);
 
   const handleTaskAction = useCallback((task) => {
+    const activityPromptTopic = String(task.detail || task.objective || task.title || '').trim();
     navigate(`${ROUTES.TRAINING}?autostart=1`, {
       state: {
-        freeTopic: task.title,
+        freeTopic: activityPromptTopic,
         objective: task.objective || task.detail,
         focus: 'free',
         sessionType: 'training',
@@ -563,12 +964,21 @@ function ActivityPage() {
 
   useEffect(() => {
     if (location.state?.launchFreeSpeechTutorial !== true) return;
+    
+    // Explicitly reset the seen flag if we're coming from the onboarding reveal
+    window.localStorage.setItem(FREE_SPEECH_TUTORIAL_SEEN_KEY, '0');
     setShowFreeSpeechTutorial(true);
-    navigate(location.pathname, {
-      replace: true,
-      state: { ...(location.state || {}), launchFreeSpeechTutorial: false },
-    });
-  }, [location.pathname, location.state, navigate]);
+
+    // Short delay to ensure the overlay renders before we clear the state flag
+    const t = setTimeout(() => {
+      navigate(location.pathname, {
+        replace: true,
+        state: { ...(location.state || {}), launchFreeSpeechTutorial: false },
+      });
+    }, 100);
+
+    return () => clearTimeout(t);
+  }, [location.pathname, location.state, navigate, FREE_SPEECH_TUTORIAL_SEEN_KEY]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
@@ -592,7 +1002,21 @@ function ActivityPage() {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(FREE_SPEECH_TUTORIAL_SEEN_KEY, '1');
     }
-  }, []);
+
+    // Persist to database so it doesn't show again on other devices
+    if (user?.id) {
+      updateUserMetadata({ dashboard_tutorial_seen: true }).catch(() => {});
+    }
+
+    const sLevel = Number(user?.speakerLevelNumber || 1);
+    const pLevel = Number(user?.progressLevelNumber || 1);
+    const reducedTo = JOURNEY_STAGE_LIMITS[sLevel]?.[pLevel] ?? 30;
+
+    // Show assessment modal if the current journey has reduced stages for this user
+    if (reducedTo < 30) {
+      setShowAssessmentModal(true);
+    }
+  }, [user?.id, levelProgress?.levelNumber, recommendedLevel, updateUserMetadata]);
 
   const handleCloseFreeSpeechOverlay = useCallback(() => {
     setShowFreeSpeechOverlay(false);
@@ -614,14 +1038,33 @@ function ActivityPage() {
   }, [freeSpeechDraftTopic, navigate]);
 
   const handleRandomizerClick = useCallback(() => {
+    setIsStreakRecoveryMode(false);
     setShowRandomizerOverlay(true);
   }, []);
 
   const handleCloseRandomizerOverlay = useCallback(() => {
+    setIsStreakRecoveryMode(false);
     setShowRandomizerOverlay(false);
   }, []);
 
-  const handleRandomizeTopic = useCallback(() => {
+  const handleRandomizeTopic = useCallback(async () => {
+    setIsRandomizingTopic(true);
+    try {
+      const response = await fetch('https://b01-ai-worker.dzeref4000.workers.dev/random-topic');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.title) {
+          setRandomizerTopic({ title: data.title, body: data.body || '' });
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch AI topic:', error);
+    } finally {
+      setIsRandomizingTopic(false);
+    }
+
+    // Fallback to local randomization
     if (!RANDOM_TOPICS.length) return;
     setRandomizerTopic((current) => {
       if (RANDOM_TOPICS.length === 1) return RANDOM_TOPICS[0];
@@ -635,32 +1078,47 @@ function ActivityPage() {
 
   const handleStartRandomizerTopic = useCallback(() => {
     if (!randomizerTopic?.title) return;
+    const isRecovery = isStreakRecoveryMode;
+    
     navigate(`${ROUTES.TRAINING}?autostart=1`, {
       state: {
         freeTopic: randomizerTopic.title,
         freeSpeechContext: randomizerTopic.body || '',
         focus: 'free',
         sessionType: 'practice',
-        entryPoint: 'practice',
+        entryPoint: isRecovery ? 'streak-recovery' : 'practice',
+        objective: isRecovery 
+          ? `Recover your ${potentialStreak} day streak by completing this Level 1-5 Randomizer session!` 
+          : randomizerTopic.title,
         autoStartCountdown: true,
       },
     });
-  }, [navigate, randomizerTopic]);
+  }, [navigate, randomizerTopic, isStreakRecoveryMode, potentialStreak]);
+
+  const handleRecoverStreak = useCallback(() => {
+    setIsStreakRecoveryMode(true);
+    setShowRandomizerOverlay(true);
+    // Optionally trigger randomization immediately for a better UX
+    if (!randomizerTopic) {
+      handleRandomizeTopic();
+    }
+  }, [handleRandomizeTopic, randomizerTopic]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
-    if (showRandomizerOverlay || showFreeSpeechOverlay) {
+    const isAnyOverlayOpen = showRandomizerOverlay || showFreeSpeechOverlay || isRankModalOpen || isAskB01ModalOpen || isStreakModalOpen;
+    if (isAnyOverlayOpen) {
       document.body.classList.add('randomizer-overlay-open');
     } else {
       document.body.classList.remove('randomizer-overlay-open');
     }
     return () => document.body.classList.remove('randomizer-overlay-open');
-  }, [showRandomizerOverlay, showFreeSpeechOverlay]);
+  }, [showRandomizerOverlay, showFreeSpeechOverlay, isRankModalOpen, isAskB01ModalOpen, isStreakModalOpen]);
 
-  const renderTaskCardForShell = useCallback(({ task, animationClass = '' }) => {
+  const renderTaskCardForShell = useCallback(({ task, isLocked: shellLocked, animationClass = '' }) => {
     const done = taskState[task.id] === true;
     const isUnlocked = taskUnlockState[task.id] === true;
-    const isLocked = !done && !isUnlocked;
+    const isLocked = shellLocked ?? (!done && !isUnlocked);
     const shouldAnimateStamp = done && recentStampedTaskId === task.id;
     const progress = taskProgress[task.id] || { current: 0, target: 1 };
     const canShowProgress = !isLocked && progress.target > 1;
@@ -698,8 +1156,8 @@ function ActivityPage() {
         ) : null}
 
         <div className="activity-task-actions">
-          <button
-            type="button"
+          <Button
+            variant="practice"
             className={`activity-action-btn${isLocked ? ' is-locked' : ''}${canShowProgress ? ' with-progress' : ''}`}
             onClick={() => handleTaskAction(task)}
             disabled={isLocked || done}
@@ -708,7 +1166,7 @@ function ActivityPage() {
               <span className="activity-action-progress-fill" style={{ width: `${progressPctForTask}%` }} />
             ) : null}
             <span className="activity-action-btn-text">{ctaLabel}</span>
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -782,66 +1240,68 @@ function ActivityPage() {
     );
   };
 
-  if (activitiesLoading) {
-    return (
-      <div className="activity-page-root">
-        <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
-          <p className="section-label">Loading journey…</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (activitiesError) {
-    return (
-      <div className="activity-page-root">
-        <div className="activity-content-wrap" style={{ padding: '2rem', textAlign: 'center' }}>
-          <p className="activity-task-lock-note">Could not load activities: {activitiesError}</p>
-          <p className="activity-task-detail">Ensure the `activities` table exists and RLS allows read for authenticated users.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="activity-page-root activity-page--skyward-entrance">
+    <div className={`activity-page-root ${!activitiesLoading ? 'activity-page--skyward-entrance' : ''} ${(showFreeSpeechTutorial || showAssessmentModal) ? 'is-tutorial-active' : ''}`}>
       <TutorialOverlay
         isOpen={showFreeSpeechTutorial}
-        steps={FREE_SPEECH_TUTORIAL_STEPS}
+        steps={freeSpeechTutorialSteps}
         showAudioToggle
         onClose={() => setShowFreeSpeechTutorial(false)}
         onFinish={handleTutorialFinish}
       />
-      {showCompletionCelebration && (
-        <Confetti
-          width={viewportSize.width}
-          height={viewportSize.height}
-          recycle
-          numberOfPieces={280}
-          gravity={0.24}
-        />
-      )}
-      {showCompletionCelebration && (
-        <div className="activity-clear-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="activity-clear-modal-title">
-          <div className="activity-clear-modal">
-            <h3 id="activity-clear-modal-title" className="activity-clear-modal-title">
-              Congratulations, you've cleared: {completionModalTaskTitle || 'This stage'}
-            </h3>
-            <PushButton
-              className="activity-clear-modal-continue-btn"
-              bgColor="#2d5a27"
-              shadowColor="#1a3b16"
-              textColor="#ffffff"
-              onClick={() => {
-                setShowCompletionCelebration(false);
-                setCompletionModalTaskTitle('');
-              }}
-            >
-              Continue
-            </PushButton>
+
+      <div className="activity-page-grid">
+        {/* Loading Overlay (Only if no data yet) */}
+        {activitiesLoading && tasks.length === 0 && (
+          <div className="activity-loading-overlay-root">
+            <div className="activity-loading-content">
+              <div className="loading-spinner" style={{ width: '50px', height: '50px', borderWidth: '4px', marginBottom: '1.5rem' }} />
+              <p className="section-label" style={{ margin: 0, color: '#059669', letterSpacing: '0.1em' }}>Loading your journey…</p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Error Overlay */}
+        {activitiesError && tasks.length === 0 && (
+          <div className="activity-loading-overlay-root">
+            <div className="activity-content-wrap" style={{ padding: '4rem', textAlign: 'center' }}>
+              <p className="activity-task-lock-note">Could not load activities: {activitiesError}</p>
+              <p className="activity-task-detail">Please try refreshing the page.</p>
+            </div>
+          </div>
+        )}
+
+        {showCompletionCelebration && (
+          <Confetti
+            width={viewportSize.width}
+            height={viewportSize.height}
+            recycle
+            numberOfPieces={280}
+            gravity={0.24}
+          />
+        )}
+        
+        {showCompletionCelebration && (
+          <div className="activity-clear-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="activity-clear-modal-title">
+            <div className="activity-clear-modal">
+              <h3 id="activity-clear-modal-title" className="activity-clear-modal-title">
+                Congratulations, you've cleared: {completionModalTaskTitle || 'This stage'}
+              </h3>
+              <PushButton
+                className="activity-clear-modal-continue-btn"
+                bgColor="#2d5a27"
+                shadowColor="#1a3b16"
+                textColor="#ffffff"
+                onClick={() => {
+                  setShowCompletionCelebration(false);
+                  setCompletionModalTaskTitle('');
+                }}
+              >
+                Continue
+              </PushButton>
+            </div>
+          </div>
+        )}
 
       {showRandomizerOverlay && (
         <section className="randomizer-overlay-wrapper" aria-label="Randomizer overlay">
@@ -849,7 +1309,9 @@ function ActivityPage() {
           <div className="randomizer-overlay-content">
             <div className="randomizer-overlay-card">
               <div className="randomizer-overlay-card-top">
-                <h2 className="randomizer-overlay-title">Randomizer</h2>
+                <h2 className="randomizer-overlay-title">
+                  {isStreakRecoveryMode ? 'Streak Recovery Task' : 'Randomizer × B-01'}
+                </h2>
                 <button
                   type="button"
                   className="randomizer-overlay-close-btn"
@@ -861,27 +1323,58 @@ function ActivityPage() {
               </div>
               <p className="randomizer-overlay-copy">
                 <span className="randomizer-overlay-copy-kicker">B-01:</span>
-                Ready to put your skills to the test? Click the 'Generate' button for a random topic, and whenever you're ready, hit 'Start' to begin your speaking practice!
+                {isStreakRecoveryMode 
+                  ? `Ready to put your skills to the test? To recover your streak, you'll need to complete ${requiredRecoveryTasks} randomizer tasks with a score of 45% or higher. Whenever you're ready, hit 'Start' to begin!`
+                  : "Ready to put your skills to the test? Click the 'Generate' button for a random topic, and whenever you're ready, hit 'Start' to begin your speaking practice!"
+                }
               </p>
+
+              {isStreakRecoveryMode && (
+                <div className="randomizer-recovery-progress">
+                  <div className="randomizer-recovery-progress-header">
+                    <div className="randomizer-recovery-progress-label">Recovery Progress</div>
+                    <div className="randomizer-recovery-progress-requirement">
+                      <IoTrophyOutline className="requirement-icon" />
+                      <span>Target: 45%+ Score</span>
+                    </div>
+                  </div>
+                  <div className="randomizer-recovery-progress-bar-wrap">
+                    <div 
+                      className="randomizer-recovery-progress-bar-fill" 
+                      style={{ width: `${(recoverySessionsToday / requiredRecoveryTasks) * 100}%` }}
+                    />
+                  </div>
+                  <div className="randomizer-recovery-progress-count">
+                    {recoverySessionsToday} / {requiredRecoveryTasks} Tasks Completed
+                  </div>
+                </div>
+              )}
               <p className="randomizer-overlay-topic">
                 <span className="randomizer-overlay-topic-label">Topic:</span>
                 {' '}
-                {randomizerTopic?.title || RANDOMIZER_DEFAULT_TOPIC}
+                {isRandomizingTopic 
+                  ? 'Thinking of a topic...' 
+                  : (randomizerTopic?.title || "Click 'Randomize Topic' below to get started!")}
               </p>
               <div className="randomizer-overlay-actions">
                 <Button
                   variant="practice"
                   className="randomizer-overlay-randomize-btn"
                   onClick={handleRandomizeTopic}
+                  disabled={isRandomizingTopic}
                 >
-                  Randomize Topic
+                  {isRandomizingTopic ? 'Randomizing...' : 'Generate'}
                 </Button>
                 <Button
                   variant="practice"
                   className="randomizer-overlay-start-btn"
                   onClick={handleStartRandomizerTopic}
+                  disabled={!randomizerTopic?.title || isRandomizingTopic}
                 >
-                  Start
+                  {isStreakRecoveryMode 
+                    ? `Start Task ${Math.min(requiredRecoveryTasks, recoverySessionsToday + 1)} of ${requiredRecoveryTasks}` 
+                    : 'Start'
+                  }
                 </Button>
               </div>
             </div>
@@ -894,6 +1387,17 @@ function ActivityPage() {
                 loading="eager"
                 fetchPriority="high"
               />
+            </div>
+            <div className="tutorial-audio-action">
+              <button
+                type="button"
+                aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
+                onClick={handleToggleMute}
+              >
+                {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+              </button>
             </div>
           </div>
         </section>
@@ -949,35 +1453,78 @@ function ActivityPage() {
                 fetchPriority="high"
               />
             </div>
+            <div className="tutorial-audio-action">
+              <button
+                type="button"
+                aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
+                onClick={handleToggleMute}
+              >
+                {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+              </button>
+            </div>
           </div>
         </section>
       )}
 
-      <div className="activity-page-grid">
         {/* Banner */}
         <section className="new-banner dashboard-anim-top dashboard-anim-delay-2">
            <div className="new-banner-left" id="tutorial-target-home-banner">
               <img src={heroRobotImage} alt="" className="new-banner-robot" />
               <div className="new-banner-bubble" aria-label="Coach message">
                 <p className="new-banner-kicker">B-01:</p>
-                <p className="new-banner-copy">You're on a roll. Keep doing your activities and improve your speaking.</p>
+                <p className="new-banner-copy">
+                  {isBannerLoading ? 'Checking your progress...' : bannerMessage}
+                </p>
+                <div className="new-banner-bubble-footer">
+                  <Button 
+                    variant="practice"
+                    className="ask-b01-trigger" 
+                    onClick={() => setIsAskB01ModalOpen(true)}
+                    aria-label="Ask B-01 a question"
+                  >
+                    <IoChatbubbleEllipsesOutline />
+                    <span>Ask B-01</span>
+                  </Button>
+                </div>
               </div>
            </div>
            <div className="new-banner-right">
               <div 
-                className={`new-banner-streak${(showRandomizerOverlay || showFreeSpeechOverlay) ? ' is-hidden' : ''}`} 
+                className="new-banner-streak" 
                 id="tutorial-target-home-streak" 
                 aria-label="Daily streak"
                 onClick={() => setIsStreakModalOpen(true)}
               >
-                 <div className="new-streak-top">
-                   <div className="new-streak-fire">
-                     <Lottie animationData={fireAnimationData} loop={true} />
+                 <div className="new-streak-top" style={{ justifyContent: 'space-between', width: '100%' }}>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                     <div className="new-streak-fire">
+                       {lottieFireNode}
+                     </div>
+                     <div className="new-streak-headline">
+                       <div className="new-streak-value">
+                         {streakStats.currentStreak}
+                       </div>
+                       <p className="new-streak-label">day streak</p>
+                     </div>
                    </div>
-                   <div className="new-streak-headline">
-                     <div className="new-streak-value">{streakStats.currentStreak}</div>
-                     <p className="new-streak-label">day streak</p>
-                   </div>
+
+                   {streakStats.canRecover && (
+                     <Button 
+                       variant="practice"
+                       className="ask-b01-trigger streak-recovery-trigger" 
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         handleRecoverStreak();
+                       }}
+                       aria-label={`Recover your ${streakStats.potentialStreak} day streak`}
+                       style={{ margin: 0, width: 'auto', padding: '0 12px', height: '36px', fontSize: '0.8rem' }}
+                     >
+                       <IoFlame />
+                       <span>Recover {streakStats.potentialStreak} Day Streak</span>
+                     </Button>
+                   )}
                  </div>
                  <div className="new-streak-week" aria-label="This week streak activity">
                    {weekPills.map((pill, idx) => (
@@ -1010,9 +1557,9 @@ function ActivityPage() {
 
         {/* Right Column (Widgets) */}
         <div className="new-right-col no-scrollbar">
-            <section className={`new-widget dashboard-anim-left dashboard-anim-delay-2${(showRandomizerOverlay || showFreeSpeechOverlay) ? ' is-hidden' : ''}`} id="tutorial-target-home-rank">
+            <section className="new-widget dashboard-anim-left dashboard-anim-delay-2" id="tutorial-target-home-rank">
               <div className="new-widget-head">
-                <h2 className="new-widget-title">Journey Progression</h2>
+                <h2 className="new-widget-title">Speaker Level Progression</h2>
                 <span className="new-widget-chip">Level</span>
               </div>
               <div 
@@ -1021,15 +1568,21 @@ function ActivityPage() {
               >
                 <img src={rankSpriteImage} alt="" className="new-widget-rank-sprite" />
                 <div className="new-widget-rank-content">
-                  <p className="new-widget-kicker">Current Level</p>
-                  <p className="new-widget-value">LEVEL {levelProgress.levelNumber}</p>
+                  <p className="new-widget-kicker">Current Mastery</p>
+                  <p className="new-widget-value">LEVEL {currentJourneyNumber}</p>
                 </div>
               </div>
-              <p className="new-widget-caption">
-                {completedTaskCount}/{Math.max(tasks.length, 1)} Tasks Complete
-                <span className="new-widget-caption-sep"> - </span>
-                {sidebarProgressPct}% Cleared
-              </p>
+                <p className="new-widget-caption">
+                  {tasks.length > 0 ? (
+                    <>
+                      {completedTaskCount}/{tasks.length} Stages Completed
+                      <span className="new-widget-caption-sep"> - </span>
+                      {sidebarProgressPct}% Cleared
+                    </>
+                  ) : (
+                    'No activities found for this level.'
+                  )}
+                </p>
             </section>
 
             <section className="new-widget new-widget--practice dashboard-anim-bottom dashboard-anim-delay-4" id="tutorial-target-home-practice">
@@ -1039,7 +1592,13 @@ function ActivityPage() {
               <p className="new-practice-subtitle">Choose a mode and jump straight into speaking.</p>
 
               <div className="new-btn-group">
-                <div className="new-btn-row new-btn-row--card">
+                <div 
+                  className="new-btn-row new-btn-row--card"
+                  role="button"
+                  tabIndex={0}
+                  onClick={handleRandomizerClick}
+                  onKeyDown={(e) => e.key === 'Enter' && handleRandomizerClick()}
+                >
                   <div className="new-btn-visual new-btn-visual--randomizer">
                     <img src={crystalBallImage} alt="" className="new-btn-visual-img new-btn-visual-img--randomizer" />
                   </div>
@@ -1047,16 +1606,15 @@ function ActivityPage() {
                     <p className="new-btn-label">Randomizer</p>
                     <p className="new-btn-hint">Instant prompt to warm up your delivery.</p>
                   </div>
-                  <Button
-                    variant="practice"
-                    className={`activity-practice-cta activity-practice-cta--randomizer${(showRandomizerOverlay || showFreeSpeechOverlay) ? ' is-hidden' : ''}`}
-                    onClick={handleRandomizerClick}
-                  >
-                    Start Randomizer
-                  </Button>
                 </div>
                 
-                <div className="new-btn-row new-btn-row--card">
+                <div 
+                  className="new-btn-row new-btn-row--card"
+                  role="button"
+                  tabIndex={0}
+                  onClick={handleFreeSpeechClick}
+                  onKeyDown={(e) => e.key === 'Enter' && handleFreeSpeechClick()}
+                >
                   <div className="new-btn-visual new-btn-visual--speech">
                     <img src={crownImage} alt="" className="new-btn-visual-img" />
                   </div>
@@ -1064,24 +1622,15 @@ function ActivityPage() {
                     <p className="new-btn-label">Free Speech</p>
                     <p className="new-btn-hint">Open topic mode for confidence building.</p>
                   </div>
-                  <Button
-                    variant="training"
-                    className={`activity-practice-cta activity-practice-cta--speech${(showRandomizerOverlay || showFreeSpeechOverlay) ? ' is-hidden' : ''}`}
-                    onClick={handleFreeSpeechClick}
-                  >
-                    Start Session
-                  </Button>
                 </div>
               </div>
             </section>
           </div>
-
-
       </div>
       <StreakCalendarModal 
         isOpen={isStreakModalOpen} 
         onClose={() => setIsStreakModalOpen(false)} 
-        activeDayKeys={activeDayKeys} 
+        sessionCountsByDay={sessionCountsByDay} 
         streakStats={streakStats}
       />
 
@@ -1090,6 +1639,106 @@ function ActivityPage() {
         onClose={() => setIsRankModalOpen(false)}
         currentLevelNumber={levelProgress.levelNumber}
       />
+      <TutorialOverlay
+        isOpen={showAssessmentModal}
+        onClose={() => setShowAssessmentModal(false)}
+        onFinish={() => setShowAssessmentModal(false)}
+        steps={assessmentTutorialSteps}
+      />
+      
+      {/* Ask B-01 Modal */}
+      {isAskB01ModalOpen && (
+        <section className="randomizer-overlay-wrapper ask-b01-modal-wrapper" aria-label="Ask B-01 modal">
+          <div className="bigkas-modal-scrim ask-b01-scrim" onClick={() => setIsAskB01ModalOpen(false)} />
+          <div className="ask-b01-modal-card">
+            <div className="ask-b01-modal-header">
+              <h2 className="ask-b01-modal-title">
+                <img src={b01ChatHead} alt="" className="ask-b01-modal-title-logo" />
+                Ask <span>B-01</span>
+              </h2>
+              <button 
+                className="ask-b01-modal-close" 
+                onClick={() => setIsAskB01ModalOpen(false)}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="ask-b01-chat-container" ref={chatScrollRef}>
+              {chatMessages.map((msg, idx) => (
+                <div key={idx} className={`ask-b01-chat-row ${msg.role === 'assistant' ? 'b01-row' : 'user-row'}`}>
+                  {msg.role === 'assistant' && (
+                    <div className="ask-b01-chat-head b01-chat-head-square">
+                      <img src={b01ChatHead} alt="B-01" />
+                    </div>
+                  )}
+                  
+                  <div className={`ask-b01-message ask-b01-message--${msg.role === 'assistant' ? 'b01' : 'user'} ${!msg.content && msg.role === 'assistant' ? 'typing-indicator' : ''}`}>
+                    {msg.content || (msg.role === 'assistant' && (
+                      <><span>.</span><span>.</span><span>.</span></>
+                    ))}
+                  </div>
+
+                  {msg.role === 'user' && (
+                    <div className="ask-b01-chat-head user-head">
+                      {(user?.avatarUrl || user?.avatar_url) ? (
+                        <img src={user.avatarUrl || user.avatar_url} alt="Me" />
+                      ) : (
+                        <div className="ask-b01-avatar-placeholder">
+                          {user?.firstName?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {chatMessages.length === 1 && !isB01Typing && (
+                <div className="ask-b01-suggestions">
+                  {B01_SUGGESTIONS.map((suggestion, sIdx) => (
+                    <button 
+                      key={sIdx} 
+                      className="ask-b01-suggestion-chip"
+                      onClick={() => handleSendMessage(suggestion)}
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+            </div>
+
+            <div className="ask-b01-input-area">
+              <form 
+                className="ask-b01-input-wrapper"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSendMessage();
+                }}
+              >
+                <input 
+                  type="text" 
+                  className="ask-b01-input"
+                  placeholder="Ask me anything..."
+                  value={askB01Query}
+                  onChange={(e) => setAskB01Query(e.target.value)}
+                  disabled={isB01Typing}
+                />
+                <button 
+                  type="submit"
+                  className="ask-b01-send-btn"
+                  disabled={!askB01Query.trim() || isB01Typing}
+                >
+                  <IoSend />
+                </button>
+              </form>
+              <p className="ask-b01-disclaimer">B-01 can make mistakes. Please verify important information.</p>
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

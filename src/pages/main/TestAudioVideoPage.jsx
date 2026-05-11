@@ -1,7 +1,36 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { 
+  IoChevronBack, 
+  IoVideocam, 
+  IoMic, 
+  IoCameraReverse,
+  IoSettingsOutline,
+  IoCheckmarkCircle
+} from 'react-icons/io5';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
+import TutorialOverlay from '../../components/main/TutorialOverlay';
+import { getSpriteUrl } from '../../utils/assetUtils';
+
+const mascotSprite = getSpriteUrl('Robot/0002.webp');
+const bronzeRank = getSpriteUrl('Rank/rank-bronze.png');
+const silverRank = getSpriteUrl('Rank/rank-silver.png');
+const goldRank = getSpriteUrl('Rank/rank-gold.png');
+const mythrilRank = getSpriteUrl('Rank/rank-mythril.png');
+const legendaryRank = getSpriteUrl('Rank/rank-legendary.png');
 import './TestAudioVideoPage.css';
+
+const THEME_CONFIG = [
+  { id: 'emerald', label: 'Default', requires: 0, decoration: null, className: 'emerald' },
+  { id: 'mascot', label: 'B-01', requires: 0, decoration: mascotSprite, className: 'mascot' },
+  { id: 'bronze', label: 'Bronze', requires: 1, decoration: bronzeRank, className: 'bronze' },
+  { id: 'silver', label: 'Silver', requires: 2, decoration: silverRank, className: 'silver' },
+  { id: 'gold', label: 'Gold', requires: 3, decoration: goldRank, className: 'gold' },
+  { id: 'mythril', label: 'Mythril', requires: 4, decoration: mythrilRank, className: 'mythril' },
+  { id: 'trophy', label: 'Legend', requires: 5, decoration: legendaryRank, className: 'trophy' },
+];
 
 const MIC_SENSITIVITY_KEY = 'pref_mic_sensitivity';
 
@@ -10,13 +39,11 @@ function getMicSensitivityProfile() {
     return { analyserGain: 4.4, visualGain: 2.2 };
   }
 
-  const raw = (window.localStorage.getItem(MIC_SENSITIVITY_KEY) || 'high').toLowerCase();
-  if (raw === 'low') return { analyserGain: 2.4, visualGain: 1.4 };
-  if (raw === 'normal') return { analyserGain: 3.2, visualGain: 1.8 };
-  return { analyserGain: 4.4, visualGain: 2.2 };
+  const raw = (window.localStorage.getItem(MIC_SENSITIVITY_KEY) || '80').toLowerCase();
+  const val = parseInt(raw, 10) || 80;
+  return { analyserGain: (val / 100) * 5.5, visualGain: 2.2 };
 }
 
-/* ── Audio level bar visualiser (adapted from mobile AudioLevelIndicator) ── */
 function AudioLevelBars({ level = 0, isActive = false, barCount = 20 }) {
   return (
     <div className="av-bars" aria-hidden="true">
@@ -28,7 +55,10 @@ function AudioLevelBars({ level = 0, isActive = false, barCount = 20 }) {
           <div
             key={i}
             className={`av-bar${filled ? ' av-bar-lit' : ''}${partial ? ' av-bar-partial' : ''}`}
-            style={{ opacity: isActive ? 1 : 0.25 }}
+            style={{ 
+                opacity: isActive ? 1 : 0.25,
+                height: `${30 + (i % 3) * 10}%`
+            }}
           />
         );
       })}
@@ -36,41 +66,53 @@ function AudioLevelBars({ level = 0, isActive = false, barCount = 20 }) {
   );
 }
 
-/* ── Status dot ── */
 function StatusDot({ status }) {
-  const colors = { ok: '#34C759', warn: '#FF9500', err: '#FF3B30' };
+  const colors = { ok: '#059669', warn: '#F18F01', err: '#EF4444' };
   return <span className="av-status-dot" style={{ background: colors[status] || colors.warn }} />;
 }
 
-/**
- * TestAudioVideoPage
- *
- * Web adaptation of AudioCameraTestScreen (Bigkas-mobile).
- * Tests camera (via getUserMedia + <video>) and microphone
- * (via Web Audio API AnalyserNode for real-time level meter).
- *
- * Route: /settings/test
- */
 export default function TestAudioVideoPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuthContext();
   const videoRef  = useRef(null);
-  const streamRef = useRef(null);   // camera stream
+  const streamRef = useRef(null);
   const micStreamRef  = useRef(null);
   const audioCtxRef   = useRef(null);
   const analyserRef   = useRef(null);
   const animFrameRef  = useRef(null);
 
-  const [cameraPermission, setCameraPermission] = useState(null); // null=unknown, true/false
+  const [isTutorialOpen, setIsTutorialOpen] = useState(location.state?.launchTutorial || false);
+  const [cameraPermission, setCameraPermission] = useState(null);
   const [audioPermission,  setAudioPermission]  = useState(null);
-  const [facing,      setFacing]      = useState('user'); // 'user' | 'environment'
+  const [facing,      setFacing]      = useState('user');
   const [isMicTesting, setIsMicTesting] = useState(false);
   const [audioLevel,  setAudioLevel]  = useState(0);
   const [cameraReady, setCameraReady] = useState(false);
+  const [isMicOk, setIsMicOk] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  
+  const micOkRef = useRef(false);
+  const successTriggeredRef = useRef(false);
+  
+  const [heroTheme] = useState(() => {
+    return localStorage.getItem('pref_hero_theme') || 'emerald';
+  });
 
-  /* ── Start camera ── */
+  const getThemeDecoration = (themeId) => {
+    const config = THEME_CONFIG.find(t => t.id === themeId);
+    return config?.decoration || null;
+  };
+
+  const userInitials = useMemo(() => {
+    if (!user) return '?';
+    const first = user.firstName || '';
+    const last = user.lastName || '';
+    return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase() || '?';
+  }, [user]);
+
   const startCamera = useCallback(async (facingMode = 'user') => {
     try {
-      // Stop previous stream
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
       }
@@ -90,7 +132,6 @@ export default function TestAudioVideoPage() {
     }
   }, []);
 
-  /* ── Stop mic ── */
   const stopMicTest = useCallback(() => {
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     if (analyserRef.current) analyserRef.current.disconnect();
@@ -106,7 +147,6 @@ export default function TestAudioVideoPage() {
     setIsMicTesting(false);
   }, []);
 
-  /* ── Mic level polling via Web Audio API ── */
   const pollLevel = useCallback(function poll() {
     if (!analyserRef.current) return;
     const data = new Uint8Array(analyserRef.current.fftSize);
@@ -123,28 +163,27 @@ export default function TestAudioVideoPage() {
     const measured = Math.min(1, rms * sensitivity.analyserGain);
     const level = Math.min(1, measured * sensitivity.visualGain);
     setAudioLevel(+level.toFixed(3));
-    animFrameRef.current = requestAnimationFrame(poll);
-  }, []);
 
-  /* ── Start mic test ── */
+    // Auto-stop if clear audio is detected
+    if (level > 0.15 && !micOkRef.current) {
+      micOkRef.current = true;
+      setIsMicOk(true);
+      // Give it a moment for the user to see the bars moving before stopping
+      setTimeout(() => stopMicTest(), 1200);
+      return;
+    }
+
+    animFrameRef.current = requestAnimationFrame(poll);
+  }, [stopMicTest]);
+
   const handleToggleMicTest = useCallback(async () => {
     if (isMicTesting) {
       stopMicTest();
       return;
     }
     try {
-      const selectedMic = typeof window !== 'undefined'
-        ? window.localStorage.getItem('pref_mic') || ''
-        : '';
-
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          ...(selectedMic && selectedMic !== 'default' ? { deviceId: { exact: selectedMic } } : {}),
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          channelCount: 1,
-        },
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
         video: false,
       });
       micStreamRef.current  = stream;
@@ -155,9 +194,6 @@ export default function TestAudioVideoPage() {
       const source  = ctx.createMediaStreamSource(stream);
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 512;
-      analyser.smoothingTimeConstant = 0.7;
-      analyser.minDecibels = -95;
-      analyser.maxDecibels = -10;
       source.connect(analyser);
       audioCtxRef.current  = ctx;
       analyserRef.current  = analyser;
@@ -169,125 +205,161 @@ export default function TestAudioVideoPage() {
     }
   }, [isMicTesting, stopMicTest, pollLevel]);
 
-  /* ── Flip camera ── */
   const handleFlipCamera = useCallback(() => {
     const next = facing === 'user' ? 'environment' : 'user';
     setFacing(next);
     startCamera(next);
   }, [facing, startCamera]);
 
-  /* ── Lifecycle ── */
   useEffect(() => {
     startCamera(facing);
     return () => {
       if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
       stopMicTest();
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
-  const camStatus = cameraPermission === null
-    ? 'warn'
-    : cameraPermission && cameraReady ? 'ok' : 'err';
-  const camStatusText = cameraPermission === null
-    ? 'Requesting camera permission…'
-    : cameraPermission
-      ? cameraReady ? `${facing === 'user' ? 'Front' : 'Back'} camera active` : 'Initialising camera…'
-      : 'Camera permission not granted';
-
+  const camStatus = cameraPermission === null ? 'warn' : cameraPermission && cameraReady ? 'ok' : 'err';
+  const camStatusText = cameraPermission === null ? 'Requesting camera...' : cameraPermission ? (cameraReady ? 'Camera active' : 'Initializing...') : 'Permission denied';
   const micStatusColor = audioPermission === false ? 'err' : isMicTesting ? 'ok' : 'warn';
-  const micStatusText  = audioPermission === false
-    ? 'Microphone permission not granted'
-    : isMicTesting
-      ? 'Listening… speak into your microphone'
-      : 'Tap the button below to test';
+  const micStatusText = audioPermission === false ? 'Mic denied' : isMicTesting ? 'Listening...' : 'Ready to test';
+
+  useEffect(() => {
+    if (camStatus === 'ok' && isMicOk && !successTriggeredRef.current) {
+      successTriggeredRef.current = true;
+      // Delay slightly for a smoother transition
+      const timer = setTimeout(() => setShowSuccessModal(true), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [camStatus, isMicOk]);
 
   return (
-    <div className="av-page">
-      <section className="av-single-card">
-        <nav className="av-breadcrumb" aria-label="Breadcrumb">
-          <Link className="av-breadcrumb-link" to={ROUTES.SETTINGS}>
-            Settings
-          </Link>
-          <span className="av-breadcrumb-sep">&gt;</span>
-          <span className="av-breadcrumb-current">Test Audio/ Video</span>
-        </nav>
+    <div className="settings-profile-page dashboard-page-new av-page-new">
+      <div className="history-session-view-header av-back-header-fixed">
+        <button
+          type="button"
+          className="history-back-to-list-btn"
+          onClick={() => navigate(ROUTES.SETTINGS)}
+        >
+          <IoChevronBack /> Back to Settings
+        </button>
+      </div>
 
-        <p className="av-kicker">Hardware Check</p>
-        <h1>Test Audio / Video</h1>
-        <p className="av-subtitle">
-          Verify your camera and microphone before starting your speaking sessions.
-        </p>
-
-        {/* Camera Preview */}
-        <section className="av-section">
-          <p className="av-section-label">CAMERA PREVIEW</p>
-          <div className="av-camera-wrap">
-            {cameraPermission !== false ? (
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="av-video"
-              />
+      <div className="settings-profile-container">
+        <div className={`profile-hero-card hero-theme--${heroTheme}`}>
+          <div className="hero-decoration">
+            {heroTheme === 'mascot' ? (
+              <img src={mascotSprite} alt="" className="decoration-img decoration-mascot" />
             ) : (
-              <div className="av-camera-placeholder">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="1" y1="1" x2="23" y2="23"/>
-                  <path d="M21 21H3a2 2 0 01-2-2V8a2 2 0 012-2h3m3-3h6l2 3h4a2 2 0 012 2v9.34m-7.72-2.06A4 4 0 1111.17 12.98"/>
-                </svg>
-                <p>Camera permission not granted</p>
-              </div>
-            )}
-
-            {/* Flip camera button */}
-            {cameraPermission && cameraReady && (
-              <button
-                className="av-flip-btn"
-                onClick={handleFlipCamera}
-                aria-label="Flip camera"
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M1 4v6h6"/>
-                  <path d="M23 20v-6h-6"/>
-                  <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4-4.64 4.36A9 9 0 013.51 15"/>
-                </svg>
-              </button>
+              getThemeDecoration(heroTheme) && (
+                <img 
+                  src={getThemeDecoration(heroTheme)} 
+                  alt="" 
+                  className={`decoration-img ${heroTheme === 'trophy' ? 'decoration-trophy' : 'decoration-rank'}`} 
+                />
+              )
             )}
           </div>
-          <div className="av-status-row">
-            <StatusDot status={camStatus} />
-            <span className="av-status-text">{camStatusText}</span>
-          </div>
-        </section>
 
-        {/* Microphone Test */}
-        <section className="av-section">
-          <p className="av-section-label">MICROPHONE TEST</p>
-          <div className="av-mic-card">
-            <div className="av-visualizer">
-              <AudioLevelBars level={audioLevel} isActive={isMicTesting} barCount={24} />
-            </div>
-            <div className="av-status-row av-status-row--center">
-              <StatusDot status={micStatusColor} />
-              <span className="av-status-text">{micStatusText}</span>
-            </div>
-            <button
-              className={`av-mic-btn${isMicTesting ? ' av-mic-btn-stop' : ''}`}
-              onClick={handleToggleMicTest}
-              disabled={audioPermission === false}
-            >
-              {isMicTesting ? 'Stop Mic Test' : 'Start Mic Test'}
-            </button>
+          <div className="hero-info" style={{ position: 'relative', zIndex: 2 }}>
+            <h1 className="hero-name">Hardware Check</h1>
+            <p className="hero-email" style={{ opacity: 0.9 }}>Test your equipment for the best training experience.</p>
           </div>
-        </section>
-
-        <div className="av-done-wrap">
-          <button className="av-done-btn" onClick={() => navigate(ROUTES.SETTINGS)}>
-            Done
-          </button>
         </div>
-      </section>
+
+        <div className="settings-content-wrapper">
+          <div className="settings-main-card">
+            <div className="settings-form">
+              {/* Camera Section */}
+              <div className="settings-form-section">
+                <div className="section-header-flex">
+                   <h2 className="section-heading">Camera Preview</h2>
+                   <div className="av-status-pill">
+                      <StatusDot status={camStatus} />
+                      <span>{camStatusText}</span>
+                   </div>
+                </div>
+                
+                <div className="av-camera-viewport">
+                  {cameraPermission !== false ? (
+                    <video ref={videoRef} autoPlay playsInline muted className="av-video-feed" />
+                  ) : (
+                    <div className="av-error-placeholder">
+                      <p>Camera access was denied. Please check your browser settings.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="settings-divider" style={{ margin: '32px 0' }} />
+
+              {/* Microphone Section */}
+              <div className="settings-form-section">
+                 <div className="section-header-flex">
+                   <h2 className="section-heading">Microphone Test</h2>
+                   <div className="av-status-pill">
+                      <StatusDot status={micStatusColor} />
+                      <span>{micStatusText}</span>
+                   </div>
+                </div>
+
+                <div className="av-mic-test-area">
+                  <div className="av-visualizer-container">
+                    <AudioLevelBars level={audioLevel} isActive={isMicTesting} barCount={28} />
+                  </div>
+                  
+                  <button 
+                    className={`av-toggle-btn ${isMicTesting ? 'is-active' : ''}`}
+                    onClick={handleToggleMicTest}
+                    disabled={audioPermission === false}
+                  >
+                    {isMicTesting ? 'Stop Mic Test' : 'Start Mic Test'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <AnimatePresence>
+          {showSuccessModal && (
+            <motion.div 
+              className="av-success-banner-wrap"
+              initial={{ height: 0, opacity: 0, marginTop: 0 }}
+              animate={{ height: 'auto', opacity: 1, marginTop: 24 }}
+              exit={{ height: 0, opacity: 0, marginTop: 0 }}
+            >
+              <div className="av-success-banner">
+                <div className="av-banner-left">
+                  <div className="av-banner-badge">
+                    <IoCheckmarkCircle />
+                  </div>
+                  <div className="av-banner-info">
+                    <h3 className="av-banner-title">Hardware Verified</h3>
+                    <p className="av-banner-sub">Everything is working perfectly!</p>
+                  </div>
+                </div>
+                <div className="av-banner-right">
+                  <button 
+                    type="button"
+                    className="av-banner-launch-btn"
+                    onClick={() => navigate(ROUTES.ACTIVITY)}
+                  >
+                    Start Training
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <TutorialOverlay
+        isOpen={isTutorialOpen}
+        onClose={() => setIsTutorialOpen(false)}
+        onFinish={() => setIsTutorialOpen(false)}
+        steps={location.state?.tutorialSteps}
+      />
     </div>
   );
 }

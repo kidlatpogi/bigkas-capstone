@@ -8,8 +8,26 @@ import fireAnimationData from '../../assets/Lottie/fire.json';
 const iconFire = getAssetUrl('icons/Icon-Fire.svg');
 import './StreakCalendarModal.css';
 
-export default function StreakCalendarModal({ isOpen, onClose, activeDayKeys, streakStats }) {
+// Heatmap color scale: Dark (less) -> Light (more)
+function getSessionIntensityColor(count) {
+  if (count <= 0) return '#e2e8f0'; // Default empty
+  if (count === 1) return '#d1fae5'; // Very light emerald
+  if (count === 2) return '#a7f3d0';
+  if (count === 3) return '#34d399';
+  if (count === 4) return '#10b981';
+  return '#059669'; // Solid emerald
+}
+
+const DayFireIcon = () => (
+  <div className="streak-fire-icon-lottie">
+    <Lottie animationData={fireAnimationData} loop={true} />
+  </div>
+);
+
+export default function StreakCalendarModal({ isOpen, onClose, sessionCountsByDay, streakStats }) {
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  const lottieFireNode = useMemo(() => <Lottie animationData={fireAnimationData} loop={true} />, []);
 
   if (!isOpen) return null;
 
@@ -40,22 +58,18 @@ export default function StreakCalendarModal({ isOpen, onClose, activeDayKeys, st
     return `${year}-${month}-${d}`;
   };
 
-  // Pre-calculate active status for each day to determine streak rendering
-  const dayStatuses = days.map((day) => {
+  // Pre-calculate session counts for each day
+  const dayCounts = days.map((day) => {
     const key = getLocalDateKey(day);
-    return activeDayKeys.has(key);
+    return sessionCountsByDay.get(key) || 0;
   });
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div 
+        <div 
           className="streak-calendar-overlay bigkas-modal-scrim" 
           onClick={onClose}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3, ease: "easeInOut" }}
         >
           <motion.div 
             className="streak-calendar-modal" 
@@ -90,12 +104,27 @@ export default function StreakCalendarModal({ isOpen, onClose, activeDayKeys, st
 
         {streakStats && (
           <div className="streak-calendar-streak-card">
-            <div className="new-streak-fire">
-              <Lottie animationData={fireAnimationData} loop={true} />
+            <div className="streak-intensity-explanation">
+              <span className="intensity-label">Less</span>
+              <div className="intensity-boxes">
+                {[1, 2, 3, 4, 5].map((lvl) => (
+                  <div 
+                    key={lvl} 
+                    className="intensity-box" 
+                    style={{ backgroundColor: getSessionIntensityColor(lvl) }}
+                  />
+                ))}
+              </div>
+              <span className="intensity-label">More</span>
             </div>
-            <div className="new-streak-headline">
-              <div className="new-streak-value">{streakStats.currentStreak}</div>
-              <p className="new-streak-label">day streak</p>
+            <div className="streak-card-main-row">
+              <div className="new-streak-fire">
+                {lottieFireNode}
+              </div>
+              <div className="new-streak-headline">
+                <div className="new-streak-value">{streakStats.currentStreak}</div>
+                <p className="new-streak-label">day streak</p>
+              </div>
             </div>
           </div>
         )}
@@ -110,24 +139,19 @@ export default function StreakCalendarModal({ isOpen, onClose, activeDayKeys, st
           ))}
           
           {days.map((day, i) => {
-            const isActive = dayStatuses[i];
-            const isPrevActive = i > 0 ? dayStatuses[i - 1] : false;
-            const isNextActive = i < days.length - 1 ? dayStatuses[i + 1] : false;
+            const count = dayCounts[i];
+            const isActive = count > 0;
+            const isPrevActive = i > 0 ? dayCounts[i - 1] > 0 : false;
+            const isNextActive = i < days.length - 1 ? dayCounts[i + 1] > 0 : false;
             
             const isPartOfStreak = isActive && (isPrevActive || isNextActive);
-            const isSingleActive = isActive && !isPartOfStreak;
             
-            // Determine border radius for the streak background pill
-            // It should connect horizontally
-            const isStreakStart = isPartOfStreak && !isPrevActive;
-            const isStreakEnd = isPartOfStreak && !isNextActive;
-            // Also need to handle week wraps (Sunday to Monday)
             const currentDayOfWeek = (startDayOffset + i) % 7;
             const isMonday = currentDayOfWeek === 0;
             const isSunday = currentDayOfWeek === 6;
             
-            const roundedLeft = isStreakStart || isMonday;
-            const roundedRight = isStreakEnd || isSunday;
+            const roundedLeft = isPartOfStreak && (!isPrevActive || isMonday);
+            const roundedRight = isPartOfStreak && (!isNextActive || isSunday);
 
             let pillStyle = {};
             if (isPartOfStreak) {
@@ -144,9 +168,12 @@ export default function StreakCalendarModal({ isOpen, onClose, activeDayKeys, st
             return (
               <div key={day} className="streak-calendar-cell">
                 {isPartOfStreak && <div className="streak-bg-pill" style={pillStyle}></div>}
-                <div className={`streak-calendar-day ${isActive ? 'active' : ''} ${isPartOfStreak ? 'streak' : ''}`}>
-                  {isPartOfStreak ? (
-                    <img src={iconFire} alt="fire" className="streak-fire-icon" />
+                <div 
+                  className={`streak-calendar-day ${isActive ? 'active' : ''} ${isPartOfStreak ? 'streak' : ''}`}
+                  style={{ backgroundColor: isActive ? getSessionIntensityColor(count) : undefined }}
+                >
+                  {isActive ? (
+                    <DayFireIcon />
                   ) : (
                     <span className="streak-day-text">{day}</span>
                   )}
@@ -160,7 +187,7 @@ export default function StreakCalendarModal({ isOpen, onClose, activeDayKeys, st
           ))}
         </div>
         </motion.div>
-        </motion.div>
+        </div>
       )}
     </AnimatePresence>
   );

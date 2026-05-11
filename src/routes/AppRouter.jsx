@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Routes, Route, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { useAuthContext } from '../context/useAuthContext';
@@ -6,45 +6,48 @@ import { ENV } from '../config/env';
 import { ROUTES } from '../utils/constants';
 
 // Auth Pages
-import AdminLoginPage from '../pages/auth/AdminLoginPage';
-import LoginPage from '../pages/auth/LoginPage';
-import LandingPage from '../pages/landing/LandingPage';
-import RegisterPage from '../pages/auth/RegisterPage';
-import VerifyEmailPage from '../pages/auth/VerifyEmailPage';
-import ForgotPasswordPage from '../pages/auth/ForgotPasswordPage';
+const AdminLoginPage = lazy(() => import('../pages/auth/AdminLoginPage'));
+const LoginPage = lazy(() => import('../pages/auth/LoginPage'));
+const LandingPage = lazy(() => import('../pages/landing/LandingPage'));
+const RegisterPage = lazy(() => import('../pages/auth/RegisterPage'));
+const VerifyEmailPage = lazy(() => import('../pages/auth/VerifyEmailPage'));
+const ForgotPasswordPage = lazy(() => import('../pages/auth/ForgotPasswordPage'));
 
 // Main Pages
-import AdminDashboardPage from '../pages/main/AdminDashboardPage';
-import ProgressPage from '../pages/main/ProgressPage';
-import ProgressPageMobile from '../pages/main/ProgressPageMobile';
-import AchievementsPage from '../pages/main/AchievementsPage';
-import SettingsProfilePage from '../pages/main/SettingsProfilePage';
-import SettingsPage from '../pages/main/SettingsPage';
-import ChangePasswordPage from '../pages/main/ChangePasswordPage';
-import AccountSettingsPage from '../pages/main/AccountSettingsPage';
-import TrainingSetupPage from '../pages/main/TrainingSetupPage';
-import TrainingPage from '../pages/main/TrainingPage';
-import FrameworksPage from '../pages/main/FrameworksPage';
-import TestAudioVideoPage from '../pages/main/TestAudioVideoPage';
-import UserProfilingPage from '../pages/main/UserProfilingPage';
-import UserPretestPage from '../pages/main/UserPretestPage';
-import UserAnalyzingPage from '../pages/main/UserAnalyzingPage';
-import ActivityPage from '../pages/main/ActivityPage';
-import ActivityPageMobile from '../pages/main/ActivityPageMobile';
-import AchievementsPageMobile from '../pages/main/AchievementsPageMobile';
+const AdminDashboardPage = lazy(() => import('../pages/main/AdminDashboardPage'));
+const ProgressPage = lazy(() => import('../pages/main/ProgressPage'));
+const ProgressPageMobile = lazy(() => import('../pages/main/ProgressPageMobile'));
+const AchievementsPage = lazy(() => import('../pages/main/AchievementsPage'));
+const SettingsProfilePage = lazy(() => import('../pages/main/SettingsProfilePage'));
+const SettingsProfilePageMobile = lazy(() => import('../pages/main/SettingsProfilePageMobile'));
+const SettingsPage = lazy(() => import('../pages/main/SettingsPage'));
+const SettingsPageMobile = lazy(() => import('../pages/main/SettingsPageMobile'));
+const ChangePasswordPage = lazy(() => import('../pages/main/ChangePasswordPage'));
+const AccountSettingsPage = lazy(() => import('../pages/main/AccountSettingsPage'));
+const TrainingSetupPage = lazy(() => import('../pages/main/TrainingSetupPage'));
+const TrainingPage = lazy(() => import('../pages/main/TrainingPage'));
+const FrameworksPage = lazy(() => import('../pages/main/FrameworksPage'));
+const TestAudioVideoPage = lazy(() => import('../pages/main/TestAudioVideoPage'));
+const UserProfilingPage = lazy(() => import('../pages/main/UserProfilingPage'));
+const UserPretestPage = lazy(() => import('../pages/main/UserPretestPage'));
+const UserAnalyzingPage = lazy(() => import('../pages/main/UserAnalyzingPage'));
+const ActivityPage = lazy(() => import('../pages/main/ActivityPage'));
+const ActivityPageMobile = lazy(() => import('../pages/main/ActivityPageMobile'));
+const AchievementsPageMobile = lazy(() => import('../pages/main/AchievementsPageMobile'));
 
 // Session Pages
-import SessionDetailPage from '../pages/session/SessionDetailPage';
-import SessionResultPage from '../pages/session/SessionResultPage';
-import DetailedFeedbackPage from '../pages/session/DetailedFeedbackPage';
+const SessionDetailPage = lazy(() => import('../pages/session/SessionDetailPage'));
+const DetailedFeedbackPage = lazy(() => import('../pages/session/DetailedFeedbackPage'));
 
 // Main Pages (continued)
-import PracticePage from '../pages/main/PracticePage';
+const PracticePage = lazy(() => import('../pages/main/PracticePage'));
 
 // Components
-import SideNav from '../components/common/SideNav';
-import BottomNav from '../components/common/BottomNav';
-import bigkasLogo from '../assets/Temporary Logo.png';
+const SideNav = lazy(() => import('../components/common/SideNav'));
+const BottomNav = lazy(() => import('../components/common/BottomNav'));
+import { getAssetUrl } from '../utils/assetUtils';
+
+const bigkasLogo = "data:image/webp;base64,UklGRmYBAABXRUJQVlA4IFoBAABwCwCdASoQABAAPlEkj0WjIyIhKBAAgCcJaW7AAWzAD8AA/v/p///9f//v/P///T///2P//8P//6v//6P//4P//2P//v///+7//+p///T///R///P///L///G///E///A///8AAP79AQAA"; 
 
 /**
  * ActivityPageWrapper - Conditionally renders desktop or mobile version
@@ -111,6 +114,48 @@ function AchievementsPageWrapper() {
   }, []);
 
   return isMobileViewport ? <AchievementsPageMobile /> : <AchievementsPage />;
+}
+
+function SettingsProfilePageWrapper() {
+  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 768);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const handleViewportChange = (event) => setIsMobileViewport(event.matches);
+
+    setIsMobileViewport(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleViewportChange);
+      return () => mediaQuery.removeEventListener('change', handleViewportChange);
+    }
+
+    mediaQuery.addListener(handleViewportChange);
+    return () => mediaQuery.removeListener(handleViewportChange);
+  }, []);
+
+  return isMobileViewport ? <SettingsProfilePageMobile /> : <SettingsProfilePage />;
+}
+
+function SettingsPageWrapper() {
+  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 768);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const handleViewportChange = (event) => setIsMobileViewport(event.matches);
+
+    setIsMobileViewport(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleViewportChange);
+      return () => mediaQuery.removeEventListener('change', handleViewportChange);
+    }
+
+    mediaQuery.addListener(handleViewportChange);
+    return () => mediaQuery.removeListener(handleViewportChange);
+  }, []);
+
+  return isMobileViewport ? <SettingsPageMobile /> : <SettingsPage />;
 }
 
 function getAuthenticatedRedirect(user, isAdminAuthenticated) {
@@ -196,8 +241,16 @@ function ProtectedRoute() {
 
   return (
     <>
-      {!hideMainNav && isMobileViewport && <BottomNav />}
-      {!hideMainNav && !isMobileViewport && <SideNav />}
+      {!hideMainNav && isMobileViewport && (
+        <Suspense fallback={null}>
+          <BottomNav />
+        </Suspense>
+      )}
+      {!hideMainNav && !isMobileViewport && (
+        <Suspense fallback={null}>
+          <SideNav />
+        </Suspense>
+      )}
       <main
         className={`main-content${hideMainNav ? ' main-content--full' : ''}`}
       >
@@ -298,27 +351,79 @@ function AppRouter() {
       <Route element={<PublicRoute />}>
         <Route
           path={ROUTES.HOME}
-          element={isNative ? <Navigate to={ROUTES.LOGIN} replace /> : <LandingPage />}
+          element={isNative ? <Navigate to={ROUTES.LOGIN} replace /> : (
+            <Suspense fallback={null}>
+              <LandingPage />
+            </Suspense>
+          )}
         />
-        <Route path={ROUTES.LOGIN} element={<LoginPage />} />
-        <Route path={ROUTES.ADMIN_LOGIN_BASE} element={<AdminLoginPage />} />
-        {ENV.ADMIN_LOGIN_PATH && <Route path={ENV.ADMIN_LOGIN_PATH} element={<AdminLoginPage />} />}
-        <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
+        <Route
+          path={ROUTES.LOGIN}
+          element={
+            <Suspense fallback={null}>
+              <LoginPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={ROUTES.ADMIN_LOGIN_BASE}
+          element={
+            <Suspense fallback={null}>
+              <AdminLoginPage />
+            </Suspense>
+          }
+        />
+        {ENV.ADMIN_LOGIN_PATH && (
+          <Route
+            path={ENV.ADMIN_LOGIN_PATH}
+            element={
+              <Suspense fallback={null}>
+                <AdminLoginPage />
+              </Suspense>
+            }
+          />
+        )}
+        <Route
+          path={ROUTES.REGISTER}
+          element={
+            <Suspense fallback={null}>
+              <RegisterPage />
+            </Suspense>
+          }
+        />
       </Route>
 
       {/* Email Verification - accessible anytime */}
-      <Route path={ROUTES.VERIFY_EMAIL} element={<VerifyEmailPage />} />
+      <Route
+        path={ROUTES.VERIFY_EMAIL}
+        element={
+          <Suspense fallback={null}>
+            <VerifyEmailPage />
+          </Suspense>
+        }
+      />
 
       {/* Forgot Password - accessible anytime */}
-      <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
+      <Route
+        path={ROUTES.FORGOT_PASSWORD}
+        element={
+          <Suspense fallback={null}>
+            <ForgotPasswordPage />
+          </Suspense>
+        }
+      />
 
       {/* Protected Routes - require authentication */}
-      <Route element={<ProtectedRoute />}>
+      <Route
+        element={
+          <Suspense fallback={null}>
+            <ProtectedRoute />
+          </Suspense>
+        }
+      >
         <Route path={ROUTES.USER_PROFILING} element={<UserProfilingPage />} />
         <Route path={ROUTES.USER_PRETEST} element={<UserPretestPage />} />
         <Route path={ROUTES.USER_ANALYZING} element={<UserAnalyzingPage />} />
-
-
 
         {/* Practice */}
         <Route path={ROUTES.PRACTICE} element={<PracticePage />} />
@@ -336,21 +441,27 @@ function AppRouter() {
         <Route path={ROUTES.ACTIVITY} element={<ActivityPageWrapper />} />
 
         {/* Profile */}
-        <Route path={ROUTES.PROFILE} element={<SettingsProfilePage />} />
+        <Route path={ROUTES.PROFILE} element={<SettingsProfilePageWrapper />} />
 
         {/* Settings */}
-        <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
+        <Route path={ROUTES.SETTINGS} element={<SettingsPageWrapper />} />
         <Route path={ROUTES.CHANGE_PASSWORD} element={<ChangePasswordPage />} />
         <Route path={ROUTES.ACCOUNT_SETTINGS} element={<AccountSettingsPage />} />
         <Route path={ROUTES.AUDIO_TEST} element={<TestAudioVideoPage />} />
 
         {/* Session */}
         <Route path={ROUTES.SESSION_DETAIL} element={<SessionDetailPage />} />
-        <Route path={ROUTES.SESSION_RESULT} element={<SessionResultPage />} />
-        <Route path={ROUTES.DETAILED_FEEDBACK} element={<DetailedFeedbackPage />} />
+        <Route path={ROUTES.SESSION_RESULT} element={<DetailedFeedbackPage initialShowDetailed={false} />} />
+        <Route path={ROUTES.DETAILED_FEEDBACK} element={<DetailedFeedbackPage initialShowDetailed={true} />} />
       </Route>
 
-      <Route element={<AdminRoute />}>
+      <Route
+        element={
+          <Suspense fallback={null}>
+            <AdminRoute />
+          </Suspense>
+        }
+      >
         <Route path={ROUTES.ADMIN_DASHBOARD} element={<AdminDashboardPage />} />
       </Route>
 

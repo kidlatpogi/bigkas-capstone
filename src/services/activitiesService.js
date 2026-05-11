@@ -7,7 +7,7 @@ import { ROUTES } from '../utils/constants';
 export async function fetchActivities(currentLevel = 1) {
   const { data, error } = await supabase
     .from('activities')
-    .select('id, target_level, activity_order, title, phase_name, objective, weight_vis, weight_voc, weight_ver, created_at')
+    .select('id, target_level, activity_order, title, phase_name, objective, purpose')
     .eq('target_level', currentLevel)
     .order('activity_order', { ascending: true });
 
@@ -17,7 +17,7 @@ export async function fetchActivities(currentLevel = 1) {
       if (sessionData?.session) {
         const retry = await supabase
           .from('activities')
-          .select('id, target_level, activity_order, title, phase_name, objective, weight_vis, weight_voc, weight_ver, created_at')
+          .select('id, target_level, activity_order, title, phase_name, objective, purpose')
           .eq('target_level', currentLevel)
           .order('activity_order', { ascending: true });
         if (!retry.error) return Array.isArray(retry.data) ? retry.data : [];
@@ -44,6 +44,7 @@ export function buildJourneyTasksFromActivities(rows) {
       pillarName: phaseName || 'Training',
       phase_name: phaseName,
       objective,
+      purpose: row.purpose,
       detail: objective,
       actionLabel: 'Start training',
       actionRoute: ROUTES.TRAINING_SETUP,
@@ -51,11 +52,6 @@ export function buildJourneyTasksFromActivities(rows) {
       target_level: row.target_level,
       activity_order: row.activity_order,
       activityOrder: row.activity_order,
-      weights: {
-        vis: Number(row.weight_vis) || 0,
-        voc: Number(row.weight_voc) || 0,
-        ver: Number(row.weight_ver) || 0,
-      },
     };
   });
 }

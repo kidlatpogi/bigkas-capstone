@@ -17,6 +17,7 @@ export function getSessionMode(session) {
         .toLowerCase();
 
     if (raw.includes('pre-test') || raw.includes('pretest')) return 'Pre-Test';
+    if (raw.includes('post-test') || raw.includes('posttest')) return 'Post-Test';
     if (raw.includes('practice')) return 'Practice';
     if (raw.includes('train')) return 'Training';
     return 'Training';
@@ -81,4 +82,16 @@ export function getSessionSpeechType(session) {
     }
 
     return 'Training Session';
+}
+
+export function toFivePointScore(rawScore) {
+  const numeric = Number(rawScore);
+  if (!Number.isFinite(numeric)) return 1;
+
+  if (numeric <= 5 && numeric > 0) {
+    return Math.round(Math.max(1, Math.min(5, numeric)) * 10) / 10;
+  }
+
+  const normalized = Math.max(0, Math.min(100, numeric));
+  return Math.round((1 + (normalized / 100) * 4) * 10) / 10;
 }

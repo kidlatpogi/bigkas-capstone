@@ -15,13 +15,13 @@
 .analyzing-intro {
   width: 100%;
   max-width: min(100%, 72rem);
-  min-height: 100%;
-  height: 100dvh;
-  display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: clamp(0.2rem, 1vw, 0.6rem);
-  padding: 0;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  padding: clamp(1.5rem, 5vh, 3rem) clamp(1rem, 2.2vw, 2.3rem);
   overflow: hidden;
 }
 
@@ -34,8 +34,7 @@
   padding: clamp(0.95rem, 1.8vw, 1.2rem) clamp(1rem, 2vw, 1.3rem);
   color: #111827;
   position: relative;
-  z-index: 20;
-  transform: translateY(clamp(2.5rem, 7vh, 6rem));
+  z-index: 100;
 }
 
 .analyzing-bubble::after {
@@ -101,10 +100,11 @@
 }
 
 .analyzing-robot-wrap {
-  width: min(100%, 31rem);
-  max-width: 31rem;
-  margin-top: clamp(0.2rem, 1vw, 0.6rem);
-  align-self: end;
+  width: min(95vw, 50rem);
+  max-width: 50rem;
+  height: auto;
+  margin-top: -4.5rem;
+  align-self: center;
   justify-self: center;
   overflow: visible;
   display: grid;
@@ -122,24 +122,26 @@
 }
 
 .analyzing-robot-media--result {
-  width: min(100%, 27rem);
+  width: 100%;
 }
 
 .analyzing-robot-image {
-  width: 132%;
-  max-width: none;
+  width: 100%;
   height: auto;
+  max-height: 60vh;
   object-fit: contain;
   display: block;
   margin-left: 0;
 }
 
 .analyzing-audio-action {
+  position: fixed;
+  right: clamp(1rem, 3vw, 2.5rem);
+  bottom: calc(clamp(1rem, 3vh, 2.5rem) + env(safe-area-inset-bottom, 0px));
+  width: auto;
   display: flex;
   justify-content: center;
-  width: 100%;
-  position: relative;
-  z-index: 9;
+  z-index: 120;
 }
 
 .analyzing-audio-toggle {

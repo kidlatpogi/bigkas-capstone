@@ -6,7 +6,7 @@
 }
 
 .progress-page-bg {
-  --progress-page-pad: clamp(16px, 3vh, 32px);
+  --progress-page-pad: 1rem;
   width: 100%;
   min-height: 100dvh;
   background-color: #FDFDF9;
@@ -63,16 +63,13 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   background: #c3d49c;
 }
 
-@media (max-width: 1600px) and (min-width: 1025px) {
-  .progress-page-bg {
-    padding: var(--responsive-page-padding);
-  }
-}
+/* Removed responsive-page-padding override to match ActivityPage spacing */
+
 
 .progress-main-layout {
   display: flex;
   flex-direction: column;
-  gap: clamp(16px, 2.5vh, 24px);
+  gap: 1rem;
   width: 100%;
   max-width: 1424px;
   margin: 0 auto;
@@ -83,7 +80,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 .progress-left-content {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 1rem;
   width: 100%;
 }
 
@@ -407,7 +404,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   justify-content: flex-end !important;
 }
 
-/* Stats Card (Based on new-widget-rank-card) */
+/* Stats Card (Tactile 3D Design) */
 .progress-stat-card.new-widget-rank-card {
   display: flex !important;
   flex-direction: column !important;
@@ -416,21 +413,19 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
   gap: 4px !important;
   padding: 12px 16px !important;
   border-radius: 20px !important;
-  border: 1px solid rgba(11, 57, 84, 0.1) !important;
-  background: #ffffff !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.8) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%) !important;
+  box-shadow: 
+    0 8px 24px -10px rgba(0, 0, 0, 0.1),
+    rgba(11, 57, 84, 0.12) 0 4px 0 0 !important;
   width: 130px !important;
   height: 110px !important;
   box-sizing: border-box !important;
   transition: none !important;
   transform: none !important;
   flex-shrink: 0 !important;
-}
-
-.progress-stat-card.new-widget-rank-card:hover {
-  transform: none !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
-  background: #ffffff !important;
+  cursor: default !important;
+  pointer-events: none; /* Disable all interactions including clicks */
 }
 
 .new-widget-rank-content {
@@ -443,21 +438,21 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 .new-widget-kicker {
   margin: 0;
   font-family: 'Fredoka', sans-serif;
-  font-size: 0.7rem !important;
-  font-weight: 700;
+  font-size: 0.75rem !important;
+  font-weight: 800;
   color: #059669 !important;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   text-align: center;
-  line-height: 1.2;
+  line-height: 1.1;
 }
 
 .new-widget-value {
   margin: 0;
   font-family: 'Fredoka', sans-serif;
-  font-size: 1.5rem !important;
+  font-size: 1.6rem !important;
   font-weight: 800;
-  color: #1e293b !important;
+  color: #0f172a !important;
   line-height: 1;
 }
 

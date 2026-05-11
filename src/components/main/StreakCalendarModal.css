@@ -1,7 +1,7 @@
 .streak-calendar-overlay {
   position: fixed;
   inset: 0;
-  z-index: 2000;
+  z-index: 10000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -110,13 +110,56 @@
 
 .streak-calendar-streak-card {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
+  gap: 8px;
+  padding: 16px;
   border-radius: 16px;
   border: 1px solid rgba(11, 57, 84, 0.08);
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   margin-bottom: 8px;
+}
+
+.streak-intensity-explanation {
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(11, 57, 84, 0.05);
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.intensity-boxes {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.intensity-box {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.intensity-label {
+  font-size: 0.65rem;
+  opacity: 0.8;
+}
+
+.streak-card-main-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
 }
 
 .streak-calendar-streak-card .new-streak-fire {
@@ -164,7 +207,7 @@
   bottom: 10%;
   left: -4px;
   right: -4px;
-  background-color: #fef3c7; /* Pale yellow */
+  background-color: #ecfdf5; /* Light emerald */
   z-index: 1;
 }
 
@@ -191,11 +234,13 @@
   background-color: #f59e0b; /* Streak orange */
 }
 
-.streak-fire-icon {
-  width: 50%;
-  height: 50%;
-  object-fit: contain;
-  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
+.streak-fire-icon-lottie {
+  width: 110%;
+  height: 110%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: -4px; /* Adjust to center the flame better */
 }
 
 .streak-day-text {

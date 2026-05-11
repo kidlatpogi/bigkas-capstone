@@ -2,12 +2,12 @@ import styled from 'styled-components';
 
 const toneMap = {
   visual: {
-    cardBg: '#1a2c25',
-    gradStart: '#5d8a6a',
-    gradEnd: '#7fa890',
-    title: '#f4fbf1',
-    text: 'rgba(236, 246, 232, 0.9)',
-    shadow: 'rgba(30, 49, 41, 0.34)',
+    cardBg: '#051914',
+    gradStart: '#059669',
+    gradEnd: '#10b981',
+    title: '#ffffff',
+    text: 'rgba(255, 255, 255, 0.9)',
+    shadow: 'rgba(5, 150, 105, 0.34)',
   },
   vocal: {
     cardBg: '#30220f',
@@ -26,12 +26,12 @@ const toneMap = {
     shadow: 'rgba(8, 29, 41, 0.36)',
   },
   facial: {
-    cardBg: '#1a2c25',
-    gradStart: '#7fa06f',
-    gradEnd: '#93b184',
-    title: '#f4fbf1',
-    text: 'rgba(236, 246, 232, 0.9)',
-    shadow: 'rgba(30, 49, 41, 0.34)',
+    cardBg: '#051914',
+    gradStart: '#059669',
+    gradEnd: '#10b981',
+    title: '#ffffff',
+    text: 'rgba(255, 255, 255, 0.9)',
+    shadow: 'rgba(5, 150, 105, 0.34)',
   },
   articulation: {
     cardBg: '#132b39',
@@ -51,7 +51,7 @@ const toneMap = {
   },
 };
 
-export default function Feature3DCard({ title, text, tone = 'visual' }) {
+export default function Feature3DCard({ title, text, tone = 'visual', imageUrl, srcSet }) {
   const palette = toneMap[tone] || toneMap.visual;
 
   return (
@@ -67,6 +67,15 @@ export default function Feature3DCard({ title, text, tone = 'visual' }) {
     >
       <article className="card">
         <div className="top-section">
+          {imageUrl && (
+            <img 
+              src={imageUrl} 
+              srcSet={srcSet}
+              alt={title} 
+              className="card-top-img" 
+              loading="lazy" 
+            />
+          )}
           <div className="icons">
             <span className="logo-text">Bigkas</span>
           </div>
@@ -116,6 +125,21 @@ const StyledWrapper = styled.div`
     background: linear-gradient(45deg, var(--grad-start) 0%, var(--grad-end) 100%);
     position: relative;
     overflow: hidden;
+  }
+
+  .card-top-img {
+    position: absolute;
+    inset: 15px;
+    width: calc(100% - 30px);
+    height: calc(100% - 30px);
+    object-fit: contain;
+    z-index: 0;
+    opacity: 1;
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .card:hover .card-top-img {
+    transform: scale(1.08) translateY(-5px);
   }
 
   .top-section .icons {

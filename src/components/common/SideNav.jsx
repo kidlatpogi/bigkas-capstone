@@ -19,7 +19,10 @@ import {
   getClaimableAchievements,
   claimAchievement,
 } from '../../utils/achievementClaims';
+import { getAssetUrl } from '../../utils/assetUtils';
 import './SideNav.css';
+
+const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 
 const PRIMARY_NAV_ITEMS = [
   { to: ROUTES.ACTIVITY, label: 'Home', icon: IoHomeOutline },
@@ -38,6 +41,7 @@ export default function SideNav() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notifTrayOpen, setNotifTrayOpen] = useState(false);
   const [claimables, setClaimables] = useState(() => getClaimableAchievements());
+  const [notifTab, setNotifTab] = useState('all');
 
   const isSettingsRoute = useMemo(
     () => location.pathname === ROUTES.PROFILE || location.pathname.startsWith(ROUTES.SETTINGS),
@@ -94,13 +98,21 @@ export default function SideNav() {
       state: {
         skywardEntrance: true,
         launchFreeSpeechTutorial: true,
+        t: Date.now(),
       },
     });
   };
 
   const handleClaim = (id) => {
     claimAchievement(id);
-    // sync will be triggered by event
+    setClaimables(getClaimableAchievements());
+    setClaimableCount(getClaimableAchievementsCount());
+  };
+
+  const handleClearAll = () => {
+    claimAllAchievements();
+    setClaimables([]);
+    setClaimableCount(0);
   };
 
   const logoutModal = showLogoutConfirm && typeof document !== 'undefined'
@@ -129,11 +141,29 @@ export default function SideNav() {
     )
     : null;
 
+  const timeAgo = (date) => {
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+    if (seconds < 60) return 'Now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return new Date(date).toLocaleDateString();
+  };
+
+  const filteredNotifs = useMemo(() => {
+    if (notifTab === 'unread') return claimables;
+    return claimables;
+  }, [claimables, notifTab]);
+
   return (
     <aside className="side-nav" aria-label="Main navigation">
       <div className="side-nav-brand">
         <div className="side-nav-brand-main">
-          <span className="side-nav-brand-text">Bigkas</span>
+          <div className="side-nav-brand-top">
+            <img src={bigkasLogo} alt="Bigkas" className="side-nav-brand-logo" />
+            <span className="side-nav-brand-text">Bigkas</span>
+          </div>
           <span className="side-nav-brand-subtitle">{displayName}</span>
         </div>
         <div className="side-nav-notif-wrapper">
@@ -162,24 +192,47 @@ export default function SideNav() {
                 <div className="side-nav-notif-tray-header">
                   <div className="side-nav-notif-tray-header-top">
                     <h3 className="side-nav-notif-tray-title">Notifications</h3>
-                    <button 
-                      type="button" 
-                      className="side-nav-notif-close-btn" 
-                      onClick={() => setNotifTrayOpen(false)}
-                      aria-label="Close notifications"
-                    >
-                      ×
-                    </button>
+                    <div className="side-nav-notif-tray-header-actions">
+                      {filteredNotifs.length > 0 && (
+                        <button 
+                          type="button" 
+                          className="side-nav-notif-clear-all-btn"
+                          onClick={handleClearAll}
+                        >
+                          Clear All
+                        </button>
+                      )}
+                      <button 
+                        type="button" 
+                        className="side-nav-notif-close-btn" 
+                        onClick={() => setNotifTrayOpen(false)}
+                        aria-label="Close notifications"
+                      >
+                        ×
+                      </button>
+                    </div>
                   </div>
                   <div className="side-nav-notif-tabs">
-                    <button type="button" className="side-nav-notif-tab active">All</button>
-                    <button type="button" className="side-nav-notif-tab">Unread</button>
+                    <button 
+                      type="button" 
+                      className={`side-nav-notif-tab${notifTab === 'all' ? ' active' : ''}`}
+                      onClick={() => setNotifTab('all')}
+                    >
+                      All
+                    </button>
+                    <button 
+                      type="button" 
+                      className={`side-nav-notif-tab${notifTab === 'unread' ? ' active' : ''}`}
+                      onClick={() => setNotifTab('unread')}
+                    >
+                      Unread
+                    </button>
                   </div>
                 </div>
                 
                 <div className="side-nav-notif-tray-list no-scrollbar">
-                  {claimables.length > 0 ? (
-                    claimables.map((item) => (
+                  {filteredNotifs.length > 0 ? (
+                    filteredNotifs.map((item) => (
                       <div key={item.id} className="side-nav-notif-item">
                         <div className="side-nav-notif-item-avatar">
                           <IoMedalOutline />
@@ -187,10 +240,10 @@ export default function SideNav() {
                         <div className="side-nav-notif-item-content">
                           <div className="side-nav-notif-item-header">
                             <span className="side-nav-notif-item-name">{item.title}</span>
-                            <span className="side-nav-notif-item-time">Now</span>
+                            <span className="side-nav-notif-item-time">{timeAgo(item.createdAt)}</span>
                             <span className="side-nav-notif-unread-dot" />
                           </div>
-                          <p className="side-nav-notif-item-text">You've earned a new achievement! Claim your reward now.</p>
+                          <p className="side-nav-notif-item-text">{item.description || "You've earned a new achievement! Claim your reward now."}</p>
                           <div className="side-nav-notif-item-actions">
                             <button
                               type="button"
@@ -280,7 +333,7 @@ export default function SideNav() {
       <button type="button" className="side-nav-link side-nav-link--tutorial-launch" onClick={handleLaunchTutorial}>
         <span className="side-nav-link-label">Launch Tutorial (Temp)</span>
       </button>
-
+      
       <button type="button" className="side-nav-logout" onClick={handleLogoutClick}>
         <IoLogOutOutline aria-hidden="true" />
         <span>Log Out</span>

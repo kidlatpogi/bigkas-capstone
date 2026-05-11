@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { IoChevronForward } from 'react-icons/io5';
+import { IoChevronForward, IoChevronBack } from 'react-icons/io5';
 import { 
   ResponsiveContainer, 
   LineChart, 
@@ -11,6 +11,7 @@ import {
   Tooltip, 
   Legend 
 } from 'recharts';
+import Confetti from 'react-confetti';
 import { useSessionContext } from '../../context/useSessionContext';
 import { supabase } from '../../lib/supabase';
 import { ROUTES } from '../../utils/constants';
@@ -26,6 +27,8 @@ const vocalSprite = getSpriteUrl('common/Vocal.png');
 import DetailedFeedbackPageMobile from './DetailedFeedbackPageMobile';
 import '../main/InnerPages.css';
 import './DetailedFeedbackPage.css';
+
+const FILLER_WORDS = ['um', 'uh', 'ah', 'like', 'err', 'uhm', 'well', 'basically', 'actually', 'literally'];
 
 const FOREST_GREEN = '#059669';
 const SOFT_SAGE = '#059669';
@@ -54,10 +57,9 @@ function getTripleVScores(result) {
 }
 
 function getScoreTier15(score) {
-  if (score >= 4.0) return { label: 'Excellent', color: FOREST_GREEN };
-  if (score >= 3.0) return { label: 'Good', color: SOFT_SAGE };
-  if (score >= 2.0) return { label: 'Fair', color: VIBRANT_ORANGE };
-  return { label: 'Needs Work', color: '#D94F3B' };
+  if (score >= 3.0) return { label: 'Strong', color: '#10B981' };
+  if (score >= 2.0) return { label: 'Developing', color: '#3B82F6' };
+  return { label: 'Rising', color: '#F59E0B' };
 }
 
 function scoreBarPercent(score) {
@@ -87,8 +89,13 @@ function buildBucketPublicUrl(pathOrUrl) {
   const value = String(pathOrUrl || '').trim();
   if (!value) return null;
   
-  // If it's already a full R2 URL or other external URL, return as is
-  if (/^https?:\/\//i.test(value) && !value.includes('/storage/v1/object/')) {
+  // If it's already a full URL
+  if (/^https?:\/\//i.test(value)) {
+    // If it's a Supabase storage URL, return it as is
+    if (value.includes('/storage/v1/object/')) {
+      return value;
+    }
+    // For other external URLs, return as is
     return value;
   }
 
@@ -213,6 +220,7 @@ function buildReplayAction(session, navigate, isFree) {
     sessionType: isPractice ? 'practice' : 'training',
     entryPoint: isPractice ? 'practice' : 'training',
     autoStartCountdown: true,
+    objective: session?.topic || session?.objective_name || '',
   };
 
   if (focus === 'scripted') {
@@ -220,11 +228,12 @@ function buildReplayAction(session, navigate, isFree) {
     if (!content.trim()) return { label, onClick: () => navigate(setupRoute) };
     replayState.script = {
       id: session?.script_id || `replay-${session?.id || 'session'}`,
-      title: session?.script_title || session?.title || `${mode} Script`,
+      title: session?.script_title || session?.topic || session?.title || `${mode} Script`,
       content,
     };
   } else {
-    replayState.freeTopic = session?.transcript || 'Free speech session';
+    // Fix: Use session.topic for the free speech topic, NOT the transcript (spoken words)
+    replayState.freeTopic = session?.topic || session?.objective_name || 'Free speech session';
   }
 
   return {
@@ -233,7 +242,7 @@ function buildReplayAction(session, navigate, isFree) {
   };
 }
 
-function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
+function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initialShowDetailed = false }) {
   const navigate = useNavigate();
   const { sessionId: paramSessionId } = useParams();
   const sessionId = sessionIdProp || paramSessionId;
@@ -241,9 +250,22 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
   const { currentSession, fetchSessionById, isLoading } = useSessionContext();
   const [recordingMedia, setRecordingMedia] = useState({ audioUrl: null, videoUrl: null, transcript: '' });
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [showDetailed, setShowDetailed] = useState(() => {
+    if (locationState?.showDetailed !== undefined) return !!locationState.showDetailed;
+    return initialShowDetailed || isInnerView === false;
+  });
+  const avoidSectionRef = useRef(null);
+
+  const [windowSize, setWindowSize] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 1200,
+    height: typeof window !== 'undefined' ? window.innerHeight : 800,
+  });
 
   useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+      setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -266,15 +288,85 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
     fetchSessionById(sessionId);
   }, [fetchSessionById, session, sessionId]);
 
+  const tripleV = useMemo(() => getTripleVScores(session || {}), [session]);
+  const pillars = useMemo(() => {
+    const visualSubMetrics = [
+      { label: 'Eye Contact', score: subMetric100to15(session?.eye_contact_score) ?? tripleV.visualAvg },
+      { label: 'Gestures', score: subMetric100to15(session?.gesture_score) ?? tripleV.visualAvg },
+    ];
+    const vocalSubMetrics = [
+      { label: 'Jitter Control', score: invertedSubMetric(session?.jitter_score) },
+      { label: 'Shimmer Control', score: invertedSubMetric(session?.shimmer_score) },
+    ].filter((m) => m.score !== null);
+
+    return [
+      { key: 'visual', label: 'Visual', desc: 'Overall consistency', score: tripleV.visualAvg, subMetrics: visualSubMetrics },
+      { key: 'vocal', label: 'Vocal', desc: 'Overall consistency', score: tripleV.vocalAvg, subMetrics: vocalSubMetrics },
+      { key: 'verbal', label: 'Verbal', desc: 'Overall consistency', score: tripleV.verbalAvg, subMetrics: [] },
+    ];
+  }, [session, tripleV]);
+
+  const durationSec = Math.max(1, Math.round(session?.duration_sec ?? session?.duration ?? 1));
+
+  const timelineData = useMemo(() => {
+    if (!session) return [];
+    const pointCount = durationSec + 1;
+    return Array.from({ length: pointCount }, (_, idx) => {
+      const timeSec = idx;
+      const progress = durationSec === 0 ? 0 : timeSec / durationSec;
+      const values = { time: formatDuration(timeSec), timestamp: timeSec };
+      pillars.forEach((p, pIdx) => {
+        const pct = scoreBarPercent(p.score);
+        const variance = 8 + (100 - pct) * 0.1;
+        const phase = (timeSec * 0.4) + (pIdx * 1.5);
+        const wave = Math.sin(phase) * variance * 0.5 + Math.cos(phase * 0.7) * variance * 0.25;
+        const momentum = (progress - 0.5) * ((pct - 50) / 10);
+        values[p.label] = clamp(Math.round(pct + wave + momentum), 5, 98);
+      });
+      return values;
+    });
+  }, [durationSec, pillars, session]);
+
+  const recommendations = useMemo(() => {
+    if (!session) return [];
+    const apiRecs = sanitizeRecommendationLines(Array.isArray(session?.recommendations) ? session.recommendations : []);
+    const pillarTips = pillars
+      .filter((p) => p.score < 3.0)
+      .map((p) => {
+        if (p.key === 'visual') return { pillar: 'Visual', text: 'Improve visual presence — maintain natural eye contact and use purposeful gestures.' };
+        if (p.key === 'vocal') return { pillar: 'Vocal', text: 'Steady your voice — practice deep breathing for pitch and volume control.' };
+        return { pillar: 'Verbal', text: 'Articulate more clearly — slow down on complex words and stay on topic.' };
+      });
+    const apiTipsMapped = apiRecs.map((rec, idx) => ({ pillar: pillars[idx % pillars.length].label, text: rec }));
+    const all = [...pillarTips, ...apiTipsMapped];
+    const unique = [];
+    const seen = new Set();
+    for (const tip of all) {
+      if (!seen.has(tip.text)) {
+        seen.add(tip.text);
+        unique.push(tip);
+      }
+    }
+    if (unique.length === 0) unique.push({ pillar: 'Overall', text: 'Great job! Keep up the excellent work across all areas.' });
+    return unique;
+  }, [pillars, session]);
+
+  const deRecommendations = useMemo(() => {
+    if (!session) return [];
+    const avoidTips = [];
+    if (tripleV.visualAvg < 3.0) avoidTips.push("Don't break eye contact frequently; avoid staring at the floor or ceiling.");
+    if (tripleV.vocalAvg < 3.0) avoidTips.push("Try to avoid monotone delivery or sudden volume shifts that can distract your audience.");
+    if (tripleV.verbalAvg < 3.0) avoidTips.push("Avoid rushing through complex words or drifting too far from your main topic.");
+    if (avoidTips.length === 0) avoidTips.push("Keep avoiding distractions and maintain your current high standards.");
+    return avoidTips;
+  }, [session, tripleV]);
+
   useEffect(() => {
     let isMounted = true;
-
     const loadSessionMedia = async () => {
       if (!sessionId) return;
-
       let audioUrl = null;
       let videoUrl = null;
-
       const { data: richMedia, error: richMediaErr } = await supabase
         .from('session_media')
         .select('audio_url, video_storage_url, transcript')
@@ -348,6 +440,49 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
     return () => { isMounted = false; };
   }, [session?.created_at, session?.user_id, sessionId]);
 
+  const mode = getSessionMode(session);
+  const isPreTest = mode === 'Pre-Test';
+  const isPostTest = mode === 'Post-Test';
+  const isFreeSession = getSessionSpeechType(session) === 'Free Speech';
+  const replayAction = useMemo(() => buildReplayAction(session, navigate, isFreeSession), [session, navigate, isFreeSession]);
+
+  const shouldCelebrateScore = (res) => {
+    const score = Number(res?.confidence_score);
+    return Number.isFinite(score) && score >= 80;
+  };
+
+  const scrollToAvoid = () => avoidSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+
+  const overallTier = getScoreTier15(tripleV.entryPoint);
+  const rawTranscript = recordingMedia.transcript
+    || session?.transcript
+    || session?.target_text
+    || session?.analysis?.transcript_exact
+    || session?.analysis?.transcript
+    || '';
+
+  const practicedText = sanitizeTranscriptForDisplay(rawTranscript, '') || 'No recorded text available.';
+
+  // Extraction of mispronunciations and filler data
+  const analysisData = useMemo(() => {
+    try {
+      if (typeof session?.analysis === 'object' && session.analysis !== null) return session.analysis;
+      if (typeof session?.analysis === 'string') return JSON.parse(session.analysis);
+    } catch (e) {
+      console.warn('Failed to parse session analysis for highlighting:', e);
+    }
+    return {};
+  }, [session?.analysis]);
+
+  const mispronunciations = analysisData?.mispronunciations || [];
+  
+  const fillerCount = useMemo(() => {
+    if (analysisData?.filler_count !== undefined) return analysisData.filler_count;
+    // Fallback: count manually from transcript
+    const words = rawTranscript.toLowerCase().split(/\s+/);
+    return words.filter(w => FILLER_WORDS.includes(w.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ""))).length;
+  }, [rawTranscript, analysisData?.filler_count]);
+
   if (windowWidth < 768) {
     return (
       <DetailedFeedbackPageMobile 
@@ -379,32 +514,68 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
     );
   }
 
-  const tripleV = getTripleVScores(session);
-  const overallTier = getScoreTier15(tripleV.entryPoint);
-  const mode = getSessionMode(session);
-  const isFreeSession = getSessionSpeechType(session) === 'Free Speech';
-  const durationSec = Math.max(1, Math.round(session?.duration_sec ?? session?.duration ?? 1));
-  const practicedText = sanitizeTranscriptForDisplay(
-    recordingMedia.transcript
-      || session?.transcript
-      || session?.target_text
-      || session?.analysis?.transcript_exact
-      || session?.analysis?.transcript
-      || '',
-    '',
-  )
-    || 'No recorded text available.';
-  const audioUrl = recordingMedia.audioUrl
-    || buildBucketPublicUrl(session?.audio_url)
-    || null;
-  const videoUrl = recordingMedia.videoUrl
-    || buildBucketPublicUrl(session?.video_storage_url)
-    || buildBucketPublicUrl(session?.video_url)
-    || null;
+  const renderHighlightedTranscript = () => {
+    if (!rawTranscript) return <p className="df-practiced-text">No recorded text available.</p>;
+
+    const words = rawTranscript.split(/\s+/);
+    const fillerWordsFromAnalysis = Array.isArray(analysisData?.filler_words) 
+      ? analysisData.filler_words.map(w => w.toLowerCase()) 
+      : [];
+
+    return (
+      <div className="df-practiced-text">
+        {words.map((word, idx) => {
+          const cleanWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").toLowerCase();
+          
+          // Check if it's a filler: either in our global list OR specifically identified by analysis
+          const isFiller = FILLER_WORDS.includes(cleanWord) || fillerWordsFromAnalysis.includes(cleanWord);
+          
+          const mis = mispronunciations.find(m => m.word.toLowerCase() === cleanWord || m.heard?.toLowerCase() === cleanWord);
+
+          if (isFiller) {
+            return (
+              <span key={idx} className="transcript-word transcript-word--filler">
+                {word}
+              </span>
+            );
+          }
+
+          if (mis) {
+            return (
+              <span key={idx} className="transcript-word transcript-word--mispronounced" title={`Heard: ${mis.heard || mis.word}, Correct: ${mis.suggestion || mis.correction}`}>
+                {word}
+                <span className="transcript-word-correction">({mis.suggestion || mis.correction})</span>
+              </span>
+            );
+          }
+
+          return <span key={idx}>{word} </span>;
+        })}
+      </div>
+    );
+  };
+  
+  const audioUrl = recordingMedia.audioUrl || buildBucketPublicUrl(session?.audio_url) || null;
+  const videoUrl = recordingMedia.videoUrl || buildBucketPublicUrl(session?.video_storage_url) || buildBucketPublicUrl(session?.video_url) || null;
 
   const sourceNav = locationState?.source;
-  let breadcrumbParent = mode === 'Practice' ? 'Practice' : 'Training';
-  let breadcrumbRoute = mode === 'Practice' ? ROUTES.PRACTICE : ROUTES.TRAINING_SETUP;
+  let breadcrumbParent = mode;
+  let breadcrumbRoute = ROUTES.DASHBOARD;
+
+  if (mode === 'Practice') {
+    breadcrumbParent = 'Practice';
+    breadcrumbRoute = ROUTES.PRACTICE;
+  } else if (mode === 'Training') {
+    breadcrumbParent = 'Training';
+    breadcrumbRoute = ROUTES.TRAINING_SETUP;
+  } else if (mode === 'Pre-Test') {
+    breadcrumbParent = 'Pre-Test';
+    breadcrumbRoute = ROUTES.USER_ANALYZING;
+  } else if (mode === 'Post-Test') {
+    breadcrumbParent = 'Post-Test';
+    breadcrumbRoute = ROUTES.PROGRESS;
+  }
+
   if (sourceNav === 'progress') {
     breadcrumbParent = 'Progress';
     breadcrumbRoute = ROUTES.PROGRESS;
@@ -413,99 +584,42 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
     breadcrumbRoute = locationState?.backTo || ROUTES.DASHBOARD;
   }
 
-  const visualSubMetrics = [
-    { label: 'Eye Contact', score: subMetric100to15(session?.facial_expression_score ?? session?.eye_contact_score) ?? tripleV.visualAvg },
-    { label: 'Gestures', score: subMetric100to15(session?.gesture_score) ?? tripleV.visualAvg },
-  ];
-
-  const vocalSubMetrics = [
-    { label: 'Jitter Control', score: invertedSubMetric(session?.jitter_score) },
-    { label: 'Shimmer Control', score: invertedSubMetric(session?.shimmer_score) },
-  ].filter((m) => m.score !== null);
-
-  const verbalSubMetrics = [];
-
-  const pillars = [
-    {
-      key: 'visual',
-      label: 'Visual',
-      desc: 'Eye contact, facial expressions, and body gestures',
-      score: tripleV.visualAvg,
-      subMetrics: visualSubMetrics,
-    },
-    {
-      key: 'vocal',
-      label: 'Vocal',
-      desc: 'Voice pitch stability, volume consistency, and clarity',
-      score: tripleV.vocalAvg,
-      subMetrics: vocalSubMetrics,
-    },
-    {
-      key: 'verbal',
-      label: 'Verbal',
-      desc: 'Pronunciation accuracy and topical relevance',
-      score: tripleV.verbalAvg,
-      subMetrics: verbalSubMetrics,
-    },
-  ];
-
-  const timelineData = useMemo(() => {
-    const pointCount = durationSec + 1;
-    return Array.from({ length: pointCount }, (_, idx) => {
-      const timeSec = idx;
-      const progress = durationSec === 0 ? 0 : timeSec / durationSec;
-      const values = { time: formatDuration(timeSec), timestamp: timeSec };
-      pillars.forEach((p, pIdx) => {
-        const pct = scoreBarPercent(p.score);
-        const variance = 8 + (100 - pct) * 0.1;
-        const phase = (timeSec * 0.4) + (pIdx * 1.5);
-        const wave = Math.sin(phase) * variance * 0.5 + Math.cos(phase * 0.7) * variance * 0.25;
-        const momentum = (progress - 0.5) * ((pct - 50) / 10);
-        values[p.label] = clamp(Math.round(pct + wave + momentum), 5, 98);
-      });
-      return values;
-    });
-  }, [durationSec, pillars]);
-
   const pillarIcons = { visual: visualSprite, vocal: vocalSprite, verbal: verbalSprite };
 
-  const recommendations = (() => {
-    const apiRecs = sanitizeRecommendationLines(Array.isArray(session?.recommendations) ? session.recommendations : []);
-    const pillarTips = pillars
-      .filter((p) => p.score < 3.0)
-      .map((p) => {
-        if (p.key === 'visual') return { pillar: 'Visual', text: 'Improve visual presence — maintain natural eye contact and use purposeful gestures.' };
-        if (p.key === 'vocal') return { pillar: 'Vocal', text: 'Steady your voice — practice deep breathing for pitch and volume control.' };
-        return { pillar: 'Verbal', text: 'Articulate more clearly — slow down on complex words and stay on topic.' };
-      });
-    const apiTipsMapped = apiRecs.map((rec, idx) => ({ pillar: pillars[idx % pillars.length].label, text: rec }));
-    const all = [...pillarTips, ...apiTipsMapped];
-    const unique = [];
-    const seen = new Set();
-    for (const tip of all) {
-      if (!seen.has(tip.text)) {
-        seen.add(tip.text);
-        unique.push(tip);
-      }
-    }
-    if (unique.length === 0) unique.push({ pillar: 'Overall', text: 'Great job! Keep up the excellent work across all areas.' });
-    return unique;
-  })();
-
   return (
-    <div className={`df-page ${isInnerView ? 'df-page--inner' : ''} activity-page--skyward-entrance`}>
-      {/* Breadcrumb */}
-      {!isInnerView && (
-        <nav className="df-breadcrumb">
-          <button type="button" className="df-breadcrumb-link" onClick={() => navigate(breadcrumbRoute, { replace: true })}>
-            {breadcrumbParent}
-          </button>
-          <IoChevronForward className="df-breadcrumb-sep" />
-          <span className="df-breadcrumb-current">Session Analysis Result</span>
-        </nav>
+    <div className={`sr-page-root ${isInnerView ? 'sr-page--inner' : ''} activity-page--skyward-entrance`}>
+      {shouldCelebrateScore(session) && !isInnerView && (
+        <Confetti
+          width={windowSize.width}
+          height={windowSize.height}
+          recycle={false}
+          numberOfPieces={260}
+          gravity={0.25}
+          className="score-confetti"
+        />
       )}
 
-      <div className="df-content-layout">
+
+      {!isInnerView && (
+        <div className="history-session-view-header dashboard-anim-top">
+          <button
+            type="button"
+            className="history-back-to-list-btn"
+            onClick={() => navigate(ROUTES.DASHBOARD)}
+          >
+            <IoChevronBack /> Back to Dashboard
+          </button>
+        </div>
+      )}
+
+      <div className="sr-content-layout">
+        {/* Session Title Header */}
+        <header className="sr-page-header dashboard-anim-top">
+          <h1 className="sr-page-main-title">
+            {session?.script_title || session?.topic || (isPreTest ? 'Diagnostic Analysis' : 'Session Analysis')}
+          </h1>
+        </header>
+
         {/* AI Coach Hero Banner */}
         <section className="new-banner dashboard-anim-top dashboard-anim-delay-2" id="sr-hero-section">
           <div className="new-banner-left is-full-width">
@@ -522,6 +636,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
                         ? 'Good progress. Keep practicing to reach the next tier.'
                         : "Every session counts. Focus on the basics to improve."}
                 </p>
+                <p className="new-banner-recs-title" style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.025em' }}>Recommendations:</p>
                 <ul className="new-banner-recs-minilist">
                   {recommendations.slice(0, 2).map((rec, idx) => (
                     <li key={idx} className="new-banner-rec-item">
@@ -536,7 +651,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
         </section>
 
         {/* Overview Widgets */}
-        <div className="sr-overview-row dashboard-anim-bottom dashboard-anim-delay-3" style={{ marginBottom: '40px' }}>
+        <div className="sr-overview-row dashboard-anim-bottom dashboard-anim-delay-3">
           <div className="progress-stat-card new-banner-widget overall-score-card">
             <div className="widget-content">
               <div className="new-widget-head">
@@ -544,8 +659,8 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
                 <span className="new-widget-chip performance-chip">PERFORMANCE</span>
               </div>
               <div className="score-display">
-                <span className="score-value" style={{ color: overallTier.color }}>{tripleV.entryPoint.toFixed(1)}</span>
-                <span className="score-max">/ 5.0</span>
+                <span className="score-value" style={{ color: overallTier.color }}>{Math.round(scoreBarPercent(tripleV.entryPoint))}%</span>
+                <span className="score-max">Confidence</span>
               </div>
               <div className="score-label">
                 <div className="tier-indicator" style={{ '--tier-color': overallTier.color }}>
@@ -582,27 +697,40 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
           </div>
         </div>
 
-        {/* Performance Timeline */}
-        <section className="df-timeline-section dashboard-anim-bottom dashboard-anim-delay-2">
-          <div className="sr-section-header">
-            <h2 className="sr-section-title">Performance Timeline</h2>
-            <p className="sr-section-subtitle">Real-time fluctuations in your Triple V performance metrics throughout the session</p>
-          </div>
-          <div className="df-card" style={{ height: '400px', padding: '24px 16px 16px' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={timelineData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
-                <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 600, fill: '#94a3b8' }} dy={10} interval={Math.ceil(durationSec / 6)} />
-                <YAxis hide domain={[0, 100]} />
-                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', fontWeight: 700 }} />
-                <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '12px' }} />
-                <Line type="monotone" dataKey="Visual" stroke="#059669" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
-                <Line type="monotone" dataKey="Vocal" stroke="#10b981" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
-                <Line type="monotone" dataKey="Verbal" stroke="#F97316" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
+        {showDetailed && (
+          <>
+            {/* Performance Timeline */}
+            <section className="df-timeline-section dashboard-anim-bottom dashboard-anim-delay-2">
+              <div className="sr-section-header">
+                <h2 className="sr-section-title">Performance Timeline</h2>
+                <p className="sr-section-subtitle">Real-time fluctuations in your Triple V performance metrics throughout the session</p>
+              </div>
+              <div className="df-card" style={{ height: '400px', padding: '24px 16px 16px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={timelineData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
+                    <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 600, fill: '#94a3b8' }} dy={10} interval={Math.ceil(durationSec / 6)} />
+                    <YAxis 
+                      domain={[0, 100]} 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fontSize: 11, fontWeight: 600, fill: '#94a3b8' }} 
+                      tickFormatter={(val) => `${val}%`}
+                    />
+                    <Tooltip 
+                      formatter={(value) => `${value}%`}
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', fontWeight: 700 }} 
+                    />
+                    <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '12px' }} />
+                    <Line type="monotone" dataKey="Visual" stroke="#059669" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                    <Line type="monotone" dataKey="Vocal" stroke="#10b981" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                    <Line type="monotone" dataKey="Verbal" stroke="#F97316" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </section>
+          </>
+        )}
 
         {/* Pillars Breakdown */}
         <section className="df-pillars-section">
@@ -624,7 +752,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
                     <img src={pillarIcons[p.key]} alt="" className="new-widget-rank-sprite" />
                     <div className="new-widget-rank-content">
                       <p className="new-widget-kicker">Score</p>
-                      <p className="new-widget-value">{p.score.toFixed(1)} / 5.0</p>
+                      <p className="new-widget-value">{Math.round(scorePercent)}%</p>
                     </div>
                   </div>
                   <div className="progress-pillar-track-header">
@@ -634,7 +762,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
                   <div className="progress-pillar-track">
                     <div className="progress-pillar-track-fill" style={{ width: `${scorePercent}%`, background: tier.color }} />
                   </div>
-                  {p.subMetrics.length > 0 && (
+                  {showDetailed && p.subMetrics.length > 0 && (
                     <div className="df-pillar-subs" style={{ marginTop: '16px' }}>
                       <div className="df-pillar-subs-grid" style={{ gridTemplateColumns: '1fr' }}>
                         {p.subMetrics.map((sub) => {
@@ -643,7 +771,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
                             <div key={sub.label} className="df-sub-metric">
                               <div className="df-sub-header">
                                 <span className="df-sub-label" style={{ fontSize: '0.7rem' }}>{sub.label}</span>
-                                <span className="df-sub-score" style={{ fontSize: '0.85rem' }}>{sub.score.toFixed(1)}</span>
+                                <span className="df-sub-score" style={{ fontSize: '0.85rem' }}>{Math.round(scoreBarPercent(sub.score))}%</span>
                               </div>
                               <div className="df-sub-track" style={{ height: '4px' }}>
                                 <div className="df-sub-track-fill" style={{ width: `${scoreBarPercent(sub.score)}%`, background: subTier.color }} />
@@ -660,50 +788,127 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner }) {
           </div>
         </section>
 
-        {/* Media & Transcript */}
-        <div className="df-media-info-container dashboard-anim-bottom dashboard-anim-delay-7" style={{ marginTop: '48px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <div className="df-card" style={{ padding: '0', overflow: 'hidden' }}>
-            <div style={{ padding: '24px', borderBottom: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
-              <h3 className="df-section-title" style={{ fontSize: '1.1rem', margin: 0 }}>Session Recording</h3>
-              <div style={{ display: 'flex', gap: '32px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>Date</span>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{formatDate(session.created_at)}</span>
+        {showDetailed && (
+          <>
+            {/* Media & Transcript */}
+            <div className="df-media-info-container dashboard-anim-bottom dashboard-anim-delay-7" style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div className="df-card" style={{ padding: '0', overflow: 'hidden' }}>
+                <div style={{ padding: '24px', borderBottom: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+                  <h3 className="df-section-title" style={{ fontSize: '1.1rem', margin: 0 }}>Session Recording</h3>
+                  <div style={{ display: 'flex', gap: '32px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>Date</span>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{formatDate(session?.created_at)}</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>Duration</span>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{formatDuration(durationSec)}</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>Mode</span>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{mode}</span>
+                    </div>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>Duration</span>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{formatDuration(durationSec)}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>Mode</span>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{mode}</span>
+                <div style={{ padding: '24px', background: '#fff' }}>
+                  <div className="df-recording-content">
+                    {videoUrl && (
+                      <div className="df-video-wrap" style={{ borderRadius: '16px', overflow: 'hidden', background: '#000', maxWidth: '800px', margin: '0 auto' }}>
+                        <video className="df-video" controls preload="metadata" src={videoUrl} style={{ width: '100%', display: 'block' }}>Your browser does not support video playback.</video>
+                      </div>
+                    )}
+                    {audioUrl && (
+                      <div className="df-audio-wrap" style={{ marginTop: videoUrl ? '24px' : '0', maxWidth: '800px', margin: videoUrl ? '24px auto 0' : '0 auto' }}>
+                        <audio className="df-audio" controls preload="metadata" src={audioUrl} style={{ width: '100%' }}>Your browser does not support audio playback.</audio>
+                      </div>
+                    )}
+                    {!videoUrl && !audioUrl && <p className="df-recordings-empty">No recording available for this session.</p>}
+                  </div>
                 </div>
               </div>
-            </div>
-            <div style={{ padding: '24px', background: '#fff' }}>
-              <div className="df-recording-content">
-                {videoUrl && (
-                  <div className="df-video-wrap" style={{ borderRadius: '16px', overflow: 'hidden', background: '#000', maxWidth: '800px', margin: '0 auto' }}>
-                    <video className="df-video" controls preload="metadata" src={videoUrl} style={{ width: '100%', display: 'block' }}>Your browser does not support video playback.</video>
-                  </div>
-                )}
-                {audioUrl && (
-                  <div className="df-audio-wrap" style={{ marginTop: videoUrl ? '24px' : '0', maxWidth: '800px', margin: videoUrl ? '24px auto 0' : '0 auto' }}>
-                    <audio className="df-audio" controls preload="metadata" src={audioUrl} style={{ width: '100%' }}>Your browser does not support audio playback.</audio>
-                  </div>
-                )}
-                {!videoUrl && !audioUrl && <p className="df-recordings-empty">No recording available for this session.</p>}
-              </div>
-            </div>
-          </div>
 
-          <div className="df-card" style={{ padding: '24px' }}>
-            <h3 className="df-section-title" style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Session Transcript</h3>
-            <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.03)' }}>
-              <p className="df-practiced-text" style={{ fontSize: '0.9rem', lineHeight: '1.7', margin: 0, color: '#1e293b' }}>{practicedText}</p>
+              <div className="df-card" style={{ padding: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h3 className="df-section-title" style={{ fontSize: '1.1rem', margin: 0 }}>Session Transcript</h3>
+                  <div className="filler-counter-badge">
+                    <strong>{fillerCount}</strong> Filler Words Detected
+                  </div>
+                </div>
+                
+                <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.03)' }}>
+                  {renderHighlightedTranscript()}
+                  
+                  <div className="transcript-legend">
+                    <div className="legend-item">
+                      <div className="legend-color legend-color--mispronounced" />
+                      <span>Mispronunciation (Blue)</span>
+                    </div>
+                    <div className="legend-item">
+                      <div className="legend-color legend-color--filler" />
+                      <span>Filler Word (Green)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="df-card" ref={avoidSectionRef} style={{ padding: '32px', borderLeft: '4px solid #0d9488', background: 'linear-gradient(to right, #f0fdfa, #ffffff)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                  <div>
+                    <h3 className="df-section-title" style={{ fontSize: '1.2rem', margin: 0, color: '#134e4a' }}>Growth Focus: Areas to Refine</h3>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>Be mindful of these points in your next session</p>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+                  {deRecommendations.map((tip, idx) => (
+                    <div key={idx} style={{ display: 'flex', gap: '16px', background: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid #f0fdfa', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                      <span style={{ color: '#0d9488', fontWeight: 900, fontSize: '1.1rem' }}>•</span>
+                      <p style={{ margin: 0, fontSize: '0.95rem', lineHeight: '1.6', fontWeight: 500, color: '#334155' }}>{tip}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
+
+        {/* Footer Actions */}
+        <footer className="sr-footer-layout dashboard-anim-bottom dashboard-anim-delay-8" style={{ display: 'flex', gap: '16px' }}>
+          <button
+            type="button"
+            className="sr-detailed-feedback-card-v2"
+            onClick={() => {
+              setShowDetailed(!showDetailed);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            style={{ flex: 1 }}
+          >
+            <div className="sr-detailed-card-icon">
+              {showDetailed ? <IoChevronBack /> : <IoChevronForward />}
+            </div>
+            <div className="sr-detailed-card-content">
+              <span className="sr-detailed-card-kicker">ANALYTICS INSIGHTS</span>
+              <h3 className="sr-detailed-card-title">
+                {showDetailed ? 'Performance Overview' : 'Detailed Feedback'}
+              </h3>
+            </div>
+          </button>
+
+          <button
+            className="sr-btn-action sr-btn-primary-v2"
+            onClick={() => {
+              if (isPreTest && !isInnerView) {
+                navigate(ROUTES.USER_ANALYZING);
+              } else if (isPostTest && !isInnerView) {
+                navigate(ROUTES.PROGRESS);
+              } else {
+                replayAction.onClick();
+              }
+            }}
+            style={{ minWidth: '200px' }}
+          >
+            {(isPreTest && !isInnerView) ? 'Finish Onboarding' : (isPostTest && !isInnerView) ? 'Next Stage' : replayAction.label}
+          </button>
+        </footer>
       </div>
     </div>
   );

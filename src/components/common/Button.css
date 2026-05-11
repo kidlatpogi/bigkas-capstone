@@ -135,12 +135,50 @@
   font-size: 14px;
 }
 
-/* Variant: Practice (Orange) */
+/* Variant: Practice (Green Tactile) */
 .bigkas-btn--practice {
-  --btn-bg: #F18F01;
+  --btn-bg: #059669;
+  --btn-hover-bg: #059669;
   --btn-text: #FFFFFF;
-  --btn-hover-bg: #F18F01;
-  --btn-glow: rgba(245, 155, 0, 0.4);
+  --btn-glow: #047857;
+  
+  border-radius: 999px !important;
+  box-shadow: #047857 0 5px 0 0 !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border: none !important;
+}
+
+.bigkas-btn--practice:hover:not(:disabled) {
+  box-shadow: #047857 0 3px 0 0 !important;
+  transform: translateY(2px) !important;
+}
+
+.bigkas-btn--practice:active:not(:disabled) {
+  box-shadow: #047857 0 0 0 0 !important;
+  transform: translateY(5px) !important;
+}
+
+/* Variant: Danger (Red Tactile) */
+.bigkas-btn--danger {
+  --btn-bg: #dc2626;
+  --btn-hover-bg: #dc2626;
+  --btn-text: #FFFFFF;
+  --btn-glow: #b91c1c;
+
+  border-radius: 999px !important;
+  box-shadow: #b91c1c 0 5px 0 0 !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border: none !important;
+}
+
+.bigkas-btn--danger:hover:not(:disabled) {
+  box-shadow: #b91c1c 0 3px 0 0 !important;
+  transform: translateY(2px) !important;
+}
+
+.bigkas-btn--danger:active:not(:disabled) {
+  box-shadow: #b91c1c 0 0 0 0 !important;
+  transform: translateY(5px) !important;
 }
 
 /* Variant: Training (Glassy) */

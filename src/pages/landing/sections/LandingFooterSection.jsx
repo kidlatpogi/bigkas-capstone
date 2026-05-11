@@ -4,6 +4,9 @@ import LegalModal from '../../../components/Legal/LegalModal';
 import { TERMS_AND_CONDITIONS } from '../../../constants/legal/terms';
 import { PRIVACY_POLICY } from '../../../constants/legal/privacy';
 import { ROUTES } from '../../../utils/constants';
+import { getAssetUrl } from '../../../utils/assetUtils';
+
+const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 
 export default function LandingFooterSection({ navigateTo, onScrollToSection }) {
   const [legalModal, setLegalModal] = useState({ isOpen: false, title: '', content: '' });
@@ -31,7 +34,16 @@ export default function LandingFooterSection({ navigateTo, onScrollToSection }) 
       <footer className="landing-footer" aria-label="Site footer">
         <div className="landing-footer-main">
           <div className="landing-footer-brand">
-            <h4>Bigkas</h4>
+            <div className="footer-logo-wrapper">
+              <img 
+                src={bigkasLogo} 
+                srcSet={bigkasLogo}
+                alt="Bigkas" 
+                className="footer-logo-img" 
+                loading="lazy" 
+              />
+              <h4 className="footer-logo-text">Bigkas</h4>
+            </div>
             <p>
               Build your speaking skills in a safe space that
               gives instant feedback on how you perform.

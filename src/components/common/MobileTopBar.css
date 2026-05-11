@@ -13,10 +13,23 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
+.mobile-top-bar__brand-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-top-bar__logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
 .mobile-top-bar__brand {
   font-size: 1.125rem;
   font-weight: 800;
   color: #010101;
+  font-family: 'Fredoka', sans-serif;
 }
 
 .mobile-top-bar__profile-link {

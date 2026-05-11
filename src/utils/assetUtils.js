@@ -2,7 +2,7 @@
  * Asset utilities for fetching assets from Cloudflare R2 or local storage.
  */
 
-export const R2_BASE_URL = 'https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev';
+export const R2_BASE_URL = 'https://assets.bigkas.site';
 
 /**
  * Returns the full URL for an asset.

@@ -1,10 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
+
 
 /* 1. GLOBAL RESET & SHELL LOCK */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  scrollbar-gutter: auto !important;
+}
+
+*::-webkit-scrollbar {
+  display: none !important;
+}
+
+* {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
 
 :root {
@@ -28,6 +38,7 @@ html {
   height: 100dvh; 
   overflow: hidden; 
   background-color: #ECF3E9;
+  scrollbar-gutter: auto !important;
 }
 
 body {
@@ -36,6 +47,7 @@ body {
   overflow: hidden; 
   background-color: #ECF3E9;
   -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: auto !important;
 }
 
 #root {
@@ -129,8 +141,8 @@ ul, ol { list-style: none; }
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3.5px solid rgba(252, 186, 4, 0.25);
-  border-top-color: #F18F01;
+  border: 3.5px solid rgba(5, 150, 105, 0.15);
+  border-top-color: #059669;
   border-radius: 50%;
   animation: spin 0.75s linear infinite;
 }
@@ -151,9 +163,105 @@ ul, ol { list-style: none; }
 .bigkas-modal-scrim {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.5);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  z-index: var(--scrim-z, 1100);
+  background: rgba(15, 23, 42, 0.65);
+  z-index: 1100;
   animation: scrimFadeIn 0.3s ease-out;
+}
+
+.ask-b01-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  z-index: 1100;
+}
+
+/* =========================================================================
+   GLOBAL DASHBOARD ENTRANCE ANIMATIONS
+   ========================================================================= */
+
+[class*="dashboard-anim-"] {
+  opacity: 0;
+  animation-fill-mode: forwards;
+  animation-duration: 0.6s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dashboard-anim-fade {
+  animation-name: dashAnimFade;
+}
+
+.dashboard-anim-top {
+  animation-name: dashAnimTop;
+}
+
+.dashboard-anim-bottom {
+  animation-name: dashAnimBottom;
+}
+
+.dashboard-anim-left {
+  animation-name: dashAnimLeft;
+}
+
+.dashboard-anim-right {
+  animation-name: dashAnimRight;
+}
+
+@keyframes dashAnimFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes dashAnimTop {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes dashAnimBottom {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes dashAnimLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes dashAnimRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Staggered Delays */
+.dashboard-anim-delay-1 { animation-delay: 0.1s; }
+.dashboard-anim-delay-2 { animation-delay: 0.2s; }
+.dashboard-anim-delay-3 { animation-delay: 0.3s; }
+.dashboard-anim-delay-4 { animation-delay: 0.4s; }
+.dashboard-anim-delay-5 { animation-delay: 0.5s; }
+.dashboard-anim-delay-6 { animation-delay: 0.6s; }
+.dashboard-anim-delay-7 { animation-delay: 0.7s; }
+.dashboard-anim-delay-8 { animation-delay: 0.8s; }
+.dashboard-anim-delay-9 { animation-delay: 0.9s; }
+
+/* Optimized CSS Animations (0KB JS alternative) */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.fade-in-down {
+  animation: fadeInDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
 }

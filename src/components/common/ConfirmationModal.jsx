@@ -53,10 +53,16 @@ export default function ConfirmationModal({
         <p className="cm-message">{message}</p>
 
         <div className="cm-actions">
-          <button className="cm-btn-cancel" onClick={onCancel}>
-            {cancelLabel}
-          </button>
-          <button className={`cm-btn-confirm ${type}`} onClick={onConfirm}>
+          {cancelLabel && (
+            <button className="cm-btn-cancel" onClick={onCancel}>
+              {cancelLabel}
+            </button>
+          )}
+          <button 
+            className={`cm-btn-confirm ${type}`} 
+            onClick={onConfirm}
+            disabled={!confirmLabel || confirmLabel === '...'}
+          >
             {confirmLabel}
           </button>
         </div>

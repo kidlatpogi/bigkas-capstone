@@ -1,0 +1,343 @@
+/* VerifyEmailPageMobile.css - Specialized Mobile/Tablet Styles */
+/* 1:1 Synchronized with LoginPageMobile.css */
+
+:root {
+  --emerald-600: #059669;
+  --emerald-700: #047857;
+  --emerald-800: #065f46;
+  --emerald-500: #10b981;
+  --bg-cream: #FDFDF9;
+  --text-main: #111827;
+  --text-muted: #374151;
+}
+
+/* Page Container */
+.auth-mobile-page {
+  width: 100%;
+  min-height: 100dvh;
+  background-color: var(--bg-cream);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* 1. Background Visuals Layer */
+.auth-mobile-visual-bg {
+  position: relative;
+  width: 100%;
+  height: 28vh;
+  min-height: 200px;
+  background: linear-gradient(180deg, #34D399 0%, #059669 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.auth-mobile-header-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1.5px, transparent 0);
+  background-size: 24px 24px;
+  pointer-events: none;
+}
+
+.auth-mobile-visual-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 10px 20px 40px;
+  margin-top: 30px;
+}
+
+.auth-mobile-hero-text h2 {
+  font-family: 'Fredoka', sans-serif;
+  color: #fff;
+  font-size: clamp(1.25rem, 6vw, 1.6rem);
+  margin: 0 0 4px;
+}
+
+.auth-mobile-hero-text h2 span {
+  color: #f18f01;
+}
+
+.auth-mobile-hero-text p {
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin: 0;
+  max-width: 260px;
+  margin-inline: auto;
+}
+
+.insight-chip-bg {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(4px);
+  padding: 6px 12px;
+  border-radius: 999px;
+  color: #fff;
+  font-weight: 700;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 2. Brand Logo (Upper Left) */
+.auth-brand-logo-mobile {
+  position: absolute;
+  top: calc(16px + env(safe-area-inset-top));
+  left: calc(16px + env(safe-area-inset-left));
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: #fff;
+}
+
+.auth-logo-icon-mobile {
+  width: 32px;
+  height: 35px;
+  background-image: url("https://assets.bigkas.site/Images/Bigkas-Logo.webp");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  flex-shrink: 0;
+}
+
+/* 3. Form Container */
+.auth-mobile-form-container {
+  flex: 1;
+  padding: 0;
+  margin-top: -30px; 
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.auth-mobile-form-card {
+  background: #fff;
+  border-radius: 32px 32px 0 0;
+  padding: 30px 24px calc(20px + env(safe-area-inset-bottom));
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  box-sizing: border-box;
+  flex: 1;
+}
+
+.auth-form-header-mobile {
+  margin-bottom: 20px;
+}
+
+.auth-form-header-mobile h1 {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 1.4rem;
+  color: var(--text-main);
+  margin: 0 0 2px;
+}
+
+.auth-form-header-mobile p {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.verify-email-accent-mobile {
+  color: var(--emerald-700);
+  font-weight: 700;
+  word-break: break-all;
+}
+
+/* Form Elements */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-group-mobile {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group-mobile label {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+/* OTP Mobile Specifics */
+.otp-container-mobile {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  margin: 4px 0;
+}
+
+.otp-box-mobile {
+  width: 15%;
+  height: 52px;
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  border-radius: 12px;
+  border: 1.5px solid #d1d5db;
+  background: #fff;
+  color: var(--text-main);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.otp-box-mobile:focus {
+  border-color: var(--emerald-500);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+.otp-box-mobile.is-invalid {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+}
+
+.mobile-action-btn {
+  margin-top: 8px;
+}
+
+.mobile-action-btn button {
+  height: 56px !important;
+  border-radius: 999px !important;
+  font-family: 'Fredoka', sans-serif !important;
+  font-size: 1.05rem !important;
+}
+
+.mobile-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #4b5563;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin: 4px 0;
+}
+
+.mobile-divider::before,
+.mobile-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.verify-resend-mobile {
+  text-align: center;
+  margin-top: 4px;
+}
+
+.verify-resend-mobile p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.resend-link-mobile {
+  background: none;
+  border: none;
+  color: var(--emerald-700);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  text-decoration: underline;
+}
+
+.resend-link-mobile:disabled {
+  color: var(--text-muted);
+  text-decoration: none;
+  cursor: not-allowed;
+}
+
+.back-to-signup-mobile {
+  text-align: center;
+  margin-top: 12px;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.back-to-signup-mobile button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Banners */
+.auth-status-banner-mobile {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.auth-status-banner-mobile.is-success {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.auth-status-banner-mobile.is-error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #ef4444;
+}
+
+/* Tablet Overrides */
+@media (min-width: 768px) {
+  .auth-mobile-visual-bg {
+    height: 35vh;
+  }
+  
+  .auth-mobile-form-container {
+    margin-top: -60px;
+  }
+  
+  .auth-mobile-form-card {
+    padding: 40px;
+  }
+}
+
+/* Base Animations (JS Reduction) */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}

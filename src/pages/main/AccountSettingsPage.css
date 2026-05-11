@@ -104,8 +104,9 @@
 
 .account-settings-page .form-input:focus,
 .account-settings-page .form-input:focus-visible {
-  border-color: #5a7863;
-  outline-color: rgba(90, 120, 99, 0.35);
+  border-color: #10B981;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+  outline: none !important;
 }
 
 .account-settings-page .btn-outline {

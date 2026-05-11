@@ -282,19 +282,19 @@
   border: 1px solid rgba(11, 57, 84, 0.1);
 }
 
-.history-mobile-pillar-chip--critical {
-  border-color: rgba(255, 0, 0, 0.45);
-  background: rgba(255, 0, 0, 0.08);
+.history-mobile-pillar-chip--rising {
+  border-color: rgba(245, 158, 11, 0.45);
+  background: rgba(245, 158, 11, 0.08);
 }
 
-.history-mobile-pillar-chip--warning {
-  border-color: rgba(249, 115, 22, 0.45);
-  background: rgba(249, 115, 22, 0.08);
+.history-mobile-pillar-chip--developing {
+  border-color: rgba(59, 130, 246, 0.45);
+  background: rgba(59, 130, 246, 0.08);
 }
 
-.history-mobile-pillar-chip--healthy {
-  border-color: rgba(5, 150, 105, 0.45);
-  background: rgba(5, 150, 105, 0.08);
+.history-mobile-pillar-chip--stellar {
+  border-color: rgba(16, 185, 129, 0.45);
+  background: rgba(16, 185, 129, 0.08);
 }
 
 .history-mobile-pillar-icon {

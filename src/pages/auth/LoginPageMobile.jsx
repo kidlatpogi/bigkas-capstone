@@ -1,13 +1,16 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../context/useAuthContext';
 import { isValidEmail } from '../../utils/validators';
 import { ROUTES } from '../../utils/constants';
-import PasswordToggle from '../../components/common/PasswordToggle';
-import { motion, AnimatePresence } from 'framer-motion';
-import PushButton from '../../components/common/PushButton';
+import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
 import { getAssetUrl } from '../../utils/assetUtils';
+import googleIcon from '../../assets/logos/google-icon.svg';
 import './LoginPageMobile.css';
+
+// Lazy load UI components
+const PushButton = lazy(() => import('../../components/common/PushButton'));
+const PasswordToggle = lazy(() => import('../../components/common/PasswordToggle'));
 
 const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 
@@ -106,6 +109,15 @@ function LoginPageMobile({ managePageClass = true }) {
     };
   }, [managePageClass]);
 
+  // SEO Metadata
+  useEffect(() => {
+    document.title = 'Login | Bigkas — Master Public Speaking';
+    const metaDesc = document.querySelector('meta[name="description"]') || document.createElement('meta');
+    metaDesc.name = 'description';
+    metaDesc.content = 'Login to your Bigkas account to continue your public speaking journey. Access your sessions, feedback, and personalized AI training.';
+    if (!metaDesc.parentNode) document.head.appendChild(metaDesc);
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -161,17 +173,18 @@ function LoginPageMobile({ managePageClass = true }) {
   };
 
   return (
-    <div className="auth-mobile-page">
-      {/* 1. Background Visuals Layer */}
-      <div className="auth-mobile-visual-bg">
-        <div className="auth-mobile-header-accent" />
-        
-        <div className="auth-mobile-visual-content">
-          <motion.div className="auth-mobile-hero-text" initial="hidden" animate="visible" variants={itemVariants}>
-            <h2>Master <span>Public Speaking</span></h2>
-            <p>Your AI-powered journey to excellence starts here.</p>
-          </motion.div>
-        </div>
+    <LazyMotion features={domAnimation}>
+      <div className="auth-mobile-page">
+        {/* 1. Background Visuals Layer */}
+        <div className="auth-mobile-visual-bg">
+          <div className="auth-mobile-header-accent" />
+          
+          <div className="auth-mobile-visual-content">
+            <m.div className="auth-mobile-hero-text" initial="hidden" animate="visible" variants={itemVariants}>
+              <h2>Master <span>Public Speaking</span></h2>
+              <p>Your AI-powered journey to excellence starts here.</p>
+            </m.div>
+          </div>
 
         {/* Floating Insight Words in BG */}
         {INSIGHT_WORDS.map((word, i) => (
@@ -193,7 +206,14 @@ function LoginPageMobile({ managePageClass = true }) {
 
       {/* 2. Upper Left Brand Logo */}
       <div className="auth-brand-logo-mobile">
-        <img src={bigkasLogo} alt="Bigkas" width="32" height="32" />
+        <img 
+          src={bigkasLogo} 
+          alt="Bigkas Logo" 
+          width="32" 
+          height="32" 
+          fetchPriority="high" 
+          loading="eager"
+        />
         <span>Bigkas</span>
       </div>
 
@@ -208,7 +228,7 @@ function LoginPageMobile({ managePageClass = true }) {
           <form className="auth-form" onSubmit={handleLogin}>
             <AnimatePresence mode="wait">
               {(showAccountCreated || showAccountVerified || resendSuccess || errors.submit || showUnverified) && (
-                <motion.div 
+                <m.div 
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
@@ -220,7 +240,7 @@ function LoginPageMobile({ managePageClass = true }) {
                       {resendLoading ? '...' : resendCooldown > 0 ? `(${resendCooldown}s)` : 'Resend'}
                     </button>
                   )}
-                </motion.div>
+                </m.div>
               )}
             </AnimatePresence>
 
@@ -250,10 +270,12 @@ function LoginPageMobile({ managePageClass = true }) {
                   placeholder="••••••••"
                   disabled={isLoading || lockoutSeconds > 0}
                 />
-                <PasswordToggle
-                  isVisible={showPassword}
-                  onToggle={() => setShowPassword(!showPassword)}
-                />
+                <Suspense fallback={null}>
+                  <PasswordToggle
+                    isVisible={showPassword}
+                    onToggle={() => setShowPassword(!showPassword)}
+                  />
+                </Suspense>
               </div>
               <div className="forgot-password-wrap-mobile">
                 <Link to={ROUTES.FORGOT_PASSWORD}>Forgot Password?</Link>
@@ -261,22 +283,36 @@ function LoginPageMobile({ managePageClass = true }) {
               {errors.password && <span className="error-text-mobile">{errors.password}</span>}
             </div>
 
-            <PushButton
-              type="submit"
-              disabled={isLoading || lockoutSeconds > 0}
-              bgColor="#059669"
-              shadowColor="#047857"
-              className="mobile-login-btn"
-            >
-              {isLoading ? '...' : lockoutSeconds > 0 ? `Locked (${lockoutSeconds}s)` : 'LOGIN'}
-            </PushButton>
+            <Suspense fallback={<div style={{ height: '56px' }} />}>
+              <PushButton
+                type="submit"
+                disabled={isLoading || lockoutSeconds > 0}
+                bgColor="#047857" /* High contrast emerald-700 */
+                shadowColor="#065f46"
+                className="mobile-login-btn"
+              >
+                {isLoading ? '...' : lockoutSeconds > 0 ? `Locked (${lockoutSeconds}s)` : 'LOGIN'}
+              </PushButton>
+            </Suspense>
 
             <div className="mobile-divider">
               <span>OR</span>
             </div>
 
-            <button type="button" className="google-btn-mobile" onClick={handleGoogleSignIn} disabled={isLoading}>
-              <img src="https://assets.bigkas.site/Images/Google-Logo.webp" alt="" width="20" height="20" />
+            <button 
+              type="button" 
+              className="google-btn-mobile" 
+              onClick={handleGoogleSignIn} 
+              disabled={isLoading}
+              aria-label="Continue with Google"
+            >
+              <img 
+                src={googleIcon} 
+                alt="Google Logo" 
+                width="20" 
+                height="20" 
+                loading="eager"
+              />
               Continue with Google
             </button>
 
@@ -287,6 +323,7 @@ function LoginPageMobile({ managePageClass = true }) {
         </div>
       </div>
     </div>
+    </LazyMotion>
   );
 }
 

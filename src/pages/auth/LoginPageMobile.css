@@ -2,11 +2,12 @@
 
 :root {
   --emerald-600: #059669;
-  --emerald-700: #047857;
+  --emerald-700: #047857; /* Use this for high-contrast text */
+  --emerald-800: #065f46; /* Even higher contrast for small text */
   --emerald-500: #10b981;
   --bg-cream: #FDFDF9;
   --text-main: #111827;
-  --text-muted: #4b5563;
+  --text-muted: #374151; /* Darkened from 4b5563 for contrast */
 }
 
 /* Page Container */
@@ -77,14 +78,15 @@
 }
 
 .auth-mobile-hero-text h2 span {
-  color: #f97316;
+  color: #f18f01;
 }
 
 .auth-mobile-hero-text p {
-  color: rgba(255, 255, 255, 0.9);
+  color: #ffffff; /* Pure white on green has excellent contrast */
   font-size: 0.85rem;
+  font-weight: 500;
   margin: 0;
-  max-width: 240px;
+  max-width: 260px;
   margin-inline: auto;
 }
 
@@ -182,11 +184,17 @@
   height: 52px;
   padding: 0 16px;
   border-radius: 14px;
-  border: 1.5px solid #e5e7eb;
-  background: #f9fafb;
+  border: 1.5px solid #d1d5db; /* Darker border */
+  background: #fff; /* White background for better input contrast */
   font-size: 1rem;
+  color: var(--text-main);
   box-sizing: border-box;
   outline: none;
+}
+
+.form-group-mobile input::placeholder {
+  color: #6b7280; /* Darker placeholder for better contrast */
+  opacity: 1;
 }
 
 .form-group-mobile input:focus {
@@ -206,7 +214,7 @@
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: var(--emerald-600);
+  color: var(--emerald-700); /* Darker for accessibility */
   font-family: 'Fredoka', sans-serif;
   font-weight: 700;
   font-size: 0.85rem;
@@ -227,10 +235,10 @@
 }
 
 .forgot-password-wrap-mobile a {
-  color: var(--emerald-600);
+  color: var(--emerald-700); /* Darker for accessibility */
   font-size: 0.85rem;
   font-weight: 700;
-  text-decoration: none;
+  text-decoration: underline; /* Added underline for better recognition */
 }
 
 .error-text-mobile {
@@ -253,8 +261,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #9ca3af;
-  font-size: 0.75rem;
+  color: #4b5563; /* Darker for accessibility */
+  font-size: 0.8rem;
   font-weight: 700;
   margin: 4px 0;
 }
@@ -284,16 +292,16 @@
 
 .signup-link-mobile {
   text-align: center;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin-top: 8px;
+  font-size: 0.88rem;
+  color: var(--text-main); /* Darker for accessibility */
+  margin-top: 12px;
   padding-bottom: env(safe-area-inset-bottom);
 }
 
 .signup-link-mobile a {
-  color: var(--emerald-600);
+  color: var(--emerald-700); /* Darker for accessibility */
   font-weight: 700;
-  text-decoration: none;
+  text-decoration: underline;
 }
 
 /* Banners */

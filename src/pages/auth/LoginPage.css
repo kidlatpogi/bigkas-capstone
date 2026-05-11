@@ -260,7 +260,7 @@ body.login-page-active {
 }
 
 .auth-hero-tagline span {
-  color: #f97316; /* Vibrant brand orange for high visibility */
+  color: #f18f01; /* Vibrant brand orange for high visibility */
 }
 
 .auth-hero-desc {
@@ -427,6 +427,29 @@ body.login-page-active {
   outline: none !important;
 }
 
+/* Password Toggle specific padding */
+.form-group-v2 .input-field-wrap input[type="password"],
+.form-group-v2 .input-field-wrap input[type="text"] {
+  padding-right: 65px;
+}
+
+.pw-toggle-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--emerald-700);
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 10px;
+  z-index: 10;
+  text-transform: capitalize;
+}
+
 .input-field-wrap input.is-invalid {
   border-color: #ef4444;
 }
@@ -437,11 +460,7 @@ body.login-page-active {
   margin-top: 4px;
 }
 
-.form-actions-v2 {
-  margin-top: 10px;
-}
-
-.login-submit-btn button {
+.form-actions-v2 button {
   font-family: 'Fredoka', sans-serif !important;
   font-size: 1.05rem !important;
   height: 56px !important;

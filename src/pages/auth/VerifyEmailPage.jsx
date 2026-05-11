@@ -211,11 +211,6 @@ export default function VerifyEmailPage() {
               </motion.p>
             </div>
             
-            <div className="auth-visual-waves">
-              {[...Array(24)].map((_, i) => (
-                <div key={i} className={`auth-visual-wave auth-visual-wave-${(i % 6) + 1}`} />
-              ))}
-            </div>
           </div>
 
           {/* Right Side: Verification Form */}

@@ -53,6 +53,15 @@ function RegisterPageMobile({ managePageClass = true }) {
     };
   }, [managePageClass]);
 
+  // SEO Metadata
+  useEffect(() => {
+    document.title = 'Create Account | Bigkas — Master Public Speaking';
+    const metaDesc = document.querySelector('meta[name="description"]') || document.createElement('meta');
+    metaDesc.name = 'description';
+    metaDesc.content = 'Join Bigkas today and start your AI-powered journey to public speaking excellence. Analyze your voice, master your presence, and empower your communication.';
+    if (!metaDesc.parentNode) document.head.appendChild(metaDesc);
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === 'firstName' || name === 'lastName') {
@@ -180,7 +189,7 @@ function RegisterPageMobile({ managePageClass = true }) {
             alt="Bigkas Logo" 
             width="32" 
             height="32" 
-            fetchpriority="high" 
+            fetchPriority="high" 
             loading="eager"
           />
           <span>Bigkas</span>
@@ -213,10 +222,12 @@ function RegisterPageMobile({ managePageClass = true }) {
                   <label>First Name</label>
                   <input
                     name="firstName"
+                    id="firstName"
                     value={formData.firstName}
                     onChange={handleChange}
                     placeholder="Juan"
                     disabled={isLoading}
+                    aria-label="First Name"
                   />
                   {errors.firstName && <span className="error-text-mobile">{errors.firstName}</span>}
                 </div>
@@ -224,10 +235,12 @@ function RegisterPageMobile({ managePageClass = true }) {
                   <label>Last Name</label>
                   <input
                     name="lastName"
+                    id="lastName"
                     value={formData.lastName}
                     onChange={handleChange}
                     placeholder="Dela Cruz"
                     disabled={isLoading}
+                    aria-label="Last Name"
                   />
                   {errors.lastName && <span className="error-text-mobile">{errors.lastName}</span>}
                 </div>
@@ -238,10 +251,12 @@ function RegisterPageMobile({ managePageClass = true }) {
                 <input
                   type="email"
                   name="email"
+                  id="email"
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="name@gmail.com"
                   disabled={isLoading}
+                  aria-label="Email Address"
                 />
                 {errors.email && <span className="error-text-mobile">{errors.email}</span>}
               </div>
@@ -304,8 +319,10 @@ function RegisterPageMobile({ managePageClass = true }) {
               <div className="register-consent-group-mobile">
                 <input 
                   type="checkbox" 
+                  id="consent"
                   checked={consentChecked} 
                   onChange={(e) => setConsentChecked(e.target.checked)} 
+                  aria-label="Agree to terms and conditions"
                 />
                 <span className="register-consent-text-mobile">
                   I agree to the <a href="#" onClick={showTerms}>Terms</a> and <a href="#" onClick={showPrivacy}>Privacy Policy</a>.
@@ -317,9 +334,10 @@ function RegisterPageMobile({ managePageClass = true }) {
                 <PushButton
                   type="submit"
                   disabled={isLoading || !consentChecked}
-                  bgColor="#047857"
+                  bgColor="#047857" /* High contrast emerald-700 */
                   shadowColor="#065f46"
                   className="mobile-register-btn"
+                  aria-label="Create Account Button"
                 >
                   {isLoading ? '...' : 'Create Account'}
                 </PushButton>

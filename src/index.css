@@ -240,4 +240,28 @@ ul, ol { list-style: none; }
 .dashboard-anim-delay-6 { animation-delay: 0.6s; }
 .dashboard-anim-delay-7 { animation-delay: 0.7s; }
 .dashboard-anim-delay-8 { animation-delay: 0.8s; }
-.dashboard-anim-delay-9 { animation-delay: 0.9s; }
+.dashboard-anim-delay-9 { animation-delay: 0.9s; }
+
+/* Optimized CSS Animations (0KB JS alternative) */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.fade-in-down {
+  animation: fadeInDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}

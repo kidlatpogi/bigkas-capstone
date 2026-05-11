@@ -1,0 +1,2 @@
+import{r as o}from"./vendor-framework-gCbw6FxD.js";import{S as e}from"./index-C_p4eY_4.js";function n(){const t=o.useContext(e);if(!t)throw new Error("useSessionContext must be used within a SessionProvider");return t}export{n as u};
+//# sourceMappingURL=useSessionContext-gCgO0IY1.js.map

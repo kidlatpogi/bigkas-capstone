@@ -1,13 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  FaceLandmarker,
-  FilesetResolver,
-  GestureRecognizer,
-  DrawingUtils,
-} from "@mediapipe/tasks-vision";
 
+// Types defined locally to avoid early MediaPipe import
 type VisualAnalysisResult = {
   overall_score: number;
   eye_contact_score: number;
@@ -29,6 +24,7 @@ const VISION_WASM_PATH = "/wasm";
 const CDN_BASE_URL = "https://assets.bigkas.site/Models";
 const FACE_MODEL_PATH = `${CDN_BASE_URL}/face_landmarker.task`;
 const GESTURE_MODEL_PATH = `${CDN_BASE_URL}/gesture_recognizer.task`;
+const LANDMARKS_STORAGE_KEY = "bigkas_show_ai_landmarks";
 
 // Fallback hand skeleton connections for canvas drawing.
 const HAND_CONNECTIONS: number[][] = [
@@ -93,10 +89,32 @@ export function useVisualAnalysis() {
     gesture_score: 0,
   });
 
-  const faceLandmarkerRef = useRef<FaceLandmarker | null>(null);
-  const gestureRecognizerRef = useRef<GestureRecognizer | null>(null);
+  const [showLandmarks, setShowLandmarksState] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const saved = window.localStorage.getItem(LANDMARKS_STORAGE_KEY);
+    return saved === null ? true : saved === "true";
+  });
+  const showLandmarksRef = useRef(showLandmarks);
+
+  const setShowLandmarks = useCallback((val: boolean | ((prev: boolean) => boolean)) => {
+    setShowLandmarksState((prev) => {
+      const next = typeof val === "function" ? val(prev) : !!val;
+      showLandmarksRef.current = next;
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(LANDMARKS_STORAGE_KEY, String(next));
+      }
+      return next;
+    });
+  }, []);
+
+  // Use dynamic refs for MediaPipe classes to avoid bundling them in the initial parse
+  const faceLandmarkerRef = useRef<any>(null);
+  const gestureRecognizerRef = useRef<any>(null);
+  const drawingUtilsClassRef = useRef<any>(null);
+  const faceLandmarkerClassRef = useRef<any>(null);
+
   const rafRef = useRef<number | null>(null);
-  const drawingUtilsRef = useRef<DrawingUtils | null>(null);
+  const drawingUtilsRef = useRef<any>(null);
   const canvasCtxRef = useRef<CanvasRenderingContext2D | null>(null);
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
   const canvasElementRef = useRef<HTMLCanvasElement | null>(null);
@@ -138,6 +156,14 @@ export function useVisualAnalysis() {
       setIsReady(true);
       return;
     }
+
+    // PERFORMANCE OPTIMIZATION: Dynamically import MediaPipe only when needed.
+    // This moves 'vision_bundle.mjs' out of the critical path / initial Script Evaluation.
+    const { FaceLandmarker, FilesetResolver, GestureRecognizer, DrawingUtils } = await import("@mediapipe/tasks-vision");
+    
+    // Store classes for use in analyzeFrame loop without closures
+    drawingUtilsClassRef.current = DrawingUtils;
+    faceLandmarkerClassRef.current = FaceLandmarker;
 
     const vision = await FilesetResolver.forVisionTasks(VISION_WASM_PATH);
     
@@ -296,36 +322,37 @@ export function useVisualAnalysis() {
 
       ctx.clearRect(0, 0, width, height);
 
-      if (!drawingUtilsRef.current) {
-        drawingUtilsRef.current = new DrawingUtils(ctx);
-      }
-      const drawingUtils = drawingUtilsRef.current;
+      if (showLandmarksRef.current) {
+        if (!drawingUtilsRef.current && drawingUtilsClassRef.current) {
+          drawingUtilsRef.current = new drawingUtilsClassRef.current(ctx);
+        }
+        const drawingUtils = drawingUtilsRef.current;
 
-      if (faceResult?.faceLandmarks?.length) {
-        faceResult.faceLandmarks.forEach((landmarks) => {
-          // Draw contours (eyes, lips, face outline) instead of the full 478-point mesh.
-          // This is much lighter for the CPU/main thread but still shows tracking is working perfectly.
-          drawingUtils.drawConnectors(
-            landmarks,
-            (FaceLandmarker as any).FACE_LANDMARKS_CONTOURS || [],
-            { color: "rgba(80,200,120,0.7)", lineWidth: 1 },
-          );
-        });
-      }
-
-      if (handLandmarks.length) {
-        handLandmarks.forEach((points) => {
-          drawHandConnections(ctx, points, width, height);
-          drawingUtils.drawLandmarks(points, {
-            color: "rgba(255, 212, 106, 0.95)",
-            radius: 2,
+        if (faceResult?.faceLandmarks?.length) {
+          faceResult.faceLandmarks.forEach((landmarks: any) => {
+            if (drawingUtils) {
+              drawingUtils.drawConnectors(
+                landmarks,
+                (faceLandmarkerClassRef.current as any).FACE_LANDMARKS_CONTOURS || [],
+                { color: "rgba(80,200,120,0.7)", lineWidth: 1 },
+              );
+            }
           });
-        });
+        }
+
+        if (handLandmarks.length && drawingUtils) {
+          handLandmarks.forEach((points: any) => {
+            drawHandConnections(ctx, points, width, height);
+            drawingUtils.drawLandmarks(points, {
+              color: "rgba(255, 212, 106, 0.95)",
+              radius: 2,
+            });
+          });
+        }
       }
     }
 
     // Use setTimeout for throttling instead of requestAnimationFrame polling.
-    // This lets the thread rest completely until the next frame is needed.
     const elapsed = performance.now() - nowMs;
     const delay = Math.max(0, THROTTLE_MS - elapsed);
     (rafRef.current as any) = setTimeout(() => {
@@ -403,6 +430,8 @@ export function useVisualAnalysis() {
     error,
     lastResult,
     liveScores,
+    showLandmarks,
+    setShowLandmarks,
     startAnalysis,
     stopAnalysis,
   };

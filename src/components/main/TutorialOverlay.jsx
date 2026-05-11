@@ -191,7 +191,7 @@ function TutorialOverlay({
     ];
     stepAudioRefs.current.forEach((audio) => {
       if (!audio) return;
-      audio.preload = 'auto';
+      audio.preload = 'none'; // Changed from 'auto' to 'none' for Lighthouse performance
     });
 
     return () => {

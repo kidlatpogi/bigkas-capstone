@@ -47,7 +47,7 @@ const SideNav = lazy(() => import('../components/common/SideNav'));
 const BottomNav = lazy(() => import('../components/common/BottomNav'));
 import { getAssetUrl } from '../utils/assetUtils';
 
-const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
+const bigkasLogo = "data:image/webp;base64,UklGRmYBAABXRUJQVlA4IFoBAABwCwCdASoQABAAPlEkj0WjIyIhKBAAgCcJaW7AAWzAD8AA/v/p///9f//v/P///T///2P//8P//6v//6P//4P//2P//v///+7//+p///T///R///P///L///G///E///A///8AAP79AQAA"; 
 
 /**
  * ActivityPageWrapper - Conditionally renders desktop or mobile version

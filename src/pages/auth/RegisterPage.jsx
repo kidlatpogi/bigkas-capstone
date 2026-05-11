@@ -12,9 +12,12 @@ import PushButton from '../../components/common/PushButton';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import './RegisterPage.css';
 
+// Lazy load the specialized mobile version
+const RegisterPageMobile = lazy(() => import('./RegisterPageMobile'));
+
 const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 
-function RegisterPage({ managePageClass = true }) {
+function RegisterPageDesktop({ managePageClass = true }) {
   const layoutRef = useRef(null);
   const navigate = useNavigate();
   const { register, isLoading } = useAuthContext();
@@ -242,11 +245,6 @@ function RegisterPage({ managePageClass = true }) {
                 Your AI-powered journey to public speaking excellence starts here.
               </motion.p>
             </div>
-            <div className="auth-visual-waves">
-              {[...Array(24)].map((_, i) => (
-                <div key={i} className={`auth-visual-wave auth-visual-wave-${(i % 6) + 1}`} />
-              ))}
-            </div>
           </div>
 
           {/* Right Side: Form */}
@@ -395,6 +393,30 @@ function RegisterPage({ managePageClass = true }) {
         content={legalModal.content}
       />
     </div>
+  );
+}
+
+export { RegisterPageDesktop };
+
+/**
+ * Main Responsive Wrapper for Register Page
+ * Switches between Desktop and Mobile/Tablet specialized versions
+ */
+function RegisterPage() {
+  const [isMobileOrTablet, setIsMobileOrTablet] = useState(() => window.innerWidth < 1024);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileOrTablet(window.innerWidth < 1024);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return (
+    <Suspense fallback={null}>
+      {isMobileOrTablet ? <RegisterPageMobile /> : <RegisterPageDesktop />}
+    </Suspense>
   );
 }
 

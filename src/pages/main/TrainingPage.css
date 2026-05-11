@@ -453,14 +453,19 @@ body.training-page-active {
   bottom: 12px;
   left: 50%;
   transform: translateX(-50%);
-  color: #F18F01;
+  color: #fff;
+  background: rgba(241, 143, 1, 0.4);
+  backdrop-filter: blur(4px);
+  padding: 4px 12px;
+  border-radius: 20px;
   font-family: 'Inter', sans-serif;
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 800;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.12em;
   white-space: nowrap;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.8);
-  opacity: 0.8;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  border: 1px solid rgba(241, 143, 1, 0.3);
+  opacity: 0.9;
 }
 
 .tp-camera-frame-guide--active {
@@ -1955,8 +1960,8 @@ body.training-page-active {
   }
 
   .tp-waveform--free-pretest {
-    width: min(100%, 13.5rem);
-    padding-right: 2.35rem;
+    width: 100%;
+    padding-right: 0;
   }
 
   .tp-free-pretest-timer {

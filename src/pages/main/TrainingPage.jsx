@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { RotateCcw, AlertCircle, ChevronLeft } from 'lucide-react';
 import { useSessionContext } from '../../context/useSessionContext';
@@ -178,47 +178,49 @@ function SettingsGearIcon() {
   );
 }
 
-/* ─── Memoized Sub-components ──────────────────────────────────────────────── */
+/**
+ * Memoized Teleprompter view to prevent massive re-renders during high-frequency updates.
+ */
 const TeleprompterView = ({
   scriptWords,
+  scriptSentences,
   highlightIdx,
   highlightMode,
   currentSentenceIdx,
   fontSize,
-  autoScroll,
   scriptRef,
-}) => {
-  return (
-    <div
-      className="tp-teleprompter"
-      ref={scriptRef}
-      style={{ fontSize: `${fontSize}px` }}
-    >
-      {scriptWords.map((word, idx) => {
-        const isPassed = idx < highlightIdx;
+}) => (
+  <div className="tp-teleprompter" ref={scriptRef} style={{ fontSize: `${fontSize}px` }}>
+    {highlightMode === 'sentence'
+      ? scriptSentences.map((sentence, idx) => (
+        <span
+          key={`${sentence.start}-${sentence.end}`}
+          data-sentence-idx={idx}
+          className={`tp-sentence${idx < currentSentenceIdx ? ' tp-sentence--passed' : ''}${idx === currentSentenceIdx ? ' tp-sentence--current' : ''}`}
+        >
+          {sentence.text}{' '}
+        </span>
+      ))
+      : scriptWords.map((word, idx) => {
+        const isPassed = highlightMode === 'word' && idx < highlightIdx;
         const isCurrent = highlightMode === 'word' && idx === highlightIdx;
-        
-        let sentenceIdx = -1;
-        if (highlightMode === 'sentence') {
-          // This is a bit expensive to calculate here, but better than re-mapping the whole thing
-          // In a real app, we'd pre-calculate sentence indices for each word.
-        }
-
         return (
           <span
             key={idx}
             data-word-idx={idx}
-            className={`tp-word ${isPassed ? 'tp-word--passed' : ''} ${isCurrent ? 'tp-word--current' : ''}`}
+            className={`tp-word${isPassed ? ' tp-word--passed' : ''}${isCurrent ? ' tp-word--current' : ''}`}
           >
             {word}{' '}
           </span>
         );
       })}
-    </div>
-  );
-};
+    {scriptWords.length === 0 && (
+      <p className="tp-script-empty">No script content loaded.</p>
+    )}
+  </div>
+);
 
-const MemoizedTeleprompter = useMemo(() => TeleprompterView, []);
+const MemoizedTeleprompter = memo(TeleprompterView);
 function TrainingPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -1699,34 +1701,15 @@ function TrainingPage() {
               <span className="tp-script-label">AUTO-SCROLLING SCRIPT</span>
             </div>
 
-            <div className="tp-teleprompter" ref={scriptRef} style={{ fontSize: `${fontSize}px` }}>
-              {highlightMode === 'sentence'
-                ? scriptSentences.map((sentence, idx) => (
-                  <span
-                    key={`${sentence.start}-${sentence.end}`}
-                    data-sentence-idx={idx}
-                    className={`tp-sentence${idx < currentSentenceIdx ? ' tp-sentence--passed' : ''}${idx === currentSentenceIdx ? ' tp-sentence--current' : ''}`}
-                  >
-                    {sentence.text}{' '}
-                  </span>
-                ))
-                : scriptWords.map((word, idx) => {
-                  const isPassed = highlightMode === 'word' && idx < highlightIdx;
-                  const isCurrent = highlightMode === 'word' && idx === highlightIdx;
-                  return (
-                    <span
-                      key={idx}
-                      data-word-idx={idx}
-                      className={`tp-word${isPassed ? ' tp-word--passed' : ''}${isCurrent ? ' tp-word--current' : ''}`}
-                    >
-                      {word}{' '}
-                    </span>
-                  );
-                })}
-              {scriptWords.length === 0 && (
-                <p className="tp-script-empty">{script?.content || ''}</p>
-              )}
-            </div>
+            <MemoizedTeleprompter
+              scriptWords={scriptWords}
+              scriptSentences={scriptSentences}
+              highlightIdx={highlightIdx}
+              highlightMode={highlightMode}
+              currentSentenceIdx={currentSentenceIdx}
+              fontSize={fontSize}
+              scriptRef={scriptRef}
+            />
 
           </div>
         )}

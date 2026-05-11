@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../context/useAuthContext';
 import { isValidEmail, validatePassword } from '../../utils/validators';

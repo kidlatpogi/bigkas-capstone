@@ -176,7 +176,7 @@ body.training-page-active {
   overflow: hidden;
 }
 
-.tp-content:not(.tp-content--split) .tp-left {
+.tp-left {
   width: min(1080px, 100%);
   margin-inline: auto;
 }
@@ -241,11 +241,7 @@ body.training-page-active {
   font-weight: 800;
 }
 
-/* Split layout: scripted mode †’ two columns */
-.tp-content--split {
-  flex-direction: row;
-  align-items: stretch;
-}
+
 
 /* ── Left column (camera + waveform + controls) ── */
 .tp-left {
@@ -257,11 +253,7 @@ body.training-page-active {
   overflow: hidden;
 }
 
-.tp-content--split .tp-left {
-  flex: 0 0 55%;
-  border-right: 1px solid #EBEBEB;
-  overflow: hidden;
-}
+
 
 /* Mode label + REC badge row */
 .tp-cam-header {
@@ -382,6 +374,8 @@ body.training-page-active {
   display: block;
   background: #111;
   border-radius: inherit;
+  /* Mirror the camera for a more natural feel */
+  transform: scaleX(-1);
 }
 
 .tp-camera-overlay {
@@ -390,6 +384,8 @@ body.training-page-active {
   width: 100%;
   height: 100%;
   pointer-events: none;
+  /* Mirror the overlay to match the mirrored camera */
+  transform: scaleX(-1);
 }
 
 .tp-camera-placeholder {
@@ -421,38 +417,57 @@ body.training-page-active {
 
 .tp-camera-frame-guide {
   position: absolute;
-  top: 50%;
+  top: 48%; /* Slightly above center to accommodate chest space below */
   left: 50%;
   transform: translate(-50%, -50%);
-  width: min(65%, 260px);
-  height: min(85%, 360px);
-  border: 2.5px solid rgba(241, 143, 1, 0.8);
-  border-radius: 130px 130px 60px 60px;
-  box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.55);
+  width: min(85%, 420px);
+  height: min(80%, 380px);
+  border: 1px solid rgba(241, 143, 1, 0.2);
+  border-radius: 40px;
+  /* Premium cutout effect */
+  box-shadow: 0 0 0 3000px rgba(0, 0, 0, 0.6);
   pointer-events: none;
   z-index: 1;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Technical Corner Brackets */
+.tp-camera-frame-guide::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 40px;
+  padding: 2px;
+  background: linear-gradient(135deg, #F18F01 10%, transparent 10%, transparent 90%, #F18F01 90%),
+              linear-gradient(225deg, #F18F01 10%, transparent 10%, transparent 90%, #F18F01 90%);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  opacity: 0.8;
 }
 
 .tp-camera-frame-guide::after {
-  content: 'POSITION WITHIN FRAME';
+  content: 'CENTER YOURSELF—ENSURE HANDS ARE VISIBLE';
   position: absolute;
-  bottom: -32px;
+  bottom: -36px;
   left: 50%;
   transform: translateX(-50%);
   color: #F18F01;
-  font-size: 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.15em;
   white-space: nowrap;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
-  transition: opacity 0.3s ease;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+  opacity: 0.8;
 }
 
 .tp-camera-frame-guide--active {
-  border-color: rgba(241, 143, 1, 0.45);
-  border-style: solid;
-  border-width: 2px;
-  box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.35);
+  width: min(88%, 440px);
+  height: min(82%, 400px);
+  border-color: rgba(241, 143, 1, 0.1);
+  box-shadow: 0 0 0 3000px rgba(0, 0, 0, 0.4);
 }
 
 /* Hide internal guide shadow when the whole camera is spotlighted by tutorial */
@@ -508,7 +523,6 @@ body.training-page-active {
   gap: 3px;
   height: clamp(3rem, 6vw, 4.2rem);
   position: relative;
-  padding-right: 2.75rem;
 }
 
 .tp-page--free-pretest .tp-wave-bar {
@@ -1193,6 +1207,21 @@ body.training-page-active {
   font-weight: 900;
   color: #F18F01;
   line-height: 1;
+  text-shadow: 0 4px 20px rgba(241, 143, 1, 0.35);
+}
+
+.tp-countdown-subtext {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: rgba(241, 143, 1, 0.85);
+  margin-top: -4px;
+  animation: tp-pulse-soft 2s infinite ease-in-out;
+}
+
+@keyframes tp-pulse-soft {
+  0%, 100% { opacity: 0.6; transform: scale(0.98); }
+  50% { opacity: 1; transform: scale(1); }
 }
 
 .tp-analysing-view {
@@ -1589,72 +1618,7 @@ body.training-page-active {
 
 .tp-modal-close:hover { background: #E0E0E0; }
 
-.tp-modal-row {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
 
-.tp-modal-row--toggle {
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.tp-modal-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(1,1,1,0.55);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.tp-modal-val {
-  font-size: 16px;
-  font-weight: 700;
-  color: #010101;
-}
-
-.tp-modal-slider {
-  width: 100%;
-  accent-color: #F18F01;
-  min-height: 44px;
-  touch-action: pan-y;
-}
-
-.tp-modal-slider::-webkit-slider-runnable-track {
-  height: 8px;
-  border-radius: 999px;
-  background: rgba(90, 120, 99, 0.22);
-}
-
-.tp-modal-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 20px;
-  height: 20px;
-  margin-top: -6px;
-  border: 2px solid #ffffff;
-  border-radius: 50%;
-  background: #F18F01;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
-}
-
-.tp-modal-slider::-moz-range-track {
-  height: 8px;
-  border: none;
-  border-radius: 999px;
-  background: rgba(90, 120, 99, 0.22);
-}
-
-.tp-modal-slider::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #ffffff;
-  border-radius: 50%;
-  background: #F18F01;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
-}
 
 /* Toggle switch */
 .tp-toggle-btn {
@@ -1759,22 +1723,7 @@ body.training-page-active {
   border-color: #444;
 }
 
-[data-theme="dark"] .tp-right { background: #141414; }
-[data-theme="dark"] .tp-content--split .tp-left { border-color: #2A2A2A; }
-[data-theme="dark"] .tp-script-label { color: #F0F0F0; }
-[data-theme="dark"] .tp-script-sub { color: rgba(240,240,240,0.45); }
-[data-theme="dark"] .tp-teleprompter { color: rgba(240,240,240,0.55); }
-[data-theme="dark"] .tp-word--passed { color: rgba(240,240,240,0.3); }
-[data-theme="dark"] .tp-sentence--passed { color: rgba(240,240,240,0.3); }
-[data-theme="dark"] .tp-word--current { background: #8fb088; color: #102216; }
-[data-theme="dark"] .tp-sentence--current { background: #8fb088; color: #102216; }
 [data-theme="dark"] .tp-ctrl-label { color: rgba(240,240,240,0.5); }
-[data-theme="dark"] .tp-record-tooltip { background: linear-gradient(135deg, #6d8e6a 0%, #557553 100%); color: #f5fff3; border-color: rgba(245, 255, 243, 0.26); }
-[data-theme="dark"] .tp-record-tooltip::before { border-bottom-color: #62815e; }
-[data-theme="dark"] .tp-record-btn--hint {
-  border-color: rgba(143, 176, 136, 0.95);
-  box-shadow: 0 6px 24px rgba(143, 176, 136, 0.34);
-}
 
 [data-theme="dark"] .tp-modal { background: #1A1A1A; }
 [data-theme="dark"] .tp-modal-title { color: #F0F0F0; }
@@ -1873,44 +1822,7 @@ body.training-page-active {
     min-height: calc(100dvh + 1px);
   }
 
-  /* Collapse split layout: teleprompter on top, camera/feedback below */
-  .tp-content--split {
-    flex-direction: column;
-  }
 
-  .tp-analyse-bg-btn {
-    display: none;
-  }
-
-  .tp-content--split .tp-right {
-    order: 1;
-  }
-
-  .tp-content--split .tp-left {
-    order: 2;
-    flex: none;
-    border-right: none;
-    border-top: 1px solid #EBEBEB;
-    padding-top: 10px;
-    padding-bottom: 0;
-  }
-
-  /* Camera: shorter on mobile so teleprompter has room */
-  .tp-camera-wrap {
-    max-height: 28vh;
-  }
-
-  /* Teleprompter pane: take remaining space */
-  .tp-right {
-    flex: 1;
-    min-height: 0;
-  }
-
-  /* Teleprompter text: fluid size, legible at arm's length */
-  .tp-teleprompter {
-    font-size: clamp(1rem, 3.5vw, 1.4rem);
-    line-height: 1.9;
-  }
 
   /* Waveform: full width */
   .tp-waveform {
@@ -2003,21 +1915,43 @@ body.training-page-active {
   }
 
   .tp-controls--free-pretest {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    justify-items: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: clamp(1.5rem, 5vw, 2.5rem);
+    padding: 12px 8px 24px;
+    width: 100%;
   }
 
-  .tp-ctrl-col--mobile-main {
-    grid-column: 1 / -1;
-    order: 1;
-    width: 100%;
-    max-width: 9.8rem;
+  .tp-ctrl-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex: 0 1 auto;
   }
 
-  .tp-ctrl-col--mobile-bottom {
-    order: 2;
-    width: 100%;
-    max-width: 9.8rem;
+  /* Hide labels on mobile to reduce clutter as the buttons themselves have text */
+  .tp-ctrl-label--free-pretest {
+    display: none !important;
+  }
+
+  .tp-record-btn--start {
+    width: 110px !important;
+    height: 110px !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+  }
+
+  .tp-record-btn--active {
+    width: 100px !important;
+    height: 100px !important;
+  }
+
+  .tp-ctrl-btn {
+    width: 64px !important;
+    height: 64px !important;
+    font-size: 13px !important;
   }
 
   .tp-waveform--free-pretest {
@@ -2063,9 +1997,7 @@ body.training-page-active {
   }
 }
 
-[data-theme="dark"] .tp-content--split .tp-left {
-  border-top-color: #2A2A2A;
-}
+
 
 /* ── Hide floating theme toggle during training session ── */
 body:has(.tp-page) .theme-toggle-wrap {

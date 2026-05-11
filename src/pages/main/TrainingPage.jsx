@@ -1,11 +1,14 @@
-import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { RotateCcw, AlertCircle, ChevronLeft } from 'lucide-react';
+import { AlertCircle, ChevronLeft, RotateCcw } from 'lucide-react';
 import { useSessionContext } from '../../context/useSessionContext';
 import { useAuthContext } from '../../context/useAuthContext';
 import { buildRoute, ROUTES } from '../../utils/constants';
-import BackButton from '../../components/common/BackButton';
-import TutorialOverlay from '../../components/main/TutorialOverlay';
+
+// Lazy load heavy components to reduce initial Script Evaluation time
+const TutorialOverlay = lazy(() => import('../../components/main/TutorialOverlay'));
+const ConfirmationModal = lazy(() => import('../../components/common/ConfirmationModal'));
+
 import {
   GLOBAL_ACTIVITY_SCOPE,
   addPointsToSpeakerProgress,
@@ -19,7 +22,6 @@ import {
   appendSpeakerPointsHistory,
   createSpeakerPointsHistoryEntry,
 } from '../../utils/speakerPointsHistory';
-import ConfirmationModal from '../../components/common/ConfirmationModal';
 import { useVisualAnalysis } from '../../hooks/useVisualAnalysis';
 import { getSpriteUrl } from '../../utils/assetUtils';
 import './TrainingPage.css';
@@ -94,6 +96,18 @@ const MAX_VIDEO_BLOB_BYTES = 18 * 1024 * 1024;
 /** Minimum recording length (seconds) before FastAPI / Supabase analysis runs. */
 const DEFAULT_MIN_RECORDING_SECONDS = 20;
 
+// Cache API configuration for persistent asset storage (Lighthouse: Efficient cache lifetimes)
+const CACHE_NAME = 'bigkas-training-assets-v1';
+const ASSETS_TO_CACHE = [
+  'https://assets.bigkas.site/Images/Bigkas-Logo.webp',
+  'https://assets.bigkas.site/Voices/Profiling%20and%20Pre-Testing/Pre-Testing%20Tutorial/pre-testing%20tutorial%201.mp3',
+  'https://assets.bigkas.site/Voices/Profiling%20and%20Pre-Testing/Pre-Testing%20Tutorial/pre-testing%20tutorial%202.mp3',
+  'https://assets.bigkas.site/Voices/Profiling%20and%20Pre-Testing/Pre-Testing%20Tutorial/pre-testing%20tutorial%203.mp3',
+  'https://assets.bigkas.site/Voices/Profiling%20and%20Pre-Testing/Pre-Testing%20Tutorial/pre-testing%20tutorial%204.mp3',
+  'https://assets.bigkas.site/Voices/Profiling%20and%20Pre-Testing/Pre-Testing%20Tutorial/pre-testing%20tutorial%205.mp3',
+  'https://assets.bigkas.site/Voices/Profiling%20and%20Pre-Testing/Pre-Testing%20Tutorial/pre-testing%20tutorial%20FINAL.mp3'
+];
+
 function formatTime(sec) {
   const h = Math.floor(sec / 3600).toString().padStart(2, '0');
   const m = Math.floor((sec % 3600) / 60).toString().padStart(2, '0');
@@ -112,8 +126,6 @@ function formatMinuteSecond(sec) {
 const SILENCE_TRIGGER_MS = 5000; // ms of silence before showing hint
 const MIC_SENSITIVITY_KEY = 'pref_mic_sensitivity';
 const MIC_LOW_PICKUP_TRIGGER_MS = 2500;
-const TRAINING_FONT_SIZE_KEY = 'training_settings_font_size';
-const TRAINING_WPM_KEY = 'training_settings_wpm';
 const ACTIVITY_CELEBRATION_STORAGE_KEY = 'bigkas_pending_activity_celebration_v1';
 
 function readNumericSetting(key, fallback, min, max) {
@@ -178,50 +190,8 @@ function SettingsGearIcon() {
   );
 }
 
-/**
- * Memoized Teleprompter view to prevent massive re-renders during high-frequency updates.
- */
-const TeleprompterView = ({
-  scriptWords,
-  scriptSentences,
-  highlightIdx,
-  highlightMode,
-  currentSentenceIdx,
-  fontSize,
-  scriptRef,
-  scriptContent,
-}) => (
-  <div className="tp-teleprompter" ref={scriptRef} style={{ fontSize: `${fontSize}px` }}>
-    {highlightMode === 'sentence'
-      ? scriptSentences.map((sentence, idx) => (
-        <span
-          key={`${sentence.start}-${sentence.end}`}
-          data-sentence-idx={idx}
-          className={`tp-sentence${idx < currentSentenceIdx ? ' tp-sentence--passed' : ''}${idx === currentSentenceIdx ? ' tp-sentence--current' : ''}`}
-        >
-          {sentence.text}{' '}
-        </span>
-      ))
-      : scriptWords.map((word, idx) => {
-        const isPassed = highlightMode === 'word' && idx < highlightIdx;
-        const isCurrent = highlightMode === 'word' && idx === highlightIdx;
-        return (
-          <span
-            key={idx}
-            data-word-idx={idx}
-            className={`tp-word${isPassed ? ' tp-word--passed' : ''}${isCurrent ? ' tp-word--current' : ''}`}
-          >
-            {word}{' '}
-          </span>
-        );
-      })}
-    {scriptWords.length === 0 && (
-      <p className="tp-script-empty">{scriptContent || ''}</p>
-    )}
-  </div>
-);
 
-const MemoizedTeleprompter = memo(TeleprompterView);
+
 function TrainingPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -243,14 +213,12 @@ function TrainingPage() {
     }
   }, [state]);
 
-  const script = state?.script || recoveredState?.script || null;
-  const focus = state?.focus || recoveredState?.focus || 'scripted';
+  const focus = 'free';
   const sessionType = state?.sessionType || recoveredState?.sessionType || focus;
   const freeTopic = (state?.freeTopic || recoveredState?.freeTopic || '').trim();
   const objectiveText = (state?.objective || state?.step?.objective || recoveredState?.objective || recoveredState?.step?.objective || '').trim();
   const isPreTestSession = String(sessionType || '').toLowerCase().includes('pre-test') || String(sessionType || '').toLowerCase().includes('pretest');
-  const hidePermissionRetry = isPreTestSession && focus === 'scripted';
-  const isFreePretestSession = isPreTestSession && focus === 'free';
+  const isFreePretestSession = isPreTestSession;
 
   const MIN_RECORDING_SECONDS = useMemo(() => {
     const match = objectiveText.match(/(\d+)\s+Seconds/i) || objectiveText.match(/for\s+(\d+)\s+s/i);
@@ -276,7 +244,7 @@ function TrainingPage() {
     }
 
     // Detect missing navigation state on mount (e.g. refresh)
-    if (!effectiveState || (!effectiveState.script && focus === 'scripted' && !isPreTestSession)) {
+    if (!effectiveState) {
       return 'missing-data';
     }
     return 'idle';
@@ -298,26 +266,14 @@ function TrainingPage() {
   const [showOneMinWarning, setShowOneMinWarning] = useState(false);
 
   const trainingSettingsScope = user?.id || 'guest';
-  const trainingFontSizeStorageKey = `${TRAINING_FONT_SIZE_KEY}_${trainingSettingsScope}`;
-  const trainingWpmStorageKey = `${TRAINING_WPM_KEY}_${trainingSettingsScope}`;
-
-  /* Settings modal */
   const [showSettings, setShowSettings] = useState(false);
-  const [fontSize, setFontSize] = useState(16);
-  const [wpm, setWpm] = useState(120);
-  const [autoScroll, setAutoScroll] = useState(true);
-  const [highlightMode, setHighlightMode] = useState('word');
 
   /* Waveform — 50-bar history stored in ref, state triggers re-render */
   const [waveformBars, setWaveformBars] = useState(Array(50).fill(0));
 
-  /* WPM highlighting */
-  const [highlightIdx, setHighlightIdx] = useState(-1);
-
   /* Refs */
   const videoRef = useRef(null);
   const visualCanvasRef = useRef(null);
-  const scriptRef = useRef(null);
   const timerRef = useRef(null);
   /** Tracks elapsed recording seconds (excludes pause); same source as timer. Used at stop for min-duration gate. */
   const recordingDurationSecRef = useRef(0);
@@ -333,7 +289,6 @@ function TrainingPage() {
   const animRef = useRef(null);
   const waveHistRef = useRef(Array(50).fill(0));
   const lastWaveUpdateRef = useRef(0);
-  const wpmTimerRef = useRef(null);
   const silenceStartRef = useRef(null);
   const hintDismissRef = useRef(null);
   const frameworksRef = useRef([]);
@@ -343,6 +298,7 @@ function TrainingPage() {
   const isMountedRef = useRef(true);
   const visualScoresRef = useRef(null);
   const freeLayoutObserverRef = useRef(null);
+  const audioDataBufferRef = useRef(null);
 
   /* Hint toast state */
   const [showHint, setShowHint] = useState(false);
@@ -386,7 +342,7 @@ function TrainingPage() {
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analysisStatusMessage, setAnalysisStatusMessage] = useState('Initializing analysis...');
   const [isPreviewActive, setIsPreviewActive] = useState(false);
-  const { startAnalysis, stopAnalysis, liveScores, error: visualError, isReady: isVisualReady } = useVisualAnalysis();
+  const { startAnalysis, stopAnalysis, liveScores, error: visualError, isReady: isVisualReady, showLowLightWarning } = useVisualAnalysis();
 
   const isRecording = status === 'recording';
   const isPaused = status === 'paused';
@@ -428,8 +384,6 @@ function TrainingPage() {
           visualMediaRef.current.pause();
         }
         clearInterval(timerRef.current);
-        clearInterval(wpmTimerRef.current);
-        clearTimeout(wpmTimerRef.current);
         cancelAnimationFrame(animRef.current);
         setStatus('paused');
       }
@@ -438,113 +392,63 @@ function TrainingPage() {
     });
   }, [isPreTestSession]);
 
-  useEffect(() => {
-    const savedFontSize = readNumericSetting(trainingFontSizeStorageKey, null, 12, 24);
-    if (savedFontSize !== null) setFontSize(savedFontSize);
-    const savedWpm = readNumericSetting(trainingWpmStorageKey, null, 60, 200);
-    if (savedWpm !== null) setWpm(savedWpm);
-  }, [trainingFontSizeStorageKey, trainingWpmStorageKey]);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(trainingFontSizeStorageKey, String(fontSize));
-    }
-  }, [fontSize, trainingFontSizeStorageKey]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(trainingWpmStorageKey, String(wpm));
-    }
-  }, [trainingWpmStorageKey, wpm]);
 
   useEffect(() => {
     isMountedRef.current = true;
-    
+
     // bfcache optimization: Stop all tracks and analysis when navigating away
-    const handlePageHide = () => {
+    const handleCleanup = () => {
       stopAnalysis();
-      streamRef.current?.getTracks().forEach(t => t.stop());
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => {
+          t.stop();
+          t.enabled = false;
+        });
+        streamRef.current = null;
+      }
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+        videoRef.current.pause();
+      }
+      clearInterval(timerRef.current);
+      clearInterval(countRef.current);
+      cancelAnimationFrame(animRef.current);
     };
-    window.addEventListener('pagehide', handlePageHide);
+
+    window.addEventListener('pagehide', handleCleanup);
     window.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') handlePageHide();
+      if (document.visibilityState === 'hidden') handleCleanup();
     });
+
+    // Defer Cache API preloading to improve LCP/TBT scores
+    const cacheAssets = async () => {
+      try {
+        const cache = await caches.open(CACHE_NAME);
+        for (const url of ASSETS_TO_CACHE) {
+          try {
+            // Use no-cors for assets to avoid preflight/CORS blocks on images/audio
+            const response = await fetch(url, { mode: 'no-cors' });
+            if (response) await cache.put(url, response);
+          } catch (e) {
+            console.warn(`Failed to cache ${url}:`, e);
+          }
+        }
+      } catch (err) {
+        console.error('Cache API error:', err);
+      }
+    };
+    const cacheTimer = setTimeout(cacheAssets, 3500);
 
     return () => {
       isMountedRef.current = false;
-      window.removeEventListener('pagehide', handlePageHide);
-      handlePageHide();
-      clearInterval(timerRef.current);
-      clearInterval(countRef.current);
-      clearInterval(wpmTimerRef.current);
-      cancelAnimationFrame(animRef.current);
+      window.removeEventListener('pagehide', handleCleanup);
+      clearTimeout(cacheTimer);
+      handleCleanup();
     };
   }, [stopAnalysis]);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(trainingWpmStorageKey, String(wpm));
-  }, [trainingWpmStorageKey, wpm]);
 
-  useEffect(() => {
-    isMountedRef.current = true;
-
-    // Performance Optimization: Dynamic Preconnect & Font Pre-warming
-    const preconnects = [
-      { href: 'https://fonts.gstatic.com', crossorigin: true },
-      { href: 'https://assets.bigkas.site', crossorigin: true },
-    ];
-
-    const nodes = preconnects.map(p => {
-      const link = document.createElement('link');
-      link.rel = 'preconnect';
-      link.href = p.href;
-      if (p.crossorigin) link.crossOrigin = 'anonymous';
-      document.head.appendChild(link);
-      return link;
-    });
-
-    return () => {
-      isMountedRef.current = false;
-      nodes.forEach(n => document.head.removeChild(n));
-      clearInterval(timerRef.current);
-      clearInterval(countRef.current);
-      clearInterval(wpmTimerRef.current);
-      cancelAnimationFrame(animRef.current);
-    };
-  }, []);
-
-  /* Lighting detection logic */
-  useEffect(() => {
-    if (!isPreviewActive || !videoRef.current || isTutorialOverlayOpen) {
-      setShowLowLightWarning(false);
-      return undefined;
-    }
-
-    const checkLighting = () => {
-      const video = videoRef.current;
-      if (!video || video.readyState < 2) return;
-
-      const canvas = document.createElement('canvas');
-      canvas.width = 40; // Reduced resolution for faster processing
-      canvas.height = 30;
-      const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-
-      let totalBrightness = 0;
-      const step = 4 * 2; // Sample every 2nd pixel to save 50% CPU
-      for (let i = 0; i < data.length; i += step) {
-        const avg = (data[i] * 299 + data[i + 1] * 587 + data[i + 2] * 114) / 1000;
-        totalBrightness += avg;
-      }
-      const brightness = totalBrightness / (data.length / step);
-      setShowLowLightWarning(brightness < 45);
-    };
-
-    const interval = setInterval(checkLighting, 5000); // Increased interval to 5s
-    return () => clearInterval(interval);
-  }, [isActive]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
@@ -558,10 +462,7 @@ function TrainingPage() {
     };
   }, []);
 
-  const scriptWords = useMemo(() => {
-    if (focus !== 'scripted' || !script?.content) return [];
-    return script.content.split(/\s+/).filter(Boolean);
-  }, [focus, script]);
+
 
   useEffect(() => {
     if (!isFreePretestSession || typeof window === 'undefined') return undefined;
@@ -615,91 +516,7 @@ function TrainingPage() {
     return () => clearInterval(interval);
   }, [status]);
 
-  const scriptSentences = useMemo(() => {
-    if (focus !== 'scripted' || scriptWords.length === 0) return [];
 
-    const sentences = [];
-    let sentenceStart = 0;
-
-    scriptWords.forEach((word, idx) => {
-      const isSentenceEnd = /[.!?]+["')\]]*$/.test(word);
-      const isLastWord = idx === scriptWords.length - 1;
-
-      if (isSentenceEnd || isLastWord) {
-        sentences.push({
-          start: sentenceStart,
-          end: idx,
-          text: scriptWords.slice(sentenceStart, idx + 1).join(' '),
-        });
-        sentenceStart = idx + 1;
-      }
-    });
-
-    return sentences;
-  }, [focus, scriptWords]);
-
-  const currentSentenceIdx = useMemo(() => {
-    if (highlightIdx < 0 || scriptSentences.length === 0) return -1;
-    return scriptSentences.findIndex(
-      (sentence) => highlightIdx >= sentence.start && highlightIdx <= sentence.end,
-    );
-  }, [highlightIdx, scriptSentences]);
-
-  const clearWpmTimer = useCallback(() => {
-    clearInterval(wpmTimerRef.current);
-    clearTimeout(wpmTimerRef.current);
-    wpmTimerRef.current = null;
-  }, []);
-
-  const startScriptHighlightLoop = useCallback((startIndex = 0) => {
-    if (focus !== 'scripted' || scriptWords.length === 0) return;
-
-    clearWpmTimer();
-
-    const normalizedStart = Math.max(0, Math.min(startIndex, scriptWords.length - 1));
-    setHighlightIdx(normalizedStart);
-
-    if (normalizedStart >= scriptWords.length - 1) return;
-
-    const msPerWord = (60 / wpm) * 1000;
-
-    if (highlightMode === 'sentence' && scriptSentences.length > 0) {
-      // Sentence mode: advance sentence by sentence with WPM-based timing
-      const MIN_SENTENCE_MS = 2000;
-
-      // Find which sentence contains the start index
-      let sentIdx = scriptSentences.findIndex(
-        (s) => normalizedStart >= s.start && normalizedStart <= s.end,
-      );
-      if (sentIdx < 0) sentIdx = 0;
-
-      const advanceToNextSentence = () => {
-        sentIdx += 1;
-        if (sentIdx >= scriptSentences.length) return;
-
-        const sentence = scriptSentences[sentIdx];
-        setHighlightIdx(sentence.start);
-
-        const wordsInSentence = sentence.end - sentence.start + 1;
-        const sentenceMs = Math.max(MIN_SENTENCE_MS, wordsInSentence * msPerWord);
-        wpmTimerRef.current = setTimeout(advanceToNextSentence, sentenceMs);
-      };
-
-      // Calculate remaining display time for the current (partial) sentence
-      const currentSentence = scriptSentences[sentIdx];
-      const remainingWords = currentSentence.end - normalizedStart + 1;
-      const remainingMs = Math.max(MIN_SENTENCE_MS, remainingWords * msPerWord);
-      wpmTimerRef.current = setTimeout(advanceToNextSentence, remainingMs);
-    } else {
-      // Word mode: advance word by word
-      let idx = normalizedStart;
-      wpmTimerRef.current = setInterval(() => {
-        idx += 1;
-        if (idx < scriptWords.length) setHighlightIdx(idx);
-        else clearInterval(wpmTimerRef.current);
-      }, msPerWord);
-    }
-  }, [clearWpmTimer, focus, highlightMode, scriptSentences, scriptWords, wpm]);
 
   /* ── Lazy-load frameworks for silence hints ── */
   useEffect(() => {
@@ -713,9 +530,6 @@ function TrainingPage() {
     return () => {
       isMountedRef.current = false;
       clearInterval(timerRef.current);
-      clearInterval(countRef.current);
-      clearInterval(wpmTimerRef.current);
-      clearTimeout(wpmTimerRef.current);
       cancelAnimationFrame(animRef.current);
       streamRef.current?.getTracks().forEach((t) => t.stop());
       if (audioCtxRef.current) {
@@ -766,37 +580,9 @@ function TrainingPage() {
     osc.stop(now + duration + 0.02);
   }, []);
 
-  /* ── Auto-scroll teleprompter to highlighted word ── */
-  useEffect(() => {
-    if (!autoScroll || highlightIdx < 0 || !scriptRef.current) return;
 
-    let targetEl = null;
-    if (highlightMode === 'sentence') {
-      if (currentSentenceIdx < 0) return;
-      targetEl = scriptRef.current.querySelector(`[data-sentence-idx="${currentSentenceIdx}"]`);
-    } else {
-      targetEl = scriptRef.current.querySelector(`[data-word-idx="${highlightIdx}"]`);
-    }
 
-    if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, [highlightIdx, autoScroll, highlightMode, currentSentenceIdx]);
 
-  /* ── Restart teleprompter highlight when WPM slider changes mid-recording ── */
-  useEffect(() => {
-    if (status !== 'recording') return;
-    if (focus !== 'scripted' || scriptWords.length === 0) return;
-
-    // Re-launch the interval from the current word so the new speed takes effect
-    startScriptHighlightLoop(Math.max(highlightIdx, 0));
-
-    // Cleanup: clear the timer created above when the effect re-runs or unmounts
-    return () => {
-      clearInterval(wpmTimerRef.current);
-      clearTimeout(wpmTimerRef.current);
-    };
-    // Re-run when wpm OR highlightMode changes during recording
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wpm, highlightMode]);
 
   /* ── Waveform animation loop (shared by startRecording + resume) ── */
   const startWaveformLoop = useCallback(() => {
@@ -817,23 +603,31 @@ function TrainingPage() {
       if (audioCtxRef.current.state === 'suspended') {
         audioCtxRef.current.resume().catch(() => {});
       }
-      const data = new Uint8Array(analyserRef.current.fftSize);
+
+      // Buffer Reuse Optimization: Persistent Uint8Array to avoid GC pressure
+      if (!audioDataBufferRef.current || audioDataBufferRef.current.length !== analyserRef.current.fftSize) {
+        audioDataBufferRef.current = new Uint8Array(analyserRef.current.fftSize);
+      }
+      const data = audioDataBufferRef.current;
       analyserRef.current.getByteTimeDomainData(data);
 
       let power = 0;
-      for (let i = 0; i < data.length; i += 1) {
+      // Performance Optimization: Sub-sample every 4th element to reduce CPU work by 75%
+      for (let i = 0; i < data.length; i += 4) {
         const centered = (data[i] - 128) / 128;
         power += centered * centered;
       }
 
-      const rms = Math.sqrt(power / data.length);
+      const rms = Math.sqrt(power / (data.length / 4));
       const measured = Math.min(1, rms * sensitivity.analyserGain);
       const visualLevel = Math.min(1, measured * sensitivity.visualGain);
 
       waveHistRef.current = [...waveHistRef.current.slice(1), visualLevel];
 
       const now = performance.now();
-      if (!lastWaveUpdateRef.current || now - lastWaveUpdateRef.current > 32) {
+      // Throttling Optimization: 48ms (~20fps) is plenty for waveform visualization 
+      // and significantly reduces main-thread reconciliation compared to 60fps.
+      if (!lastWaveUpdateRef.current || now - lastWaveUpdateRef.current > 48) {
         setWaveformBars([...waveHistRef.current]);
         lastWaveUpdateRef.current = now;
       }
@@ -948,12 +742,15 @@ function TrainingPage() {
     }
   }, [status]); // Only re-sync when status changes, not on every render
 
-  /* Start preview when idle */
+  /* Start preview when idle - deferred to reduce TBT */
   useEffect(() => {
     if (status === 'idle' || status === 'permission-denied') {
-      initPreview();
+      const timer = setTimeout(() => {
+        initPreview();
+      }, 1500); // 1.5s delay to stay out of the critical LCP path
+      return () => clearTimeout(timer);
     }
-  }, [initPreview, status]); // Removed isTutorialOverlayOpen to avoid redundant re-init
+  }, [initPreview, status]);
 
   /* ── Start recording ── */
   const startRecording = useCallback(async () => {
@@ -1029,9 +826,6 @@ function TrainingPage() {
       setShowMicWarning(false);
       timerRef.current = setInterval(bumpElapsedSec, 1000);
 
-      /* WPM word highlight (scripted only) */
-      startScriptHighlightLoop(0);
-
       setErrorMsg('');
     } catch (err) {
       if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
@@ -1041,26 +835,45 @@ function TrainingPage() {
         setStatus('error');
       }
     }
-  }, [bumpElapsedSec, startScriptHighlightLoop, startWaveformLoop]);
+  }, [bumpElapsedSec, startWaveformLoop]);
 
-  /* ── Countdown → start ── */
-  const startCountdown = useCallback(() => {
-    setIsTutorialOverlayOpen(false);
+  /* ── 3..2..1 Countdown timer logic ── */
+  const runTimerCountdown = useCallback(() => {
     setStatus('countdown');
     setCountdown(3);
-    setHighlightIdx(-1);
     let c = 3;
     playCountdownCue('tick');
     countRef.current = setInterval(() => {
       c -= 1;
       setCountdown(c);
-      playCountdownCue(c <= 0 ? 'start' : 'tick');
+      
       if (c <= 0) {
         clearInterval(countRef.current);
+        playCountdownCue('start');
         startRecording();
+      } else {
+        playCountdownCue('tick');
       }
     }, 1000);
   }, [playCountdownCue, startRecording]);
+
+  const handleStartClick = useCallback(() => {
+    setIsTutorialOverlayOpen(false);
+    
+    // If AI is already ready (e.g. from a restart), go straight to countdown
+    if (isVisualReady) {
+      runTimerCountdown();
+    } else {
+      setStatus('preparing-ai');
+    }
+  }, [isVisualReady, runTimerCountdown]);
+
+  // Bridge Effect: Auto-start countdown when AI becomes ready during 'preparing-ai'
+  useEffect(() => {
+    if (status === 'preparing-ai' && isVisualReady) {
+      runTimerCountdown();
+    }
+  }, [status, isVisualReady, runTimerCountdown]);
 
 
 
@@ -1074,8 +887,6 @@ function TrainingPage() {
 
     // 2. Clear all active timers/animations
     clearInterval(timerRef.current);
-    clearInterval(wpmTimerRef.current);
-    clearTimeout(wpmTimerRef.current);
     cancelAnimationFrame(animRef.current);
     silenceStartRef.current = null;
     clearTimeout(hintDismissRef.current);
@@ -1159,13 +970,13 @@ function TrainingPage() {
         const result = await analyseAndSave({
           audioBlob,
           videoBlob,
-          targetText: focus === 'scripted' ? (script?.content || '') : freeTopic,
+          targetText: freeTopic,
           scriptType: sessionType,
           speakingMode: focus,
-          scriptTitle: focus === 'scripted' ? (script?.title || '') : freeTopic,
+          scriptTitle: freeTopic,
           activityId: String(state?.fromActivityTaskId || '').trim() || null,
           visualAnalysis: visualScoresRef.current,
-          topic: focus === 'scripted' ? (script?.title || 'Scripted Speech') : (freeTopic || 'General Speaking'),
+          topic: freeTopic || 'General Speaking',
           profilingAnswers,
           onProgress: (p, msg) => {
             setAnalysisProgress(p);
@@ -1198,14 +1009,7 @@ function TrainingPage() {
           const completionHistoryBefore = getActivityCompletionHistory(activityScopeKey);
 
           // Activity events
-          if (focus === 'scripted') {
-            recordActivityEvent({
-              type: 'scripted-session-complete',
-              sessionId: result.data.id,
-              durationSec: recordingDurationSec,
-              scriptTitle: script?.title || '',
-            }, activityScopeKey);
-          }
+
 
           if (focus === 'free' && state?.entryPoint === 'practice') {
             recordActivityEvent({ type: 'randomizer-session-complete', sessionId: result.data.id }, activityScopeKey);
@@ -1230,12 +1034,6 @@ function TrainingPage() {
           }
         } else {
           // Pre-test specific metadata
-          if (focus === 'scripted') {
-            metadataUpdates.pretest_scripted_completed = true;
-            metadataUpdates.pretest_scripted_completed_at = new Date().toISOString();
-            metadataUpdates.pretest_scripted_session_id = result.data.id;
-            metadataUpdates.pretest_scripted_score = Math.round(normalizedSessionScore);
-          } else {
             metadataUpdates.onboarding_stage = 'analyzing';
             metadataUpdates.onboarding_completed = false;
             metadataUpdates.pretest_completed = true;
@@ -1244,7 +1042,6 @@ function TrainingPage() {
             metadataUpdates.pretest_free_session_id = result.data.id;
             metadataUpdates.pretest_free_score = Math.round(normalizedSessionScore);
             metadataUpdates.pretest_session_id = result.data.id;
-          }
         }
 
         if (Object.keys(metadataUpdates).length > 0) {
@@ -1300,8 +1097,6 @@ function TrainingPage() {
     if (mediaRef.current?.state === 'recording') {
       mediaRef.current.pause();
       clearInterval(timerRef.current);
-      clearInterval(wpmTimerRef.current);
-      clearTimeout(wpmTimerRef.current);
       cancelAnimationFrame(animRef.current);
       micLowStartRef.current = null;
       micWarningVisibleRef.current = false;
@@ -1312,9 +1107,6 @@ function TrainingPage() {
       mediaRef.current.resume();
       timerRef.current = setInterval(bumpElapsedSec, 1000);
       startWaveformLoop();
-      if (focus === 'scripted') {
-        startScriptHighlightLoop(Math.max(highlightIdx, 0));
-      }
       setStatus('recording');
     }
   };
@@ -1354,9 +1146,6 @@ function TrainingPage() {
         clearInterval(timerRef.current);
         timerRef.current = setInterval(bumpElapsedSec, 1000);
         startWaveformLoop();
-        if (focus === 'scripted') {
-          startScriptHighlightLoop(Math.max(highlightIdx, 0));
-        }
 
         // Visual "Speak" overlay management
         setIsResumingVisual(true);
@@ -1370,7 +1159,7 @@ function TrainingPage() {
         playCountdownCue('tick');
       }
     }, 1000);
-  }, [bumpElapsedSec, focus, highlightIdx, status, startScriptHighlightLoop, startWaveformLoop, playCountdownCue]);
+  }, [bumpElapsedSec, focus, status, startWaveformLoop, playCountdownCue]);
 
   const handleContinueFromShortModal = useCallback(() => {
     setShowMinDurationModal(false);
@@ -1378,17 +1167,12 @@ function TrainingPage() {
     clearInterval(timerRef.current);
     timerRef.current = setInterval(bumpElapsedSec, 1000);
     startWaveformLoop();
-    if (focus === 'scripted') {
-      startScriptHighlightLoop(Math.max(highlightIdx, 0));
-    }
-  }, [bumpElapsedSec, focus, highlightIdx, startScriptHighlightLoop, startWaveformLoop]);
+  }, [bumpElapsedSec, focus, startWaveformLoop]);
 
   /* ── Restart ── */
   const handleRestart = () => {
     clearInterval(timerRef.current);
     clearInterval(countRef.current);
-    clearInterval(wpmTimerRef.current);
-    clearTimeout(wpmTimerRef.current);
     cancelAnimationFrame(animRef.current);
     if (mediaRef.current && mediaRef.current.state !== 'inactive') mediaRef.current.stop();
     if (visualMediaRef.current && visualMediaRef.current.state !== 'inactive') visualMediaRef.current.stop();
@@ -1407,7 +1191,6 @@ function TrainingPage() {
     setStatus('idle');
     recordingDurationSecRef.current = 0;
     setElapsedSec(0);
-    setHighlightIdx(-1);
     chunksRef.current = [];
     visualMediaRef.current = null;
     visualChunksRef.current = [];
@@ -1480,27 +1263,25 @@ function TrainingPage() {
   }, [isActive]);
 
 
-  const title = focus === 'scripted' ? (script?.title || 'Training') : 'Free Speech';
-  const modeLabel = focus === 'scripted' ? 'Scripted Mode' : 'Free Speech Mode';
+  const title = 'Free Speech';
+  const modeLabel = 'Free Speech Mode';
 
   useEffect(() => {
     if (!videoRef.current || !visualCanvasRef.current) return;
 
-    // Optimization: ONLY start analysis if recording/active. 
-    // This prevents massive 32MB model downloads on page load for users who haven't started yet.
-    if (isTutorialOverlayOpen || !isActive) {
-      stopAnalysis();
-      if (animRef.current) cancelAnimationFrame(animRef.current);
-      return;
-    }
+    // PROACTIVE PRE-WARMING: Start analysis as soon as the tutorial is closed.
+    // Defer by 1.5s to let the main thread settle after page load/hydration.
+    const timer = setTimeout(() => {
+      startAnalysis({
+        videoElement: videoRef.current,
+        canvasElement: visualCanvasRef.current,
+        isTutorialMode: false,
+      });
 
-    startAnalysis({
-      videoElement: videoRef.current,
-      canvasElement: visualCanvasRef.current,
-      isTutorialMode: false,
-    });
+      if (analyserRef.current) startWaveformLoop();
+    }, 1500);
 
-    if (analyserRef.current) startWaveformLoop();
+    return () => clearTimeout(timer);
   }, [isActive, startAnalysis, isTutorialOverlayOpen, stopAnalysis, startWaveformLoop]);
 
   return (
@@ -1522,7 +1303,7 @@ function TrainingPage() {
 
       {/* ── Main Content ── */}
       <div
-        className={`tp-content${focus === 'scripted' ? ' tp-content--split' : ''}${hasActivePretestTutorial ? ' tp-content--tutorial-active' : ''}`}
+        className={`tp-content${hasActivePretestTutorial ? ' tp-content--tutorial-active' : ''}`}
       >
 
         {/* ── Left / Main Column ── */}
@@ -1530,7 +1311,6 @@ function TrainingPage() {
           ref={freeLayoutObserverRef}
           className="tp-left tp-left--free-pretest"
         >
-          {focus === 'free' && (
             <section
               id={isFreePretestSession ? 'tutorial-target-topic' : undefined}
               className="tp-topic-card tp-topic-card--free-pretest"
@@ -1540,7 +1320,6 @@ function TrainingPage() {
                 <strong>Topic:</strong> {freeTopic || objectiveText}.
               </p>
             </section>
-          )}
 
 
 
@@ -1663,8 +1442,8 @@ function TrainingPage() {
             <div className="tp-ctrl-col">
               <button
                 className={`tp-record-btn${isActive ? ' tp-record-btn--active' : ' tp-record-btn--start'}`}
-                onClick={isActive ? stopRecording : startCountdown}
-                disabled={status === 'countdown' || isStartBlockedByTutorial}
+                onClick={isActive ? stopRecording : handleStartClick}
+                disabled={status === 'countdown' || status === 'preparing-ai' || isStartBlockedByTutorial}
                 aria-label={isActive ? 'Stop' : 'Start'}
               >
                 {isActive ? (
@@ -1676,7 +1455,7 @@ function TrainingPage() {
                 )}
               </button>
               <span className="tp-ctrl-label tp-ctrl-label--free-pretest">
-                {isActive ? 'Stop' : (status === 'countdown' ? 'Starting...' : 'Start')}
+                {isActive ? 'Stop' : (status === 'countdown' || status === 'preparing-ai' ? 'Starting...' : 'Start')}
               </span>
             </div>
 
@@ -1695,36 +1474,12 @@ function TrainingPage() {
           </div>
         </div>
 
-        {/* ── Right Column — Teleprompter (scripted only) ── */}
-        {focus === 'scripted' && (
-          <div className="tp-right">
-            <div className="tp-script-header">
-              <span className="tp-script-label">AUTO-SCROLLING SCRIPT</span>
-            </div>
 
-            <MemoizedTeleprompter
-              scriptWords={scriptWords}
-              scriptSentences={scriptSentences}
-              highlightIdx={highlightIdx}
-              highlightMode={highlightMode}
-              currentSentenceIdx={currentSentenceIdx}
-              fontSize={fontSize}
-              scriptRef={scriptRef}
-              scriptContent={script?.content}
-            />
-
-          </div>
-        )}
       </div>
 
-      <TutorialOverlay
-        isOpen={hasActivePretestTutorial}
-        showAudioToggle={hasActivePretestTutorial}
-        onClose={handleCloseTutorial}
-      />
 
       {/* ── Countdown Overlay ── */}
-      {(status === 'countdown' || status === 'resume-countdown' || isResumingVisual) && (
+      {(status === 'countdown' || status === 'resume-countdown' || isResumingVisual || status === 'preparing-ai') && (
         <div className="tp-overlay">
           <div className="tp-countdown-box">
             <span className="tp-countdown-num">
@@ -1732,10 +1487,15 @@ function TrainingPage() {
                 ? 'Speak'
                 : status === 'resume-countdown' && resumeCountdown > 0
                 ? resumeCountdown
+                : status === 'preparing-ai'
+                ? 'Preparing AI...'
                 : countdown > 0
                 ? countdown
                 : 'Speak'}
             </span>
+            {status === 'preparing-ai' && (
+              <div className="tp-countdown-subtext">Initializing speech engine...</div>
+            )}
           </div>
         </div>
       )}
@@ -1829,15 +1589,13 @@ function TrainingPage() {
         <div className="tp-overlay tp-permission-overlay">
           <div className="tp-permission-box">
             <div className="tp-permission-icon" aria-hidden="true">🎙️</div>
-            <h2 className="tp-permission-title">
-              {focus === 'scripted' ? 'Microphone & Camera Required' : 'Microphone Required'}
-            </h2>
+            <h2 className="tp-permission-title">Microphone Required</h2>
             <p className="tp-permission-desc">
-              Bigkas needs access to your {focus === 'scripted' ? 'microphone and camera' : 'microphone'} to record your session.
+              Bigkas needs access to your microphone to record your session.
             </p>
             <ol className="tp-permission-steps">
               <li>Click the <strong>lock 🔒</strong> icon in your browser&rsquo;s address bar</li>
-              <li>Set <strong>Microphone{focus === 'scripted' ? ' and Camera' : ''}</strong> to <strong>Allow</strong></li>
+              <li>Set <strong>Microphone</strong> to <strong>Allow</strong></li>
               {!hidePermissionRetry && <li>Tap <strong>Try Again</strong> below</li>}
               {hidePermissionRetry && <li>Tap <strong>Go Back</strong> and restart the pre-test</li>}
             </ol>
@@ -1846,7 +1604,7 @@ function TrainingPage() {
                 <button
                   className="tp-permission-retry"
                   onClick={() => {
-                    startCountdown();
+                    handleStartClick();
                   }}
                 >
                   Try Again
@@ -1869,52 +1627,21 @@ function TrainingPage() {
               <button className="tp-modal-close" onClick={() => setShowSettings(false)}>✕</button>
             </div>
 
-            <div className="tp-modal-row">
-              <label className="tp-modal-label">Font Size</label>
-              <span className="tp-modal-val">{fontSize}px</span>
-              <input type="range" min="12" max="24" value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} className="tp-modal-slider" />
-            </div>
-
-            <div className="tp-modal-row">
-              <label className="tp-modal-label">Scroll Speed</label>
-              <span className="tp-modal-val">{wpm} WPM</span>
-              <input type="range" min="60" max="200" step="5" value={wpm} onChange={(e) => setWpm(Number(e.target.value))} className="tp-modal-slider" />
-            </div>
-
             <div className="tp-modal-row tp-modal-row--toggle">
-              <label className="tp-modal-label">Auto-Scroll</label>
-              <button
-                className={`tp-toggle-btn${autoScroll ? ' tp-toggle-btn--on' : ''}`}
-                onClick={() => setAutoScroll((v) => !v)}
-                aria-checked={autoScroll}
-                role="switch"
+              <label className="tp-modal-label">Microphone Sensitivity</label>
+              <select 
+                className="tp-modal-select"
+                value={localStorage.getItem(MIC_SENSITIVITY_KEY) || 'high'}
+                onChange={(e) => {
+                  localStorage.setItem(MIC_SENSITIVITY_KEY, e.target.value);
+                  // Force re-render if needed or just let it apply on next start
+                  setShowSettings(false);
+                }}
               >
-                <span className="tp-toggle-thumb" />
-              </button>
-            </div>
-
-            <div className="tp-modal-row tp-modal-row--toggle">
-              <label className="tp-modal-label">Word-by-word Highlight</label>
-              <button
-                className={`tp-toggle-btn${highlightMode === 'word' ? ' tp-toggle-btn--on' : ''}`}
-                onClick={() => setHighlightMode((v) => (v === 'word' ? null : 'word'))}
-                aria-checked={highlightMode === 'word'}
-                role="switch"
-              >
-                <span className="tp-toggle-thumb" />
-              </button>
-            </div>
-
-            <div className="tp-modal-row tp-modal-row--toggle">
-              <label className="tp-modal-label">Sentence Highlight</label>
-              <button
-                className={`tp-toggle-btn${highlightMode === 'sentence' ? ' tp-toggle-btn--on' : ''}`}
-                onClick={() => setHighlightMode((v) => (v === 'sentence' ? null : 'sentence'))}
-                aria-checked={highlightMode === 'sentence'}
-                role="switch"
-              >
-                <span className="tp-toggle-thumb" />
-              </button>
+                <option value="low">Low</option>
+                <option value="normal">Normal</option>
+                <option value="high">High</option>
+              </select>
             </div>
 
             <button className="tp-modal-done" onClick={() => setShowSettings(false)}>Done</button>
@@ -1941,34 +1668,61 @@ function TrainingPage() {
         </div>
       )}
 
-      <ConfirmationModal
-        isOpen={showExitConfirm}
-        title="Quit session?"
-        message="You have an ongoing recording. If you leave now, this recording will be discarded."
-        confirmLabel="Stay"
-        cancelLabel="Quit"
-        type="info"
-        onCancel={() => {
-          handleRestart();
-          setShowExitConfirm(false);
-          navigate(ROUTES.ACTIVITY);
-        }}
-        onConfirm={() => setShowExitConfirm(false)}
-      />
+      <Suspense fallback={null}>
+        <TutorialOverlay
+          isOpen={hasActivePretestTutorial}
+          showAudioToggle={hasActivePretestTutorial}
+          onClose={handleCloseTutorial}
+        />
 
-      <ConfirmationModal
-        isOpen={showRestartConfirm}
-        title="Proceed to restart?"
-        message="Your current recording progress will be discarded and you will start over."
-        confirmLabel="Restart"
-        cancelLabel="Cancel"
-        type="info"
-        onCancel={() => setShowRestartConfirm(false)}
-        onConfirm={() => {
-          handleRestart();
-          setShowRestartConfirm(false);
-        }}
-      />
+        <ConfirmationModal
+          isOpen={showExitConfirm}
+          title="Exit Session?"
+          message="Are you sure you want to exit? Your current progress will not be saved."
+          confirmLabel="Yes, Exit"
+          cancelLabel="No, Keep Going"
+          onConfirm={() => {
+            handleRestart();
+            navigate(-1);
+          }}
+          onCancel={() => setShowExitConfirm(false)}
+        />
+
+        <ConfirmationModal
+          isOpen={showRestartConfirm}
+          title="Restart Session?"
+          message="This will clear your current recording and start fresh. Continue?"
+          confirmLabel="Yes, Restart"
+          cancelLabel="No, Go Back"
+          onConfirm={() => {
+            handleRestart();
+            setShowRestartConfirm(false);
+          }}
+          onCancel={() => setShowRestartConfirm(false)}
+        />
+
+        <ConfirmationModal
+          isOpen={showMinDurationModal}
+          title="Recording Too Short"
+          message={`To provide accurate AI feedback, your recording needs to be at least ${MIN_RECORDING_SECONDS} seconds long. Keep going, you're doing great!`}
+          onConfirm={handleContinueFromShortModal}
+          onCancel={handleContinueFromShortModal}
+          confirmLabel="Understood"
+          cancelLabel=""
+          type="default"
+        />
+
+        <ConfirmationModal
+          isOpen={showPausedModal}
+          title="Recording Paused"
+          message="Your recording is currently paused. You can resume anytime."
+          confirmLabel="Resume"
+          cancelLabel=""
+          type="info"
+          onCancel={() => setShowPausedModal(false)}
+          onConfirm={handleResumeFromPausedModal}
+        />
+      </Suspense>
 
       {/* Milestone Warning (1 Minute) */}
       {showOneMinWarning && (
@@ -1999,28 +1753,6 @@ function TrainingPage() {
           </div>
         </div>
       )}
-
-      <ConfirmationModal
-        isOpen={showMinDurationModal}
-        title="Recording Too Short"
-        message={`To provide accurate AI feedback, your recording needs to be at least ${MIN_RECORDING_SECONDS} seconds long. Keep going, you're doing great!`}
-        onConfirm={handleContinueFromShortModal}
-        onCancel={handleContinueFromShortModal}
-        confirmLabel="Understood"
-        cancelLabel=""
-        type="default"
-      />
-
-      <ConfirmationModal
-        isOpen={showPausedModal}
-        title="Recording Paused"
-        message="Your recording is currently paused. You can resume anytime."
-        confirmLabel="Resume"
-        cancelLabel=""
-        type="info"
-        onCancel={() => setShowPausedModal(false)}
-        onConfirm={handleResumeFromPausedModal}
-      />
     </div>
   );
 }

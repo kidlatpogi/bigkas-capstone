@@ -25,9 +25,10 @@ type StartAnalysisArgs = {
   isTutorialMode?: boolean;
 };
 
-const VISION_WASM_PATH = "/models/wasm";
-const FACE_MODEL_PATH = "/models/face_landmarker.task";
-const GESTURE_MODEL_PATH = "/models/gesture_recognizer.task";
+const VISION_WASM_PATH = "/wasm";
+const CDN_BASE_URL = "https://assets.bigkas.site/Models";
+const FACE_MODEL_PATH = `${CDN_BASE_URL}/face_landmarker.task`;
+const GESTURE_MODEL_PATH = `${CDN_BASE_URL}/gesture_recognizer.task`;
 
 // Fallback hand skeleton connections for canvas drawing.
 const HAND_CONNECTIONS: number[][] = [
@@ -152,6 +153,7 @@ export function useVisualAnalysis() {
       faceLandmarkerRef.current = await FaceLandmarker.createFromOptions(vision, {
         baseOptions: {
           modelAssetPath: FACE_MODEL_PATH,
+          delegate: "GPU",
         },
         runningMode: "VIDEO",
         numFaces: 1,
@@ -170,6 +172,7 @@ export function useVisualAnalysis() {
       gestureRecognizerRef.current = await GestureRecognizer.createFromOptions(vision, {
         baseOptions: {
           modelAssetPath: GESTURE_MODEL_PATH,
+          delegate: "GPU",
         },
         runningMode: "VIDEO",
         numHands: 2,

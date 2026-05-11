@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
+import { Volume2, VolumeX } from 'lucide-react';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import questionsData from '../../assets/data/profiling_questions.json';
@@ -124,12 +124,8 @@ function UserProfilingPage() {
 
   const [screen, setScreen] = useState(() => (user?.profilingCompleted ? 'outro' : 'intro'));
   const [introStep, setIntroStep] = useState(() => (user?.profilingCompleted ? 2 : 0));
-  const [typedIntroText, setTypedIntroText] = useState('');
   const [isIntroTypingDone, setIsIntroTypingDone] = useState(false);
-  const [typedReadyText, setTypedReadyText] = useState('');
   const [isReadyTypingDone, setIsReadyTypingDone] = useState(false);
-  const [typedOutroFirstText, setTypedOutroFirstText] = useState('');
-  const [typedOutroMissionText, setTypedOutroMissionText] = useState('');
   const [isOutroTypingDone, setIsOutroTypingDone] = useState(false);
   const [form, setForm] = useState(INITIAL_FORM);
   const [demographicIndex, setDemographicIndex] = useState(0);
@@ -141,14 +137,7 @@ function UserProfilingPage() {
     if (typeof window === 'undefined') return false;
     return window.localStorage.getItem(INTRO_MUTE_KEY) === '1';
   });
-  const introAudioRef = useRef(null);
-  const stepTwoAudioRef = useRef(null);
-  const genderAudioRef = useRef(null);
-  const ageAudioRef = useRef(null);
-  const readyAudioRef = useRef(null);
-  const outroAudioRef = useRef(null);
-
-  const questionAudioRefs = useRef([]);
+  const audioMap = useRef({});
 
   const totalSteps = QUESTIONS.length;
   const currentQuestion = QUESTIONS[currentIndex] || QUESTIONS[0];
@@ -167,136 +156,118 @@ function UserProfilingPage() {
     }
   }, [isAdminAuthenticated, navigate]);
 
-  useEffect(() => {
-    if (screen !== 'intro' || introStep !== 1) {
-      return undefined;
-    }
-
-    setTypedIntroText('');
-    setIsIntroTypingDone(false);
-
-    let charIndex = 0;
-    const typingInterval = window.setInterval(() => {
-      charIndex += 1;
-      setTypedIntroText(introSecondMessage.slice(0, charIndex));
-      if (charIndex >= introSecondMessage.length) {
-        window.clearInterval(typingInterval);
-        setIsIntroTypingDone(true);
-      }
-    }, 8);
-
-    return () => {
-      window.clearInterval(typingInterval);
-    };
-  }, [introSecondMessage, introStep, screen]);
-
-  useEffect(() => {
-    if (screen !== 'ready') {
-      return undefined;
-    }
-
-    setTypedReadyText('');
-    setIsReadyTypingDone(false);
-
-    let charIndex = 0;
-    const typingInterval = window.setInterval(() => {
-      charIndex += 1;
-      setTypedReadyText(readyMessage.slice(0, charIndex));
-      if (charIndex >= readyMessage.length) {
-        window.clearInterval(typingInterval);
-        setIsReadyTypingDone(true);
-      }
-    }, 8);
-
-    return () => {
-      window.clearInterval(typingInterval);
-    };
-  }, [readyMessage, screen]);
-
-  useEffect(() => {
-    if (screen !== 'outro') {
-      return undefined;
-    }
-
-    setTypedOutroFirstText('');
-    setTypedOutroMissionText('');
-    setIsOutroTypingDone(false);
-
-    let firstIndex = 0;
-    let missionIndex = 0;
-    let isFirstDone = false;
-    const typingInterval = window.setInterval(() => {
-      if (!isFirstDone) {
-        firstIndex += 1;
-        setTypedOutroFirstText(outroFirstMessage.slice(0, firstIndex));
-        if (firstIndex >= outroFirstMessage.length) {
-          isFirstDone = true;
+  /**
+   * Internal Typewriter Component to handle animated text reveals
+   */
+  const Typewriter = ({ text, onComplete, delay = 8 }) => {
+    const [displayed, setDisplayed] = useState('');
+    useEffect(() => {
+      let index = 0;
+      setDisplayed('');
+      const timer = setInterval(() => {
+        index++;
+        setDisplayed(text.slice(0, index));
+        if (index >= text.length) {
+          clearInterval(timer);
+          onComplete?.();
         }
-        return;
-      }
+      }, delay);
+      return () => clearInterval(timer);
+    }, [text, onComplete, delay]);
+    return <>{displayed}</>;
+  };
 
-      missionIndex += 1;
-      setTypedOutroMissionText(outroMissionMessage.slice(0, missionIndex));
-      if (missionIndex >= outroMissionMessage.length) {
-        window.clearInterval(typingInterval);
-        setIsOutroTypingDone(true);
-      }
-    }, 8);
-
-    return () => {
-      window.clearInterval(typingInterval);
-    };
-  }, [outroFirstMessage, outroMissionMessage, screen]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-
-    introAudioRef.current = new Audio(introVoice1);
-    stepTwoAudioRef.current = new Audio(introVoice2);
-    genderAudioRef.current = new Audio(demographicGenderVoice);
-    ageAudioRef.current = new Audio(demographicAgeVoice);
-    readyAudioRef.current = new Audio(introVoice3);
-    outroAudioRef.current = new Audio(beforePretestingVoice);
-    questionAudioRefs.current = QUESTION_VOICE_SOURCES.map((src) => new Audio(src));
-
-    const refs = [
-      introAudioRef.current,
-      stepTwoAudioRef.current,
-      genderAudioRef.current,
-      ageAudioRef.current,
-      readyAudioRef.current,
-      outroAudioRef.current,
-      ...questionAudioRefs.current,
-    ];
-    refs.forEach((audio) => {
+  /**
+   * Helper to get or create an audio instance for a source
+   */
+  const getAudio = (src) => {
+    if (!src) return null;
+    if (!audioMap.current[src]) {
+      const audio = new Audio(src);
       audio.preload = 'auto';
-      audio.muted = false;
-    });
+      audio.muted = isMuted;
+      audioMap.current[src] = audio;
+    }
+    return audioMap.current[src];
+  };
+
+  /**
+   * Preload audios for the current and next screen
+   */
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const toPreload = [];
+    
+    // Initial intro audios
+    if (screen === 'intro') {
+      toPreload.push(introVoice1, introVoice2);
+      // Next potential step
+      toPreload.push(demographicGenderVoice);
+    } 
+    else if (screen === 'demographics') {
+      toPreload.push(demographicGenderVoice, demographicAgeVoice);
+      // Next potential step
+      toPreload.push(introVoice3);
+    }
+    else if (screen === 'ready') {
+      toPreload.push(introVoice3);
+      // Preload first few questions
+      toPreload.push(QUESTION_VOICE_SOURCES[0], QUESTION_VOICE_SOURCES[1]);
+    }
+    else if (screen === 'questions') {
+      toPreload.push(QUESTION_VOICE_SOURCES[currentIndex]);
+      if (currentIndex + 1 < QUESTION_VOICE_SOURCES.length) {
+        toPreload.push(QUESTION_VOICE_SOURCES[currentIndex + 1]);
+      }
+      // Preload outro when nearing the end
+      if (currentIndex >= QUESTION_VOICE_SOURCES.length - 2) {
+        toPreload.push(beforePretestingVoice);
+      }
+    }
+    else if (screen === 'outro') {
+      toPreload.push(beforePretestingVoice);
+    }
+
+    toPreload.forEach(src => getAudio(src));
 
     return () => {
-      refs.forEach((audio) => {
+      Object.values(audioMap.current).forEach((audio) => {
+        if (!audio) return;
         audio.pause();
-        audio.currentTime = 0;
+        audio.src = '';
+        audio.load();
       });
-      introAudioRef.current = null;
-      stepTwoAudioRef.current = null;
-      readyAudioRef.current = null;
-      outroAudioRef.current = null;
-      questionAudioRefs.current = [];
+      audioMap.current = {};
     };
-  }, [beforePretestingVoice]);
+  }, [screen, currentIndex, isMuted]);
 
+  /**
+   * BF-Cache & Resource Cleanup
+   * Pauses all media when the page is hidden to allow the browser to cache the state.
+   */
   useEffect(() => {
-    const refs = [
-      introAudioRef.current,
-      stepTwoAudioRef.current,
-      genderAudioRef.current,
-      ageAudioRef.current,
-      readyAudioRef.current,
-      outroAudioRef.current,
-      ...questionAudioRefs.current,
-    ];
-    refs.forEach((audio) => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        Object.values(audioMap.current).forEach(audio => audio?.pause());
+        // Also find and pause any video elements
+        const videos = document.querySelectorAll('video');
+        videos.forEach(v => v.pause());
+      }
+    };
+
+    window.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handleVisibilityChange);
+    };
+  }, []);
+
+  // Handle mute state across all active audios
+  useEffect(() => {
+    Object.values(audioMap.current).forEach((audio) => {
       if (!audio) return;
       audio.muted = isMuted;
       if (isMuted) {
@@ -308,61 +279,49 @@ function UserProfilingPage() {
   useEffect(() => {
     if (isMuted) return;
 
-    const playClip = (audioRef) => {
-      if (!audioRef?.current) return;
-      [
-        introAudioRef.current,
-        stepTwoAudioRef.current,
-        genderAudioRef.current,
-        ageAudioRef.current,
-        readyAudioRef.current,
-        outroAudioRef.current,
-        ...questionAudioRefs.current,
-      ].forEach((audio) => {
-        if (audio && audio !== audioRef.current) {
-          audio.pause();
-          audio.currentTime = 0;
+    const playClip = (src) => {
+      const audio = getAudio(src);
+      if (!audio) return;
+
+      Object.values(audioMap.current).forEach((a) => {
+        if (a && a !== audio) {
+          a.pause();
+          a.currentTime = 0;
         }
       });
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => {});
+
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
     };
 
     if (screen === 'intro' && introStep === 0) {
-      playClip(introAudioRef);
+      playClip(introVoice1);
     } else if (screen === 'intro' && introStep === 1) {
-      playClip(stepTwoAudioRef);
+      playClip(introVoice2);
     } else if (screen === 'demographics') {
-      playClip(demographicIndex === 0 ? genderAudioRef : ageAudioRef);
+      playClip(demographicIndex === 0 ? demographicGenderVoice : demographicAgeVoice);
     } else if (screen === 'ready') {
-      playClip(readyAudioRef);
+      playClip(introVoice3);
     } else if (screen === 'outro') {
-      playClip(outroAudioRef);
+      playClip(beforePretestingVoice);
     }
   }, [introStep, isMuted, screen, demographicIndex]);
 
   useEffect(() => {
     if (screen !== 'questions' || isMuted) return;
-    const currentQuestionAudio = questionAudioRefs.current[currentIndex];
-    if (!currentQuestionAudio) return;
+    const currentQuestionVoice = QUESTION_VOICE_SOURCES[currentIndex];
+    const audio = getAudio(currentQuestionVoice);
+    if (!audio) return;
 
-    [
-      introAudioRef.current,
-      stepTwoAudioRef.current,
-      genderAudioRef.current,
-      ageAudioRef.current,
-      readyAudioRef.current,
-      outroAudioRef.current,
-      ...questionAudioRefs.current,
-    ].forEach((audio) => {
-      if (audio && audio !== currentQuestionAudio) {
-        audio.pause();
-        audio.currentTime = 0;
+    Object.values(audioMap.current).forEach((a) => {
+      if (a && a !== audio) {
+        a.pause();
+        a.currentTime = 0;
       }
     });
 
-    currentQuestionAudio.currentTime = 0;
-    currentQuestionAudio.play().catch(() => {});
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
   }, [currentIndex, isMuted, screen]);
 
   const updateField = (key, value) => {
@@ -571,19 +530,7 @@ function UserProfilingPage() {
         window.localStorage.setItem(INTRO_MUTE_KEY, next ? '1' : '0');
       }
       if (next) {
-        [
-          introAudioRef.current,
-          stepTwoAudioRef.current,
-          genderAudioRef.current,
-          ageAudioRef.current,
-          readyAudioRef.current,
-          outroAudioRef.current,
-        ].forEach((audio) => {
-          if (!audio) return;
-          audio.pause();
-          audio.currentTime = 0;
-        });
-        questionAudioRefs.current.forEach((audio) => {
+        Object.values(audioMap.current).forEach((audio) => {
           if (!audio) return;
           audio.pause();
           audio.currentTime = 0;
@@ -594,15 +541,7 @@ function UserProfilingPage() {
   };
 
   const stopAllIntroAudios = () => {
-    [
-      introAudioRef.current,
-      stepTwoAudioRef.current,
-      genderAudioRef.current,
-      ageAudioRef.current,
-      readyAudioRef.current,
-      outroAudioRef.current,
-      ...questionAudioRefs.current,
-    ].forEach((audio) => {
+    Object.values(audioMap.current).forEach((audio) => {
       if (!audio) return;
       audio.pause();
       audio.currentTime = 0;
@@ -616,8 +555,7 @@ function UserProfilingPage() {
       return;
     }
 
-    if (!isIntroTypingDone) {
-      setTypedIntroText(introSecondMessage);
+    if (!isIntroTypingDone && introStep === 1) {
       setIsIntroTypingDone(true);
       return;
     }
@@ -629,12 +567,8 @@ function UserProfilingPage() {
   const handleBackToIntro = () => {
     stopAllIntroAudios();
     setIntroStep(0);
-    setTypedIntroText('');
     setIsIntroTypingDone(false);
-    setTypedReadyText('');
     setIsReadyTypingDone(false);
-    setTypedOutroFirstText('');
-    setTypedOutroMissionText('');
     setIsOutroTypingDone(false);
     setScreen('intro');
   };
@@ -656,7 +590,9 @@ function UserProfilingPage() {
                   speaking.
                 </p>
               ) : (
-                <p>{typedIntroText}</p>
+                <p>
+                  <Typewriter text={introSecondMessage} onComplete={() => setIsIntroTypingDone(true)} />
+                </p>
               )}
               <div className="profiling-intro-actions">
                 <div className="profiling-submit-btn">
@@ -701,7 +637,7 @@ function UserProfilingPage() {
                     <strong className="profiling-answer-no">No</strong>.
                   </>
                 ) : (
-                  typedReadyText
+                  <Typewriter text={readyMessage} onComplete={() => setIsReadyTypingDone(true)} />
                 )}
               </p>
               <div className="profiling-intro-actions">
@@ -901,7 +837,7 @@ function UserProfilingPage() {
               <p className="profiling-pretest-text">
                 <strong>B-01:</strong>
                 <br />
-                {typedOutroFirstText}
+                <Typewriter text={outroFirstMessage} />
               </p>
               <p className="profiling-pretest-text profiling-pretest-text--mission">
                 <strong>Your mission:</strong>
@@ -909,11 +845,11 @@ function UserProfilingPage() {
                 {isOutroTypingDone ? (
                   <>
                     Speak for at least <strong>30 seconds</strong> on the topic,{' '}
-                    <strong>&apos;Tell me about yourself.&apos;</strong> Don&apos;t overthink it-just be
+                    <strong>&apos;Tell me about yourself.&apos;</strong> Don&apos;t overthink it—just be
                     you and let your voice lead the way!
                   </>
                 ) : (
-                  typedOutroMissionText
+                  <Typewriter text={outroMissionMessage} onComplete={() => setIsOutroTypingDone(true)} />
                 )}
               </p>
               <div className="profiling-intro-actions profiling-intro-actions--end">
@@ -944,7 +880,7 @@ function UserProfilingPage() {
           title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
           className={`profiling-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
         >
-          {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+          {isMuted ? <VolumeX aria-hidden="true" /> : <Volume2 aria-hidden="true" />}
         </button>
       </div>
     </div>

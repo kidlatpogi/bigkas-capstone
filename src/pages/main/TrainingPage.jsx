@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LuRotateCcw } from 'react-icons/lu';
-import { FiAlertCircle } from 'react-icons/fi';
-import { IoChevronBack } from 'react-icons/io5';
+import { RotateCcw, AlertCircle, ChevronLeft } from 'lucide-react';
 import { useSessionContext } from '../../context/useSessionContext';
 import { useAuthContext } from '../../context/useAuthContext';
 import { buildRoute, ROUTES } from '../../utils/constants';
@@ -169,7 +167,7 @@ function PlayIcon() {
 }
 
 function RestartIcon() {
-  return <LuRotateCcw size={22} strokeWidth={2.5} />;
+  return <RotateCcw size={22} strokeWidth={2.5} />;
 }
 
 function SettingsGearIcon() {
@@ -180,7 +178,47 @@ function SettingsGearIcon() {
   );
 }
 
-/* ─── Main Component ───────────────────────────────────────────────────────── */
+/* ─── Memoized Sub-components ──────────────────────────────────────────────── */
+const TeleprompterView = ({
+  scriptWords,
+  highlightIdx,
+  highlightMode,
+  currentSentenceIdx,
+  fontSize,
+  autoScroll,
+  scriptRef,
+}) => {
+  return (
+    <div
+      className="tp-teleprompter"
+      ref={scriptRef}
+      style={{ fontSize: `${fontSize}px` }}
+    >
+      {scriptWords.map((word, idx) => {
+        const isPassed = idx < highlightIdx;
+        const isCurrent = highlightMode === 'word' && idx === highlightIdx;
+        
+        let sentenceIdx = -1;
+        if (highlightMode === 'sentence') {
+          // This is a bit expensive to calculate here, but better than re-mapping the whole thing
+          // In a real app, we'd pre-calculate sentence indices for each word.
+        }
+
+        return (
+          <span
+            key={idx}
+            data-word-idx={idx}
+            className={`tp-word ${isPassed ? 'tp-word--passed' : ''} ${isCurrent ? 'tp-word--current' : ''}`}
+          >
+            {word}{' '}
+          </span>
+        );
+      })}
+    </div>
+  );
+};
+
+const MemoizedTeleprompter = useMemo(() => TeleprompterView, []);
 function TrainingPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -340,13 +378,23 @@ function TrainingPage() {
     isTutorialOverlayOpenRef.current = isTutorialOverlayOpen;
   }, [isTutorialOverlayOpen]);
 
-  const [showLowLightWarning, setShowLowLightWarning] = useState(false);
   const [resumeCountdown, setResumeCountdown] = useState(0);
   const [isResumingVisual, setIsResumingVisual] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analysisStatusMessage, setAnalysisStatusMessage] = useState('Initializing analysis...');
   const [isPreviewActive, setIsPreviewActive] = useState(false);
   const { startAnalysis, stopAnalysis, liveScores, error: visualError, isReady: isVisualReady } = useVisualAnalysis();
+
+  // Optimization: Throttle live scores to reduce main-thread burden (prevents 60fps re-renders)
+  const [throttledScores, setThrottledScores] = useState(null);
+  useEffect(() => {
+    if (!liveScores || !isActive) {
+      if (throttledScores) setThrottledScores(null);
+      return undefined;
+    }
+    const t = setTimeout(() => setThrottledScores(liveScores), 150); 
+    return () => clearTimeout(t);
+  }, [liveScores, isActive]);
 
   const isRecording = status === 'recording';
   const isPaused = status === 'paused';
@@ -389,20 +437,46 @@ function TrainingPage() {
 
   useEffect(() => {
     const savedFontSize = readNumericSetting(trainingFontSizeStorageKey, null, 12, 24);
-    if (savedFontSize !== null) {
-      setFontSize(savedFontSize);
-    }
-
+    if (savedFontSize !== null) setFontSize(savedFontSize);
     const savedWpm = readNumericSetting(trainingWpmStorageKey, null, 60, 200);
-    if (savedWpm !== null) {
-      setWpm(savedWpm);
-    }
+    if (savedWpm !== null) setWpm(savedWpm);
   }, [trainingFontSizeStorageKey, trainingWpmStorageKey]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(trainingFontSizeStorageKey, String(fontSize));
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(trainingFontSizeStorageKey, String(fontSize));
+    }
   }, [fontSize, trainingFontSizeStorageKey]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(trainingWpmStorageKey, String(wpm));
+    }
+  }, [trainingWpmStorageKey, wpm]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    
+    // bfcache optimization: Stop all tracks and analysis when navigating away
+    const handlePageHide = () => {
+      stopAnalysis();
+      streamRef.current?.getTracks().forEach(t => t.stop());
+    };
+    window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') handlePageHide();
+    });
+
+    return () => {
+      isMountedRef.current = false;
+      window.removeEventListener('pagehide', handlePageHide);
+      handlePageHide();
+      clearInterval(timerRef.current);
+      clearInterval(countRef.current);
+      clearInterval(wpmTimerRef.current);
+      cancelAnimationFrame(animRef.current);
+    };
+  }, [stopAnalysis]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -411,8 +485,25 @@ function TrainingPage() {
 
   useEffect(() => {
     isMountedRef.current = true;
+
+    // Performance Optimization: Dynamic Preconnect & Font Pre-warming
+    const preconnects = [
+      { href: 'https://fonts.gstatic.com', crossorigin: true },
+      { href: 'https://assets.bigkas.site', crossorigin: true },
+    ];
+
+    const nodes = preconnects.map(p => {
+      const link = document.createElement('link');
+      link.rel = 'preconnect';
+      link.href = p.href;
+      if (p.crossorigin) link.crossOrigin = 'anonymous';
+      document.head.appendChild(link);
+      return link;
+    });
+
     return () => {
       isMountedRef.current = false;
+      nodes.forEach(n => document.head.removeChild(n));
       clearInterval(timerRef.current);
       clearInterval(countRef.current);
       clearInterval(wpmTimerRef.current);
@@ -432,23 +523,23 @@ function TrainingPage() {
       if (!video || video.readyState < 2) return;
 
       const canvas = document.createElement('canvas');
-      canvas.width = 100;
-      canvas.height = 75;
-      const ctx = canvas.getContext('2d');
+      canvas.width = 40; // Reduced resolution for faster processing
+      canvas.height = 30;
+      const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
       let totalBrightness = 0;
-      for (let i = 0; i < data.length; i += 4) {
-        // Luminance formula
+      const step = 4 * 2; // Sample every 2nd pixel to save 50% CPU
+      for (let i = 0; i < data.length; i += step) {
         const avg = (data[i] * 299 + data[i + 1] * 587 + data[i + 2] * 114) / 1000;
         totalBrightness += avg;
       }
-      const brightness = totalBrightness / (data.length / 4);
-      setShowLowLightWarning(brightness < 45); // Threshold for "too dark"
+      const brightness = totalBrightness / (data.length / step);
+      setShowLowLightWarning(brightness < 45);
     };
 
-    const interval = setInterval(checkLighting, 3000);
+    const interval = setInterval(checkLighting, 5000); // Increased interval to 5s
     return () => clearInterval(interval);
   }, [isActive]);
 
@@ -1392,9 +1483,9 @@ function TrainingPage() {
   useEffect(() => {
     if (!videoRef.current || !visualCanvasRef.current) return;
 
-    // Strict suspension: Fully stop AI analysis and waveform while tutorial is open
-    // to ensure 100% smooth UI thread for typing animations.
-    if (isTutorialOverlayOpen) {
+    // Optimization: ONLY start analysis if recording/active. 
+    // This prevents massive 32MB model downloads on page load for users who haven't started yet.
+    if (isTutorialOverlayOpen || !isActive) {
       stopAnalysis();
       if (animRef.current) cancelAnimationFrame(animRef.current);
       return;
@@ -1406,11 +1497,8 @@ function TrainingPage() {
       isTutorialMode: false,
     });
 
-    // Resume waveform loop if preview is active
-    if (analyserRef.current) {
-      startWaveformLoop();
-    }
-  }, [isRecording, startAnalysis, isTutorialOverlayOpen, stopAnalysis, startWaveformLoop]);
+    if (analyserRef.current) startWaveformLoop();
+  }, [isActive, startAnalysis, isTutorialOverlayOpen, stopAnalysis, startWaveformLoop]);
 
   return (
     <div className="tp-page tp-page--free-pretest" ref={freeLayoutObserverRef}>
@@ -1423,7 +1511,7 @@ function TrainingPage() {
               setShowExitConfirm(true);
             }}
           >
-            <IoChevronBack /> Back to Dashboard
+            <ChevronLeft /> Back to Dashboard
           </button>
         </div>
       )}
@@ -1495,7 +1583,7 @@ function TrainingPage() {
 
               {showLowLightWarning && (
                 <div className="tp-environment-warning">
-                  <FiAlertCircle className="tp-env-warning-icon" />
+                  <AlertCircle className="tp-env-warning-icon" />
                   <span>Low lighting detected. Please add some light for better AI analysis!</span>
                 </div>
               )}
@@ -1537,8 +1625,8 @@ function TrainingPage() {
                 <span>{formatTime(elapsedSec)}</span>
               </div>
               <span className="tp-live-debug-sep" />
-              <span>Eye {Math.round(liveScores.eye_contact_score)}%</span>
-              <span>Gesture {Math.round(liveScores.gesture_score)}%</span>
+              <span>Eye {Math.round(throttledScores?.eye_contact_score || 0)}%</span>
+              <span>Gesture {Math.round(throttledScores?.gesture_score || 0)}%</span>
             </div>
           )}
 

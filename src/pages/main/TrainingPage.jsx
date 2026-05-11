@@ -189,6 +189,7 @@ const TeleprompterView = ({
   currentSentenceIdx,
   fontSize,
   scriptRef,
+  scriptContent,
 }) => (
   <div className="tp-teleprompter" ref={scriptRef} style={{ fontSize: `${fontSize}px` }}>
     {highlightMode === 'sentence'
@@ -215,7 +216,7 @@ const TeleprompterView = ({
         );
       })}
     {scriptWords.length === 0 && (
-      <p className="tp-script-empty">No script content loaded.</p>
+      <p className="tp-script-empty">{scriptContent || ''}</p>
     )}
   </div>
 );
@@ -387,6 +388,10 @@ function TrainingPage() {
   const [isPreviewActive, setIsPreviewActive] = useState(false);
   const { startAnalysis, stopAnalysis, liveScores, error: visualError, isReady: isVisualReady } = useVisualAnalysis();
 
+  const isRecording = status === 'recording';
+  const isPaused = status === 'paused';
+  const isActive = isRecording || isPaused;
+
   // Optimization: Throttle live scores to reduce main-thread burden (prevents 60fps re-renders)
   const [throttledScores, setThrottledScores] = useState(null);
   useEffect(() => {
@@ -397,10 +402,6 @@ function TrainingPage() {
     const t = setTimeout(() => setThrottledScores(liveScores), 150); 
     return () => clearTimeout(t);
   }, [liveScores, isActive]);
-
-  const isRecording = status === 'recording';
-  const isPaused = status === 'paused';
-  const isActive = isRecording || isPaused;
   const hasActivePretestTutorial = 
     isFreePretestSession && 
     isTutorialOverlayOpen && 
@@ -1709,6 +1710,7 @@ function TrainingPage() {
               currentSentenceIdx={currentSentenceIdx}
               fontSize={fontSize}
               scriptRef={scriptRef}
+              scriptContent={script?.content}
             />
 
           </div>

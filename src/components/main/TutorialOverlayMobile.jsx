@@ -332,9 +332,23 @@ function TutorialOverlayMobile({
         nextEl.classList.add('tutorial-spotlight-active');
         nextEl.style.setProperty('z-index', spotlightZIndex, 'important');
         activeSpotlightRef.current = nextEl;
-        try {
-          nextEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } catch (e) {}
+        if (targetId === 'tutorial-target-home-practice') {
+          const scrollContainer = document.querySelector('.dashboard-overlay-scroll-content') || document.querySelector('.dashboard-overlay-content');
+          if (scrollContainer) {
+            try {
+              scrollContainer.scrollTo({ top: scrollContainer.scrollHeight, behavior: 'smooth' });
+            } catch (e) {
+              scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            }
+            setTimeout(() => {
+              if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            }, 60);
+          }
+        } else {
+          try {
+            nextEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } catch (e) {}
+        }
         return;
       }
       if (attempt >= maxAttempts) return;

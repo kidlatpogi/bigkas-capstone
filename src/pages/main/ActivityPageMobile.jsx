@@ -8,6 +8,7 @@ import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import PushButton from '../../components/common/PushButton';
 import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
+import { IoChatbubbleEllipsesOutline, IoSend, IoTrophyOutline } from 'react-icons/io5';
 import TutorialOverlayMobile from '../../components/main/TutorialOverlayMobile';
 import {
   GLOBAL_ACTIVITY_SCOPE,
@@ -27,6 +28,11 @@ import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../servic
 import { RANDOM_TOPICS } from '../../utils/practiceData';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import { filterActivitiesForJourney, JOURNEY_STAGE_LIMITS } from '../../utils/journeyFiltering';
+import { generateCoachInsights } from '../../utils/coachInsights';
+import fireAnimationData from '../../assets/Lottie/fire.json';
+import './InnerPages.css';
+import './ActivityPageMobile.css';
+import './ActivityPage.css';
 
 const iconFire = getAssetUrl('icons/Icon-Fire.svg');
 const robotMorningImage = getSpriteUrl('Robot/0018.webp');
@@ -46,9 +52,14 @@ const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.png');
 const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.png');
 const crystalBallImage = getSpriteUrl('common/crystal-ball.png');
 const crownImage = getSpriteUrl('common/crown.png');
-import fireAnimationData from '../../assets/Lottie/fire.json';
-import './InnerPages.css';
-import './ActivityPageMobile.css';
+const b01ChatHead = getAssetUrl('Images/Bigkas-Logo.webp');
+const B01_SUGGESTIONS = [
+  'Summarize my progress so far',
+  'How can I improve my confidence?',
+  'Give me tips for vocal variety',
+  'Explain my current rank and growth',
+  'What should I practice next?',
+];
 
 const DAY_MS = 86_400_000;
 const ACTIVITY_CELEBRATION_STORAGE_KEY = 'bigkas_pending_activity_celebration_v1';
@@ -56,8 +67,6 @@ const LAST_SHOWN_COMPLETION_EVENT_KEY = 'bigkas_last_completion_event_v1';
 const FREE_SPEECH_TUTORIAL_SEEN_KEY = 'bigkas_free_speech_tutorial_seen_v1';
 
 
-
-const RANDOMIZER_DEFAULT_TOPIC = 'How does artificial intelligence impact our everyday lives?';
 
 function getLocalDateKey(date = new Date()) {
   const year = date.getFullYear();
@@ -91,7 +100,7 @@ function isPreTestSession(session) {
   return raw.includes('pre-test') || raw.includes('pretest');
 }
 
-function buildStreakStats(sessions = [], historyEntries = []) {
+function buildStreakStats(sessions = []) {
   const dayIndexes = new Set();
   const addDate = (dateInput) => {
     const parsed = new Date(dateInput);
@@ -103,79 +112,65 @@ function buildStreakStats(sessions = [], historyEntries = []) {
       if (d) addDate(d);
     }
   });
-  historyEntries.forEach((e) => {
-    if (e?.completedAt) addDate(e.completedAt);
-  });
   const activeDays = [...dayIndexes].sort((a, b) => a - b);
-  if (!activeDays.length) return { currentStreak: 0, longestStreak: 0, activeDays: [], canRecover: false };
+  if (!activeDays.length) return { currentStreak: 0, canRecover: false, potentialStreak: 0, recoverySessionsToday: 0, requiredRecoveryTasks: 1 };
 
   const todayIndex = getLocalDayIndex(new Date());
   const last = activeDays[activeDays.length - 1];
+  const daySet = new Set(activeDays);
 
-  const hasRecoveryToday = sessions.some((s) => {
+  const recoverySessionsToday = sessions.filter((s) => {
     const d = getSessionDate(s);
     const entry = s?.entry_point ?? s?.entryPoint;
-    return d && getLocalDayIndex(d) === todayIndex && entry === 'streak-recovery';
-  });
+    const score = s?.overall_score ?? s?.score ?? s?.overallScore ?? 0;
+    return d && getLocalDayIndex(d) === todayIndex && entry === 'streak-recovery' && score >= 45;
+  }).length;
+
+  let potentialStreak = 0;
+  if (todayIndex === last && !daySet.has(todayIndex - 1)) {
+    let pCursor = todayIndex - 2;
+    while (daySet.has(pCursor)) {
+      potentialStreak += 1;
+      pCursor -= 1;
+    }
+  } else if (todayIndex - last === 2) {
+    let pCursor = last;
+    while (daySet.has(pCursor)) {
+      potentialStreak += 1;
+      pCursor -= 1;
+    }
+  }
+
+  const requiredRecoveryTasks = Math.min(5, Math.max(1, Math.floor((potentialStreak - 1) / 3) + 1));
+  const hasFinishedRecovery = recoverySessionsToday >= requiredRecoveryTasks;
 
   let currentStreak = 0;
   let canRecover = false;
-  let potentialStreak = 0;
-
-  const daySet = new Set(activeDays);
 
   if (todayIndex - last <= 1) {
     let cursor = last;
-    while (daySet.has(cursor) || (hasRecoveryToday && cursor === todayIndex - 1)) {
+    while (daySet.has(cursor) || (hasFinishedRecovery && cursor === todayIndex - 1)) {
       currentStreak += 1;
       cursor -= 1;
     }
 
-    if (todayIndex === last && !daySet.has(todayIndex - 1) && !hasRecoveryToday) {
-      let prevStreak = 0;
-      let pCursor = todayIndex - 2;
-      while (daySet.has(pCursor)) {
-        prevStreak += 1;
-        pCursor -= 1;
-      }
-      if (prevStreak > 0) {
+    if (todayIndex === last && !daySet.has(todayIndex - 1) && !hasFinishedRecovery) {
+      if (potentialStreak > 0) {
         canRecover = true;
-        potentialStreak = prevStreak + 1;
       }
     }
-  } else if (todayIndex - last === 2 && !hasRecoveryToday) {
-    let potentialStreakVal = 0;
-    let cursor = last;
-    while (daySet.has(cursor)) {
-      potentialStreakVal += 1;
-      cursor -= 1;
-    }
-    if (potentialStreakVal > 0) {
+  } else if (todayIndex - last === 2 && !hasFinishedRecovery) {
+    if (potentialStreak > 0) {
       canRecover = true;
-      potentialStreak = potentialStreakVal;
     }
   }
 
-  // Calculate longest streak
-  let longestStreak = 0;
-  let current = 0;
-  let prev = null;
-  activeDays.forEach((idx) => {
-    if (prev !== null && idx === prev + 1) {
-      current += 1;
-    } else {
-      current = 1;
-    }
-    longestStreak = Math.max(longestStreak, current);
-    prev = idx;
-  });
-
-  return { 
-    currentStreak, 
-    longestStreak, 
-    activeDays, 
-    canRecover: canRecover && potentialStreak > 0, 
-    potentialStreak 
+  return {
+    currentStreak,
+    canRecover: canRecover && potentialStreak > 0,
+    potentialStreak,
+    recoverySessionsToday,
+    requiredRecoveryTasks,
   };
 }
 
@@ -243,7 +238,7 @@ function ActivityPageMobile() {
   const [showRandomizerOverlay, setShowRandomizerOverlay] = useState(false);
   const [showFreeSpeechOverlay, setShowFreeSpeechOverlay] = useState(false);
   const [freeSpeechDraftTopic, setFreeSpeechDraftTopic] = useState('');
-  const [randomizerTopic, setRandomizerTopic] = useState(RANDOM_TOPICS[0] || {});
+  const [randomizerTopic, setRandomizerTopic] = useState(null);
   const [showCompletionCelebration, setShowCompletionCelebration] = useState(false);
   const [completionModalTaskTitle, setCompletionModalTaskTitle] = useState('');
   const [recentStampedTaskId, setRecentStampedTaskId] = useState(null);
@@ -255,9 +250,21 @@ function ActivityPageMobile() {
   const [entranceFromNav, setEntranceFromNav] = useState(false);
   const [isStreakRecoveryMode, setIsStreakRecoveryMode] = useState(false);
   const [isRandomizingTopic, setIsRandomizingTopic] = useState(false);
+  const [isAskB01ModalOpen, setIsAskB01ModalOpen] = useState(false);
+  const [askB01Query, setAskB01Query] = useState('');
+  const [isB01Typing, setIsB01Typing] = useState(false);
+  const [chatMessages, setChatMessages] = useState([
+    {
+      role: 'assistant',
+      content:
+        "Hello! I'm B-01, your AI speaking coach. What would you like to know about public speaking or your progress today?",
+      id: 'initial-greeting',
+    },
+  ]);
   const stampResetTimeoutRef = useRef(null);
   const audioContextRef = useRef(null);
   const overlayAudioRef = useRef(null);
+  const chatScrollRef = useRef(null);
 
   // Clean up effects
   useEffect(() => {
@@ -345,8 +352,142 @@ function ActivityPageMobile() {
     return keys;
   }, [sessions, activityHistory]);
 
-  const streakStats = useMemo(() => buildStreakStats(sessions, activityHistory), [sessions, activityHistory]);
-  const { potentialStreak } = streakStats;
+  const streakStats = useMemo(() => buildStreakStats(sessions), [sessions]);
+  const { potentialStreak, recoverySessionsToday, requiredRecoveryTasks } = streakStats;
+
+  const getProgressContext = useCallback(() => {
+    const sortedSessions = [...sessions]
+      .filter((s) => {
+        const isError = s.status === 'error' || s.is_error === true;
+        return !isPreTestSession(s) && !isError;
+      })
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    const latest = sortedSessions[0];
+    const first = sortedSessions[sortedSessions.length - 1];
+
+    const latestScore = Math.floor(latest?.score || latest?.overall_score || latest?.overallScore || 0);
+    const firstScore = Math.floor(first?.score || first?.overall_score || first?.overallScore || 0);
+
+    const insights = generateCoachInsights(sessions);
+
+    return {
+      totalSessionCount: (sessions || []).filter((s) => s.status !== 'error' && s.is_error !== true).length,
+      analyzedSessionsCount: sortedSessions.length,
+      averageScore: activityMetrics?.averageScore || 'N/A',
+      currentLevel: levelProgress.levelNumber,
+      levelName: levelProgress.levelName,
+
+      growthSummary: {
+        firstSessionScore: firstScore,
+        latestSessionScore: latestScore,
+        growthPercentage: insights.growth.toFixed(1),
+        strongestPillar: insights.strongestPillar,
+        coachNarrative: insights.growthUpdate,
+        positiveQuote: insights.positiveQuote,
+        status: insights.growth > 0 ? 'Improving' : insights.growth < 0 ? 'Declining' : 'Stable',
+      },
+
+      latestSession: latest
+        ? {
+            score: latestScore,
+            topic: latest.topic || latest.script_title || latest.activity_title,
+            date: latest.created_at,
+          }
+        : null,
+
+      recentTimeline: sortedSessions.slice(0, 15).map((s) => ({
+        date: new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        score: `${Math.floor(s.score || s.overall_score || s.overallScore || 0)}%`,
+        topic: s.topic || s.script_title || s.activity_title,
+      })),
+    };
+  }, [sessions, activityMetrics, levelProgress, streakStats.currentStreak, completedTaskCount, tasks]);
+
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [chatMessages, isB01Typing]);
+
+  const handleSendMessage = async (customQuery = null) => {
+    const query = (customQuery || askB01Query).trim();
+    if (!query || isB01Typing) return;
+
+    const userMessage = { role: 'user', content: query };
+    const newMessages = [...chatMessages, userMessage];
+
+    setChatMessages(newMessages);
+    setAskB01Query('');
+    setIsB01Typing(true);
+
+    const assistantMessageId = Date.now();
+    setChatMessages((prev) => [...prev, { role: 'assistant', content: '', id: assistantMessageId }]);
+
+    try {
+      const contextMessage = {
+        role: 'system',
+        content: `CONTEXT: User Progress Snapshot: ${JSON.stringify(getProgressContext())}. Reference these specific numbers if asked about progress, growth, or stats.`,
+      };
+
+      const response = await fetch('https://b01-ai-worker.dzeref4000.workers.dev', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [contextMessage, ...newMessages],
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to connect to B-01');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+      let accumulatedResponse = '';
+
+      setIsB01Typing(false);
+
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        const chunkValue = decoder.decode(value);
+
+        const lines = chunkValue.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            if (line.includes('[DONE]')) break;
+            try {
+              const data = JSON.parse(line.slice(6));
+              accumulatedResponse += data.response || '';
+
+              setChatMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === assistantMessageId ? { ...msg, content: accumulatedResponse } : msg,
+                ),
+              );
+            } catch (e) {
+              console.warn('Chunk parse error', e);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('B-01 Error:', error);
+      setChatMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === assistantMessageId
+            ? {
+                ...msg,
+                content:
+                  "I'm having a little trouble connecting to my brain right now. Please try again in a moment!",
+              }
+            : msg,
+        ),
+      );
+    } finally {
+      setIsB01Typing(false);
+    }
+  };
   const weekPills = useMemo(() => getWeekdayPills(activeDayKeys), [activeDayKeys]);
   const timeOfDay = useMemo(() => getTimeOfDay(), []);
   const heroRobotImage = useMemo(() => {
@@ -556,8 +697,7 @@ function ActivityPageMobile() {
   const handleRecoverStreak = useCallback(() => {
     setIsStreakRecoveryMode(true);
     setShowRandomizerOverlay(true);
-    // Optionally trigger randomization immediately for a better UX
-    if (!randomizerTopic?.title) {
+    if (!randomizerTopic) {
       handleRandomizeTopic();
     }
   }, [handleRandomizeTopic, randomizerTopic]);
@@ -587,13 +727,13 @@ function ActivityPageMobile() {
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
-    if (showRandomizerOverlay || showFreeSpeechOverlay) {
+    if (showRandomizerOverlay || showFreeSpeechOverlay || isAskB01ModalOpen) {
       document.body.classList.add('randomizer-overlay-open');
     } else {
       document.body.classList.remove('randomizer-overlay-open');
     }
     return () => document.body.classList.remove('randomizer-overlay-open');
-  }, [showRandomizerOverlay, showFreeSpeechOverlay]);
+  }, [showRandomizerOverlay, showFreeSpeechOverlay, isAskB01ModalOpen]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
@@ -674,8 +814,14 @@ function ActivityPageMobile() {
         robotClassName: 'is-roadmap-step',
         button: 'Next',
         targetElementId: 'tutorial-target-home-journey',
-        text: 'This path is your customized learning roadmap! You will start at your first stage and unlock the next ones as you move forward. The activities gradually become more challenging, and once you complete all tasks on your path, you unlock a final Post-test challenge to advance.',
-        voice: "https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%203.mp3",
+        text:
+          'This path is your customized learning roadmap! You will start at your first stage and unlock the next ones as you move forward.',
+        textPart2:
+          'The activities gradually become more challenging, and once you complete all tasks on your path, you unlock a final Post-test challenge to advance.',
+        voice:
+          'https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%203%20Part%201.mp3',
+        voicePart2:
+          'https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%203%20Part%202.mp3',
       },
       {
         id: 'step-practice',
@@ -850,7 +996,9 @@ function ActivityPageMobile() {
           <div className="randomizer-overlay-content">
             <div className="randomizer-overlay-card">
               <div className="randomizer-overlay-card-top">
-                <h2 className="randomizer-overlay-title">Randomizer</h2>
+                <h2 className="randomizer-overlay-title">
+                  {isStreakRecoveryMode ? 'Streak Recovery Task' : 'Randomizer × B-01'}
+                </h2>
                 <button
                   type="button"
                   className="randomizer-overlay-close-btn"
@@ -862,27 +1010,56 @@ function ActivityPageMobile() {
               </div>
               <p className="randomizer-overlay-copy">
                 <span className="randomizer-overlay-copy-kicker">B-01:</span>
-                Ready to put your skills to the test? Click the 'Generate' button for a random topic, and whenever you're ready, hit 'Start' to begin your speaking practice!
+                {isStreakRecoveryMode
+                  ? `Ready to put your skills to the test? To recover your streak, you'll need to complete ${requiredRecoveryTasks} randomizer tasks with a score of 45% or higher. Whenever you're ready, hit 'Start' to begin!`
+                  : "Ready to put your skills to the test? Click the 'Generate' button for a random topic, and whenever you're ready, hit 'Start' to begin your speaking practice!"}
               </p>
+
+              {isStreakRecoveryMode && (
+                <div className="randomizer-recovery-progress">
+                  <div className="randomizer-recovery-progress-header">
+                    <div className="randomizer-recovery-progress-label">Recovery Progress</div>
+                    <div className="randomizer-recovery-progress-requirement">
+                      <IoTrophyOutline className="requirement-icon" />
+                      <span>Target: 45%+ Score</span>
+                    </div>
+                  </div>
+                  <div className="randomizer-recovery-progress-bar-wrap">
+                    <div
+                      className="randomizer-recovery-progress-bar-fill"
+                      style={{ width: `${(recoverySessionsToday / requiredRecoveryTasks) * 100}%` }}
+                    />
+                  </div>
+                  <div className="randomizer-recovery-progress-count">
+                    {recoverySessionsToday} / {requiredRecoveryTasks} Tasks Completed
+                  </div>
+                </div>
+              )}
               <p className="randomizer-overlay-topic">
                 <span className="randomizer-overlay-topic-label">Topic:</span>
                 {' '}
-                {randomizerTopic?.title || RANDOMIZER_DEFAULT_TOPIC}
+                {isRandomizingTopic
+                  ? 'Thinking of a topic...'
+                  : (randomizerTopic?.title || "Click 'Randomize Topic' below to get started!")}
               </p>
               <div className="randomizer-overlay-actions">
                 <Button
                   variant="practice"
                   className="randomizer-overlay-randomize-btn"
                   onClick={handleRandomizeTopic}
+                  disabled={isRandomizingTopic}
                 >
-                  Randomize Topic
+                  {isRandomizingTopic ? 'Randomizing...' : 'Generate'}
                 </Button>
                 <Button
                   variant="practice"
                   className="randomizer-overlay-start-btn"
                   onClick={handleStartRandomizerTopic}
+                  disabled={!randomizerTopic?.title || isRandomizingTopic}
                 >
-                  Start
+                  {isStreakRecoveryMode
+                    ? `Start Task ${Math.min(requiredRecoveryTasks, recoverySessionsToday + 1)} of ${requiredRecoveryTasks}`
+                    : 'Start'}
                 </Button>
               </div>
             </div>
@@ -999,7 +1176,9 @@ function ActivityPageMobile() {
         />
       </div>
 
-      <div className={`activity-mobile-dashboard-section${(showDashboardOverlay || showRandomizerOverlay || showFreeSpeechOverlay) ? ' is-hidden' : ''}`}>
+      <div
+        className={`activity-mobile-dashboard-section${showDashboardOverlay || showRandomizerOverlay || showFreeSpeechOverlay || isAskB01ModalOpen ? ' is-hidden' : ''}`}
+      >
         <Button 
           variant="practice" 
           className="activity-mobile-dashboard-btn"
@@ -1036,6 +1215,19 @@ function ActivityPageMobile() {
                 }}
               >
                 Launch Tutorial (Temp)
+              </Button>
+              <Button
+                variant="practice"
+                className="ask-b01-trigger activity-mobile-dashboard-btn"
+                style={{ width: '100%', marginBottom: '1rem', height: '44px' }}
+                onClick={() => {
+                  setShowDashboardOverlay(false);
+                  setIsAskB01ModalOpen(true);
+                }}
+                aria-label="Ask B-01 a question"
+              >
+                <IoChatbubbleEllipsesOutline aria-hidden />
+                <span>Ask B-01</span>
               </Button>
               {/* Streak Widget */}
               <div 
@@ -1176,6 +1368,103 @@ function ActivityPageMobile() {
         onClose={() => setIsRankModalOpen(false)}
         currentLevelNumber={levelProgress.levelNumber}
       />
+
+      {isAskB01ModalOpen && (
+        <section className="randomizer-overlay-wrapper ask-b01-modal-wrapper" aria-label="Ask B-01 modal">
+          <div className="bigkas-modal-scrim ask-b01-scrim" onClick={() => setIsAskB01ModalOpen(false)} />
+          <div className="ask-b01-modal-card">
+            <div className="ask-b01-modal-header">
+              <h2 className="ask-b01-modal-title">
+                <img src={b01ChatHead} alt="" className="ask-b01-modal-title-logo" />
+                Ask <span>B-01</span>
+              </h2>
+              <button
+                type="button"
+                className="ask-b01-modal-close"
+                onClick={() => setIsAskB01ModalOpen(false)}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="ask-b01-chat-container" ref={chatScrollRef}>
+              {chatMessages.map((msg, idx) => (
+                <div key={idx} className={`ask-b01-chat-row ${msg.role === 'assistant' ? 'b01-row' : 'user-row'}`}>
+                  {msg.role === 'assistant' && (
+                    <div className="ask-b01-chat-head b01-chat-head-square">
+                      <img src={b01ChatHead} alt="B-01" />
+                    </div>
+                  )}
+
+                  <div
+                    className={`ask-b01-message ask-b01-message--${msg.role === 'assistant' ? 'b01' : 'user'} ${!msg.content && msg.role === 'assistant' ? 'typing-indicator' : ''}`}
+                  >
+                    {msg.content ||
+                      (msg.role === 'assistant' && (
+                        <>
+                          <span>.</span>
+                          <span>.</span>
+                          <span>.</span>
+                        </>
+                      ))}
+                  </div>
+
+                  {msg.role === 'user' && (
+                    <div className="ask-b01-chat-head user-head">
+                      {user?.avatarUrl || user?.avatar_url ? (
+                        <img src={user.avatarUrl || user.avatar_url} alt="Me" />
+                      ) : (
+                        <div className="ask-b01-avatar-placeholder">
+                          {user?.firstName?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {chatMessages.length === 1 && !isB01Typing && (
+                <div className="ask-b01-suggestions">
+                  {B01_SUGGESTIONS.map((suggestion, sIdx) => (
+                    <button
+                      type="button"
+                      key={sIdx}
+                      className="ask-b01-suggestion-chip"
+                      onClick={() => handleSendMessage(suggestion)}
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="ask-b01-input-area">
+              <form
+                className="ask-b01-input-wrapper"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSendMessage();
+                }}
+              >
+                <input
+                  type="text"
+                  className="ask-b01-input"
+                  placeholder="Ask me anything..."
+                  value={askB01Query}
+                  onChange={(e) => setAskB01Query(e.target.value)}
+                  disabled={isB01Typing}
+                />
+                <button type="submit" className="ask-b01-send-btn" disabled={!askB01Query.trim() || isB01Typing}>
+                  <IoSend />
+                </button>
+              </form>
+              <p className="ask-b01-disclaimer">B-01 can make mistakes. Please verify important information.</p>
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { IoChevronForward, IoPlay, IoMic } from 'react-icons/io5';
+import { IoChevronBack, IoChevronForward, IoPlay, IoMic } from 'react-icons/io5';
 import { 
   ResponsiveContainer, 
   LineChart, 
@@ -287,17 +287,8 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
     return () => { isMounted = false; };
   }, [session?.created_at, session?.user_id, sessionId]);
 
-  if (!session && isLoading) return <div className="df-mobile-root"><div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div></div>;
-  if (!session) return <div className="df-mobile-root"><div style={{ padding: '40px', textAlign: 'center' }}>Session not found</div></div>;
-
-  const tripleV = getTripleVScores(session);
-  const overallTier = getScoreTier15(tripleV.entryPoint);
-  const mode = getSessionMode(session);
-  const durationSec = Math.max(1, Math.round(session?.duration_sec ?? session?.duration ?? 1));
   const rawTranscript = recordingMedia.transcript || session?.transcript || '';
-  const practicedText = sanitizeTranscriptForDisplay(rawTranscript, '');
 
-  // Extraction of mispronunciations and filler data
   const analysisData = useMemo(() => {
     try {
       if (typeof session?.analysis === 'object' && session.analysis !== null) return session.analysis;
@@ -308,13 +299,19 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
     return {};
   }, [session?.analysis]);
 
-  const mispronunciations = analysisData?.mispronunciations || [];
-  
   const fillerCount = useMemo(() => {
     if (analysisData?.filler_count !== undefined) return analysisData.filler_count;
     const words = rawTranscript.toLowerCase().split(/\s+/);
     return words.filter(w => FILLER_WORDS.includes(w.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ""))).length;
   }, [rawTranscript, analysisData?.filler_count]);
+
+  const placeholderTripleV = { entryPoint: 1, visualAvg: 1, vocalAvg: 1, verbalAvg: 1 };
+  const tripleV = session ? getTripleVScores(session) : placeholderTripleV;
+  const overallTier = getScoreTier15(tripleV.entryPoint);
+  const mode = session ? getSessionMode(session) : '';
+  const durationSec = Math.max(1, Math.round(session?.duration_sec ?? session?.duration ?? 1));
+
+  const mispronunciations = analysisData?.mispronunciations || [];
 
   const renderHighlightedTranscript = () => {
     if (!rawTranscript) return <p className="df-mobile-transcript-text">No transcript generated.</p>;
@@ -405,8 +402,8 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
       return { text, pillar: p.key };
     });
 
-  const allRecommendations = [...pillarRecommendations, ...recommendations.map(text => ({ text, pillar: 'general' }))];
-    if (allRecommendations.length === 0) {
+  let allRecommendations = [...pillarRecommendations, ...recommendations.map((text) => ({ text, pillar: 'general' }))];
+  if (allRecommendations.length === 0) {
     allRecommendations.push({ text: 'Great job! Keep up the excellent work.', pillar: 'general' });
   }
 
@@ -420,7 +417,24 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
   })();
 
   const avoidSectionRef = useRef(null);
-  const scrollToAvoid = () => avoidSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToAvoid = useCallback(() => {
+    avoidSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
+  if (!session && isLoading) {
+    return (
+      <div className="df-mobile-root">
+        <div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div>
+      </div>
+    );
+  }
+  if (!session) {
+    return (
+      <div className="df-mobile-root">
+        <div style={{ padding: '40px', textAlign: 'center' }}>Session not found</div>
+      </div>
+    );
+  }
 
   return (
     <div className="df-mobile-root no-scrollbar">

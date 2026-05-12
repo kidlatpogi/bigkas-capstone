@@ -59,6 +59,7 @@ const rankSilverImage = getSpriteUrl('Rank/rank-silver.png');
 const rankGoldImage = getSpriteUrl('Rank/rank-gold.png');
 const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.png');
 const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.png');
+const BIGKAS_PREREQ_LOGO_URL = 'https://assets.bigkas.site/Images/Bigkas-Logo.webp';
 import './SkywardJourney.css';
 
 const MAP_SCALE = 1;
@@ -778,29 +779,19 @@ export default function SkywardJourney({
     return curr > rec;
   }, [currentLevel, recommendedLevel]);
 
-  /** Instructions when viewing a journey that is not yet playable (prerequisite journey or speaker level). */
+  /** When the previous journey’s final stage is not done yet. */
   const prerequisiteLines = useMemo(() => {
     const level = Number(currentLevel) || 1;
-    const rec = Number(recommendedLevel) || 1;
-    const lockedByRank = level > rec;
     const needsPrevJourneyComplete = level > 1 && !isPrevLevelDone;
-    if (!lockedByRank && !needsPrevJourneyComplete) return [];
+    if (!needsPrevJourneyComplete) return [];
 
-    const out = [];
-    if (needsPrevJourneyComplete) {
-      out.push({
+    return [
+      {
         key: 'finish-previous-journey',
         text: `Complete every stage in Journey ${level - 1} before you can progress on Journey ${level}.`,
-      });
-    }
-    if (lockedByRank) {
-      out.push({
-        key: 'speaker-journey-level',
-        text: `Your active journey is Journey ${rec}. Finish Journey ${rec} first to unlock Journey ${level}.`,
-      });
-    }
-    return out;
-  }, [currentLevel, recommendedLevel, isPrevLevelDone]);
+      },
+    ];
+  }, [currentLevel, isPrevLevelDone]);
 
   const completedCount = useMemo(() => steps.filter(s => s.nodeState === NODE_STATE.COMPLETED).length, [steps]);
 
@@ -1560,9 +1551,15 @@ export default function SkywardJourney({
             aria-label="Prerequisites for this journey"
           >
             <div className="skyward-journey-prerequisite-banner-inner">
-              <IoLockClosed className="skyward-journey-prerequisite-icon" aria-hidden />
               <div className="skyward-journey-prerequisite-body">
-                <p className="skyward-journey-prerequisite-title">Before you start this journey</p>
+                <div className="skyward-journey-prerequisite-title-row">
+                  <img
+                    src={BIGKAS_PREREQ_LOGO_URL}
+                    alt=""
+                    className="skyward-journey-prerequisite-logo"
+                  />
+                  <p className="skyward-journey-prerequisite-title">Before you start this journey</p>
+                </div>
                 <ul className="skyward-journey-prerequisite-list">
                   {prerequisiteLines.map((line) => (
                     <li key={line.key}>{line.text}</li>

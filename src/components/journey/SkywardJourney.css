@@ -315,57 +315,75 @@
   line-height: 1.35;
 }
 
-/* Bottom callout: prerequisite journey / speaker level (desktop + mobile) */
+/* Bottom callout: prerequisite journey (compact, centered) */
 .skyward-journey-prerequisite-banner {
   flex: 0 0 auto;
   box-sizing: border-box;
   width: 100%;
-  padding: 12px 14px 14px;
-  border-top: 1px solid rgba(11, 57, 84, 0.1);
-  background: linear-gradient(180deg, rgba(236, 253, 245, 0.85) 0%, rgba(255, 255, 255, 0.97) 100%);
+  padding: 6px 10px 8px;
+  border-top: 1px solid rgba(11, 57, 84, 0.06);
+  background: rgba(248, 250, 252, 0.9);
 }
 
 .skyward-journey-prerequisite-banner-inner {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  max-width: 52rem;
+  justify-content: center;
+  max-width: 40rem;
   margin-inline: auto;
 }
 
-.skyward-journey-prerequisite-icon {
-  flex-shrink: 0;
-  margin-top: 2px;
-  font-size: 1.25rem;
-  color: #059669;
+.skyward-journey-prerequisite-body {
+  width: 100%;
+  min-width: 0;
+  text-align: center;
 }
 
-.skyward-journey-prerequisite-body {
-  flex: 1;
-  min-width: 0;
+.skyward-journey-prerequisite-title-row {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.skyward-journey-prerequisite-logo {
+  display: block;
+  height: 24px;
+  width: auto;
+  max-width: 100px;
+  object-fit: contain;
+  object-position: center;
+  flex-shrink: 0;
+  opacity: 0.92;
 }
 
 .skyward-journey-prerequisite-title {
-  margin: 0 0 8px;
+  margin: 0;
   font-family: 'Fredoka', sans-serif;
-  font-size: clamp(0.82rem, 1.9vw, 0.95rem);
-  font-weight: 800;
-  color: #0f766e;
+  font-size: clamp(0.7rem, 1.4vw, 0.78rem);
+  font-weight: 700;
+  color: #64748b;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
 }
 
 .skyward-journey-prerequisite-list {
   margin: 0;
-  padding-left: 1.15rem;
-  color: #334155;
-  font-size: clamp(0.85rem, 2vw, 0.95rem);
-  font-weight: 600;
-  line-height: 1.45;
+  padding: 0;
+  list-style: none;
+  color: #64748b;
+  font-size: clamp(0.75rem, 1.5vw, 0.82rem);
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: center;
 }
 
-.skyward-journey-prerequisite-list li + li {
-  margin-top: 6px;
+.skyward-journey-prerequisite-list li {
+  margin: 0;
+  max-width: 36rem;
+  margin-inline: auto;
 }
 
 .skyward-journey-svg {
@@ -1382,15 +1400,12 @@
   }
 
   .skyward-journey-prerequisite-banner {
-    padding: 10px 12px 12px;
+    padding: 5px 8px 7px;
   }
 
-  .skyward-journey-prerequisite-banner-inner {
-    gap: 10px;
-  }
-
-  .skyward-journey-prerequisite-icon {
-    font-size: 1.1rem;
+  .skyward-journey-prerequisite-logo {
+    height: 22px;
+    max-width: 88px;
   }
 
   .skyward-journey-container--locked {

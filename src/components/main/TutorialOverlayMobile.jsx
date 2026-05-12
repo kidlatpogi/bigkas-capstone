@@ -646,11 +646,17 @@ function TutorialOverlayMobile({
           }
           .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-speech-bubble {
             order: 1 !important;
-            transform: translateY(8rem) !important;
             z-index: 1301 !important;
             width: 100% !important;
             max-width: min(100%, 48rem) !important;
             margin: 0 !important;
+          }
+          .tutorial-overlay-wrapper.is-custom-tutorial.is-activity-home-step-1 .tutorial-speech-bubble,
+          .tutorial-overlay-wrapper.is-custom-tutorial.is-activity-home-step-2 .tutorial-speech-bubble {
+            transform: translateY(8rem) !important;
+          }
+          .tutorial-overlay-wrapper.is-custom-tutorial:not(.is-activity-home-step-1):not(.is-activity-home-step-2) .tutorial-speech-bubble {
+            transform: translateY(0) !important;
           }
           .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-speech-bubble::before {
             left: 50% !important;

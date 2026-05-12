@@ -279,7 +279,7 @@ function TutorialOverlay({
         activeSpotlightRef.current = null;
       }
     };
-  }, [activeStep, isOpen]);
+  }, [isOpen, activeStep?.targetElementId]);
 
   useEffect(() => {
     if (!isOpen || !activeStep) {
@@ -339,7 +339,7 @@ function TutorialOverlay({
       window.removeEventListener('resize', scheduleUpdate);
       window.removeEventListener('orientationchange', scheduleUpdate);
     };
-  }, [activeStep, isOpen]);
+  }, [isOpen, activeStep?.id, activeStep?.targetElementId]);
 
   useEffect(() => {
     if (!isOpen || !activeStep) return undefined;
@@ -392,7 +392,7 @@ function TutorialOverlay({
       }
       stopAllAudios();
     };
-  }, [currentStep, isOpen, shouldUseAudio, activeStep]);
+  }, [currentStep, isOpen, shouldUseAudio, activeStep?.id, activeStep?.text, activeStep?.voice]);
 
   if (!isOpen || !activeStep) return null;
 

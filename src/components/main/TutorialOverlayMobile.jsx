@@ -302,7 +302,7 @@ function TutorialOverlayMobile({
       dashboardFooterClickDoneRef.current = true;
     }
     return undefined;
-  }, [isOpen, activeStep, currentStep]);
+  }, [isOpen, activeStep?.id, activeStep?.targetElementId, currentStep]);
 
   useEffect(() => {
     if (!isOpen || !activeStep) return undefined;
@@ -313,10 +313,9 @@ function TutorialOverlayMobile({
       activeSpotlightRef.current = null;
     }
 
-    const targetId = activeStep.targetElementId;
-    const isCustom = Array.isArray(steps) && steps.length > 0;
+    const targetId = activeStep?.targetElementId;
     const spotlightZIndex =
-      isCustom && targetId === 'tutorial-target-home-journey' ? '4600' : '4800';
+      isCustomTutorial && targetId === 'tutorial-target-home-journey' ? '4600' : '4800';
     const needsDashboard =
       targetId === 'tutorial-target-home-streak' || targetId === 'tutorial-target-home-rank';
     const maxAttempts = needsDashboard ? 48 : 6;
@@ -353,7 +352,7 @@ function TutorialOverlayMobile({
         activeSpotlightRef.current = null;
       }
     };
-  }, [activeStep, isOpen, steps]);
+  }, [isOpen, activeStep?.targetElementId, isCustomTutorial]);
 
   useEffect(() => {
     if (!isOpen || !activeStep) {
@@ -413,7 +412,7 @@ function TutorialOverlayMobile({
       window.removeEventListener('resize', scheduleUpdate);
       window.removeEventListener('orientationchange', scheduleUpdate);
     };
-  }, [activeStep, isOpen]);
+  }, [isOpen, activeStep?.id, activeStep?.targetElementId]);
 
   useEffect(() => {
     if (!isOpen || !activeStep) return undefined;
@@ -463,7 +462,7 @@ function TutorialOverlayMobile({
       }
       stopAllAudios();
     };
-  }, [currentStep, isOpen, shouldUseAudio, activeStep]);
+  }, [currentStep, isOpen, shouldUseAudio, activeStep?.id, activeStep?.text, activeStep?.voice]);
 
   if (!isOpen || !activeStep) return null;
 

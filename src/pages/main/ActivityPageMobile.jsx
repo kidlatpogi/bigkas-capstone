@@ -44,11 +44,11 @@ const tutorialRobotStep3 = getSpriteUrl('Robot/0018.webp');
 const tutorialRobotStep4 = getSpriteUrl('Robot/0001.webp');
 const tutorialRobotStep5 = getSpriteUrl('Robot/0002.webp');
 const tutorialRobotStep6 = getSpriteUrl('Robot/0004.webp');
-const rankBronze = getSpriteUrl('Rank/rank-bronze.png');
-const rankSilverImage = getSpriteUrl('Rank/rank-silver.png');
-const rankGoldImage = getSpriteUrl('Rank/rank-gold.png');
-const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.png');
-const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.png');
+const rankBronze = getSpriteUrl('Rank/rank-bronze.webp');
+const rankSilverImage = getSpriteUrl('Rank/rank-silver.webp');
+const rankGoldImage = getSpriteUrl('Rank/rank-gold.webp');
+const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.webp');
+const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.webp');
 const crystalBallImage = getSpriteUrl('common/crystal-ball.webp');
 const crownImage = getSpriteUrl('common/crown.webp');
 const b01ChatHead = getAssetUrl('Images/Bigkas-Logo.webp');
@@ -323,19 +323,25 @@ function ActivityPageMobile() {
     ? Math.round((completedTaskCount / tasks.length) * 100)
     : 0;
 
-  const activeDayKeys = useMemo(() => {
-    const keys = new Set();
+  /** Same shape as ActivityPage — Map<YYYY-MM-DD, number> for streak calendar heatmap + weekday pills */
+  const sessionCountsByDay = useMemo(() => {
+    const counts = new Map();
     sessions.forEach((s) => {
       if (isPreTestSession(s)) return;
       const d = getSessionDate(s);
-      if (d) keys.add(getLocalDateKey(d));
+      if (d) {
+        const k = getLocalDateKey(d);
+        counts.set(k, (counts.get(k) || 0) + 1);
+      }
     });
     activityHistory.forEach((e) => {
       if (!e?.completedAt) return;
       const k = getDayKeyFromDate(e.completedAt);
-      if (k) keys.add(k);
+      if (k) {
+        counts.set(k, (counts.get(k) || 0) + 1);
+      }
     });
-    return keys;
+    return counts;
   }, [sessions, activityHistory]);
 
   const streakStats = useMemo(() => buildStreakStats(sessions), [sessions]);
@@ -474,7 +480,7 @@ function ActivityPageMobile() {
       setIsB01Typing(false);
     }
   };
-  const weekPills = useMemo(() => getWeekdayPills(activeDayKeys), [activeDayKeys]);
+  const weekPills = useMemo(() => getWeekdayPills(sessionCountsByDay), [sessionCountsByDay]);
   const timeOfDay = useMemo(() => getTimeOfDay(), []);
   const heroRobotImage = useMemo(() => {
     if (timeOfDay === 'morning') return robotMorningImage;
@@ -681,6 +687,7 @@ function ActivityPageMobile() {
   }, [navigate, randomizerTopic, isStreakRecoveryMode, potentialStreak]);
 
   const handleRecoverStreak = useCallback(() => {
+    setShowDashboardOverlay(false);
     setIsStreakRecoveryMode(true);
     setShowRandomizerOverlay(true);
     if (!randomizerTopic) {
@@ -1386,7 +1393,7 @@ function ActivityPageMobile() {
       <StreakCalendarModal
         isOpen={isStreakModalOpen}
         onClose={() => setIsStreakModalOpen(false)}
-        activeDayKeys={activeDayKeys}
+        sessionCountsByDay={sessionCountsByDay}
         streakStats={streakStats}
       />
 

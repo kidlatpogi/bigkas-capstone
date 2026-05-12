@@ -20,9 +20,9 @@ import { sanitizeRecommendationLines } from '../../utils/analysisTranscript';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 
 const BIGKAS_LOGO_URL = 'https://assets.bigkas.site/Images/Bigkas-Logo.webp';
-const verbalSprite = getSpriteUrl('common/Verbal.png');
-const visualSprite = getSpriteUrl('common/Visual.png');
-const vocalSprite = getSpriteUrl('common/Vocal.png');
+const verbalSprite = getSpriteUrl('common/Verbal.webp');
+const visualSprite = getSpriteUrl('common/Visual.webp');
+const vocalSprite = getSpriteUrl('common/Vocal.webp');
 import './DetailedFeedbackPageMobile.css';
 import './DetailedFeedbackPage.css';
 

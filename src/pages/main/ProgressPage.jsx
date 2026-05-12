@@ -37,9 +37,9 @@ import { sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
 import { getSpriteUrl } from '../../utils/assetUtils';
 
 const heroRobotImage = getSpriteUrl('Robot/0018.webp');
-const visualSprite = getSpriteUrl('common/Visual.png');
-const verbalSprite = getSpriteUrl('common/Verbal.png');
-const vocalSprite = getSpriteUrl('common/Vocal.png');
+const visualSprite = getSpriteUrl('common/Visual.webp');
+const verbalSprite = getSpriteUrl('common/Verbal.webp');
+const vocalSprite = getSpriteUrl('common/Vocal.webp');
 import HistoryPage from './HistoryPage';
 import HistoryPageMobile from './HistoryPageMobile';
 import { generateCoachInsights } from '../../utils/coachInsights';

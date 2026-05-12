@@ -49,8 +49,8 @@ const rankSilverImage = getSpriteUrl('Rank/rank-silver.png');
 const rankGoldImage = getSpriteUrl('Rank/rank-gold.png');
 const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.png');
 const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.png');
-const crystalBallImage = getSpriteUrl('common/crystal-ball.png');
-const crownImage = getSpriteUrl('common/crown.png');
+const crystalBallImage = getSpriteUrl('common/crystal-ball.webp');
+const crownImage = getSpriteUrl('common/crown.webp');
 const b01ChatHead = getAssetUrl('Images/Bigkas-Logo.webp');
 const B01_SUGGESTIONS = [
   'Summarize my progress so far',
@@ -570,7 +570,7 @@ function ActivityPageMobile() {
   useEffect(() => {
     if (user?.isAudioMuted) return;
 
-    if (showRandomizerOverlay) {
+    if (showRandomizerOverlay && !isStreakRecoveryMode) {
       if (overlayAudioRef.current) overlayAudioRef.current.pause();
       const audio = new Audio("https://assets.bigkas.site/Voices/Home%20Page/Randomizer%20and%20Free%20Speech%20Button/Randomizer.mp3");
       overlayAudioRef.current = audio;
@@ -1043,19 +1043,19 @@ function ActivityPageMobile() {
                 </h2>
                 <button
                   type="button"
-                  className="randomizer-overlay-close-btn"
+                  className="dashboard-overlay-close-btn"
                   onClick={handleCloseRandomizerOverlay}
                   aria-label="Close randomizer overlay"
                 >
                   ×
                 </button>
               </div>
-              <p className="randomizer-overlay-copy">
-                <span className="randomizer-overlay-copy-kicker">B-01:</span>
-                {isStreakRecoveryMode
-                  ? `Ready to put your skills to the test? To recover your streak, you'll need to complete ${requiredRecoveryTasks} randomizer tasks with a score of 45% or higher. Whenever you're ready, hit 'Start' to begin!`
-                  : "Ready to put your skills to the test? Click the 'Generate' button for a random topic, and whenever you're ready, hit 'Start' to begin your speaking practice!"}
-              </p>
+              {!isStreakRecoveryMode && (
+                <p className="randomizer-overlay-copy">
+                  <span className="randomizer-overlay-copy-kicker">B-01:</span>
+                  Ready to put your skills to the test? Click the 'Generate' button for a random topic, and whenever you're ready, hit 'Start' to begin your speaking practice!
+                </p>
+              )}
 
               {isStreakRecoveryMode && (
                 <div className="randomizer-recovery-progress">
@@ -1105,17 +1105,19 @@ function ActivityPageMobile() {
                 </Button>
               </div>
             </div>
-            <div className="tutorial-audio-action">
-              <button
-                type="button"
-                aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
-                onClick={handleToggleMute}
-              >
-                {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-              </button>
-            </div>
+            {!isStreakRecoveryMode && (
+              <div className="tutorial-audio-action">
+                <button
+                  type="button"
+                  aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                  title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                  className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
+                  onClick={handleToggleMute}
+                >
+                  {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+                </button>
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -1131,7 +1133,7 @@ function ActivityPageMobile() {
                 </h2>
                 <button
                   type="button"
-                  className="randomizer-overlay-close-btn"
+                  className="dashboard-overlay-close-btn"
                   onClick={handleCloseFreeSpeechOverlay}
                   aria-label="Close free speech overlay"
                 >
@@ -1202,7 +1204,7 @@ function ActivityPageMobile() {
       </div>
 
       <div
-        className={`activity-mobile-dashboard-section${showDashboardOverlay || showRandomizerOverlay || showFreeSpeechOverlay || isAskB01ModalOpen ? ' is-hidden' : ''}`}
+        className={`activity-mobile-dashboard-section${showDashboardOverlay || showRandomizerOverlay || showFreeSpeechOverlay || isAskB01ModalOpen || showFreeSpeechTutorial ? ' is-hidden' : ''}`}
       >
         <Button 
           variant="practice" 
@@ -1405,7 +1407,7 @@ function ActivityPageMobile() {
               </h2>
               <button
                 type="button"
-                className="ask-b01-modal-close"
+                className="dashboard-overlay-close-btn"
                 onClick={() => setIsAskB01ModalOpen(false)}
                 aria-label="Close"
               >

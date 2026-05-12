@@ -6,9 +6,9 @@ import { getSessionMode } from '../../utils/sessionFormatting';
 import { sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
 import { getSpriteUrl } from '../../utils/assetUtils';
 
-const verbalSprite = getSpriteUrl('common/Verbal.png');
-const visualSprite = getSpriteUrl('common/Visual.png');
-const vocalSprite = getSpriteUrl('common/Vocal.png');
+const verbalSprite = getSpriteUrl('common/Verbal.webp');
+const visualSprite = getSpriteUrl('common/Visual.webp');
+const vocalSprite = getSpriteUrl('common/Vocal.webp');
 import DetailedFeedbackPage from '../session/DetailedFeedbackPage';
 import './HistoryPage.css';
 import './HistoryPageMobile.css';
@@ -187,7 +187,7 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
           <div className="history-mobile-header dashboard-anim-top">
             <div className="history-mobile-title-row">
               <h2 className="history-mobile-title">History</h2>
-              <button type="button" className="history-mobile-close-btn" onClick={onClose}>×</button>
+              <button type="button" className="dashboard-overlay-close-btn" onClick={onClose} aria-label="Close history">×</button>
             </div>
           </div>
 

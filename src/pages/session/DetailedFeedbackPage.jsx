@@ -21,9 +21,9 @@ import { sanitizeRecommendationLines, sanitizeTranscriptForDisplay } from '../..
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 
 const heroRobotImage = getSpriteUrl('Robot/0018.webp');
-const verbalSprite = getSpriteUrl('common/Verbal.png');
-const visualSprite = getSpriteUrl('common/Visual.png');
-const vocalSprite = getSpriteUrl('common/Vocal.png');
+const verbalSprite = getSpriteUrl('common/Verbal.webp');
+const visualSprite = getSpriteUrl('common/Visual.webp');
+const vocalSprite = getSpriteUrl('common/Vocal.webp');
 import DetailedFeedbackPageMobile from './DetailedFeedbackPageMobile';
 import '../main/InnerPages.css';
 import './DetailedFeedbackPage.css';

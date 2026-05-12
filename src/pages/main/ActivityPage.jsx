@@ -46,8 +46,8 @@ const rankSilverImage = getSpriteUrl('Rank/rank-silver.png');
 const rankGoldImage = getSpriteUrl('Rank/rank-gold.png');
 const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.png');
 const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.png');
-const crystalBallImage = getSpriteUrl('common/crystal-ball.png');
-const crownImage = getSpriteUrl('common/crown.png');
+const crystalBallImage = getSpriteUrl('common/crystal-ball.webp');
+const crownImage = getSpriteUrl('common/crown.webp');
 const b01ChatHead = getAssetUrl('Images/Bigkas-Logo.webp');
 import fireAnimationData from '../../assets/Lottie/fire.json';
 import { generateCoachInsights } from '../../utils/coachInsights';
@@ -118,7 +118,7 @@ function buildStreakStats(sessions = []) {
   });
   const activeDays = [...dayIndexes].sort((a, b) => a - b);
   if (!activeDays.length) return { currentStreak: 0, canRecover: false, potentialStreak: 0, recoverySessionsToday: 0, requiredRecoveryTasks: 1 };
-  
+
   const todayIndex = getLocalDayIndex(new Date());
   const last = activeDays[activeDays.length - 1];
   const daySet = new Set(activeDays);
@@ -171,9 +171,9 @@ function buildStreakStats(sessions = []) {
     }
   }
 
-  return { 
-    currentStreak, 
-    canRecover: canRecover && potentialStreak > 0, 
+  return {
+    currentStreak,
+    canRecover: canRecover && potentialStreak > 0,
     potentialStreak,
     recoverySessionsToday,
     requiredRecoveryTasks
@@ -292,7 +292,7 @@ function ActivityPage() {
         window.clearTimeout(stampResetTimeoutRef.current);
       }
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close().catch(() => {});
+        audioContextRef.current.close().catch(() => { });
       }
       if (overlayAudioRef.current) {
         overlayAudioRef.current.pause();
@@ -364,17 +364,17 @@ function ActivityPage() {
   const isAdvancingRef = useRef(null);
   useEffect(() => {
     if (!user?.id || tasks.length === 0 || activitiesLoading) return;
-    
+
     if (completedTaskCount === tasks.length) {
       const currentLevel = Number(user.progressLevelNumber || 1);
       if (currentLevel < 5) {
         const nextLevel = currentLevel + 1;
-        
+
         if (isAdvancingRef.current === nextLevel) return;
         isAdvancingRef.current = nextLevel;
 
         console.log(`[Journey] All ${tasks.length} stages done in Level ${currentLevel}. Advancing to ${nextLevel}.`);
-        
+
         // Update both profiles table and auth metadata for consistency
         updateUserProgressLevel(user.id, nextLevel).catch(err => {
           console.error('Failed to update profile level:', err);
@@ -430,7 +430,7 @@ function ActivityPage() {
 
     const latestScore = Math.floor(latest?.score || latest?.overall_score || latest?.overallScore || 0);
     const firstScore = Math.floor(first?.score || first?.overall_score || first?.overallScore || 0);
-    
+
     const insights = generateCoachInsights(sessions);
 
     return {
@@ -439,7 +439,7 @@ function ActivityPage() {
       averageScore: activityMetrics?.averageScore || "N/A",
       currentLevel: levelProgress.levelNumber,
       levelName: levelProgress.levelName,
-      
+
       // Pre-calculated Math for B-01 to ensure accurate summaries
       growthSummary: {
         firstSessionScore: firstScore,
@@ -457,7 +457,7 @@ function ActivityPage() {
         topic: latest.topic || latest.script_title || latest.activity_title,
         date: latest.created_at
       } : null,
-      
+
       // Recent history (Truncated to avoid token limits, but enough for trends)
       recentTimeline: sortedSessions.slice(0, 15).map(s => ({
         date: new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
@@ -491,7 +491,7 @@ function ActivityPage() {
             return;
           }
         }
-        
+
         const response = await fetch('https://b01-ai-worker.dzeref4000.workers.dev/banner-message', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -528,7 +528,7 @@ function ActivityPage() {
 
     const userMessage = { role: 'user', content: query };
     const newMessages = [...chatMessages, userMessage];
-    
+
     setChatMessages(newMessages);
     setAskB01Query('');
     setIsB01Typing(true);
@@ -537,16 +537,16 @@ function ActivityPage() {
     setChatMessages(prev => [...prev, { role: 'assistant', content: '', id: assistantMessageId }]);
 
     try {
-      const contextMessage = { 
-        role: 'system', 
-        content: `CONTEXT: User Progress Snapshot: ${JSON.stringify(getProgressContext())}. Reference these specific numbers if asked about progress, growth, or stats.` 
+      const contextMessage = {
+        role: 'system',
+        content: `CONTEXT: User Progress Snapshot: ${JSON.stringify(getProgressContext())}. Reference these specific numbers if asked about progress, growth, or stats.`
       };
 
       const response = await fetch('https://b01-ai-worker.dzeref4000.workers.dev', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          messages: [contextMessage, ...newMessages] 
+        body: JSON.stringify({
+          messages: [contextMessage, ...newMessages]
         }),
       });
 
@@ -563,7 +563,7 @@ function ActivityPage() {
         const { value, done: doneReading } = await reader.read();
         done = doneReading;
         const chunkValue = decoder.decode(value);
-        
+
         // Cloudflare Workers AI streaming returns data prefixes like "data: {...}"
         const lines = chunkValue.split('\n');
         for (const line of lines) {
@@ -572,9 +572,9 @@ function ActivityPage() {
             try {
               const data = JSON.parse(line.slice(6));
               accumulatedResponse += data.response || '';
-              
-              setChatMessages(prev => prev.map(msg => 
-                msg.id === assistantMessageId 
+
+              setChatMessages(prev => prev.map(msg =>
+                msg.id === assistantMessageId
                   ? { ...msg, content: accumulatedResponse }
                   : msg
               ));
@@ -586,8 +586,8 @@ function ActivityPage() {
       }
     } catch (error) {
       console.error('B-01 Error:', error);
-      setChatMessages(prev => prev.map(msg => 
-        msg.id === assistantMessageId 
+      setChatMessages(prev => prev.map(msg =>
+        msg.id === assistantMessageId
           ? { ...msg, content: "I'm having a little trouble connecting to my brain right now. Please try again in a moment!" }
           : msg
       ));
@@ -656,13 +656,13 @@ function ActivityPage() {
   // Automatic Tutorial Trigger
   useEffect(() => {
     if (!user?.id || activitiesLoading) return;
-    
+
     // Condition: finished profiling AND pre-testing OR finished entire onboarding
-    const isReadyForTutorial = 
-      user.onboardingStage === 'completed' || 
+    const isReadyForTutorial =
+      user.onboardingStage === 'completed' ||
       (user.isProfilingCompleted && user.isPreTestCompleted) ||
       (user.profilingCompleted && user.pretestCompleted);
-    
+
     if (isReadyForTutorial) {
       const localSeen = window.localStorage.getItem(FREE_SPEECH_TUTORIAL_SEEN_KEY);
       const remoteSeen = !!user.dashboardTutorialSeen;
@@ -677,7 +677,7 @@ function ActivityPage() {
     const level = resolveDashboardTutorialSpeakerLevel(user);
     let welcomeText = "Welcome aboard! You made it, and I know you're going to do great things here. Let me give you a quick, guided tour of your Home screen so you know exactly where everything is.";
     let welcomeVoice = null;
-    
+
     if (level === 1) {
       welcomeText = "Welcome! I’ve analyzed your profile and we’re starting from the ground up. You’ll be taking the full 30-stage path for Journey 1 to ensure your vocal and visual foundations are unbreakable. Let’s build your mastery, stage by stage.";
       welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%201.mp3";
@@ -789,16 +789,16 @@ function ActivityPage() {
   useEffect(() => {
     if (user?.isAudioMuted) return;
 
-    if (showRandomizerOverlay) {
+    if (showRandomizerOverlay && !isStreakRecoveryMode) {
       if (overlayAudioRef.current) overlayAudioRef.current.pause();
       const audio = new Audio("https://assets.bigkas.site/Voices/Home%20Page/Randomizer%20and%20Free%20Speech%20Button/Randomizer.mp3");
       overlayAudioRef.current = audio;
-      audio.play().catch(() => {});
+      audio.play().catch(() => { });
     } else if (showFreeSpeechOverlay) {
       if (overlayAudioRef.current) overlayAudioRef.current.pause();
       const audio = new Audio("https://assets.bigkas.site/Voices/Home%20Page/Randomizer%20and%20Free%20Speech%20Button/Free%20Speech.mp3");
       overlayAudioRef.current = audio;
-      audio.play().catch(() => {});
+      audio.play().catch(() => { });
     } else {
       if (overlayAudioRef.current) {
         overlayAudioRef.current.pause();
@@ -811,7 +811,7 @@ function ActivityPage() {
     const nextMute = !user?.isAudioMuted;
     await updateUserMetadata({ is_audio_muted: nextMute });
     localStorage.setItem('bigkas_global_audio_muted_v1', nextMute ? '1' : '0');
-    
+
     // Immediate feedback: pause if muting
     if (nextMute && overlayAudioRef.current) {
       overlayAudioRef.current.pause();
@@ -821,7 +821,7 @@ function ActivityPage() {
   const handleActiveTaskIdChange = useCallback((id) => {
     setActiveTaskId(id);
     if (user?.id) {
-      updateJourneyCurrentActivity(user.id, id ?? null).catch(() => {});
+      updateJourneyCurrentActivity(user.id, id ?? null).catch(() => { });
     }
   }, [user?.id]);
 
@@ -838,7 +838,7 @@ function ActivityPage() {
     const audioCtx = audioContextRef.current;
 
     if (audioCtx.state === 'suspended') {
-      audioCtx.resume().catch(() => {});
+      audioCtx.resume().catch(() => { });
     }
 
     const now = audioCtx.currentTime;
@@ -968,7 +968,7 @@ function ActivityPage() {
 
   useEffect(() => {
     if (location.state?.launchFreeSpeechTutorial !== true) return;
-    
+
     // Explicitly reset the seen flag if we're coming from the onboarding reveal
     window.localStorage.setItem(FREE_SPEECH_TUTORIAL_SEEN_KEY, '0');
     setShowFreeSpeechTutorial(true);
@@ -1029,7 +1029,7 @@ function ActivityPage() {
 
     // Persist to database so it doesn't show again on other devices
     if (user?.id) {
-      updateUserMetadata({ dashboard_tutorial_seen: true }).catch(() => {});
+      updateUserMetadata({ dashboard_tutorial_seen: true }).catch(() => { });
     }
 
     const sLevel = resolveDashboardTutorialSpeakerLevel(user);
@@ -1103,7 +1103,7 @@ function ActivityPage() {
   const handleStartRandomizerTopic = useCallback(() => {
     if (!randomizerTopic?.title) return;
     const isRecovery = isStreakRecoveryMode;
-    
+
     navigate(`${ROUTES.TRAINING}?autostart=1`, {
       state: {
         freeTopic: randomizerTopic.title,
@@ -1111,8 +1111,8 @@ function ActivityPage() {
         focus: 'free',
         sessionType: 'practice',
         entryPoint: isRecovery ? 'streak-recovery' : 'practice',
-        objective: isRecovery 
-          ? `Recover your ${potentialStreak} day streak by completing this Level 1-5 Randomizer session!` 
+        objective: isRecovery
+          ? `Recover your ${potentialStreak} day streak by completing this Level 1-5 Randomizer session!`
           : randomizerTopic.title,
         autoStartCountdown: true,
       },
@@ -1304,7 +1304,7 @@ function ActivityPage() {
             gravity={0.24}
           />
         )}
-        
+
         {showCompletionCelebration && (
           <div className="activity-clear-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="activity-clear-modal-title">
             <div className="activity-clear-modal">
@@ -1327,334 +1327,335 @@ function ActivityPage() {
           </div>
         )}
 
-      {showRandomizerOverlay && (
-        <section className="randomizer-overlay-wrapper" aria-label="Randomizer overlay">
-          <div className="bigkas-modal-scrim" aria-hidden="true" onClick={handleCloseRandomizerOverlay} />
-          <div className="randomizer-overlay-content">
-            <div className="randomizer-overlay-card">
-              <div className="randomizer-overlay-card-top">
-                <h2 className="randomizer-overlay-title">
-                  {isStreakRecoveryMode ? 'Streak Recovery Task' : 'Randomizer × B-01'}
-                </h2>
-                <button
-                  type="button"
-                  className="randomizer-overlay-close-btn"
-                  onClick={handleCloseRandomizerOverlay}
-                  aria-label="Close randomizer overlay"
-                >
-                  ×
-                </button>
-              </div>
-              <p className="randomizer-overlay-copy">
-                <span className="randomizer-overlay-copy-kicker">B-01:</span>
-                {isStreakRecoveryMode 
-                  ? `Ready to put your skills to the test? To recover your streak, you'll need to complete ${requiredRecoveryTasks} randomizer tasks with a score of 45% or higher. Whenever you're ready, hit 'Start' to begin!`
-                  : "Ready to put your skills to the test? Click the 'Generate' button for a random topic, and whenever you're ready, hit 'Start' to begin your speaking practice!"
-                }
-              </p>
+        {showRandomizerOverlay && (
+          <section className="randomizer-overlay-wrapper" aria-label="Randomizer overlay">
+            <div className="bigkas-modal-scrim" aria-hidden="true" onClick={handleCloseRandomizerOverlay} />
+            <div className="randomizer-overlay-content">
+              <div className="randomizer-overlay-card">
+                <div className="randomizer-overlay-card-top">
+                  <h2 className="randomizer-overlay-title">
+                    {isStreakRecoveryMode ? 'Streak Recovery Task' : 'Randomizer × B-01'}
+                  </h2>
+                  <button
+                    type="button"
+                    className="dashboard-overlay-close-btn"
+                    onClick={handleCloseRandomizerOverlay}
+                    aria-label="Close randomizer overlay"
+                  >
+                    ×
+                  </button>
+                </div>
+                {!isStreakRecoveryMode && (
+                  <p className="randomizer-overlay-copy">
+                    <span className="randomizer-overlay-copy-kicker">B-01:</span>
+                    Ready to put your skills to the test? Click the 'Generate' button for a random topic, and whenever you're ready, hit 'Start' to begin your speaking practice!
+                  </p>
+                )}
 
-              {isStreakRecoveryMode && (
-                <div className="randomizer-recovery-progress">
-                  <div className="randomizer-recovery-progress-header">
-                    <div className="randomizer-recovery-progress-label">Recovery Progress</div>
-                    <div className="randomizer-recovery-progress-requirement">
-                      <IoTrophyOutline className="requirement-icon" />
-                      <span>Target: 45%+ Score</span>
+                {isStreakRecoveryMode && (
+                  <div className="randomizer-recovery-progress">
+                    <div className="randomizer-recovery-progress-header">
+                      <div className="randomizer-recovery-progress-label">Recovery Progress</div>
+                      <div className="randomizer-recovery-progress-requirement">
+                        <IoTrophyOutline className="requirement-icon" />
+                        <span>Target: 45%+ Score</span>
+                      </div>
+                    </div>
+                    <div className="randomizer-recovery-progress-bar-wrap">
+                      <div
+                        className="randomizer-recovery-progress-bar-fill"
+                        style={{ width: `${(recoverySessionsToday / requiredRecoveryTasks) * 100}%` }}
+                      />
+                    </div>
+                    <div className="randomizer-recovery-progress-count">
+                      {recoverySessionsToday} / {requiredRecoveryTasks} Tasks Completed
                     </div>
                   </div>
-                  <div className="randomizer-recovery-progress-bar-wrap">
-                    <div 
-                      className="randomizer-recovery-progress-bar-fill" 
-                      style={{ width: `${(recoverySessionsToday / requiredRecoveryTasks) * 100}%` }}
-                    />
-                  </div>
-                  <div className="randomizer-recovery-progress-count">
-                    {recoverySessionsToday} / {requiredRecoveryTasks} Tasks Completed
-                  </div>
-                </div>
-              )}
-              <p className="randomizer-overlay-topic">
-                <span className="randomizer-overlay-topic-label">Topic:</span>
-                {' '}
-                {isRandomizingTopic 
-                  ? 'Thinking of a topic...' 
-                  : (randomizerTopic?.title || "Click 'Randomize Topic' below to get started!")}
-              </p>
-              <div className="randomizer-overlay-actions">
-                <Button
-                  variant="practice"
-                  className="randomizer-overlay-randomize-btn"
-                  onClick={handleRandomizeTopic}
-                  disabled={isRandomizingTopic}
-                >
-                  {isRandomizingTopic ? 'Randomizing...' : 'Generate'}
-                </Button>
-                <Button
-                  variant="practice"
-                  className="randomizer-overlay-start-btn"
-                  onClick={handleStartRandomizerTopic}
-                  disabled={!randomizerTopic?.title || isRandomizingTopic}
-                >
-                  {isStreakRecoveryMode 
-                    ? `Start Task ${Math.min(requiredRecoveryTasks, recoverySessionsToday + 1)} of ${requiredRecoveryTasks}` 
-                    : 'Start'
-                  }
-                </Button>
-              </div>
-            </div>
-            <div className="randomizer-overlay-robot-wrap">
-              <img
-                src={randomizerRobotImage}
-                alt=""
-                className="randomizer-overlay-robot"
-                aria-hidden="true"
-                loading="eager"
-                fetchPriority="high"
-              />
-            </div>
-            <div className="tutorial-audio-action">
-              <button
-                type="button"
-                aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
-                onClick={handleToggleMute}
-              >
-                {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
-      {showFreeSpeechOverlay && (
-        <section className="randomizer-overlay-wrapper" aria-label="Free speech overlay">
-          <div className="bigkas-modal-scrim" aria-hidden="true" onClick={handleCloseFreeSpeechOverlay} />
-          <div className="randomizer-overlay-content">
-            <div className="randomizer-overlay-card free-speech-overlay-card">
-              <div className="randomizer-overlay-card-top">
-                <h2 className="randomizer-overlay-title">Free Speech</h2>
-                <button
-                  type="button"
-                  className="randomizer-overlay-close-btn"
-                  onClick={handleCloseFreeSpeechOverlay}
-                  aria-label="Close free speech overlay"
-                >
-                  ×
-                </button>
-              </div>
-              <p className="randomizer-overlay-copy">
-                <span className="randomizer-overlay-copy-kicker">B-01:</span>
-                In this mode, you have the freedom to speak about any topic of your choice. When you're ready, just hit the 'Start' button and let your words flow!
-              </p>
-              <label className="randomizer-overlay-topic free-speech-overlay-topic-input-wrap">
-                <span className="randomizer-overlay-topic-label">Your Topic:</span>
-                <textarea
-                  className="free-speech-overlay-topic-input"
-                  rows={3}
-                  placeholder="Type what you will be speaking about..."
-                  value={freeSpeechDraftTopic}
-                  onChange={(event) => setFreeSpeechDraftTopic(event.target.value)}
-                />
-              </label>
-              <div className="randomizer-overlay-actions free-speech-overlay-actions">
-                <Button
-                  variant="practice"
-                  className="randomizer-overlay-start-btn free-speech-overlay-start-btn"
-                  onClick={handleStartFreeSpeechOverlay}
-                  disabled={!freeSpeechDraftTopic.trim()}
-                >
-                  Start
-                </Button>
-              </div>
-            </div>
-            <div className="randomizer-overlay-robot-wrap">
-              <img
-                src={randomizerRobotImage}
-                alt=""
-                className="randomizer-overlay-robot"
-                aria-hidden="true"
-                loading="eager"
-                fetchPriority="high"
-              />
-            </div>
-            <div className="tutorial-audio-action">
-              <button
-                type="button"
-                aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
-                onClick={handleToggleMute}
-              >
-                {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
-
-        {/* Banner */}
-        <section className="new-banner dashboard-anim-top dashboard-anim-delay-2">
-           <div className="new-banner-left" id="tutorial-target-home-banner">
-              <img src={heroRobotImage} alt="" className="new-banner-robot" />
-              <div className="new-banner-bubble" aria-label="Coach message">
-                <p className="new-banner-kicker">B-01:</p>
-                <p className="new-banner-copy">
-                  {isBannerLoading ? 'Checking your progress...' : bannerMessage}
+                )}
+                <p className="randomizer-overlay-topic">
+                  <span className="randomizer-overlay-topic-label">Topic:</span>
+                  {' '}
+                  {isRandomizingTopic
+                    ? 'Thinking of a topic...'
+                    : (randomizerTopic?.title || "Click 'Randomize Topic' below to get started!")}
                 </p>
-                <div className="new-banner-bubble-footer">
-                  <Button 
+                <div className="randomizer-overlay-actions">
+                  <Button
                     variant="practice"
-                    className="ask-b01-trigger" 
-                    onClick={() => setIsAskB01ModalOpen(true)}
-                    aria-label="Ask B-01 a question"
+                    className="randomizer-overlay-randomize-btn"
+                    onClick={handleRandomizeTopic}
+                    disabled={isRandomizingTopic}
                   >
-                    <IoChatbubbleEllipsesOutline />
-                    <span>Ask B-01</span>
+                    {isRandomizingTopic ? 'Randomizing...' : 'Generate'}
+                  </Button>
+                  <Button
+                    variant="practice"
+                    className="randomizer-overlay-start-btn"
+                    onClick={handleStartRandomizerTopic}
+                    disabled={!randomizerTopic?.title || isRandomizingTopic}
+                  >
+                    {isStreakRecoveryMode
+                      ? `Start Task ${Math.min(requiredRecoveryTasks, recoverySessionsToday + 1)} of ${requiredRecoveryTasks}`
+                      : 'Start'
+                    }
                   </Button>
                 </div>
               </div>
-           </div>
-           <div className="new-banner-right">
-              <div 
-                className="new-banner-streak" 
-                id="tutorial-target-home-streak" 
-                aria-label="Daily streak"
-                onClick={() => setIsStreakModalOpen(true)}
-              >
-                 <div className="new-streak-top" style={{ justifyContent: 'space-between', width: '100%' }}>
-                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                     <div className="new-streak-fire">
-                       {lottieFireNode}
-                     </div>
-                     <div className="new-streak-headline">
-                       <div className="new-streak-value">
-                         {streakStats.currentStreak}
-                       </div>
-                       <p className="new-streak-label">day streak</p>
-                     </div>
-                   </div>
-
-                   {streakStats.canRecover && (
-                     <Button 
-                       variant="practice"
-                       className="ask-b01-trigger streak-recovery-trigger" 
-                       onClick={(e) => {
-                         e.stopPropagation();
-                         handleRecoverStreak();
-                       }}
-                       aria-label={`Recover your ${streakStats.potentialStreak} day streak`}
-                       style={{ margin: 0, width: 'auto', padding: '0 12px', height: '36px', fontSize: '0.8rem' }}
-                     >
-                       <IoFlame />
-                       <span>Recover {streakStats.potentialStreak} Day Streak</span>
-                     </Button>
-                   )}
-                 </div>
-                 <div className="new-streak-week" aria-label="This week streak activity">
-                   {weekPills.map((pill, idx) => (
-                     <span
-                       key={`${pill.label}-${idx}`}
-                       className={`new-streak-pill${pill.active ? ' is-active' : ''}${pill.isToday ? ' is-today' : ''}`}
-                     >
-                       {pill.label}
-                     </span>
-                   ))}
-                 </div>
-                 <p className="new-streak-copy">Build a daily speaking habit to keep stacking your streak.</p>
+              <div className="randomizer-overlay-robot-wrap">
+                <img
+                  src={randomizerRobotImage}
+                  alt=""
+                  className="randomizer-overlay-robot"
+                  aria-hidden="true"
+                  loading="eager"
+                  fetchPriority="high"
+                />
               </div>
-           </div>
+              {!isStreakRecoveryMode && (
+                <div className="tutorial-audio-action">
+                  <button
+                    type="button"
+                    aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                    title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                    className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
+                    onClick={handleToggleMute}
+                  >
+                    {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+        {showFreeSpeechOverlay && (
+          <section className="randomizer-overlay-wrapper" aria-label="Free speech overlay">
+            <div className="bigkas-modal-scrim" aria-hidden="true" onClick={handleCloseFreeSpeechOverlay} />
+            <div className="randomizer-overlay-content">
+              <div className="randomizer-overlay-card free-speech-overlay-card">
+                <div className="randomizer-overlay-card-top">
+                  <h2 className="randomizer-overlay-title">Free Speech</h2>
+                  <button
+                    type="button"
+                    className="dashboard-overlay-close-btn"
+                    onClick={handleCloseFreeSpeechOverlay}
+                    aria-label="Close free speech overlay"
+                  >
+                    ×
+                  </button>
+                </div>
+                <p className="randomizer-overlay-copy">
+                  <span className="randomizer-overlay-copy-kicker">B-01:</span>
+                  In this mode, you have the freedom to speak about any topic of your choice. When you're ready, just hit the 'Start' button and let your words flow!
+                </p>
+                <label className="randomizer-overlay-topic free-speech-overlay-topic-input-wrap">
+                  <span className="randomizer-overlay-topic-label">Your Topic:</span>
+                  <textarea
+                    className="free-speech-overlay-topic-input"
+                    rows={3}
+                    placeholder="Type what you will be speaking about..."
+                    value={freeSpeechDraftTopic}
+                    onChange={(event) => setFreeSpeechDraftTopic(event.target.value)}
+                  />
+                </label>
+                <div className="randomizer-overlay-actions free-speech-overlay-actions">
+                  <Button
+                    variant="practice"
+                    className="randomizer-overlay-start-btn free-speech-overlay-start-btn"
+                    onClick={handleStartFreeSpeechOverlay}
+                    disabled={!freeSpeechDraftTopic.trim()}
+                  >
+                    Start
+                  </Button>
+                </div>
+              </div>
+              <div className="randomizer-overlay-robot-wrap">
+                <img
+                  src={randomizerRobotImage}
+                  alt=""
+                  className="randomizer-overlay-robot"
+                  aria-hidden="true"
+                  loading="eager"
+                  fetchPriority="high"
+                />
+              </div>
+              <div className="tutorial-audio-action">
+                <button
+                  type="button"
+                  aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                  title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                  className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
+                  onClick={handleToggleMute}
+                >
+                  {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Banner */}
+        <section className="new-banner dashboard-anim-top dashboard-anim-delay-2">
+          <div className="new-banner-left" id="tutorial-target-home-banner">
+            <img src={heroRobotImage} alt="" className="new-banner-robot" />
+            <div className="new-banner-bubble" aria-label="Coach message">
+              <p className="new-banner-kicker">B-01:</p>
+              <p className="new-banner-copy">
+                {isBannerLoading ? 'Checking your progress...' : bannerMessage}
+              </p>
+              <div className="new-banner-bubble-footer">
+                <Button
+                  variant="practice"
+                  className="ask-b01-trigger"
+                  onClick={() => setIsAskB01ModalOpen(true)}
+                  aria-label="Ask B-01 a question"
+                >
+                  <IoChatbubbleEllipsesOutline />
+                  <span>Ask B-01</span>
+                </Button>
+              </div>
+            </div>
+          </div>
+          <div className="new-banner-right">
+            <div
+              className="new-banner-streak"
+              id="tutorial-target-home-streak"
+              aria-label="Daily streak"
+              onClick={() => setIsStreakModalOpen(true)}
+            >
+              <div className="new-streak-top" style={{ justifyContent: 'space-between', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div className="new-streak-fire">
+                    {lottieFireNode}
+                  </div>
+                  <div className="new-streak-headline">
+                    <div className="new-streak-value">
+                      {streakStats.currentStreak}
+                    </div>
+                    <p className="new-streak-label">day streak</p>
+                  </div>
+                </div>
+
+                {streakStats.canRecover && (
+                  <Button
+                    variant="practice"
+                    className="ask-b01-trigger streak-recovery-trigger"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRecoverStreak();
+                    }}
+                    aria-label={`Recover your ${streakStats.potentialStreak} day streak`}
+                    style={{ margin: 0, width: 'auto', padding: '0 12px', height: '36px', fontSize: '0.8rem' }}
+                  >
+                    <IoFlame />
+                    <span>Recover {streakStats.potentialStreak} Day Streak</span>
+                  </Button>
+                )}
+              </div>
+              <div className="new-streak-week" aria-label="This week streak activity">
+                {weekPills.map((pill, idx) => (
+                  <span
+                    key={`${pill.label}-${idx}`}
+                    className={`new-streak-pill${pill.active ? ' is-active' : ''}${pill.isToday ? ' is-today' : ''}`}
+                  >
+                    {pill.label}
+                  </span>
+                ))}
+              </div>
+              <p className="new-streak-copy">Build a daily speaking habit to keep stacking your streak.</p>
+            </div>
+          </div>
         </section>
 
         {/* Left Column (Journey Shell) */}
         <div className="new-left-col" id="tutorial-target-home-journey">
           <div className="new-left-col-inner">
-             <SkywardJourneyShell
-               initialLevel={recommendedLevel}
-               recommendedLevel={recommendedLevel}
-               entranceFromNav={entranceFromNav}
-               scrollToStepIndex={scrollToStepIndex}
-               renderTaskCard={renderTaskCardForShell}
-               onActiveTaskIdChange={handleActiveTaskIdChange}
-             />
+            <SkywardJourneyShell
+              initialLevel={recommendedLevel}
+              recommendedLevel={recommendedLevel}
+              entranceFromNav={entranceFromNav}
+              scrollToStepIndex={scrollToStepIndex}
+              renderTaskCard={renderTaskCardForShell}
+              onActiveTaskIdChange={handleActiveTaskIdChange}
+            />
           </div>
         </div>
 
         {/* Right Column (Widgets) */}
         <div className="new-right-col no-scrollbar">
-            <section className="new-widget dashboard-anim-left dashboard-anim-delay-2" id="tutorial-target-home-rank">
-              <div className="new-widget-head">
-                <h2 className="new-widget-title">Speaker Level Progression</h2>
-                <span className="new-widget-chip">Level</span>
+          <section className="new-widget dashboard-anim-left dashboard-anim-delay-2" id="tutorial-target-home-rank">
+            <div className="new-widget-head">
+              <h2 className="new-widget-title">Speaker Level Progression</h2>
+              <span className="new-widget-chip">Level</span>
+            </div>
+            <div
+              className="new-widget-rank-card"
+              onClick={() => setIsRankModalOpen(true)}
+            >
+              <img src={rankSpriteImage} alt="" className="new-widget-rank-sprite" />
+              <div className="new-widget-rank-content">
+                <p className="new-widget-kicker">Current Mastery</p>
+                <p className="new-widget-value">LEVEL {currentJourneyNumber}</p>
               </div>
-              <div 
-                className="new-widget-rank-card"
-                onClick={() => setIsRankModalOpen(true)}
+            </div>
+            <p className="new-widget-caption">
+              {tasks.length > 0 ? (
+                <>
+                  {completedTaskCount}/{tasks.length} Stages Completed
+                  <span className="new-widget-caption-sep"> - </span>
+                  {sidebarProgressPct}% Cleared
+                </>
+              ) : (
+                'No activities found for this level.'
+              )}
+            </p>
+          </section>
+
+          <section className="new-widget new-widget--practice dashboard-anim-bottom dashboard-anim-delay-4" id="tutorial-target-home-practice">
+            <div className="new-widget-head">
+              <h2 className="new-widget-title">Practice</h2>
+            </div>
+            <p className="new-practice-subtitle">Choose a mode and jump straight into speaking.</p>
+
+            <div className="new-btn-group">
+              <div
+                className="new-btn-row new-btn-row--card"
+                role="button"
+                tabIndex={0}
+                onClick={handleRandomizerClick}
+                onKeyDown={(e) => e.key === 'Enter' && handleRandomizerClick()}
               >
-                <img src={rankSpriteImage} alt="" className="new-widget-rank-sprite" />
-                <div className="new-widget-rank-content">
-                  <p className="new-widget-kicker">Current Mastery</p>
-                  <p className="new-widget-value">LEVEL {currentJourneyNumber}</p>
+                <div className="new-btn-visual new-btn-visual--randomizer">
+                  <img src={crystalBallImage} alt="" className="new-btn-visual-img new-btn-visual-img--randomizer" />
+                </div>
+                <div className="new-btn-meta">
+                  <p className="new-btn-label">Randomizer</p>
+                  <p className="new-btn-hint">Instant prompt to warm up your delivery.</p>
                 </div>
               </div>
-                <p className="new-widget-caption">
-                  {tasks.length > 0 ? (
-                    <>
-                      {completedTaskCount}/{tasks.length} Stages Completed
-                      <span className="new-widget-caption-sep"> - </span>
-                      {sidebarProgressPct}% Cleared
-                    </>
-                  ) : (
-                    'No activities found for this level.'
-                  )}
-                </p>
-            </section>
 
-            <section className="new-widget new-widget--practice dashboard-anim-bottom dashboard-anim-delay-4" id="tutorial-target-home-practice">
-              <div className="new-widget-head">
-                <h2 className="new-widget-title">Practice</h2>
-              </div>
-              <p className="new-practice-subtitle">Choose a mode and jump straight into speaking.</p>
-
-              <div className="new-btn-group">
-                <div 
-                  className="new-btn-row new-btn-row--card"
-                  role="button"
-                  tabIndex={0}
-                  onClick={handleRandomizerClick}
-                  onKeyDown={(e) => e.key === 'Enter' && handleRandomizerClick()}
-                >
-                  <div className="new-btn-visual new-btn-visual--randomizer">
-                    <img src={crystalBallImage} alt="" className="new-btn-visual-img new-btn-visual-img--randomizer" />
-                  </div>
-                  <div className="new-btn-meta">
-                    <p className="new-btn-label">Randomizer</p>
-                    <p className="new-btn-hint">Instant prompt to warm up your delivery.</p>
-                  </div>
+              <div
+                className="new-btn-row new-btn-row--card"
+                role="button"
+                tabIndex={0}
+                onClick={handleFreeSpeechClick}
+                onKeyDown={(e) => e.key === 'Enter' && handleFreeSpeechClick()}
+              >
+                <div className="new-btn-visual new-btn-visual--speech">
+                  <img src={crownImage} alt="" className="new-btn-visual-img" />
                 </div>
-                
-                <div 
-                  className="new-btn-row new-btn-row--card"
-                  role="button"
-                  tabIndex={0}
-                  onClick={handleFreeSpeechClick}
-                  onKeyDown={(e) => e.key === 'Enter' && handleFreeSpeechClick()}
-                >
-                  <div className="new-btn-visual new-btn-visual--speech">
-                    <img src={crownImage} alt="" className="new-btn-visual-img" />
-                  </div>
-                  <div className="new-btn-meta">
-                    <p className="new-btn-label">Free Speech</p>
-                    <p className="new-btn-hint">Open topic mode for confidence building.</p>
-                  </div>
+                <div className="new-btn-meta">
+                  <p className="new-btn-label">Free Speech</p>
+                  <p className="new-btn-hint">Open topic mode for confidence building.</p>
                 </div>
               </div>
-            </section>
-          </div>
+            </div>
+          </section>
+        </div>
       </div>
-      <StreakCalendarModal 
-        isOpen={isStreakModalOpen} 
-        onClose={() => setIsStreakModalOpen(false)} 
-        sessionCountsByDay={sessionCountsByDay} 
+      <StreakCalendarModal
+        isOpen={isStreakModalOpen}
+        onClose={() => setIsStreakModalOpen(false)}
+        sessionCountsByDay={sessionCountsByDay}
         streakStats={streakStats}
       />
 
@@ -1669,7 +1670,7 @@ function ActivityPage() {
         onFinish={() => setShowAssessmentModal(false)}
         steps={assessmentTutorialSteps}
       />
-      
+
       {/* Ask B-01 Modal */}
       {isAskB01ModalOpen && (
         <section className="randomizer-overlay-wrapper ask-b01-modal-wrapper" aria-label="Ask B-01 modal">
@@ -1680,15 +1681,15 @@ function ActivityPage() {
                 <img src={b01ChatHead} alt="" className="ask-b01-modal-title-logo" />
                 Ask <span>B-01</span>
               </h2>
-              <button 
-                className="ask-b01-modal-close" 
+              <button
+                className="dashboard-overlay-close-btn"
                 onClick={() => setIsAskB01ModalOpen(false)}
                 aria-label="Close"
               >
                 ×
               </button>
             </div>
-            
+
             <div className="ask-b01-chat-container" ref={chatScrollRef}>
               {chatMessages.map((msg, idx) => (
                 <div key={idx} className={`ask-b01-chat-row ${msg.role === 'assistant' ? 'b01-row' : 'user-row'}`}>
@@ -1697,7 +1698,7 @@ function ActivityPage() {
                       <img src={b01ChatHead} alt="B-01" />
                     </div>
                   )}
-                  
+
                   <div className={`ask-b01-message ask-b01-message--${msg.role === 'assistant' ? 'b01' : 'user'} ${!msg.content && msg.role === 'assistant' ? 'typing-indicator' : ''}`}>
                     {msg.content || (msg.role === 'assistant' && (
                       <><span>.</span><span>.</span><span>.</span></>
@@ -1721,8 +1722,8 @@ function ActivityPage() {
               {chatMessages.length === 1 && !isB01Typing && (
                 <div className="ask-b01-suggestions">
                   {B01_SUGGESTIONS.map((suggestion, sIdx) => (
-                    <button 
-                      key={sIdx} 
+                    <button
+                      key={sIdx}
                       className="ask-b01-suggestion-chip"
                       onClick={() => handleSendMessage(suggestion)}
                     >
@@ -1735,22 +1736,22 @@ function ActivityPage() {
             </div>
 
             <div className="ask-b01-input-area">
-              <form 
+              <form
                 className="ask-b01-input-wrapper"
                 onSubmit={(e) => {
                   e.preventDefault();
                   handleSendMessage();
                 }}
               >
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   className="ask-b01-input"
                   placeholder="Ask me anything..."
                   value={askB01Query}
                   onChange={(e) => setAskB01Query(e.target.value)}
                   disabled={isB01Typing}
                 />
-                <button 
+                <button
                   type="submit"
                   className="ask-b01-send-btn"
                   disabled={!askB01Query.trim() || isB01Typing}

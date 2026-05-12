@@ -658,16 +658,10 @@ function TrainingPage() {
 
   /* ── Waveform animation loop (shared by startRecording + resume) ── */
   const startWaveformLoop = useCallback(() => {
-    // Check ref instead of state to avoid re-creating this callback
-    if (isTutorialOverlayOpenRef.current) {
-      if (animRef.current) cancelAnimationFrame(animRef.current);
-      return;
-    }
-    
     const sensitivity = getMicSensitivityProfile();
 
     const tick = () => {
-      if (isTutorialOverlayOpenRef.current || !analyserRef.current || !audioCtxRef.current) {
+      if (!analyserRef.current || !audioCtxRef.current) {
         if (animRef.current) cancelAnimationFrame(animRef.current);
         return;
       }
@@ -898,6 +892,7 @@ function TrainingPage() {
       audioRecorder.start(200);
 
       setStatus('recording');
+      startWaveformLoop();
       recordingDurationSecRef.current = 0;
       setElapsedSec(0);
       micLowStartRef.current = null;

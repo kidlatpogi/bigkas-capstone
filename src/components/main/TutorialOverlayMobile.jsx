@@ -415,6 +415,43 @@ function TutorialOverlayMobile({
   return (
     <>
       <div className="tutorial-dark-bg" aria-hidden="true" />
+      <style>{`
+        /* Override layout for custom tutorial steps on mobile to perfectly match step 1 design */
+        @media (max-width: 768px) {
+          .tutorial-overlay-wrapper.is-custom-tutorial:not(.is-activity-home-step-1) .tutorial-companion-container {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 0.5rem !important;
+            bottom: calc(clamp(10px, 3vh, 30px) + env(safe-area-inset-bottom, 0px)) !important;
+            top: auto !important;
+          }
+          .tutorial-overlay-wrapper.is-custom-tutorial:not(.is-activity-home-step-1) .tutorial-speech-bubble {
+            order: 1 !important;
+            transform: translateY(8rem) !important;
+            z-index: 1301 !important;
+            width: 100% !important;
+            max-width: min(100%, 48rem) !important;
+            margin: 0 !important;
+          }
+          .tutorial-overlay-wrapper.is-custom-tutorial:not(.is-activity-home-step-1) .tutorial-speech-bubble::before {
+            left: 50% !important;
+            top: auto !important;
+            bottom: -12px !important;
+            border-top: 12px solid #FDFDF9 !important;
+            border-bottom: 0 !important;
+            border-right: 12px solid transparent !important;
+            border-left: 12px solid transparent !important;
+            transform: translateX(-50%) !important;
+          }
+          .tutorial-overlay-wrapper.is-custom-tutorial:not(.is-activity-home-step-1) .tutorial-robot-img {
+            order: 2 !important;
+            width: clamp(320px, 85vw, 520px) !important;
+            height: auto !important;
+            filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.18)) !important;
+          }
+        }
+      `}</style>
       <section
         className={`tutorial-overlay-wrapper${Array.isArray(steps) && steps.length > 0 ? ' is-custom-tutorial' : ' is-default-tutorial'}${activeStep.id === 'step-controls' ? ' is-controls-step' : ''}${activeStep.id === 'step-soundbar' ? ' is-soundbar-step' : ''}${activeStep.id === 'step-final' ? ' is-final-step' : ''}${activeStep.robotClassName ? ` ${activeStep.robotClassName}` : ''}`}
         aria-label="Training tutorial overlay"

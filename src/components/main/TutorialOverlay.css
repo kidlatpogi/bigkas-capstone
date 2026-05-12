@@ -517,50 +517,57 @@
     max-width: calc(100vw - 32px) !important;
     bottom: calc(clamp(104px, 18vh, 148px) + env(safe-area-inset-bottom, 0px)) !important;
     top: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
   }
 
-  .tutorial-overlay-wrapper.is-default-tutorial.is-controls-step .tutorial-companion-container {
-    top: calc(clamp(52px, 8vh, 74px) + env(safe-area-inset-top, 0px));
-    bottom: auto;
-    left: 50%;
-    transform: translateX(-50%);
-    width: min(calc(100vw - clamp(16px, 6vw, 32px)), 54rem);
-    align-items: flex-start;
-  }
-
+  .tutorial-overlay-wrapper.is-default-tutorial.is-controls-step .tutorial-companion-container,
   .tutorial-overlay-wrapper.is-default-tutorial.is-soundbar-step .tutorial-companion-container {
-    top: calc(clamp(56px, 9vh, 86px) + env(safe-area-inset-top, 0px));
-    bottom: auto;
-    left: 50%;
-    transform: translateX(-50%);
-    width: min(calc(100vw - clamp(16px, 6vw, 32px)), 54rem);
-    align-items: flex-start;
-    z-index: 5100;
+    top: calc(clamp(56px, 9vh, 86px) + env(safe-area-inset-top, 0px)) !important;
+    bottom: auto !important;
+    z-index: 5100 !important;
+  }
+
+  .tutorial-overlay-wrapper:not(.is-final-step) .tutorial-robot-img {
+    width: clamp(90px, 28vw, 150px) !important;
+    height: auto !important;
+    order: 2 !important;
+    margin: 0 !important;
+  }
+
+  .tutorial-overlay-wrapper:not(.is-final-step) .tutorial-speech-bubble {
+    width: 100% !important;
+    max-width: min(calc(100vw - 32px), 500px) !important;
+    order: 1 !important;
+    margin: 0 !important;
+    padding: 1rem 1.25rem !important;
+  }
+
+  .tutorial-overlay-wrapper:not(.is-final-step) .tutorial-speech-bubble::before {
+    left: 50% !important;
+    top: auto !important;
+    bottom: -12px !important;
+    border-top: 12px solid #FDFDF9 !important;
+    border-bottom: 0 !important;
+    border-right: 12px solid transparent !important;
+    border-left: 12px solid transparent !important;
+    transform: translateX(-50%) !important;
   }
 
   .tutorial-overlay-wrapper.is-default-tutorial.is-final-step .tutorial-companion-container {
-    top: calc(clamp(8rem, 16vh, 11rem) - 5rem);
-  }
-
-  .tutorial-overlay-wrapper.is-default-tutorial:not(.is-final-step) .tutorial-speech-bubble::before {
-    top: 50%;
-    bottom: auto;
-    left: -12px;
-    border-top: 12px solid transparent;
-    border-bottom: 12px solid transparent;
-    border-right: 12px solid #FDFDF9;
-    border-left: 0;
-    transform: translateY(-50%);
+    top: calc(clamp(8rem, 16vh, 11rem) - 5rem) !important;
   }
 
   .tutorial-audio-action,
   .tutorial-overlay-wrapper.is-default-tutorial .tutorial-audio-action,
   .tutorial-overlay-wrapper.is-default-tutorial.is-final-step .tutorial-audio-action,
   .tutorial-overlay-wrapper.is-activity-home-step-1 .tutorial-audio-action {
-    right: auto;
-    left: 50%;
-    transform: translateX(-50%);
-    bottom: calc(clamp(16px, 4.5vh, 28px) + env(safe-area-inset-bottom, 0px));
+    right: auto !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    bottom: calc(clamp(16px, 4.5vh, 28px) + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
 

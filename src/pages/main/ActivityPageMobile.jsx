@@ -1125,6 +1125,22 @@ function ActivityPageMobile() {
                   </div>
                 </div>
               </section>
+
+              {/* Launch Tutorial Temp */}
+              <Button
+                variant="practice"
+                className="activity-mobile-dashboard-btn"
+                onClick={() => {
+                  setShowDashboardOverlay(false);
+                  if (typeof window !== 'undefined') {
+                    window.localStorage.setItem('bigkas_free_speech_tutorial_seen_v1', '0');
+                  }
+                  setShowFreeSpeechTutorial(true);
+                }}
+                style={{ marginTop: '1rem', width: '100%' }}
+              >
+                Launch Tutorial (Temp)
+              </Button>
             </div>
           </div>
         </section>

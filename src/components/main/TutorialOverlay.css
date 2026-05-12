@@ -506,12 +506,17 @@
 @media (max-width: 768px) {
 
   .tutorial-overlay-wrapper.is-default-tutorial .tutorial-companion-container,
-  .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-companion-container {
+  .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-companion-container,
+  .tutorial-overlay-wrapper.is-custom-tutorial:not(.is-activity-home-step-1) .tutorial-companion-container,
+  .tutorial-overlay-wrapper[class*="is-activity-home-step-"] .tutorial-companion-container,
+  .tutorial-overlay-wrapper.is-roadmap-step .tutorial-companion-container,
+  .tutorial-overlay-wrapper.is-practice-step .tutorial-companion-container {
     left: 50% !important;
     transform: translateX(-50%) !important;
     width: min(calc(100vw - clamp(16px, 6vw, 32px)), 54rem) !important;
-    max-width: none !important;
+    max-width: calc(100vw - 32px) !important;
     bottom: calc(clamp(104px, 18vh, 148px) + env(safe-area-inset-bottom, 0px)) !important;
+    top: auto !important;
   }
 
   .tutorial-overlay-wrapper.is-default-tutorial.is-controls-step .tutorial-companion-container {

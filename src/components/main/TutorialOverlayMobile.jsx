@@ -13,6 +13,11 @@ const tutorialVoice5 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutori
 const tutorialVoiceFinal = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial FINAL.mp3');
 const defaultFinalRobotImage = getSpriteUrl('Robot/0002.webp');
 const BIGKAS_LOGO_URL = 'https://assets.bigkas.site/Images/Bigkas-Logo.webp';
+/** Home streak step: desktop copy references top-right; on narrow viewports the streak lives elsewhere. */
+const HOME_STREAK_STEP_TEXT_MOBILE =
+  "Your Streak counter tracks how many consecutive days you've practiced. Consistency is the true secret to mastering public speaking! Log in and complete a daily activity to keep the fire burning and watch that number grow.";
+const HOME_STREAK_STEP_VOICE_MOBILE =
+  'https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Streak-Counter.mp3';
 import './TutorialOverlay.css';
 
 /**
@@ -157,6 +162,22 @@ function TutorialOverlayMobile({
   const [anchoredCompanionStyle, setAnchoredCompanionStyle] = useState(null);
 
   const activeStep = useMemo(() => tutorialSteps[currentStep], [tutorialSteps, currentStep]);
+
+  const bubbleFullText = useMemo(() => {
+    if (!activeStep?.text) return '';
+    if (isNarrowViewport && activeStep.id === 'step-streak') {
+      return HOME_STREAK_STEP_TEXT_MOBILE;
+    }
+    return activeStep.text;
+  }, [activeStep, isNarrowViewport]);
+
+  const bubbleVoiceUrl = useMemo(() => {
+    if (!activeStep) return null;
+    if (isNarrowViewport && activeStep.id === 'step-streak') {
+      return HOME_STREAK_STEP_VOICE_MOBILE;
+    }
+    return activeStep.voice ?? null;
+  }, [activeStep, isNarrowViewport]);
 
   const robotSrc = useMemo(() => {
     if (!activeStep) return robotImage;
@@ -443,7 +464,7 @@ function TutorialOverlayMobile({
     }
 
     let charIndex = 0;
-    const fullText = activeStep.text;
+    const fullText = bubbleFullText;
     typingIntervalRef.current = window.setInterval(() => {
       charIndex += 1;
       setTypedText(fullText.slice(0, charIndex));
@@ -459,8 +480,8 @@ function TutorialOverlayMobile({
     if (!isMutedRef.current) {
       stopAllAudios();
 
-      if (activeStep.voice) {
-        const audio = new Audio(activeStep.voice);
+      if (bubbleVoiceUrl) {
+        const audio = new Audio(bubbleVoiceUrl);
         audio.muted = false;
         customVoiceRef.current = audio;
         audio.play().catch((err) => console.warn('[TutorialOverlayMobile] Custom voice play failed:', err));
@@ -480,7 +501,7 @@ function TutorialOverlayMobile({
       }
       stopAllAudios();
     };
-  }, [currentStep, isOpen, shouldUseAudio, activeStep?.id, activeStep?.text, activeStep?.voice]);
+  }, [currentStep, isOpen, shouldUseAudio, activeStep?.id, bubbleFullText, bubbleVoiceUrl]);
 
   if (!isOpen || !activeStep) return null;
 
@@ -488,7 +509,7 @@ function TutorialOverlayMobile({
     stopAllAudios();
 
     if (!isTypingDone) {
-      setTypedText(activeStep.text);
+      setTypedText(bubbleFullText);
       setIsTypingDone(true);
       if (typingIntervalRef.current) {
         window.clearInterval(typingIntervalRef.current);
@@ -549,7 +570,7 @@ function TutorialOverlayMobile({
           <p className="tutorial-bubble-text">
             <TypingText
               text={typedText}
-              fullText={activeStep.text}
+              fullText={bubbleFullText}
               isDone={isTypingDone}
               emphasis={activeStep.emphasis}
             />
@@ -672,10 +693,32 @@ function TutorialOverlayMobile({
             bottom: calc(clamp(104px, 18vh, 148px) + env(safe-area-inset-bottom, 0px)) !important;
             top: auto !important;
           }
-          .tutorial-overlay-wrapper.is-custom-tutorial.is-rank-step .tutorial-companion-container,
+          .tutorial-overlay-wrapper.is-custom-tutorial.is-rank-step .tutorial-companion-container {
+            top: calc(16px + 2rem + env(safe-area-inset-top, 0px)) !important;
+            bottom: auto !important;
+          }
           .tutorial-overlay-wrapper.is-custom-tutorial.is-practice-step .tutorial-companion-container {
             top: calc(16px + env(safe-area-inset-top, 0px)) !important;
             bottom: auto !important;
+          }
+          /* Roadmap: default bottom anchor covered the journey; pin companion to top + shrink footer art so Skyward Journey stays visible */
+          .tutorial-overlay-wrapper.is-custom-tutorial.is-roadmap-step .tutorial-companion-container {
+            top: calc(12px + env(safe-area-inset-top, 0px)) !important;
+            bottom: auto !important;
+            gap: 0.35rem !important;
+          }
+          .tutorial-overlay-wrapper.is-custom-tutorial.is-roadmap-step .tutorial-speech-bubble {
+            padding-bottom: 0.65rem !important;
+          }
+          .tutorial-overlay-wrapper.is-custom-tutorial.is-roadmap-step .tutorial-bubble-text {
+            max-height: min(26vh, 132px) !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+          }
+          .tutorial-overlay-wrapper.is-custom-tutorial.is-roadmap-step .tutorial-robot-img:not(.tutorial-robot-img--logo) {
+            max-height: 76px !important;
+            max-width: 148px !important;
+            width: auto !important;
           }
           .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-speech-bubble {
             order: 1 !important;

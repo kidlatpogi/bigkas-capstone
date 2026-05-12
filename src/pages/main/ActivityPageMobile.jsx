@@ -932,6 +932,61 @@ function ActivityPageMobile() {
 
   return (
     <div className="activity-page-mobile-root activity-page--skyward-entrance">
+      <style>
+        {`
+          @media (max-width: 767px) {
+            /*
+             * Mobile viewport: prerequisite banner inside SkywardJourney — stack logo above title,
+             * tighten padding, keep copy centered for narrow widths.
+             */
+            .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-banner {
+              padding: 4px 10px 6px;
+              border-top: 1px solid rgba(11, 57, 84, 0.05);
+              background: rgba(255, 255, 255, 0.72);
+            }
+            .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-banner-inner {
+              max-width: none;
+            }
+            .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-body {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              text-align: center;
+            }
+            .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-title-row {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              gap: 4px;
+              margin-bottom: 4px;
+              width: 100%;
+            }
+            .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-logo {
+              height: 26px;
+              width: auto;
+              max-width: 80px;
+              flex-shrink: 0;
+              opacity: 1;
+            }
+            .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-title {
+              font-size: 0.65rem;
+              letter-spacing: 0.055em;
+              line-height: 1.25;
+              max-width: 17.5rem;
+            }
+            .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-list {
+              font-size: 0.7rem;
+              line-height: 1.32;
+              font-weight: 500;
+              padding: 0 2px;
+            }
+            .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-list li {
+              max-width: 18rem;
+            }
+          }
+        `}
+      </style>
       <TutorialOverlayMobile
         isOpen={showFreeSpeechTutorial}
         steps={freeSpeechTutorialSteps}

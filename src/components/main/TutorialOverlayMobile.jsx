@@ -120,6 +120,8 @@ function TutorialOverlayMobile({
   const isCustomTutorial = Array.isArray(steps) && steps.length > 0;
 
   const [currentStep, setCurrentStep] = useState(0);
+  /** 0 = `text`; 1 = optional `textPart2` before advancing to the next step */
+  const [stepTextSegment, setStepTextSegment] = useState(0);
   const [typedText, setTypedText] = useState('');
   const [isTypingDone, setIsTypingDone] = useState(false);
   const [isNarrowViewport, setIsNarrowViewport] = useState(
@@ -165,19 +167,28 @@ function TutorialOverlayMobile({
 
   const bubbleFullText = useMemo(() => {
     if (!activeStep?.text) return '';
+    if (activeStep.textPart2 && stepTextSegment === 1) {
+      return activeStep.textPart2;
+    }
     if (isNarrowViewport && activeStep.id === 'step-streak') {
       return HOME_STREAK_STEP_TEXT_MOBILE;
     }
     return activeStep.text;
-  }, [activeStep, isNarrowViewport]);
+  }, [activeStep, isNarrowViewport, stepTextSegment]);
 
   const bubbleVoiceUrl = useMemo(() => {
     if (!activeStep) return null;
     if (isNarrowViewport && activeStep.id === 'step-streak') {
       return HOME_STREAK_STEP_VOICE_MOBILE;
     }
+    if (stepTextSegment === 1 && activeStep.voicePart2) {
+      return activeStep.voicePart2;
+    }
+    if (stepTextSegment === 1) {
+      return null;
+    }
     return activeStep.voice ?? null;
-  }, [activeStep, isNarrowViewport]);
+  }, [activeStep, isNarrowViewport, stepTextSegment]);
 
   const robotSrc = useMemo(() => {
     if (!activeStep) return robotImage;
@@ -288,6 +299,7 @@ function TutorialOverlayMobile({
     if (isOpen) {
       clearAllSpotlights();
       setCurrentStep(0);
+      setStepTextSegment(0);
       return;
     }
     clearAllSpotlights();
@@ -301,6 +313,10 @@ function TutorialOverlayMobile({
       activeSpotlightRef.current = null;
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    setStepTextSegment(0);
+  }, [currentStep]);
 
   useEffect(() => {
     dashboardFooterClickDoneRef.current = false;
@@ -451,7 +467,7 @@ function TutorialOverlayMobile({
       window.removeEventListener('resize', scheduleUpdate);
       window.removeEventListener('orientationchange', scheduleUpdate);
     };
-  }, [isOpen, activeStep?.id, activeStep?.targetElementId]);
+  }, [isOpen, activeStep?.id, activeStep?.targetElementId, stepTextSegment]);
 
   useEffect(() => {
     if (!isOpen || !activeStep) return undefined;
@@ -501,7 +517,7 @@ function TutorialOverlayMobile({
       }
       stopAllAudios();
     };
-  }, [currentStep, isOpen, shouldUseAudio, activeStep?.id, bubbleFullText, bubbleVoiceUrl]);
+  }, [currentStep, isOpen, shouldUseAudio, activeStep?.id, bubbleFullText, bubbleVoiceUrl, stepTextSegment]);
 
   if (!isOpen || !activeStep) return null;
 
@@ -515,6 +531,11 @@ function TutorialOverlayMobile({
         window.clearInterval(typingIntervalRef.current);
         typingIntervalRef.current = null;
       }
+      return;
+    }
+
+    if (activeStep.textPart2 && stepTextSegment === 0) {
+      setStepTextSegment(1);
       return;
     }
 
@@ -572,7 +593,7 @@ function TutorialOverlayMobile({
               text={typedText}
               fullText={bubbleFullText}
               isDone={isTypingDone}
-              emphasis={activeStep.emphasis}
+              emphasis={stepTextSegment === 0 ? activeStep.emphasis : undefined}
             />
           </p>
           <button type="button" className="tutorial-bubble-btn" onClick={handleNext} disabled={!isTypingDone}>
@@ -671,15 +692,12 @@ function TutorialOverlayMobile({
             background: #ffffff !important;
             box-shadow: 0 0 0 5px #34D399, 0 0 42px rgba(52, 211, 153, 0.9) !important;
           }
-          /* Dim the entire dashboard overlay container when a child element inside it is targeted by the spotlight */
-          .dashboard-overlay-wrapper:has(.tutorial-spotlight-active) .dashboard-overlay-content::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.82) !important;
-            z-index: 4000 !important;
-            border-radius: 32px 32px 0 0 !important;
+          /* Dim non-spotlighted siblings inside the dashboard scroll area instead of rendering a covering absolute pseudo-element */
+          .dashboard-overlay-wrapper:has(.tutorial-spotlight-active) .dashboard-overlay-scroll-content > *:not(.tutorial-spotlight-active),
+          .dashboard-overlay-wrapper:has(.tutorial-spotlight-active) .dashboard-overlay-header {
+            opacity: 0.15 !important;
             pointer-events: none !important;
+            transition: opacity 0.3s ease !important;
           }
           .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-companion-container {
             display: flex !important;

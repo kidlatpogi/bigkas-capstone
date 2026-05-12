@@ -74,7 +74,8 @@
   pointer-events: none;
 }
 
-.activity-mobile-banner-left {
+/* Scoped to Progress mobile root so embedded DetailedFeedback (df-mobile-root) is not shifted by robot inset */
+.progress-page-mobile-root .activity-mobile-banner-left {
   width: 100%;
   border-radius: 16px;
   position: relative;
@@ -85,7 +86,7 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
-.activity-mobile-banner-robot {
+.progress-page-mobile-root .activity-mobile-banner-robot {
   position: absolute;
   left: -2px;
   bottom: -10px;
@@ -94,7 +95,7 @@
   pointer-events: none;
 }
 
-.activity-mobile-banner-bubble {
+.progress-page-mobile-root .activity-mobile-banner-bubble {
   width: 100%;
   background: #ffffff;
   border-radius: 12px;
@@ -106,7 +107,7 @@
   justify-content: center;
 }
 
-.activity-mobile-banner-kicker {
+.progress-page-mobile-root .activity-mobile-banner-kicker {
   margin: 0;
   font-size: 0.85rem;
   font-weight: 800;
@@ -114,7 +115,7 @@
   line-height: 1.1;
 }
 
-.activity-mobile-banner-copy {
+.progress-page-mobile-root .activity-mobile-banner-copy {
   margin: 3px 0 0;
   font-size: 0.72rem;
   color: #1f2937;

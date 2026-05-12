@@ -540,6 +540,24 @@
   }
 }
 
+/*
+ * Full-bleed bubble inside the green frame when embedded (e.g. Progress → History).
+ * Other routes used unpadded banner-left rules with 100px left inset for the robot; keep DF isolated.
+ */
+.df-mobile-root .activity-mobile-banner-left {
+  padding: 0;
+  align-items: stretch;
+  flex-direction: column;
+}
+
+.df-mobile-root .activity-mobile-banner-bubble {
+  align-self: stretch;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
 /* Scoped parity with desktop DetailedFeedbackPage — keeps imported desktop components readable */
 .df-mobile-root .df-mobile-content.df-mobile-sr-parity {
   gap: 16px;

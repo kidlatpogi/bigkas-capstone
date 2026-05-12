@@ -532,7 +532,8 @@
 
   .tutorial-overlay-wrapper:not(.is-final-step) .tutorial-robot-img,
   .tutorial-overlay-wrapper[class*="is-"] .tutorial-robot-img {
-    width: clamp(140px, 38vw, 220px) !important;
+    width: 70vw !important;
+    max-width: 360px !important;
     height: auto !important;
     order: 2 !important;
     margin: 0 !important;
@@ -566,11 +567,11 @@
   .tutorial-audio-action,
   .tutorial-overlay-wrapper .tutorial-audio-action,
   .tutorial-overlay-wrapper[class*="is-"] .tutorial-audio-action {
-    top: calc(clamp(16px, 2.5vh, 24px) + env(safe-area-inset-top, 0px)) !important;
-    right: clamp(16px, 4vw, 24px) !important;
-    left: auto !important;
-    bottom: auto !important;
-    transform: none !important;
+    top: auto !important;
+    bottom: calc(clamp(16px, 3vh, 24px) + env(safe-area-inset-bottom, 0px)) !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
     z-index: 5500 !important;
   }
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { IoChevronBack, IoChevronForward } from 'react-icons/io5';
 import { 
@@ -488,9 +488,6 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
   })();
 
   const avoidSectionRef = useRef(null);
-  const scrollToAvoid = useCallback(() => {
-    avoidSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
 
   if (!session && isLoading) {
     return (
@@ -537,16 +534,8 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
         <section className="activity-mobile-top-strip sr-mobile-hero dashboard-anim-top">
           <div className="activity-mobile-banner-left">
             <div className="activity-mobile-banner-bubble">
+              <p className="activity-mobile-banner-kicker">B-01:</p>
               <img src={BIGKAS_LOGO_URL} alt="Bigkas" className="activity-mobile-banner-logo" />
-              <p className="activity-mobile-banner-copy new-banner-intro-text">
-                {tripleV.entryPoint >= 4.0
-                  ? 'Outstanding! Your performance was exemplary.'
-                  : tripleV.entryPoint >= 3.0
-                    ? 'Great effort! Your speaking is clear and professional.'
-                    : tripleV.entryPoint >= 2.0
-                      ? 'Good progress. Keep practicing to reach the next tier.'
-                      : 'Every session counts. Focus on the basics to improve.'}
-              </p>
               <p className="new-banner-recs-title">Recommendations:</p>
               {recommendations.length > 0 && (
                 <ul className="new-banner-recs-minilist">
@@ -558,9 +547,6 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
                   ))}
                 </ul>
               )}
-              <button type="button" className="df-mobile-growth-focus-btn" onClick={scrollToAvoid}>
-                GROWTH FOCUS ↓
-              </button>
             </div>
           </div>
         </section>

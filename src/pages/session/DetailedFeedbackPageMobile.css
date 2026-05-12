@@ -131,14 +131,25 @@
 
 .activity-mobile-banner-left {
   width: 100%;
+  flex: 1;
+  min-height: 0;
   border-radius: 16px;
   position: relative;
-  padding: 10px;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: stretch;
   border: 1px solid rgba(255, 255, 255, 0.25);
   background: rgba(255, 255, 255, 0.08);
+}
+
+.activity-mobile-banner-kicker {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #059669;
+  line-height: 1.1;
 }
 
 .activity-mobile-banner-logo {
@@ -148,19 +159,21 @@
   max-width: 140px;
   object-fit: contain;
   object-position: left center;
-  margin: 0 0 4px;
+  margin: 6px 0 8px;
 }
 
 .activity-mobile-banner-bubble {
+  flex: 1;
   width: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
   background: #ffffff;
-  border-radius: 12px;
-  padding: 8px 10px;
+  border-radius: 16px;
+  padding: 10px 12px;
   box-shadow: 0 6px 12px rgba(11, 57, 84, 0.12);
-  min-height: 60px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .activity-mobile-banner-copy {
@@ -552,20 +565,6 @@
 .df-mobile-root .df-mobile-timeline-card {
   height: 280px;
   padding: 16px 12px 12px;
-}
-
-.df-mobile-growth-focus-btn {
-  margin-top: 12px;
-  background: #10b98115;
-  color: #059669;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 10px;
-  font-size: 0.65rem;
-  font-weight: 800;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.1);
-  font-family: inherit;
 }
 
 .df-mobile-root .df-mobile-footer-actions.sr-footer-layout {

@@ -178,7 +178,8 @@ function TutorialOverlayMobile({
 
   const needsDashboardForSpotlight = Boolean(
     activeStep?.targetElementId === 'tutorial-target-home-streak'
-      || activeStep?.targetElementId === 'tutorial-target-home-rank',
+      || activeStep?.targetElementId === 'tutorial-target-home-rank'
+      || activeStep?.targetElementId === 'tutorial-target-home-practice',
   );
 
   /** Streak step: Bigkas modal scrim below spotlight; rank uses dashboard scrim only */
@@ -317,7 +318,7 @@ function TutorialOverlayMobile({
     const spotlightZIndex =
       isCustomTutorial && targetId === 'tutorial-target-home-journey' ? '4600' : '4800';
     const needsDashboard =
-      targetId === 'tutorial-target-home-streak' || targetId === 'tutorial-target-home-rank';
+      targetId === 'tutorial-target-home-streak' || targetId === 'tutorial-target-home-rank' || targetId === 'tutorial-target-home-practice';
     const maxAttempts = needsDashboard ? 48 : 6;
     const retryMs = needsDashboard ? 80 : 60;
 
@@ -331,6 +332,9 @@ function TutorialOverlayMobile({
         nextEl.classList.add('tutorial-spotlight-active');
         nextEl.style.setProperty('z-index', spotlightZIndex, 'important');
         activeSpotlightRef.current = nextEl;
+        try {
+          nextEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch (e) {}
         return;
       }
       if (attempt >= maxAttempts) return;
@@ -654,7 +658,8 @@ function TutorialOverlayMobile({
             bottom: calc(clamp(104px, 18vh, 148px) + env(safe-area-inset-bottom, 0px)) !important;
             top: auto !important;
           }
-          .tutorial-overlay-wrapper.is-custom-tutorial.is-rank-step .tutorial-companion-container {
+          .tutorial-overlay-wrapper.is-custom-tutorial.is-rank-step .tutorial-companion-container,
+          .tutorial-overlay-wrapper.is-custom-tutorial.is-practice-step .tutorial-companion-container {
             top: calc(16px + env(safe-area-inset-top, 0px)) !important;
             bottom: auto !important;
           }

@@ -14,7 +14,7 @@ const defaultFinalRobotImage = getSpriteUrl('Robot/0002.webp');
 import './TutorialOverlay.css';
 
 /**
- * Isolated typing component to prevent parent re-renders on every character
+ * Isolated typing component to prevent parent re-renders on every character typing cycle
  */
 const TypingText = memo(({ text, fullText, isDone, emphasis }) => {
   if (!isDone) return <>{text}</>;

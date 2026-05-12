@@ -418,15 +418,19 @@ function TutorialOverlayMobile({
       <style>{`
         /* Override layout for custom tutorial steps on mobile to perfectly match step 1 design */
         @media (max-width: 768px) {
-          .tutorial-overlay-wrapper.is-custom-tutorial:not(.is-activity-home-step-1) .tutorial-companion-container {
+          .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-companion-container {
             display: flex !important;
             flex-direction: column !important;
             align-items: center !important;
             gap: 0.5rem !important;
-            bottom: calc(clamp(10px, 3vh, 30px) + env(safe-area-inset-bottom, 0px)) !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            width: min(calc(100vw - clamp(16px, 6vw, 32px)), 54rem) !important;
+            max-width: calc(100vw - 32px) !important;
+            bottom: calc(clamp(104px, 18vh, 148px) + env(safe-area-inset-bottom, 0px)) !important;
             top: auto !important;
           }
-          .tutorial-overlay-wrapper.is-custom-tutorial:not(.is-activity-home-step-1) .tutorial-speech-bubble {
+          .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-speech-bubble {
             order: 1 !important;
             transform: translateY(8rem) !important;
             z-index: 1301 !important;
@@ -434,7 +438,7 @@ function TutorialOverlayMobile({
             max-width: min(100%, 48rem) !important;
             margin: 0 !important;
           }
-          .tutorial-overlay-wrapper.is-custom-tutorial:not(.is-activity-home-step-1) .tutorial-speech-bubble::before {
+          .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-speech-bubble::before {
             left: 50% !important;
             top: auto !important;
             bottom: -12px !important;
@@ -444,14 +448,10 @@ function TutorialOverlayMobile({
             border-left: 12px solid transparent !important;
             transform: translateX(-50%) !important;
           }
-          .tutorial-overlay-wrapper.is-custom-tutorial:not(.is-activity-home-step-1) .tutorial-robot-img {
+          .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-robot-img {
             order: 2 !important;
-            width: auto !important;
-            max-width: clamp(200px, 55vw, 260px) !important;
+            width: clamp(320px, 85vw, 520px) !important;
             height: auto !important;
-            max-height: 220px !important;
-            object-fit: contain !important;
-            margin-bottom: 25px !important;
             filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.18)) !important;
           }
         }

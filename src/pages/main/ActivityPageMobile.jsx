@@ -44,7 +44,6 @@ const tutorialRobotStep3 = getSpriteUrl('Robot/0018.webp');
 const tutorialRobotStep4 = getSpriteUrl('Robot/0001.webp');
 const tutorialRobotStep5 = getSpriteUrl('Robot/0002.webp');
 const tutorialRobotStep6 = getSpriteUrl('Robot/0004.webp');
-const randomizerRobotImage = getSpriteUrl('Robot/0002.webp');
 const rankBronze = getSpriteUrl('Rank/rank-bronze.png');
 const rankSilverImage = getSpriteUrl('Rank/rank-silver.png');
 const rankGoldImage = getSpriteUrl('Rank/rank-gold.png');
@@ -294,19 +293,6 @@ function ActivityPageMobile() {
     onResize();
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
-  }, []);
-
-  useEffect(() => {
-    const preloadLink = document.createElement('link');
-    preloadLink.rel = 'preload';
-    preloadLink.as = 'image';
-    preloadLink.href = randomizerRobotImage;
-    document.head.appendChild(preloadLink);
-    return () => {
-      if (document.head.contains(preloadLink)) {
-        document.head.removeChild(preloadLink);
-      }
-    };
   }, []);
 
   const recommendedLevel = useMemo(() => {
@@ -997,6 +983,7 @@ function ActivityPageMobile() {
             <div className="randomizer-overlay-card">
               <div className="randomizer-overlay-card-top">
                 <h2 className="randomizer-overlay-title">
+                  <img src={b01ChatHead} alt="" className="randomizer-overlay-title-logo" width={22} height={22} />
                   {isStreakRecoveryMode ? 'Streak Recovery Task' : 'Randomizer × B-01'}
                 </h2>
                 <button
@@ -1063,16 +1050,6 @@ function ActivityPageMobile() {
                 </Button>
               </div>
             </div>
-            <div className="randomizer-overlay-robot-wrap">
-              <img
-                src={randomizerRobotImage}
-                alt=""
-                className="randomizer-overlay-robot"
-                aria-hidden="true"
-                loading="eager"
-                fetchPriority="high"
-              />
-            </div>
             <div className="tutorial-audio-action">
               <button
                 type="button"
@@ -1093,7 +1070,10 @@ function ActivityPageMobile() {
           <div className="randomizer-overlay-content">
             <div className="randomizer-overlay-card free-speech-overlay-card">
               <div className="randomizer-overlay-card-top">
-                <h2 className="randomizer-overlay-title">Free Speech</h2>
+                <h2 className="randomizer-overlay-title">
+                  <img src={b01ChatHead} alt="" className="randomizer-overlay-title-logo" width={22} height={22} />
+                  Free Speech
+                </h2>
                 <button
                   type="button"
                   className="randomizer-overlay-close-btn"
@@ -1127,16 +1107,6 @@ function ActivityPageMobile() {
                   Start
                 </Button>
               </div>
-            </div>
-            <div className="randomizer-overlay-robot-wrap">
-              <img
-                src={randomizerRobotImage}
-                alt=""
-                className="randomizer-overlay-robot"
-                aria-hidden="true"
-                loading="eager"
-                fetchPriority="high"
-              />
             </div>
             <div className="tutorial-audio-action">
               <button

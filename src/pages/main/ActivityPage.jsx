@@ -104,7 +104,7 @@ function isPreTestSession(session) {
   return raw.includes('pre-test') || raw.includes('pretest');
 }
 
-function buildStreakStats(sessions = [], historyEntries = []) {
+function buildStreakStats(sessions = []) {
   const dayIndexes = new Set();
   const addDate = (dateInput) => {
     const parsed = new Date(dateInput);
@@ -115,9 +115,6 @@ function buildStreakStats(sessions = [], historyEntries = []) {
       const d = getSessionDate(s);
       if (d) addDate(d);
     }
-  });
-  historyEntries.forEach((e) => {
-    if (e?.completedAt) addDate(e.completedAt);
   });
   const activeDays = [...dayIndexes].sort((a, b) => a - b);
   if (!activeDays.length) return { currentStreak: 0, canRecover: false, potentialStreak: 0, recoverySessionsToday: 0, requiredRecoveryTasks: 1 };
@@ -416,7 +413,7 @@ function ActivityPage() {
     return counts;
   }, [sessions, activityHistory]);
 
-  const streakStats = useMemo(() => buildStreakStats(sessions, activityHistory), [sessions, activityHistory]);
+  const streakStats = useMemo(() => buildStreakStats(sessions), [sessions]);
   const { currentStreak, canRecover, potentialStreak, recoverySessionsToday, requiredRecoveryTasks } = streakStats;
 
   const getProgressContext = useCallback(() => {
@@ -745,8 +742,14 @@ function ActivityPage() {
         robotClassName: 'is-roadmap-step',
         button: 'Next',
         targetElementId: 'tutorial-target-home-journey',
-        text: 'This path is your customized learning roadmap! You will start at your first stage and unlock the next ones as you move forward. The activities gradually become more challenging, and once you complete all tasks on your path, you unlock a final Post-test challenge to advance.',
-        voice: "https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%203.mp3",
+        text:
+          'This path is your customized learning roadmap! You will start at your first stage and unlock the next ones as you move forward.',
+        textPart2:
+          'The activities gradually become more challenging, and once you complete all tasks on your path, you unlock a final Post-test challenge to advance.',
+        voice:
+          'https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%203%20Part%201.mp3',
+        voicePart2:
+          'https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%203%20Part%202.mp3',
       },
       {
         id: 'step-practice',
@@ -990,6 +993,26 @@ function ActivityPage() {
     }
     return () => document.body.classList.remove('activity-tutorial-open');
   }, [showFreeSpeechTutorial]);
+
+  /** Assessment overlay uses the same scrim as home tutorial; spotlight cleanup may miss inline z-index on targets */
+  const ASSESSMENT_TUTORIAL_TARGET_IDS = [
+    'tutorial-target-home-banner',
+    'tutorial-target-home-streak',
+    'tutorial-target-home-journey',
+    'tutorial-target-home-rank',
+    'tutorial-target-home-practice',
+  ];
+
+  useEffect(() => {
+    if (!showAssessmentModal || typeof document === 'undefined') return undefined;
+    ASSESSMENT_TUTORIAL_TARGET_IDS.forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove('tutorial-spotlight-active');
+      el.style.removeProperty('z-index');
+    });
+    return undefined;
+  }, [showAssessmentModal]);
 
   const launchFreeSpeechSession = useCallback(() => {
     navigate(ROUTES.TRAINING_SETUP);

@@ -168,6 +168,8 @@
 
   .activity-mobile-top-strip {
     min-height: 112px;
+    border-radius: 28px;
+    overflow: hidden;
   }
 
   .activity-mobile-journey-container .skyward-journey-anim-header.skyward-journey-header-card {

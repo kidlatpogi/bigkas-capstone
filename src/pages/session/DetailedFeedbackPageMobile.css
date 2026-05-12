@@ -102,7 +102,7 @@
   line-height: 1.4;
 }
 
-/* Immersive Coach Hero */
+/* Immersive Coach Hero — same strip treatment as Activity / Progress mobile */
 .activity-mobile-top-strip {
   width: 100%;
   min-height: 112px;
@@ -115,6 +115,7 @@
   display: flex;
   align-items: stretch;
   position: relative;
+  overflow: hidden;
 }
 
 .activity-mobile-top-strip::before {
@@ -523,4 +524,12 @@
 .df-mobile-back-btn:active {
   transform: translateY(2px);
   box-shadow: 0 3px 0 #047857;
+}
+
+/* Mobile viewport: reinforce coach hero strip radius (matches Activity mobile home) */
+@media (max-width: 767px) {
+  .df-mobile-root .activity-mobile-top-strip {
+    border-radius: 28px;
+    overflow: hidden;
+  }
 }

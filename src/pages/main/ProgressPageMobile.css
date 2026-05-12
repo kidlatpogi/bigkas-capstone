@@ -47,7 +47,7 @@
   gap: 16px;
 }
 
-/* Immersive Mobile Banner */
+/* Immersive Mobile Banner — match Activity home strip (full corner radius, clipped gradient) */
 .activity-mobile-top-strip {
   width: 100%;
   min-height: 112px;
@@ -55,14 +55,12 @@
   background: linear-gradient(180deg, #10b981 0%, #059669 100%);
   box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.15);
   flex-shrink: 0;
-  margin-bottom: 0;
-  padding: 12px;
   margin: 0;
-  width: 100%;
-  border-radius: 0 0 28px 28px;
+  padding: 12px;
   display: flex;
   align-items: stretch;
   position: relative;
+  overflow: hidden;
 }
 
 .activity-mobile-top-strip::before {
@@ -390,4 +388,12 @@
   border-radius: 20px;
   margin-top: 16px;
   width: 100%;
+}
+
+/* Mobile viewport: reinforce coach strip radius (matches Activity mobile home) */
+@media (max-width: 767px) {
+  .progress-page-mobile-root .activity-mobile-top-strip {
+    border-radius: 28px;
+    overflow: hidden;
+  }
 }

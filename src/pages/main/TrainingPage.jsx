@@ -751,7 +751,24 @@ function TrainingPage() {
         streamRef.current.getTracks().forEach(t => t.stop());
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (primaryErr) {
+        const name = primaryErr?.name;
+        const retriable =
+          name === 'NotReadableError'
+          || name === 'OverconstrainedError'
+          || name === 'TrackStartError';
+        if (!retriable) throw primaryErr;
+        await new Promise((r) => setTimeout(r, 400));
+        if (!isMountedRef.current) return;
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: { facingMode: 'user' },
+        });
+      }
+
       if (!isMountedRef.current) {
         stream.getTracks().forEach(t => t.stop());
         return;
@@ -1368,13 +1385,14 @@ function TrainingPage() {
 
   useEffect(() => {
     if (!videoRef.current || !visualCanvasRef.current) return;
+    /* Wait for preview stream so getUserMedia completes before MediaPipe — avoids NotReadableError when both race. */
+    if (!isPreviewActive) return;
+    /* Heavy vision work deferred until onboarding tutorial is dismissed */
+    if (isTutorialOverlayOpen) return;
 
-    // PERFORMANCE OPTIMIZATION: Prioritize LCP/TBT by deferring AI initialization.
-    // We use a combination of setTimeout and requestIdleCallback to ensure the main thread 
-    // is completely free for initial rendering and user interaction before starting heavy vision tasks.
     const timer = setTimeout(() => {
       const initAI = () => {
-        if (!isMountedRef.current) return;
+        if (!isMountedRef.current || !videoRef.current || !visualCanvasRef.current) return;
         startAnalysis({
           videoElement: videoRef.current,
           canvasElement: visualCanvasRef.current,
@@ -1388,10 +1406,13 @@ function TrainingPage() {
       } else {
         initAI();
       }
-    }, 2500); // Increased delay to 2.5s for better mobile TBT scores
+    }, 450);
 
-    return () => clearTimeout(timer);
-  }, [isActive, startAnalysis, isTutorialOverlayOpen, stopAnalysis, startWaveformLoop]);
+    return () => {
+      clearTimeout(timer);
+      stopAnalysis();
+    };
+  }, [isPreviewActive, isTutorialOverlayOpen, startAnalysis, stopAnalysis, startWaveformLoop]);
 
   return (
     <div className="tp-page tp-page--free-pretest" ref={freeLayoutObserverRef}>

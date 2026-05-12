@@ -118,6 +118,15 @@ export function useVisualAnalysis() {
   const canvasCtxRef = useRef<CanvasRenderingContext2D | null>(null);
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
   const canvasElementRef = useRef<HTMLCanvasElement | null>(null);
+  const sampleCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const sampleCtxRef = useRef<CanvasRenderingContext2D | null>(null);
+  const lowLightSampleRef = useRef({
+    lastCheckMs: 0,
+    lowStreak: 0,
+    okStreak: 0,
+  });
+
+  const [showLowLightWarning, setShowLowLightWarning] = useState(false);
 
   const metricsRef = useRef({
     frameCount: 0,
@@ -249,6 +258,46 @@ export function useVisualAnalysis() {
     }
 
     const nowMs = performance.now();
+
+    /* Low-light banner: sample video luma periodically (no extra getUserMedia). */
+    if (!sampleCanvasRef.current && typeof document !== "undefined") {
+      sampleCanvasRef.current = document.createElement("canvas");
+      sampleCanvasRef.current.width = 48;
+      sampleCanvasRef.current.height = 48;
+      sampleCtxRef.current = sampleCanvasRef.current.getContext("2d", { willReadFrequently: true });
+    }
+    const sampleCtx = sampleCtxRef.current;
+    if (sampleCtx && nowMs - lowLightSampleRef.current.lastCheckMs > 650) {
+      lowLightSampleRef.current.lastCheckMs = nowMs;
+      try {
+        const w = 48;
+        const h = 48;
+        sampleCtx.drawImage(videoElement, 0, 0, w, h);
+        const id = sampleCtx.getImageData(0, 0, w, h);
+        const d = id.data;
+        let sum = 0;
+        for (let i = 0; i < d.length; i += 4) {
+          sum += 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+        }
+        const avg = sum / (d.length / 4);
+        const isLow = avg < 52;
+        if (isLow) {
+          lowLightSampleRef.current.lowStreak += 1;
+          lowLightSampleRef.current.okStreak = 0;
+        } else {
+          lowLightSampleRef.current.okStreak += 1;
+          lowLightSampleRef.current.lowStreak = 0;
+        }
+        if (lowLightSampleRef.current.lowStreak >= 2) {
+          setShowLowLightWarning((prev) => (prev ? prev : true));
+        }
+        if (lowLightSampleRef.current.okStreak >= 4) {
+          setShowLowLightWarning((prev) => (prev ? false : prev));
+        }
+      } catch {
+        /* ignore sampling errors */
+      }
+    }
     
     // Dynamic throttling: 
     // 5 FPS during tutorial (200ms) to save CPU for animations.
@@ -377,6 +426,8 @@ export function useVisualAnalysis() {
         lastProcessedTime: 0,
         isTutorialMode,
       };
+      lowLightSampleRef.current = { lastCheckMs: 0, lowStreak: 0, okStreak: 0 };
+      setShowLowLightWarning(false);
       rafRef.current = requestAnimationFrame(analyzeFrame);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to start visual analysis.");
@@ -387,6 +438,8 @@ export function useVisualAnalysis() {
   const stopAnalysis = useCallback((): VisualAnalysisResult => {
     stopLoop();
     clearOverlay();
+    lowLightSampleRef.current = { lastCheckMs: 0, lowStreak: 0, okStreak: 0 };
+    setShowLowLightWarning(false);
 
     const frames = Math.max(1, metricsRef.current.frameCount);
     const eyeAvg = clampScore(metricsRef.current.eyeContactAccum / frames);
@@ -430,6 +483,7 @@ export function useVisualAnalysis() {
     error,
     lastResult,
     liveScores,
+    showLowLightWarning,
     showLandmarks,
     setShowLandmarks,
     startAnalysis,

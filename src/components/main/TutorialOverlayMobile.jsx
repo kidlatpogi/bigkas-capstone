@@ -656,6 +656,19 @@ function TutorialOverlayMobile({
 
   return (
     <>
+      {isOpen && isStreakHomeStep ? (
+        <style>{`
+          /*
+           * Streak tutorial: scrim is portaled to document.body (z-index 1800). #root stacks as auto,
+           * so the scrim paints above the whole app and hides the spotlight. Raise #root while this
+           * step is open so dashboard content (including #tutorial-target-home-streak) stacks above the scrim.
+           */
+          #root {
+            position: relative;
+            z-index: 1850 !important;
+          }
+        `}</style>
+      ) : null}
       {!needsDashboardForSpotlight ? <div className="tutorial-dark-bg" aria-hidden="true" /> : null}
       <style>{`
         .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-speech-bubble--logo::before,
@@ -714,6 +727,16 @@ function TutorialOverlayMobile({
           .tutorial-overlay-wrapper.is-custom-tutorial.is-rank-step .tutorial-companion-container {
             top: calc(16px + 2rem + env(safe-area-inset-top, 0px)) !important;
             bottom: auto !important;
+          }
+          /* Home streak (activity step 3): pin speech bubble to top so the streak card stays visible below */
+          .tutorial-overlay-wrapper.is-custom-tutorial.is-activity-home-step-3 .tutorial-companion-container {
+            top: calc(16px + env(safe-area-inset-top, 0px)) !important;
+            bottom: auto !important;
+            left: 16px !important;
+            transform: none !important;
+            align-items: stretch !important;
+            width: min(calc(100vw - 32px), 54rem) !important;
+            max-width: calc(100vw - 32px) !important;
           }
           .tutorial-overlay-wrapper.is-custom-tutorial.is-practice-step .tutorial-companion-container {
             top: calc(16px + env(safe-area-inset-top, 0px)) !important;

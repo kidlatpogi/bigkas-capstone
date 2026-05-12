@@ -492,7 +492,7 @@ function TutorialOverlayMobile({
     setCurrentStep((prev) => prev + 1);
   };
 
-  const overlaySectionClassName = `tutorial-overlay-wrapper${isCustomTutorial ? ' is-custom-tutorial' : ' is-default-tutorial'}${activeStep.id === 'step-controls' ? ' is-controls-step' : ''}${activeStep.id === 'step-soundbar' ? ' is-soundbar-step' : ''}${activeStep.id === 'step-final' ? ' is-final-step' : ''}${activeStep.robotClassName ? ` ${activeStep.robotClassName}` : ''}`;
+  const overlaySectionClassName = `tutorial-overlay-wrapper${isCustomTutorial ? ' is-custom-tutorial' : ' is-default-tutorial'}${activeStep?.id === 'step-controls' ? ' is-controls-step' : ''}${activeStep?.id === 'step-soundbar' ? ' is-soundbar-step' : ''}${activeStep?.id === 'step-final' ? ' is-final-step' : ''}${activeStep?.id === 'step-rank' ? ' is-rank-step' : ''}${activeStep?.robotClassName ? ` ${activeStep.robotClassName}` : ''}`;
 
   const companionInner = (
     <>
@@ -653,6 +653,10 @@ function TutorialOverlayMobile({
             max-width: calc(100vw - 32px) !important;
             bottom: calc(clamp(104px, 18vh, 148px) + env(safe-area-inset-bottom, 0px)) !important;
             top: auto !important;
+          }
+          .tutorial-overlay-wrapper.is-custom-tutorial.is-rank-step .tutorial-companion-container {
+            top: calc(16px + env(safe-area-inset-top, 0px)) !important;
+            bottom: auto !important;
           }
           .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-speech-bubble {
             order: 1 !important;

@@ -1103,6 +1103,10 @@
     border-radius: 1.2rem;
   }
 
+  .profiling-intro-bubble::after {
+    display: none;
+  }
+
   .profiling-intro-bubble p {
     font-size: 0.95rem;
     line-height: 1.42;
@@ -1191,6 +1195,10 @@
     border-radius: 1.2rem;
     padding: 0.95rem 0.9rem;
     top: 0;
+  }
+
+  .profiling-question-bubble::after {
+    display: none;
   }
 
   .profiling-question-count {

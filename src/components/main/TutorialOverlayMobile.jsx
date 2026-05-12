@@ -150,6 +150,10 @@ function TutorialOverlayMobile({
   const customVoiceRef = useRef(null);
   const typingIntervalRef = useRef(null);
   const dashboardFooterClickDoneRef = useRef(false);
+  const isMutedRef = useRef(isMuted);
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+  }, [isMuted]);
   const [anchoredCompanionStyle, setAnchoredCompanionStyle] = useState(null);
 
   const activeStep = useMemo(() => tutorialSteps[currentStep], [tutorialSteps, currentStep]);
@@ -241,7 +245,6 @@ function TutorialOverlayMobile({
   }, [shouldUseAudio]);
 
   useEffect(() => {
-    if (!shouldUseAudio) return;
     stepAudioRefs.current.forEach((audio) => {
       if (!audio) return;
       audio.muted = isMuted;
@@ -250,7 +253,14 @@ function TutorialOverlayMobile({
         audio.currentTime = 0;
       }
     });
-  }, [isMuted, shouldUseAudio]);
+    if (customVoiceRef.current) {
+      customVoiceRef.current.muted = isMuted;
+      if (isMuted) {
+        customVoiceRef.current.pause();
+        customVoiceRef.current.currentTime = 0;
+      }
+    }
+  }, [isMuted]);
 
   useEffect(() => {
     if (isOpen) {
@@ -429,7 +439,7 @@ function TutorialOverlayMobile({
       }
     }, 12);
 
-    if (!isMuted) {
+    if (!isMutedRef.current) {
       stopAllAudios();
 
       if (activeStep.voice) {
@@ -453,7 +463,7 @@ function TutorialOverlayMobile({
       }
       stopAllAudios();
     };
-  }, [currentStep, isMuted, isOpen, shouldUseAudio, activeStep]);
+  }, [currentStep, isOpen, shouldUseAudio, activeStep]);
 
   if (!isOpen || !activeStep) return null;
 

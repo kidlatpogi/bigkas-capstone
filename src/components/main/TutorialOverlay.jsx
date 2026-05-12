@@ -131,6 +131,10 @@ function TutorialOverlay({
   const stepAudioRefs = useRef([]);
   const customVoiceRef = useRef(null);
   const typingIntervalRef = useRef(null);
+  const isMutedRef = useRef(isMuted);
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+  }, [isMuted]);
   const [anchoredCompanionStyle, setAnchoredCompanionStyle] = useState(null);
 
   const activeStep = useMemo(() => tutorialSteps[currentStep], [tutorialSteps, currentStep]);
@@ -201,7 +205,6 @@ function TutorialOverlay({
   }, [shouldUseAudio]);
 
   useEffect(() => {
-    if (!shouldUseAudio) return;
     stepAudioRefs.current.forEach((audio) => {
       if (!audio) return;
       audio.muted = isMuted;
@@ -210,7 +213,14 @@ function TutorialOverlay({
         audio.currentTime = 0;
       }
     });
-  }, [isMuted, shouldUseAudio]);
+    if (customVoiceRef.current) {
+      customVoiceRef.current.muted = isMuted;
+      if (isMuted) {
+        customVoiceRef.current.pause();
+        customVoiceRef.current.currentTime = 0;
+      }
+    }
+  }, [isMuted]);
 
   useEffect(() => {
     if (isOpen) {
@@ -355,7 +365,7 @@ function TutorialOverlay({
       }
     }, 12);
 
-    if (!isMuted) {
+    if (!isMutedRef.current) {
       stopAllAudios();
       
       // 1. Check for step-specific voice (highest priority)
@@ -382,7 +392,7 @@ function TutorialOverlay({
       }
       stopAllAudios();
     };
-  }, [currentStep, isMuted, isOpen, shouldUseAudio, activeStep]);
+  }, [currentStep, isOpen, shouldUseAudio, activeStep]);
 
   if (!isOpen || !activeStep) return null;
 

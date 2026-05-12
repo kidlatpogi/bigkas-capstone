@@ -59,6 +59,7 @@ const rankSilverImage = getSpriteUrl('Rank/rank-silver.png');
 const rankGoldImage = getSpriteUrl('Rank/rank-gold.png');
 const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.png');
 const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.png');
+const BIGKAS_PREREQ_LOGO_URL = 'https://assets.bigkas.site/Images/Bigkas-Logo.webp';
 import './SkywardJourney.css';
 
 const MAP_SCALE = 1;
@@ -740,6 +741,7 @@ export default function SkywardJourney({
   scrollToStepIndex = null,
   currentLevel = 1,
   recommendedLevel = 1,
+  isPrevLevelDone = true,
   onLevelChange,
 }) {
   const rank = useMemo(() => getRankForLevel(currentLevel), [currentLevel]);
@@ -776,6 +778,20 @@ export default function SkywardJourney({
     const rec = Number(recommendedLevel) || 1;
     return curr > rec;
   }, [currentLevel, recommendedLevel]);
+
+  /** When the previous journey’s final stage is not done yet. */
+  const prerequisiteLines = useMemo(() => {
+    const level = Number(currentLevel) || 1;
+    const needsPrevJourneyComplete = level > 1 && !isPrevLevelDone;
+    if (!needsPrevJourneyComplete) return [];
+
+    return [
+      {
+        key: 'finish-previous-journey',
+        text: `Complete every stage in Journey ${level - 1} before you can progress on Journey ${level}.`,
+      },
+    ];
+  }, [currentLevel, isPrevLevelDone]);
 
   const completedCount = useMemo(() => steps.filter(s => s.nodeState === NODE_STATE.COMPLETED).length, [steps]);
 
@@ -1527,6 +1543,32 @@ export default function SkywardJourney({
             </div>
           </div>
         </div>
+
+        {prerequisiteLines.length > 0 && steps.length > 0 ? (
+          <div
+            className="skyward-journey-prerequisite-banner"
+            role="region"
+            aria-label="Prerequisites for this journey"
+          >
+            <div className="skyward-journey-prerequisite-banner-inner">
+              <div className="skyward-journey-prerequisite-body">
+                <div className="skyward-journey-prerequisite-title-row">
+                  <img
+                    src={BIGKAS_PREREQ_LOGO_URL}
+                    alt=""
+                    className="skyward-journey-prerequisite-logo"
+                  />
+                  <p className="skyward-journey-prerequisite-title">Before you start this journey</p>
+                </div>
+                <ul className="skyward-journey-prerequisite-list">
+                  {prerequisiteLines.map((line) => (
+                    <li key={line.key}>{line.text}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         {typeof document !== 'undefined' && selectedStep
           ? createPortal(

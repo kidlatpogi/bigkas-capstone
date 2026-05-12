@@ -146,7 +146,7 @@ function SkywardJourneyShell({
       previousCompleted = taskState[task.id] === true;
     }
     return state;
-  }, [tasks, taskState, isPassedLevel]);
+  }, [tasks, taskState, isPassedLevel, isPrevLevelDone]);
 
   const activeTaskId = useMemo(
     () => getActiveTaskId(tasks, taskState, taskUnlockState),
@@ -224,6 +224,7 @@ function SkywardJourneyShell({
       groupedTasks={groupedTasks}
       currentLevel={selectedLevel}
       recommendedLevel={recommendedLevel}
+      isPrevLevelDone={isPrevLevelDone}
       onLevelChange={handleLevelChange}
       entranceFromNav={entranceFromNav}
       scrollToStepIndex={scrollToStepIndex}

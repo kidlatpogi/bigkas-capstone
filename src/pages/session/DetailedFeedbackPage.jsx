@@ -21,9 +21,9 @@ import { sanitizeRecommendationLines, sanitizeTranscriptForDisplay } from '../..
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 
 const heroRobotImage = getSpriteUrl('Robot/0018.webp');
-const verbalSprite = getSpriteUrl('common/Verbal.png');
-const visualSprite = getSpriteUrl('common/Visual.png');
-const vocalSprite = getSpriteUrl('common/Vocal.png');
+const verbalSprite = getSpriteUrl('common/Verbal.webp');
+const visualSprite = getSpriteUrl('common/Visual.webp');
+const vocalSprite = getSpriteUrl('common/Vocal.webp');
 import DetailedFeedbackPageMobile from './DetailedFeedbackPageMobile';
 import '../main/InnerPages.css';
 import './DetailedFeedbackPage.css';
@@ -451,8 +451,6 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
     return Number.isFinite(score) && score >= 80;
   };
 
-  const scrollToAvoid = () => avoidSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
-
   const overallTier = getScoreTier15(tripleV.entryPoint);
   const rawTranscript = recordingMedia.transcript
     || session?.transcript
@@ -627,15 +625,6 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
             <div className="new-banner-bubble" aria-label="Coach message">
               <p className="new-banner-kicker">B-01:</p>
               <div className="new-banner-feedback-content">
-                <p className="new-banner-intro-text">
-                  {tripleV.entryPoint >= 4.0
-                    ? 'Outstanding! Your performance was exemplary.'
-                    : tripleV.entryPoint >= 3.0
-                      ? 'Great effort! Your speaking is clear and professional.'
-                      : tripleV.entryPoint >= 2.0
-                        ? 'Good progress. Keep practicing to reach the next tier.'
-                        : "Every session counts. Focus on the basics to improve."}
-                </p>
                 <p className="new-banner-recs-title" style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.025em' }}>Recommendations:</p>
                 <ul className="new-banner-recs-minilist">
                   {recommendations.slice(0, 2).map((rec, idx) => (

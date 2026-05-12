@@ -30,9 +30,9 @@ import {
 import { getSpriteUrl } from '../../utils/assetUtils';
 
 const heroRobotImage = getSpriteUrl('Robot/0018.webp');
-const visualSprite = getSpriteUrl('common/Visual.png');
-const verbalSprite = getSpriteUrl('common/Verbal.png');
-const vocalSprite = getSpriteUrl('common/Vocal.png');
+const visualSprite = getSpriteUrl('common/Visual.webp');
+const verbalSprite = getSpriteUrl('common/Verbal.webp');
+const vocalSprite = getSpriteUrl('common/Vocal.webp');
 import HistoryPageMobile from './HistoryPageMobile';
 import './ProgressPage.css'; 
 import './ProgressPageMobile.css';
@@ -376,7 +376,7 @@ function ProgressPageMobile() {
           </div>
 
           {/* Performance Graph Section */}
-          <div className="progress-mobile-section dashboard-anim-bottom">
+          <div className="progress-mobile-section progress-mobile-section--speaking-performance dashboard-anim-bottom">
             <h3 className="progress-mobile-section-title">Speaking Performance</h3>
             <p className="progress-mobile-section-desc">Your delivery scores over time</p>
             <div className="progress-mobile-range-labels no-scrollbar">
@@ -417,7 +417,7 @@ function ProgressPageMobile() {
 
           {/* Pillar Trends Section */}
           <div className="progress-mobile-pillars-section dashboard-anim-bottom">
-            <div className="progress-mobile-section" style={{ marginBottom: 0, paddingBottom: '32px' }}>
+            <div className="progress-mobile-section progress-mobile-section--pillar-trends-header">
               <h3 className="progress-mobile-section-title">Pillar Trends ({pillarRange})</h3>
               <div className="progress-mobile-range-labels no-scrollbar">
                 {TIME_RANGES.map(r => (

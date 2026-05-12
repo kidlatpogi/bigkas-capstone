@@ -1,5 +1,5 @@
 import { createContext, useCallback, useEffect, useReducer } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, ensureFreshAccessToken, isJwtExpiredError } from '../lib/supabase';
 import { ENV } from '../config/env';
 import {
   isFailedAnalysisTranscript,
@@ -492,12 +492,19 @@ export function SessionProvider({ children }) {
     dispatch({ type: 'SET_LOADING', payload: true });
     const from = (page - 1) * safePageSize;
     const request = (async () => {
-      const { data, error, count } = await supabase
-        .from('sessions')
-        .select(SESSIONS_SELECT_QUERY, { count: 'exact' })
-        .eq('user_id', uid)
-        .order('created_at', { ascending: false })
-        .range(from, from + safePageSize - 1);
+      const queryPage = () =>
+        supabase
+          .from('sessions')
+          .select(SESSIONS_SELECT_QUERY, { count: 'exact' })
+          .eq('user_id', uid)
+          .order('created_at', { ascending: false })
+          .range(from, from + safePageSize - 1);
+
+      let { data, error, count } = await queryPage();
+      if (error && isJwtExpiredError(error)) {
+        await ensureFreshAccessToken();
+        ({ data, error, count } = await queryPage());
+      }
       dispatch({ type: 'SET_LOADING', payload: false });
       if (error) {
         if (isSessionsTableMissing(error)) {
@@ -561,12 +568,19 @@ export function SessionProvider({ children }) {
       try {
         while (true) {
           const from = (page - 1) * batchSize;
-          const { data, error, count } = await supabase
-            .from('sessions')
-            .select(SESSIONS_SELECT_QUERY, { count: page === 1 ? 'exact' : undefined })
-            .eq('user_id', uid)
-            .order('created_at', { ascending: false })
-            .range(from, from + batchSize - 1);
+          const queryBatch = () =>
+            supabase
+              .from('sessions')
+              .select(SESSIONS_SELECT_QUERY, { count: page === 1 ? 'exact' : undefined })
+              .eq('user_id', uid)
+              .order('created_at', { ascending: false })
+              .range(from, from + batchSize - 1);
+
+          let { data, error, count } = await queryBatch();
+          if (error && isJwtExpiredError(error)) {
+            await ensureFreshAccessToken();
+            ({ data, error, count } = await queryBatch());
+          }
 
           if (error) {
             if (isSessionsTableMissing(error)) {
@@ -651,7 +665,13 @@ export function SessionProvider({ children }) {
     }
 
     dispatch({ type: 'SET_LOADING', payload: true });
-    const { data, error } = await supabase.from('sessions').select(SESSIONS_SELECT_QUERY).eq('id', sessionId).single();
+    const queryDetail = () =>
+      supabase.from('sessions').select(SESSIONS_SELECT_QUERY).eq('id', sessionId).single();
+    let { data, error } = await queryDetail();
+    if (error && isJwtExpiredError(error)) {
+      await ensureFreshAccessToken();
+      ({ data, error } = await queryDetail());
+    }
     dispatch({ type: 'SET_LOADING', payload: false });
     if (isSessionsTableMissing(error)) {
       dispatch({ type: 'SET_CURRENT', payload: null });

@@ -1099,8 +1099,13 @@
 
   .profiling-intro-bubble {
     width: min(100%, 22rem);
-    padding: 0.95rem 0.9rem;
+    padding: 1.1rem 1.1rem 1.6rem;
     border-radius: 1.2rem;
+  }
+
+  .profiling-intro-bubble::after {
+    display: block;
+    left: 50%;
   }
 
   .profiling-intro-bubble p {
@@ -1189,8 +1194,13 @@
   .profiling-question-bubble {
     width: min(100%, 22rem);
     border-radius: 1.2rem;
-    padding: 0.95rem 0.9rem;
+    padding: 1.1rem 1.1rem 1.6rem;
     top: 0;
+  }
+
+  .profiling-question-bubble::after {
+    display: block;
+    left: 50%;
   }
 
   .profiling-question-count {

@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, ensureFreshAccessToken, isJwtExpiredError } from '../lib/supabase';
 import { ENV } from '../config/env';
 import { normalizeSpeakerPointsHistory } from '../utils/speakerPointsHistory';
 
@@ -565,12 +565,22 @@ export function AuthProvider({ children }) {
   const fetchAndMergeProfile = useCallback(async (userId) => {
     if (!userId) return;
     try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('is_profiling_completed, is_pre_test_completed, dashboard_tutorial_seen, current_level, speaker_level, diagnostic_score, diagnostic_completed_at')
-        .eq('id', userId)
-        .single();
-      
+      const selectProfile = () =>
+        supabase
+          .from('profiles')
+          .select('is_profiling_completed, is_pre_test_completed, dashboard_tutorial_seen, current_level, speaker_level, diagnostic_score, diagnostic_completed_at')
+          .eq('id', userId)
+          .single();
+
+      let { data: profile, error } = await selectProfile();
+
+      if (error && isJwtExpiredError(error)) {
+        const { session: fresh, error: refErr } = await ensureFreshAccessToken();
+        if (!refErr && fresh) {
+          ({ data: profile, error } = await selectProfile());
+        }
+      }
+
       if (error) {
         if (error.code !== 'PGRST116') { // PGRST116 is 'no rows found'
           console.error('Bigkas Auth: failed to fetch profile:', error);
@@ -624,7 +634,16 @@ export function AuthProvider({ children }) {
     let isCancelled = false;
 
     const syncDerivedOnboardingMetadata = async () => {
-      const { data, error: getUserError } = await supabase.auth.getUser();
+      let { data, error: getUserError } = await supabase.auth.getUser();
+      if (
+        getUserError
+        && (getUserError.status === 401 || getUserError.status === 403)
+      ) {
+        const { session: fresh, error: refErr } = await ensureFreshAccessToken();
+        if (!refErr && fresh) {
+          ({ data, error: getUserError } = await supabase.auth.getUser());
+        }
+      }
       if (isCancelled || getUserError || !data?.user) return;
 
       const meta = data.user.user_metadata || {};
@@ -672,7 +691,7 @@ export function AuthProvider({ children }) {
       setIsInitializing(false);
     }, 8000);
 
-    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+    supabase.auth.getSession().then(async ({ data: { session: initialSession }, error }) => {
       if (!isMounted || isBootstrapped) return;
 
       if (error) {
@@ -680,6 +699,24 @@ export function AuthProvider({ children }) {
         // Recover from "Refresh Token Not Found" or other 400 Bad Request errors by clearing local session
         if (error.message?.includes('Refresh Token') || error.status === 400) {
           await supabase.auth.signOut({ scope: 'local' });
+        }
+      }
+
+      let session = initialSession;
+      if (session) {
+        const { session: freshSession, error: refreshErr } = await ensureFreshAccessToken(session);
+        if (refreshErr) {
+          const msg = String(refreshErr.message || '').toLowerCase();
+          const fatalRefresh =
+            msg.includes('refresh token')
+            || msg.includes('invalid')
+            || refreshErr.status === 400;
+          if (fatalRefresh) {
+            await supabase.auth.signOut({ scope: 'local' });
+            session = null;
+          }
+        } else if (freshSession) {
+          session = freshSession;
         }
       }
 
@@ -760,6 +797,19 @@ export function AuthProvider({ children }) {
       subscription.unsubscribe();
     };
   }, [buildUser, clearAdminSession, fetchAndMergeProfile]);
+
+  /* ── Refresh JWT when the tab becomes visible (background tabs throttle auto-refresh timers) ── */
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const onVisibility = () => {
+      if (document.visibilityState !== 'visible') return;
+      void supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) void ensureFreshAccessToken(session);
+      });
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
 
   /* ── Login ── */
   const login = useCallback(async (email, password) => {

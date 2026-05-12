@@ -7,14 +7,14 @@ const defaultRobotImage = getSpriteUrl('Robot/0008-noBulb-inverted.png');
 const tutorialVoice1 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 1.mp3');
 const tutorialVoice2 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 2.mp3');
 const tutorialVoice3 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 3.mp3');
-const tutorialVoice4 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 4.mp3');
+const tutorialVoice4 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 4_new.mp3');
 const tutorialVoice5 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 5.mp3');
 const tutorialVoiceFinal = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial FINAL.mp3');
 const defaultFinalRobotImage = getSpriteUrl('Robot/0002.webp');
 import './TutorialOverlay.css';
 
 /**
- * Isolated typing component to prevent parent re-renders on every character
+ * Isolated typing component to prevent parent re-renders on every character typing cycle
  */
 const TypingText = memo(({ text, fullText, isDone, emphasis }) => {
   if (!isDone) return <>{text}</>;
@@ -111,6 +111,8 @@ function TutorialOverlay({
   );
 
   const [currentStep, setCurrentStep] = useState(0);
+  /** 0 = primary `text`; 1 = optional `textPart2` before advancing to the next step */
+  const [stepTextSegment, setStepTextSegment] = useState(0);
   const [typedText, setTypedText] = useState('');
   const [isTypingDone, setIsTypingDone] = useState(false);
   const [isMuted, setIsMuted] = useState(() => {
@@ -131,9 +133,21 @@ function TutorialOverlay({
   const stepAudioRefs = useRef([]);
   const customVoiceRef = useRef(null);
   const typingIntervalRef = useRef(null);
+  const isMutedRef = useRef(isMuted);
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+  }, [isMuted]);
   const [anchoredCompanionStyle, setAnchoredCompanionStyle] = useState(null);
 
   const activeStep = useMemo(() => tutorialSteps[currentStep], [tutorialSteps, currentStep]);
+
+  const displayedStepText = useMemo(() => {
+    if (!activeStep?.text) return '';
+    if (activeStep.textPart2 && stepTextSegment === 1) {
+      return activeStep.textPart2;
+    }
+    return activeStep.text;
+  }, [activeStep, stepTextSegment]);
 
   const robotSrc = useMemo(() => {
     if (!activeStep) return robotImage;
@@ -201,7 +215,6 @@ function TutorialOverlay({
   }, [shouldUseAudio]);
 
   useEffect(() => {
-    if (!shouldUseAudio) return;
     stepAudioRefs.current.forEach((audio) => {
       if (!audio) return;
       audio.muted = isMuted;
@@ -210,12 +223,20 @@ function TutorialOverlay({
         audio.currentTime = 0;
       }
     });
-  }, [isMuted, shouldUseAudio]);
+    if (customVoiceRef.current) {
+      customVoiceRef.current.muted = isMuted;
+      if (isMuted) {
+        customVoiceRef.current.pause();
+        customVoiceRef.current.currentTime = 0;
+      }
+    }
+  }, [isMuted]);
 
   useEffect(() => {
     if (isOpen) {
       clearAllSpotlights();
       setCurrentStep(0);
+      setStepTextSegment(0);
       return;
     }
     clearAllSpotlights();
@@ -229,6 +250,10 @@ function TutorialOverlay({
       activeSpotlightRef.current = null;
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    setStepTextSegment(0);
+  }, [currentStep]);
 
   useEffect(() => {
     if (!isOpen || !activeStep) return undefined;
@@ -269,7 +294,7 @@ function TutorialOverlay({
         activeSpotlightRef.current = null;
       }
     };
-  }, [activeStep, isOpen]);
+  }, [isOpen, activeStep?.targetElementId]);
 
   useEffect(() => {
     if (!isOpen || !activeStep) {
@@ -329,7 +354,7 @@ function TutorialOverlay({
       window.removeEventListener('resize', scheduleUpdate);
       window.removeEventListener('orientationchange', scheduleUpdate);
     };
-  }, [activeStep, isOpen]);
+  }, [isOpen, activeStep?.id, activeStep?.targetElementId, stepTextSegment]);
 
   useEffect(() => {
     if (!isOpen || !activeStep) return undefined;
@@ -342,7 +367,7 @@ function TutorialOverlay({
     }
 
     let charIndex = 0;
-    const fullText = activeStep.text;
+    const fullText = displayedStepText;
     typingIntervalRef.current = window.setInterval(() => {
       charIndex += 1;
       setTypedText(fullText.slice(0, charIndex));
@@ -355,16 +380,23 @@ function TutorialOverlay({
       }
     }, 12);
 
-    if (!isMuted) {
+    if (!isMutedRef.current) {
       stopAllAudios();
-      
-      // 1. Check for step-specific voice (highest priority)
-      if (activeStep.voice) {
-        const audio = new Audio(activeStep.voice);
+
+      const voiceUrl =
+        stepTextSegment === 1 && activeStep.voicePart2
+          ? activeStep.voicePart2
+          : stepTextSegment === 0 && activeStep.voice
+            ? activeStep.voice
+            : null;
+
+      // 1. Step-specific voice (segment 0: voice; segment 1: voicePart2 when provided)
+      if (voiceUrl) {
+        const audio = new Audio(voiceUrl);
         audio.muted = false;
         customVoiceRef.current = audio;
         audio.play().catch((err) => console.warn('[TutorialOverlay] Custom voice play failed:', err));
-      } 
+      }
       // 2. Fallback to hardcoded pre-test tutorial voices
       else if (shouldUseAudio) {
         const stepAudio = stepAudioRefs.current[currentStep];
@@ -382,7 +414,16 @@ function TutorialOverlay({
       }
       stopAllAudios();
     };
-  }, [currentStep, isMuted, isOpen, shouldUseAudio, activeStep]);
+  }, [
+    currentStep,
+    isOpen,
+    shouldUseAudio,
+    activeStep?.id,
+    activeStep?.voice,
+    activeStep?.voicePart2,
+    displayedStepText,
+    stepTextSegment,
+  ]);
 
   if (!isOpen || !activeStep) return null;
 
@@ -390,12 +431,17 @@ function TutorialOverlay({
     stopAllAudios();
 
     if (!isTypingDone) {
-      setTypedText(activeStep.text);
+      setTypedText(displayedStepText);
       setIsTypingDone(true);
       if (typingIntervalRef.current) {
         window.clearInterval(typingIntervalRef.current);
         typingIntervalRef.current = null;
       }
+      return;
+    }
+
+    if (activeStep.textPart2 && stepTextSegment === 0) {
+      setStepTextSegment(1);
       return;
     }
 
@@ -431,9 +477,9 @@ function TutorialOverlay({
             <p className="tutorial-bubble-text">
               <TypingText 
                 text={typedText} 
-                fullText={activeStep.text} 
+                fullText={displayedStepText} 
                 isDone={isTypingDone} 
-                emphasis={activeStep.emphasis} 
+                emphasis={stepTextSegment === 0 ? activeStep.emphasis : undefined} 
               />
             </p>
             <button type="button" className="tutorial-bubble-btn" onClick={handleNext} disabled={!isTypingDone}>

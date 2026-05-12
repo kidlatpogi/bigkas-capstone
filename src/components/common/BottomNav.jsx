@@ -9,10 +9,7 @@ import {
 } from 'react-icons/io5';
 import { ROUTES } from '../../utils/constants';
 import ProfileModal from './ProfileModal';
-import { getAssetUrl } from '../../utils/assetUtils';
 import './BottomNav.css';
-
-const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 
 const NAV_ITEMS = [
   { label: 'Home', to: ROUTES.ACTIVITY, icon: IoHomeOutline, type: 'link' },
@@ -65,11 +62,7 @@ function BottomNav() {
             >
               <div className="bottom-nav__pill">
                 <div className="bottom-nav__icon-wrapper">
-                  {label === 'Home' ? (
-                    <img src={bigkasLogo} alt="Bigkas" className="bottom-nav-logo" />
-                  ) : (
-                    <Icon aria-hidden="true" />
-                  )}
+                  <Icon aria-hidden="true" />
                 </div>
                 <span>{label}</span>
               </div>

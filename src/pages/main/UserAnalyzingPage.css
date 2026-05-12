@@ -21,8 +21,19 @@
   justify-content: center;
   align-items: center;
   gap: 0.75rem;
-  padding: clamp(1.5rem, 5vh, 3rem) clamp(1rem, 2.2vw, 2.3rem);
+  padding: clamp(1.5rem, 5vh, 3rem) 0;
   overflow: hidden;
+}
+
+.user-analyzing-page .profiling-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  box-sizing: border-box;
+  padding-inline: clamp(1rem, 2.2vw, 2.3rem);
 }
 
 .analyzing-bubble {
@@ -385,6 +396,14 @@
 
 [data-theme='dark'] .analyzing-breakdown-scale {
   color: rgba(203, 213, 225, 0.7) !important;
+}
+
+@media (max-width: 767px) {
+  .analyzing-audio-action {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+  }
 }
 
 @media (max-width: 520px) {

@@ -102,8 +102,12 @@
   line-height: 1.4;
 }
 
-/* Immersive Coach Hero */
-.activity-mobile-top-strip {
+/*
+ * Detailed Feedback mobile hero — unique class prefix so rules from ActivityPageMobile.css /
+ * ProgressPageMobile.css (.activity-mobile-* with 100px left padding for the robot) never apply here.
+ * Strip → single white panel (flattened; no nested activity-mobile-banner-left / bubble).
+ */
+.df-mobile-hero-strip {
   width: 100%;
   min-height: 112px;
   border-radius: 28px;
@@ -114,10 +118,13 @@
   padding: 12px;
   display: flex;
   align-items: stretch;
+  justify-content: stretch;
   position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
-.activity-mobile-top-strip::before {
+.df-mobile-hero-strip::before {
   content: '';
   position: absolute;
   top: -20px;
@@ -128,40 +135,25 @@
   pointer-events: none;
 }
 
-.activity-mobile-banner-left {
-  width: 100%;
-  border-radius: 16px;
+.df-mobile-hero-panel {
   position: relative;
-  padding: 10px 10px 10px 100px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.activity-mobile-banner-robot {
-  position: absolute;
-  left: -2px;
-  bottom: -10px;
-  width: 104px;
-  height: auto;
-  pointer-events: none;
-}
-
-.activity-mobile-banner-bubble {
+  z-index: 1;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  flex: 1;
+  align-self: stretch;
+  box-sizing: border-box;
   background: #ffffff;
-  border-radius: 12px;
-  padding: 8px 10px;
+  border-radius: 16px;
+  padding: 10px 12px;
   box-shadow: 0 6px 12px rgba(11, 57, 84, 0.12);
-  min-height: 60px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
-.activity-mobile-banner-kicker {
+.df-mobile-hero-kicker {
   margin: 0;
   font-size: 0.85rem;
   font-weight: 800;
@@ -169,11 +161,14 @@
   line-height: 1.1;
 }
 
-.activity-mobile-banner-copy {
-  margin: 3px 0 0;
-  font-size: 0.72rem;
-  color: #1f2937;
-  line-height: 1.25;
+.df-mobile-hero-logo {
+  display: block;
+  height: 28px;
+  width: auto;
+  max-width: 140px;
+  object-fit: contain;
+  object-position: left center;
+  margin: 6px 0 8px;
 }
 
 .sr-mobile-hero-recs {
@@ -523,4 +518,136 @@
 .df-mobile-back-btn:active {
   transform: translateY(2px);
   box-shadow: 0 3px 0 #047857;
+}
+
+/* Mobile viewport: reinforce coach hero strip radius (matches Activity mobile home) */
+@media (max-width: 767px) {
+  .df-mobile-root .df-mobile-hero-strip {
+    border-radius: 28px;
+    overflow: hidden;
+  }
+}
+
+/* Scoped parity with desktop DetailedFeedbackPage — keeps imported desktop components readable */
+.df-mobile-root .df-mobile-content.df-mobile-sr-parity {
+  gap: 16px;
+}
+
+.df-mobile-root .sr-page-header {
+  margin-bottom: 4px;
+}
+
+.df-mobile-root .sr-page-main-title {
+  font-size: clamp(1.15rem, 4vw, 1.45rem);
+  line-height: 1.2;
+}
+
+.df-mobile-root .df-mobile-sr-parity .score-value {
+  font-size: clamp(2rem, 8vw, 2.75rem);
+}
+
+.df-mobile-root .df-mobile-sr-parity .sr-detailed-feedback-card-v2:hover {
+  transform: translateY(-2px);
+}
+
+.df-mobile-root .df-mobile-timeline-card {
+  height: 280px;
+  padding: 16px 12px 12px;
+}
+
+.df-mobile-root .df-mobile-footer-actions.sr-footer-layout {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 16px;
+  margin-top: 8px;
+}
+
+.df-mobile-root .df-mobile-footer-toggle.sr-detailed-feedback-card-v2 {
+  width: 100%;
+  flex: none;
+  padding: 18px 20px;
+}
+
+.df-mobile-root .df-mobile-footer-primary.sr-btn-action {
+  width: 100%;
+  min-width: unset;
+}
+
+.df-mobile-media-stack.df-media-info-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 0;
+}
+
+.df-mobile-recording-card-head {
+  padding: 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  background: #f8fafc;
+}
+
+.df-mobile-section-title-tight {
+  font-size: 1rem !important;
+  margin: 0 0 12px !important;
+}
+
+.df-mobile-media-header--parity {
+  flex-wrap: wrap;
+  border-bottom: none;
+  padding: 0;
+  background: transparent;
+  gap: 12px 20px;
+}
+
+.df-mobile-video-wrap {
+  border-radius: 16px;
+  overflow: hidden;
+  background: #000;
+}
+
+.df-mobile-audio-wrap--after-video {
+  margin-top: 16px;
+}
+
+.df-mobile-transcript-head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+@media (min-width: 380px) {
+  .df-mobile-transcript-head {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.df-mobile-transcript-inner {
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.df-mobile-growth-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.df-mobile-growth-tip {
+  display: flex;
+  gap: 12px;
+  background: #fff;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid #f0fdfa;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.df-mobile-root--inner {
+  padding-bottom: 24px;
 }

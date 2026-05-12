@@ -133,7 +133,7 @@
   width: 100%;
   border-radius: 16px;
   position: relative;
-  padding: 10px 10px 10px 100px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -141,13 +141,14 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
-.activity-mobile-banner-robot {
-  position: absolute;
-  left: -2px;
-  bottom: -10px;
-  width: 104px;
-  height: auto;
-  pointer-events: none;
+.activity-mobile-banner-logo {
+  display: block;
+  height: 28px;
+  width: auto;
+  max-width: 140px;
+  object-fit: contain;
+  object-position: left center;
+  margin: 0 0 4px;
 }
 
 .activity-mobile-banner-bubble {
@@ -160,14 +161,6 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-}
-
-.activity-mobile-banner-kicker {
-  margin: 0;
-  font-size: 0.85rem;
-  font-weight: 800;
-  color: #059669;
-  line-height: 1.1;
 }
 
 .activity-mobile-banner-copy {

@@ -19,7 +19,7 @@ import { getSessionMode, getSessionSpeechType } from '../../utils/sessionFormatt
 import { sanitizeRecommendationLines } from '../../utils/analysisTranscript';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 
-const heroRobotImage = getSpriteUrl('Robot/0018.webp');
+const BIGKAS_LOGO_URL = 'https://assets.bigkas.site/Images/Bigkas-Logo.webp';
 const verbalSprite = getSpriteUrl('common/Verbal.png');
 const visualSprite = getSpriteUrl('common/Visual.png');
 const vocalSprite = getSpriteUrl('common/Vocal.png');
@@ -536,9 +536,8 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
         {/* Coach hero — copy aligned with desktop DetailedFeedbackPage */}
         <section className="activity-mobile-top-strip sr-mobile-hero dashboard-anim-top">
           <div className="activity-mobile-banner-left">
-            <img src={heroRobotImage} alt="" className="activity-mobile-banner-robot" />
             <div className="activity-mobile-banner-bubble">
-              <p className="activity-mobile-banner-kicker">B-01:</p>
+              <img src={BIGKAS_LOGO_URL} alt="Bigkas" className="activity-mobile-banner-logo" />
               <p className="activity-mobile-banner-copy new-banner-intro-text">
                 {tripleV.entryPoint >= 4.0
                   ? 'Outstanding! Your performance was exemplary.'

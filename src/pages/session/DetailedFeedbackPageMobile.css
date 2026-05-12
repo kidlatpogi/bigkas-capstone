@@ -102,8 +102,12 @@
   line-height: 1.4;
 }
 
-/* Immersive Coach Hero — same strip treatment as Activity / Progress mobile */
-.activity-mobile-top-strip {
+/*
+ * Detailed Feedback mobile hero — unique class prefix so rules from ActivityPageMobile.css /
+ * ProgressPageMobile.css (.activity-mobile-* with 100px left padding for the robot) never apply here.
+ * Strip → single white panel (flattened; no nested activity-mobile-banner-left / bubble).
+ */
+.df-mobile-hero-strip {
   width: 100%;
   min-height: 112px;
   border-radius: 28px;
@@ -114,11 +118,13 @@
   padding: 12px;
   display: flex;
   align-items: stretch;
+  justify-content: stretch;
   position: relative;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
-.activity-mobile-top-strip::before {
+.df-mobile-hero-strip::before {
   content: '';
   position: absolute;
   top: -20px;
@@ -129,43 +135,14 @@
   pointer-events: none;
 }
 
-.activity-mobile-banner-left {
-  width: 100%;
-  flex: 1;
-  min-height: 0;
-  border-radius: 16px;
+.df-mobile-hero-panel {
   position: relative;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: stretch;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.activity-mobile-banner-kicker {
-  margin: 0;
-  font-size: 0.85rem;
-  font-weight: 800;
-  color: #059669;
-  line-height: 1.1;
-}
-
-.activity-mobile-banner-logo {
-  display: block;
-  height: 28px;
-  width: auto;
-  max-width: 140px;
-  object-fit: contain;
-  object-position: left center;
-  margin: 6px 0 8px;
-}
-
-.activity-mobile-banner-bubble {
-  flex: 1;
+  z-index: 1;
   width: 100%;
-  min-height: 100%;
+  max-width: 100%;
+  min-width: 0;
+  flex: 1;
+  align-self: stretch;
   box-sizing: border-box;
   background: #ffffff;
   border-radius: 16px;
@@ -176,11 +153,22 @@
   justify-content: flex-start;
 }
 
-.activity-mobile-banner-copy {
-  margin: 3px 0 0;
-  font-size: 0.72rem;
-  color: #1f2937;
-  line-height: 1.25;
+.df-mobile-hero-kicker {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #059669;
+  line-height: 1.1;
+}
+
+.df-mobile-hero-logo {
+  display: block;
+  height: 28px;
+  width: auto;
+  max-width: 140px;
+  object-fit: contain;
+  object-position: left center;
+  margin: 6px 0 8px;
 }
 
 .sr-mobile-hero-recs {
@@ -534,28 +522,10 @@
 
 /* Mobile viewport: reinforce coach hero strip radius (matches Activity mobile home) */
 @media (max-width: 767px) {
-  .df-mobile-root .activity-mobile-top-strip {
+  .df-mobile-root .df-mobile-hero-strip {
     border-radius: 28px;
     overflow: hidden;
   }
-}
-
-/*
- * Full-bleed bubble inside the green frame when embedded (e.g. Progress → History).
- * Other routes used unpadded banner-left rules with 100px left inset for the robot; keep DF isolated.
- */
-.df-mobile-root .activity-mobile-banner-left {
-  padding: 0;
-  align-items: stretch;
-  flex-direction: column;
-}
-
-.df-mobile-root .activity-mobile-banner-bubble {
-  align-self: stretch;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
 }
 
 /* Scoped parity with desktop DetailedFeedbackPage — keeps imported desktop components readable */

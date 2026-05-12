@@ -530,24 +530,22 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
           </h1>
         </header>
 
-        {/* Coach hero — copy aligned with desktop DetailedFeedbackPage */}
-        <section className="activity-mobile-top-strip sr-mobile-hero dashboard-anim-top">
-          <div className="activity-mobile-banner-left">
-            <div className="activity-mobile-banner-bubble">
-              <p className="activity-mobile-banner-kicker">B-01:</p>
-              <img src={BIGKAS_LOGO_URL} alt="Bigkas" className="activity-mobile-banner-logo" />
-              <p className="new-banner-recs-title">Recommendations:</p>
-              {recommendations.length > 0 && (
-                <ul className="new-banner-recs-minilist">
-                  {recommendations.slice(0, 2).map((rec, idx) => (
-                    <li key={idx} className="new-banner-rec-item">
-                      <span className="new-banner-rec-bullet">•</span>
-                      {rec.text}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+        {/* Coach hero — DF-only class names so Activity/Progress global banner CSS cannot apply robot inset */}
+        <section className="df-mobile-hero-strip sr-mobile-hero dashboard-anim-top">
+          <div className="df-mobile-hero-panel">
+            <p className="df-mobile-hero-kicker">B-01:</p>
+            <img src={BIGKAS_LOGO_URL} alt="Bigkas" className="df-mobile-hero-logo" />
+            <p className="new-banner-recs-title">Recommendations:</p>
+            {recommendations.length > 0 && (
+              <ul className="new-banner-recs-minilist">
+                {recommendations.slice(0, 2).map((rec, idx) => (
+                  <li key={idx} className="new-banner-rec-item">
+                    <span className="new-banner-rec-bullet">•</span>
+                    {rec.text}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </section>
 

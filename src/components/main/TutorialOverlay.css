@@ -537,12 +537,14 @@
     margin: 0 !important;
   }
 
-  .tutorial-overlay-wrapper:not(.is-final-step) .tutorial-speech-bubble {
+  .tutorial-overlay-wrapper:not(.is-final-step) .tutorial-speech-bubble,
+  .tutorial-overlay-wrapper[class*="is-"] .tutorial-speech-bubble {
     width: 100% !important;
     max-width: min(calc(100vw - 32px), 500px) !important;
     order: 1 !important;
     margin: 0 !important;
     padding: 1rem 1.25rem !important;
+    transform: none !important;
   }
 
   .tutorial-overlay-wrapper:not(.is-final-step) .tutorial-speech-bubble::before {

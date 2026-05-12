@@ -28,6 +28,7 @@ const TrainingSetupPage = lazy(() => import('../pages/main/TrainingSetupPage'));
 const TrainingPage = lazy(() => import('../pages/main/TrainingPage'));
 const FrameworksPage = lazy(() => import('../pages/main/FrameworksPage'));
 const TestAudioVideoPage = lazy(() => import('../pages/main/TestAudioVideoPage'));
+const TestAudioVideoPageMobile = lazy(() => import('../pages/main/TestAudioVideoPageMobile'));
 const UserProfilingPage = lazy(() => import('../pages/main/UserProfilingPage'));
 const UserPretestPage = lazy(() => import('../pages/main/UserPretestPage'));
 const UserAnalyzingPage = lazy(() => import('../pages/main/UserAnalyzingPage'));
@@ -156,6 +157,27 @@ function SettingsPageWrapper() {
   }, []);
 
   return isMobileViewport ? <SettingsPageMobile /> : <SettingsPage />;
+}
+
+function TestAudioVideoPageWrapper() {
+  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 768);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const handleViewportChange = (event) => setIsMobileViewport(event.matches);
+
+    setIsMobileViewport(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleViewportChange);
+      return () => mediaQuery.removeEventListener('change', handleViewportChange);
+    }
+
+    mediaQuery.addListener(handleViewportChange);
+    return () => mediaQuery.removeListener(handleViewportChange);
+  }, []);
+
+  return isMobileViewport ? <TestAudioVideoPageMobile /> : <TestAudioVideoPage />;
 }
 
 function getAuthenticatedRedirect(user, isAdminAuthenticated) {
@@ -447,7 +469,7 @@ function AppRouter() {
         <Route path={ROUTES.SETTINGS} element={<SettingsPageWrapper />} />
         <Route path={ROUTES.CHANGE_PASSWORD} element={<ChangePasswordPage />} />
         <Route path={ROUTES.ACCOUNT_SETTINGS} element={<AccountSettingsPage />} />
-        <Route path={ROUTES.AUDIO_TEST} element={<TestAudioVideoPage />} />
+        <Route path={ROUTES.AUDIO_TEST} element={<TestAudioVideoPageWrapper />} />
 
         {/* Session */}
         <Route path={ROUTES.SESSION_DETAIL} element={<SessionDetailPage />} />

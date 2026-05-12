@@ -253,6 +253,8 @@ function ActivityPageMobile() {
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const [entranceFromNav, setEntranceFromNav] = useState(false);
+  const [isStreakRecoveryMode, setIsStreakRecoveryMode] = useState(false);
+  const [isRandomizingTopic, setIsRandomizingTopic] = useState(false);
   const stampResetTimeoutRef = useRef(null);
   const audioContextRef = useRef(null);
   const overlayAudioRef = useRef(null);
@@ -344,6 +346,7 @@ function ActivityPageMobile() {
   }, [sessions, activityHistory]);
 
   const streakStats = useMemo(() => buildStreakStats(sessions, activityHistory), [sessions, activityHistory]);
+  const { potentialStreak } = streakStats;
   const weekPills = useMemo(() => getWeekdayPills(activeDayKeys), [activeDayKeys]);
   const timeOfDay = useMemo(() => getTimeOfDay(), []);
   const heroRobotImage = useMemo(() => {
@@ -482,10 +485,12 @@ function ActivityPageMobile() {
   }, [navigate]);
 
   const handleRandomizerClick = useCallback(() => {
+    setIsStreakRecoveryMode(false);
     setShowRandomizerOverlay(true);
   }, []);
 
   const handleCloseRandomizerOverlay = useCallback(() => {
+    setIsStreakRecoveryMode(false);
     setShowRandomizerOverlay(false);
   }, []);
 
@@ -500,7 +505,24 @@ function ActivityPageMobile() {
     }
   };
 
-  const handleRandomizeTopic = useCallback(() => {
+  const handleRandomizeTopic = useCallback(async () => {
+    setIsRandomizingTopic(true);
+    try {
+      const response = await fetch('https://b01-ai-worker.dzeref4000.workers.dev/random-topic');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.title) {
+          setRandomizerTopic({ title: data.title, body: data.body || '' });
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch AI topic:', error);
+    } finally {
+      setIsRandomizingTopic(false);
+    }
+
+    // Fallback to local randomization
     if (!RANDOM_TOPICS.length) return;
     setRandomizerTopic((current) => {
       if (RANDOM_TOPICS.length === 1) return RANDOM_TOPICS[0];
@@ -514,30 +536,31 @@ function ActivityPageMobile() {
 
   const handleStartRandomizerTopic = useCallback(() => {
     if (!randomizerTopic?.title) return;
+    const isRecovery = isStreakRecoveryMode;
+
     navigate(`${ROUTES.TRAINING}?autostart=1`, {
       state: {
         freeTopic: randomizerTopic.title,
         freeSpeechContext: randomizerTopic.body || '',
         focus: 'free',
         sessionType: 'practice',
-        entryPoint: 'practice',
+        entryPoint: isRecovery ? 'streak-recovery' : 'practice',
+        objective: isRecovery 
+          ? `Recover your ${potentialStreak} day streak by completing this Level 1-5 Randomizer session!` 
+          : randomizerTopic.title,
         autoStartCountdown: true,
       },
     });
-  }, [navigate, randomizerTopic]);
+  }, [navigate, randomizerTopic, isStreakRecoveryMode, potentialStreak]);
 
   const handleRecoverStreak = useCallback(() => {
-    navigate(`${ROUTES.TRAINING}?autostart=1`, {
-      state: {
-        focus: 'free',
-        freeTopic: 'Reflecting on my speaking journey',
-        objective: 'Complete this session to recover your daily streak!',
-        sessionType: 'practice',
-        entryPoint: 'streak-recovery',
-        autoStartCountdown: true,
-      },
-    });
-  }, [navigate]);
+    setIsStreakRecoveryMode(true);
+    setShowRandomizerOverlay(true);
+    // Optionally trigger randomization immediately for a better UX
+    if (!randomizerTopic?.title) {
+      handleRandomizeTopic();
+    }
+  }, [handleRandomizeTopic, randomizerTopic]);
 
   const handleFreeSpeechClick = useCallback(() => {
     setShowFreeSpeechOverlay(true);

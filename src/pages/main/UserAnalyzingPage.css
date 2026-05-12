@@ -388,8 +388,15 @@
 }
 
 @media (max-width: 520px) {
+  .analyzing-intro {
+    padding-inline: 0;
+  }
+
   .analyzing-bubble {
     transform: translateY(clamp(1.5rem, 4vh, 3.25rem));
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
   }
 
   .analyzing-actions {

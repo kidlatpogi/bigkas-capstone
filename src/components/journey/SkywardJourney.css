@@ -186,12 +186,26 @@
 }
 
 .skyward-journey-container {
+  display: flex;
+  flex-direction: column;
   height: var(--journey-map-shell-height, 100%);
   max-height: 100%;
   min-height: 0;
   overflow: hidden;
   margin-inline: auto;
   border-radius: 24px;
+}
+
+.skyward-journey-container > .skyward-journey-header-card {
+  flex-shrink: 0;
+}
+
+/* Map fills remaining space above optional prerequisite footer */
+.skyward-journey-anim-root.skyward-journey-map {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+  max-height: 100%;
 }
 
 .skyward-journey-map {
@@ -299,6 +313,59 @@
   font-weight: 600;
   max-width: 400px;
   line-height: 1.35;
+}
+
+/* Bottom callout: prerequisite journey / speaker level (desktop + mobile) */
+.skyward-journey-prerequisite-banner {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px 14px 14px;
+  border-top: 1px solid rgba(11, 57, 84, 0.1);
+  background: linear-gradient(180deg, rgba(236, 253, 245, 0.85) 0%, rgba(255, 255, 255, 0.97) 100%);
+}
+
+.skyward-journey-prerequisite-banner-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 52rem;
+  margin-inline: auto;
+}
+
+.skyward-journey-prerequisite-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-size: 1.25rem;
+  color: #059669;
+}
+
+.skyward-journey-prerequisite-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.skyward-journey-prerequisite-title {
+  margin: 0 0 8px;
+  font-family: 'Fredoka', sans-serif;
+  font-size: clamp(0.82rem, 1.9vw, 0.95rem);
+  font-weight: 800;
+  color: #0f766e;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.skyward-journey-prerequisite-list {
+  margin: 0;
+  padding-left: 1.15rem;
+  color: #334155;
+  font-size: clamp(0.85rem, 2vw, 0.95rem);
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.skyward-journey-prerequisite-list li + li {
+  margin-top: 6px;
 }
 
 .skyward-journey-svg {
@@ -1314,6 +1381,18 @@
     --skyward-shift: 28px;
   }
 
+  .skyward-journey-prerequisite-banner {
+    padding: 10px 12px 12px;
+  }
+
+  .skyward-journey-prerequisite-banner-inner {
+    gap: 10px;
+  }
+
+  .skyward-journey-prerequisite-icon {
+    font-size: 1.1rem;
+  }
+
   .skyward-journey-container--locked {
     min-height: clamp(400px, 62vh, 540px);
   }
@@ -1575,4 +1654,4 @@
 
 [data-theme='dark'] .skyward-journey-purpose-text {
   color: #cbd5e1;
-}
+}

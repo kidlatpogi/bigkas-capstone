@@ -740,6 +740,7 @@ export default function SkywardJourney({
   scrollToStepIndex = null,
   currentLevel = 1,
   recommendedLevel = 1,
+  isPrevLevelDone = true,
   onLevelChange,
 }) {
   const rank = useMemo(() => getRankForLevel(currentLevel), [currentLevel]);
@@ -776,6 +777,30 @@ export default function SkywardJourney({
     const rec = Number(recommendedLevel) || 1;
     return curr > rec;
   }, [currentLevel, recommendedLevel]);
+
+  /** Instructions when viewing a journey that is not yet playable (prerequisite journey or speaker level). */
+  const prerequisiteLines = useMemo(() => {
+    const level = Number(currentLevel) || 1;
+    const rec = Number(recommendedLevel) || 1;
+    const lockedByRank = level > rec;
+    const needsPrevJourneyComplete = level > 1 && !isPrevLevelDone;
+    if (!lockedByRank && !needsPrevJourneyComplete) return [];
+
+    const out = [];
+    if (needsPrevJourneyComplete) {
+      out.push({
+        key: 'finish-previous-journey',
+        text: `Complete every stage in Journey ${level - 1} before you can progress on Journey ${level}.`,
+      });
+    }
+    if (lockedByRank) {
+      out.push({
+        key: 'speaker-journey-level',
+        text: `Your active journey is Journey ${rec}. Finish Journey ${rec} first to unlock Journey ${level}.`,
+      });
+    }
+    return out;
+  }, [currentLevel, recommendedLevel, isPrevLevelDone]);
 
   const completedCount = useMemo(() => steps.filter(s => s.nodeState === NODE_STATE.COMPLETED).length, [steps]);
 
@@ -1527,6 +1552,26 @@ export default function SkywardJourney({
             </div>
           </div>
         </div>
+
+        {prerequisiteLines.length > 0 && steps.length > 0 ? (
+          <div
+            className="skyward-journey-prerequisite-banner"
+            role="region"
+            aria-label="Prerequisites for this journey"
+          >
+            <div className="skyward-journey-prerequisite-banner-inner">
+              <IoLockClosed className="skyward-journey-prerequisite-icon" aria-hidden />
+              <div className="skyward-journey-prerequisite-body">
+                <p className="skyward-journey-prerequisite-title">Before you start this journey</p>
+                <ul className="skyward-journey-prerequisite-list">
+                  {prerequisiteLines.map((line) => (
+                    <li key={line.key}>{line.text}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         {typeof document !== 'undefined' && selectedStep
           ? createPortal(

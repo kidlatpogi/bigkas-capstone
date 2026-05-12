@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, memo } from 'react';
+import { createPortal } from 'react-dom';
 import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import { getSpriteUrl, getVoiceUrl } from '../../utils/assetUtils';
 import { useAuthContext } from '../../context/useAuthContext';
@@ -11,6 +12,7 @@ const tutorialVoice4 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutori
 const tutorialVoice5 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 5.mp3');
 const tutorialVoiceFinal = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial FINAL.mp3');
 const defaultFinalRobotImage = getSpriteUrl('Robot/0002.webp');
+const BIGKAS_LOGO_URL = 'https://assets.bigkas.site/Images/Bigkas-Logo.webp';
 import './TutorialOverlay.css';
 
 /**
@@ -110,15 +112,31 @@ function TutorialOverlayMobile({
     [steps],
   );
 
+  const isCustomTutorial = Array.isArray(steps) && steps.length > 0;
+
   const [currentStep, setCurrentStep] = useState(0);
   const [typedText, setTypedText] = useState('');
   const [isTypingDone, setIsTypingDone] = useState(false);
+  const [isNarrowViewport, setIsNarrowViewport] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches,
+  );
   const [isMuted, setIsMuted] = useState(() => {
     if (typeof window === 'undefined') return false;
-    // Prioritize context/user preference if available
     if (user && typeof user.isAudioMuted === 'boolean') return user.isAudioMuted;
     return window.localStorage.getItem(GLOBAL_MUTE_KEY) === '1';
   });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const mq = window.matchMedia('(max-width: 768px)');
+    const handler = () => setIsNarrowViewport(mq.matches);
+    if (typeof mq.addEventListener === 'function') {
+      mq.addEventListener('change', handler);
+      return () => mq.removeEventListener('change', handler);
+    }
+    mq.addListener(handler);
+    return () => mq.removeListener(handler);
+  }, []);
 
   useEffect(() => {
     if (user && typeof user.isAudioMuted === 'boolean') {
@@ -131,6 +149,7 @@ function TutorialOverlayMobile({
   const stepAudioRefs = useRef([]);
   const customVoiceRef = useRef(null);
   const typingIntervalRef = useRef(null);
+  const dashboardFooterClickDoneRef = useRef(false);
   const [anchoredCompanionStyle, setAnchoredCompanionStyle] = useState(null);
 
   const activeStep = useMemo(() => tutorialSteps[currentStep], [tutorialSteps, currentStep]);
@@ -139,6 +158,27 @@ function TutorialOverlayMobile({
     if (!activeStep) return robotImage;
     return activeStep.robot || (activeStep.id === 'step-final' ? finalRobotImage : robotImage);
   }, [activeStep, finalRobotImage, robotImage]);
+
+  // Home steps 1–2: keep full B-01 robot art; streak step always uses Bigkas logo; other later steps use logo on narrow viewports
+  const useRobotArtForHomeIntro =
+    activeStep?.id === 'step-intro' || activeStep?.id === 'step-companion';
+  const useLogoCompanion = Boolean(
+    isCustomTutorial
+      && (activeStep?.id === 'step-streak' || (isNarrowViewport && !useRobotArtForHomeIntro)),
+  );
+
+  const companionSrc = useMemo(() => {
+    if (useLogoCompanion) return BIGKAS_LOGO_URL;
+    return robotSrc;
+  }, [useLogoCompanion, robotSrc]);
+
+  const needsDashboardForSpotlight = Boolean(
+    activeStep?.targetElementId === 'tutorial-target-home-streak'
+      || activeStep?.targetElementId === 'tutorial-target-home-rank',
+  );
+
+  /** Streak step: Bigkas modal scrim below spotlight; rank uses dashboard scrim only */
+  const isStreakHomeStep = activeStep?.id === 'step-streak';
 
   const clearAllSpotlights = () => {
     if (typeof document === 'undefined') return;
@@ -191,7 +231,7 @@ function TutorialOverlayMobile({
     ];
     stepAudioRefs.current.forEach((audio) => {
       if (!audio) return;
-      audio.preload = 'none'; // Changed from 'auto' to 'none' for Lighthouse performance
+      audio.preload = 'none';
     });
 
     return () => {
@@ -231,6 +271,30 @@ function TutorialOverlayMobile({
   }, [isOpen]);
 
   useEffect(() => {
+    dashboardFooterClickDoneRef.current = false;
+  }, [currentStep]);
+
+  useEffect(() => {
+    if (!isOpen || !activeStep) return undefined;
+    const tid = activeStep.targetElementId;
+    if (tid !== 'tutorial-target-home-streak' && tid !== 'tutorial-target-home-rank') {
+      return undefined;
+    }
+    if (typeof document === 'undefined') return undefined;
+    if (document.getElementById(tid)) return undefined;
+    if (dashboardFooterClickDoneRef.current) return undefined;
+
+    const footerSection = document.querySelector('.activity-mobile-dashboard-section:not(.is-hidden)');
+    const btn = footerSection?.querySelector('button.activity-mobile-dashboard-btn');
+    const label = btn?.textContent?.trim().toLowerCase();
+    if (btn && label === 'dashboard') {
+      btn.click();
+      dashboardFooterClickDoneRef.current = true;
+    }
+    return undefined;
+  }, [isOpen, activeStep, currentStep]);
+
+  useEffect(() => {
     if (!isOpen || !activeStep) return undefined;
 
     clearAllSpotlights();
@@ -240,26 +304,36 @@ function TutorialOverlayMobile({
     }
 
     const targetId = activeStep.targetElementId;
-    const isCustomTutorial = Array.isArray(steps) && steps.length > 0;
+    const isCustom = Array.isArray(steps) && steps.length > 0;
     const spotlightZIndex =
-      isCustomTutorial && targetId === 'tutorial-target-home-journey' ? '4600' : '4500';
+      isCustom && targetId === 'tutorial-target-home-journey' ? '4600' : '4800';
+    const needsDashboard =
+      targetId === 'tutorial-target-home-streak' || targetId === 'tutorial-target-home-rank';
+    const maxAttempts = needsDashboard ? 48 : 6;
+    const retryMs = needsDashboard ? 80 : 60;
+
+    let cancelled = false;
     let retryTimer = null;
+
+    const applySpotlight = (attempt = 0) => {
+      if (cancelled || !targetId) return;
+      const nextEl = document.getElementById(targetId);
+      if (nextEl) {
+        nextEl.classList.add('tutorial-spotlight-active');
+        nextEl.style.setProperty('z-index', spotlightZIndex, 'important');
+        activeSpotlightRef.current = nextEl;
+        return;
+      }
+      if (attempt >= maxAttempts) return;
+      retryTimer = window.setTimeout(() => applySpotlight(attempt + 1), retryMs);
+    };
+
     if (targetId) {
-      const applySpotlight = (attempt = 0) => {
-        const nextEl = document.getElementById(targetId);
-        if (nextEl) {
-          nextEl.classList.add('tutorial-spotlight-active');
-          nextEl.style.setProperty('z-index', spotlightZIndex, 'important');
-          activeSpotlightRef.current = nextEl;
-          return;
-        }
-        if (attempt >= 4) return;
-        retryTimer = window.setTimeout(() => applySpotlight(attempt + 1), 60);
-      };
       applySpotlight(0);
     }
 
     return () => {
+      cancelled = true;
       if (retryTimer) {
         window.clearTimeout(retryTimer);
       }
@@ -269,7 +343,7 @@ function TutorialOverlayMobile({
         activeSpotlightRef.current = null;
       }
     };
-  }, [activeStep, isOpen]);
+  }, [activeStep, isOpen, steps]);
 
   useEffect(() => {
     if (!isOpen || !activeStep) {
@@ -357,16 +431,13 @@ function TutorialOverlayMobile({
 
     if (!isMuted) {
       stopAllAudios();
-      
-      // 1. Check for step-specific voice (highest priority)
+
       if (activeStep.voice) {
         const audio = new Audio(activeStep.voice);
         audio.muted = false;
         customVoiceRef.current = audio;
-        audio.play().catch((err) => console.warn('[TutorialOverlay] Custom voice play failed:', err));
-      } 
-      // 2. Fallback to hardcoded pre-test tutorial voices
-      else if (shouldUseAudio) {
+        audio.play().catch((err) => console.warn('[TutorialOverlayMobile] Custom voice play failed:', err));
+      } else if (shouldUseAudio) {
         const stepAudio = stepAudioRefs.current[currentStep];
         if (stepAudio) {
           stepAudio.currentTime = 0;
@@ -412,12 +483,155 @@ function TutorialOverlayMobile({
     setCurrentStep((prev) => prev + 1);
   };
 
+  const overlaySectionClassName = `tutorial-overlay-wrapper${isCustomTutorial ? ' is-custom-tutorial' : ' is-default-tutorial'}${activeStep.id === 'step-controls' ? ' is-controls-step' : ''}${activeStep.id === 'step-soundbar' ? ' is-soundbar-step' : ''}${activeStep.id === 'step-final' ? ' is-final-step' : ''}${activeStep.robotClassName ? ` ${activeStep.robotClassName}` : ''}`;
+
+  const companionInner = (
+    <>
+      <div
+        className="tutorial-companion-container"
+        ref={companionContainerRef}
+        style={needsDashboardForSpotlight ? { ...(anchoredCompanionStyle ?? {}), pointerEvents: 'auto' } : (anchoredCompanionStyle ?? undefined)}
+      >
+        {!isStreakHomeStep ? (
+          <img
+            src={companionSrc}
+            alt=""
+            className={`tutorial-robot-img${useLogoCompanion ? ' tutorial-robot-img--logo' : ''}`}
+            aria-hidden="true"
+          />
+        ) : null}
+        <article className="tutorial-speech-bubble">
+          <div
+            className={`tutorial-bubble-title${isStreakHomeStep ? ' tutorial-bubble-title--with-brand' : ''}`}
+          >
+            {isStreakHomeStep ? (
+              <>
+                <img
+                  src={BIGKAS_LOGO_URL}
+                  alt=""
+                  className="tutorial-bubble-title-logo"
+                  width={36}
+                  height={36}
+                />
+                <span className="tutorial-bubble-title-label">{activeStep.title}</span>
+              </>
+            ) : (
+              activeStep.title
+            )}
+          </div>
+          <p className="tutorial-bubble-text">
+            <TypingText
+              text={typedText}
+              fullText={activeStep.text}
+              isDone={isTypingDone}
+              emphasis={activeStep.emphasis}
+            />
+          </p>
+          <button type="button" className="tutorial-bubble-btn" onClick={handleNext} disabled={!isTypingDone}>
+            {activeStep.button}
+          </button>
+        </article>
+      </div>
+      {showAudioToggle ? (
+        <div className="tutorial-audio-action" style={needsDashboardForSpotlight ? { pointerEvents: 'auto' } : undefined}>
+          <button
+            type="button"
+            onClick={handleToggleMute}
+            aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+            title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+            className={`tutorial-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
+          >
+            {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+          </button>
+        </div>
+      ) : null}
+    </>
+  );
+
+  const portalEl =
+    needsDashboardForSpotlight && typeof document !== 'undefined'
+      ? createPortal(
+          <>
+            {isStreakHomeStep ? (
+              <div
+                className="bigkas-modal-scrim tutorial-mobile-streak-scrim"
+                aria-hidden="true"
+                style={{
+                  /* Below .dashboard-overlay-wrapper (z-index 2000) so streak stays visible; above base page */
+                  position: 'fixed',
+                  inset: 0,
+                  zIndex: 1800,
+                  pointerEvents: 'none',
+                  background: 'rgba(15, 23, 42, 0.5)',
+                  backdropFilter: 'blur(4px)',
+                  WebkitBackdropFilter: 'blur(4px)',
+                }}
+              />
+            ) : null}
+            <div
+              className={overlaySectionClassName}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                zIndex: 7200,
+                pointerEvents: 'none',
+              }}
+              aria-label="Training tutorial overlay"
+            >
+              {companionInner}
+            </div>
+          </>,
+          document.body,
+        )
+      : null;
+
   return (
     <>
-      <div className="tutorial-dark-bg" aria-hidden="true" />
+      {!needsDashboardForSpotlight ? <div className="tutorial-dark-bg" aria-hidden="true" /> : null}
       <style>{`
-        /* Override layout for custom tutorial steps on mobile to perfectly match step 1 design */
+        .tutorial-overlay-wrapper.is-custom-tutorial.is-activity-home-step-3 .tutorial-speech-bubble::before {
+          display: none !important;
+          content: none !important;
+          border: none !important;
+        }
+        .tutorial-bubble-title--with-brand {
+          display: flex !important;
+          align-items: center !important;
+          gap: 0.5rem !important;
+          flex-wrap: nowrap !important;
+          font-weight: 400 !important;
+        }
+        .tutorial-bubble-title-logo {
+          width: 36px !important;
+          height: 36px !important;
+          object-fit: contain !important;
+          flex-shrink: 0 !important;
+          display: block !important;
+        }
+        .tutorial-bubble-title--with-brand .tutorial-bubble-title-label {
+          font-family: 'Fredoka', sans-serif !important;
+          font-weight: 400 !important;
+          color: #059669 !important;
+        }
+        /* Mobile activity tutorial: logo mark + bubble; dashboard steps portal above sheets */
         @media (max-width: 768px) {
+          /* Ensure targeted elements inside the dashboard sheet elevate properly into the sheet's stacking context */
+          .dashboard-overlay-content .tutorial-spotlight-active {
+            position: relative !important;
+            z-index: 4800 !important;
+            background: #ffffff !important;
+            box-shadow: 0 0 0 5px #34D399, 0 0 42px rgba(52, 211, 153, 0.9) !important;
+          }
+          /* Dim the entire dashboard overlay container when a child element inside it is targeted by the spotlight */
+          .dashboard-overlay-wrapper:has(.tutorial-spotlight-active) .dashboard-overlay-content::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.82) !important;
+            z-index: 4000 !important;
+            border-radius: 32px 32px 0 0 !important;
+            pointer-events: none !important;
+          }
           .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-companion-container {
             display: flex !important;
             flex-direction: column !important;
@@ -448,7 +662,23 @@ function TutorialOverlayMobile({
             border-left: 12px solid transparent !important;
             transform: translateX(-50%) !important;
           }
-          .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-robot-img {
+          .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-robot-img.tutorial-robot-img--logo {
+            order: 2 !important;
+            width: auto !important;
+            max-width: 180px !important;
+            max-height: 64px !important;
+            height: auto !important;
+            object-fit: contain !important;
+            filter: none !important;
+          }
+          .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-robot-img:not(.tutorial-robot-img--logo) {
+            order: 2 !important;
+            width: clamp(160px, 48vw, 280px) !important;
+            height: auto !important;
+            filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.18)) !important;
+          }
+          .tutorial-overlay-wrapper.is-custom-tutorial.is-activity-home-step-1 .tutorial-robot-img:not(.tutorial-robot-img--logo),
+          .tutorial-overlay-wrapper.is-custom-tutorial.is-activity-home-step-2 .tutorial-robot-img:not(.tutorial-robot-img--logo) {
             order: 2 !important;
             width: clamp(320px, 85vw, 520px) !important;
             height: auto !important;
@@ -456,46 +686,13 @@ function TutorialOverlayMobile({
           }
         }
       `}</style>
-      <section
-        className={`tutorial-overlay-wrapper${Array.isArray(steps) && steps.length > 0 ? ' is-custom-tutorial' : ' is-default-tutorial'}${activeStep.id === 'step-controls' ? ' is-controls-step' : ''}${activeStep.id === 'step-soundbar' ? ' is-soundbar-step' : ''}${activeStep.id === 'step-final' ? ' is-final-step' : ''}${activeStep.robotClassName ? ` ${activeStep.robotClassName}` : ''}`}
-        aria-label="Training tutorial overlay"
-      >
-        <div className="tutorial-companion-container" ref={companionContainerRef} style={anchoredCompanionStyle ?? undefined}>
-          <img
-            src={robotSrc}
-            alt=""
-            className="tutorial-robot-img"
-            aria-hidden="true"
-          />
-          <article className="tutorial-speech-bubble">
-            <div className="tutorial-bubble-title">{activeStep.title}</div>
-            <p className="tutorial-bubble-text">
-              <TypingText 
-                text={typedText} 
-                fullText={activeStep.text} 
-                isDone={isTypingDone} 
-                emphasis={activeStep.emphasis} 
-              />
-            </p>
-            <button type="button" className="tutorial-bubble-btn" onClick={handleNext} disabled={!isTypingDone}>
-              {activeStep.button}
-            </button>
-          </article>
-        </div>
-        {showAudioToggle ? (
-          <div className="tutorial-audio-action">
-            <button
-              type="button"
-              onClick={handleToggleMute}
-              aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-              title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-              className={`tutorial-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
-            >
-              {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-            </button>
-          </div>
-        ) : null}
-      </section>
+      {needsDashboardForSpotlight && portalEl ? (
+        portalEl
+      ) : (
+        <section className={overlaySectionClassName} aria-label="Training tutorial overlay">
+          {companionInner}
+        </section>
+      )}
     </>
   );
 }

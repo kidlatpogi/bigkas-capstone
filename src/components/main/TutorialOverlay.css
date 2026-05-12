@@ -507,10 +507,11 @@
 
   .tutorial-overlay-wrapper.is-default-tutorial .tutorial-companion-container,
   .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-companion-container {
-    left: 50%;
-    transform: translateX(-50%);
-    width: min(calc(100vw - clamp(16px, 6vw, 32px)), 54rem);
-    bottom: calc(clamp(104px, 18vh, 148px) + env(safe-area-inset-bottom, 0px));
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: min(calc(100vw - clamp(16px, 6vw, 32px)), 54rem) !important;
+    max-width: none !important;
+    bottom: calc(clamp(104px, 18vh, 148px) + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   .tutorial-overlay-wrapper.is-default-tutorial.is-controls-step .tutorial-companion-container {
@@ -555,90 +556,6 @@
     left: 50%;
     transform: translateX(-50%);
     bottom: calc(clamp(16px, 4.5vh, 28px) + env(safe-area-inset-bottom, 0px));
-  }
-
-  /*
-   * Activity / Home custom tutorial on narrow viewports:
-   * Desktop uses row layout + clamp(..., 260px, ...) minimum robot width — wider than many phones,
-   * which clips the companion and truncates the bubble. Stack bubble above robot and scale art down.
-   */
-  .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-companion-container,
-  .tutorial-overlay-wrapper.is-custom-tutorial:not(.is-activity-home-step-1) .tutorial-companion-container {
-    flex-direction: column-reverse;
-    align-items: stretch;
-    justify-content: flex-end;
-    width: min(calc(100vw - clamp(16px, 6vw, 32px)), 54rem) !important;
-    max-width: min(calc(100vw - clamp(16px, 6vw, 32px)), 54rem);
-    max-height: min(82dvh, calc(100dvh - 120px));
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    box-sizing: border-box;
-  }
-
-  .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-robot-img {
-    width: min(38vw, 132px) !important;
-    max-width: min(44vw, 150px);
-    height: auto;
-    flex-shrink: 0;
-    align-self: center;
-    margin-top: 0.35rem;
-  }
-
-  .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-speech-bubble {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0;
-    flex: 0 1 auto;
-    overflow: visible;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-  }
-
-  .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-bubble-text {
-    overflow: visible;
-    max-height: none;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-    flex: 0 1 auto;
-  }
-
-  .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-bubble-btn {
-    float: none;
-    align-self: flex-end;
-    margin-top: 0;
-  }
-
-  /* Side pointer → downward pointer when bubble stacks above the robot */
-  .tutorial-overlay-wrapper.is-custom-tutorial:not(.is-activity-home-step-1) .tutorial-speech-bubble::before {
-    left: 50%;
-    top: auto;
-    bottom: -12px;
-    transform: translateX(-50%);
-    border-top: 12px solid #FDFDF9;
-    border-bottom: 0;
-    border-right: 12px solid transparent;
-    border-left: 12px solid transparent;
-  }
-
-  /* Step 1: robot used clamp(520px, …) — forces horizontal overflow on phones */
-  .tutorial-overlay-wrapper.is-activity-home-step-1 .tutorial-companion-container {
-    max-height: min(85dvh, calc(100dvh - 96px));
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .tutorial-overlay-wrapper.is-activity-home-step-1 .tutorial-speech-bubble {
-    transform: none;
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .tutorial-overlay-wrapper.is-activity-home-step-1 .tutorial-robot-img {
-    width: min(78vw, 260px) !important;
-    max-width: 100%;
   }
 }
 

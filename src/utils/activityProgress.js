@@ -138,6 +138,44 @@ export function getBigkasLevelFromUser(user) {
 }
 
 /**
+ * Speaker band (1–5) for Home dashboard tutorial welcome copy and matching voice assets.
+ * Auth metadata often defaults speaker_level_number to 1 before/without a refresh; onboarding
+ * analysis and entry-score bands stay authoritative — upgrade stale "1" when evidence says higher.
+ */
+export function resolveDashboardTutorialSpeakerLevel(user) {
+  if (!user) return 1;
+
+  const fromMeta = Number(user.speakerLevelNumber ?? user.speaker_level_number);
+  const fromAnalysis = Number(user.onboardingLevelAnalysis?.estimated_level_number);
+
+  const metaOk = Number.isFinite(fromMeta) && fromMeta >= 1 && fromMeta <= 5;
+  const analysisOk = Number.isFinite(fromAnalysis) && fromAnalysis >= 1 && fromAnalysis <= 5;
+
+  if (metaOk) {
+    let level = Math.round(fromMeta);
+    // Default meta is often still 1 while diagnosis/scores already reflect Level 2+.
+    if (level === 1) {
+      if (analysisOk && fromAnalysis > 1) {
+        level = Math.round(fromAnalysis);
+      } else {
+        const derived = getBigkasLevelFromUser(user)?.levelNumber;
+        if (Number.isFinite(derived) && derived > 1 && derived <= 5) {
+          level = derived;
+        }
+      }
+    }
+    return level;
+  }
+
+  if (analysisOk) {
+    return Math.round(fromAnalysis);
+  }
+
+  const derived = getBigkasLevelFromUser(user)?.levelNumber;
+  return Number.isFinite(derived) && derived >= 1 && derived <= 5 ? derived : 1;
+}
+
+/**
  * @deprecated Use getBigkasLevelFromUser — levels are score-based, not XP-based.
  */
 export function deriveLevelProgress(totalPointsIgnored) {

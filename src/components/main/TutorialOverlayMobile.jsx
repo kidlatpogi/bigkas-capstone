@@ -501,19 +501,19 @@ function TutorialOverlayMobile({
         ref={companionContainerRef}
         style={needsDashboardForSpotlight ? { ...(anchoredCompanionStyle ?? {}), pointerEvents: 'auto' } : (anchoredCompanionStyle ?? undefined)}
       >
-        {!isStreakHomeStep ? (
+        {!useLogoCompanion ? (
           <img
             src={companionSrc}
             alt=""
-            className={`tutorial-robot-img${useLogoCompanion ? ' tutorial-robot-img--logo' : ''}`}
+            className="tutorial-robot-img"
             aria-hidden="true"
           />
         ) : null}
-        <article className="tutorial-speech-bubble">
+        <article className={`tutorial-speech-bubble${useLogoCompanion ? ' tutorial-speech-bubble--logo' : ''}`}>
           <div
-            className={`tutorial-bubble-title${isStreakHomeStep ? ' tutorial-bubble-title--with-brand' : ''}`}
+            className={`tutorial-bubble-title${useLogoCompanion ? ' tutorial-bubble-title--with-brand' : ''}`}
           >
-            {isStreakHomeStep ? (
+            {useLogoCompanion ? (
               <>
                 <img
                   src={BIGKAS_LOGO_URL}
@@ -598,6 +598,7 @@ function TutorialOverlayMobile({
     <>
       {!needsDashboardForSpotlight ? <div className="tutorial-dark-bg" aria-hidden="true" /> : null}
       <style>{`
+        .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-speech-bubble--logo::before,
         .tutorial-overlay-wrapper.is-custom-tutorial.is-activity-home-step-3 .tutorial-speech-bubble::before {
           display: none !important;
           content: none !important;

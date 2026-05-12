@@ -446,8 +446,12 @@ function TutorialOverlayMobile({
           }
           .tutorial-overlay-wrapper.is-custom-tutorial:not(.is-activity-home-step-1) .tutorial-robot-img {
             order: 2 !important;
-            width: clamp(320px, 85vw, 520px) !important;
+            width: auto !important;
+            max-width: clamp(200px, 55vw, 260px) !important;
             height: auto !important;
+            max-height: 220px !important;
+            object-fit: contain !important;
+            margin-bottom: 25px !important;
             filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.18)) !important;
           }
         }

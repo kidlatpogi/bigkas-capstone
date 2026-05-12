@@ -8,7 +8,7 @@ import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import PushButton from '../../components/common/PushButton';
 import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
-import TutorialOverlay from '../../components/main/TutorialOverlay';
+import TutorialOverlayMobile from '../../components/main/TutorialOverlayMobile';
 import {
   GLOBAL_ACTIVITY_SCOPE,
   getActivityTaskProgress,
@@ -777,14 +777,14 @@ function ActivityPageMobile() {
 
   return (
     <div className="activity-page-mobile-root activity-page--skyward-entrance">
-      <TutorialOverlay
+      <TutorialOverlayMobile
         isOpen={showFreeSpeechTutorial}
         steps={freeSpeechTutorialSteps}
         showAudioToggle
         onClose={() => setShowFreeSpeechTutorial(false)}
         onFinish={handleTutorialFinish}
       />
-      <TutorialOverlay
+      <TutorialOverlayMobile
         isOpen={showAssessmentModal}
         onClose={() => setShowAssessmentModal(false)}
         onFinish={() => setShowAssessmentModal(false)}
@@ -1003,6 +1003,17 @@ function ActivityPageMobile() {
             </div>
 
             <div className="dashboard-overlay-scroll-content">
+              <Button
+                variant="practice"
+                className="activity-mobile-dashboard-btn"
+                style={{ width: '100%', marginBottom: '1rem', height: '44px' }}
+                onClick={() => {
+                  setShowDashboardOverlay(false);
+                  setShowFreeSpeechTutorial(true);
+                }}
+              >
+                Launch Tutorial (Temp)
+              </Button>
               {/* Streak Widget */}
               <div 
                 className="new-banner-streak" 
@@ -1125,22 +1136,6 @@ function ActivityPageMobile() {
                   </div>
                 </div>
               </section>
-
-              {/* Launch Tutorial Temp */}
-              <Button
-                variant="practice"
-                className="activity-mobile-dashboard-btn"
-                onClick={() => {
-                  setShowDashboardOverlay(false);
-                  if (typeof window !== 'undefined') {
-                    window.localStorage.setItem('bigkas_free_speech_tutorial_seen_v1', '0');
-                  }
-                  setShowFreeSpeechTutorial(true);
-                }}
-                style={{ marginTop: '1rem', width: '100%' }}
-              >
-                Launch Tutorial (Temp)
-              </Button>
             </div>
           </div>
         </section>

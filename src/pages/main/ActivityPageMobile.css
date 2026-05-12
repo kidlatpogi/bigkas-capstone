@@ -230,6 +230,17 @@
    OVERLAY ADJUSTMENTS FOR MOBILE
    ========================================================================= */
 
+/* Fixed mute controls must not be clipped by the root; clear bottom nav (~64px) + safe area */
+.activity-page-mobile-root:has(.randomizer-overlay-wrapper),
+.activity-page-mobile-root:has(.tutorial-overlay-wrapper) {
+  overflow: visible;
+}
+
+.activity-page-mobile-root .randomizer-overlay-wrapper .tutorial-audio-action {
+  bottom: calc(clamp(16px, 2.8vh, 30px) + env(safe-area-inset-bottom, 0px) + 72px);
+  z-index: 10;
+}
+
 .activity-page-mobile-root .randomizer-overlay-wrapper {
   position: fixed;
   inset: 0;

@@ -560,7 +560,12 @@
     right: auto;
     left: 50%;
     transform: translateX(-50%);
-    bottom: calc(clamp(16px, 4.5vh, 28px) + env(safe-area-inset-bottom, 0px));
+    bottom: calc(clamp(16px, 4.5vh, 28px) + env(safe-area-inset-bottom, 0px) + 72px);
+    z-index: 5101;
+  }
+
+  .tutorial-overlay-wrapper.is-practice-step .tutorial-audio-action {
+    bottom: calc(clamp(16px, 2.8vh, 30px) + env(safe-area-inset-bottom, 0px) + 72px);
   }
 }
 

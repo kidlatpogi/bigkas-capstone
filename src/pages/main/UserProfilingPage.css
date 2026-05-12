@@ -1105,7 +1105,7 @@
 
   .profiling-intro-bubble::after {
     display: block;
-    left: 72%;
+    left: 50%;
   }
 
   .profiling-intro-bubble p {
@@ -1200,7 +1200,7 @@
 
   .profiling-question-bubble::after {
     display: block;
-    left: 72%;
+    left: 50%;
   }
 
   .profiling-question-count {

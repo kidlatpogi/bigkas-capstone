@@ -1624,9 +1624,12 @@ export default function SkywardJourney({
                             aria-hidden="true"
                             decoding="async"
                           />
-                          B-01:
+                          B-01
                         </span>
-                        Ready for your next stage? Here is what we’ll focus on: <strong>{selectedStep?.title || 'General Speaking'}</strong>
+                        <span className="randomizer-overlay-copy-lead">
+                          Ready for your next stage? Here is what we’ll focus on:
+                        </span>{' '}
+                        <strong>{selectedStep?.title || 'General Speaking'}</strong>
                       </p>
 
                       {selectedStep?.task?.purpose && (

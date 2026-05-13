@@ -1413,8 +1413,8 @@
   }
 }
 
-/* Phone: quest details sheet matches Dashboard overlay (slide-up); no robot / bubble tail */
-@keyframes skywardQuestSheetSlideUp {
+/* Phone: quest sheet — same slide keyframe as Activity mobile dashboard */
+@keyframes dashboardSlideUp {
   from {
     transform: translateY(100%);
   }
@@ -1428,13 +1428,16 @@
   .skyward-journey-panel-root {
     align-items: flex-end;
     justify-content: center;
+    /* Below BottomNav (1200) so the tab bar stays visible and tappable */
+    z-index: 1100;
   }
 
   .skyward-journey-panel-root .skyward-journey-overlay-content {
     position: fixed !important;
     left: 0 !important;
     right: 0 !important;
-    bottom: 0 !important;
+    /* Match `.main-content--with-mobile-nav` bottom inset (globals.css) */
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
     width: 100% !important;
     max-width: 500px;
     margin-left: auto;
@@ -1442,13 +1445,13 @@
     flex-direction: column;
     align-items: stretch;
     gap: 0;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-bottom: 0;
     border-radius: 32px 32px 0 0;
     overflow: hidden;
     background: #fdfdf9;
     box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.2);
     transition: none;
-    animation: skywardQuestSheetSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: dashboardSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .skyward-journey-panel-root .randomizer-overlay-card {
@@ -1464,7 +1467,7 @@
     flex-direction: column;
     flex: 1 1 auto;
     min-height: 0;
-    max-height: min(90vh, calc(100dvh - 24px));
+    max-height: min(90vh, calc(100dvh - 72px - env(safe-area-inset-bottom, 0px) - 20px));
     background: #fdfdf9;
   }
 
@@ -1494,11 +1497,103 @@
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 20px 20px calc(120px + env(safe-area-inset-bottom, 0px));
+    padding: 16px 20px 12px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 12px;
     box-sizing: border-box;
+  }
+
+  .skyward-journey-panel-root .randomizer-overlay-copy {
+    margin: 0;
+    padding: 0;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    font-weight: 500;
+    color: #64748b;
+    letter-spacing: 0.01em;
+  }
+
+  .skyward-journey-panel-root .randomizer-overlay-copy strong {
+    display: block;
+    margin-top: 4px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+  }
+
+  .skyward-journey-panel-root .randomizer-overlay-copy-lead {
+    display: block;
+    margin-top: 2px;
+    font-weight: 500;
+  }
+
+  .skyward-journey-panel-root .randomizer-overlay-copy-kicker {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #94a3b8;
+  }
+
+  .skyward-journey-panel-root .randomizer-overlay-copy-kicker-logo {
+    display: block;
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    flex-shrink: 0;
+    opacity: 0.9;
+  }
+
+  .skyward-journey-panel-root .skyward-journey-purpose-box {
+    margin-top: 0;
+    margin-bottom: 0;
+    padding: 12px 14px;
+    border-radius: 12px;
+    box-shadow: none;
+    background: #f8fafc;
+    border: 1px solid rgba(11, 57, 84, 0.06);
+  }
+
+  .skyward-journey-panel-root .skyward-journey-purpose-label {
+    margin-bottom: 6px;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: #64748b;
+  }
+
+  .skyward-journey-panel-root .skyward-journey-purpose-text {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: #475569;
+  }
+
+  .skyward-journey-panel-root .randomizer-overlay-topic {
+    margin: 0;
+    padding: 12px 14px;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    border-radius: 12px;
+    border: 1px solid rgba(11, 57, 84, 0.06);
+    background: #ffffff;
+    box-shadow: none;
+  }
+
+  .skyward-journey-panel-root .randomizer-overlay-topic-label {
+    font-weight: 700;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #94a3b8;
+  }
+
+  .skyward-journey-panel-root .skyward-journey-overlay-task-inject {
+    margin-top: 0;
   }
 
   .skyward-journey-panel-root .randomizer-overlay-card::before {
@@ -1508,21 +1603,6 @@
 
   .skyward-journey-panel-root .randomizer-overlay-robot-wrap {
     display: none !important;
-  }
-
-  .skyward-journey-panel-root .randomizer-overlay-copy-kicker {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 6px;
-  }
-
-  .skyward-journey-panel-root .randomizer-overlay-copy-kicker-logo {
-    display: block;
-    width: 28px;
-    height: 28px;
-    object-fit: contain;
-    flex-shrink: 0;
   }
 
   /* Match Activity mobile `.dashboard-overlay-close-btn` */

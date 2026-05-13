@@ -178,6 +178,27 @@
   justify-content: center;
 }
 
+.achievements-rewards-claim-all-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 999px;
+  border: none;
+  background: #f97316;
+  color: #fff;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: #ea580c 0 4px 0 0;
+  transition: all 0.15s ease;
+  margin-top: 4px;
+}
+
+.achievements-rewards-claim-all-btn:active {
+  box-shadow: #ea580c 0 0 0 0;
+  transform: translateY(4px);
+}
+
 /* ── Rewards modal: claimable items list ── */
 .achievements-rewards-list {
   display: flex;

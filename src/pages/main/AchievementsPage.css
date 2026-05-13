@@ -851,3 +851,131 @@
   background: #0F172A;
   border-color: rgba(255, 255, 255, 0.05);
 }
+
+/* ── Congratulations Modal ── */
+.badge-congrats-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: congratsScrimIn 0.3s ease-out;
+}
+
+@keyframes congratsScrimIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.badge-congrats-card {
+  position: relative;
+  width: min(100%, 380px);
+  padding: 40px 32px 32px;
+  border-radius: 28px;
+  background: linear-gradient(180deg, #fffbeb 0%, #ffffff 40%, #f0fdf4 100%);
+  border: 2px solid #f97316;
+  box-shadow: 0 24px 60px rgba(249, 115, 22, 0.2), 0 0 0 1px rgba(249, 115, 22, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  animation: congratsCardPop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  overflow: hidden;
+}
+
+@keyframes congratsCardPop {
+  0% { transform: scale(0.6) translateY(40px); opacity: 0; }
+  60% { transform: scale(1.05) translateY(-4px); opacity: 1; }
+  100% { transform: scale(1) translateY(0); }
+}
+
+.badge-congrats-icon-wrap {
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: congratsBadgeSpin 0.8s 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes congratsBadgeSpin {
+  0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+  70% { transform: scale(1.15) rotate(10deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); }
+}
+
+.badge-congrats-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 20px rgba(249, 115, 22, 0.3));
+}
+
+.badge-congrats-trophy {
+  font-size: 2rem;
+  color: #f97316;
+  animation: congratsTrophyBounce 0.6s 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes congratsTrophyBounce {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.badge-congrats-title {
+  margin: 4px 0 0;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #f97316;
+  letter-spacing: -0.01em;
+}
+
+.badge-congrats-name {
+  margin: 0;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.badge-congrats-desc {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #64748b;
+  line-height: 1.5;
+  max-width: 300px;
+}
+
+.badge-congrats-done-btn {
+  margin-top: 16px;
+  width: 100%;
+  padding: 14px;
+  border-radius: 999px;
+  border: none;
+  background: #f97316;
+  color: #fff;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: #ea580c 0 5px 0 0;
+  transition: all 0.15s ease;
+}
+
+.badge-congrats-done-btn:hover {
+  box-shadow: #ea580c 0 3px 0 0;
+  transform: translateY(2px);
+}
+
+.badge-congrats-done-btn:active {
+  box-shadow: #ea580c 0 0 0 0;
+  transform: translateY(5px);
+}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { IoCheckmarkCircle, IoSearch, IoNotificationsOutline, IoLockClosed, IoGift } from 'react-icons/io5';
+import { IoCheckmarkCircle, IoSearch, IoNotificationsOutline, IoLockClosed, IoGift, IoTrophy } from 'react-icons/io5';
 import { getSpriteUrl } from '../../utils/assetUtils';
 import { useAuthContext } from '../../context/useAuthContext';
 import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
@@ -9,15 +9,12 @@ import {
   isActivityTaskCompleted,
   GLOBAL_ACTIVITY_SCOPE,
 } from '../../utils/activityProgress';
-import Button from '../../components/common/Button';
 import {
   acknowledgeAllPublishedUnlockedBadges,
   syncUnlockedBadgeIds,
 } from '../../utils/achievementNavBadge';
 import {
   syncClaimableAchievements,
-  getClaimableAchievementsCount,
-  ACHIEVEMENTS_UPDATED_EVENT,
   claimAchievement as removeNotif,
   claimAllAchievements as clearAllNotifs,
 } from '../../utils/achievementClaims';
@@ -37,28 +34,20 @@ const RANK_NAMES = ['BRONZE', 'SILVER', 'GOLD', 'MYTHRIL', 'LEGENDARY'];
 
 function formatDate(iso) {
   if (!iso) return null;
-  try {
-    return new Intl.DateTimeFormat('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(iso));
-  } catch {
-    return null;
-  }
-}
-
-function readClaimable() {
-  if (typeof window === 'undefined') return 0;
-  return getClaimableAchievementsCount();
+  try { return new Intl.DateTimeFormat('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(iso)); }
+  catch { return null; }
 }
 
 export default function AchievementsPageMobile() {
   const { user } = useAuthContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [rewardsModalOpen, setRewardsModalOpen] = useState(false);
-  const [claimableCount, setClaimableCount] = useState(readClaimable);
   const [achievements, setAchievements] = useState([]);
   const [loadingBadges, setLoadingBadges] = useState(true);
   const [badgesError, setBadgesError] = useState('');
   const [claimingId, setClaimingId] = useState(null);
-  const [justClaimedIds, setJustClaimedIds] = useState(new Set());
+  const [congratsBadge, setCongratsBadge] = useState(null);
+  const [congratsQueue, setCongratsQueue] = useState([]);
 
   const currentLevelNumber = user?.speakerLevelNumber || 1;
   const { tasks, loading: tasksLoading } = useActivitiesJourneyTasks(currentLevelNumber);
@@ -86,17 +75,6 @@ export default function AchievementsPageMobile() {
   useEffect(() => { loadAchievements(); }, [loadAchievements]);
 
   useEffect(() => {
-    const sync = () => setClaimableCount(getClaimableAchievementsCount());
-    sync();
-    window.addEventListener(ACHIEVEMENTS_UPDATED_EVENT, sync);
-    window.addEventListener('storage', sync);
-    return () => {
-      window.removeEventListener(ACHIEVEMENTS_UPDATED_EVENT, sync);
-      window.removeEventListener('storage', sync);
-    };
-  }, []);
-
-  useEffect(() => {
     if (!rewardsModalOpen) return undefined;
     const onKeyDown = (e) => { if (e.key === 'Escape') setRewardsModalOpen(false); };
     window.addEventListener('keydown', onKeyDown);
@@ -110,51 +88,57 @@ export default function AchievementsPageMobile() {
     return () => { document.body.style.overflow = prev; };
   }, [rewardsModalOpen]);
 
+  const markBadgeClaimed = useCallback((badge, unlockedAt) => {
+    setAchievements((prev) =>
+      prev.map((a) => a.id === badge.id ? { ...a, claimed: true, claimable: false, unlocked: true, unlockedAt } : a)
+    );
+    removeNotif(badge.id);
+    syncUnlockedBadgeIds(
+      achievements.filter((a) => a.claimed || a.id === badge.id).map((a) => a.id)
+    );
+  }, [achievements]);
+
   const handleClaim = useCallback(async (badge) => {
     if (!user?.id || claimingId) return;
     setClaimingId(badge.id);
     try {
       const unlockedAt = await claimAchievementInDB(user.id, badge.id);
-      setJustClaimedIds((prev) => new Set(prev).add(badge.id));
-      setAchievements((prev) =>
-        prev.map((a) =>
-          a.id === badge.id
-            ? { ...a, claimed: true, claimable: false, unlocked: true, unlockedAt }
-            : a
-        )
-      );
-      removeNotif(badge.id);
-      syncUnlockedBadgeIds(
-        achievements.filter((a) => a.claimed || a.id === badge.id).map((a) => a.id)
-      );
-    } catch {
-      // Silently fail
-    } finally {
-      setClaimingId(null);
-    }
-  }, [user?.id, claimingId, achievements]);
+      markBadgeClaimed(badge, unlockedAt);
+      setCongratsBadge({ ...badge, unlockedAt });
+    } catch { /* user can retry */ }
+    finally { setClaimingId(null); }
+  }, [user?.id, claimingId, markBadgeClaimed]);
 
   const handleClaimAll = useCallback(async () => {
     const claimables = achievements.filter((a) => a.claimable);
     if (!user?.id || claimables.length === 0) return;
+    const claimed = [];
     for (const badge of claimables) {
       try {
-        await claimAchievementInDB(user.id, badge.id);
+        const unlockedAt = await claimAchievementInDB(user.id, badge.id);
+        claimed.push({ ...badge, unlockedAt });
       } catch { /* continue */ }
     }
-    setJustClaimedIds((prev) => {
-      const next = new Set(prev);
-      claimables.forEach((b) => next.add(b.id));
-      return next;
-    });
-    setAchievements((prev) =>
-      prev.map((a) =>
-        a.claimable ? { ...a, claimed: true, claimable: false, unlocked: true, unlockedAt: new Date().toISOString() } : a
-      )
-    );
-    clearAllNotifs();
+    if (claimed.length > 0) {
+      setAchievements((prev) => prev.map((a) => {
+        const found = claimed.find((c) => c.id === a.id);
+        return found ? { ...a, claimed: true, claimable: false, unlocked: true, unlockedAt: found.unlockedAt } : a;
+      }));
+      clearAllNotifs();
+      setCongratsBadge(claimed[0]);
+      if (claimed.length > 1) setCongratsQueue(claimed.slice(1));
+    }
     setRewardsModalOpen(false);
   }, [user?.id, achievements]);
+
+  const handleCongratsClose = useCallback(() => {
+    if (congratsQueue.length > 0) {
+      setCongratsBadge(congratsQueue[0]);
+      setCongratsQueue((q) => q.slice(1));
+    } else {
+      setCongratsBadge(null);
+    }
+  }, [congratsQueue]);
 
   const trophies = useMemo(() => {
     return [1, 2, 3, 4, 5].map((lvl) => {
@@ -175,10 +159,7 @@ export default function AchievementsPageMobile() {
 
   const claimableAchievements = useMemo(() => achievements.filter((a) => a.claimable), [achievements]);
 
-  const bellBadgeLabel = claimableCount >= 10 ? '9+' : String(Math.max(0, claimableCount));
-
   const getCardClass = (badge) => {
-    if (justClaimedIds.has(badge.id)) return 'badge-card badge-card--just-claimed';
     if (badge.claimed) return 'badge-card unlocked';
     if (badge.claimable) return 'badge-card badge-card--claimable';
     return 'badge-card locked';
@@ -197,58 +178,46 @@ export default function AchievementsPageMobile() {
               <button
                 type="button"
                 className={`achievements-bell-btn${claimableAchievements.length > 0 ? ' achievements-bell-btn--active' : ''}`}
-                aria-label={claimableAchievements.length > 0 ? `Rewards, ${claimableAchievements.length} to claim` : 'Rewards, nothing to claim'}
+                aria-label={claimableAchievements.length > 0 ? `${claimableAchievements.length} achievements to claim` : 'No achievements to claim'}
                 aria-expanded={rewardsModalOpen}
                 aria-haspopup="dialog"
                 onClick={() => setRewardsModalOpen((o) => !o)}
               >
-                <IoNotificationsOutline aria-hidden className="achievements-bell-icon" />
+                <IoNotificationsOutline aria-hidden="true" className="achievements-bell-icon" />
                 {claimableAchievements.length > 0 && (
-                  <span className="achievements-bell-badge" aria-hidden>{claimableAchievements.length > 9 ? '9+' : claimableAchievements.length}</span>
+                  <span className="achievements-bell-badge" aria-hidden="true">{claimableAchievements.length > 9 ? '9+' : claimableAchievements.length}</span>
                 )}
               </button>
             </div>
           </div>
         </header>
 
-        {/* ── Rewards Modal — shows claimable items ── */}
         {rewardsModalOpen && (
           <div className="achievements-rewards-modal-root">
             <button type="button" className="achievements-rewards-modal-backdrop" aria-label="Close" onClick={() => setRewardsModalOpen(false)} />
             <div className="achievements-rewards-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="achievements-rewards-panel-title" onClick={(e) => e.stopPropagation()}>
               <div className="achievements-rewards-modal-header-row">
                 <h2 id="achievements-rewards-panel-title" className="achievements-rewards-panel-title">
-                  {claimableAchievements.length === 0 ? "You're all caught up" : `${claimableAchievements.length} reward${claimableAchievements.length === 1 ? '' : 's'} to claim`}
+                  {claimableAchievements.length === 0 ? "You're all caught up" : `${claimableAchievements.length} achievement${claimableAchievements.length === 1 ? '' : 's'} to claim`}
                 </h2>
                 <button type="button" className="dashboard-overlay-close-btn" aria-label="Close" onClick={() => setRewardsModalOpen(false)}>×</button>
               </div>
-
               {claimableAchievements.length > 0 ? (
                 <div className="achievements-rewards-list">
-                  {claimableAchievements.map((badge) => {
-                    const isClaimed = justClaimedIds.has(badge.id);
-                    return (
-                      <div key={badge.id} className={`achievements-reward-item${isClaimed ? ' achievements-reward-item--claimed' : ''}`}>
-                        <img src={badge.badgeUrl ?? badgeImg} alt="" className="achievements-reward-item-img" onError={(e) => { e.currentTarget.src = badgeImg; }} />
-                        <div className="achievements-reward-item-info">
-                          <span className="achievements-reward-item-name">{badge.name}</span>
-                          <span className="achievements-reward-item-desc">{badge.description.length > 60 ? `${badge.description.slice(0, 60)}…` : badge.description}</span>
-                        </div>
-                        <button
-                          type="button"
-                          className={`achievements-reward-item-claim${isClaimed ? ' achievements-reward-item-claim--done' : ''}`}
-                          disabled={claimingId === badge.id || isClaimed}
-                          onClick={() => { handleClaim(badge); }}
-                        >
-                          {isClaimed ? '✓' : claimingId === badge.id ? '…' : 'Claim'}
-                        </button>
+                  {claimableAchievements.map((badge) => (
+                    <div key={badge.id} className="achievements-reward-item">
+                      <img src={badge.badgeUrl ?? badgeImg} alt="" className="achievements-reward-item-img" loading="lazy" width="44" height="44" onError={(e) => { e.currentTarget.src = badgeImg; }} />
+                      <div className="achievements-reward-item-info">
+                        <span className="achievements-reward-item-name">{badge.name}</span>
+                        <span className="achievements-reward-item-desc">{badge.description.length > 60 ? `${badge.description.slice(0, 60)}…` : badge.description}</span>
                       </div>
-                    );
-                  })}
+                      <button type="button" className="achievements-reward-item-claim" disabled={claimingId === badge.id} onClick={() => { setRewardsModalOpen(false); handleClaim(badge); }} aria-label={`Claim ${badge.name}`}>
+                        {claimingId === badge.id ? '…' : 'Claim'}
+                      </button>
+                    </div>
+                  ))}
                   {claimableAchievements.length > 1 && (
-                    <Button type="button" variant="practice" className="achievements-rewards-claim-all" onClick={handleClaimAll}>
-                      Claim All
-                    </Button>
+                    <button type="button" className="achievements-rewards-claim-all-btn" onClick={handleClaimAll}>Claim All</button>
                   )}
                 </div>
               ) : (
@@ -259,19 +228,21 @@ export default function AchievementsPageMobile() {
         )}
 
         <div className="achievements-mobile-scroll-content">
-          <section className="trophy-podium-section dashboard-anim-top dashboard-anim-delay-1">
+          <section className="trophy-podium-section dashboard-anim-top dashboard-anim-delay-1" aria-label="Trophy podium">
             <div className="trophy-showcase-card">
               <div className="trophy-podium-scroll no-scrollbar">
                 {trophies.map((trophy) => (
                   <div key={trophy.id} className={`trophy-podium-item ${trophy.isLocked ? 'locked' : ''}`}>
                     <div className="podium-rank-badge">
-                      <img src={trophy.rankImg} alt={trophy.name} className="rank-icon" />
+                      <img src={trophy.rankImg} alt={`Level ${trophy.id}`} className="rank-icon" loading="lazy" width="36" height="36" />
                       <span className="rank-name">LEVEL {trophy.id}</span>
                     </div>
                     <div className="podium-pillar">
-                      <div className="podium-trophy-wrap"><img src={trophyImg} alt={trophy.name} className="podium-img" /></div>
+                      <div className="podium-trophy-wrap"><img src={trophyImg} alt="" className="podium-img" loading="lazy" width="60" height="60" /></div>
                       <div className="podium-stats">
-                        <div className="podium-progress-bar"><div className="podium-progress-fill" style={{ width: trophy.isCompleted ? '100%' : trophy.total > 0 ? `${(trophy.current / trophy.total) * 100}%` : '0%' }} /></div>
+                        <div className="podium-progress-bar" role="progressbar" aria-valuenow={trophy.current} aria-valuemin={0} aria-valuemax={trophy.total || 1}>
+                          <div className="podium-progress-fill" style={{ width: trophy.isCompleted ? '100%' : trophy.total > 0 ? `${(trophy.current / trophy.total) * 100}%` : '0%' }} />
+                        </div>
                         <span className="podium-count">{trophy.isLocked ? 'LOCKED' : trophy.isCompleted ? 'DONE' : tasksLoading ? '…' : `${trophy.current}/${trophy.total}`}</span>
                       </div>
                     </div>
@@ -283,12 +254,12 @@ export default function AchievementsPageMobile() {
 
           <div className="achievements-mobile-filters dashboard-anim-top dashboard-anim-delay-2">
             <div className="mobile-search-wrapper">
-              <IoSearch className="search-icon" />
-              <input type="text" placeholder="Search badges" className="mobile-search-input" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <IoSearch className="search-icon" aria-hidden="true" />
+              <input type="text" placeholder="Search badges" className="mobile-search-input" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} aria-label="Search badges" />
             </div>
           </div>
 
-          <section className="badges-mobile-grid dashboard-anim-bottom dashboard-anim-delay-3">
+          <section className="badges-mobile-grid dashboard-anim-bottom dashboard-anim-delay-3" aria-label="Badges">
             {loadingBadges && <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2.5rem', color: 'rgba(1,1,1,0.45)', fontWeight: 600 }}>Loading badges…</div>}
             {!loadingBadges && badgesError && (
               <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2.5rem' }}>
@@ -298,31 +269,27 @@ export default function AchievementsPageMobile() {
             )}
             {!loadingBadges && !badgesError && filteredBadges.length === 0 && (
               <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2.5rem 1rem', gap: '10px', color: 'rgba(1,1,1,0.45)', textAlign: 'center' }}>
-                <IoLockClosed size={32} style={{ opacity: 0.35 }} />
+                <IoLockClosed size={32} style={{ opacity: 0.35 }} aria-hidden="true" />
                 <p style={{ fontWeight: 700, fontSize: '0.95rem', margin: 0 }}>{searchTerm ? `No badges for "${searchTerm}"` : 'No badges yet'}</p>
                 <p style={{ fontSize: '0.82rem', margin: 0 }}>Keep training — earned badges will appear here.</p>
               </div>
             )}
-
             {!loadingBadges && !badgesError && filteredBadges.map((badge) => (
-              <div key={badge.id} className={getCardClass(badge)}>
-                <span className="badge-status-top">
-                  {badge.claimed ? (formatDate(badge.unlockedAt) ?? 'Claimed') : badge.claimable ? 'Ready to claim!' : 'Locked'}
-                </span>
+              <div key={badge.id} className={getCardClass(badge)} role="button" tabIndex={0}>
+                <span className="badge-status-top">{badge.claimed ? (formatDate(badge.unlockedAt) ?? 'Claimed') : badge.claimable ? 'Ready to claim!' : 'Locked'}</span>
                 <div className="badge-icon-wrapper">
-                  <img src={badge.badgeUrl ?? badgeImg} alt={badge.name} className="badge-img" onError={(e) => { e.currentTarget.src = badgeImg; }} />
+                  <img src={badge.badgeUrl ?? badgeImg} alt={badge.name} className="badge-img" loading="lazy" width="80" height="80" onError={(e) => { e.currentTarget.src = badgeImg; }} />
                 </div>
-                <h3 className="badge-title">
-                  {badge.name}
-                  {badge.claimed && <IoCheckmarkCircle className="checkmark-icon" />}
-                </h3>
+                <h3 className="badge-title">{badge.name}{badge.claimed && <IoCheckmarkCircle className="checkmark-icon" aria-label="Claimed" />}</h3>
                 <div className="badge-progress-container">
-                  <div className="badge-progress-bar"><div className="badge-progress-fill" style={{ width: badge.claimed ? '100%' : '0%' }} /></div>
+                  <div className="badge-progress-bar" role="progressbar" aria-valuenow={badge.claimed ? 1 : 0} aria-valuemin={0} aria-valuemax={1}>
+                    <div className="badge-progress-fill" style={{ width: badge.claimed ? '100%' : '0%' }} />
+                  </div>
                   <span className="badge-progress-text">{badge.claimed ? '1/1' : '0/1'}</span>
                 </div>
                 {badge.claimable && (
-                  <button type="button" className="badge-claim-btn" disabled={claimingId === badge.id} onClick={(e) => { e.stopPropagation(); handleClaim(badge); }}>
-                    <IoGift style={{ fontSize: '1rem' }} />{claimingId === badge.id ? 'Claiming…' : 'Claim'}
+                  <button type="button" className="badge-claim-btn" disabled={claimingId === badge.id} onClick={(e) => { e.stopPropagation(); handleClaim(badge); }} aria-label={`Claim ${badge.name}`}>
+                    <IoGift aria-hidden="true" style={{ fontSize: '1rem' }} />{claimingId === badge.id ? 'Claiming…' : 'Claim'}
                   </button>
                 )}
               </div>
@@ -331,6 +298,24 @@ export default function AchievementsPageMobile() {
           <div className="mobile-footer-spacer" />
         </div>
       </div>
+
+      {/* ── Congratulations Modal ── */}
+      {congratsBadge && (
+        <div className="badge-congrats-overlay" onClick={handleCongratsClose} role="dialog" aria-modal="true" aria-labelledby="badge-congrats-title-m">
+          <div className="badge-congrats-card" onClick={(e) => e.stopPropagation()}>
+            <div className="badge-congrats-icon-wrap">
+              <img src={congratsBadge.badgeUrl ?? badgeImg} alt={congratsBadge.name} className="badge-congrats-img" width="120" height="120" />
+            </div>
+            <IoTrophy className="badge-congrats-trophy" aria-hidden="true" />
+            <h2 id="badge-congrats-title-m" className="badge-congrats-title">Congratulations!</h2>
+            <p className="badge-congrats-name">{congratsBadge.name}</p>
+            <p className="badge-congrats-desc">{congratsBadge.description}</p>
+            <button type="button" className="badge-congrats-done-btn" onClick={handleCongratsClose}>
+              {congratsQueue.length > 0 ? 'Next' : 'Done'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

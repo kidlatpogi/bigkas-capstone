@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { IoCheckmarkCircle, IoLockClosed, IoGift } from 'react-icons/io5';
+import { IoCheckmarkCircle, IoLockClosed, IoGift, IoTrophy } from 'react-icons/io5';
 import { getSpriteUrl } from '../../utils/assetUtils';
 import { useAuthContext } from '../../context/useAuthContext';
 import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
@@ -13,7 +13,7 @@ import {
   acknowledgeAllPublishedUnlockedBadges,
   syncUnlockedBadgeIds,
 } from '../../utils/achievementNavBadge';
-import { syncClaimableAchievements } from '../../utils/achievementClaims';
+import { syncClaimableAchievements, claimAchievement as removeNotif } from '../../utils/achievementClaims';
 import { fetchUserAchievements, claimAchievementInDB } from '../../services/achievementsService';
 import './AchievementsPage.css';
 
@@ -46,7 +46,8 @@ export default function AchievementsPage() {
   const [loadingBadges, setLoadingBadges] = useState(true);
   const [badgesError, setBadgesError] = useState('');
   const [claimingId, setClaimingId] = useState(null);
-  const [justClaimedIds, setJustClaimedIds] = useState(new Set());
+  const [congratsBadge, setCongratsBadge] = useState(null);
+  const [congratsQueue, setCongratsQueue] = useState([]);
 
   const currentLevelNumber = user?.speakerLevelNumber || 1;
   const { tasks, loading: tasksLoading } = useActivitiesJourneyTasks(currentLevelNumber);
@@ -62,8 +63,7 @@ export default function AchievementsPage() {
       const data = await fetchUserAchievements(user.id, user);
       setAchievements(data);
       syncClaimableAchievements(data);
-      const unlockedIds = data.filter((a) => a.claimed).map((a) => a.id);
-      syncUnlockedBadgeIds(unlockedIds);
+      syncUnlockedBadgeIds(data.filter((a) => a.claimed).map((a) => a.id));
       acknowledgeAllPublishedUnlockedBadges();
     } catch (err) {
       setBadgesError(err?.message ?? 'Failed to load badges.');
@@ -74,43 +74,46 @@ export default function AchievementsPage() {
 
   useEffect(() => { loadAchievements(); }, [loadAchievements]);
 
+  const markBadgeClaimed = useCallback((badge, unlockedAt) => {
+    setAchievements((prev) =>
+      prev.map((a) => a.id === badge.id ? { ...a, claimed: true, claimable: false, unlocked: true, unlockedAt } : a)
+    );
+    removeNotif(badge.id);
+    syncUnlockedBadgeIds(
+      achievements.filter((a) => a.claimed || a.id === badge.id).map((a) => a.id)
+    );
+  }, [achievements]);
+
   const handleClaim = useCallback(async (badge) => {
     if (!user?.id || claimingId) return;
     setClaimingId(badge.id);
     try {
       const unlockedAt = await claimAchievementInDB(user.id, badge.id);
-      setJustClaimedIds((prev) => new Set(prev).add(badge.id));
-      setAchievements((prev) =>
-        prev.map((a) =>
-          a.id === badge.id
-            ? { ...a, claimed: true, claimable: false, unlocked: true, unlockedAt }
-            : a
-        )
-      );
-      // Remove from notification tray
-      const { claimAchievement: removeNotif } = await import('../../utils/achievementClaims');
-      removeNotif(badge.id);
-      syncUnlockedBadgeIds(
-        achievements
-          .filter((a) => a.claimed || a.id === badge.id)
-          .map((a) => a.id)
-      );
+      markBadgeClaimed(badge, unlockedAt);
+      setCongratsBadge({ ...badge, unlockedAt });
     } catch {
-      // Silently fail — user can retry
+      // user can retry
     } finally {
       setClaimingId(null);
     }
-  }, [user?.id, claimingId, achievements]);
+  }, [user?.id, claimingId, markBadgeClaimed]);
+
+  const handleCongratsClose = useCallback(() => {
+    if (congratsQueue.length > 0) {
+      setCongratsBadge(congratsQueue[0]);
+      setCongratsQueue((q) => q.slice(1));
+    } else {
+      setCongratsBadge(null);
+    }
+  }, [congratsQueue]);
 
   const trophies = useMemo(() => {
     return [1, 2, 3, 4, 5].map((lvl) => {
       const isCurrentLevel = lvl === currentLevelNumber;
       const isCompleted    = lvl < currentLevelNumber;
       const isLocked       = lvl > currentLevelNumber;
-      const total   = isCurrentLevel ? tasks.length : 0;
-      const current = isCurrentLevel
-        ? tasks.filter((t) => isActivityTaskCompleted(t.id, activityMetrics)).length
-        : 0;
+      const total = isCurrentLevel ? tasks.length : 0;
+      const current = isCurrentLevel ? tasks.filter((t) => isActivityTaskCompleted(t.id, activityMetrics)).length : 0;
       return { id: lvl, name: RANK_NAMES[lvl - 1], rankImg: RANK_IMGS[lvl - 1], total, current, isCompleted, isLocked };
     });
   }, [currentLevelNumber, tasks, activityMetrics]);
@@ -131,7 +134,6 @@ export default function AchievementsPage() {
   }, [achievements, filterStatus, sortBy]);
 
   const getCardClass = (badge) => {
-    if (justClaimedIds.has(badge.id)) return 'badge-card badge-card--just-claimed';
     if (badge.claimed) return 'badge-card unlocked';
     if (badge.claimable) return 'badge-card badge-card--claimable';
     return 'badge-card locked';
@@ -144,18 +146,18 @@ export default function AchievementsPage() {
         <h1 className="achievements-title">Achievements</h1>
       </header>
 
-      <section className="trophy-showcase-card dashboard-anim-top dashboard-anim-delay-1">
+      <section className="trophy-showcase-card dashboard-anim-top dashboard-anim-delay-1" aria-label="Trophy showcase">
         {trophies.map((trophy) => (
           <div key={trophy.id} className={`trophy-item ${trophy.isLocked ? 'locked' : ''}`}>
             <div className="trophy-rank-badge">
-              <img src={trophy.rankImg} alt={trophy.name} className="rank-icon" />
+              <img src={trophy.rankImg} alt={`Level ${trophy.id} ${trophy.name}`} className="rank-icon" loading="lazy" width="40" height="40" />
               <span className="rank-name">LEVEL {trophy.id}</span>
             </div>
             <div className="trophy-wrapper">
-              <img src={trophyImg} alt={trophy.name} className="trophy-img" />
+              <img src={trophyImg} alt="" className="trophy-img" loading="lazy" width="80" height="80" />
             </div>
             <div className="trophy-progress-container">
-              <div className="trophy-progress-bar">
+              <div className="trophy-progress-bar" role="progressbar" aria-valuenow={trophy.current} aria-valuemin={0} aria-valuemax={trophy.total || 1}>
                 <div className="trophy-progress-fill" style={{ width: trophy.isCompleted ? '100%' : trophy.total > 0 ? `${(trophy.current / trophy.total) * 100}%` : '0%' }} />
               </div>
               <span className="trophy-progress-text">
@@ -174,7 +176,7 @@ export default function AchievementsPage() {
             { val: 'unlocked', label: 'Claimed' },
             { val: 'locked', label: 'Locked' },
           ].map((f) => (
-            <button key={f.val} type="button" className={`filter-tab-btn ${filterStatus === f.val ? 'active' : ''}`} onClick={() => setFilterStatus(f.val)}>
+            <button key={f.val} type="button" className={`filter-tab-btn ${filterStatus === f.val ? 'active' : ''}`} onClick={() => setFilterStatus(f.val)} aria-pressed={filterStatus === f.val}>
               {f.label}
             </button>
           ))}
@@ -191,7 +193,7 @@ export default function AchievementsPage() {
         </div>
       </div>
 
-      <section className="badges-grid dashboard-anim-bottom dashboard-anim-delay-3">
+      <section className="badges-grid dashboard-anim-bottom dashboard-anim-delay-3" aria-label="Badges">
         {loadingBadges && (
           <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: 'rgba(1,1,1,0.45)', fontWeight: 600 }}>Loading badges…</div>
         )}
@@ -203,7 +205,7 @@ export default function AchievementsPage() {
         )}
         {!loadingBadges && !badgesError && filteredBadges.length === 0 && (
           <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem 1rem', gap: '12px', color: 'rgba(1,1,1,0.45)', textAlign: 'center' }}>
-            <IoLockClosed size={36} style={{ opacity: 0.35 }} />
+            <IoLockClosed size={36} style={{ opacity: 0.35 }} aria-hidden="true" />
             <p style={{ fontWeight: 700, fontSize: '1rem', margin: 0 }}>
               {filterStatus === 'claimable' ? 'No claimable badges right now' : filterStatus === 'unlocked' ? 'No claimed badges yet' : filterStatus === 'locked' ? 'No locked badges' : 'No badges yet'}
             </p>
@@ -212,54 +214,21 @@ export default function AchievementsPage() {
         )}
 
         {!loadingBadges && !badgesError && filteredBadges.map((badge) => (
-          <div
-            key={badge.id}
-            className={getCardClass(badge)}
-            onClick={() => {
-              if (badge.claimable) return;
-              setSelectedBadge(badge);
-            }}
-          >
-            <span className="badge-status-top">
-              {badge.claimed
-                ? (formatDate(badge.unlockedAt) ?? 'Claimed')
-                : badge.claimable
-                  ? 'Ready to claim!'
-                  : 'Locked'}
-            </span>
-
+          <div key={badge.id} className={getCardClass(badge)} onClick={() => { if (!badge.claimable) setSelectedBadge(badge); }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' && !badge.claimable) setSelectedBadge(badge); }}>
+            <span className="badge-status-top">{badge.claimed ? (formatDate(badge.unlockedAt) ?? 'Claimed') : badge.claimable ? 'Ready to claim!' : 'Locked'}</span>
             <div className="badge-icon-wrapper">
-              <img
-                src={badge.badgeUrl ?? badgeImg}
-                alt={badge.name}
-                className="badge-img"
-                onError={(e) => { e.currentTarget.src = badgeImg; }}
-              />
+              <img src={badge.badgeUrl ?? badgeImg} alt={badge.name} className="badge-img" loading="lazy" width="100" height="100" onError={(e) => { e.currentTarget.src = badgeImg; }} />
             </div>
-
-            <h3 className="badge-title">
-              {badge.name}
-              {badge.claimed && <IoCheckmarkCircle className="checkmark-icon" />}
-            </h3>
-
+            <h3 className="badge-title">{badge.name}{badge.claimed && <IoCheckmarkCircle className="checkmark-icon" aria-label="Claimed" />}</h3>
             <div className="badge-progress-container">
-              <div className="badge-progress-bar">
+              <div className="badge-progress-bar" role="progressbar" aria-valuenow={badge.claimed ? 1 : 0} aria-valuemin={0} aria-valuemax={1}>
                 <div className="badge-progress-fill" style={{ width: badge.claimed ? '100%' : '0%' }} />
               </div>
               <span className="badge-progress-text">{badge.claimed ? '1/1' : '0/1'}</span>
             </div>
-
             {badge.claimable && (
-              <button
-                type="button"
-                className="badge-claim-btn"
-                disabled={claimingId === badge.id}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleClaim(badge);
-                }}
-              >
-                <IoGift style={{ fontSize: '1.1rem' }} />
+              <button type="button" className="badge-claim-btn" disabled={claimingId === badge.id} onClick={(e) => { e.stopPropagation(); handleClaim(badge); }} aria-label={`Claim ${badge.name}`}>
+                <IoGift aria-hidden="true" style={{ fontSize: '1.1rem' }} />
                 {claimingId === badge.id ? 'Claiming…' : 'Claim Reward'}
               </button>
             )}
@@ -267,15 +236,16 @@ export default function AchievementsPage() {
         ))}
       </section>
 
+      {/* ── Badge Detail Modal ── */}
       {selectedBadge && (
-        <div className="badge-modal-overlay" onClick={() => setSelectedBadge(null)}>
+        <div className="badge-modal-overlay" onClick={() => setSelectedBadge(null)} role="dialog" aria-modal="true" aria-labelledby="badge-modal-title">
           <div className="badge-modal-content" onClick={(e) => e.stopPropagation()}>
             <button type="button" className="dashboard-overlay-close-btn badge-modal-close" onClick={() => setSelectedBadge(null)} aria-label="Close" style={{ position: 'absolute', top: '20px', right: '20px' }}>×</button>
             <span className="badge-modal-status">{selectedBadge.claimed ? (formatDate(selectedBadge.unlockedAt) ?? 'Claimed') : selectedBadge.claimable ? 'Ready to claim!' : 'Locked'}</span>
             <div className={`badge-modal-icon ${!selectedBadge.claimed && !selectedBadge.claimable ? 'locked' : ''}`}>
-              <img src={selectedBadge.badgeUrl ?? badgeImg} alt={selectedBadge.name} className="badge-modal-img" onError={(e) => { e.currentTarget.src = badgeImg; }} />
+              <img src={selectedBadge.badgeUrl ?? badgeImg} alt={selectedBadge.name} className="badge-modal-img" loading="lazy" width="120" height="120" onError={(e) => { e.currentTarget.src = badgeImg; }} />
             </div>
-            <h2 className="badge-modal-title">{selectedBadge.name}{selectedBadge.claimed && <IoCheckmarkCircle className="checkmark-icon" />}</h2>
+            <h2 id="badge-modal-title" className="badge-modal-title">{selectedBadge.name}{selectedBadge.claimed && <IoCheckmarkCircle className="checkmark-icon" aria-label="Claimed" />}</h2>
             {!selectedBadge.claimed ? (
               <>
                 <span className="badge-modal-req-label">HOW TO UNLOCK</span>
@@ -286,14 +256,34 @@ export default function AchievementsPage() {
               <p className="badge-modal-desc">{selectedBadge.description}</p>
             )}
             <div className="badge-modal-progress">
-              <div className="badge-progress-bar"><div className="badge-progress-fill" style={{ width: selectedBadge.claimed ? '100%' : '0%' }} /></div>
+              <div className="badge-progress-bar" role="progressbar" aria-valuenow={selectedBadge.claimed ? 1 : 0} aria-valuemin={0} aria-valuemax={1}>
+                <div className="badge-progress-fill" style={{ width: selectedBadge.claimed ? '100%' : '0%' }} />
+              </div>
               <span className="badge-progress-text">{selectedBadge.claimed ? '1/1 Completed' : '0/1 Incomplete'}</span>
             </div>
             {selectedBadge.claimable && (
-              <button type="button" className="badge-claim-btn" style={{ marginTop: '12px' }} disabled={claimingId === selectedBadge.id} onClick={() => { handleClaim(selectedBadge); setSelectedBadge(null); }}>
-                <IoGift style={{ fontSize: '1.1rem' }} />{claimingId === selectedBadge.id ? 'Claiming…' : 'Claim Reward'}
+              <button type="button" className="badge-claim-btn" style={{ marginTop: '12px' }} disabled={claimingId === selectedBadge.id} onClick={() => { handleClaim(selectedBadge); setSelectedBadge(null); }} aria-label={`Claim ${selectedBadge.name}`}>
+                <IoGift aria-hidden="true" style={{ fontSize: '1.1rem' }} />{claimingId === selectedBadge.id ? 'Claiming…' : 'Claim Reward'}
               </button>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Congratulations Modal ── */}
+      {congratsBadge && (
+        <div className="badge-congrats-overlay" onClick={handleCongratsClose} role="dialog" aria-modal="true" aria-labelledby="badge-congrats-title">
+          <div className="badge-congrats-card" onClick={(e) => e.stopPropagation()}>
+            <div className="badge-congrats-icon-wrap">
+              <img src={congratsBadge.badgeUrl ?? badgeImg} alt={congratsBadge.name} className="badge-congrats-img" width="120" height="120" />
+            </div>
+            <IoTrophy className="badge-congrats-trophy" aria-hidden="true" />
+            <h2 id="badge-congrats-title" className="badge-congrats-title">Congratulations!</h2>
+            <p className="badge-congrats-name">{congratsBadge.name}</p>
+            <p className="badge-congrats-desc">{congratsBadge.description}</p>
+            <button type="button" className="badge-congrats-done-btn" onClick={handleCongratsClose}>
+              {congratsQueue.length > 0 ? 'Next' : 'Done'}
+            </button>
           </div>
         </div>
       )}

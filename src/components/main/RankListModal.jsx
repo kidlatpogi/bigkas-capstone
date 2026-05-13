@@ -1,11 +1,11 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { getSpriteUrl } from '../../utils/assetUtils';
 
-const rankBronze = getSpriteUrl('Rank/rank-bronze.png');
-const rankSilverImage = getSpriteUrl('Rank/rank-silver.png');
-const rankGoldImage = getSpriteUrl('Rank/rank-gold.png');
-const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.png');
-const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.png');
+const rankBronze = getSpriteUrl('Rank/rank-bronze.webp');
+const rankSilverImage = getSpriteUrl('Rank/rank-silver.webp');
+const rankGoldImage = getSpriteUrl('Rank/rank-gold.webp');
+const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.webp');
+const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.webp');
 import { BIGKAS_LEVELS } from '../../utils/activityProgress';
 import './RankListModal.css';
 
@@ -36,7 +36,14 @@ export default function RankListModal({ isOpen, onClose, currentLevelNumber }) {
           >
             <div className="rank-modal-header">
               <h2 className="rank-modal-title">Speaker Ranks</h2>
-              <button className="rank-modal-close-btn" onClick={onClose}>×</button>
+              <button
+                type="button"
+                className="dashboard-overlay-close-btn"
+                onClick={onClose}
+                aria-label="Close ranks"
+              >
+                ×
+              </button>
             </div>
 
             <div className="rank-modal-list">

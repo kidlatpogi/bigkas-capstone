@@ -24,7 +24,6 @@ import SkywardJourneyShell from '../../components/journey/SkywardJourneyShell';
 import StreakCalendarModal from '../../components/main/StreakCalendarModal';
 import RankListModal from '../../components/main/RankListModal';
 import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
-import { useBottomSheetPresence } from '../../hooks/useBottomSheetPresence';
 import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../services/journeyProgressService';
 import { RANDOM_TOPICS } from '../../utils/practiceData';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
@@ -265,9 +264,6 @@ function ActivityPageMobile() {
   const audioContextRef = useRef(null);
   const overlayAudioRef = useRef(null);
   const chatScrollRef = useRef(null);
-
-  const dashboardSheetPresence = useBottomSheetPresence(showDashboardOverlay);
-  const askB01SheetPresence = useBottomSheetPresence(isAskB01ModalOpen);
 
   // Clean up effects
   useEffect(() => {
@@ -724,13 +720,13 @@ function ActivityPageMobile() {
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
-    if (showRandomizerOverlay || showFreeSpeechOverlay || askB01SheetPresence.mounted) {
+    if (showRandomizerOverlay || showFreeSpeechOverlay || isAskB01ModalOpen) {
       document.body.classList.add('randomizer-overlay-open');
     } else {
       document.body.classList.remove('randomizer-overlay-open');
     }
     return () => document.body.classList.remove('randomizer-overlay-open');
-  }, [showRandomizerOverlay, showFreeSpeechOverlay, askB01SheetPresence.mounted]);
+  }, [showRandomizerOverlay, showFreeSpeechOverlay, isAskB01ModalOpen]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
@@ -857,13 +853,13 @@ function ActivityPageMobile() {
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
-    if (dashboardSheetPresence.mounted) {
+    if (showDashboardOverlay) {
       document.body.classList.add('dashboard-overlay-open');
     } else {
       document.body.classList.remove('dashboard-overlay-open');
     }
     return () => document.body.classList.remove('dashboard-overlay-open');
-  }, [dashboardSheetPresence.mounted]);
+  }, [showDashboardOverlay]);
 
   const closeDashboardForHomeJourneyTutorial = useCallback(() => {
     setShowDashboardOverlay(false);
@@ -956,8 +952,8 @@ function ActivityPageMobile() {
              */
             .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-banner {
               padding: 4px 10px 6px;
-              border-top: 1px solid rgba(11, 57, 84, 0.05);
-              background: rgba(255, 255, 255, 0.72);
+              border-top: 1.5px solid rgba(52, 211, 153, 0.35);
+              background: linear-gradient(180deg, rgba(236, 253, 245, 0.95) 0%, rgba(209, 250, 229, 0.85) 100%);
             }
             .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-banner-inner {
               max-width: none;
@@ -989,12 +985,15 @@ function ActivityPageMobile() {
               letter-spacing: 0.055em;
               line-height: 1.25;
               max-width: 17.5rem;
+              color: #059669;
+              font-weight: 800;
             }
             .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-list {
               font-size: 0.7rem;
               line-height: 1.32;
-              font-weight: 500;
+              font-weight: 600;
               padding: 0 2px;
+              color: #0f766e;
             }
             .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-list li {
               max-width: 18rem;
@@ -1048,9 +1047,9 @@ function ActivityPageMobile() {
       )}
 
       {showRandomizerOverlay && (
-        <section className="randomizer-overlay-wrapper" aria-label="Randomizer overlay">
+        <section className="randomizer-overlay-wrapper activity-mobile-overlay-wrapper" aria-label="Randomizer overlay">
           <div className="bigkas-modal-scrim" aria-hidden="true" onClick={handleCloseRandomizerOverlay} />
-          <div className="randomizer-overlay-content">
+          <div className="randomizer-overlay-content activity-mobile-overlay-content">
             <div className="randomizer-overlay-card">
               <div className="randomizer-overlay-card-top">
                 <h2 className="randomizer-overlay-title">
@@ -1138,9 +1137,9 @@ function ActivityPageMobile() {
         </section>
       )}
       {showFreeSpeechOverlay && (
-        <section className="randomizer-overlay-wrapper" aria-label="Free speech overlay">
+        <section className="randomizer-overlay-wrapper activity-mobile-overlay-wrapper" aria-label="Free speech overlay">
           <div className="bigkas-modal-scrim" aria-hidden="true" onClick={handleCloseFreeSpeechOverlay} />
-          <div className="randomizer-overlay-content">
+          <div className="randomizer-overlay-content activity-mobile-overlay-content">
             <div className="randomizer-overlay-card free-speech-overlay-card">
               <div className="randomizer-overlay-card-top">
                 <h2 className="randomizer-overlay-title">
@@ -1220,7 +1219,7 @@ function ActivityPageMobile() {
       </div>
 
       <div
-        className={`activity-mobile-dashboard-section${dashboardSheetPresence.mounted || showRandomizerOverlay || showFreeSpeechOverlay || askB01SheetPresence.mounted || showFreeSpeechTutorial ? ' is-hidden' : ''}`}
+        className={`activity-mobile-dashboard-section${showDashboardOverlay || showRandomizerOverlay || showFreeSpeechOverlay || isAskB01ModalOpen || showFreeSpeechTutorial ? ' is-hidden' : ''}`}
       >
         <Button 
           variant="practice" 
@@ -1231,11 +1230,8 @@ function ActivityPageMobile() {
         </Button>
       </div>
 
-      {dashboardSheetPresence.mounted && (
-        <section
-          className={`dashboard-overlay-wrapper bigkas-bottom-sheet-root ${dashboardSheetPresence.rootClassName}`.trim()}
-          aria-label="Dashboard overlay"
-        >
+      {showDashboardOverlay && (
+        <section className="dashboard-overlay-wrapper" aria-label="Dashboard overlay">
           <div className="bigkas-modal-scrim" aria-hidden="true" onClick={() => setShowDashboardOverlay(false)} />
           <div className="dashboard-overlay-content no-scrollbar">
             <div className="dashboard-overlay-header">
@@ -1415,11 +1411,8 @@ function ActivityPageMobile() {
         currentLevelNumber={levelProgress.levelNumber}
       />
 
-      {askB01SheetPresence.mounted && (
-        <section
-          className={`randomizer-overlay-wrapper ask-b01-modal-wrapper bigkas-bottom-sheet-root ${askB01SheetPresence.rootClassName}`.trim()}
-          aria-label="Ask B-01 modal"
-        >
+      {isAskB01ModalOpen && (
+        <section className="randomizer-overlay-wrapper ask-b01-modal-wrapper" aria-label="Ask B-01 modal">
           <div className="bigkas-modal-scrim ask-b01-scrim" onClick={() => setIsAskB01ModalOpen(false)} />
           <div className="ask-b01-modal-card">
             <div className="ask-b01-modal-header">

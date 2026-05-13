@@ -41,6 +41,7 @@ const visualSprite = getSpriteUrl('common/Visual.webp');
 const verbalSprite = getSpriteUrl('common/Verbal.webp');
 const vocalSprite = getSpriteUrl('common/Vocal.webp');
 import HistoryPage from './HistoryPage';
+import HistoryPageMobile from './HistoryPageMobile';
 import { generateCoachInsights } from '../../utils/coachInsights';
 import './ProgressPage.css';
 
@@ -447,36 +448,36 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
             </div>
           ) : null}
 
-          {/* Banner Section (1:1 with Activity Page) */}
-          <section className="new-banner dashboard-anim-top dashboard-anim-delay-2">
-            <div className="new-banner-left" id="tutorial-target-home-banner">
-              <img src={heroRobotImage} alt="" className="new-banner-robot" />
-              <div className="new-banner-bubble" aria-label="Coach message">
-                <p className="new-banner-kicker">B-01:</p>
-                <p className="new-banner-copy">{coachInsights.growthUpdate}</p>
+          {/* Banner Section (1:1 with Activity Page layout feel) */}
+          <section className="progress-banner dashboard-anim-top dashboard-anim-delay-2">
+            <div className="progress-banner-left" id="tutorial-target-home-banner">
+              <img src={heroRobotImage} alt="" className="progress-banner-robot" />
+              <div className="progress-banner-bubble" aria-label="Coach message">
+                <p className="progress-banner-kicker">B-01:</p>
+                <p className="progress-banner-copy">{coachInsights.growthUpdate}</p>
               </div>
             </div>
 
-            <div className="new-banner-right">
+            <div className="progress-banner-right">
               <div className="progress-banner-stats">
-                <div className="new-widget-rank-card progress-stat-card">
-                  <div className="new-widget-rank-content">
-                    <p className="new-widget-kicker">Sessions ({range})</p>
-                    <p className="new-widget-value">{stats.sessionsCount}</p>
+                <div className="progress-stat-card">
+                  <div className="progress-stat-content">
+                    <p className="progress-stat-kicker">Sessions ({range})</p>
+                    <p className="progress-stat-value">{stats.sessionsCount}</p>
                   </div>
                 </div>
 
-                <div className="new-widget-rank-card progress-stat-card">
-                  <div className="new-widget-rank-content">
-                    <p className="new-widget-kicker">Average Score</p>
-                    <p className="new-widget-value">{stats.averageScoreLabel}</p>
+                <div className="progress-stat-card">
+                  <div className="progress-stat-content">
+                    <p className="progress-stat-kicker">Average Score</p>
+                    <p className="progress-stat-value">{stats.averageScoreLabel}</p>
                   </div>
                 </div>
 
-                <div className="new-widget-rank-card progress-stat-card">
-                  <div className="new-widget-rank-content">
-                    <p className="new-widget-kicker">Total Speaking</p>
-                    <p className="new-widget-value">{stats.totalSpeakingTime}m</p>
+                <div className="progress-stat-card">
+                  <div className="progress-stat-content">
+                    <p className="progress-stat-kicker">Total Speaking</p>
+                    <p className="progress-stat-value">{stats.totalSpeakingTime}m</p>
                   </div>
                 </div>
               </div>
@@ -594,17 +595,17 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
                       key={pillar.key} 
                       className={`pillar-card dashboard-anim-bottom dashboard-anim-delay-${5 + index}`}
                     >
-                      <div className="new-widget-head">
-                        <h2 className="new-widget-title">{pillar.label}</h2>
-                        <span className="new-widget-chip" style={{ background: `${tier.color}20`, color: tier.color }}>
+                      <div className="progress-pillar-head">
+                        <h2 className="progress-pillar-title">{pillar.label}</h2>
+                        <span className="progress-pillar-chip" style={{ background: `${tier.color}20`, color: tier.color }}>
                           {tier.label}
                         </span>
                       </div>
-                      <div className="new-widget-rank-card">
-                        <img src={pillar.image} alt="" className="new-widget-rank-sprite" />
-                        <div className="new-widget-rank-content">
-                          <p className="new-widget-kicker">Score</p>
-                          <p className="new-widget-value">{Math.round(pillar.value)}%</p>
+                      <div className="progress-pillar-rank-card">
+                        <img src={pillar.image} alt="" className="progress-pillar-sprite" />
+                        <div className="progress-pillar-content">
+                          <p className="progress-pillar-kicker">Score</p>
+                          <p className="progress-pillar-value">{Math.round(pillar.value)}%</p>
                         </div>
                       </div>
                       <div className="progress-pillar-track-header">
@@ -637,12 +638,11 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
 
         {/* History Sidebar Overlay */}
         {isMobile ? (
-          <HistoryPage
+          <HistoryPageMobile
             isOpen={showMobileHistory}
             onClose={() => setShowMobileHistory(false)}
             userSessions={userSessions}
             isLoading={isLoading}
-            isMobile
           />
         ) : (
           <HistoryPage

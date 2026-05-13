@@ -5,7 +5,6 @@ import { buildRoute } from '../../utils/constants';
 import { getSessionMode } from '../../utils/sessionFormatting';
 import { sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
 import { getSpriteUrl } from '../../utils/assetUtils';
-import { useBottomSheetPresence } from '../../hooks/useBottomSheetPresence';
 
 const verbalSprite = getSpriteUrl('common/Verbal.webp');
 const visualSprite = getSpriteUrl('common/Visual.webp');
@@ -153,7 +152,6 @@ function getAdaptiveHistoryPages(pageCount, activePage) {
 
 export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoading, isMobile = false }) {
   const navigate = useNavigate();
-  const sheetPresence = useBottomSheetPresence(isOpen);
   const [historyFilter, setHistoryFilter] = useState('All');
   const [scoreSortTarget, setScoreSortTarget] = useState(HISTORY_SCORE_SORT_NONE);
   const [historyPage, setHistoryPage] = useState(0);
@@ -225,7 +223,7 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
     [paginationPageCount, safeHistoryPage]
   );
 
-  if (!sheetPresence.mounted) return null;
+  if (!isOpen) return null;
 
   const historyControls = (
     <div className="history-controls">
@@ -275,9 +273,7 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
   };
 
   return (
-    <div
-      className={`bigkas-bottom-sheet-root history-page-bottom-sheet-root ${sheetPresence.rootClassName}`.trim()}
-    >
+    <>
       <div className="bigkas-modal-scrim" onClick={handleClose} style={{ '--scrim-z': 1100 }} aria-hidden="true" />
       <div
         id="progress-history-sidebar"
@@ -526,6 +522,6 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }

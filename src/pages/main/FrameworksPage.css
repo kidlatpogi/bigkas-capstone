@@ -501,7 +501,40 @@
   font-weight: 500;
 }
 
+/* Level-0 tutorial CTA: replica of .progress-show-history-btn style and feel, preserving tutorial orange colors */
+.fh-modal .bigkas-btn.bigkas-btn--tutorial.fh-tutorial-launch-btn {
+  align-self: center;
+  margin: 0 auto 36px;
+  box-sizing: border-box;
+  height: 56px !important;
+  min-height: 56px !important;
+  width: min(100%, 348px) !important;
+  padding: 0 2rem !important;
+  border-radius: 999px !important;
+  font-family: 'Fredoka', 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif !important;
+  font-size: clamp(0.9rem, 0.86rem + 0.2vw, 0.98rem) !important;
+  font-weight: 500 !important;
+  color: #ffffff !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border: none !important;
+  cursor: pointer !important;
+  background: #F18F01 !important;
+  box-shadow: #cc7a00 0 5px 0 0 !important;
+}
 
+.fh-modal .bigkas-btn.bigkas-btn--tutorial.fh-tutorial-launch-btn:hover {
+  box-shadow: #cc7a00 0 3px 0 0 !important;
+  transform: translateY(2px) !important;
+}
+
+.fh-modal .bigkas-btn.bigkas-btn--tutorial.fh-tutorial-launch-btn:active {
+  box-shadow: #cc7a00 0 0 0 0 !important;
+  transform: translateY(5px) !important;
+}
 
 @media (max-width: 1024px) {
   .fh-controls {

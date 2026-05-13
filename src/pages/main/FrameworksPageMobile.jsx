@@ -1,9 +1,12 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { IoSearch, IoClose } from 'react-icons/io5';
 import { fetchModules } from '../../services/modulesService';
 import { ROUTES } from '../../utils/constants';
+import '../../components/common/Button.css';
 import './FrameworksPageMobile.css';
+import '../../styles/dashboard-overlay-close-btn.css';
 
 /* ── Level palette ── */
 const LEVEL_COLORS = {
@@ -75,16 +78,18 @@ function ModuleModal({ module, onClose }) {
     return () => { document.body.style.overflow = ''; };
   }, []);
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <div
       className="fh-mobile-modal-overlay"
       onClick={(e) => e.target === e.currentTarget && onClose()}
-      style={{ zIndex: 12000 }}
+      style={{ zIndex: 1100 }}
     >
       <div className="fh-mobile-modal-sheet" style={{ display: 'flex', flexDirection: 'column' }}>
         <div className="fh-mobile-modal-handle" />
 
-        <div className="fh-mobile-modal-header">
+        <div className="fh-mobile-modal-header" style={{ alignItems: 'center' }}>
           <div className="fh-mobile-modal-titles">
             <p className="fh-mobile-modal-kicker" style={{ color }}>
               {module.level_name} · Lesson {module.lesson_number}
@@ -105,18 +110,17 @@ function ModuleModal({ module, onClose }) {
           <p className="fh-mobile-modal-summary">{module.content}</p>
 
           {module.date_started ? (
-            <div style={{ padding: '0 24px 16px', marginTop: '-8px', fontSize: '0.85rem', color: '#64748b', display: 'flex', gap: '16px', fontWeight: 600 }}>
+            <div style={{ padding: '0 4px 16px', marginTop: '-8px', fontSize: '0.85rem', color: '#64748b', display: 'flex', gap: '16px', fontWeight: 600 }}>
               <span>Started: {new Date(module.date_started).toLocaleDateString()}</span>
               {module.date_ended ? <span>Ended: {new Date(module.date_ended).toLocaleDateString()}</span> : null}
             </div>
           ) : null}
 
           {module.level_number === 0 ? (
-            <div style={{ padding: '0 24px 24px' }}>
+            <div className="fh-mobile-modal-tutorial-row">
               <button
                 type="button"
-                className="bigkas-btn bigkas-btn--tutorial"
-                style={{ width: '100%' }}
+                className="bigkas-btn bigkas-btn--tutorial fh-tutorial-launch-btn"
                 onClick={() => {
                   onClose();
                   navigate(ROUTES.ACTIVITY, {
@@ -134,7 +138,8 @@ function ModuleModal({ module, onClose }) {
           ) : null}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

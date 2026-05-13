@@ -90,6 +90,15 @@
   display: block;
 }
 
+.profile-modal-avatar-loading {
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1;
+  user-select: none;
+  opacity: 0.85;
+}
+
 .profile-modal-user-info {
   display: flex;
   flex-direction: column;
@@ -265,6 +274,10 @@ body.profile-modal-open {
 
 /* Mobile: remove hairline / shadow strip between sheet and BottomNav (fill with white) */
 @media (max-width: 767px) {
+  .profile-modal {
+    animation: bigkas-bottom-sheet-panel-in var(--bigkas-bottom-sheet-duration) var(--bigkas-bottom-sheet-ease) both !important;
+  }
+
   .profile-modal-wrapper {
     overflow: visible;
   }

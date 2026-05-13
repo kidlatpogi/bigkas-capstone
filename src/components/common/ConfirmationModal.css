@@ -89,23 +89,23 @@
   height: 56px;
   border-radius: 999px;
   border: none;
-  background: #F97316;
+  background: #059669;
   color: #FFFFFF;
   font-family: 'Fredoka', sans-serif;
   font-size: 1.1rem;
   font-weight: 500;
   cursor: pointer;
-  box-shadow: #C2410C 0 5px 0 0;
+  box-shadow: #047857 0 5px 0 0;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .cm-btn-cancel:hover:not(:disabled) {
-  box-shadow: #C2410C 0 3px 0 0;
+  box-shadow: #047857 0 3px 0 0;
   transform: translateY(2px);
 }
 
 .cm-btn-cancel:active:not(:disabled) {
-  box-shadow: #C2410C 0 0 0 0;
+  box-shadow: #047857 0 0 0 0;
   transform: translateY(5px);
 }
 
@@ -195,9 +195,9 @@
 }
 
 [data-theme="dark"] .cm-btn-cancel {
-  background: #F97316;
+  background: #059669;
   color: #FFFFFF;
-  box-shadow: #9A3412 0 4px 0 0;
+  box-shadow: #047857 0 4px 0 0;
   border: none;
 }
 

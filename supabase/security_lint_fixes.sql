@@ -113,3 +113,31 @@ BEGIN
         WITH CHECK (true);
     END IF;
 END $$;
+
+-- Achievements: Publicly readable
+ALTER TABLE public.achievements ENABLE ROW LEVEL SECURITY;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE tablename = 'achievements' AND policyname = 'Allow public read access to achievements'
+    ) THEN
+        CREATE POLICY "Allow public read access to achievements"
+        ON public.achievements FOR SELECT
+        USING (true);
+    END IF;
+END $$;
+
+-- User Achievements: Users can view their own unlocked badges
+ALTER TABLE public.user_achievements ENABLE ROW LEVEL SECURITY;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE tablename = 'user_achievements' AND policyname = 'Users can view their own achievements'
+    ) THEN
+        CREATE POLICY "Users can view their own achievements"
+        ON public.user_achievements FOR SELECT
+        USING (user_id = auth.uid());
+    END IF;
+END $$;

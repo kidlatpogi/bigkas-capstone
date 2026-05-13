@@ -4,6 +4,7 @@ import { IoChevronDown } from 'react-icons/io5';
 import FrameworksPageMobile from './FrameworksPageMobile';
 import { fetchModules } from '../../services/modulesService';
 import { ROUTES } from '../../utils/constants';
+import '../../components/common/Button.css';
 import './FrameworksPage.css';
 
 /* ── Level palette ── */
@@ -144,8 +145,7 @@ function ModuleModal({ module, onClose }) {
         {module.level_number === 0 ? (
           <button
             type="button"
-            className="bigkas-btn bigkas-btn--tutorial"
-            style={{ margin: '0 40px 36px', width: 'calc(100% - 80px)' }}
+            className="bigkas-btn bigkas-btn--tutorial fh-tutorial-launch-btn"
             onClick={() => {
               onClose();
               navigate(ROUTES.ACTIVITY, {

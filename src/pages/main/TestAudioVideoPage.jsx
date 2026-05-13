@@ -15,11 +15,11 @@ import TutorialOverlay from '../../components/main/TutorialOverlay';
 import { getSpriteUrl } from '../../utils/assetUtils';
 
 const mascotSprite = getSpriteUrl('Robot/0002.webp');
-const bronzeRank = getSpriteUrl('Rank/rank-bronze.png');
-const silverRank = getSpriteUrl('Rank/rank-silver.png');
-const goldRank = getSpriteUrl('Rank/rank-gold.png');
-const mythrilRank = getSpriteUrl('Rank/rank-mythril.png');
-const legendaryRank = getSpriteUrl('Rank/rank-legendary.png');
+const bronzeRank = getSpriteUrl('Rank/rank-bronze.webp');
+const silverRank = getSpriteUrl('Rank/rank-silver.webp');
+const goldRank = getSpriteUrl('Rank/rank-gold.webp');
+const mythrilRank = getSpriteUrl('Rank/rank-mythril.webp');
+const legendaryRank = getSpriteUrl('Rank/rank-legendary.webp');
 import './TestAudioVideoPage.css';
 
 const THEME_CONFIG = [

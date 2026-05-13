@@ -1016,7 +1016,7 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
 /* Mobile responsive */
 /* Mobile responsive & Compact Laptop Adjustments */
 @media (max-width: 1100px) {
-  .new-banner {
+  .progress-page-bg .new-banner {
     flex-direction: column !important;
     height: auto !important;
     gap: 20px !important;
@@ -1024,27 +1024,27 @@ body.progress-page-active::-webkit-scrollbar-thumb:hover {
     align-items: center !important;
   }
 
-  .new-banner-left:not(.is-full-width) {
+  .progress-page-bg .new-banner-left:not(.is-full-width) {
     width: 100% !important;
     flex: none !important;
     max-width: 600px !important;
     padding-left: clamp(150px, 16vw, 190px) !important;
   }
 
-  .new-banner-left.is-full-width {
+  .progress-page-bg .new-banner-left.is-full-width {
     width: 100% !important;
     max-width: none !important;
     flex: none !important;
     align-self: stretch !important;
   }
 
-  .new-banner-robot {
+  .progress-page-bg .new-banner-robot {
     width: clamp(140px, 12vw, 180px) !important;
     bottom: -10px !important;
     left: -10px !important;
   }
 
-  .new-banner-right {
+  .progress-page-bg .new-banner-right {
     width: 100% !important;
     display: flex !important;
     justify-content: center !important;

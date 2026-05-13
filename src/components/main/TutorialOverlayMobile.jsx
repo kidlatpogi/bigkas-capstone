@@ -52,6 +52,8 @@ function TutorialOverlayMobile({
   robotImage = defaultRobotImage,
   finalRobotImage = defaultFinalRobotImage,
   showAudioToggle = false,
+  /** Mobile Activity home tour: close dashboard when spotlighting the journey map (`tutorial-target-home-journey`). */
+  onCloseDashboard = undefined,
 }) {
   const { user, updateUserMetadata } = useAuthContext();
   const GLOBAL_MUTE_KEY = 'bigkas_global_audio_muted_v1';
@@ -157,6 +159,8 @@ function TutorialOverlayMobile({
   const customVoiceRef = useRef(null);
   const typingIntervalRef = useRef(null);
   const dashboardFooterClickDoneRef = useRef(false);
+  /** True after `isOpen` was true at least once this mount — avoids closing dashboard on initial closed render. */
+  const tutorialSessionWasOpenRef = useRef(false);
   const isMutedRef = useRef(isMuted);
   useEffect(() => {
     isMutedRef.current = isMuted;
@@ -293,15 +297,37 @@ function TutorialOverlayMobile({
         customVoiceRef.current.currentTime = 0;
       }
     }
-  }, [isMuted]);
+
+    if (!isMuted && isOpen && activeStep) {
+      stopAllAudios();
+      if (bubbleVoiceUrl) {
+        const audio = new Audio(bubbleVoiceUrl);
+        audio.muted = false;
+        customVoiceRef.current = audio;
+        audio.play().catch(() => {});
+      } else if (shouldUseAudio) {
+        const stepAudio = stepAudioRefs.current[currentStep];
+        if (stepAudio) {
+          stepAudio.muted = false;
+          stepAudio.currentTime = 0;
+          stepAudio.play().catch(() => {});
+        }
+      }
+    }
+  }, [isMuted, isOpen, activeStep, bubbleVoiceUrl, shouldUseAudio, currentStep]);
 
   useEffect(() => {
     if (isOpen) {
+      tutorialSessionWasOpenRef.current = true;
       clearAllSpotlights();
       setCurrentStep(0);
       setStepTextSegment(0);
       return;
     }
+    if (tutorialSessionWasOpenRef.current && onCloseDashboard && isCustomTutorial && isNarrowViewport) {
+      onCloseDashboard();
+    }
+    tutorialSessionWasOpenRef.current = false;
     clearAllSpotlights();
     stopAllAudios();
     if (typingIntervalRef.current) {
@@ -312,7 +338,7 @@ function TutorialOverlayMobile({
       activeSpotlightRef.current.classList.remove('tutorial-spotlight-active');
       activeSpotlightRef.current = null;
     }
-  }, [isOpen]);
+  }, [isOpen, onCloseDashboard, isCustomTutorial, isNarrowViewport]);
 
   useEffect(() => {
     setStepTextSegment(0);
@@ -325,14 +351,14 @@ function TutorialOverlayMobile({
   useEffect(() => {
     if (!isOpen || !activeStep) return undefined;
     const tid = activeStep.targetElementId;
-    if (tid !== 'tutorial-target-home-streak' && tid !== 'tutorial-target-home-rank') {
+    if (tid !== 'tutorial-target-home-streak' && tid !== 'tutorial-target-home-rank' && tid !== 'tutorial-target-home-practice') {
       return undefined;
     }
     if (typeof document === 'undefined') return undefined;
     if (document.getElementById(tid)) return undefined;
     if (dashboardFooterClickDoneRef.current) return undefined;
 
-    const footerSection = document.querySelector('.activity-mobile-dashboard-section:not(.is-hidden)');
+    const footerSection = document.querySelector('.activity-mobile-dashboard-section');
     const btn = footerSection?.querySelector('button.activity-mobile-dashboard-btn');
     const label = btn?.textContent?.trim().toLowerCase();
     if (btn && label === 'dashboard') {
@@ -408,6 +434,22 @@ function TutorialOverlayMobile({
       }
     };
   }, [isOpen, activeStep?.targetElementId, isCustomTutorial]);
+
+  /* Home journey step: dashboard sheet covers the map — close it on narrow viewports only. */
+  useEffect(() => {
+    if (!isOpen || !isNarrowViewport || !isCustomTutorial || !onCloseDashboard) return undefined;
+    if (activeStep?.targetElementId !== 'tutorial-target-home-journey') return undefined;
+    onCloseDashboard();
+    return undefined;
+  }, [
+    isOpen,
+    isNarrowViewport,
+    isCustomTutorial,
+    activeStep?.targetElementId,
+    currentStep,
+    stepTextSegment,
+    onCloseDashboard,
+  ]);
 
   useEffect(() => {
     if (!isOpen || !activeStep) {
@@ -623,7 +665,7 @@ function TutorialOverlayMobile({
           <>
             {isStreakHomeStep ? (
               <div
-                className="bigkas-modal-scrim tutorial-mobile-streak-scrim"
+                className="bigkas-modal-scrim bigkas-modal-scrim--no-enter tutorial-mobile-streak-scrim"
                 aria-hidden="true"
                 style={{
                   /* Below .dashboard-overlay-wrapper (z-index 2000) so streak stays visible; above base page */
@@ -698,6 +740,13 @@ function TutorialOverlayMobile({
         }
         /* Mobile activity tutorial: logo mark + bubble; dashboard steps portal above sheets */
         @media (max-width: 768px) {
+          /* Automatically suppress the tutorial's standalone dark background scrim whenever the dashboard sheet is actively open */
+          body:has(.dashboard-overlay-wrapper) .tutorial-dark-bg,
+          body.dashboard-overlay-open .tutorial-dark-bg {
+            display: none !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+          }
           /* Ensure targeted elements inside the dashboard sheet elevate properly into the sheet's stacking context */
           .dashboard-overlay-content .tutorial-spotlight-active {
             position: relative !important;

@@ -81,8 +81,20 @@ export async function claimAchievementInDB(userId, achievementId) {
       { onConflict: 'user_id, achievement_id', ignoreDuplicates: true }
     )
     .select('unlocked_at')
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
   return data?.unlocked_at ?? new Date().toISOString();
+}
+
+/**
+ * Temporarily unclaims all achievements for a user by deleting their user_achievements rows.
+ */
+export async function unclaimAllAchievementsInDB(userId) {
+  const { error } = await supabase
+    .from('user_achievements')
+    .delete()
+    .eq('user_id', userId);
+
+  if (error) throw error;
 }

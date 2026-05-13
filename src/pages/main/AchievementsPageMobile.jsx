@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { IoCheckmarkCircle, IoSearch, IoNotificationsOutline, IoLockClosed, IoGift, IoTrophy } from 'react-icons/io5';
 import { getSpriteUrl } from '../../utils/assetUtils';
 import { useAuthContext } from '../../context/useAuthContext';
@@ -45,6 +46,7 @@ export default function AchievementsPageMobile() {
   const [achievements, setAchievements] = useState([]);
   const [loadingBadges, setLoadingBadges] = useState(true);
   const [badgesError, setBadgesError] = useState('');
+  const [selectedBadge, setSelectedBadge] = useState(null);
   const [claimingId, setClaimingId] = useState(null);
   const [congratsBadge, setCongratsBadge] = useState(null);
   const [congratsQueue, setCongratsQueue] = useState([]);
@@ -275,7 +277,14 @@ export default function AchievementsPageMobile() {
               </div>
             )}
             {!loadingBadges && !badgesError && filteredBadges.map((badge) => (
-              <div key={badge.id} className={getCardClass(badge)} role="button" tabIndex={0}>
+              <div
+                key={badge.id}
+                className={getCardClass(badge)}
+                onClick={() => { if (!badge.claimable) setSelectedBadge(badge); }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !badge.claimable) setSelectedBadge(badge); }}
+              >
                 <span className="badge-status-top">{badge.claimed ? (formatDate(badge.unlockedAt) ?? 'Claimed') : badge.claimable ? 'Ready to claim!' : 'Locked'}</span>
                 <div className="badge-icon-wrapper">
                   <img src={badge.badgeUrl ?? badgeImg} alt={badge.name} className="badge-img" loading="lazy" width="80" height="80" onError={(e) => { e.currentTarget.src = badgeImg; }} />
@@ -299,8 +308,43 @@ export default function AchievementsPageMobile() {
         </div>
       </div>
 
+      {/* ── Badge Detail Modal ── */}
+      {selectedBadge && typeof document !== 'undefined' && createPortal(
+        <div className="badge-modal-overlay" onClick={() => setSelectedBadge(null)} role="dialog" aria-modal="true" aria-labelledby="badge-modal-title-m">
+          <div className="badge-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button type="button" className="dashboard-overlay-close-btn badge-modal-close" onClick={() => setSelectedBadge(null)} aria-label="Close" style={{ position: 'absolute', top: '20px', right: '20px' }}>×</button>
+            <span className="badge-modal-status">{selectedBadge.claimed ? (formatDate(selectedBadge.unlockedAt) ?? 'Claimed') : selectedBadge.claimable ? 'Ready to claim!' : 'Locked'}</span>
+            <div className={`badge-modal-icon ${!selectedBadge.claimed && !selectedBadge.claimable ? 'locked' : ''}`}>
+              <img src={selectedBadge.badgeUrl ?? badgeImg} alt={selectedBadge.name} className="badge-modal-img" loading="lazy" width="100" height="100" onError={(e) => { e.currentTarget.src = badgeImg; }} />
+            </div>
+            <h2 id="badge-modal-title-m" className="badge-modal-title">{selectedBadge.name}{selectedBadge.claimed && <IoCheckmarkCircle className="checkmark-icon" aria-label="Claimed" />}</h2>
+            {!selectedBadge.claimed ? (
+              <>
+                <span className="badge-modal-req-label">HOW TO UNLOCK</span>
+                <p className="badge-modal-desc" style={{ fontWeight: 700, color: '#059669' }}>{selectedBadge.unlockDescription || 'Keep training to earn this.'}</p>
+                {selectedBadge.description && <p className="badge-modal-desc" style={{ opacity: 0.65, fontSize: '0.85rem', marginTop: '-14px' }}>{selectedBadge.description}</p>}
+              </>
+            ) : (
+              <p className="badge-modal-desc">{selectedBadge.description}</p>
+            )}
+            <div className="badge-modal-progress">
+              <div className="badge-progress-bar" role="progressbar" aria-valuenow={selectedBadge.claimed ? 1 : 0} aria-valuemin={0} aria-valuemax={1}>
+                <div className="badge-progress-fill" style={{ width: selectedBadge.claimed ? '100%' : '0%' }} />
+              </div>
+              <span className="badge-progress-text">{selectedBadge.claimed ? '1/1 Completed' : '0/1 Incomplete'}</span>
+            </div>
+            {selectedBadge.claimable && (
+              <button type="button" className="badge-claim-btn" style={{ marginTop: '12px' }} disabled={claimingId === selectedBadge.id} onClick={() => { handleClaim(selectedBadge); setSelectedBadge(null); }} aria-label={`Claim ${selectedBadge.name}`}>
+                <IoGift aria-hidden="true" style={{ fontSize: '1rem' }} />{claimingId === selectedBadge.id ? 'Claiming…' : 'Claim'}
+              </button>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+
       {/* ── Congratulations Modal ── */}
-      {congratsBadge && (
+      {congratsBadge && typeof document !== 'undefined' && createPortal(
         <div className="badge-congrats-overlay" onClick={handleCongratsClose} role="dialog" aria-modal="true" aria-labelledby="badge-congrats-title-m">
           <div className="badge-congrats-card" onClick={(e) => e.stopPropagation()}>
             <div className="badge-congrats-icon-wrap">
@@ -314,7 +358,8 @@ export default function AchievementsPageMobile() {
               {congratsQueue.length > 0 ? 'Next' : 'Done'}
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

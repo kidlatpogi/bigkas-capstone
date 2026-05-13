@@ -10,6 +10,7 @@ import {
   IoSettingsOutline,
   IoStatsChartOutline,
   IoNotificationsOutline,
+  IoTrophy,
 } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
@@ -20,10 +21,12 @@ import {
   claimAchievement,
   claimAllAchievements,
 } from '../../utils/achievementClaims';
-import { getAssetUrl } from '../../utils/assetUtils';
+import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
+import { claimAchievementInDB, unclaimAllAchievementsInDB } from '../../services/achievementsService';
 import './SideNav.css';
 
 const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
+const badgeImg = getSpriteUrl('Badges/Badge.png');
 
 const PRIMARY_NAV_ITEMS = [
   { to: ROUTES.ACTIVITY, label: 'Home', icon: IoHomeOutline },
@@ -43,6 +46,9 @@ export default function SideNav() {
   const [notifTrayOpen, setNotifTrayOpen] = useState(false);
   const [claimables, setClaimables] = useState(() => getClaimableAchievements());
   const [notifTab, setNotifTab] = useState('all');
+  const [unclaiming, setUnclaiming] = useState(false);
+  const [claimingId, setClaimingId] = useState(null);
+  const [congratsBadge, setCongratsBadge] = useState(null);
 
   const isSettingsRoute = useMemo(
     () => location.pathname === ROUTES.PROFILE || location.pathname.startsWith(ROUTES.SETTINGS),
@@ -113,6 +119,35 @@ export default function SideNav() {
     claimAllAchievements();
     setClaimables([]);
     setClaimableCount(0);
+  };
+
+  const handleUnclaimAllTemp = async () => {
+    if (!user?.id || unclaiming) return;
+    setUnclaiming(true);
+    try {
+      await unclaimAllAchievementsInDB(user.id);
+      window.location.reload();
+    } catch (err) {
+      console.error('Failed to unclaim achievements:', err);
+      setUnclaiming(false);
+    }
+  };
+
+  const handleClaimDirect = async (item) => {
+    if (!user?.id || claimingId) return;
+    setClaimingId(item.id);
+    try {
+      await claimAchievementInDB(user.id, item.id);
+      claimAchievement(item.id);
+      setClaimables((prev) => prev.filter((entry) => String(entry.id) !== String(item.id)));
+      setClaimableCount((prev) => Math.max(0, prev - 1));
+      setCongratsBadge(item);
+    } catch (err) {
+      console.error('Failed to claim achievement:', err);
+      handleClaimNavigate();
+    } finally {
+      setClaimingId(null);
+    }
   };
 
   const logoutModal = showLogoutConfirm && typeof document !== 'undefined'
@@ -252,9 +287,10 @@ export default function SideNav() {
                             <button
                               type="button"
                               className="side-nav-notif-claim-btn"
-                              onClick={handleClaimNavigate}
+                              disabled={claimingId === item.id}
+                              onClick={() => handleClaimDirect(item)}
                             >
-                              Claim Achievement
+                              {claimingId === item.id ? 'Claiming…' : 'Claim Achievement'}
                             </button>
                           </div>
                         </div>
@@ -337,6 +373,16 @@ export default function SideNav() {
       <button type="button" className="side-nav-link side-nav-link--tutorial-launch" onClick={handleLaunchTutorial}>
         <span className="side-nav-link-label">Launch Tutorial (Temp)</span>
       </button>
+
+      <button
+        type="button"
+        className="side-nav-link side-nav-link--tutorial-launch"
+        disabled={unclaiming}
+        onClick={handleUnclaimAllTemp}
+        style={{ marginTop: '-4px' }}
+      >
+        <span className="side-nav-link-label">{unclaiming ? 'Resetting…' : 'Unclaim All (Temp)'}</span>
+      </button>
       
       <button type="button" className="side-nav-logout" onClick={handleLogoutClick}>
         <IoLogOutOutline aria-hidden="true" />
@@ -344,6 +390,26 @@ export default function SideNav() {
       </button>
 
       {logoutModal}
+
+      {congratsBadge && typeof document !== 'undefined'
+        ? createPortal(
+          <div className="badge-congrats-overlay" onClick={() => setCongratsBadge(null)} role="dialog" aria-modal="true" aria-labelledby="side-congrats-title">
+            <div className="badge-congrats-card" onClick={(e) => e.stopPropagation()}>
+              <div className="badge-congrats-icon-wrap">
+                <img src={congratsBadge.badgeUrl ?? badgeImg} alt={congratsBadge.title || congratsBadge.name} className="badge-congrats-img" width="120" height="120" />
+              </div>
+              <IoTrophy className="badge-congrats-trophy" aria-hidden="true" />
+              <h2 id="side-congrats-title" className="badge-congrats-title">Congratulations!</h2>
+              <p className="badge-congrats-name">{congratsBadge.title || congratsBadge.name}</p>
+              <p className="badge-congrats-desc">{congratsBadge.description}</p>
+              <button type="button" className="badge-congrats-done-btn" onClick={() => setCongratsBadge(null)}>
+                Done
+              </button>
+            </div>
+          </div>,
+          document.body
+        )
+        : null}
     </aside>
   );
 }

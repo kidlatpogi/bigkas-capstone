@@ -51,16 +51,55 @@
     margin-left: calc(var(--mobile-px, 16px) * -1);
     margin-right: calc(var(--mobile-px, 16px) * -1);
   }
+}
 
-  /* Inset search + category chips (avoid desktop-wide rules bleeding on narrow viewports) */
-  .fh-mobile-header {
-    padding: 16px 0.5rem 8px;
-    margin: 0;
+/* Native-like shell (≤767px phone; desktop FrameworksPage unchanged) */
+@media (max-width: 767px) {
+  .fh-mobile-root {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color-scheme: light;
+    isolation: isolate;
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
+    padding-top: max(6px, env(safe-area-inset-top, 0px));
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: auto;
+    background-attachment: scroll;
   }
 
-  .fh-mobile-categories {
-    padding: 4px 0.5rem;
-    margin: 0 0 8px;
+  .fh-mobile-root .fh-mobile-search-input,
+  .fh-mobile-root .fh-mobile-search-clear,
+  .fh-mobile-root .fh-mobile-chip {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  .fh-mobile-root .fh-mobile-chip:active {
+    transform: scale(0.97);
+  }
+
+  .fh-mobile-root .fh-mobile-header {
+    overscroll-behavior: contain;
+  }
+
+  .fh-mobile-root .fh-mobile-categories {
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .fh-mobile-root .fh-mobile-card {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  .fh-mobile-root .fh-mobile-card:active {
+    transform: scale(0.992);
+    transition: transform 0.12s ease;
   }
 }
 
@@ -268,13 +307,8 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  padding-bottom: env(safe-area-inset-bottom, 24px);
-  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes slideUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+  padding-bottom: calc(88px + env(safe-area-inset-bottom, 24px));
+  animation: bigkas-bottom-sheet-panel-in var(--bigkas-bottom-sheet-duration) var(--bigkas-bottom-sheet-ease) both !important;
 }
 
 .fh-mobile-modal-handle {
@@ -312,16 +346,7 @@
   color: #1e293b;
 }
 
-.fh-mobile-modal-close {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #f1f5f9;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #64748b;
+.fh-mobile-modal-header .dashboard-overlay-close-btn {
   margin-left: 12px;
 }
 
@@ -348,24 +373,43 @@
   margin-bottom: 24px;
 }
 
-.fh-mobile-modal-action {
-  width: 100%;
-  height: 56px;
-  border-radius: 16px;
-  background: #f97316;
-  color: #ffffff;
-  font-weight: 800;
-  font-size: 1.05rem;
-  border: none;
+.fh-mobile-modal-tutorial-row {
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 8px;
-  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2);
+  padding: 4px 4px 16px;
 }
 
-.fh-mobile-modal-action:active {
-  transform: scale(0.98);
+/* Replica of .progress-show-history-btn style and feel, preserving tutorial orange brand colors */
+.fh-mobile-modal-body .bigkas-btn.bigkas-btn--tutorial.fh-tutorial-launch-btn {
+  box-sizing: border-box;
+  height: 56px !important;
+  min-height: 56px !important;
+  width: min(100%, 348px) !important;
+  padding: 0 2rem !important;
+  border-radius: 999px !important;
+  font-family: 'Fredoka', 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif !important;
+  font-size: clamp(0.9rem, 0.86rem + 0.2vw, 0.98rem) !important;
+  font-weight: 500 !important;
+  color: #ffffff !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border: none !important;
+  cursor: pointer !important;
+  background: #F18F01 !important;
+  box-shadow: #cc7a00 0 5px 0 0 !important;
+}
+
+.fh-mobile-modal-body .bigkas-btn.bigkas-btn--tutorial.fh-tutorial-launch-btn:hover {
+  box-shadow: #cc7a00 0 3px 0 0 !important;
+  transform: translateY(2px) !important;
+}
+
+.fh-mobile-modal-body .bigkas-btn.bigkas-btn--tutorial.fh-tutorial-launch-btn:active {
+  box-shadow: #cc7a00 0 0 0 0 !important;
+  transform: translateY(5px) !important;
 }
 
 .fh-mobile-empty {
@@ -376,4 +420,25 @@
   background: #f8fafc;
   border-radius: 24px;
   margin-top: 20px;
+}
+
+/*
+ * Mobile only: search + chip row sit inside full-bleed `.fh-mobile-root`.
+ * Base `.fh-mobile-header` / `.fh-mobile-categories` use negative horizontal margins (-16px)
+ * which pulls them flush to the viewport — reset those here so 0.5rem gutter applies.
+ */
+@media (max-width: 768px) {
+  .fh-mobile-header {
+    margin: 0;
+    padding-top: 16px;
+    padding-bottom: 8px;
+    padding-left: max(0.5rem, env(safe-area-inset-left, 0px));
+    padding-right: max(0.5rem, env(safe-area-inset-right, 0px));
+  }
+
+  .fh-mobile-categories {
+    margin: 0 0 8px;
+    padding: 4px 0;
+    /* Chips scroll within header inset; no negative margin */
+  }
 }

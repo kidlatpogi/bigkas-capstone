@@ -5,12 +5,10 @@ import { IoPersonOutline, IoSettingsOutline } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import { ensureProfileModalAvatarSrc, invalidateProfileModalAvatarCache } from '../../utils/profileModalAvatarCache';
-import { useBottomSheetPresence } from '../../hooks/useBottomSheetPresence';
 import './ProfileModal.css';
 
 export default function ProfileModal({ isOpen, onClose }) {
   const navigate = useNavigate();
-  const sheetPresence = useBottomSheetPresence(isOpen);
   const { user, logout } = useAuthContext();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
@@ -54,13 +52,13 @@ export default function ProfileModal({ isOpen, onClose }) {
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
-    if (sheetPresence.mounted) {
+    if (isOpen) {
       document.body.classList.add('profile-modal-open');
     } else {
       document.body.classList.remove('profile-modal-open');
     }
     return () => document.body.classList.remove('profile-modal-open');
-  }, [sheetPresence.mounted]);
+  }, [isOpen]);
 
   const handleLogoutClick = () => {
     setShowLogoutConfirm(true);
@@ -86,10 +84,10 @@ export default function ProfileModal({ isOpen, onClose }) {
     navigate(ROUTES.SETTINGS);
   };
 
-  if (!sheetPresence.mounted) return null;
+  if (!isOpen) return null;
 
   const modalContent = (
-    <div className={`bigkas-bottom-sheet-root profile-modal-bottom-sheet-root ${sheetPresence.rootClassName}`.trim()}>
+    <>
       <div className="profile-modal-backdrop" role="presentation" onClick={onClose} />
       <div className="profile-modal-wrapper">
         <div className="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
@@ -201,7 +199,7 @@ export default function ProfileModal({ isOpen, onClose }) {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 
   return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : null;

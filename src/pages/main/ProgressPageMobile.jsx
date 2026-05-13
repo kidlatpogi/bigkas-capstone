@@ -33,7 +33,7 @@ const heroRobotImage = getSpriteUrl('Robot/0018.webp');
 const visualSprite = getSpriteUrl('common/Visual.webp');
 const verbalSprite = getSpriteUrl('common/Verbal.webp');
 const vocalSprite = getSpriteUrl('common/Vocal.webp');
-import HistoryPage from './HistoryPage';
+import HistoryPageMobile from './HistoryPageMobile';
 import './ProgressPage.css'; 
 import './ProgressPageMobile.css';
 
@@ -489,12 +489,11 @@ function ProgressPageMobile() {
         </div>
 
         {/* History Sidebar Overlay */}
-        <HistoryPage
+        <HistoryPageMobile
           isOpen={showMobileHistory}
           onClose={() => setShowMobileHistory(false)}
           userSessions={userSessions}
           isLoading={isLoading}
-          isMobile
         />
       </div>
     </div>

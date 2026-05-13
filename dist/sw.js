@@ -33,6 +33,9 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Cache API only supports GET requests — skip everything else immediately.
+  if (event.request.method !== 'GET') return;
+
   const url = new URL(event.request.url);
 
   // Strategy: Cache First for assets from assets.bigkas.site
@@ -44,15 +47,12 @@ self.addEventListener('fetch', (event) => {
         }
 
         return fetch(event.request).then((response) => {
-          // Check if we received a valid response
-          if (!response || response.status !== 200 || response.type !== 'basic' && response.type !== 'cors') {
+          // Only cache valid same-origin or CORS responses.
+          if (!response || response.status !== 200 || (response.type !== 'basic' && response.type !== 'cors')) {
             return response;
           }
 
-          // IMPORTANT: Clone the response. A response is a stream
-          // and because we want the browser to consume the stream
-          // as well as the cache consuming the stream, we need
-          // to clone it so we have two streams.
+          // Clone before consuming — the cache and browser each need their own stream.
           const responseToCache = response.clone();
 
           caches.open(CACHE_NAME).then((cache) => {
@@ -66,6 +66,5 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Default: Network First for other requests (like API calls)
-  // or just let it pass through (browser default)
+  // Default: let all other requests (API calls, auth, etc.) pass through to the network.
 });

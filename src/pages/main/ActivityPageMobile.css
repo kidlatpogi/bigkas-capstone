@@ -5,9 +5,9 @@
    ========================================================================= */
 
 .activity-page-mobile-root {
-  width: calc(100% + (var(--mobile-px, 16px) * 2));
-  margin-left: calc(var(--mobile-px, 16px) * -1);
-  margin-right: calc(var(--mobile-px, 16px) * -1);
+  width: calc(100% + var(--mobile-page-inset-left) + var(--mobile-page-inset-right));
+  margin-left: calc(-1 * var(--mobile-page-inset-left));
+  margin-right: calc(-1 * var(--mobile-page-inset-right));
   height: 100dvh;
   overflow: hidden;
   box-sizing: border-box;
@@ -22,7 +22,7 @@
     radial-gradient(circle at 0% 100%, rgba(241, 143, 1, 0.05) 0%, transparent 40%);
   background-size: 32px 32px, 100% 100%, 100% 100%;
   
-  padding: 16px 16px 0;
+  padding: max(16px, env(safe-area-inset-top, 0px)) var(--mobile-page-inset-right) 0 var(--mobile-page-inset-left);
   gap: 20px; /* Equal vertical gap */
   padding-bottom: calc(64px + 20px + env(safe-area-inset-bottom, 0px));
 }
@@ -113,6 +113,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  scroll-padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -158,12 +159,12 @@
 /* Override SkywardJourney MapHeaderCard for mobile to keep header visible */
 @media (max-width: 767px) {
   .activity-page-mobile-root {
-    width: calc(100% + (var(--mobile-px, 16px) * 2));
-    margin-left: calc(var(--mobile-px, 16px) * -1);
-    margin-right: calc(var(--mobile-px, 16px) * -1);
-    padding-left: 16px;
-    padding-right: 16px;
-    padding-top: 10px;
+    width: calc(100% + var(--mobile-page-inset-left) + var(--mobile-page-inset-right));
+    margin-left: calc(-1 * var(--mobile-page-inset-left));
+    margin-right: calc(-1 * var(--mobile-page-inset-right));
+    padding-left: var(--mobile-page-inset-left);
+    padding-right: var(--mobile-page-inset-right);
+    padding-top: max(10px, env(safe-area-inset-top, 0px));
   }
 
   .activity-mobile-top-strip {
@@ -204,6 +205,66 @@
 }
 
 /* =========================================================================
+   NATIVE-LIKE SHELL — Skyward entrance (mobile only; ActivityPageMobile root)
+   Touch/overscroll/typography + softer “sheet” chrome. Desktop ActivityPage unchanged.
+   ========================================================================= */
+
+@media (max-width: 767px) {
+  .activity-page-mobile-root.activity-page--skyward-entrance {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color-scheme: light;
+    isolation: isolate;
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
+    gap: 14px;
+    padding-top: max(8px, env(safe-area-inset-top, 0px));
+    padding-bottom: calc(64px + 12px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .activity-page-mobile-root.activity-page--skyward-entrance .activity-mobile-journey-container {
+    overscroll-behavior: contain;
+    border-radius: 22px;
+  }
+
+  .activity-page-mobile-root.activity-page--skyward-entrance
+    .activity-mobile-journey-container
+    .skyward-journey.skyward-journey-container.no-scrollbar {
+    overscroll-behavior-y: contain;
+  }
+
+  .activity-page-mobile-root.activity-page--skyward-entrance .activity-mobile-top-strip {
+    border-radius: 22px;
+    box-shadow:
+      0 2px 10px rgba(5, 150, 105, 0.14),
+      0 14px 32px -10px rgba(5, 150, 105, 0.28);
+  }
+
+  .activity-page-mobile-root.activity-page--skyward-entrance .activity-mobile-banner-bubble {
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.94);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 14px rgba(11, 57, 84, 0.1);
+  }
+
+  .activity-page-mobile-root.activity-page--skyward-entrance .activity-mobile-journey-container .skyward-journey {
+    border-radius: 20px;
+    border-color: rgba(11, 57, 84, 0.06);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.65) inset,
+      0 8px 28px rgba(15, 23, 42, 0.07);
+  }
+
+  .activity-page-mobile-root.activity-page--skyward-entrance .activity-mobile-dashboard-btn:active:not(:disabled) {
+    transform: translateY(5px) scale(0.985) !important;
+  }
+}
+
+/* =========================================================================
    BOTTOM NAVIGATION (Mobile)
    ========================================================================= */
 
@@ -234,7 +295,8 @@
 
 /* Fixed mute controls must not be clipped by the root; clear bottom nav (~64px) + safe area */
 .activity-page-mobile-root:has(.randomizer-overlay-wrapper),
-.activity-page-mobile-root:has(.tutorial-overlay-wrapper) {
+.activity-page-mobile-root:has(.tutorial-overlay-wrapper),
+.activity-page-mobile-root:has(.dashboard-overlay-wrapper) {
   overflow: visible;
 }
 
@@ -243,31 +305,52 @@
   z-index: 10;
 }
 
-.activity-page-mobile-root .randomizer-overlay-wrapper {
-  position: fixed;
-  inset: 0;
+.activity-page-mobile-root .randomizer-overlay-wrapper,
+.activity-page-mobile-root .activity-mobile-overlay-wrapper {
+  position: fixed !important;
+  /* Cover only the visible area above the bottom nav so flex centering
+     puts the card exactly in the middle of what the user can see. */
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+  margin: 0 !important;
   z-index: 3000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 16px !important;
+  box-sizing: border-box !important;
 }
 
 /* randomizer-overlay-backdrop removed */
 
-.activity-page-mobile-root .randomizer-overlay-content {
-  position: relative;
+.activity-page-mobile-root .randomizer-overlay-content,
+.activity-page-mobile-root .activity-mobile-overlay-content {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  margin: 0 auto !important;
+  transform: none !important;
   z-index: 1200; /* Above scrim (1100) */
-  width: min(100%, 420px);
+  width: 100%;
+  max-width: 420px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0;
-  padding: 0 16px;
+  align-items: stretch;
+  box-sizing: border-box !important;
 }
 
 .activity-page-mobile-root .randomizer-overlay-card {
-  position: relative;
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  margin: 0 auto !important;
+  transform: none !important;
   width: 100%;
   padding: 1.5rem;
   background: #FDFDF9;
@@ -279,22 +362,13 @@
   gap: 14px;
   max-height: 70vh;
   overflow-y: auto;
-  margin-top: 0;
+  box-sizing: border-box !important;
 }
 
+/* Desktop uses an upward arrow because the robot sits above the card.
+   On mobile there is no robot above, so hide the pseudo-element. */
 .activity-page-mobile-root .randomizer-overlay-card::before {
-  content: '';
-  position: absolute;
-  top: -12px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 12px solid transparent;
-  border-right: 12px solid transparent;
-  border-bottom: 12px solid #FDFDF9;
-  border-top: none;
-  filter: drop-shadow(0 -2px 2px rgba(0,0,0,0.05));
+  display: none;
 }
 
 .activity-page-mobile-root .randomizer-overlay-card-top {
@@ -322,26 +396,6 @@
   height: 22px;
   object-fit: contain;
   flex-shrink: 0;
-}
-
-.activity-page-mobile-root .randomizer-overlay-close-btn {
-  background: rgba(15, 23, 42, 0.06);
-  border: none;
-  font-size: 24px;
-  color: #475569;
-  cursor: pointer;
-  padding: 0;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-
-.activity-page-mobile-root .randomizer-overlay-close-btn:active {
-  color: #059669;
 }
 
 .activity-page-mobile-root .randomizer-overlay-copy {
@@ -560,8 +614,23 @@
   pointer-events: auto;
 }
 
+/*
+ * Dashboard sheet lives inside .activity-page-mobile-root (overflow:hidden by default).
+ * Without lifting overflow + explicit stacking, the fixed scrim paints but the bottom sheet
+ * can be clipped — looks like “scrim only”. Mirror randomizer overlay z-index / isolate.
+ */
+.activity-page-mobile-root .dashboard-overlay-wrapper {
+  z-index: 3000;
+  isolation: isolate;
+}
+
+.activity-page-mobile-root .dashboard-overlay-wrapper > .bigkas-modal-scrim {
+  z-index: 0;
+}
+
 /* dashboard-overlay-backdrop removed */
 
+.activity-page-mobile-root .dashboard-overlay-wrapper .dashboard-overlay-content,
 .dashboard-overlay-content {
   position: relative;
   z-index: 1200; /* Above scrim (1100) */
@@ -573,12 +642,7 @@
   flex-direction: column;
   max-height: 90vh;
   box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.2);
-  animation: dashboardSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes dashboardSlideUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+  animation: bigkas-bottom-sheet-panel-in var(--bigkas-bottom-sheet-duration) var(--bigkas-bottom-sheet-ease) both !important;
 }
 
 .dashboard-overlay-header {
@@ -595,35 +659,6 @@
   font-size: 22px;
   font-weight: 800;
   color: #111827;
-}
-
-.dashboard-overlay-close-btn {
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: rgba(15, 23, 42, 0.08);
-  color: #334155;
-  font-size: 1.1rem;
-  line-height: 1;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-}
-
-.dashboard-overlay-close-btn:hover {
-  background: #ef4444;
-  color: #ffffff;
-}
-
-.dashboard-overlay-close-btn:active {
-  transform: scale(0.9);
 }
 
 .dashboard-overlay-scroll-content {
@@ -937,4 +972,118 @@
   font-weight: 600;
   color: #334155;
   text-align: right;
+}
+
+/* =========================================================================
+   ASK B-01 — native-style bottom sheet (mobile Activity route only)
+   Scoped under .activity-page-mobile-root — desktop ActivityPage.jsx unchanged
+   ========================================================================= */
+
+/* Ask B-01 is a full-height bottom sheet — restore full viewport coverage and anchor to bottom */
+.activity-page-mobile-root .randomizer-overlay-wrapper.ask-b01-modal-wrapper {
+  bottom: 0 !important; /* Override: extend back to full viewport height */
+  align-items: flex-end !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+  z-index: 13000 !important;
+  isolation: isolate;
+  pointer-events: none !important;
+}
+
+.activity-page-mobile-root .randomizer-overlay-wrapper.ask-b01-modal-wrapper > * {
+  pointer-events: auto !important;
+}
+
+.activity-page-mobile-root .ask-b01-modal-wrapper .ask-b01-scrim {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.activity-page-mobile-root .ask-b01-modal-card {
+  width: 100% !important;
+  max-width: 500px !important;
+  height: 90vh !important;
+  max-height: 90vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 32px 32px 0 0 !important;
+  background: #FDFDF9 !important;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.2) !important;
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  animation: bigkas-bottom-sheet-panel-in var(--bigkas-bottom-sheet-duration) var(--bigkas-bottom-sheet-ease) both !important;
+}
+
+/* Header: layout perfectly matching dashboard sheet */
+.activity-page-mobile-root .ask-b01-modal-header {
+  padding: 24px 24px 16px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  border-bottom: 1px solid rgba(11, 57, 84, 0.08) !important;
+  background: #FDFDF9 !important;
+  flex-shrink: 0 !important;
+}
+
+.activity-page-mobile-root .ask-b01-modal-title {
+  margin: 0 !important;
+  font-size: 22px !important;
+  font-weight: 800 !important;
+  color: #111827 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.activity-page-mobile-root .ask-b01-modal-header > .dashboard-overlay-close-btn {
+  align-self: auto !important;
+  margin: 0 !important;
+}
+
+.activity-page-mobile-root .ask-b01-chat-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  border-radius: 0;
+  border: none;
+  padding: 16px;
+  background: #eef2f7;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+.activity-page-mobile-root .ask-b01-suggestions {
+  padding: 4px 0 12px;
+  padding-left: 0;
+}
+
+.activity-page-mobile-root .ask-b01-suggestion-chip {
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.35;
+}
+
+.activity-page-mobile-root .ask-b01-input-area {
+  flex-shrink: 0;
+  /* Pad for home indicator only — nav clearance is on the sheet wrapper + card max-height */
+  padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  background: #ffffff;
+  border-top: 1px solid rgba(11, 57, 84, 0.08);
+  gap: 10px;
+}
+
+/* 16px+ avoids iOS zoom-on-focus */
+.activity-page-mobile-root .ask-b01-input {
+  font-size: 16px;
+}
+
+.activity-page-mobile-root .ask-b01-disclaimer {
+  margin-top: 4px;
+  padding-bottom: 2px;
 }

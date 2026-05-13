@@ -230,7 +230,31 @@ function TutorialOverlay({
         customVoiceRef.current.currentTime = 0;
       }
     }
-  }, [isMuted]);
+
+    if (!isMuted && isOpen && activeStep) {
+      stopAllAudios();
+      const voiceUrl =
+        stepTextSegment === 1 && activeStep.voicePart2
+          ? activeStep.voicePart2
+          : stepTextSegment === 0 && activeStep.voice
+            ? activeStep.voice
+            : null;
+
+      if (voiceUrl) {
+        const audio = new Audio(voiceUrl);
+        audio.muted = false;
+        customVoiceRef.current = audio;
+        audio.play().catch(() => {});
+      } else if (shouldUseAudio) {
+        const stepAudio = stepAudioRefs.current[currentStep];
+        if (stepAudio) {
+          stepAudio.muted = false;
+          stepAudio.currentTime = 0;
+          stepAudio.play().catch(() => {});
+        }
+      }
+    }
+  }, [isMuted, isOpen, activeStep, stepTextSegment, shouldUseAudio, currentStep]);
 
   useEffect(() => {
     if (isOpen) {

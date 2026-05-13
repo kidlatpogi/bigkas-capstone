@@ -760,7 +760,7 @@ function ActivityPageMobile() {
       welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%205_new.mp3";
     }
 
-    return [
+    const fullSteps = [
       {
         id: 'step-intro',
         title: 'B-01:',
@@ -827,7 +827,12 @@ function ActivityPageMobile() {
         voice: "https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%205.mp3",
       },
     ];
-  }, [user?.speakerLevelNumber, user?.onboardingLevelAnalysis, user?.speakerEntryScore, user?.speaker_entry_score]);
+
+    if (location.state?.skipTutorialIntro) {
+      return fullSteps.filter((s) => s.id !== 'step-intro');
+    }
+    return fullSteps;
+  }, [user?.speakerLevelNumber, user?.onboardingLevelAnalysis, user?.speakerEntryScore, user?.speaker_entry_score, location.state?.skipTutorialIntro]);
 
   const assessmentTutorialSteps = useMemo(() => {
     const sLevel = resolveDashboardTutorialSpeakerLevel(user);
@@ -860,6 +865,10 @@ function ActivityPageMobile() {
     }
     return () => document.body.classList.remove('dashboard-overlay-open');
   }, [showDashboardOverlay]);
+
+  const closeDashboardForHomeJourneyTutorial = useCallback(() => {
+    setShowDashboardOverlay(false);
+  }, []);
 
   const handleTutorialFinish = useCallback(() => {
     if (typeof window !== 'undefined') {
@@ -948,8 +957,8 @@ function ActivityPageMobile() {
              */
             .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-banner {
               padding: 4px 10px 6px;
-              border-top: 1px solid rgba(11, 57, 84, 0.05);
-              background: rgba(255, 255, 255, 0.72);
+              border-top: 1.5px solid rgba(52, 211, 153, 0.35);
+              background: linear-gradient(180deg, rgba(236, 253, 245, 0.95) 0%, rgba(209, 250, 229, 0.85) 100%);
             }
             .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-banner-inner {
               max-width: none;
@@ -981,12 +990,15 @@ function ActivityPageMobile() {
               letter-spacing: 0.055em;
               line-height: 1.25;
               max-width: 17.5rem;
+              color: #059669;
+              font-weight: 800;
             }
             .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-list {
               font-size: 0.7rem;
               line-height: 1.32;
-              font-weight: 500;
+              font-weight: 600;
               padding: 0 2px;
+              color: #0f766e;
             }
             .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-list li {
               max-width: 18rem;
@@ -998,6 +1010,7 @@ function ActivityPageMobile() {
         isOpen={showFreeSpeechTutorial}
         steps={freeSpeechTutorialSteps}
         showAudioToggle
+        onCloseDashboard={closeDashboardForHomeJourneyTutorial}
         onClose={() => setShowFreeSpeechTutorial(false)}
         onFinish={handleTutorialFinish}
       />
@@ -1039,9 +1052,9 @@ function ActivityPageMobile() {
       )}
 
       {showRandomizerOverlay && (
-        <section className="randomizer-overlay-wrapper" aria-label="Randomizer overlay">
+        <section className="randomizer-overlay-wrapper activity-mobile-overlay-wrapper" aria-label="Randomizer overlay">
           <div className="bigkas-modal-scrim" aria-hidden="true" onClick={handleCloseRandomizerOverlay} />
-          <div className="randomizer-overlay-content">
+          <div className="randomizer-overlay-content activity-mobile-overlay-content">
             <div className="randomizer-overlay-card">
               <div className="randomizer-overlay-card-top">
                 <h2 className="randomizer-overlay-title">
@@ -1129,9 +1142,9 @@ function ActivityPageMobile() {
         </section>
       )}
       {showFreeSpeechOverlay && (
-        <section className="randomizer-overlay-wrapper" aria-label="Free speech overlay">
+        <section className="randomizer-overlay-wrapper activity-mobile-overlay-wrapper" aria-label="Free speech overlay">
           <div className="bigkas-modal-scrim" aria-hidden="true" onClick={handleCloseFreeSpeechOverlay} />
-          <div className="randomizer-overlay-content">
+          <div className="randomizer-overlay-content activity-mobile-overlay-content">
             <div className="randomizer-overlay-card free-speech-overlay-card">
               <div className="randomizer-overlay-card-top">
                 <h2 className="randomizer-overlay-title">

@@ -1,0 +1,81 @@
+/**
+ * Centralized bottom-sheet motion: scrim fade + panel slide-up.
+ * Uses CSS variables so lazy-loaded page CSS can reference the same timing without overriding keyframes.
+ */
+
+:root {
+  /* Ultra-premium, silky smooth fluid timing duration */
+  --bigkas-bottom-sheet-duration: 0.52s;
+  /* Damped spring cubic-bezier with an exquisite custom overshoot curve */
+  --bigkas-bottom-sheet-ease: cubic-bezier(0.2, 1.05, 0.3, 1);
+}
+
+@keyframes bigkas-bottom-sheet-scrim-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes bigkas-bottom-sheet-panel-in {
+  from {
+    transform: translate3d(0, 100%, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --bigkas-bottom-sheet-duration: 0.01ms;
+  }
+
+  .bigkas-modal-scrim:not(.bigkas-modal-scrim--no-enter),
+  .progress-page-bg:not(.progress-page-bg--mobile) .progress-main-layout > .bigkas-modal-scrim:not(.bigkas-modal-scrim--no-enter) {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+
+  .profile-modal-backdrop {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+
+  .dashboard-overlay-content,
+  .activity-page-mobile-root .ask-b01-modal-card,
+  .fh-mobile-modal-sheet,
+  .profile-modal,
+  .tp-modal,
+  .skyward-journey-panel-root .skyward-journey-overlay-content {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .history-mobile-sidebar {
+    transition: none !important;
+  }
+}
+
+/* Mobile + tablet: shared scrim entrance (overrides static scrim once opacity is driven by animation) */
+@media (max-width: 1023px) {
+  .bigkas-modal-scrim:not(.bigkas-modal-scrim--no-enter) {
+    animation: bigkas-bottom-sheet-scrim-in var(--bigkas-bottom-sheet-duration) ease-out forwards;
+    opacity: 0;
+  }
+
+  .profile-modal-backdrop {
+    animation: bigkas-bottom-sheet-scrim-in var(--bigkas-bottom-sheet-duration) ease-out forwards;
+    opacity: 0;
+  }
+}
+
+/* Desktop: Progress → History overlay scrim only */
+@media (min-width: 1024px) {
+  .progress-page-bg:not(.progress-page-bg--mobile) .progress-main-layout > .bigkas-modal-scrim:not(.bigkas-modal-scrim--no-enter) {
+    animation: bigkas-bottom-sheet-scrim-in var(--bigkas-bottom-sheet-duration) ease-out forwards;
+    opacity: 0;
+  }
+}

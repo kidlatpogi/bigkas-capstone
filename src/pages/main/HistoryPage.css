@@ -198,7 +198,7 @@
   gap: 12px;
 }
 
-.history-mobile-close-btn {
+.history-overlay-header .dashboard-overlay-close-btn {
   display: none;
 }
 
@@ -671,33 +671,8 @@
     line-height: 1.1;
   }
 
-  .history-mobile-close-btn {
-    width: 28px;
-    height: 28px;
-    min-width: 28px;
-    min-height: 28px;
-    padding: 0;
-    border: 0;
-    border-radius: 50%;
-    background: rgba(15, 23, 42, 0.08);
-    color: #334155;
-    font-size: 1.1rem;
-    line-height: 1;
-    cursor: pointer;
+  .history-overlay-header .dashboard-overlay-close-btn {
     display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-  }
-
-  .history-mobile-close-btn:hover {
-    background: #ef4444;
-    color: #ffffff;
-  }
-
-  .history-mobile-close-btn:active {
-    transform: scale(0.9);
   }
 
   .history-filters {

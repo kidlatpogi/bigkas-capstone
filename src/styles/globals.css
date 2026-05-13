@@ -13,6 +13,9 @@
   --bp-xl: 1440px;
   --bp-2k: 2000px;
   --mobile-px: 16px;
+  /* Horizontal page gutters on phones: at least --mobile-px, plus notch / curved-edge insets */
+  --mobile-page-inset-left: var(--mobile-px);
+  --mobile-page-inset-right: var(--mobile-px);
 
   /* Colors — Bigkas design tokens (primary: #F18F01, dark: #010101) */
   --color-primary: #F18F01;
@@ -267,10 +270,15 @@ img {
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   * {
     scrollbar-width: none;
     -ms-overflow-style: none;
+  }
+
+  :root {
+    --mobile-page-inset-left: max(var(--mobile-px), env(safe-area-inset-left, 0px));
+    --mobile-page-inset-right: max(var(--mobile-px), env(safe-area-inset-right, 0px));
   }
 
   *::-webkit-scrollbar {
@@ -278,18 +286,20 @@ img {
   }
 
   .main-content {
-    padding-left: var(--mobile-px);
-    padding-right: var(--mobile-px);
+    padding-left: var(--mobile-page-inset-left);
+    padding-right: var(--mobile-page-inset-right);
+    padding-top: env(safe-area-inset-top, 0px);
   }
 
   /* Immersive flows (profiling, pretest, analyzing, training): align content with full-width shell */
   .main-content.main-content--full {
     padding-left: 0;
     padding-right: 0;
+    padding-top: 0;
   }
 
   .main-content.main-content--with-mobile-nav {
-    padding-top: 64px;
+    padding-top: calc(64px + env(safe-area-inset-top, 0px));
     padding-bottom: calc(72px + env(safe-area-inset-bottom));
   }
 }

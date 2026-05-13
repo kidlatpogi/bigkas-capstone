@@ -54,15 +54,18 @@ import { getSpriteUrl } from '../../utils/assetUtils';
 
 const safetyBarrierImage = getSpriteUrl('common/safety-barrier.png');
 const randomizerRobotImage = getSpriteUrl('Robot/0002.webp');
-const rankBronzeImage = getSpriteUrl('Rank/rank-bronze.png');
-const rankSilverImage = getSpriteUrl('Rank/rank-silver.png');
-const rankGoldImage = getSpriteUrl('Rank/rank-gold.png');
-const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.png');
-const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.png');
+const rankBronzeImage = getSpriteUrl('Rank/rank-bronze.webp');
+const rankSilverImage = getSpriteUrl('Rank/rank-silver.webp');
+const rankGoldImage = getSpriteUrl('Rank/rank-gold.webp');
+const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.webp');
+const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.webp');
 const BIGKAS_PREREQ_LOGO_URL = 'https://assets.bigkas.site/Images/Bigkas-Logo.webp';
 import './SkywardJourney.css';
 
 const MAP_SCALE = 1;
+/** Touch pan moves the map farther per finger pixel on narrow viewports (feels less “heavy”). */
+const MOBILE_PAN_SPEED = 1.38;
+const MOBILE_WHEEL_PAN_MULT = 1.12;
 const DESKTOP_OFFSETS = [0, 120, 220, 220, 120, 0, -120, -220, -220, -120];
 const MOBILE_OFFSETS = [0, 45, 85, 85, 45, 0, -45, -85, -85, -45];
 
@@ -143,117 +146,225 @@ function isStartNode(step, index) {
 function getPhaseIcon(step) {
   const phase = getStepPhaseName(step).toLowerCase();
   switch (true) {
+    case phase.includes('visual anchor'):
     case phase.includes('gaze'):
+    case phase.includes('physical authority'):
+    case phase.includes('gesture'):
       return 'gaze';
     case phase.includes('vocal'):
+    case phase.includes('voice projection'):
+    case phase.includes('pace control'):
       return 'vocal';
     case phase.includes('verbal'):
+    case phase.includes('filler'):
+    case phase.includes('simple translation'):
       return 'verbal';
     case phase.includes('sync'):
+    case phase.includes('tone variation'):
     case phase.includes('multi'):
       return 'sync';
     case phase.includes('context'):
     case phase.includes('advanced'):
+    case phase.includes('structured'):
+    case phase.includes('framework'):
+    case phase.includes('professional'):
+    case phase.includes('persuasion'):
+    case phase.includes('impromptu'):
+    case phase.includes('storytelling'):
+    case phase.includes('executive'):
       return 'context';
     default:
       return 'default';
   }
 }
 
+/**
+ * Keyword-priority table: first matching keyword wins.
+ * Order matters — more specific keywords appear before broader ones.
+ */
+const TITLE_ICON_KEYWORDS = [
+  // Technology & Innovation → IoHardwareChip
+  { kw: 'technical',        cat: 'chip' },
+  { kw: 'tech ',            cat: 'chip' },
+  { kw: 'eli5',             cat: 'chip' },
+  { kw: 'ai',               cat: 'chip' },
+  { kw: 'startup',          cat: 'chip' },
+  { kw: 'mic failure',      cat: 'chip' },
+  { kw: 'time traveler',    cat: 'chip' },
+  { kw: 'filler limit',     cat: 'chip' },
+  { kw: 'masterclass',      cat: 'chip' },
+
+  // Visual & Body → IoEye
+  { kw: 'visual',           cat: 'eye' },
+  { kw: 'spatial',          cat: 'eye' },
+  { kw: 'posture',          cat: 'eye' },
+  { kw: 'gaze',             cat: 'eye' },
+  { kw: 'gesture',          cat: 'eye' },
+  { kw: 'facial',           cat: 'eye' },
+  { kw: 'body sync',        cat: 'eye' },
+  { kw: 'impeccable',       cat: 'eye' },
+  { kw: 'taking up space',  cat: 'eye' },
+  { kw: 'constant volume',  cat: 'eye' },
+  { kw: 'physical control', cat: 'eye' },
+
+  // Location & Campus → IoLocation
+  { kw: 'commute',          cat: 'location' },
+  { kw: 'room carry',       cat: 'location' },
+  { kw: 'directional',      cat: 'location' },
+  { kw: 'distance',         cat: 'location' },
+  { kw: 'construction',     cat: 'location' },
+  { kw: 'strict prioritization', cat: 'location' },
+
+  // Logic & Process → IoList
+  { kw: 'logic',            cat: 'list' },
+  { kw: 'logical',          cat: 'list' },
+  { kw: 'deliberate',       cat: 'list' },
+  { kw: 'precision',        cat: 'list' },
+  { kw: 'continuous process', cat: 'list' },
+  { kw: 'balanced',         cat: 'list' },
+  { kw: 'problem solution', cat: 'list' },
+  { kw: 'explicit',         cat: 'list' },
+  { kw: 'argumentation',    cat: 'list' },
+  { kw: 'unbiased',         cat: 'list' },
+  { kw: 'analogy',          cat: 'list' },
+  { kw: 'nuanced',          cat: 'list' },
+  { kw: 'urgent pitch',     cat: 'list' },
+  { kw: 'actionable',       cat: 'list' },
+  { kw: 'instant definition', cat: 'list' },
+  { kw: 'ending discipline', cat: 'list' },
+  { kw: 'no you knows',     cat: 'list' },
+
+  // Academic & Career → IoSchool
+  { kw: 'academic',         cat: 'school' },
+  { kw: 'school context',   cat: 'school' },
+  { kw: 'vocabulary',       cat: 'school' },
+  { kw: 'instructional',    cat: 'school' },
+  { kw: 'familiarity',      cat: 'school' },
+  { kw: 'jargon',           cat: 'school' },
+  { kw: 'core understanding', cat: 'school' },
+  { kw: 'constructive',     cat: 'school' },
+  { kw: 'accountable',      cat: 'school' },
+  { kw: 'capstone',         cat: 'school' },
+  { kw: 'defense',          cat: 'school' },
+  { kw: 'reporting',        cat: 'school' },
+  { kw: 'room filling',     cat: 'school' },
+  { kw: 'first second',     cat: 'school' },
+  { kw: 'respectful',       cat: 'school' },
+  { kw: 'vocal confidence', cat: 'school' },
+  { kw: 'firm projection',  cat: 'school' },
+
+  // Identity & Social → IoPeople
+  { kw: 'identity',         cat: 'people' },
+  { kw: 'confidence projection', cat: 'people' },
+  { kw: 'dynamic range',    cat: 'people' },
+  { kw: 'firm authority',   cat: 'people' },
+  { kw: 'group',            cat: 'people' },
+  { kw: 'authority',        cat: 'people' },
+  { kw: 'conviction',       cat: 'people' },
+  { kw: 'leadership',       cat: 'people' },
+  { kw: 'formal',           cat: 'people' },
+  { kw: 'measured',         cat: 'people' },
+  { kw: 'commanding',       cat: 'people' },
+  { kw: 'controlled leadership', cat: 'people' },
+  { kw: 'doubt',            cat: 'people' },
+  { kw: 'choose me',        cat: 'people' },
+  { kw: 'apology',          cat: 'people' },
+  { kw: 'negotiation',      cat: 'people' },
+  { kw: 'resolution',       cat: 'people' },
+  { kw: 'advocacy',         cat: 'people' },
+  { kw: 'objection',        cat: 'people' },
+  { kw: 'crisis',           cat: 'people' },
+  { kw: 'accountability',   cat: 'people' },
+  { kw: 'limitation',       cat: 'people' },
+  { kw: 'value prop',       cat: 'people' },
+  { kw: 'pace maintenance', cat: 'people' },
+  { kw: 'elder',            cat: 'people' },
+  { kw: 'slang bridge',     cat: 'people' },
+  { kw: 'behavioral',       cat: 'people' },
+  { kw: 'definitive',       cat: 'people' },
+
+  // Hobbies & Entertainment → IoPlayCircle
+  { kw: 'hobby',            cat: 'play' },
+  { kw: 'pitch mapping',    cat: 'play' },
+  { kw: 'speed',            cat: 'play' },
+  { kw: 'excited',          cat: 'play' },
+  { kw: 'patient',          cat: 'play' },
+  { kw: 'comedic',          cat: 'play' },
+  { kw: 'intensity',        cat: 'play' },
+
+  // Aspirations & Storytelling → IoSparkles
+  { kw: 'story',            cat: 'sparkles' },
+  { kw: 'narrative',        cat: 'sparkles' },
+  { kw: 'expressive',       cat: 'sparkles' },
+  { kw: 'imaginative',      cat: 'sparkles' },
+  { kw: 'emotional',        cat: 'sparkles' },
+  { kw: 'sincere',          cat: 'sparkles' },
+  { kw: 'grateful',         cat: 'sparkles' },
+  { kw: 'resilient',        cat: 'sparkles' },
+  { kw: 'smooth recovery',  cat: 'sparkles' },
+  { kw: 'strategic',        cat: 'sparkles' },
+  { kw: 'relatable',        cat: 'sparkles' },
+  { kw: 'surprise',         cat: 'sparkles' },
+  { kw: 'simplicity',       cat: 'sparkles' },
+  { kw: 'wild idea',        cat: 'sparkles' },
+  { kw: 'zero prep',        cat: 'sparkles' },
+  { kw: 'suspense',         cat: 'sparkles' },
+  { kw: 'joyful',           cat: 'sparkles' },
+  { kw: 'nervous habit',    cat: 'sparkles' },
+  { kw: 'engagement',       cat: 'sparkles' },
+  { kw: 'intelligent',      cat: 'sparkles' },
+  { kw: 'brevity',          cat: 'sparkles' },
+  { kw: 'timeless',         cat: 'sparkles' },
+  { kw: 'embodying',        cat: 'sparkles' },
+  { kw: 'excellence',       cat: 'sparkles' },
+  { kw: 'warm',             cat: 'sparkles' },
+  { kw: 'seamless',         cat: 'sparkles' },
+  { kw: 'intentional',      cat: 'sparkles' },
+  { kw: 'open presence',    cat: 'sparkles' },
+  { kw: 'sustained',        cat: 'sparkles' },
+  { kw: 'high-energy',      cat: 'sparkles' },
+
+  // Daily Life & Routines → IoCafe
+  { kw: 'sensory',          cat: 'cafe' },
+  { kw: 'baseline',         cat: 'cafe' },
+  { kw: 'tension',          cat: 'cafe' },
+  { kw: 'stability check',  cat: 'cafe' },
+  { kw: 'calm',             cat: 'cafe' },
+  { kw: 'rhythmic',         cat: 'cafe' },
+  { kw: 'banning',          cat: 'cafe' },
+  { kw: 'fluency',          cat: 'cafe' },
+  { kw: 'clean delivery',   cat: 'cafe' },
+  { kw: 'clarity projection', cat: 'cafe' },
+  { kw: 'internal pacing',  cat: 'cafe' },
+  { kw: 'sequence',         cat: 'cafe' },
+  { kw: 'continuity',       cat: 'cafe' },
+
+  // Program Milestones → IoTrophy
+  { kw: 'milestone',        cat: 'trophy' },
+  { kw: 'boss',             cat: 'trophy' },
+  { kw: 'final',            cat: 'trophy' },
+];
+
+const TITLE_ICON_MAP = {
+  chip:     <IoHardwareChip />,
+  eye:      <IoEye />,
+  location: <IoLocation />,
+  list:     <IoList />,
+  school:   <IoSchool />,
+  people:   <IoPeople />,
+  play:     <IoPlayCircle />,
+  sparkles: <IoSparkles />,
+  cafe:     <IoCafe />,
+  trophy:   <IoTrophy />,
+};
+
 function getStepTitleIcon(step) {
-  const title = getStepActivityTitle(step);
-  const normalizedTitle = title.toLowerCase();
-  
-  // 1. Daily Life & Routines (coffee)
-  if (
-    normalizedTitle === 'breakfast routine' ||
-    normalizedTitle === 'weekend recap' ||
-    normalizedTitle === 'yesterday recap' ||
-    normalizedTitle === 'relaxation tips'
-  ) {
-    return <IoCafe />;
-  }
-  
-  // 2. Visual & Environmental (eye)
-  if (
-    normalizedTitle === 'visual description' ||
-    normalizedTitle === 'window view' ||
-    normalizedTitle === 'spatial awareness' ||
-    normalizedTitle === 'weather forecast'
-  ) {
-    return <IoEye />;
-  }
+  const title = getStepActivityTitle(step).toLowerCase();
 
-  // 3. Local & Campus Geography (map-pin)
-  if (
-    normalizedTitle === 'commute story' ||
-    normalizedTitle === 'local delicacy' ||
-    normalizedTitle === 'campus bites'
-  ) {
-    return <IoLocation />;
-  }
-
-  // 4. Hobbies & Entertainment (play-circle)
-  if (
-    normalizedTitle === 'cinematic eye' ||
-    normalizedTitle === 'game rules' ||
-    normalizedTitle === 'music review' ||
-    normalizedTitle === 'hobby pitch'
-  ) {
-    return <IoPlayCircle />;
-  }
-
-  // 5. Personal Identity & Social (users)
-  if (
-    normalizedTitle === 'identity check' ||
-    normalizedTitle === 'role model' ||
-    normalizedTitle === 'introduction'
-  ) {
-    return <IoPeople />;
-  }
-
-  // 6. Academic & Career Growth (graduation-cap)
-  if (
-    normalizedTitle === 'academic choice' ||
-    normalizedTitle === 'university pride' ||
-    normalizedTitle === 'career ambition' ||
-    normalizedTitle === 'study habits' ||
-    normalizedTitle === 'time control'
-  ) {
-    return <IoSchool />;
-  }
-
-  // 7. Technology & Innovation (cpu)
-  if (
-    normalizedTitle === 'tech essential' ||
-    normalizedTitle === 'future ai'
-  ) {
-    return <IoHardwareChip />;
-  }
-
-  // 8. Logic & Process Explanation (list-tree)
-  if (
-    normalizedTitle === 'milo master' ||
-    normalizedTitle === 'vital logic'
-  ) {
-    return <IoList />;
-  }
-
-  // 9. Aspirations & Reflection (sparkles)
-  if (
-    normalizedTitle === 'dream escape' ||
-    normalizedTitle === 'small wins' ||
-    normalizedTitle === 'the hero'
-  ) {
-    return <IoSparkles />;
-  }
-
-  // 10. Program Milestones (award)
-  if (
-    normalizedTitle === 'the bigkas milestone' ||
-    normalizedTitle.includes('milestone')
-  ) {
-    return <IoTrophy />;
+  for (let i = 0; i < TITLE_ICON_KEYWORDS.length; i++) {
+    if (title.includes(TITLE_ICON_KEYWORDS[i].kw)) {
+      return TITLE_ICON_MAP[TITLE_ICON_KEYWORDS[i].cat] ?? null;
+    }
   }
 
   return null;
@@ -504,6 +615,11 @@ const TooltipBox = styled.div`
       border-right: 16px solid transparent;
       border-top: 16px solid ${props.$nodeState === 'locked' ? '#ffffff' : (props.$themeColor || '#059669')};
     `}
+
+    @media (max-width: 768px) {
+      display: none;
+      content: none;
+    }
   }
 `;
 
@@ -802,6 +918,8 @@ export default function SkywardJourney({
   // removed showTapHint
   const [map, setMap] = useState(() => ({ tx: 0, ty: 0 }));
   const [tooltipNodeId, setTooltipNodeId] = useState(null);
+  /** Disables CSS transform transition on the map layer while the user is dragging (mobile felt laggy). */
+  const [mapLayerDragActive, setMapLayerDragActive] = useState(false);
 
   useLayoutEffect(() => {
     mapRef.current = map;
@@ -944,7 +1062,9 @@ export default function SkywardJourney({
       if (panelOpenId) return;
       const dominantDelta = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
       if (Math.abs(dominantDelta) < 0.5) return;
-      const panStep = dominantDelta * 0.8;
+      const wheelMult =
+        (typeof window !== 'undefined' && window.innerWidth <= 768 ? MOBILE_WHEEL_PAN_MULT : 1) * 0.8;
+      const panStep = dominantDelta * wheelMult;
       const current = mapRef.current;
       const next = clampMapState({ ...current, ty: current.ty - panStep }, vp, content, MAP_SCALE);
       const didPan = Math.abs(next.ty - current.ty) > 0.1 || Math.abs(next.tx - current.tx) > 0.1;
@@ -974,6 +1094,7 @@ export default function SkywardJourney({
         tx: m.tx,
         ty: m.ty,
       };
+      setMapLayerDragActive(true);
       e.currentTarget.setPointerCapture(e.pointerId);
     },
     [panelOpenId, tooltipNodeId, isLockedLevel],
@@ -983,19 +1104,23 @@ export default function SkywardJourney({
     // Removed isLockedLevel restriction to allow users to view locked maps.
     const p = pointerPanRef.current;
     if (!p || p.pid !== e.pointerId) return;
-    const dy = e.clientY - p.sy;
+    let dy = e.clientY - p.sy;
+    if (isMobile && e.pointerType === 'touch') {
+      dy *= MOBILE_PAN_SPEED;
+    }
     const vp = viewportRef.current;
     const content = mapContentRef.current;
     if (!vp || !content) return;
     setMap((m) =>
       clampMapState({ ...m, ty: p.ty + dy }, vp, content, MAP_SCALE),
     );
-  }, [isLockedLevel]);
+  }, [isLockedLevel, isMobile]);
 
   const onPointerUpViewport = useCallback((e) => {
     const p = pointerPanRef.current;
     if (!p || p.pid !== e.pointerId) return;
     pointerPanRef.current = null;
+    setMapLayerDragActive(false);
     try {
       e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {
@@ -1007,6 +1132,7 @@ export default function SkywardJourney({
     // Removed isLockedLevel restriction to allow users to view locked maps.
     if (e.touches.length === 2) {
       pointerPanRef.current = null;
+      setMapLayerDragActive(false);
       pinchRef.current = { active: true };
     }
   }, [isLockedLevel]);
@@ -1072,25 +1198,24 @@ export default function SkywardJourney({
         return;
       }
 
-      // Auto-close overlay if open when clicking ANY node
-      if (panelOpenId) {
-        requestClosePanel();
-      }
+      const sid = String(step.id);
 
-      if (step.nodeState === NODE_STATE.LOCKED) {
-        setJiggleIndex(index);
-        window.setTimeout(() => setJiggleIndex(null), 520);
+      if (String(tooltipNodeId) === sid) {
+        setTooltipNodeId(null);
+        return;
+      }
+      if (String(panelOpenId) === sid) {
+        requestClosePanel();
         return;
       }
 
-      // Auto-close overlay if open when clicking ANY node
-      if (panelOpenId) {
+      if (panelOpenId != null) {
         requestClosePanel();
       }
 
       setTooltipNodeId(step.id);
     },
-    [panelOpenId, requestClosePanel],
+    [panelOpenId, tooltipNodeId, requestClosePanel],
   );
 
   const selectedStep = useMemo(
@@ -1207,7 +1332,7 @@ export default function SkywardJourney({
                       .filter(Boolean)
                       .join(' ')}
                     aria-current={isActive ? 'step' : undefined}
-                    aria-expanded={panelOpenId === step.id}
+                    aria-expanded={String(panelOpenId) === String(step.id) || String(tooltipNodeId) === String(step.id)}
                     aria-label={`${isUltimateBoss ? 'Milestone: ' : ''}${theme.shortLabel}: ${title}. ${isDone ? 'Completed' : isLocked ? 'Locked' : 'Current step'
                       }. Open quest details.`}
                     onClick={() => handleNodeClick(step, i)}
@@ -1483,7 +1608,7 @@ export default function SkywardJourney({
             aria-label="Skyward journey path. Scroll wheel to move the map up or down, and drag to pan."
           >
             <div
-              className="skyward-journey-map-layer"
+              className={`skyward-journey-map-layer${mapLayerDragActive ? ' skyward-journey-map-layer--dragging' : ''}`}
               ref={mapLayerRef}
               style={{
                 transform: `translate(${map.tx}px, ${map.ty}px) scale(${MAP_SCALE})`,
@@ -1599,8 +1724,20 @@ export default function SkywardJourney({
                     
                     <div className="skyward-journey-overlay-inner-body">
                       <p className="randomizer-overlay-copy">
-                        <span className="randomizer-overlay-copy-kicker">B-01:</span>
-                        Ready for your next stage? Here is what we'll focus on: <strong>{selectedStep?.title || 'General Speaking'}</strong>
+                        <span className="randomizer-overlay-copy-kicker">
+                          <img
+                            src={BIGKAS_PREREQ_LOGO_URL}
+                            alt=""
+                            className="randomizer-overlay-copy-kicker-logo"
+                            aria-hidden="true"
+                            decoding="async"
+                          />
+                          B-01
+                        </span>
+                        <span className="randomizer-overlay-copy-lead">
+                          Ready for your next stage? Here is what we’ll focus on:
+                        </span>{' '}
+                        <strong>{selectedStep?.title || 'General Speaking'}</strong>
                       </p>
 
                       {selectedStep?.task?.purpose && (

@@ -6,7 +6,7 @@ export const R2_BASE_URL = 'https://assets.bigkas.site';
 
 /**
  * Returns the full URL for an asset.
- * @param {string} path - The relative path to the asset (e.g., 'Sprites/Rank/rank-bronze.png')
+ * @param {string} path - The relative path to the asset (e.g., 'Sprites/Rank/rank-bronze.webp')
  * @returns {string} - The full URL
  */
 export function getAssetUrl(path) {

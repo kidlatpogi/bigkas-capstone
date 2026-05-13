@@ -41,11 +41,11 @@ const tutorialRobotStep4 = getSpriteUrl('Robot/0001.webp');
 const tutorialRobotStep5 = getSpriteUrl('Robot/0002.webp');
 const tutorialRobotStep6 = getSpriteUrl('Robot/0004.webp');
 const randomizerRobotImage = getSpriteUrl('Robot/0002.webp');
-const rankBronzeImage = getSpriteUrl('Rank/rank-bronze.png');
-const rankSilverImage = getSpriteUrl('Rank/rank-silver.png');
-const rankGoldImage = getSpriteUrl('Rank/rank-gold.png');
-const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.png');
-const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.png');
+const rankBronzeImage = getSpriteUrl('Rank/rank-bronze.webp');
+const rankSilverImage = getSpriteUrl('Rank/rank-silver.webp');
+const rankGoldImage = getSpriteUrl('Rank/rank-gold.webp');
+const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.webp');
+const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.webp');
 const crystalBallImage = getSpriteUrl('common/crystal-ball.webp');
 const crownImage = getSpriteUrl('common/crown.webp');
 const b01ChatHead = getAssetUrl('Images/Bigkas-Logo.webp');
@@ -695,7 +695,7 @@ function ActivityPage() {
       welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%205_new.mp3";
     }
 
-    return [
+    const fullSteps = [
       {
         id: 'step-intro',
         title: 'B-01:',
@@ -762,7 +762,12 @@ function ActivityPage() {
         voice: "https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%205.mp3",
       },
     ];
-  }, [user?.speakerLevelNumber, user?.onboardingLevelAnalysis, user?.speakerEntryScore, user?.speaker_entry_score]);
+
+    if (location.state?.skipTutorialIntro) {
+      return fullSteps.filter((s) => s.id !== 'step-intro');
+    }
+    return fullSteps;
+  }, [user?.speakerLevelNumber, user?.onboardingLevelAnalysis, user?.speakerEntryScore, user?.speaker_entry_score, location.state?.skipTutorialIntro]);
 
   const assessmentTutorialSteps = useMemo(() => {
     const sLevel = resolveDashboardTutorialSpeakerLevel(user);

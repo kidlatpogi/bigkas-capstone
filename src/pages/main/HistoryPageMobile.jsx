@@ -101,6 +101,13 @@ function buildSessionTitleOrTopic(session) {
   return 'Training Session';
 }
 
+function truncateToWords(text, maxWords = 5) {
+  if (!text) return text;
+  const words = text.trim().split(/\s+/);
+  if (words.length <= maxWords) return text;
+  return `${words.slice(0, maxWords).join(' ')}...`;
+}
+
 function getAdaptiveHistoryPages(pageCount, activePage) {
   if (pageCount <= 6) return Array.from({ length: pageCount }, (_, idx) => idx);
   const leading = [0, 1, 2, 3].filter(i => i < pageCount - 1);
@@ -237,7 +244,7 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
                   >
                     <div className="history-mobile-item-top">
                       <div className="history-mobile-item-info">
-                        <h3 className="history-mobile-item-title">{buildSessionTitleOrTopic(s)}</h3>
+                        <h3 className="history-mobile-item-title">{truncateToWords(buildSessionTitleOrTopic(s))}</h3>
                         <div className="history-mobile-item-meta">
                           <span className="history-mobile-item-badge" style={{ borderColor: tier.color, backgroundColor: `${tier.color}15`, color: tier.color }}>
                             <span className="history-mobile-item-badge-dot" style={{ backgroundColor: tier.color }} />

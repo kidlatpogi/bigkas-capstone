@@ -77,20 +77,6 @@
   margin: 0;
 }
 
-.history-mobile-close-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: rgba(15, 23, 42, 0.08);
-  color: #334155;
-  border: none;
-  font-size: 1.1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
 .history-mobile-controls {
   display: flex;
   flex-direction: column;

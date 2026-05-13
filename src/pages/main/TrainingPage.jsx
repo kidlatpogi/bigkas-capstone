@@ -1769,7 +1769,7 @@ function TrainingPage() {
           <div className="tp-modal" onClick={(e) => e.stopPropagation()}>
             <div className="tp-modal-header">
               <span className="tp-modal-title">Training Settings</span>
-              <button className="tp-modal-close" onClick={() => setShowSettings(false)}>✕</button>
+              <button type="button" className="dashboard-overlay-close-btn" onClick={() => setShowSettings(false)} aria-label="Close settings">×</button>
             </div>
 
             <div className="tp-modal-row tp-modal-row--toggle">
@@ -1886,7 +1886,7 @@ function TrainingPage() {
 
       {/* Milestone Warning (1 Minute) */}
       {showOneMinWarning && (
-        <div className="bigkas-modal-scrim" style={{ '--scrim-z': 3000 }}>
+        <div className="bigkas-modal-scrim tp-milestone-scrim" style={{ '--scrim-z': 3000 }}>
           <div className="milestone-companion-container" onClick={(e) => e.stopPropagation()}>
             <img 
               src={getSpriteUrl('Robot/0012.webp')} 

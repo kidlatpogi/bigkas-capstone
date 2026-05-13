@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IoChevronForward, IoCamera, IoColorPalette, IoLockClosed, IoArrowBack } from 'react-icons/io5';
+import { IoChevronForward, IoCamera, IoColorPalette, IoLockClosed } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
@@ -8,14 +8,23 @@ import './SettingsProfilePageMobile.css';
 
 import { getSpriteUrl } from '../../utils/assetUtils';
 
-// Define decorative asset URLs
-const mascotSprite = getSpriteUrl('Robot/0001.webp');
-const goldRank = getSpriteUrl('Rank/rank-gold.png');
-const legendaryRank = getSpriteUrl('Rank/rank-legendary.png');
+import { getBigkasLevelFromUser } from '../../utils/activityProgress';
+
+const mascotSprite = getSpriteUrl('Robot/0002.webp');
+
+const THEME_CONFIG = [
+  { id: 'emerald', label: 'Default', requires: 0, decoration: null, className: 'emerald' },
+  { id: 'mascot', label: 'B-01', requires: 0, decoration: getSpriteUrl('Robot/0002.webp'), className: 'mascot' },
+  { id: 'bronze', label: 'Bronze', requires: 1, decoration: getSpriteUrl('Rank/rank-bronze.webp'), className: 'bronze' },
+  { id: 'silver', label: 'Silver', requires: 2, decoration: getSpriteUrl('Rank/rank-silver.webp'), className: 'silver' },
+  { id: 'gold', label: 'Gold', requires: 3, decoration: getSpriteUrl('Rank/rank-gold.webp'), className: 'gold' },
+  { id: 'mythril', label: 'Mythril', requires: 4, decoration: getSpriteUrl('Rank/rank-mythril.webp'), className: 'mythril' },
+  { id: 'trophy', label: 'Legend', requires: 5, decoration: getSpriteUrl('Rank/rank-legendary.webp'), className: 'trophy' },
+];
 
 function SettingsProfilePageMobile() {
   const navigate = useNavigate();
-  const { user, updateProfile, uploadAvatar } = useAuthContext();
+  const { user, updateProfile, uploadAvatar, logout } = useAuthContext();
   const fileRef = useRef(null);
 
   const [firstName, setFirstName] = useState('');
@@ -34,6 +43,14 @@ function SettingsProfilePageMobile() {
   const [heroTheme, setHeroTheme] = useState(() => {
     return localStorage.getItem('pref_hero_theme') || 'emerald';
   });
+
+  const userLevel = useMemo(() => getBigkasLevelFromUser(user), [user]);
+  const currentLevelNumber = userLevel.levelNumber;
+
+  const getThemeDecoration = (themeId) => {
+    const config = THEME_CONFIG.find(t => t.id === themeId);
+    return config?.decoration || null;
+  };
 
   useEffect(() => {
     if (user) {
@@ -117,13 +134,19 @@ function SettingsProfilePageMobile() {
       setAvatarFile(null);
       setAvatarRemoved(false);
       setUpdateMessage({ type: 'success', text: 'Profile updated successfully!' });
-      
-      // Auto-dismiss success message after 3s
-      setTimeout(() => setUpdateMessage({ type: '', text: '' }), 3000);
     } catch (err) {
       setUpdateMessage({ type: 'error', text: err.message || 'Failed to update profile.' });
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate(ROUTES.LOGIN);
+    } catch (err) {
+      setUpdateMessage({ type: 'error', text: 'Failed to log out.' });
     }
   };
 
@@ -132,22 +155,21 @@ function SettingsProfilePageMobile() {
   }, [firstName, lastName]);
 
   return (
-    <div className="sp-mobile-page">
-      {/* Header Bar */}
-      <header className="sp-mobile-header">
-        <button className="sp-back-btn" onClick={() => navigate(-1)}>
-          <IoArrowBack />
-        </button>
-        <h1 className="sp-header-title">Edit Profile</h1>
-        <div className="sp-header-right" />
-      </header>
-
-      <div className="sp-mobile-scroll">
-        <div className={`sp-mobile-hero hero-theme--${heroTheme}`}>
+    <div className="settings-profile-page dashboard-page-new">
+      <div className="settings-profile-container">
+        <div className={`profile-hero-card hero-theme--${heroTheme}`}>
           <div className="hero-decoration">
-            {heroTheme === 'mascot' && <img src={mascotSprite} alt="" className="decoration-img decoration-mascot" />}
-            {heroTheme === 'trophy' && <img src={legendaryRank} alt="" className="decoration-img decoration-trophy" />}
-            {heroTheme === 'gold' && <img src={goldRank} alt="" className="decoration-img decoration-trophy" />}
+            {heroTheme === 'mascot' ? (
+              <img src={mascotSprite} alt="" className="decoration-img decoration-mascot" />
+            ) : (
+              getThemeDecoration(heroTheme) && (
+                <img 
+                  src={getThemeDecoration(heroTheme)} 
+                  alt="" 
+                  className={`decoration-img ${heroTheme === 'trophy' ? 'decoration-trophy' : 'decoration-rank'}`} 
+                />
+              )
+            )}
           </div>
           
           <div className="hero-avatar-wrapper">
@@ -168,153 +190,247 @@ function SettingsProfilePageMobile() {
               </div>
             </button>
           </div>
+          <div className="hero-info">
+            <h1 className="hero-name">{firstName} {lastName}</h1>
+            <p className="hero-email">{user?.email}</p>
+          </div>
 
           <button 
             type="button" 
-            className="hero-theme-trigger-mobile" 
+            className="hero-theme-trigger" 
             onClick={() => setIsThemeModalOpen(true)}
+            aria-label="Change theme"
           >
             <IoColorPalette />
+            <span>Theme</span>
           </button>
         </div>
 
-        <div className="sp-mobile-content">
-          {updateMessage.text && (
-            <div className={`sp-status-message-mobile sp-status-message-mobile--${updateMessage.type}`}>
-              {updateMessage.text}
-            </div>
-          )}
-
-          <form className="sp-mobile-form" onSubmit={handleSubmit}>
-            <div className="sp-mobile-section">
-              <h2 className="sp-section-label">Personal Details</h2>
-              <div className="sp-mobile-field">
-                <label className="sp-field-label">First Name</label>
-                <input
-                  type="text"
-                  className="sp-mobile-input"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="First Name"
-                />
+        <div className="settings-content-wrapper">
+          <div className="settings-main-card">
+            {updateMessage.text && (
+              <div className={`sp-status-message sp-status-message--${updateMessage.type}`}>
+                {updateMessage.text}
               </div>
-              <div className="sp-mobile-field">
-                <label className="sp-field-label">Last Name</label>
-                <input
-                  type="text"
-                  className="sp-mobile-input"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Last Name"
-                />
-              </div>
-            </div>
+            )}
 
-            <div className="sp-mobile-section">
-              <h2 className="sp-section-label">Account</h2>
-              <div className="sp-mobile-field">
-                <label className="sp-field-label">Email Address</label>
-                <div className="sp-mobile-input sp-mobile-input--read-only">
-                  {user?.email}
+            <form className="settings-form" onSubmit={handleSubmit}>
+              <div className="settings-form-section">
+                <h2 className="section-heading">Personal Details</h2>
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="firstName">First Name</label>
+                    <input
+                      id="firstName"
+                      type="text"
+                      className="form-input"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      placeholder="First Name"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="lastName">Last Name</label>
+                    <input
+                      id="lastName"
+                      type="text"
+                      className="form-input"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      placeholder="Last Name"
+                    />
+                  </div>
                 </div>
-                <p className="sp-field-help">Managed by your account provider.</p>
               </div>
-            </div>
 
-            <div className="sp-mobile-section">
-              <h2 className="sp-section-label">Security</h2>
-              <Button 
-                variant="practice" 
-                className="sp-mobile-action-btn"
-                onClick={() => navigate(ROUTES.CHANGE_PASSWORD)}
-                fullWidth
-              >
-                Change Password
-              </Button>
-            </div>
+              <div className="settings-divider" />
 
-            <div className="sp-mobile-footer-actions">
-               {hasChanges && (
-                 <>
-                   <Button
-                     type="button"
-                     variant="ghost"
-                     onClick={handleCancel}
-                     className="sp-footer-btn"
-                   >
-                     Cancel
-                   </Button>
-                   <Button
-                     type="submit"
-                     variant="practice"
-                     isLoading={isUpdating}
-                     className="sp-footer-btn"
-                   >
-                     Save Changes
-                   </Button>
-                 </>
-               )}
-            </div>
-          </form>
+              <div className="settings-form-section">
+                <h2 className="section-heading">Account</h2>
+                <div className="form-group">
+                  <label className="form-label">Email Address</label>
+                  <input
+                    type="email"
+                    className="form-input form-input--disabled"
+                    value={user?.email || ''}
+                    readOnly
+                    disabled
+                  />
+                  <p className="form-help-text">Email address is managed by your account provider.</p>
+                </div>
+              </div>
+
+              <div className="settings-divider" />
+
+              <div className="settings-form-section">
+                <h2 className="section-heading">Security</h2>
+                <div className="security-actions">
+                  <Button 
+                    variant="practice" 
+                    className="security-btn" 
+                    onClick={() => navigate(ROUTES.CHANGE_PASSWORD)} 
+                    icon={IoChevronForward}
+                  >
+                    Change Password
+                  </Button>
+                </div>
+              </div>
+
+              <div className="settings-footer-actions">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={handleCancel}
+                  disabled={!hasChanges || isUpdating}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="practice"
+                  disabled={!hasChanges || isUpdating}
+                  isLoading={isUpdating}
+                >
+                  Save Changes
+                </Button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
 
-      {/* Modals adapted for mobile */}
       {isAvatarModalOpen && (
-        <div className="sp-mobile-drawer-overlay" onClick={() => setIsAvatarModalOpen(false)}>
-          <div className="sp-mobile-drawer" onClick={(e) => e.stopPropagation()}>
-            <div className="sp-drawer-handle" />
-            <h3 className="sp-drawer-title">Profile Photo</h3>
-            <div className="sp-drawer-actions">
-              <button className="sp-drawer-btn" onClick={() => fileRef.current?.click()}>
-                Upload New Photo
-              </button>
-              <button className="sp-drawer-btn sp-drawer-btn--danger" onClick={handleRemoveAvatar}>
+        <div 
+          className="bigkas-modal-scrim sp-modal-backdrop" 
+          style={{ '--scrim-z': 800 }} 
+          onClick={() => setIsAvatarModalOpen(false)}
+        >
+          <div className="sp-modal" style={{ width: 'min(400px, 90vw)' }} onClick={(e) => e.stopPropagation()}>
+            <h3 className="sp-modal-title" style={{ marginBottom: '8px' }}>Edit Photo</h3>
+            <p style={{ textAlign: 'center', color: 'var(--sp-text-muted)', fontSize: '14px', marginBottom: '12px' }}>
+              Update your profile picture
+            </p>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <Button 
+                variant="practice" 
+                onClick={() => fileRef.current?.click()}
+              >
+                Upload Photo
+              </Button>
+              
+              <Button 
+                variant="danger" 
+                onClick={handleRemoveAvatar}
+              >
                 Remove Photo
-              </button>
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                onClick={() => setIsAvatarModalOpen(false)}
+              >
+                Cancel
+              </Button>
             </div>
-            <button className="sp-drawer-close" onClick={() => setIsAvatarModalOpen(false)}>Cancel</button>
-            <input type="file" ref={fileRef} className="sp-sr-only" accept="image/*" onChange={handleFileChange} />
+            <input
+              type="file"
+              ref={fileRef}
+              className="sp-sr-only"
+              accept="image/*"
+              onChange={handleFileChange}
+            />
           </div>
         </div>
       )}
 
       {isThemeModalOpen && (
-        <div className="sp-mobile-drawer-overlay" onClick={() => setIsThemeModalOpen(false)}>
-          <div className="sp-mobile-drawer sp-mobile-drawer--large" onClick={(e) => e.stopPropagation()}>
-            <div className="sp-drawer-handle" />
-            <h3 className="sp-drawer-title">Choose Theme</h3>
-            
-            <div className="sp-theme-grid">
-              <button 
-                className={`sp-theme-card ${heroTheme === 'emerald' ? 'is-active' : ''}`}
-                onClick={() => setHeroTheme('emerald')}
+        <div 
+          className="bigkas-modal-scrim sp-modal-backdrop" 
+          style={{ '--scrim-z': 800 }} 
+          onClick={() => setIsThemeModalOpen(false)}
+        >
+          <div className="sp-modal sp-modal--wide" onClick={(e) => e.stopPropagation()}>
+            <div className="theme-modal-header">
+              <h3 className="sp-modal-title">Customize Profile Theme</h3>
+              <button
+                type="button"
+                className="dashboard-overlay-close-btn"
+                onClick={() => setIsThemeModalOpen(false)}
+                aria-label="Close theme picker"
               >
-                <div className="sp-theme-swatch emerald" />
-                <span>Emerald</span>
-              </button>
-              <button 
-                className={`sp-theme-card ${heroTheme === 'mascot' ? 'is-active' : ''}`}
-                onClick={() => setHeroTheme('mascot')}
-              >
-                <div className="sp-theme-swatch mascot" />
-                <span>B-01</span>
-              </button>
-              <button className="sp-theme-card is-locked" disabled>
-                <div className="sp-theme-swatch trophy">
-                  <IoLockClosed />
-                </div>
-                <span>Legend</span>
-              </button>
-              <button className="sp-theme-card is-locked" disabled>
-                <div className="sp-theme-swatch gold">
-                  <IoLockClosed />
-                </div>
-                <span>Champion</span>
+                ×
               </button>
             </div>
-            
-            <button className="sp-drawer-confirm" onClick={() => setIsThemeModalOpen(false)}>Done</button>
+
+            <div className="theme-modal-preview">
+              <div className={`profile-hero-card profile-hero-card--preview hero-theme--${heroTheme}`}>
+                <div className="hero-decoration">
+                  {heroTheme === 'mascot' ? (
+                    <img src={mascotSprite} alt="" className="decoration-img decoration-mascot" />
+                  ) : (
+                    getThemeDecoration(heroTheme) && (
+                      <img 
+                        src={getThemeDecoration(heroTheme)} 
+                        alt="" 
+                        className={`decoration-img ${heroTheme === 'trophy' ? 'decoration-trophy' : 'decoration-rank'}`} 
+                      />
+                    )
+                  )}
+                </div>
+                <div className="hero-avatar-wrapper">
+                  <div className="hero-avatar-ring">
+                    {(avatarLocalUrl || (user?.avatarUrl && !avatarRemoved)) ? (
+                      <img src={avatarLocalUrl || user.avatarUrl} alt="" className="hero-avatar-img" />
+                    ) : (
+                      <div className="hero-avatar-placeholder">{userInitials}</div>
+                    )}
+                  </div>
+                </div>
+                <div className="hero-info">
+                  <h1 className="hero-name">{firstName} {lastName}</h1>
+                  <p className="hero-email">{user?.email}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="theme-picker">
+              {THEME_CONFIG.map((theme) => {
+                const isLocked = currentLevelNumber < theme.requires;
+                const isActive = heroTheme === theme.id;
+                
+                return (
+                  <button 
+                    key={theme.id}
+                    type="button" 
+                    className={`theme-option theme-option--${theme.className} ${isActive ? 'is-active' : ''} ${isLocked ? 'theme-option--locked' : ''}`}
+                    onClick={() => !isLocked && setHeroTheme(theme.id)}
+                    disabled={isLocked}
+                  >
+                    <div className="theme-preview">
+                      {isLocked && (
+                        <div className="theme-lock-overlay">
+                          <IoLockClosed />
+                        </div>
+                      )}
+                    </div>
+                    <span>{theme.label}</span>
+                    {isLocked && (
+                      <div className="theme-rank-banner">Requires Level {theme.requires}</div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            <Button 
+              type="button" 
+              variant="practice"
+              className="sp-modal-cancel" 
+              onClick={() => setIsThemeModalOpen(false)}
+            >
+              Done
+            </Button>
           </div>
         </div>
       )}

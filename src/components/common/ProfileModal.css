@@ -13,7 +13,8 @@
 
 .profile-modal-wrapper {
   position: fixed;
-  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  /* Match BottomNav total stack: 64px row + 6px top padding + safe-area (nav uses border-box + same safe inset) */
+  bottom: calc(70px + env(safe-area-inset-bottom, 0px));
   left: 0;
   right: 0;
   z-index: 1001; /* Above bottom nav */
@@ -54,34 +55,7 @@
   letter-spacing: -0.01em;
 }
 
-.profile-modal-close-btn {
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  min-height: 28px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: rgba(15, 23, 42, 0.08);
-  color: #334155;
-  font-size: 1.1rem;
-  line-height: 1;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-}
-
-.profile-modal-close-btn:hover {
-  background: #ef4444;
-  color: #ffffff;
-}
-
-.profile-modal-close-btn:active {
-  transform: scale(0.9);
-}
+/* Close control: shared `.dashboard-overlay-close-btn` (main.jsx → dashboard-overlay-close-btn.css) */
 
 .profile-modal-user-section {
   display: flex;
@@ -92,17 +66,37 @@
 }
 
 .profile-modal-avatar {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
   background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+}
+
+.profile-modal-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.profile-modal-avatar-loading {
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1;
+  user-select: none;
+  opacity: 0.85;
 }
 
 .profile-modal-user-info {
@@ -277,6 +271,33 @@ body.profile-modal-open {
 /* =========================================================================
    RESPONSIVE
    ========================================================================= */
+
+/* Mobile: remove hairline / shadow strip between sheet and BottomNav (fill with white) */
+@media (max-width: 767px) {
+  .profile-modal {
+    animation: bigkas-bottom-sheet-panel-in var(--bigkas-bottom-sheet-duration) var(--bigkas-bottom-sheet-ease) both !important;
+  }
+
+  .profile-modal-wrapper {
+    overflow: visible;
+  }
+
+  .profile-modal-wrapper::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -20px;
+    height: 20px;
+    background: #ffffff;
+    z-index: 1005;
+    pointer-events: none;
+  }
+
+  .profile-modal {
+    box-shadow: 0 -4px 16px rgba(2, 6, 23, 0.05);
+  }
+}
 
 @media (min-width: 768px) {
   .profile-modal-wrapper {

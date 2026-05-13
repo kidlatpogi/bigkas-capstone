@@ -11,12 +11,7 @@ function readRawList() {
     const raw = window.localStorage.getItem(CLAIMABLE_ACHIEVEMENTS_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    const list = Array.isArray(parsed) ? parsed : [];
-    // Surgical removal of legacy/mock notifications as requested
-    return list.filter(item => 
-      item.title !== 'Breakfast Routine' && 
-      item.source !== 'activity-task'
-    );
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }
@@ -36,23 +31,53 @@ export function getClaimableAchievementsCount() {
   return getClaimableAchievements().length;
 }
 
+/**
+ * Adds a claimable achievement notification.
+ * Called when an achievement meets requirements but hasn't been claimed.
+ */
 export function addClaimableAchievement(item) {
   if (!item?.id) return;
   const current = readRawList();
   const id = String(item.id);
-  const alreadyExists = current.some((entry) => String(entry?.id) === id);
-  if (alreadyExists) return;
+  if (current.some((entry) => String(entry?.id) === id)) return;
   const next = [
     ...current,
     {
       id,
-      title: String(item.title || 'Achievement Unlocked'),
-      source: String(item.source || 'activity'),
+      title: String(item.title || item.name || 'Achievement Unlocked'),
       description: String(item.description || ''),
+      badgeUrl: item.badgeUrl ?? null,
+      source: 'achievement',
       createdAt: Number(item.createdAt || Date.now()),
     },
   ];
   writeRawList(next);
+}
+
+/**
+ * Sync claimable achievements from a fetched list.
+ * Adds any new claimable badges that aren't already in the notification tray.
+ */
+export function syncClaimableAchievements(achievements) {
+  const current = readRawList();
+  const existingIds = new Set(current.map((e) => String(e.id)));
+  let changed = false;
+
+  for (const a of achievements) {
+    if (a.claimable && !existingIds.has(String(a.id))) {
+      current.push({
+        id: String(a.id),
+        title: a.name || 'Achievement Unlocked',
+        description: a.description || '',
+        badgeUrl: a.badgeUrl ?? null,
+        source: 'achievement',
+        createdAt: Date.now(),
+      });
+      changed = true;
+    }
+  }
+
+  if (changed) writeRawList(current);
 }
 
 export function claimAchievement(id) {

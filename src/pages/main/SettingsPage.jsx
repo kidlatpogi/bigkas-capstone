@@ -27,11 +27,11 @@ const mascotSprite = getSpriteUrl('Robot/0001.webp');
 const THEME_CONFIG = [
   { id: 'emerald', label: 'Default', requires: 0, decoration: null, className: 'emerald' },
   { id: 'mascot', label: 'B-01', requires: 0, decoration: getSpriteUrl('Robot/0001.webp'), className: 'mascot' },
-  { id: 'bronze', label: 'Bronze', requires: 1, decoration: getSpriteUrl('Rank/rank-bronze.png'), className: 'bronze' },
-  { id: 'silver', label: 'Silver', requires: 2, decoration: getSpriteUrl('Rank/rank-silver.png'), className: 'silver' },
-  { id: 'gold', label: 'Gold', requires: 3, decoration: getSpriteUrl('Rank/rank-gold.png'), className: 'gold' },
-  { id: 'mythril', label: 'Mythril', requires: 4, decoration: getSpriteUrl('Rank/rank-mythril.png'), className: 'mythril' },
-  { id: 'trophy', label: 'Legend', requires: 5, decoration: getSpriteUrl('Rank/rank-legendary.png'), className: 'trophy' },
+  { id: 'bronze', label: 'Bronze', requires: 1, decoration: getSpriteUrl('Rank/rank-bronze.webp'), className: 'bronze' },
+  { id: 'silver', label: 'Silver', requires: 2, decoration: getSpriteUrl('Rank/rank-silver.webp'), className: 'silver' },
+  { id: 'gold', label: 'Gold', requires: 3, decoration: getSpriteUrl('Rank/rank-gold.webp'), className: 'gold' },
+  { id: 'mythril', label: 'Mythril', requires: 4, decoration: getSpriteUrl('Rank/rank-mythril.webp'), className: 'mythril' },
+  { id: 'trophy', label: 'Legend', requires: 5, decoration: getSpriteUrl('Rank/rank-legendary.webp'), className: 'trophy' },
 ];
 
 const MIC_SENSITIVITY_KEY = 'pref_mic_sensitivity';

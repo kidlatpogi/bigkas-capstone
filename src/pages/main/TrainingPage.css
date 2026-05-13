@@ -1581,12 +1581,7 @@ body.training-page-active {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  animation: tp-slide-up 0.28s cubic-bezier(0.32,0,0.67,0) forwards;
-}
-
-@keyframes tp-slide-up {
-  from { transform: translateY(100%); }
-  to   { transform: translateY(0); }
+  animation: bigkas-bottom-sheet-panel-in var(--bigkas-bottom-sheet-duration) var(--bigkas-bottom-sheet-ease) both !important;
 }
 
 .tp-modal-header {
@@ -1600,33 +1595,6 @@ body.training-page-active {
   font-weight: 700;
   color: #010101;
 }
-
-.tp-modal-close {
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  min-height: 32px;
-  max-width: 32px;
-  max-height: 32px;
-  aspect-ratio: 1 / 1;
-  padding: 0;
-  box-sizing: border-box;
-  line-height: 1;
-  border-radius: 50%;
-  border: none;
-  background: #F0F0F0;
-  color: #010101;
-  font-size: 14px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s;
-}
-
-.tp-modal-close:hover { background: #E0E0E0; }
-
-
 
 /* Toggle switch */
 .tp-toggle-btn {
@@ -1735,7 +1703,7 @@ body.training-page-active {
 
 [data-theme="dark"] .tp-modal { background: #1A1A1A; }
 [data-theme="dark"] .tp-modal-title { color: #F0F0F0; }
-[data-theme="dark"] .tp-modal-close { background: #2A2A2A; color: #F0F0F0; }
+[data-theme="dark"] .tp-modal .dashboard-overlay-close-btn { background: #2A2A2A; color: #F0F0F0; }
 [data-theme="dark"] .tp-modal-label { color: rgba(240,240,240,0.5); }
 [data-theme="dark"] .tp-modal-val { color: #F0F0F0; }
 [data-theme="dark"] .tp-modal-done { background: #F0F0F0; color: #010101; }
@@ -2026,7 +1994,7 @@ body.training-page-active .theme-toggle-wrap {
 }
 
 /* ── Milestone Warning Modal (1 Minute) ── */
-.bigkas-modal-scrim {
+.tp-milestone-scrim.bigkas-modal-scrim {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.7);
@@ -2267,5 +2235,87 @@ body.training-page-active .theme-toggle-wrap {
     left: 50%;
     transform: translateX(-50%);
     bottom: calc(clamp(16px, 4.5vh, 28px) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Low-light warning — mobile-only frosted system banner (base .tp-environment-warning above = desktop) */
+@media (max-width: 768px) {
+  .tp-environment-warning {
+    top: max(8px, env(safe-area-inset-top, 0px));
+    left: max(10px, env(safe-area-inset-left, 0px));
+    right: max(10px, env(safe-area-inset-right, 0px));
+    width: auto;
+    max-width: none;
+    transform: none;
+    padding: 10px 12px;
+    gap: 10px;
+    align-items: center;
+    border-radius: 16px;
+    /* Frosted bar over camera — reads like iOS / Material surface */
+    background: rgba(55, 55, 58, 0.58);
+    color: #fff;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: -0.022em;
+    line-height: 1.35;
+    -webkit-font-smoothing: antialiased;
+    border: 0.5px solid rgba(255, 255, 255, 0.22);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.1) inset,
+      0 10px 40px rgba(0, 0, 0, 0.14),
+      0 2px 10px rgba(0, 0, 0, 0.1);
+    backdrop-filter: saturate(180%) blur(22px);
+    -webkit-backdrop-filter: saturate(180%) blur(22px);
+    animation: tp-env-warn-slide-mobile 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .tp-environment-warning span {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  }
+
+  /* Leading “native” alert glyph — capsule behind Lucide icon */
+  .tp-env-warning-icon {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    padding: 7px;
+    border-radius: 11px;
+    box-sizing: content-box;
+    font-size: 16px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(165deg, #ff6961 0%, #d92d20 100%);
+    color: #fff;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.25) inset,
+      0 2px 6px rgba(180, 30, 20, 0.35);
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.15));
+  }
+}
+
+@keyframes tp-env-warn-slide-mobile {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 768px) and (prefers-reduced-motion: reduce) {
+  .tp-environment-warning {
+    animation: none;
   }
 }

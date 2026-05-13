@@ -24,10 +24,16 @@ const DayFireIcon = () => (
   </div>
 );
 
+/** Avoid allocating a new Map each render when prop is omitted */
+const EMPTY_DAY_COUNTS = new Map();
+
 export default function StreakCalendarModal({ isOpen, onClose, sessionCountsByDay, streakStats }) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const lottieFireNode = useMemo(() => <Lottie animationData={fireAnimationData} loop={true} />, []);
+
+  const countsByDay =
+    sessionCountsByDay instanceof Map ? sessionCountsByDay : EMPTY_DAY_COUNTS;
 
   if (!isOpen) return null;
 
@@ -61,14 +67,14 @@ export default function StreakCalendarModal({ isOpen, onClose, sessionCountsByDa
   // Pre-calculate session counts for each day
   const dayCounts = days.map((day) => {
     const key = getLocalDateKey(day);
-    return sessionCountsByDay.get(key) || 0;
+    return countsByDay.get(key) || 0;
   });
 
   return (
     <AnimatePresence>
       {isOpen && (
         <div 
-          className="streak-calendar-overlay bigkas-modal-scrim" 
+          className="streak-calendar-overlay bigkas-modal-scrim bigkas-modal-scrim--no-enter" 
           onClick={onClose}
         >
           <motion.div 

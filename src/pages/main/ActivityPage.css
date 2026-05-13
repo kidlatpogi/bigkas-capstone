@@ -201,11 +201,12 @@ html {
   box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
   display: grid;
   grid-template-columns: 1.2fr minmax(320px, 0.8fr);
-  align-items: stretch;
+  align-items: center;
   gap: 14px;
   padding: 18px 20px;
   position: relative;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .new-banner::before,
@@ -246,6 +247,7 @@ html {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   overflow: visible;
+  box-sizing: border-box;
 }
 
 .new-banner-robot {
@@ -298,8 +300,10 @@ html {
 
 .new-banner-right {
   display: flex;
-  align-items: stretch;
+  align-items: center;
+  justify-content: center;
   z-index: 2;
+  box-sizing: border-box;
 }
 
 .new-banner-streak {
@@ -309,6 +313,7 @@ html {
   text-align: left;
   min-width: 0;
   width: 100%;
+  box-sizing: border-box;
   box-shadow: 0 12px 24px rgba(11, 57, 84, 0.12);
   display: flex;
   flex-direction: column;
@@ -429,8 +434,7 @@ html {
   gap: 16px;
   height: 100%;
   min-height: 0;
-  overflow-y: auto;
-  overflow-x: visible;
+  overflow: hidden;
   padding: 6px;
   margin: -6px;
 }
@@ -456,7 +460,7 @@ html {
   min-height: 0;
   overflow: hidden;
   transition: opacity 0.2s ease;
-  flex-shrink: 0;
+  flex-shrink: 1;
 }
 
 .new-widget.is-hidden {
@@ -723,37 +727,62 @@ html {
 }
 
 /* Responsive height adjustments for shorter screens */
-@media (max-height: 850px) {
+@media (max-height: 950px), (max-width: 1280px) {
   .activity-page-root {
     --activity-page-pad: 12px;
   }
   
   .new-banner {
-    min-height: 160px;
+    min-height: 140px;
     padding: 12px 16px;
   }
   
+  .new-right-col {
+    gap: 10px;
+  }
+  
   .new-widget {
-    padding: 16px 20px;
-    gap: 8px;
+    padding: 14px 16px;
+    gap: 6px;
+    border-radius: 20px;
   }
   
   .new-widget-title {
-    font-size: 1.15rem;
+    font-size: 1.1rem;
   }
   
+  .new-widget-rank-card {
+    grid-template-columns: 52px 1fr;
+    padding: 8px 10px;
+    gap: 10px;
+  }
+  
+  .new-widget-rank-sprite {
+    width: 52px;
+    height: 52px;
+  }
+  
+  .new-widget-value {
+    font-size: 0.95rem;
+  }
+  
+  .new-widget-caption {
+    font-size: 0.78rem;
+  }
+
   .new-btn-visual {
-    width: 60px;
-    height: 60px;
-    padding: 8px;
+    width: 48px;
+    height: 48px;
+    padding: 6px;
+    border-radius: 12px;
   }
   
   .new-btn-label {
-    font-size: 1rem;
+    font-size: 0.95rem;
   }
   
   .new-btn-hint {
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     display: -webkit-box;
     -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
@@ -761,13 +790,21 @@ html {
   }
   
   .new-btn-row--card {
-    padding: 10px 16px;
-    gap: 12px;
-    grid-template-columns: 60px 1fr;
+    padding: 8px 12px;
+    gap: 10px;
+    grid-template-columns: 48px 1fr;
+    border-radius: 16px;
   }
   
   .new-btn-group {
-    gap: 8px;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  
+  .activity-practice-cta.bigkas-btn {
+    height: 38px !important;
+    min-height: 38px !important;
+    font-size: 0.85rem !important;
   }
 }
 
@@ -858,36 +895,6 @@ html {
   font-size: clamp(1rem, 2vw, 1.25rem);
   margin: 0;
   line-height: 1.2;
-}
-
-.randomizer-overlay-close-btn {
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  min-height: 28px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: rgba(15, 23, 42, 0.08);
-  color: #334155;
-  font-size: 1.1rem;
-  line-height: 1;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
-  flex-shrink: 0;
-}
-
-.randomizer-overlay-close-btn:hover {
-  background: #ef4444;
-  color: #ffffff;
-  transform: scale(1.03);
-}
-
-.randomizer-overlay-close-btn:active {
-  transform: scale(0.97);
 }
 
 .randomizer-overlay-copy {
@@ -1169,7 +1176,7 @@ html {
   border: 1px solid rgba(5, 150, 105, 0.2);
   position: relative;
   z-index: 10001; /* Higher than scrim */
-  animation: modalSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: modalSlideUp var(--bigkas-bottom-sheet-duration) var(--bigkas-bottom-sheet-ease);
 }
 
 @keyframes modalSlideUp {
@@ -1399,36 +1406,6 @@ html {
   width: 100%;
 }
 
-.ask-b01-modal-close {
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  min-height: 28px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: rgba(15, 23, 42, 0.08);
-  color: #334155;
-  font-size: 1.1rem;
-  line-height: 1;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
-  flex-shrink: 0;
-}
-
-.ask-b01-modal-close:hover {
-  background: #ef4444;
-  color: #ffffff;
-  transform: scale(1.03);
-}
-
-.ask-b01-modal-close:active {
-  transform: scale(0.97);
-}
-
 /* Updated Chat Heads & Centering */
 .ask-b01-modal-wrapper {
   padding-left: calc(280px + 20px);
@@ -1604,4 +1581,4 @@ html {
   text-align: right;
 }
 
-
+

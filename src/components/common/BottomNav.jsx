@@ -8,6 +8,7 @@ import {
   IoStatsChartOutline,
 } from 'react-icons/io5';
 import { ROUTES } from '../../utils/constants';
+import { useAchievementNavBadge } from '../../hooks/useAchievementNavBadge';
 import ProfileModal from './ProfileModal';
 import './BottomNav.css';
 
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
 
 function BottomNav() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const achievementPendingCount = useAchievementNavBadge();
 
   const handleProfileClick = (e) => {
     e.preventDefault();
@@ -50,6 +52,15 @@ function BottomNav() {
             );
           }
 
+          const isAchievementTab = to === ROUTES.ACHIEVEMENTS;
+          const showAchievementBadge = isAchievementTab && achievementPendingCount > 0;
+          const badgeLabel =
+            achievementPendingCount >= 10 ? '9+' : String(achievementPendingCount);
+          const navAriaLabel =
+            showAchievementBadge && isAchievementTab
+              ? `${label}, ${achievementPendingCount >= 10 ? '9 or more' : achievementPendingCount} new rewards`
+              : label;
+
           return (
             <NavLink
               key={to}
@@ -57,12 +68,19 @@ function BottomNav() {
               className={({ isActive }) => 
                 `bottom-nav__item${(isActive && !isProfileModalOpen) ? ' active active-nav-item' : ''}`
               }
-              aria-label={label}
+              aria-label={navAriaLabel}
               onClick={() => setIsProfileModalOpen(false)}
             >
               <div className="bottom-nav__pill">
-                <div className="bottom-nav__icon-wrapper">
+                <div
+                  className={`bottom-nav__icon-wrapper${showAchievementBadge ? ' bottom-nav__icon-wrapper--badged' : ''}`}
+                >
                   <Icon aria-hidden="true" />
+                  {showAchievementBadge && (
+                    <span className="bottom-nav__badge" aria-hidden="true">
+                      {badgeLabel}
+                    </span>
+                  )}
                 </div>
                 <span>{label}</span>
               </div>

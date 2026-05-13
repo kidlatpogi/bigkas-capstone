@@ -181,6 +181,29 @@
   transform: translateY(5px) !important;
 }
 
+/* Variant: Tutorial Walkthrough (Orange Tactile) */
+.bigkas-btn--tutorial {
+  --btn-bg: #F18F01;
+  --btn-hover-bg: #F18F01;
+  --btn-text: #FFFFFF;
+  --btn-glow: #cc7a00;
+  
+  border-radius: 999px !important;
+  box-shadow: #cc7a00 0 5px 0 0 !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border: none !important;
+}
+
+.bigkas-btn--tutorial:hover:not(:disabled) {
+  box-shadow: #cc7a00 0 3px 0 0 !important;
+  transform: translateY(2px) !important;
+}
+
+.bigkas-btn--tutorial:active:not(:disabled) {
+  box-shadow: #cc7a00 0 0 0 0 !important;
+  transform: translateY(5px) !important;
+}
+
 /* Variant: Training (Glassy) */
 .bigkas-btn--training {
   --btn-bg: rgba(255, 255, 255, 0.1);

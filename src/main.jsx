@@ -7,8 +7,10 @@ import AppRouter from './routes/AppRouter';
 
 // Styles
 import './styles/globals.css';
+import './styles/dashboard-overlay-close-btn.css';
 import './styles/mobileViewport.css';
 import './index.css';
+import './styles/bigkas-bottom-sheet-motion.css';
 
 /**
  * Bigkas Web Application

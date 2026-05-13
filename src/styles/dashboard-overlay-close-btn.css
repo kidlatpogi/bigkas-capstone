@@ -1,0 +1,32 @@
+/**
+ * Shared circular dismiss (×) — matches Activity mobile dashboard overlay
+ * (`ActivityPageMobile` `.dashboard-overlay-close-btn`).
+ */
+.dashboard-overlay-close-btn {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.08);
+  color: #334155;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.dashboard-overlay-close-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.dashboard-overlay-close-btn:active {
+  transform: scale(0.9);
+}

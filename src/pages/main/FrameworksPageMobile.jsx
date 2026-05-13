@@ -1,194 +1,197 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { 
-  IoSearch, 
-  IoClose, 
-  IoVideocam, 
-  IoEye, 
-  IoVolumeHigh, 
-  IoHandLeft, 
-  IoBook, 
-  IoRibbon 
-} from 'react-icons/io5';
-import { getSpriteUrl } from '../../utils/assetUtils';
+import { IoSearch, IoClose } from 'react-icons/io5';
+import { fetchModules } from '../../services/modulesService';
+import { ROUTES } from '../../utils/constants';
+import '../../components/common/Button.css';
 import './FrameworksPageMobile.css';
+import '../../styles/dashboard-overlay-close-btn.css';
 
-const b01ChatHead = getSpriteUrl('Robot/0015.webp');
+/* ── Level palette ── */
+const LEVEL_COLORS = {
+  0: '#F18F01',
+  1: '#059669',
+  2: '#2563eb',
+  3: '#7c3aed',
+  4: '#ea580c',
+  5: '#dc2626',
+};
 
-const CATEGORIES = [
-  { id: 'all', label: 'All Modules' },
-  { id: 'setup', label: 'Technical Setup' },
-  { id: 'visual', label: 'Visual Delivery' },
-];
-
-const MODULES = [
-  {
-    id: 'mod-0',
-    categoryId: 'setup',
-    title: 'Module 0: Technical Setup',
-    description: 'Ensure your camera and microphone are positioned correctly for optimal recording quality.',
-    b01Script: [
-      { speaker: 'b01', text: "Hello! I am B-01. Before we begin speaking, let's make sure you are seen and heard clearly." },
-      { speaker: 'b01', text: "First, position your camera at eye level. This creates a natural connection with your audience." },
-      { speaker: 'b01', text: "Second, ensure you are in a quiet room and your microphone is not blocked." },
-      { speaker: 'b01', text: "Ready? Let's move on to the next module!" }
-    ]
-  },
-  {
-    id: 'mod-1',
-    categoryId: 'visual',
-    title: 'Module 1: The Visual Anchor',
-    description: 'Master the art of eye contact and open posture to project confidence.',
-    b01Script: [
-      { speaker: 'b01', text: "Welcome to Module 1! Let's talk about your physical presence." },
-      { speaker: 'b01', text: "When speaking, maintain eye contact with the camera lens, not the screen. This simulates looking directly at your audience." },
-      { speaker: 'b01', text: "Keep your posture open. Avoid crossing your arms, and sit or stand up straight. This signals confidence and readiness." },
-      { speaker: 'b01', text: "Practice this in your next free speech session!" }
-    ]
-  }
-];
-
-function getModuleIcon(id) {
-  const size = 42;
-  const color = '#059669';
-  switch (id) {
-    case 'mod-0': return <IoVideocam size={size} color={color} />;
-    case 'mod-1': return <IoEye size={size} color={color} />;
-    case 'mod-2': return <IoVolumeHigh size={size} color={color} />;
-    case 'mod-3': return <IoHandLeft size={size} color={color} />;
-    case 'mod-4': return <IoBook size={size} color={color} />;
-    case 'mod-5': return <IoRibbon size={size} color={color} />;
-    default: return <IoBook size={size} color={color} />;
-  }
+function levelColor(n) {
+  return LEVEL_COLORS[n] ?? '#059669';
 }
 
-function ModuleCard({ module, onOpen, index }) {
-  const [imgError, setImgError] = useState(false);
-
+/* ── Card thumbnail ── */
+function LessonThumb({ module }) {
+  const color = levelColor(module.level_number);
   return (
-    <button 
-      type="button" 
+    <div style={{
+      height: '100px',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '4px',
+      background: `linear-gradient(135deg, ${color}18 0%, ${color}38 100%)`,
+      borderBottom: `1px solid ${color}33`,
+    }}>
+      <span style={{ fontSize: '1.8rem', fontWeight: 900, color, lineHeight: 1 }}>
+        {module.lesson_number}
+      </span>
+      <span style={{ fontSize: '0.6rem', fontWeight: 800, color, textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.8 }}>
+        {module.level_name}
+      </span>
+    </div>
+  );
+}
+
+/* ── Module card ── */
+function ModuleCard({ module, onOpen, index }) {
+  return (
+    <button
+      type="button"
       className={`fh-mobile-card dashboard-anim-bottom dashboard-anim-delay-${Math.min(index + 1, 9)}`}
       onClick={() => onOpen(module)}
     >
-      <div style={{ background: '#f8fafc', height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid rgba(5,150,105,0.1)' }}>
-        {!imgError ? (
-          <img 
-            src={b01ChatHead} 
-            alt="" 
-            onError={() => setImgError(true)}
-            style={{ height: '70px', filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.1))' }} 
-          />
-        ) : (
-          <div style={{ opacity: 0.8 }}>
-            {getModuleIcon(module.id)}
-          </div>
-        )}
-      </div>
+      <LessonThumb module={module} />
       <div className="fh-mobile-card-body">
         <div className="fh-mobile-card-info">
-          <h3 className="fh-mobile-card-name" style={{ color: '#059669' }}>{module.title}</h3>
-          <p className="fh-mobile-card-summary">{module.description}</p>
+          <h3 className="fh-mobile-card-name">{module.title}</h3>
+          <p className="fh-mobile-card-author">Lesson {module.lesson_number}</p>
+          <p className="fh-mobile-card-summary">
+            {module.content.length > 90 ? `${module.content.slice(0, 90)}…` : module.content}
+          </p>
         </div>
       </div>
     </button>
   );
 }
 
+/* ── Module detail bottom sheet ── */
 function ModuleModal({ module, onClose }) {
-  const [currentStep, setCurrentStep] = useState(0);
+  const navigate = useNavigate();
+  const color = levelColor(module.level_number);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = 'auto'; };
+    return () => { document.body.style.overflow = ''; };
   }, []);
 
-  const handleNext = () => {
-    if (currentStep < module.b01Script.length - 1) {
-      setCurrentStep(prev => prev + 1);
-    } else {
-      onClose();
-    }
-  };
+  if (typeof document === 'undefined') return null;
 
-  return (
-    <div className="fh-mobile-modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()} style={{ zIndex: 12000 }}>
+  return createPortal(
+    <div
+      className="fh-mobile-modal-overlay"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      style={{ zIndex: 1100 }}
+    >
       <div className="fh-mobile-modal-sheet" style={{ display: 'flex', flexDirection: 'column' }}>
         <div className="fh-mobile-modal-handle" />
-        <div className="fh-mobile-modal-header" style={{ borderBottom: '1px solid rgba(11,57,84,0.05)', paddingBottom: '16px' }}>
-          <div className="fh-mobile-modal-titles" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-             <img src={b01ChatHead} alt="" style={{ width: '28px' }} />
-             <h2 className="fh-mobile-modal-title" style={{ margin: 0, fontSize: '1.2rem' }}>{module.title}</h2>
+
+        <div className="fh-mobile-modal-header" style={{ alignItems: 'center' }}>
+          <div className="fh-mobile-modal-titles">
+            <p className="fh-mobile-modal-kicker" style={{ color }}>
+              {module.level_name} · Lesson {module.lesson_number}
+            </p>
+            <h2 className="fh-mobile-modal-title">{module.title}</h2>
           </div>
-          <button className="fh-mobile-modal-close" onClick={onClose}>
-            <IoClose size={24} />
-          </button>
-        </div>
-
-        <div className="fh-mobile-modal-body" style={{ flex: 1, padding: '16px', overflowY: 'auto', background: '#f8fafc', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {module.b01Script.slice(0, currentStep + 1).map((msg, idx) => (
-            <div key={idx} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }} className="dashboard-anim-bottom">
-              <div style={{ width: '38px', height: '38px', flexShrink: 0, background: '#fff', borderRadius: '12px', padding: '4px', border: '1px solid rgba(5,150,105,0.1)' }}>
-                <img src={b01ChatHead} alt="B-01" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-              </div>
-              <div style={{ background: '#fff', padding: '12px 16px', borderRadius: '18px', borderTopLeftRadius: '4px', fontSize: '0.95rem', color: '#334155', border: '1px solid rgba(11,57,84,0.05)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-                {msg.text}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ padding: '16px', background: '#fff', borderTop: '1px solid rgba(11,57,84,0.05)', display: 'flex', justifyContent: 'flex-end' }}>
-          <button 
-            style={{ width: '100%', padding: '14px', background: '#059669', color: 'white', border: 'none', borderRadius: '999px', fontSize: '1rem', fontWeight: 'bold', boxShadow: '#047857 0 4px 0 0' }}
-            onClick={handleNext}
+          <button
+            type="button"
+            className="dashboard-overlay-close-btn"
+            onClick={onClose}
+            aria-label="Close"
           >
-            {currentStep < module.b01Script.length - 1 ? 'Next' : 'Finish Module'}
+            ×
           </button>
+        </div>
+
+        <div className="fh-mobile-modal-body">
+          <p className="fh-mobile-modal-summary">{module.content}</p>
+
+          {module.date_started ? (
+            <div style={{ padding: '0 4px 16px', marginTop: '-8px', fontSize: '0.85rem', color: '#64748b', display: 'flex', gap: '16px', fontWeight: 600 }}>
+              <span>Started: {new Date(module.date_started).toLocaleDateString()}</span>
+              {module.date_ended ? <span>Ended: {new Date(module.date_ended).toLocaleDateString()}</span> : null}
+            </div>
+          ) : null}
+
+          {module.level_number === 0 ? (
+            <div className="fh-mobile-modal-tutorial-row">
+              <button
+                type="button"
+                className="bigkas-btn bigkas-btn--tutorial fh-tutorial-launch-btn"
+                onClick={() => {
+                  onClose();
+                  navigate(ROUTES.ACTIVITY, {
+                    state: {
+                      skywardEntrance: true,
+                      launchFreeSpeechTutorial: true,
+                      skipTutorialIntro: true,
+                      t: Date.now(),
+                    },
+                  });
+                }}
+              >
+                Launch Tutorial Walkthrough
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
+/* ── Main mobile page ── */
 export default function FrameworksPageMobile() {
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('all');
+  const [modules, setModules] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState(0);
   const [activeModal, setActiveModal] = useState(null);
   const [query, setQuery] = useState('');
 
-  const handleOpenModule = (module) => {
-    const tutorialSteps = module.b01Script.map((msg, i) => ({
-      id: `${module.id}-step-${i}`,
-      title: 'B-01:',
-      text: msg.text,
-      button: i < module.b01Script.length - 1 ? 'Next' : 'Finish',
-      targetElementId: null,
-    }));
-
-    if (module.id === 'mod-0') {
-      navigate('/settings/test', {
-        state: {
-          launchTutorial: true,
-          tutorialSteps,
-        }
-      });
-    } else {
-      setActiveModal(module);
+  const loadModules = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await fetchModules();
+      setModules(data);
+    } catch (err) {
+      setError(err?.message ?? 'Failed to load modules.');
+    } finally {
+      setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => { loadModules(); }, [loadModules]);
+
+  /* Derive level tabs from loaded data */
+  const levels = useMemo(() => {
+    const seen = new Map();
+    modules.forEach((m) => {
+      if (!seen.has(m.level_number)) seen.set(m.level_number, m.level_name);
+    });
+    return [...seen.entries()].sort((a, b) => a[0] - b[0]);
+  }, [modules]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let list = activeTab === 'all' ? MODULES : MODULES.filter(m => m.categoryId === activeTab);
+    let list = activeTab === 0
+      ? modules
+      : modules.filter((m) => m.level_number === activeTab);
+
     if (q) {
-      list = list.filter(it => 
-        it.title.toLowerCase().includes(q) || 
-        it.description.toLowerCase().includes(q)
+      list = list.filter((m) =>
+        m.title.toLowerCase().includes(q) ||
+        m.content.toLowerCase().includes(q) ||
+        m.lesson_number.includes(q)
       );
     }
     return list;
-  }, [activeTab, query]);
+  }, [modules, activeTab, query]);
 
   return (
     <div className="fh-mobile-root activity-page--skyward-entrance no-scrollbar">
@@ -203,37 +206,62 @@ export default function FrameworksPageMobile() {
             onChange={(e) => setQuery(e.target.value)}
           />
           {query && (
-            <button className="fh-mobile-search-clear" onClick={() => setQuery('')}>
+            <button className="fh-mobile-search-clear" onClick={() => setQuery('')} aria-label="Clear search">
               <IoClose />
             </button>
           )}
         </div>
 
         <div className="fh-mobile-categories">
-          {CATEGORIES.map((cat) => (
+          <button
+            className={`fh-mobile-chip${activeTab === 0 ? ' active' : ''}`}
+            onClick={() => setActiveTab(0)}
+          >
+            All
+          </button>
+          {levels.map(([num, name]) => (
             <button
-              key={cat.id}
-              className={`fh-mobile-chip ${activeTab === cat.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(cat.id)}
+              key={num}
+              className={`fh-mobile-chip${activeTab === num ? ' active' : ''}`}
+              onClick={() => setActiveTab(num)}
             >
-              {cat.label}
+              Lv.{num} {name}
             </button>
           ))}
         </div>
       </div>
 
       <div className="fh-mobile-content">
-        {filtered.length === 0 ? (
+        {loading && (
+          <div className="fh-mobile-empty dashboard-anim-bottom">Loading modules…</div>
+        )}
+
+        {!loading && error && (
+          <div className="fh-mobile-empty dashboard-anim-bottom" style={{ color: '#dc2626' }}>
+            {error}
+            <br />
+            <button
+              style={{ marginTop: '12px', fontSize: '0.85rem', color: '#059669', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+              onClick={loadModules}
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
+        {!loading && !error && filtered.length === 0 && (
           <div className="fh-mobile-empty dashboard-anim-bottom">
             {query ? `No modules found for "${query}"` : 'No modules available.'}
           </div>
-        ) : (
+        )}
+
+        {!loading && !error && filtered.length > 0 && (
           <div className="fh-mobile-grid">
             {filtered.map((module, index) => (
               <ModuleCard
-                key={module.id}
+                key={`${module.level_number}-${module.lesson_number}`}
                 module={module}
-                onOpen={handleOpenModule}
+                onOpen={setActiveModal}
                 index={index}
               />
             ))}
@@ -241,7 +269,9 @@ export default function FrameworksPageMobile() {
         )}
       </div>
 
-      {activeModal && <ModuleModal module={activeModal} onClose={() => setActiveModal(null)} />}
+      {activeModal && (
+        <ModuleModal module={activeModal} onClose={() => setActiveModal(null)} />
+      )}
     </div>
   );
 }

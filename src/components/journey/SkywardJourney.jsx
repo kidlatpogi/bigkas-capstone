@@ -1601,7 +1601,8 @@ export default function SkywardJourney({
                   ref={drawerRef}
                   className="skyward-journey-overlay-content"
                 >
-                  <div className="randomizer-overlay-card">
+                  <div className="skyward-journey-quest-slide">
+                    <div className="randomizer-overlay-card">
                     <div className="randomizer-overlay-card-top">
                       <h2 className="randomizer-overlay-title">Quest details</h2>
                       <button
@@ -1613,7 +1614,7 @@ export default function SkywardJourney({
                         ×
                       </button>
                     </div>
-                    
+
                     <div className="skyward-journey-overlay-inner-body">
                       <p className="randomizer-overlay-copy">
                         <span className="randomizer-overlay-copy-kicker">
@@ -1638,7 +1639,7 @@ export default function SkywardJourney({
                           <p className="skyward-journey-purpose-text">{selectedStep.task.purpose}</p>
                         </div>
                       )}
-                      
+
                       <div className="randomizer-overlay-topic">
                         <span className="randomizer-overlay-topic-label">Topic:</span>
                         {' '}
@@ -1649,15 +1650,16 @@ export default function SkywardJourney({
                         {selectedStep && renderStepContent?.(selectedStep, selectedMeta)}
                       </div>
                     </div>
-                  </div>
+                    </div>
 
-                  <div className="randomizer-overlay-robot-wrap">
-                    <img 
-                      src={getSpriteUrl('Robot/0002.webp')} 
-                      alt="" 
-                      className="randomizer-overlay-robot"
-                      aria-hidden="true"
-                    />
+                    <div className="randomizer-overlay-robot-wrap">
+                      <img
+                        src={getSpriteUrl('Robot/0002.webp')}
+                        alt=""
+                        className="randomizer-overlay-robot"
+                        aria-hidden="true"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>,

@@ -1231,6 +1231,11 @@
   transition: all 0.5s ease-in-out;
 }
 
+/* Portal quest: wrapper is inert on desktop (children join overlay flex); mobile sheet animates this layer */
+.skyward-journey-quest-slide {
+  display: contents;
+}
+
 .skyward-journey-overlay-card {
   position: relative;
   order: 2;
@@ -1444,7 +1449,7 @@
   }
 
   .skyward-journey-panel-root .skyward-journey-overlay-content {
-    /* Relative sheet in flex-end root = same motion as `.dashboard-overlay-content` */
+    /* Outer shell: flex-end placement + nav inset (matches dashboard wrapper + padding model) */
     position: relative !important;
     left: auto !important;
     right: auto !important;
@@ -1458,14 +1463,25 @@
     flex-direction: column;
     align-items: stretch;
     gap: 0;
-    /* Flush paint to viewport bottom; content inset matches main + nav (globals) */
     padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    overflow: visible;
+    background: #fdfdf9;
+    transition: none;
+    /* No transform here — avoids overflow clipping the slide (see `.skyward-journey-quest-slide`) */
+  }
+
+  /* Same motion + chrome as `.dashboard-overlay-content` (ActivityPageMobile.css) */
+  .skyward-journey-panel-root .skyward-journey-quest-slide {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
     max-height: 90vh;
     border-radius: 32px 32px 0 0;
     overflow: hidden;
     background: #fdfdf9;
     box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.2);
-    transition: none;
+    flex: 0 1 auto;
+    min-height: 0;
     animation: dashboardSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
@@ -1641,7 +1657,7 @@
 }
 
 @media (max-width: 767px) and (prefers-reduced-motion: reduce) {
-  .skyward-journey-panel-root .skyward-journey-overlay-content {
+  .skyward-journey-panel-root .skyward-journey-quest-slide {
     animation: none;
   }
 }

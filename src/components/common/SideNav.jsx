@@ -44,6 +44,7 @@ export default function SideNav() {
   const [notifTrayOpen, setNotifTrayOpen] = useState(false);
   const [claimables, setClaimables] = useState(() => getClaimableAchievements());
   const [notifTab, setNotifTab] = useState('all');
+  const [claimedNotifIds, setClaimedNotifIds] = useState(new Set());
 
   const isSettingsRoute = useMemo(
     () => location.pathname === ROUTES.PROFILE || location.pathname.startsWith(ROUTES.SETTINGS),
@@ -106,12 +107,16 @@ export default function SideNav() {
   };
 
   const handleClaim = (id) => {
-    claimAchievement(id);
-    setClaimables(getClaimableAchievements());
-    setClaimableCount(getClaimableAchievementsCount());
+    setClaimedNotifIds((prev) => new Set(prev).add(id));
     if (user?.id) {
       claimAchievementInDB(user.id, id).catch(() => {});
     }
+    setTimeout(() => {
+      claimAchievement(id);
+      setClaimables(getClaimableAchievements());
+      setClaimableCount(getClaimableAchievementsCount());
+      setClaimedNotifIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
+    }, 600);
   };
 
   const handleClearAll = () => {
@@ -237,34 +242,38 @@ export default function SideNav() {
                 
                 <div className="side-nav-notif-tray-list no-scrollbar">
                   {filteredNotifs.length > 0 ? (
-                    filteredNotifs.map((item) => (
-                      <div key={item.id} className="side-nav-notif-item">
-                        <div className="side-nav-notif-item-avatar">
-                          {item.badgeUrl ? (
-                            <img src={item.badgeUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '14px' }} />
-                          ) : (
-                            <IoMedalOutline />
-                          )}
-                        </div>
-                        <div className="side-nav-notif-item-content">
-                          <div className="side-nav-notif-item-header">
-                            <span className="side-nav-notif-item-name">{item.title}</span>
-                            <span className="side-nav-notif-item-time">{timeAgo(item.createdAt)}</span>
-                            <span className="side-nav-notif-unread-dot" />
+                    filteredNotifs.map((item) => {
+                      const justClaimed = claimedNotifIds.has(item.id);
+                      return (
+                        <div key={item.id} className={`side-nav-notif-item${justClaimed ? ' side-nav-notif-item--claimed' : ''}`}>
+                          <div className="side-nav-notif-item-avatar">
+                            {item.badgeUrl ? (
+                              <img src={item.badgeUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '14px' }} />
+                            ) : (
+                              <IoMedalOutline />
+                            )}
                           </div>
-                          <p className="side-nav-notif-item-text">{item.description || "You've earned a new achievement! Claim your reward now."}</p>
-                          <div className="side-nav-notif-item-actions">
-                            <button
-                              type="button"
-                              className="side-nav-notif-claim-btn"
-                              onClick={() => handleClaim(item.id)}
-                            >
-                              Claim Reward
-                            </button>
+                          <div className="side-nav-notif-item-content">
+                            <div className="side-nav-notif-item-header">
+                              <span className="side-nav-notif-item-name">{item.title}</span>
+                              <span className="side-nav-notif-item-time">{timeAgo(item.createdAt)}</span>
+                              <span className="side-nav-notif-unread-dot" />
+                            </div>
+                            <p className="side-nav-notif-item-text">{item.description || "You've earned a new achievement! Claim your reward now."}</p>
+                            <div className="side-nav-notif-item-actions">
+                              <button
+                                type="button"
+                                className="side-nav-notif-claim-btn"
+                                disabled={justClaimed}
+                                onClick={() => handleClaim(item.id)}
+                              >
+                                {justClaimed ? '✓ Claimed!' : 'Claim Reward'}
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="side-nav-notif-empty">
                       <div className="side-nav-notif-empty-icon">

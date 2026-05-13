@@ -26,10 +26,6 @@ const SESSIONS_SELECT_QUERY = `
   duration,
   created_at,
   activity_id,
-  activities (
-    title,
-    objective
-  ),
   session_media (
     audio_url,
     transcript,

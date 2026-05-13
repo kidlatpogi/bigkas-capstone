@@ -251,6 +251,31 @@
   cursor: not-allowed;
 }
 
+.achievements-reward-item-claim--done {
+  background: #10b981 !important;
+  box-shadow: #059669 0 3px 0 0 !important;
+  opacity: 1 !important;
+}
+
+.achievements-reward-item--claimed {
+  animation: rewardItemClaimed 0.5s 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.achievements-reward-item--claimed .achievements-reward-item-img {
+  animation: rewardImgPop 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes rewardItemClaimed {
+  0% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(40px); max-height: 0; padding: 0; margin: 0; overflow: hidden; }
+}
+
+@keyframes rewardImgPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
 .achievements-mobile-page .achievements-kicker {
   font-size: 0.9rem;
   font-weight: 800;

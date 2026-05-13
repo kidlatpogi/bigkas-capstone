@@ -225,18 +225,26 @@ export default function AchievementsPageMobile() {
 
               {claimableAchievements.length > 0 ? (
                 <div className="achievements-rewards-list">
-                  {claimableAchievements.map((badge) => (
-                    <div key={badge.id} className="achievements-reward-item">
-                      <img src={badge.badgeUrl ?? badgeImg} alt="" className="achievements-reward-item-img" onError={(e) => { e.currentTarget.src = badgeImg; }} />
-                      <div className="achievements-reward-item-info">
-                        <span className="achievements-reward-item-name">{badge.name}</span>
-                        <span className="achievements-reward-item-desc">{badge.description.length > 60 ? `${badge.description.slice(0, 60)}…` : badge.description}</span>
+                  {claimableAchievements.map((badge) => {
+                    const isClaimed = justClaimedIds.has(badge.id);
+                    return (
+                      <div key={badge.id} className={`achievements-reward-item${isClaimed ? ' achievements-reward-item--claimed' : ''}`}>
+                        <img src={badge.badgeUrl ?? badgeImg} alt="" className="achievements-reward-item-img" onError={(e) => { e.currentTarget.src = badgeImg; }} />
+                        <div className="achievements-reward-item-info">
+                          <span className="achievements-reward-item-name">{badge.name}</span>
+                          <span className="achievements-reward-item-desc">{badge.description.length > 60 ? `${badge.description.slice(0, 60)}…` : badge.description}</span>
+                        </div>
+                        <button
+                          type="button"
+                          className={`achievements-reward-item-claim${isClaimed ? ' achievements-reward-item-claim--done' : ''}`}
+                          disabled={claimingId === badge.id || isClaimed}
+                          onClick={() => { handleClaim(badge); }}
+                        >
+                          {isClaimed ? '✓' : claimingId === badge.id ? '…' : 'Claim'}
+                        </button>
                       </div>
-                      <button type="button" className="achievements-reward-item-claim" disabled={claimingId === badge.id} onClick={() => { handleClaim(badge); }}>
-                        {claimingId === badge.id ? '…' : 'Claim'}
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {claimableAchievements.length > 1 && (
                     <Button type="button" variant="practice" className="achievements-rewards-claim-all" onClick={handleClaimAll}>
                       Claim All

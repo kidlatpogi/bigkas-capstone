@@ -1,19 +1,50 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { IoCloseOutline, IoLogOutOutline, IoPersonOutline, IoSettingsOutline } from 'react-icons/io5';
+import { IoPersonOutline, IoSettingsOutline } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
+import { ensureProfileModalAvatarSrc, invalidateProfileModalAvatarCache } from '../../utils/profileModalAvatarCache';
+import { useBottomSheetPresence } from '../../hooks/useBottomSheetPresence';
 import './ProfileModal.css';
 
 export default function ProfileModal({ isOpen, onClose }) {
   const navigate = useNavigate();
+  const sheetPresence = useBottomSheetPresence(isOpen);
   const { user, logout } = useAuthContext();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
+  const [resolvedAvatarSrc, setResolvedAvatarSrc] = useState(null);
 
   const displayName = user?.name || user?.nickname || user?.firstName || 'Speaker';
   const displayEmail = user?.email || '';
-  const userInitial = displayName.charAt(0).toUpperCase();
+  const avatarUrl = user?.avatarUrl || user?.avatar_url || null;
+
+  const userInitials = useMemo(() => {
+    const first = user?.firstName || '';
+    const last = user?.lastName || '';
+    const pair = `${first.charAt(0)}${last.charAt(0)}`.trim().toUpperCase();
+    if (pair) return pair;
+    return displayName.charAt(0).toUpperCase() || '?';
+  }, [user?.firstName, user?.lastName, displayName]);
+
+  useEffect(() => {
+    setAvatarLoadFailed(false);
+  }, [avatarUrl]);
+
+  useEffect(() => {
+    if (!avatarUrl) {
+      setResolvedAvatarSrc(null);
+      return undefined;
+    }
+    let cancelled = false;
+    ensureProfileModalAvatarSrc(avatarUrl).then((src) => {
+      if (!cancelled) setResolvedAvatarSrc(src);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [avatarUrl]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -23,13 +54,13 @@ export default function ProfileModal({ isOpen, onClose }) {
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
-    if (isOpen) {
+    if (sheetPresence.mounted) {
       document.body.classList.add('profile-modal-open');
     } else {
       document.body.classList.remove('profile-modal-open');
     }
     return () => document.body.classList.remove('profile-modal-open');
-  }, [isOpen]);
+  }, [sheetPresence.mounted]);
 
   const handleLogoutClick = () => {
     setShowLogoutConfirm(true);
@@ -55,10 +86,10 @@ export default function ProfileModal({ isOpen, onClose }) {
     navigate(ROUTES.SETTINGS);
   };
 
-  if (!isOpen) return null;
+  if (!sheetPresence.mounted) return null;
 
   const modalContent = (
-    <>
+    <div className={`bigkas-bottom-sheet-root profile-modal-bottom-sheet-root ${sheetPresence.rootClassName}`.trim()}>
       <div className="profile-modal-backdrop" role="presentation" onClick={onClose} />
       <div className="profile-modal-wrapper">
         <div className="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
@@ -67,18 +98,37 @@ export default function ProfileModal({ isOpen, onClose }) {
             <h2 id="profile-modal-title" className="profile-modal-title">Settings</h2>
             <button
               type="button"
-              className="profile-modal-close-btn"
+              className="dashboard-overlay-close-btn"
               onClick={onClose}
               aria-label="Close profile modal"
             >
-              <IoCloseOutline size={24} />
+              ×
             </button>
           </div>
 
           {/* User Info */}
           <div className="profile-modal-user-section">
             <div className="profile-modal-avatar">
-              {userInitial}
+              {avatarUrl && !avatarLoadFailed ? (
+                resolvedAvatarSrc ? (
+                  <img
+                    src={resolvedAvatarSrc}
+                    alt=""
+                    className="profile-modal-avatar-img"
+                    onError={() => {
+                      invalidateProfileModalAvatarCache(avatarUrl);
+                      setAvatarLoadFailed(true);
+                      setResolvedAvatarSrc(null);
+                    }}
+                  />
+                ) : (
+                  <span className="profile-modal-avatar-loading" aria-hidden>
+                    {userInitials}
+                  </span>
+                )
+              ) : (
+                userInitials
+              )}
             </div>
             <div className="profile-modal-user-info">
               <p className="profile-modal-user-name">{displayName}</p>
@@ -151,7 +201,7 @@ export default function ProfileModal({ isOpen, onClose }) {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 
   return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : null;

@@ -24,6 +24,7 @@ import SkywardJourneyShell from '../../components/journey/SkywardJourneyShell';
 import StreakCalendarModal from '../../components/main/StreakCalendarModal';
 import RankListModal from '../../components/main/RankListModal';
 import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
+import { useBottomSheetPresence } from '../../hooks/useBottomSheetPresence';
 import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../services/journeyProgressService';
 import { RANDOM_TOPICS } from '../../utils/practiceData';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
@@ -264,6 +265,9 @@ function ActivityPageMobile() {
   const audioContextRef = useRef(null);
   const overlayAudioRef = useRef(null);
   const chatScrollRef = useRef(null);
+
+  const dashboardSheetPresence = useBottomSheetPresence(showDashboardOverlay);
+  const askB01SheetPresence = useBottomSheetPresence(isAskB01ModalOpen);
 
   // Clean up effects
   useEffect(() => {
@@ -720,13 +724,13 @@ function ActivityPageMobile() {
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
-    if (showRandomizerOverlay || showFreeSpeechOverlay || isAskB01ModalOpen) {
+    if (showRandomizerOverlay || showFreeSpeechOverlay || askB01SheetPresence.mounted) {
       document.body.classList.add('randomizer-overlay-open');
     } else {
       document.body.classList.remove('randomizer-overlay-open');
     }
     return () => document.body.classList.remove('randomizer-overlay-open');
-  }, [showRandomizerOverlay, showFreeSpeechOverlay, isAskB01ModalOpen]);
+  }, [showRandomizerOverlay, showFreeSpeechOverlay, askB01SheetPresence.mounted]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
@@ -853,13 +857,17 @@ function ActivityPageMobile() {
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
-    if (showDashboardOverlay) {
+    if (dashboardSheetPresence.mounted) {
       document.body.classList.add('dashboard-overlay-open');
     } else {
       document.body.classList.remove('dashboard-overlay-open');
     }
     return () => document.body.classList.remove('dashboard-overlay-open');
-  }, [showDashboardOverlay]);
+  }, [dashboardSheetPresence.mounted]);
+
+  const closeDashboardForHomeJourneyTutorial = useCallback(() => {
+    setShowDashboardOverlay(false);
+  }, []);
 
   const handleTutorialFinish = useCallback(() => {
     if (typeof window !== 'undefined') {
@@ -998,6 +1006,7 @@ function ActivityPageMobile() {
         isOpen={showFreeSpeechTutorial}
         steps={freeSpeechTutorialSteps}
         showAudioToggle
+        onCloseDashboard={closeDashboardForHomeJourneyTutorial}
         onClose={() => setShowFreeSpeechTutorial(false)}
         onFinish={handleTutorialFinish}
       />
@@ -1211,7 +1220,7 @@ function ActivityPageMobile() {
       </div>
 
       <div
-        className={`activity-mobile-dashboard-section${showDashboardOverlay || showRandomizerOverlay || showFreeSpeechOverlay || isAskB01ModalOpen || showFreeSpeechTutorial ? ' is-hidden' : ''}`}
+        className={`activity-mobile-dashboard-section${dashboardSheetPresence.mounted || showRandomizerOverlay || showFreeSpeechOverlay || askB01SheetPresence.mounted || showFreeSpeechTutorial ? ' is-hidden' : ''}`}
       >
         <Button 
           variant="practice" 
@@ -1222,8 +1231,11 @@ function ActivityPageMobile() {
         </Button>
       </div>
 
-      {showDashboardOverlay && (
-        <section className="dashboard-overlay-wrapper" aria-label="Dashboard overlay">
+      {dashboardSheetPresence.mounted && (
+        <section
+          className={`dashboard-overlay-wrapper bigkas-bottom-sheet-root ${dashboardSheetPresence.rootClassName}`.trim()}
+          aria-label="Dashboard overlay"
+        >
           <div className="bigkas-modal-scrim" aria-hidden="true" onClick={() => setShowDashboardOverlay(false)} />
           <div className="dashboard-overlay-content no-scrollbar">
             <div className="dashboard-overlay-header">
@@ -1403,8 +1415,11 @@ function ActivityPageMobile() {
         currentLevelNumber={levelProgress.levelNumber}
       />
 
-      {isAskB01ModalOpen && (
-        <section className="randomizer-overlay-wrapper ask-b01-modal-wrapper" aria-label="Ask B-01 modal">
+      {askB01SheetPresence.mounted && (
+        <section
+          className={`randomizer-overlay-wrapper ask-b01-modal-wrapper bigkas-bottom-sheet-root ${askB01SheetPresence.rootClassName}`.trim()}
+          aria-label="Ask B-01 modal"
+        >
           <div className="bigkas-modal-scrim ask-b01-scrim" onClick={() => setIsAskB01ModalOpen(false)} />
           <div className="ask-b01-modal-card">
             <div className="ask-b01-modal-header">

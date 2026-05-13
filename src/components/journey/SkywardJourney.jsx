@@ -51,6 +51,7 @@ import {
 import { BIGKAS_LEVELS } from '../../utils/activityProgress';
 import SkywardJourneyNodeButton from './SkywardJourneyNodeButton';
 import { getSpriteUrl } from '../../utils/assetUtils';
+import { BIGKAS_BOTTOM_SHEET_EXIT_MS } from '../../hooks/useBottomSheetPresence';
 
 const safetyBarrierImage = getSpriteUrl('common/safety-barrier.png');
 const randomizerRobotImage = getSpriteUrl('Robot/0002.webp');
@@ -806,6 +807,7 @@ export default function SkywardJourney({
   const [pathPoints, setPathPoints] = useState([]);
   const [indexedNodePoints, setIndexedNodePoints] = useState([]);
   const [panelOpenId, setPanelOpenId] = useState(null);
+  const [panelClosing, setPanelClosing] = useState(false);
   const [jiggleIndex, setJiggleIndex] = useState(null);
   // removed showTapHint
   const [map, setMap] = useState(() => ({ tx: 0, ty: 0 }));
@@ -820,8 +822,18 @@ export default function SkywardJourney({
   // Removed map reset effect for locked levels to allow persistent centering logic.
 
   const requestClosePanel = useCallback(() => {
-    setPanelOpenId(null);
-  }, []);
+    if (!panelOpenId || panelClosing) return;
+    setPanelClosing(true);
+  }, [panelOpenId, panelClosing]);
+
+  useEffect(() => {
+    if (!panelClosing) return undefined;
+    const id = window.setTimeout(() => {
+      setPanelOpenId(null);
+      setPanelClosing(false);
+    }, BIGKAS_BOTTOM_SHEET_EXIT_MS);
+    return () => window.clearTimeout(id);
+  }, [panelClosing]);
 
   const recomputePath = useCallback(() => {
     const content = mapContentRef.current;
@@ -1259,7 +1271,10 @@ export default function SkywardJourney({
                         onStart={() => {
                           setTooltipNodeId(null);
                           if (step.onActivate) step.onActivate();
-                          else setPanelOpenId(step.id);
+                          else {
+                            setPanelClosing(false);
+                            setPanelOpenId(step.id);
+                          }
                         }}
                         onClose={() => setTooltipNodeId(null)}
                         nodeRef={{ get current() { return nodeRefs.current[i]; } }}
@@ -1589,7 +1604,7 @@ export default function SkywardJourney({
 
         {typeof document !== 'undefined' && selectedStep
           ? createPortal(
-              <div className="skyward-journey-panel-root">
+              <div className={`skyward-journey-panel-root bigkas-bottom-sheet-root ${panelClosing ? 'bigkas-bottom-sheet--exiting' : ''}`.trim()}>
                 <div 
                   className="bigkas-modal-scrim"
                   onClick={closePanel}
@@ -1601,8 +1616,7 @@ export default function SkywardJourney({
                   ref={drawerRef}
                   className="skyward-journey-overlay-content"
                 >
-                  <div className="skyward-journey-quest-slide">
-                    <div className="randomizer-overlay-card">
+                  <div className="randomizer-overlay-card">
                     <div className="randomizer-overlay-card-top">
                       <h2 className="randomizer-overlay-title">Quest details</h2>
                       <button
@@ -1614,7 +1628,7 @@ export default function SkywardJourney({
                         ×
                       </button>
                     </div>
-
+                    
                     <div className="skyward-journey-overlay-inner-body">
                       <p className="randomizer-overlay-copy">
                         <span className="randomizer-overlay-copy-kicker">
@@ -1639,7 +1653,7 @@ export default function SkywardJourney({
                           <p className="skyward-journey-purpose-text">{selectedStep.task.purpose}</p>
                         </div>
                       )}
-
+                      
                       <div className="randomizer-overlay-topic">
                         <span className="randomizer-overlay-topic-label">Topic:</span>
                         {' '}
@@ -1650,16 +1664,15 @@ export default function SkywardJourney({
                         {selectedStep && renderStepContent?.(selectedStep, selectedMeta)}
                       </div>
                     </div>
-                    </div>
+                  </div>
 
-                    <div className="randomizer-overlay-robot-wrap">
-                      <img
-                        src={getSpriteUrl('Robot/0002.webp')}
-                        alt=""
-                        className="randomizer-overlay-robot"
-                        aria-hidden="true"
-                      />
-                    </div>
+                  <div className="randomizer-overlay-robot-wrap">
+                    <img 
+                      src={getSpriteUrl('Robot/0002.webp')} 
+                      alt="" 
+                      className="randomizer-overlay-robot"
+                      aria-hidden="true"
+                    />
                   </div>
                 </div>
               </div>,

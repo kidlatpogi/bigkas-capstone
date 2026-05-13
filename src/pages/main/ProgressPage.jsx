@@ -41,7 +41,6 @@ const visualSprite = getSpriteUrl('common/Visual.webp');
 const verbalSprite = getSpriteUrl('common/Verbal.webp');
 const vocalSprite = getSpriteUrl('common/Vocal.webp');
 import HistoryPage from './HistoryPage';
-import HistoryPageMobile from './HistoryPageMobile';
 import { generateCoachInsights } from '../../utils/coachInsights';
 import './ProgressPage.css';
 
@@ -638,11 +637,12 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
 
         {/* History Sidebar Overlay */}
         {isMobile ? (
-          <HistoryPageMobile
+          <HistoryPage
             isOpen={showMobileHistory}
             onClose={() => setShowMobileHistory(false)}
             userSessions={userSessions}
             isLoading={isLoading}
+            isMobile
           />
         ) : (
           <HistoryPage

@@ -1,0 +1,168 @@
+/**
+ * Centralized bottom-sheet motion: scrim fade + panel slide (mobile / tablet).
+ * Open/close: `useBottomSheetPresence` + `.bigkas-bottom-sheet-root` and `.bigkas-bottom-sheet--exiting`.
+ */
+
+:root {
+  --bigkas-bottom-sheet-duration: 0.44s;
+  --bigkas-bottom-sheet-duration-exit: 0.34s;
+  --bigkas-bottom-sheet-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --bigkas-bottom-sheet-ease-exit: cubic-bezier(0.4, 0, 0.98, 0.58);
+}
+
+@keyframes bigkas-bottom-sheet-scrim-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes bigkas-bottom-sheet-scrim-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes bigkas-bottom-sheet-panel-in {
+  from {
+    transform: translate3d(0, 108%, 0) scale(0.98);
+    opacity: 0.96;
+  }
+  to {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes bigkas-bottom-sheet-panel-out {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translate3d(0, 100%, 0) scale(0.985);
+    opacity: 0.9;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --bigkas-bottom-sheet-duration: 0.01ms;
+    --bigkas-bottom-sheet-duration-exit: 0.01ms;
+  }
+
+  .bigkas-modal-scrim:not(.bigkas-modal-scrim--no-enter),
+  .progress-page-bg:not(.progress-page-bg--mobile) .progress-main-layout > .bigkas-modal-scrim:not(.bigkas-modal-scrim--no-enter) {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+
+  .profile-modal-backdrop {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+
+  .dashboard-overlay-content,
+  .activity-page-mobile-root .ask-b01-modal-card,
+  .fh-mobile-modal-sheet,
+  .profile-modal,
+  .skyward-journey-panel-root .skyward-journey-overlay-content {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .history-mobile-sidebar,
+  .progress-history-sidebar {
+    transition: none !important;
+  }
+
+  .bigkas-bottom-sheet-root.bigkas-bottom-sheet--exiting > .bigkas-modal-scrim,
+  .bigkas-bottom-sheet-root.bigkas-bottom-sheet--exiting .profile-modal-backdrop {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+}
+
+/* Mobile + tablet: shared scrim entrance (overrides static scrim once opacity is driven by animation) */
+@media (max-width: 1023px) {
+  .bigkas-modal-scrim:not(.bigkas-modal-scrim--no-enter) {
+    animation: bigkas-bottom-sheet-scrim-in var(--bigkas-bottom-sheet-duration) var(--bigkas-bottom-sheet-ease) forwards;
+    opacity: 0;
+  }
+
+  .profile-modal-backdrop {
+    animation: bigkas-bottom-sheet-scrim-in var(--bigkas-bottom-sheet-duration) var(--bigkas-bottom-sheet-ease) forwards;
+    opacity: 0;
+  }
+}
+
+/* Desktop: Progress → History overlay scrim only */
+@media (min-width: 1024px) {
+  .progress-page-bg:not(.progress-page-bg--mobile) .progress-main-layout > .bigkas-modal-scrim:not(.bigkas-modal-scrim--no-enter),
+  .progress-page-bg:not(.progress-page-bg--mobile)
+    .progress-main-layout
+    .history-page-bottom-sheet-root
+    > .bigkas-modal-scrim:not(.bigkas-modal-scrim--no-enter) {
+    animation: bigkas-bottom-sheet-scrim-in var(--bigkas-bottom-sheet-duration) var(--bigkas-bottom-sheet-ease) forwards;
+    opacity: 0;
+  }
+}
+
+/* Exit (root: `.bigkas-bottom-sheet-root.bigkas-bottom-sheet--exiting`) */
+.bigkas-bottom-sheet-root.bigkas-bottom-sheet--exiting > .bigkas-modal-scrim:not(.bigkas-modal-scrim--no-enter),
+.bigkas-bottom-sheet-root.bigkas-bottom-sheet--exiting > .ask-b01-scrim.bigkas-modal-scrim:not(.bigkas-modal-scrim--no-enter) {
+  animation: bigkas-bottom-sheet-scrim-out var(--bigkas-bottom-sheet-duration-exit) var(--bigkas-bottom-sheet-ease-exit) forwards !important;
+}
+
+@media (max-width: 1023px) {
+  .bigkas-bottom-sheet-root.bigkas-bottom-sheet--exiting .profile-modal-backdrop {
+    animation: bigkas-bottom-sheet-scrim-out var(--bigkas-bottom-sheet-duration-exit) var(--bigkas-bottom-sheet-ease-exit) forwards !important;
+  }
+}
+
+.bigkas-bottom-sheet-root.bigkas-bottom-sheet--exiting > .dashboard-overlay-content {
+  animation: bigkas-bottom-sheet-panel-out var(--bigkas-bottom-sheet-duration-exit) var(--bigkas-bottom-sheet-ease-exit) forwards !important;
+}
+
+.bigkas-bottom-sheet-root.bigkas-bottom-sheet--exiting > .ask-b01-modal-card {
+  animation: bigkas-bottom-sheet-panel-out var(--bigkas-bottom-sheet-duration-exit) var(--bigkas-bottom-sheet-ease-exit) forwards !important;
+}
+
+.bigkas-bottom-sheet-root.bigkas-bottom-sheet--exiting .skyward-journey-overlay-content {
+  animation: bigkas-bottom-sheet-panel-out var(--bigkas-bottom-sheet-duration-exit) var(--bigkas-bottom-sheet-ease-exit) forwards !important;
+}
+
+@media (max-width: 1023px) {
+  .bigkas-bottom-sheet-root.bigkas-bottom-sheet--exiting .profile-modal {
+    animation: bigkas-bottom-sheet-panel-out var(--bigkas-bottom-sheet-duration-exit) var(--bigkas-bottom-sheet-ease-exit) forwards !important;
+  }
+}
+
+.bigkas-bottom-sheet-root.bigkas-bottom-sheet--exiting .progress-history-sidebar {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition:
+    opacity var(--bigkas-bottom-sheet-duration-exit) var(--bigkas-bottom-sheet-ease-exit),
+    transform var(--bigkas-bottom-sheet-duration-exit) var(--bigkas-bottom-sheet-ease-exit) !important;
+}
+
+@media (max-width: 768px) {
+  .bigkas-bottom-sheet-root.bigkas-bottom-sheet--exiting .progress-history-sidebar.progress-history-sidebar--mobile:not(.history-viewing-session) {
+    transform: translate(-50%, calc(100% + 24px)) !important;
+  }
+
+  .bigkas-bottom-sheet-root.bigkas-bottom-sheet--exiting .progress-history-sidebar.progress-history-sidebar--mobile.history-viewing-session {
+    transform: translate3d(0, 100%, 0) !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .bigkas-bottom-sheet-root.bigkas-bottom-sheet--exiting .progress-history-sidebar:not(.history-viewing-session) {
+    transform: translate(-50%, 100%) !important;
+  }
+}

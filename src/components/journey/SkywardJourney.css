@@ -1457,6 +1457,48 @@
     margin-bottom: 0;
     border-radius: 0;
     box-shadow: none;
+    /* Match dashboard sheet: single column, no outer padding — header + scroll body */
+    padding: 0;
+    gap: 0;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: min(90vh, calc(100dvh - 24px));
+    background: #fdfdf9;
+  }
+
+  .skyward-journey-panel-root .randomizer-overlay-card-top {
+    padding: 24px 24px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(11, 57, 84, 0.08);
+    flex-shrink: 0;
+    margin-bottom: 0;
+    gap: 0;
+  }
+
+  .skyward-journey-panel-root .randomizer-overlay-title {
+    font-family: 'Nunito', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: #111827;
+    line-height: 1.2;
+    margin: 0;
+  }
+
+  .skyward-journey-panel-root .skyward-journey-overlay-inner-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 20px 20px calc(120px + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    box-sizing: border-box;
   }
 
   .skyward-journey-panel-root .randomizer-overlay-card::before {

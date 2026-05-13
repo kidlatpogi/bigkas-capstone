@@ -1,107 +1,26 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { 
-  IoChevronDown, 
-  IoVideocam, 
-  IoEye, 
-  IoVolumeHigh, 
-  IoHandLeft, 
-  IoBook, 
-  IoRibbon 
-} from 'react-icons/io5';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { IoChevronDown } from 'react-icons/io5';
 import FrameworksPageMobile from './FrameworksPageMobile';
-import { getSpriteUrl } from '../../utils/assetUtils';
+import { fetchModules } from '../../services/modulesService';
+import { ROUTES } from '../../utils/constants';
 import './FrameworksPage.css';
 
-const b01ChatHead = getSpriteUrl('Robot/0015.webp');
+/* ── Level palette ── */
+const LEVEL_COLORS = {
+  0: '#F18F01',
+  1: '#059669',
+  2: '#2563eb',
+  3: '#7c3aed',
+  4: '#ea580c',
+  5: '#dc2626',
+};
 
-const CATEGORIES = [
-  { id: 'all', label: 'All Modules' },
-  { id: 'setup', label: 'Technical Setup' },
-  { id: 'visual', label: 'Visual Delivery' },
-];
+function levelColor(n) {
+  return LEVEL_COLORS[n] ?? '#059669';
+}
 
-const MODULES = [
-  {
-    id: 'mod-0',
-    categoryId: 'setup',
-    level: 1,
-    title: 'Module 0: Technical Setup',
-    description: 'Ensure your camera and microphone are positioned correctly for optimal recording quality.',
-    b01Script: [
-      { speaker: 'b01', text: "Hello! I am B-01. Before we begin speaking, let's make sure you are seen and heard clearly." },
-      { speaker: 'b01', text: "First, position your camera at eye level. This creates a natural connection with your audience." },
-      { speaker: 'b01', text: "Second, ensure you are in a quiet room and your microphone is not blocked." },
-      { speaker: 'b01', text: "Ready? Let's move on to the next module!" }
-    ]
-  },
-  {
-    id: 'mod-1',
-    categoryId: 'visual',
-    level: 1,
-    title: 'Module 1: The Visual Anchor',
-    description: 'Master the art of eye contact and open posture to project confidence.',
-    b01Script: [
-      { speaker: 'b01', text: "Welcome to Module 1! Let's talk about your physical presence." },
-      { speaker: 'b01', text: "When speaking, maintain eye contact with the camera lens, not the screen. This simulates looking directly at your audience." },
-      { speaker: 'b01', text: "Keep your posture open. Avoid crossing your arms, and sit or stand up straight. This signals confidence and readiness." },
-      { speaker: 'b01', text: "Practice this in your next free speech session!" }
-    ]
-  },
-  {
-    id: 'mod-2',
-    categoryId: 'visual',
-    level: 2,
-    title: 'Module 2: Vocal Dynamics',
-    description: 'Learn to control your pitch, pace, and volume to keep your audience engaged.',
-    b01Script: [
-      { speaker: 'b01', text: "Ready to sound like a pro? Let's dive into vocal dynamics!" },
-      { speaker: 'b01', text: "Varying your pitch helps emphasize key points and prevents a monotone delivery." },
-      { speaker: 'b01', text: "Don't rush! A steady pace allows your audience to digest your message." },
-      { speaker: 'b01', text: "You're doing great! Keep practicing those vocal exercises." }
-    ]
-  },
-  {
-    id: 'mod-3',
-    categoryId: 'visual',
-    level: 3,
-    title: 'Module 3: Gestures and Expression',
-    description: 'Use your hands and facial expressions to reinforce your verbal message.',
-    b01Script: [
-      { speaker: 'b01', text: "In Module 3, we focus on using your whole body to communicate." },
-      { speaker: 'b01', text: "Natural hand gestures can make you seem more relaxed and authoritative." },
-      { speaker: 'b01', text: "Your face is a powerful tool. Match your expressions to the emotion of your speech." },
-      { speaker: 'b01', text: "Let's see some expressive energy in your next recording!" }
-    ]
-  },
-  {
-    id: 'mod-4',
-    categoryId: 'visual',
-    level: 4,
-    title: 'Module 4: Advanced Storytelling',
-    description: 'Craft compelling narratives that resonate emotionally with your audience.',
-    b01Script: [
-      { speaker: 'b01', text: "Now we're getting into the heart of public speaking: storytelling." },
-      { speaker: 'b01', text: "Start with a hook that immediately grabs attention." },
-      { speaker: 'b01', text: "Use sensory details to bring your story to life for your listeners." },
-      { speaker: 'b01', text: "Every great speech is a journey. Lead your audience well!" }
-    ]
-  },
-  {
-    id: 'mod-5',
-    categoryId: 'visual',
-    level: 5,
-    title: 'Module 5: Rhetorical Mastery',
-    description: 'Master the use of rhetorical devices to make your message unforgettable.',
-    b01Script: [
-      { speaker: 'b01', text: "Final module! Let's sharpen your rhetorical skills." },
-      { speaker: 'b01', text: "Try using the 'Rule of Three' to make your points more memorable." },
-      { speaker: 'b01', text: "Anaphora—repeating a word or phrase—can add powerful rhythm to your speech." },
-      { speaker: 'b01', text: "You've come a long way. Use these tools to inspire and persuade!" }
-    ]
-  }
-];
-
+/* ── Search icon ── */
 function IconSearch() {
   return (
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -111,137 +30,143 @@ function IconSearch() {
   );
 }
 
-function IconClose() {
+/* ── Card thumbnail — colored banner showing lesson number ── */
+function LessonThumb({ module }) {
+  const color = levelColor(module.level_number);
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
+    <div
+      className="fh-card-thumb-wrap"
+      style={{
+        background: `linear-gradient(135deg, ${color}22 0%, ${color}44 100%)`,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '6px',
+        border: `1px solid ${color}33`,
+      }}
+    >
+      <span style={{ fontSize: '2rem', fontWeight: 900, color, lineHeight: 1 }}>
+        {module.lesson_number}
+      </span>
+      <span style={{ fontSize: '0.65rem', fontWeight: 800, color, textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.8 }}>
+        {module.level_name}
+      </span>
+    </div>
   );
 }
 
-function getModuleIcon(id) {
-  const size = 48;
-  const color = '#059669';
-  switch (id) {
-    case 'mod-0': return <IoVideocam size={size} color={color} />;
-    case 'mod-1': return <IoEye size={size} color={color} />;
-    case 'mod-2': return <IoVolumeHigh size={size} color={color} />;
-    case 'mod-3': return <IoHandLeft size={size} color={color} />;
-    case 'mod-4': return <IoBook size={size} color={color} />;
-    case 'mod-5': return <IoRibbon size={size} color={color} />;
-    default: return <IoBook size={size} color={color} />;
-  }
+/* ── Level badge (used as author-avatar slot) ── */
+function LevelBadge({ level }) {
+  return (
+    <span
+      className="fh-card-author-avatar"
+      style={{ background: levelColor(level), color: '#fff', fontSize: '0.7rem' }}
+      aria-hidden="true"
+    >
+      L{level}
+    </span>
+  );
 }
 
-function ModuleCard({ module, isCompleted, onOpen, animationClass = '' }) {
-  const [imgError, setImgError] = useState(false);
-
+/* ── Module card ── */
+function ModuleCard({ module, onOpen, animationClass = '' }) {
   return (
-    <button type="button" className={`fh-card ${animationClass}`.trim()} onClick={() => onOpen(module)}>
-      <div className="fh-card-thumb-wrap" style={{ background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(5, 150, 105, 0.1)', position: 'relative' }}>
-        {!imgError ? (
-          <img 
-            src={b01ChatHead} 
-            alt="" 
-            onError={() => setImgError(true)}
-            style={{ width: '80px', filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.1))' }} 
-          />
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', opacity: 0.8 }}>
-            {getModuleIcon(module.id)}
-          </div>
-        )}
-        
-        <div style={{ position: 'absolute', top: '8px', right: '8px', background: '#059669', color: 'white', fontSize: '0.65rem', fontWeight: '800', padding: '4px 8px', borderRadius: '6px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
-          {isCompleted && <span style={{ fontSize: '10px' }}>✓</span>}
-          Level {module.level}
-        </div>
-        {isCompleted && (
-          <div style={{ position: 'absolute', bottom: '8px', left: '8px', background: '#f97316', color: 'white', fontSize: '0.6rem', fontWeight: '900', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase' }}>
-            Completed
-          </div>
-        )}
-      </div>
+    <button
+      type="button"
+      className={`fh-card ${animationClass}`.trim()}
+      onClick={() => onOpen(module)}
+    >
+      <LessonThumb module={module} />
       <div className="fh-card-meta">
+        <LevelBadge level={module.level_number} />
         <div className="fh-card-copy">
-          <h3 className="fh-card-name" style={{ color: isCompleted ? '#64748b' : '#059669', marginTop: '10px' }}>
-            {module.title}
-          </h3>
-          <p className="fh-card-summary">{module.description}</p>
+          <h3 className="fh-card-name">{module.title}</h3>
+          <p className="fh-card-author">Lesson {module.lesson_number}</p>
+          <p className="fh-card-summary">
+            {module.content.length > 110 ? `${module.content.slice(0, 110)}…` : module.content}
+          </p>
         </div>
       </div>
     </button>
   );
 }
 
-function ModuleModal({ module, onClose, onComplete }) {
-  const [currentStep, setCurrentStep] = useState(0);
+/* ── Module detail modal ── */
+function ModuleModal({ module, onClose }) {
+  const navigate = useNavigate();
+  const color = levelColor(module.level_number);
 
   useEffect(() => {
-    const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
-
-  const handleNext = () => {
-    if (currentStep < module.b01Script.length - 1) {
-      setCurrentStep(prev => prev + 1);
-    } else {
-      if (onComplete) onComplete(module.id);
-      onClose();
-    }
-  };
 
   return (
     <div
       className="fh-modal-backdrop"
       role="dialog"
       aria-modal="true"
+      aria-labelledby="fh-modal-title"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      style={{ zIndex: 12000 }}
     >
-      <div className="ask-b01-modal-card dashboard-anim-bottom" style={{ maxWidth: '600px', margin: 'auto', pointerEvents: 'auto' }}>
-        <div className="ask-b01-modal-header">
-          <h2 className="ask-b01-modal-title">
-            <img src={b01ChatHead} alt="" className="ask-b01-modal-title-logo" />
-            Learn: <span>{module.title}</span>
-          </h2>
-          <button className="ask-b01-modal-close" onClick={onClose} aria-label="Close">
-            <IconClose />
-          </button>
-        </div>
-
-        <div className="ask-b01-chat-container">
-          {module.b01Script.slice(0, currentStep + 1).map((msg, idx) => (
-            <div key={idx} className="ask-b01-chat-row b01-row dashboard-anim-bottom">
-              <div className="ask-b01-chat-head b01-chat-head-square">
-                <img src={b01ChatHead} alt="B-01" />
-              </div>
-              <div className="ask-b01-message ask-b01-message--b01">
-                {msg.text}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="ask-b01-input-area" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'auto' }}>
-          <button 
-            className="bigkas-btn dashboard-anim-fade"
-            style={{ padding: '10px 24px', background: '#059669', color: 'white', border: 'none', borderRadius: '999px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '#047857 0 4px 0 0' }}
-            onClick={handleNext}
+      <div className="fh-modal">
+        <div className="fh-modal-header">
+          <div>
+            <span
+              className="fh-modal-author"
+              style={{ backgroundColor: color, color: '#ffffff' }}
+            >
+              {module.level_name} · Lesson {module.lesson_number}
+            </span>
+            <h2 id="fh-modal-title" className="fh-modal-title">{module.title}</h2>
+          </div>
+          <button
+            type="button"
+            className="dashboard-overlay-close-btn"
+            onClick={onClose}
+            aria-label="Close"
           >
-            {currentStep < module.b01Script.length - 1 ? 'Next' : 'Finish Module'}
+            ×
           </button>
         </div>
+
+        <p className="fh-modal-summary">{module.content}</p>
+
+        {module.date_started ? (
+          <div style={{ padding: '0 40px 20px', marginTop: '-16px', fontSize: '0.9rem', color: '#64748b', display: 'flex', gap: '20px', fontWeight: 600 }}>
+            <span>Started: {new Date(module.date_started).toLocaleDateString()}</span>
+            {module.date_ended ? <span>Ended: {new Date(module.date_ended).toLocaleDateString()}</span> : null}
+          </div>
+        ) : null}
+
+        {module.level_number === 0 ? (
+          <button
+            type="button"
+            className="bigkas-btn bigkas-btn--tutorial"
+            style={{ margin: '0 40px 36px', width: 'calc(100% - 80px)' }}
+            onClick={() => {
+              onClose();
+              navigate(ROUTES.ACTIVITY, {
+                state: {
+                  skywardEntrance: true,
+                  launchFreeSpeechTutorial: true,
+                  t: Date.now(),
+                },
+              });
+            }}
+          >
+            Launch Tutorial Walkthrough
+          </button>
+        ) : null}
       </div>
     </div>
   );
 }
 
+/* ── Main page ── */
 export default function FrameworksPage() {
-  const location = useLocation();
-  const navigate = useNavigate();
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   useEffect(() => {
@@ -250,94 +175,64 @@ export default function FrameworksPage() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const [activeTab, setActiveTab] = useState('all');
+  const [modules, setModules] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState(0);
   const [activeModal, setActiveModal] = useState(null);
   const [query, setQuery] = useState('');
-  const [sortOrder, setSortOrder] = useState('level-1');
-  const [statusSort, setStatusSort] = useState('all');
+  const [sortOrder, setSortOrder] = useState('default');
 
-  const [completedModules, setCompletedModules] = useState(() => {
+  const loadModules = useCallback(async () => {
+    setLoading(true);
+    setError('');
     try {
-      const saved = localStorage.getItem('bigkas_framework_completion');
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
-
-  const handleComplete = (moduleId) => {
-    setCompletedModules(prev => {
-      if (prev.includes(moduleId)) return prev;
-      const next = [...prev, moduleId];
-      localStorage.setItem('bigkas_framework_completion', JSON.stringify(next));
-      return next;
-    });
-  };
-
-  const handleOpenModule = (module) => {
-    const tutorialSteps = module.b01Script.map((msg, i) => ({
-      id: `${module.id}-step-${i}`,
-      title: 'B-01:',
-      text: msg.text,
-      button: i < module.b01Script.length - 1 ? 'Next' : 'Finish',
-      targetElementId: null,
-    }));
-
-    if (module.id === 'mod-0') {
-      navigate('/settings/test', {
-        state: {
-          launchTutorial: true,
-          tutorialSteps,
-          onCompleteCallback: () => handleComplete('mod-0')
-        }
-      });
-    } else {
-      setActiveModal(module);
+      const data = await fetchModules();
+      setModules(data);
+    } catch (err) {
+      setError(err?.message ?? 'Failed to load modules.');
+    } finally {
+      setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => { loadModules(); }, [loadModules]);
+
+  /* Derive level tabs from loaded data */
+  const levels = useMemo(() => {
+    const seen = new Map();
+    modules.forEach((m) => {
+      if (!seen.has(m.level_number)) seen.set(m.level_number, m.level_name);
+    });
+    return [...seen.entries()].sort((a, b) => a[0] - b[0]);
+  }, [modules]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    let list = activeTab === 0
+      ? modules
+      : modules.filter((m) => m.level_number === activeTab);
+
+    if (q) {
+      list = list.filter((m) =>
+        m.title.toLowerCase().includes(q) ||
+        m.content.toLowerCase().includes(q) ||
+        m.lesson_number.includes(q)
+      );
+    }
+
+    if (sortOrder === 'az') {
+      list = [...list].sort((a, b) => a.title.localeCompare(b.title));
+    } else if (sortOrder === 'za') {
+      list = [...list].sort((a, b) => b.title.localeCompare(a.title));
+    }
+
+    return list;
+  }, [modules, activeTab, query, sortOrder]);
 
   if (windowWidth < 768) {
     return <FrameworksPageMobile />;
   }
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    let list = activeTab === 'all' ? MODULES : MODULES.filter(m => m.categoryId === activeTab);
-    
-    if (q) {
-      list = list.filter(it => 
-        it.title.toLowerCase().includes(q) || 
-        it.description.toLowerCase().includes(q)
-      );
-    }
-
-    // Sort/Filter Logic
-    list = [...list].sort((a, b) => {
-      // Primary Sort: Level prioritization
-      if (sortOrder.startsWith('level-')) {
-        const target = parseInt(sortOrder.split('-')[1], 10);
-        if (a.level === target && b.level !== target) return -1;
-        if (b.level === target && a.level !== target) return 1;
-        // Within same priority or non-target, sort by level asc
-        return a.level - b.level;
-      }
-
-      // Secondary Sort: Completion (Status)
-      if (statusSort !== 'all') {
-        const doneA = completedModules.includes(a.id);
-        const doneB = completedModules.includes(b.id);
-        if (statusSort === 'completed') {
-          if (doneA && !doneB) return -1;
-          if (!doneA && doneB) return 1;
-        } else if (statusSort === 'not-completed') {
-          if (!doneA && doneB) return -1;
-          if (doneA && !doneB) return 1;
-        }
-      }
-
-      return 0;
-    });
-
-    return list;
-  }, [activeTab, query, sortOrder, statusSort, completedModules]);
 
   return (
     <div className="fh-page no-scrollbar dashboard-anim-fade">
@@ -357,60 +252,73 @@ export default function FrameworksPage() {
         </div>
 
         <div className="fh-sort-wrap">
-          <select 
+          <select
             className="fh-sort"
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value)}
           >
-            <option value="level-1">Level 1</option>
-            <option value="level-2">Level 2</option>
-            <option value="level-3">Level 3</option>
-            <option value="level-4">Level 4</option>
-            <option value="level-5">Level 5</option>
-          </select>
-          <span className="fh-sort-chevron"><IoChevronDown /></span>
-        </div>
-
-        <div className="fh-sort-wrap">
-          <select 
-            className="fh-sort"
-            value={statusSort}
-            onChange={(e) => setStatusSort(e.target.value)}
-          >
-            <option value="all">Status: All</option>
-            <option value="completed">Completed</option>
-            <option value="not-completed">Not Completed</option>
+            <option value="default">Default Order</option>
+            <option value="az">A – Z</option>
+            <option value="za">Z – A</option>
           </select>
           <span className="fh-sort-chevron"><IoChevronDown /></span>
         </div>
       </div>
 
       <div className="fh-tabs dashboard-anim-top dashboard-anim-delay-1" role="tablist">
-        {CATEGORIES.map((cat) => (
+        <button
+          role="tab"
+          aria-selected={activeTab === 0}
+          className={`fh-tab${activeTab === 0 ? ' fh-tab--active' : ''}`}
+          onClick={() => { setActiveTab(0); setQuery(''); }}
+        >
+          All Modules
+        </button>
+        {levels.map(([num, name]) => (
           <button
-            key={cat.id}
+            key={num}
             role="tab"
-            aria-selected={activeTab === cat.id}
-            className={`fh-tab${activeTab === cat.id ? ' fh-tab--active' : ''}`}
-            onClick={() => { setActiveTab(cat.id); setQuery(''); }}
+            aria-selected={activeTab === num}
+            className={`fh-tab${activeTab === num ? ' fh-tab--active' : ''}`}
+            onClick={() => { setActiveTab(num); setQuery(''); }}
           >
-            {cat.label}
+            Level {num}: {name}
           </button>
         ))}
       </div>
 
-      {filtered.length === 0 ? (
+      {loading && (
+        <div className="fh-empty dashboard-anim-bottom dashboard-anim-delay-2">
+          Loading modules…
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="fh-empty dashboard-anim-bottom dashboard-anim-delay-2" style={{ color: '#dc2626' }}>
+          {error}
+          <br />
+          <button
+            style={{ marginTop: '12px', fontSize: '0.85rem', color: '#059669', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+            onClick={loadModules}
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
+      {!loading && !error && filtered.length === 0 && (
         <div className="fh-empty dashboard-anim-bottom dashboard-anim-delay-2">
           {query ? `No modules found for "${query}"` : 'No modules available.'}
         </div>
-      ) : (
+      )}
+
+      {!loading && !error && filtered.length > 0 && (
         <div className="fh-grid">
           {filtered.map((module, index) => (
             <ModuleCard
-              key={module.id}
+              key={`${module.level_number}-${module.lesson_number}`}
               module={module}
-              isCompleted={completedModules.includes(module.id)}
-              onOpen={handleOpenModule}
+              onOpen={setActiveModal}
               animationClass={`dashboard-anim-bottom dashboard-anim-delay-${Math.min(index + 2, 9)}`}
             />
           ))}
@@ -418,14 +326,11 @@ export default function FrameworksPage() {
       )}
 
       {activeModal && (
-        <ModuleModal 
-          module={activeModal} 
-          onClose={() => setActiveModal(null)} 
-          onComplete={handleComplete}
+        <ModuleModal
+          module={activeModal}
+          onClose={() => setActiveModal(null)}
         />
       )}
     </div>
   );
 }
-
-

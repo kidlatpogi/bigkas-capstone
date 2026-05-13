@@ -57,8 +57,8 @@ body {
   background-color: #ECF3E9;
 }
 
-/* Allow scrolling on mobile viewports */
-@media (max-width: 767px) {
+/* Allow scrolling on mobile/tablet viewports */
+@media (max-width: 1023px) {
   html {
     overflow: auto;
   }
@@ -154,18 +154,12 @@ ul, ol { list-style: none; }
 [data-theme="dark"] .loading-screen { background: #0B0B0D; }
 [data-theme="dark"] .loading-logo { color: #F5F5F5; }
 
-/* 8. GLOBAL MODAL SCRIM */
-@keyframes scrimFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
+/* 8. GLOBAL MODAL SCRIM (entrance: bigkas-bottom-sheet-motion.css) */
 .bigkas-modal-scrim {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.65);
   z-index: 1100;
-  animation: scrimFadeIn 0.3s ease-out;
 }
 
 .ask-b01-scrim {

@@ -55,10 +55,10 @@ const bigkasLogo = "data:image/webp;base64,UklGRmYBAABXRUJQVlA4IFoBAABwCwCdASoQA
  * based on viewport size
  */
 function ActivityPageWrapper() {
-  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 768);
+  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 1024);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const mediaQuery = window.matchMedia('(max-width: 1023px)');
     const handleViewportChange = (event) => setIsMobileViewport(event.matches);
 
     setIsMobileViewport(mediaQuery.matches);
@@ -76,10 +76,10 @@ function ActivityPageWrapper() {
 }
 
 function ProgressPageWrapper() {
-  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 768);
+  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 1024);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const mediaQuery = window.matchMedia('(max-width: 1023px)');
     const handleViewportChange = (event) => setIsMobileViewport(event.matches);
 
     setIsMobileViewport(mediaQuery.matches);
@@ -97,10 +97,10 @@ function ProgressPageWrapper() {
 }
 
 function AchievementsPageWrapper() {
-  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 768);
+  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 1024);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const mediaQuery = window.matchMedia('(max-width: 1023px)');
     const handleViewportChange = (event) => setIsMobileViewport(event.matches);
 
     setIsMobileViewport(mediaQuery.matches);
@@ -118,10 +118,10 @@ function AchievementsPageWrapper() {
 }
 
 function SettingsProfilePageWrapper() {
-  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 768);
+  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 1024);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const mediaQuery = window.matchMedia('(max-width: 1023px)');
     const handleViewportChange = (event) => setIsMobileViewport(event.matches);
 
     setIsMobileViewport(mediaQuery.matches);
@@ -139,10 +139,10 @@ function SettingsProfilePageWrapper() {
 }
 
 function SettingsPageWrapper() {
-  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 768);
+  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 1024);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const mediaQuery = window.matchMedia('(max-width: 1023px)');
     const handleViewportChange = (event) => setIsMobileViewport(event.matches);
 
     setIsMobileViewport(mediaQuery.matches);
@@ -160,10 +160,10 @@ function SettingsPageWrapper() {
 }
 
 function TestAudioVideoPageWrapper() {
-  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 768);
+  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 1024);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const mediaQuery = window.matchMedia('(max-width: 1023px)');
     const handleViewportChange = (event) => setIsMobileViewport(event.matches);
 
     setIsMobileViewport(mediaQuery.matches);
@@ -196,10 +196,10 @@ function getAuthenticatedRedirect(user, isAdminAuthenticated) {
 function ProtectedRoute() {
   const { isAuthenticated, isInitializing, user } = useAuthContext();
   const { pathname } = useLocation();
-  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 768);
+  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 1024);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const mediaQuery = window.matchMedia('(max-width: 1023px)');
     const handleViewportChange = (event) => setIsMobileViewport(event.matches);
 
     setIsMobileViewport(mediaQuery.matches);

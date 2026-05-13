@@ -242,9 +242,24 @@
   transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* Narrow viewports: snappier programmatic pans; finger-drag removes transition in JS. */
+@media (max-width: 768px) {
+  .skyward-journey-map-layer {
+    transition: transform 0.28s cubic-bezier(0.32, 1.1, 0.32, 1);
+  }
+
+  .skyward-journey-map-layer.skyward-journey-map-layer--dragging {
+    transition: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .skyward-journey-map-layer {
     transition: transform 0.35s ease;
+  }
+
+  .skyward-journey-map-layer.skyward-journey-map-layer--dragging {
+    transition: none;
   }
 
   .skyward-journey-map-viewport {
@@ -1391,6 +1406,68 @@
   
   .randomizer-overlay-robot {
     width: 200px;
+  }
+}
+
+/* Phone: quest details sheet matches Dashboard overlay (slide-up); no robot / bubble tail */
+@keyframes skywardQuestSheetSlideUp {
+  from {
+    transform: translateY(100%);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 767px) {
+  .skyward-journey-panel-root {
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .skyward-journey-panel-root .skyward-journey-overlay-content {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    border-radius: 32px 32px 0 0;
+    overflow: hidden;
+    background: #fdfdf9;
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.2);
+    transition: none;
+    animation: skywardQuestSheetSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .skyward-journey-panel-root .randomizer-overlay-card {
+    order: 1;
+    width: 100%;
+    margin-bottom: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .skyward-journey-panel-root .randomizer-overlay-card::before {
+    display: none !important;
+    content: none !important;
+  }
+
+  .skyward-journey-panel-root .randomizer-overlay-robot-wrap {
+    display: none !important;
+  }
+}
+
+@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+  .skyward-journey-panel-root .skyward-journey-overlay-content {
+    animation: none;
   }
 }
 

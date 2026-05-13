@@ -54,15 +54,18 @@ import { getSpriteUrl } from '../../utils/assetUtils';
 
 const safetyBarrierImage = getSpriteUrl('common/safety-barrier.png');
 const randomizerRobotImage = getSpriteUrl('Robot/0002.webp');
-const rankBronzeImage = getSpriteUrl('Rank/rank-bronze.png');
-const rankSilverImage = getSpriteUrl('Rank/rank-silver.png');
-const rankGoldImage = getSpriteUrl('Rank/rank-gold.png');
-const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.png');
-const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.png');
+const rankBronzeImage = getSpriteUrl('Rank/rank-bronze.webp');
+const rankSilverImage = getSpriteUrl('Rank/rank-silver.webp');
+const rankGoldImage = getSpriteUrl('Rank/rank-gold.webp');
+const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.webp');
+const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.webp');
 const BIGKAS_PREREQ_LOGO_URL = 'https://assets.bigkas.site/Images/Bigkas-Logo.webp';
 import './SkywardJourney.css';
 
 const MAP_SCALE = 1;
+/** Touch pan moves the map farther per finger pixel on narrow viewports (feels less “heavy”). */
+const MOBILE_PAN_SPEED = 1.38;
+const MOBILE_WHEEL_PAN_MULT = 1.12;
 const DESKTOP_OFFSETS = [0, 120, 220, 220, 120, 0, -120, -220, -220, -120];
 const MOBILE_OFFSETS = [0, 45, 85, 85, 45, 0, -45, -85, -85, -45];
 
@@ -504,6 +507,11 @@ const TooltipBox = styled.div`
       border-right: 16px solid transparent;
       border-top: 16px solid ${props.$nodeState === 'locked' ? '#ffffff' : (props.$themeColor || '#059669')};
     `}
+
+    @media (max-width: 768px) {
+      display: none;
+      content: none;
+    }
   }
 `;
 
@@ -802,6 +810,8 @@ export default function SkywardJourney({
   // removed showTapHint
   const [map, setMap] = useState(() => ({ tx: 0, ty: 0 }));
   const [tooltipNodeId, setTooltipNodeId] = useState(null);
+  /** Disables CSS transform transition on the map layer while the user is dragging (mobile felt laggy). */
+  const [mapLayerDragActive, setMapLayerDragActive] = useState(false);
 
   useLayoutEffect(() => {
     mapRef.current = map;
@@ -944,7 +954,9 @@ export default function SkywardJourney({
       if (panelOpenId) return;
       const dominantDelta = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
       if (Math.abs(dominantDelta) < 0.5) return;
-      const panStep = dominantDelta * 0.8;
+      const wheelMult =
+        (typeof window !== 'undefined' && window.innerWidth <= 768 ? MOBILE_WHEEL_PAN_MULT : 1) * 0.8;
+      const panStep = dominantDelta * wheelMult;
       const current = mapRef.current;
       const next = clampMapState({ ...current, ty: current.ty - panStep }, vp, content, MAP_SCALE);
       const didPan = Math.abs(next.ty - current.ty) > 0.1 || Math.abs(next.tx - current.tx) > 0.1;
@@ -974,6 +986,7 @@ export default function SkywardJourney({
         tx: m.tx,
         ty: m.ty,
       };
+      setMapLayerDragActive(true);
       e.currentTarget.setPointerCapture(e.pointerId);
     },
     [panelOpenId, tooltipNodeId, isLockedLevel],
@@ -983,19 +996,23 @@ export default function SkywardJourney({
     // Removed isLockedLevel restriction to allow users to view locked maps.
     const p = pointerPanRef.current;
     if (!p || p.pid !== e.pointerId) return;
-    const dy = e.clientY - p.sy;
+    let dy = e.clientY - p.sy;
+    if (isMobile && e.pointerType === 'touch') {
+      dy *= MOBILE_PAN_SPEED;
+    }
     const vp = viewportRef.current;
     const content = mapContentRef.current;
     if (!vp || !content) return;
     setMap((m) =>
       clampMapState({ ...m, ty: p.ty + dy }, vp, content, MAP_SCALE),
     );
-  }, [isLockedLevel]);
+  }, [isLockedLevel, isMobile]);
 
   const onPointerUpViewport = useCallback((e) => {
     const p = pointerPanRef.current;
     if (!p || p.pid !== e.pointerId) return;
     pointerPanRef.current = null;
+    setMapLayerDragActive(false);
     try {
       e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {
@@ -1007,6 +1024,7 @@ export default function SkywardJourney({
     // Removed isLockedLevel restriction to allow users to view locked maps.
     if (e.touches.length === 2) {
       pointerPanRef.current = null;
+      setMapLayerDragActive(false);
       pinchRef.current = { active: true };
     }
   }, [isLockedLevel]);
@@ -1072,25 +1090,24 @@ export default function SkywardJourney({
         return;
       }
 
-      // Auto-close overlay if open when clicking ANY node
-      if (panelOpenId) {
-        requestClosePanel();
-      }
+      const sid = String(step.id);
 
-      if (step.nodeState === NODE_STATE.LOCKED) {
-        setJiggleIndex(index);
-        window.setTimeout(() => setJiggleIndex(null), 520);
+      if (String(tooltipNodeId) === sid) {
+        setTooltipNodeId(null);
+        return;
+      }
+      if (String(panelOpenId) === sid) {
+        requestClosePanel();
         return;
       }
 
-      // Auto-close overlay if open when clicking ANY node
-      if (panelOpenId) {
+      if (panelOpenId != null) {
         requestClosePanel();
       }
 
       setTooltipNodeId(step.id);
     },
-    [panelOpenId, requestClosePanel],
+    [panelOpenId, tooltipNodeId, requestClosePanel],
   );
 
   const selectedStep = useMemo(
@@ -1207,7 +1224,7 @@ export default function SkywardJourney({
                       .filter(Boolean)
                       .join(' ')}
                     aria-current={isActive ? 'step' : undefined}
-                    aria-expanded={panelOpenId === step.id}
+                    aria-expanded={String(panelOpenId) === String(step.id) || String(tooltipNodeId) === String(step.id)}
                     aria-label={`${isUltimateBoss ? 'Milestone: ' : ''}${theme.shortLabel}: ${title}. ${isDone ? 'Completed' : isLocked ? 'Locked' : 'Current step'
                       }. Open quest details.`}
                     onClick={() => handleNodeClick(step, i)}
@@ -1483,7 +1500,7 @@ export default function SkywardJourney({
             aria-label="Skyward journey path. Scroll wheel to move the map up or down, and drag to pan."
           >
             <div
-              className="skyward-journey-map-layer"
+              className={`skyward-journey-map-layer${mapLayerDragActive ? ' skyward-journey-map-layer--dragging' : ''}`}
               ref={mapLayerRef}
               style={{
                 transform: `translate(${map.tx}px, ${map.ty}px) scale(${MAP_SCALE})`,
@@ -1599,8 +1616,17 @@ export default function SkywardJourney({
                     
                     <div className="skyward-journey-overlay-inner-body">
                       <p className="randomizer-overlay-copy">
-                        <span className="randomizer-overlay-copy-kicker">B-01:</span>
-                        Ready for your next stage? Here is what we'll focus on: <strong>{selectedStep?.title || 'General Speaking'}</strong>
+                        <span className="randomizer-overlay-copy-kicker">
+                          <img
+                            src={BIGKAS_PREREQ_LOGO_URL}
+                            alt=""
+                            className="randomizer-overlay-copy-kicker-logo"
+                            aria-hidden="true"
+                            decoding="async"
+                          />
+                          B-01:
+                        </span>
+                        Ready for your next stage? Here is what we’ll focus on: <strong>{selectedStep?.title || 'General Speaking'}</strong>
                       </p>
 
                       {selectedStep?.task?.purpose && (

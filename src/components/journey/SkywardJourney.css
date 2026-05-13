@@ -1308,6 +1308,10 @@
   margin-bottom: 2px;
 }
 
+.randomizer-overlay-copy-kicker-logo {
+  display: none;
+}
+
 .randomizer-overlay-topic {
   font-family: 'Nunito', sans-serif;
   font-size: clamp(1.12rem, 1rem + 0.26vw, 1.26rem);
@@ -1462,6 +1466,40 @@
 
   .skyward-journey-panel-root .randomizer-overlay-robot-wrap {
     display: none !important;
+  }
+
+  .skyward-journey-panel-root .randomizer-overlay-copy-kicker {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .skyward-journey-panel-root .randomizer-overlay-copy-kicker-logo {
+    display: block;
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+
+  /* Match Activity mobile `.dashboard-overlay-close-btn` */
+  .skyward-journey-panel-root .randomizer-overlay-close-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    transition: all 0.2s ease;
+  }
+
+  .skyward-journey-panel-root .randomizer-overlay-close-btn:hover {
+    background: #ef4444;
+    color: #ffffff;
+    transform: none;
+  }
+
+  .skyward-journey-panel-root .randomizer-overlay-close-btn:active {
+    transform: scale(0.9);
   }
 }
 

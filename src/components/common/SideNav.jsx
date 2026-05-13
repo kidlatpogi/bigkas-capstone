@@ -18,8 +18,10 @@ import {
   getClaimableAchievementsCount,
   getClaimableAchievements,
   claimAchievement,
+  claimAllAchievements,
 } from '../../utils/achievementClaims';
 import { getAssetUrl } from '../../utils/assetUtils';
+import { claimAchievementInDB } from '../../services/achievementsService';
 import './SideNav.css';
 
 const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
@@ -107,6 +109,9 @@ export default function SideNav() {
     claimAchievement(id);
     setClaimables(getClaimableAchievements());
     setClaimableCount(getClaimableAchievementsCount());
+    if (user?.id) {
+      claimAchievementInDB(user.id, id).catch(() => {});
+    }
   };
 
   const handleClearAll = () => {
@@ -235,7 +240,11 @@ export default function SideNav() {
                     filteredNotifs.map((item) => (
                       <div key={item.id} className="side-nav-notif-item">
                         <div className="side-nav-notif-item-avatar">
-                          <IoMedalOutline />
+                          {item.badgeUrl ? (
+                            <img src={item.badgeUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '14px' }} />
+                          ) : (
+                            <IoMedalOutline />
+                          )}
                         </div>
                         <div className="side-nav-notif-item-content">
                           <div className="side-nav-notif-item-header">

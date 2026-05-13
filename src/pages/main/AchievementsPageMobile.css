@@ -27,12 +27,228 @@
   backdrop-filter: blur(10px);
   z-index: 10;
   border-bottom: 1px solid rgba(5, 150, 105, 0.05);
+  position: relative;
+}
+
+.achievements-mobile-header-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .achievements-mobile-page .header-titles {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.achievements-header-actions {
+  flex-shrink: 0;
+  padding-bottom: 2px;
+}
+
+.achievements-bell-btn {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 14px;
+  background: rgba(5, 150, 105, 0.1);
+  color: #059669;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.achievements-bell-btn:active {
+  transform: scale(0.96);
+}
+
+.achievements-bell-btn--active {
+  background: rgba(249, 115, 22, 0.12);
+  color: #ea580c;
+}
+
+.achievements-bell-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.achievements-bell-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #f97316;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 16px;
+  text-align: center;
+  border: 2px solid #fdfdf9;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+/* Rewards modal (notification bell) — above bottom nav (z-index 1200) */
+.achievements-rewards-modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+}
+
+.achievements-rewards-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.achievements-rewards-modal-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 400px);
+  max-height: min(85vh, 520px);
+  overflow-y: auto;
+  padding: 18px 18px 16px;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 1px solid rgba(11, 57, 84, 0.1);
+  box-shadow: 0 24px 48px rgba(2, 6, 23, 0.18);
+  animation: achievementsRewardsModalIn var(--bigkas-bottom-sheet-duration) var(--bigkas-bottom-sheet-ease);
+}
+
+@keyframes achievementsRewardsModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.achievements-rewards-modal-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.achievements-rewards-panel-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.35;
+  flex: 1;
+  min-width: 0;
+}
+
+.achievements-rewards-panel-hint {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.achievements-rewards-claim-all {
+  width: 100%;
+  justify-content: center;
+}
+
+/* ── Rewards modal: claimable items list ── */
+.achievements-rewards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.achievements-reward-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  background: #fefce8;
+  border: 1px solid rgba(249, 115, 22, 0.15);
+}
+
+.achievements-reward-item-img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.achievements-reward-item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.achievements-reward-item-name {
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: #1e293b;
+  line-height: 1.2;
+}
+
+.achievements-reward-item-desc {
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.3;
+}
+
+.achievements-reward-item-claim {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: none;
+  background: #f97316;
+  color: #fff;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: #ea580c 0 3px 0 0;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.achievements-reward-item-claim:active {
+  box-shadow: #ea580c 0 0 0 0;
+  transform: translateY(3px);
+}
+
+.achievements-reward-item-claim:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .achievements-mobile-page .achievements-kicker {
@@ -438,13 +654,147 @@
   color: #94A3B8;
 }
 
+/* ── Mobile claimable badge state ── */
+.achievements-mobile-page .badge-card.badge-card--claimable {
+  background: linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%);
+  border-color: #f97316;
+  animation: claimablePulseMobile 2.4s ease-in-out infinite;
+}
+
+.achievements-mobile-page .badge-card.badge-card--claimable .badge-status-top {
+  color: #ea580c;
+}
+
+.achievements-mobile-page .badge-card.badge-card--claimable .badge-img {
+  filter: none;
+  opacity: 1;
+}
+
+@keyframes claimablePulseMobile {
+  0%, 100% { box-shadow: 0 8px 24px rgba(249, 115, 22, 0.12); }
+  50% { box-shadow: 0 8px 32px rgba(249, 115, 22, 0.28); }
+}
+
+.achievements-mobile-page .badge-claim-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: none;
+  background: #f97316;
+  color: #fff;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: #ea580c 0 3px 0 0;
+  transition: all 0.15s ease;
+}
+
+.achievements-mobile-page .badge-claim-btn:active {
+  box-shadow: #ea580c 0 0 0 0;
+  transform: translateY(3px);
+}
+
+.achievements-mobile-page .badge-claim-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* ── Mobile claim animation ── */
+.achievements-mobile-page .badge-card.badge-card--just-claimed {
+  animation: badgeClaimedMobile 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
+  border-color: #34d399;
+}
+
+@keyframes badgeClaimedMobile {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.06) rotate(-1.5deg); }
+  50% { transform: scale(1.1) rotate(1deg); }
+  70% { transform: scale(1.03) rotate(-0.5deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
+.achievements-mobile-page .badge-card.badge-card--just-claimed .badge-img {
+  animation: badgeImgPopMobile 0.6s 0.1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes badgeImgPopMobile {
+  0% { transform: scale(1); filter: brightness(1); }
+  40% { transform: scale(1.2); filter: brightness(1.3); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
 /* ── Utilities ── */
 .mobile-footer-spacer {
   height: 80px;
 }
 
+/* Native-like shell (≤767px; desktop AchievementsPage unchanged) */
+@media (max-width: 767px) {
+  .achievements-mobile-page {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    isolation: isolate;
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
+  }
+
+  .achievements-mobile-page:not([data-theme='dark']) {
+    color-scheme: light;
+  }
+
+  .achievements-mobile-container {
+    min-height: 0;
+    flex: 1;
+  }
+
+  .achievements-mobile-scroll-content {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    scroll-behavior: auto;
+    scroll-padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    min-height: 0;
+  }
+
+  .achievements-mobile-page .achievements-mobile-header {
+    position: sticky;
+    top: 0;
+    z-index: 12;
+    padding-top: max(12px, env(safe-area-inset-top, 0px));
+  }
+
+  .achievements-mobile-page .mobile-search-input,
+  .achievements-mobile-page .mobile-filter-select {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  .achievements-mobile-page .trophy-podium-scroll {
+    overscroll-behavior-x: contain;
+  }
+
+  .achievements-mobile-page .badge-card:active {
+    transform: scale(0.99);
+    transition: transform 0.12s ease;
+  }
+
+  .mobile-footer-spacer {
+    height: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 [data-theme='dark'] .achievements-mobile-page {
   background: #0f172a;
+  color-scheme: dark;
 }
 
 [data-theme='dark'] .achievements-mobile-header {

@@ -760,7 +760,7 @@ function ActivityPageMobile() {
       welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%205_new.mp3";
     }
 
-    return [
+    const fullSteps = [
       {
         id: 'step-intro',
         title: 'B-01:',
@@ -827,7 +827,12 @@ function ActivityPageMobile() {
         voice: "https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%205.mp3",
       },
     ];
-  }, [user?.speakerLevelNumber, user?.onboardingLevelAnalysis, user?.speakerEntryScore, user?.speaker_entry_score]);
+
+    if (location.state?.skipTutorialIntro) {
+      return fullSteps.filter((s) => s.id !== 'step-intro');
+    }
+    return fullSteps;
+  }, [user?.speakerLevelNumber, user?.onboardingLevelAnalysis, user?.speakerEntryScore, user?.speaker_entry_score, location.state?.skipTutorialIntro]);
 
   const assessmentTutorialSteps = useMemo(() => {
     const sLevel = resolveDashboardTutorialSpeakerLevel(user);

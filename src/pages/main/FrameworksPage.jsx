@@ -152,6 +152,7 @@ function ModuleModal({ module, onClose }) {
                 state: {
                   skywardEntrance: true,
                   launchFreeSpeechTutorial: true,
+                  skipTutorialIntro: true,
                   t: Date.now(),
                 },
               });

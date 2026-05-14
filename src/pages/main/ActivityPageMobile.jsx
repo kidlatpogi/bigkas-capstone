@@ -1164,20 +1164,20 @@ function ActivityPageMobile() {
                     : 'Start'}
                 </Button>
               </div>
+              {!isStreakRecoveryMode && (
+                <div className="tutorial-audio-action">
+                  <button
+                    type="button"
+                    aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                    title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                    className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
+                    onClick={handleToggleMute}
+                  >
+                    {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+                  </button>
+                </div>
+              )}
             </div>
-            {!isStreakRecoveryMode && (
-              <div className="tutorial-audio-action">
-                <button
-                  type="button"
-                  aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                  title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                  className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
-                  onClick={handleToggleMute}
-                >
-                  {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-                </button>
-              </div>
-            )}
           </div>
         </section>
       )}
@@ -1228,17 +1228,17 @@ function ActivityPageMobile() {
                   Start
                 </Button>
               </div>
-            </div>
-            <div className="tutorial-audio-action">
-              <button
-                type="button"
-                aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
-                onClick={handleToggleMute}
-              >
-                {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-              </button>
+              <div className="tutorial-audio-action">
+                <button
+                  type="button"
+                  aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                  title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                  className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
+                  onClick={handleToggleMute}
+                >
+                  {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+                </button>
+              </div>
             </div>
           </div>
         </section>

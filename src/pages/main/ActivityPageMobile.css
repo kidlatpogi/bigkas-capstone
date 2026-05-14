@@ -300,12 +300,16 @@
   overflow: visible;
 }
 
-.activity-page-mobile-root .randomizer-overlay-wrapper .tutorial-audio-action {
-  position: absolute;
-  top: -64px;
-  right: 16px;
-  bottom: auto;
+.activity-page-mobile-root .randomizer-overlay-card .tutorial-audio-action {
+  position: relative !important;
+  inset: auto !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+  margin: 12px auto 0 !important;
   z-index: 10;
+  transform: none !important;
 }
 
 .activity-page-mobile-root .randomizer-overlay-wrapper,

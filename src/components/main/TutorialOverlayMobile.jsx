@@ -638,24 +638,24 @@ function TutorialOverlayMobile({
               emphasis={stepTextSegment === 0 ? activeStep.emphasis : undefined}
             />
           </p>
-          <button type="button" className="tutorial-bubble-btn" onClick={handleNext} disabled={!isTypingDone}>
-            {activeStep.button}
-          </button>
+          <div className="tutorial-bubble-footer">
+            {showAudioToggle && (
+              <button
+                type="button"
+                onClick={handleToggleMute}
+                aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                className={`tutorial-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
+              >
+                {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+              </button>
+            )}
+            <button type="button" className="tutorial-bubble-btn" onClick={handleNext} disabled={!isTypingDone}>
+              {activeStep.button}
+            </button>
+          </div>
         </article>
       </div>
-      {showAudioToggle ? (
-        <div className="tutorial-audio-action" style={needsDashboardForSpotlight ? { pointerEvents: 'auto' } : undefined}>
-          <button
-            type="button"
-            onClick={handleToggleMute}
-            aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-            title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-            className={`tutorial-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
-          >
-            {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-          </button>
-        </div>
-      ) : null}
     </>
   );
 
@@ -791,15 +791,42 @@ function TutorialOverlayMobile({
             top: calc(16px + env(safe-area-inset-top, 0px)) !important;
             bottom: auto !important;
           }
-          /* Roadmap: default bottom anchor covered the journey; pin companion to top + shrink footer art so Skyward Journey stays visible */
+          /* Roadmap: Positioned at bottom with 1rem gap above bottom navigation */
           .tutorial-overlay-wrapper.is-custom-tutorial.is-roadmap-step .tutorial-companion-container {
-            top: calc(12px + env(safe-area-inset-top, 0px)) !important;
-            bottom: auto !important;
-            gap: 0.35rem !important;
+            top: auto !important;
+            bottom: calc(64px + 1rem + env(safe-area-inset-bottom, 0px)) !important;
+            gap: 0.5rem !important;
           }
           .tutorial-overlay-wrapper.is-custom-tutorial.is-roadmap-step .tutorial-speech-bubble {
             padding-bottom: 0.65rem !important;
           }
+          /* New positioning for mute button inside bubble */
+          .tutorial-bubble-footer {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            width: 100% !important;
+            gap: 12px !important;
+            margin-top: 10px !important;
+            clear: both !important;
+          }
+          .tutorial-bubble-footer .tutorial-audio-toggle {
+            position: relative !important;
+            inset: auto !important;
+            transform: none !important;
+            flex-shrink: 0 !important;
+            height: 44px !important;
+            width: 44px !important;
+            min-height: 44px !important;
+            min-width: 44px !important;
+            border-radius: 12px !important;
+          }
+          .tutorial-bubble-footer .tutorial-bubble-btn {
+            float: none !important;
+            margin: 0 !important;
+            flex: 0 0 auto !important;
+          }
+
           .tutorial-overlay-wrapper.is-custom-tutorial.is-roadmap-step .tutorial-bubble-text {
             max-height: min(26vh, 132px) !important;
             overflow-y: auto !important;

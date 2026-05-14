@@ -334,7 +334,8 @@
 .skyward-journey-prerequisite-banner {
   flex: 0 0 auto;
   box-sizing: border-box;
-  width: 100%;
+  width: 100% !important;
+  margin: 0 !important;
   padding: 6px 10px 8px;
   border-top: 1.5px solid rgba(52, 211, 153, 0.35);
   background: linear-gradient(180deg, rgba(236, 253, 245, 0.95) 0%, rgba(209, 250, 229, 0.85) 100%);
@@ -455,7 +456,7 @@
   z-index: 1;
   padding-inline: 4px;
   padding-top: 56px;
-  padding-bottom: 40px;
+  padding-bottom: 8px;
 }
 
 .skyward-journey-section {
@@ -531,7 +532,7 @@
 }
 
 .skyward-journey-section:first-of-type .skyward-journey-section-rows > .skyward-journey-row:first-child .skyward-journey-track {
-  padding-bottom: 0.5rem !important;
+  padding-bottom: 0 !important;
 }
 
 .skyward-journey-node-shell {

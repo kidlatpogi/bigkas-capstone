@@ -992,7 +992,10 @@ function ActivityPageMobile() {
              * tighten padding, keep copy centered for narrow widths.
              */
             .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-banner {
+              width: 100% !important;
+              margin: 0 !important;
               padding: 4px 10px 6px;
+
               border-top: 1.5px solid rgba(52, 211, 153, 0.35);
               background: linear-gradient(180deg, rgba(236, 253, 245, 0.95) 0%, rgba(209, 250, 229, 0.85) 100%);
             }

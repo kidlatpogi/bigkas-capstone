@@ -604,12 +604,12 @@
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0,0,0,0.1);
   background: var(--sp-bg);
-  padding: 0;
+  padding: clamp(12px, 3vw, 24px);
 }
 
 .profile-hero-card--preview {
   transform: none;
-  border-radius: var(--sp-radius) var(--sp-radius) 0 0 !important;
+  border-radius: 20px !important;
 }
 
 /* Fix Avatar Squish in Preview */

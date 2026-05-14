@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { IoSearch, IoClose } from 'react-icons/io5';
 import { fetchModules } from '../../services/modulesService';
+import { useNativeBottomSheetDrag } from '../../hooks/useNativeBottomSheetDrag';
 import { ROUTES } from '../../utils/constants';
 import '../../components/common/Button.css';
 import './FrameworksPageMobile.css';
@@ -72,11 +73,20 @@ function ModuleCard({ module, onOpen, index }) {
 function ModuleModal({ module, onClose }) {
   const navigate = useNavigate();
   const color = levelColor(module.level_number);
+  const sheetDrag = useNativeBottomSheetDrag(true, onClose);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   if (typeof document === 'undefined') return null;
 
@@ -86,8 +96,11 @@ function ModuleModal({ module, onClose }) {
       onClick={(e) => e.target === e.currentTarget && onClose()}
       style={{ zIndex: 1100 }}
     >
-      <div className="fh-mobile-modal-sheet" style={{ display: 'flex', flexDirection: 'column' }}>
-        <div className="fh-mobile-modal-handle" />
+      <div
+        className={`fh-mobile-modal-sheet native-bottom-sheet${sheetDrag.isDragging ? ' is-dragging' : ''}`}
+        style={{ ...sheetDrag.sheetStyle, display: 'flex', flexDirection: 'column' }}
+      >
+        <div className="fh-mobile-modal-handle native-bottom-sheet-grabber" {...sheetDrag.dragHandleProps} />
 
         <div className="fh-mobile-modal-header" style={{ alignItems: 'center' }}>
           <div className="fh-mobile-modal-titles">

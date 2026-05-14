@@ -24,6 +24,7 @@ import SkywardJourneyShell from '../../components/journey/SkywardJourneyShell';
 import StreakCalendarModal from '../../components/main/StreakCalendarModal';
 import RankListModal from '../../components/main/RankListModal';
 import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
+import { useNativeBottomSheetDrag } from '../../hooks/useNativeBottomSheetDrag';
 import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../services/journeyProgressService';
 import { RANDOM_TOPICS } from '../../utils/practiceData';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
@@ -627,6 +628,10 @@ function ActivityPageMobile() {
     setShowRandomizerOverlay(false);
   }, []);
 
+  const handleCloseDashboardOverlay = useCallback(() => {
+    setShowDashboardOverlay(false);
+  }, []);
+
   const handleToggleMute = async () => {
     const nextMute = !user?.isAudioMuted;
     await updateUserMetadata({ is_audio_muted: nextMute });
@@ -704,6 +709,11 @@ function ActivityPageMobile() {
     setFreeSpeechDraftTopic('');
   }, []);
 
+  const dashboardSheet = useNativeBottomSheetDrag(showDashboardOverlay, handleCloseDashboardOverlay);
+  const randomizerSheet = useNativeBottomSheetDrag(showRandomizerOverlay, handleCloseRandomizerOverlay);
+  const freeSpeechSheet = useNativeBottomSheetDrag(showFreeSpeechOverlay, handleCloseFreeSpeechOverlay);
+  const askB01Sheet = useNativeBottomSheetDrag(isAskB01ModalOpen, () => setIsAskB01ModalOpen(false));
+
   const handleStartFreeSpeechOverlay = useCallback(() => {
     const topic = freeSpeechDraftTopic.trim();
     if (!topic) return;
@@ -720,13 +730,39 @@ function ActivityPageMobile() {
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
-    if (showRandomizerOverlay || showFreeSpeechOverlay || isAskB01ModalOpen) {
+    if (showDashboardOverlay || showRandomizerOverlay || showFreeSpeechOverlay || isAskB01ModalOpen) {
       document.body.classList.add('randomizer-overlay-open');
     } else {
       document.body.classList.remove('randomizer-overlay-open');
     }
     return () => document.body.classList.remove('randomizer-overlay-open');
-  }, [showRandomizerOverlay, showFreeSpeechOverlay, isAskB01ModalOpen]);
+  }, [showDashboardOverlay, showRandomizerOverlay, showFreeSpeechOverlay, isAskB01ModalOpen]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key !== 'Escape') return;
+      if (isAskB01ModalOpen) {
+        setIsAskB01ModalOpen(false);
+      } else if (showFreeSpeechOverlay) {
+        handleCloseFreeSpeechOverlay();
+      } else if (showRandomizerOverlay) {
+        handleCloseRandomizerOverlay();
+      } else if (showDashboardOverlay) {
+        handleCloseDashboardOverlay();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    handleCloseDashboardOverlay,
+    handleCloseFreeSpeechOverlay,
+    handleCloseRandomizerOverlay,
+    isAskB01ModalOpen,
+    showDashboardOverlay,
+    showFreeSpeechOverlay,
+    showRandomizerOverlay,
+  ]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
@@ -956,7 +992,13 @@ function ActivityPageMobile() {
              * tighten padding, keep copy centered for narrow widths.
              */
             .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-banner {
-              padding: 4px 10px 6px;
+              width: 100% !important;
+              min-width: 100% !important;
+              align-self: stretch !important;
+              margin: 0 !important;
+              padding: 6px 12px 8px !important;
+              box-sizing: border-box !important;
+
               border-top: 1.5px solid rgba(52, 211, 153, 0.35);
               background: linear-gradient(180deg, rgba(236, 253, 245, 0.95) 0%, rgba(209, 250, 229, 0.85) 100%);
             }
@@ -1003,6 +1045,10 @@ function ActivityPageMobile() {
             .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-list li {
               max-width: 18rem;
             }
+            .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey.skyward-journey-container {
+              padding: 0 !important;
+              width: 100% !important;
+            }
           }
         `}
       </style>
@@ -1054,8 +1100,12 @@ function ActivityPageMobile() {
       {showRandomizerOverlay && (
         <section className="randomizer-overlay-wrapper activity-mobile-overlay-wrapper" aria-label="Randomizer overlay">
           <div className="bigkas-modal-scrim" aria-hidden="true" onClick={handleCloseRandomizerOverlay} />
-          <div className="randomizer-overlay-content activity-mobile-overlay-content">
+          <div
+            className={`randomizer-overlay-content activity-mobile-overlay-content native-bottom-sheet${randomizerSheet.dragOffset > 0 ? ' is-dragging' : ''}`}
+            style={randomizerSheet.sheetStyle}
+          >
             <div className="randomizer-overlay-card">
+              <div className="native-bottom-sheet-grabber" aria-hidden="true" {...randomizerSheet.dragHandleProps} />
               <div className="randomizer-overlay-card-top">
                 <h2 className="randomizer-overlay-title">
                   <img src={b01ChatHead} alt="" className="randomizer-overlay-title-logo" width={22} height={22} />
@@ -1124,28 +1174,32 @@ function ActivityPageMobile() {
                     : 'Start'}
                 </Button>
               </div>
+              {!isStreakRecoveryMode && (
+                <div className="tutorial-audio-action">
+                  <button
+                    type="button"
+                    aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                    title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                    className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
+                    onClick={handleToggleMute}
+                  >
+                    {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+                  </button>
+                </div>
+              )}
             </div>
-            {!isStreakRecoveryMode && (
-              <div className="tutorial-audio-action">
-                <button
-                  type="button"
-                  aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                  title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                  className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
-                  onClick={handleToggleMute}
-                >
-                  {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-                </button>
-              </div>
-            )}
           </div>
         </section>
       )}
       {showFreeSpeechOverlay && (
         <section className="randomizer-overlay-wrapper activity-mobile-overlay-wrapper" aria-label="Free speech overlay">
           <div className="bigkas-modal-scrim" aria-hidden="true" onClick={handleCloseFreeSpeechOverlay} />
-          <div className="randomizer-overlay-content activity-mobile-overlay-content">
+          <div
+            className={`randomizer-overlay-content activity-mobile-overlay-content native-bottom-sheet${freeSpeechSheet.dragOffset > 0 ? ' is-dragging' : ''}`}
+            style={freeSpeechSheet.sheetStyle}
+          >
             <div className="randomizer-overlay-card free-speech-overlay-card">
+              <div className="native-bottom-sheet-grabber" aria-hidden="true" {...freeSpeechSheet.dragHandleProps} />
               <div className="randomizer-overlay-card-top">
                 <h2 className="randomizer-overlay-title">
                   <img src={b01ChatHead} alt="" className="randomizer-overlay-title-logo" width={22} height={22} />
@@ -1184,17 +1238,17 @@ function ActivityPageMobile() {
                   Start
                 </Button>
               </div>
-            </div>
-            <div className="tutorial-audio-action">
-              <button
-                type="button"
-                aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
-                onClick={handleToggleMute}
-              >
-                {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-              </button>
+              <div className="tutorial-audio-action">
+                <button
+                  type="button"
+                  aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                  title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                  className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
+                  onClick={handleToggleMute}
+                >
+                  {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+                </button>
+              </div>
             </div>
           </div>
         </section>
@@ -1237,14 +1291,18 @@ function ActivityPageMobile() {
 
       {showDashboardOverlay && (
         <section className="dashboard-overlay-wrapper" aria-label="Dashboard overlay">
-          <div className="bigkas-modal-scrim" aria-hidden="true" onClick={() => setShowDashboardOverlay(false)} />
-          <div className="dashboard-overlay-content no-scrollbar">
+          <div className="bigkas-modal-scrim" aria-hidden="true" onClick={handleCloseDashboardOverlay} />
+          <div
+            className={`dashboard-overlay-content no-scrollbar native-bottom-sheet${dashboardSheet.dragOffset > 0 ? ' is-dragging' : ''}`}
+            style={dashboardSheet.sheetStyle}
+          >
+            <div className="native-bottom-sheet-grabber" aria-hidden="true" {...dashboardSheet.dragHandleProps} />
             <div className="dashboard-overlay-header">
               <h2 className="dashboard-overlay-title">Dashboard</h2>
               <button
                 type="button"
                 className="dashboard-overlay-close-btn"
-                onClick={() => setShowDashboardOverlay(false)}
+                onClick={handleCloseDashboardOverlay}
                 aria-label="Close dashboard"
               >
                 ×
@@ -1419,7 +1477,11 @@ function ActivityPageMobile() {
       {isAskB01ModalOpen && (
         <section className="randomizer-overlay-wrapper ask-b01-modal-wrapper" aria-label="Ask B-01 modal">
           <div className="bigkas-modal-scrim ask-b01-scrim" onClick={() => setIsAskB01ModalOpen(false)} />
-          <div className="ask-b01-modal-card">
+          <div
+            className={`ask-b01-modal-card native-bottom-sheet${askB01Sheet.dragOffset > 0 ? ' is-dragging' : ''}`}
+            style={askB01Sheet.sheetStyle}
+          >
+            <div className="native-bottom-sheet-grabber" aria-hidden="true" {...askB01Sheet.dragHandleProps} />
             <div className="ask-b01-modal-header">
               <h2 className="ask-b01-modal-title">
                 <img src={b01ChatHead} alt="" className="ask-b01-modal-title-logo" />

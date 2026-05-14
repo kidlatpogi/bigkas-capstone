@@ -1,35 +1,7 @@
 /* TestAudioVideoPageMobile — AV controls + success banner.
    Shell & hero use SettingsProfilePageMobile + SettingsPageMobile (preferences 1:1). */
 
-.test-av-mobile-nav {
-  width: 100%;
-  flex-shrink: 0;
-  padding: 0 0 10px;
-}
 
-.test-av-mobile-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 14px;
-  margin: 0 0 0 -8px;
-  border: none;
-  border-radius: 999px;
-  background: transparent;
-  font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #0f172a;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  transition: background 0.15s ease, transform 0.15s ease;
-}
-
-.test-av-mobile-back:active {
-  transform: scale(0.98);
-  background: rgba(15, 23, 42, 0.06);
-}
 
 .test-av-flip-btn {
   display: inline-flex;
@@ -252,7 +224,7 @@
     background: #34d399;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
     .test-audio-video-mobile .settings-content-wrapper {
         border-radius: 0 0 24px 24px !important;
         padding: 0;
@@ -361,7 +333,7 @@
     box-shadow: 0 0 0 #B1510F;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
     .av-success-banner {
         flex-direction: column;
         gap: 1.25rem;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   IoChevronForward, 
@@ -14,9 +14,9 @@ import {
 } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
-import LegalModal from '../../components/Legal/LegalModal';
 import { TERMS_AND_CONDITIONS } from '../../constants/legal/terms';
 import { PRIVACY_POLICY } from '../../constants/legal/privacy';
+import { useNativeBottomSheetDrag } from '../../hooks/useNativeBottomSheetDrag';
 import './SettingsProfilePageMobile.css';
 import './SettingsPageMobile.css';
 import { getSpriteUrl } from '../../utils/assetUtils';
@@ -36,6 +36,50 @@ const THEME_CONFIG = [
 
 const MIC_SENSITIVITY_KEY = 'pref_mic_sensitivity';
 const AUTO_NEXT_KEY = 'pref_auto_next';
+
+function SettingsLegalSheet({ isOpen, title, content, onClose }) {
+  const sheetDrag = useNativeBottomSheetDrag(isOpen, onClose);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    document.body.classList.add('settings-mobile-sheet-open');
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.classList.remove('settings-mobile-sheet-open');
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="settings-mobile-sheet-overlay" role="dialog" aria-modal="true" aria-labelledby="settings-mobile-sheet-title" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <div
+        className={`settings-mobile-sheet native-bottom-sheet${sheetDrag.isDragging ? ' is-dragging' : ''}`}
+        style={sheetDrag.sheetStyle}
+      >
+        <div className="settings-mobile-sheet-grabber native-bottom-sheet-grabber" aria-hidden="true" {...sheetDrag.dragHandleProps} />
+        <div className="settings-mobile-sheet-header">
+          <h2 id="settings-mobile-sheet-title" className="settings-mobile-sheet-title">{title}</h2>
+          <button type="button" className="dashboard-overlay-close-btn" onClick={onClose} aria-label="Close">
+            ×
+          </button>
+        </div>
+        <div className="settings-mobile-sheet-content">
+          {content}
+        </div>
+        <div className="settings-mobile-sheet-footer">
+          <button type="button" className="settings-mobile-sheet-close-btn" onClick={onClose}>
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function SettingsPageMobile() {
   const navigate = useNavigate();
@@ -100,6 +144,10 @@ function SettingsPageMobile() {
       });
     }
   };
+
+  const closeLegal = useCallback(() => {
+    setLegalModal((prev) => ({ ...prev, isOpen: false }));
+  }, []);
 
   const userInitials = useMemo(() => {
     if (!user) return '?';
@@ -237,9 +285,9 @@ function SettingsPageMobile() {
         </div>
       </div>
 
-      <LegalModal
+      <SettingsLegalSheet
         isOpen={legalModal.isOpen}
-        onClose={() => setLegalModal({ ...legalModal, isOpen: false })}
+        onClose={closeLegal}
         title={legalModal.title}
         content={legalModal.content}
       />

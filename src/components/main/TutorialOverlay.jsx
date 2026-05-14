@@ -506,24 +506,24 @@ function TutorialOverlay({
                 emphasis={stepTextSegment === 0 ? activeStep.emphasis : undefined} 
               />
             </p>
-            <button type="button" className="tutorial-bubble-btn" onClick={handleNext} disabled={!isTypingDone}>
-              {activeStep.button}
-            </button>
+            <div className="tutorial-bubble-footer">
+              {showAudioToggle && (
+                <button
+                  type="button"
+                  onClick={handleToggleMute}
+                  aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                  title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                  className={`tutorial-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
+                >
+                  {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+                </button>
+              )}
+              <button type="button" className="tutorial-bubble-btn" onClick={handleNext} disabled={!isTypingDone}>
+                {activeStep.button}
+              </button>
+            </div>
           </article>
         </div>
-        {showAudioToggle ? (
-          <div className="tutorial-audio-action">
-            <button
-              type="button"
-              onClick={handleToggleMute}
-              aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-              title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-              className={`tutorial-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
-            >
-              {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-            </button>
-          </div>
-        ) : null}
       </section>
     </>
   );

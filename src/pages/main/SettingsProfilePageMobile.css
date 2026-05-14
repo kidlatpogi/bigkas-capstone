@@ -520,7 +520,7 @@
   scrollbar-width: none;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   /*
    * Bottom padding clears fixed BottomNav (64px + safe-area). Backdrop does not scroll —
    * the wide theme modal (.sp-modal--wide) is the scroll container on mobile.
@@ -726,16 +726,16 @@
 }
 
 /* --- Responsive / native mobile profile shell --- */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   /*
    * main.main-content applies horizontal padding (--mobile-px) under 767px.
    * Break out so the profile shell uses the full viewport width; re-inset with safe-area + padding.
    */
   .settings-profile-page {
-    width: calc(100% + (var(--mobile-px, 16px) * 2));
+    width: calc(100% + var(--mobile-page-inset-left) + var(--mobile-page-inset-right));
     max-width: none;
-    margin-left: calc(var(--mobile-px, 16px) * -1);
-    margin-right: calc(var(--mobile-px, 16px) * -1);
+    margin-left: calc(-1 * var(--mobile-page-inset-left));
+    margin-right: calc(-1 * var(--mobile-page-inset-right));
     padding: max(8px, env(safe-area-inset-top, 0px))
       max(12px, env(safe-area-inset-left, 0px))
       calc(88px + env(safe-area-inset-bottom, 0px))
@@ -922,5 +922,42 @@
     box-shadow: none;
     border-color: var(--sp-border, #f1f3f5);
     background: #fff;
+  }
+}
+.test-av-mobile-nav {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .test-av-mobile-nav {
+    display: block;
+    width: 100%;
+    flex-shrink: 0;
+    padding: 0 0 10px;
+  }
+
+  .test-av-mobile-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 20px;
+    height: 44px;
+    border: none;
+    border-radius: 999px;
+    background: #059669;
+    font-family: inherit;
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: #fff;
+    box-shadow: 0 4px 0 #047857;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .test-av-mobile-back:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #047857;
   }
 }

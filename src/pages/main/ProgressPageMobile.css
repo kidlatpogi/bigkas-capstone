@@ -1,14 +1,13 @@
 /* ProgressPageMobile.css */
 
 .progress-page-mobile-root {
-  width: calc(100% + (var(--mobile-px, 16px) * 2));
-  margin-left: calc(var(--mobile-px, 16px) * -1);
-  margin-right: calc(var(--mobile-px, 16px) * -1);
+  width: calc(100% + var(--mobile-page-inset-left) + var(--mobile-page-inset-right));
+  margin-left: calc(-1 * var(--mobile-page-inset-left));
+  margin-right: calc(-1 * var(--mobile-page-inset-right));
   height: 100dvh;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0 16px;
-  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  padding: 0 var(--mobile-page-inset-right) calc(80px + env(safe-area-inset-bottom, 0px)) var(--mobile-page-inset-left);
   background-color: #FDFDF9;
   background-image: 
     radial-gradient(rgba(11, 57, 84, 0.1) 1px, transparent 0),

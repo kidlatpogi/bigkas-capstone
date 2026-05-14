@@ -1,8 +1,8 @@
 /* ── Mobile Page Container ── */
 .achievements-mobile-page {
-  width: calc(100% + (var(--mobile-px, 16px) * 2));
-  margin-left: calc(var(--mobile-px, 16px) * -1);
-  margin-right: calc(var(--mobile-px, 16px) * -1);
+  width: calc(100% + var(--mobile-page-inset-left) + var(--mobile-page-inset-right));
+  margin-left: calc(-1 * var(--mobile-page-inset-left));
+  margin-right: calc(-1 * var(--mobile-page-inset-right));
   height: 100%;
   background: #FDFDF9;
   display: flex;

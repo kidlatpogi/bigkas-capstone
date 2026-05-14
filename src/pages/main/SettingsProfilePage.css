@@ -441,6 +441,7 @@
 }
 
 .form-input {
+  width: 100%;
   height: 52px;
   padding: 0 16px;
   border: 2px solid var(--sp-border);
@@ -664,7 +665,7 @@
 }
 
 /* --- Responsive --- */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .profile-hero-card {
     flex-direction: column;
     text-align: center;

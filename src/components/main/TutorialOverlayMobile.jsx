@@ -336,6 +336,7 @@ function TutorialOverlayMobile({
     }
     if (activeSpotlightRef.current) {
       activeSpotlightRef.current.classList.remove('tutorial-spotlight-active');
+      activeSpotlightRef.current.style.removeProperty('pointer-events');
       activeSpotlightRef.current = null;
     }
   }, [isOpen, onCloseDashboard, isCustomTutorial, isNarrowViewport]);
@@ -374,6 +375,8 @@ function TutorialOverlayMobile({
     clearAllSpotlights();
     if (activeSpotlightRef.current) {
       activeSpotlightRef.current.classList.remove('tutorial-spotlight-active');
+      activeSpotlightRef.current.style.removeProperty('z-index');
+      activeSpotlightRef.current.style.removeProperty('pointer-events');
       activeSpotlightRef.current = null;
     }
 
@@ -381,6 +384,8 @@ function TutorialOverlayMobile({
     const spotlightZIndex =
       isCustomTutorial && targetId === 'tutorial-target-home-journey' ? '4600' : '4800';
     const needsDashboard =
+      targetId === 'tutorial-target-home-streak' || targetId === 'tutorial-target-home-rank' || targetId === 'tutorial-target-home-practice';
+    const shouldDisableTargetClicks =
       targetId === 'tutorial-target-home-streak' || targetId === 'tutorial-target-home-rank' || targetId === 'tutorial-target-home-practice';
     const maxAttempts = needsDashboard ? 48 : 6;
     const retryMs = needsDashboard ? 80 : 60;
@@ -394,6 +399,9 @@ function TutorialOverlayMobile({
       if (nextEl) {
         nextEl.classList.add('tutorial-spotlight-active');
         nextEl.style.setProperty('z-index', spotlightZIndex, 'important');
+        if (shouldDisableTargetClicks) {
+          nextEl.style.setProperty('pointer-events', 'none', 'important');
+        }
         activeSpotlightRef.current = nextEl;
         if (targetId === 'tutorial-target-home-practice') {
           const scrollContainer = document.querySelector('.dashboard-overlay-scroll-content') || document.querySelector('.dashboard-overlay-content');
@@ -407,6 +415,10 @@ function TutorialOverlayMobile({
               if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
             }, 60);
           }
+        } else if (targetId === 'tutorial-target-home-journey') {
+          try {
+            nextEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } catch (e) {}
         } else {
           try {
             nextEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -430,6 +442,7 @@ function TutorialOverlayMobile({
       if (activeSpotlightRef.current) {
         activeSpotlightRef.current.classList.remove('tutorial-spotlight-active');
         activeSpotlightRef.current.style.removeProperty('z-index');
+        activeSpotlightRef.current.style.removeProperty('pointer-events');
         activeSpotlightRef.current = null;
       }
     };
@@ -585,6 +598,8 @@ function TutorialOverlayMobile({
     if (isLast) {
       if (activeSpotlightRef.current) {
         activeSpotlightRef.current.classList.remove('tutorial-spotlight-active');
+        activeSpotlightRef.current.style.removeProperty('z-index');
+        activeSpotlightRef.current.style.removeProperty('pointer-events');
         activeSpotlightRef.current = null;
       }
       onFinish?.();
@@ -638,24 +653,24 @@ function TutorialOverlayMobile({
               emphasis={stepTextSegment === 0 ? activeStep.emphasis : undefined}
             />
           </p>
-          <button type="button" className="tutorial-bubble-btn" onClick={handleNext} disabled={!isTypingDone}>
-            {activeStep.button}
-          </button>
+          <div className="tutorial-bubble-footer">
+            {showAudioToggle && (
+              <button
+                type="button"
+                onClick={handleToggleMute}
+                aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                className={`tutorial-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
+              >
+                {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+              </button>
+            )}
+            <button type="button" className="tutorial-bubble-btn" onClick={handleNext} disabled={!isTypingDone}>
+              {activeStep.button}
+            </button>
+          </div>
         </article>
       </div>
-      {showAudioToggle ? (
-        <div className="tutorial-audio-action" style={needsDashboardForSpotlight ? { pointerEvents: 'auto' } : undefined}>
-          <button
-            type="button"
-            onClick={handleToggleMute}
-            aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-            title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-            className={`tutorial-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
-          >
-            {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-          </button>
-        </div>
-      ) : null}
     </>
   );
 
@@ -713,6 +728,10 @@ function TutorialOverlayMobile({
       ) : null}
       {!needsDashboardForSpotlight ? <div className="tutorial-dark-bg" aria-hidden="true" /> : null}
       <style>{`
+        #tutorial-target-home-journey.tutorial-spotlight-active button {
+          pointer-events: none !important;
+          cursor: default !important;
+        }
         .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-speech-bubble--logo::before,
         .tutorial-overlay-wrapper.is-custom-tutorial.is-activity-home-step-3 .tutorial-speech-bubble::before {
           display: none !important;
@@ -754,12 +773,19 @@ function TutorialOverlayMobile({
             background: #ffffff !important;
             box-shadow: 0 0 0 5px #34D399, 0 0 42px rgba(52, 211, 153, 0.9) !important;
           }
-          /* Dim non-spotlighted siblings inside the dashboard scroll area instead of rendering a covering absolute pseudo-element */
+          .dashboard-overlay-wrapper:has(.tutorial-spotlight-active) .dashboard-overlay-content::after {
+            content: '' !important;
+            position: absolute !important;
+            inset: 0 !important;
+            z-index: 4700 !important;
+            pointer-events: none !important;
+            background: rgba(15, 23, 42, 0.5) !important;
+            -webkit-backdrop-filter: blur(4px) !important;
+            backdrop-filter: blur(4px) !important;
+          }
           .dashboard-overlay-wrapper:has(.tutorial-spotlight-active) .dashboard-overlay-scroll-content > *:not(.tutorial-spotlight-active),
           .dashboard-overlay-wrapper:has(.tutorial-spotlight-active) .dashboard-overlay-header {
-            opacity: 0.15 !important;
             pointer-events: none !important;
-            transition: opacity 0.3s ease !important;
           }
           .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-companion-container {
             display: flex !important;
@@ -779,7 +805,7 @@ function TutorialOverlayMobile({
           }
           /* Home streak (activity step 3): pin speech bubble to top so the streak card stays visible below */
           .tutorial-overlay-wrapper.is-custom-tutorial.is-activity-home-step-3 .tutorial-companion-container {
-            top: calc(16px + env(safe-area-inset-top, 0px)) !important;
+            top: calc(16px + 0.5rem + env(safe-area-inset-top, 0px)) !important;
             bottom: auto !important;
             left: 16px !important;
             transform: none !important;
@@ -788,18 +814,64 @@ function TutorialOverlayMobile({
             max-width: calc(100vw - 32px) !important;
           }
           .tutorial-overlay-wrapper.is-custom-tutorial.is-practice-step .tutorial-companion-container {
-            top: calc(16px + env(safe-area-inset-top, 0px)) !important;
+            top: calc(16px + 0.5rem + env(safe-area-inset-top, 0px)) !important;
             bottom: auto !important;
           }
-          /* Roadmap: default bottom anchor covered the journey; pin companion to top + shrink footer art so Skyward Journey stays visible */
+          /* Roadmap: Positioned at bottom with 1rem gap above bottom navigation */
           .tutorial-overlay-wrapper.is-custom-tutorial.is-roadmap-step .tutorial-companion-container {
-            top: calc(12px + env(safe-area-inset-top, 0px)) !important;
-            bottom: auto !important;
-            gap: 0.35rem !important;
+            top: auto !important;
+            bottom: calc(64px + 1rem + env(safe-area-inset-bottom, 0px)) !important;
+            gap: 0.5rem !important;
           }
           .tutorial-overlay-wrapper.is-custom-tutorial.is-roadmap-step .tutorial-speech-bubble {
             padding-bottom: 0.65rem !important;
           }
+          /* New positioning for mute button inside bubble */
+          .tutorial-bubble-footer {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            width: 100% !important;
+            gap: 12px !important;
+            margin-top: 10px !important;
+            clear: both !important;
+          }
+          .tutorial-bubble-footer .tutorial-audio-toggle {
+            position: relative !important;
+            inset: auto !important;
+            transform: none !important;
+            flex-shrink: 0 !important;
+            width: clamp(3rem, 5.5vw, 3.45rem) !important;
+            height: clamp(3rem, 5.5vw, 3.45rem) !important;
+            min-height: 44px !important;
+            min-width: 44px !important;
+            border-radius: 0.95rem !important;
+            transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+          }
+          .tutorial-bubble-footer .tutorial-audio-toggle:hover {
+            transform: translateY(2px) !important;
+          }
+          .tutorial-bubble-footer .tutorial-audio-toggle.is-unmuted:hover {
+            box-shadow: #047857 0 4px 0 0 !important;
+          }
+          .tutorial-bubble-footer .tutorial-audio-toggle.is-muted:hover {
+            box-shadow: #B91C1C 0 4px 0 0 !important;
+          }
+          .tutorial-bubble-footer .tutorial-audio-toggle:active {
+            transform: translateY(6px) !important;
+          }
+          .tutorial-bubble-footer .tutorial-audio-toggle.is-unmuted:active {
+            box-shadow: #047857 0 0 0 0 !important;
+          }
+          .tutorial-bubble-footer .tutorial-audio-toggle.is-muted:active {
+            box-shadow: #B91C1C 0 0 0 0 !important;
+          }
+          .tutorial-bubble-footer .tutorial-bubble-btn {
+            float: none !important;
+            margin: 0 !important;
+            flex: 0 0 auto !important;
+          }
+
           .tutorial-overlay-wrapper.is-custom-tutorial.is-roadmap-step .tutorial-bubble-text {
             max-height: min(26vh, 132px) !important;
             overflow-y: auto !important;

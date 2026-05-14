@@ -754,12 +754,19 @@ function TutorialOverlayMobile({
             background: #ffffff !important;
             box-shadow: 0 0 0 5px #34D399, 0 0 42px rgba(52, 211, 153, 0.9) !important;
           }
-          /* Dim non-spotlighted siblings inside the dashboard scroll area instead of rendering a covering absolute pseudo-element */
+          .dashboard-overlay-wrapper:has(.tutorial-spotlight-active) .dashboard-overlay-content::after {
+            content: '' !important;
+            position: absolute !important;
+            inset: 0 !important;
+            z-index: 4700 !important;
+            pointer-events: none !important;
+            background: rgba(15, 23, 42, 0.5) !important;
+            -webkit-backdrop-filter: blur(4px) !important;
+            backdrop-filter: blur(4px) !important;
+          }
           .dashboard-overlay-wrapper:has(.tutorial-spotlight-active) .dashboard-overlay-scroll-content > *:not(.tutorial-spotlight-active),
           .dashboard-overlay-wrapper:has(.tutorial-spotlight-active) .dashboard-overlay-header {
-            opacity: 0.15 !important;
             pointer-events: none !important;
-            transition: opacity 0.3s ease !important;
           }
           .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-companion-container {
             display: flex !important;
@@ -815,11 +822,30 @@ function TutorialOverlayMobile({
             inset: auto !important;
             transform: none !important;
             flex-shrink: 0 !important;
-            height: 44px !important;
-            width: 44px !important;
+            width: clamp(3rem, 5.5vw, 3.45rem) !important;
+            height: clamp(3rem, 5.5vw, 3.45rem) !important;
             min-height: 44px !important;
             min-width: 44px !important;
-            border-radius: 12px !important;
+            border-radius: 0.95rem !important;
+            transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+          }
+          .tutorial-bubble-footer .tutorial-audio-toggle:hover {
+            transform: translateY(2px) !important;
+          }
+          .tutorial-bubble-footer .tutorial-audio-toggle.is-unmuted:hover {
+            box-shadow: #047857 0 4px 0 0 !important;
+          }
+          .tutorial-bubble-footer .tutorial-audio-toggle.is-muted:hover {
+            box-shadow: #B91C1C 0 4px 0 0 !important;
+          }
+          .tutorial-bubble-footer .tutorial-audio-toggle:active {
+            transform: translateY(6px) !important;
+          }
+          .tutorial-bubble-footer .tutorial-audio-toggle.is-unmuted:active {
+            box-shadow: #047857 0 0 0 0 !important;
+          }
+          .tutorial-bubble-footer .tutorial-audio-toggle.is-muted:active {
+            box-shadow: #B91C1C 0 0 0 0 !important;
           }
           .tutorial-bubble-footer .tutorial-bubble-btn {
             float: none !important;
@@ -843,6 +869,9 @@ function TutorialOverlayMobile({
             width: 100% !important;
             max-width: min(100%, 48rem) !important;
             margin: 0 !important;
+          }
+          .tutorial-overlay-wrapper.is-custom-tutorial.is-activity-home-step-3 .tutorial-speech-bubble {
+            padding-top: calc(clamp(1rem, 2.5vw, 1.5rem) + 0.5rem) !important;
           }
           .tutorial-overlay-wrapper.is-custom-tutorial.is-activity-home-step-1 .tutorial-speech-bubble,
           .tutorial-overlay-wrapper.is-custom-tutorial.is-activity-home-step-2 .tutorial-speech-bubble {

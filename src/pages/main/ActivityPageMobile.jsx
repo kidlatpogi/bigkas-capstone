@@ -24,6 +24,7 @@ import SkywardJourneyShell from '../../components/journey/SkywardJourneyShell';
 import StreakCalendarModal from '../../components/main/StreakCalendarModal';
 import RankListModal from '../../components/main/RankListModal';
 import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
+import { useNativeBottomSheetDrag } from '../../hooks/useNativeBottomSheetDrag';
 import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../services/journeyProgressService';
 import { RANDOM_TOPICS } from '../../utils/practiceData';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
@@ -64,8 +65,6 @@ const DAY_MS = 86_400_000;
 const ACTIVITY_CELEBRATION_STORAGE_KEY = 'bigkas_pending_activity_celebration_v1';
 const LAST_SHOWN_COMPLETION_EVENT_KEY = 'bigkas_last_completion_event_v1';
 const FREE_SPEECH_TUTORIAL_SEEN_KEY = 'bigkas_free_speech_tutorial_seen_v1';
-
-
 
 function getLocalDateKey(date = new Date()) {
   const year = date.getFullYear();
@@ -323,7 +322,6 @@ function ActivityPageMobile() {
     ? Math.round((completedTaskCount / tasks.length) * 100)
     : 0;
 
-  /** Same shape as ActivityPage — Map<YYYY-MM-DD, number> for streak calendar heatmap + weekday pills */
   const sessionCountsByDay = useMemo(() => {
     const counts = new Map();
     sessions.forEach((s) => {
@@ -536,11 +534,9 @@ function ActivityPageMobile() {
     return acc;
   }, {}), [tasks]);
 
-  // Automatic Tutorial Trigger
   useEffect(() => {
     if (!user?.id || activitiesLoading) return;
     
-    // Condition: finished profiling AND pre-testing
     const isReadyForTutorial = 
       user.onboardingStage === 'completed' || 
       (user.profilingCompleted && user.pretestCompleted) ||
@@ -559,7 +555,6 @@ function ActivityPageMobile() {
   useEffect(() => {
     if (location.state?.launchFreeSpeechTutorial !== true) return undefined;
     
-    // Explicitly reset the seen flag if we're coming from the onboarding reveal
     window.localStorage.setItem(FREE_SPEECH_TUTORIAL_SEEN_KEY, '0');
     setShowFreeSpeechTutorial(true);
 
@@ -627,12 +622,15 @@ function ActivityPageMobile() {
     setShowRandomizerOverlay(false);
   }, []);
 
+  const handleCloseDashboardOverlay = useCallback(() => {
+    setShowDashboardOverlay(false);
+  }, []);
+
   const handleToggleMute = async () => {
     const nextMute = !user?.isAudioMuted;
     await updateUserMetadata({ is_audio_muted: nextMute });
     localStorage.setItem('bigkas_global_audio_muted_v1', nextMute ? '1' : '0');
 
-    // Immediate feedback: pause if muting
     if (nextMute && overlayAudioRef.current) {
       overlayAudioRef.current.pause();
     }
@@ -655,7 +653,6 @@ function ActivityPageMobile() {
       setIsRandomizingTopic(false);
     }
 
-    // Fallback to local randomization
     if (!RANDOM_TOPICS.length) return;
     setRandomizerTopic((current) => {
       if (RANDOM_TOPICS.length === 1) return RANDOM_TOPICS[0];
@@ -704,6 +701,11 @@ function ActivityPageMobile() {
     setFreeSpeechDraftTopic('');
   }, []);
 
+  const dashboardSheet = useNativeBottomSheetDrag(showDashboardOverlay, handleCloseDashboardOverlay);
+  const randomizerSheet = useNativeBottomSheetDrag(showRandomizerOverlay, handleCloseRandomizerOverlay);
+  const freeSpeechSheet = useNativeBottomSheetDrag(showFreeSpeechOverlay, handleCloseFreeSpeechOverlay);
+  const askB01Sheet = useNativeBottomSheetDrag(isAskB01ModalOpen, () => setIsAskB01ModalOpen(false));
+
   const handleStartFreeSpeechOverlay = useCallback(() => {
     const topic = freeSpeechDraftTopic.trim();
     if (!topic) return;
@@ -720,13 +722,39 @@ function ActivityPageMobile() {
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
-    if (showRandomizerOverlay || showFreeSpeechOverlay || isAskB01ModalOpen) {
+    if (showDashboardOverlay || showRandomizerOverlay || showFreeSpeechOverlay || isAskB01ModalOpen) {
       document.body.classList.add('randomizer-overlay-open');
     } else {
       document.body.classList.remove('randomizer-overlay-open');
     }
     return () => document.body.classList.remove('randomizer-overlay-open');
-  }, [showRandomizerOverlay, showFreeSpeechOverlay, isAskB01ModalOpen]);
+  }, [showDashboardOverlay, showRandomizerOverlay, showFreeSpeechOverlay, isAskB01ModalOpen]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key !== 'Escape') return;
+      if (isAskB01ModalOpen) {
+        setIsAskB01ModalOpen(false);
+      } else if (showFreeSpeechOverlay) {
+        handleCloseFreeSpeechOverlay();
+      } else if (showRandomizerOverlay) {
+        handleCloseRandomizerOverlay();
+      } else if (showDashboardOverlay) {
+        handleCloseDashboardOverlay();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    handleCloseDashboardOverlay,
+    handleCloseFreeSpeechOverlay,
+    handleCloseRandomizerOverlay,
+    isAskB01ModalOpen,
+    showDashboardOverlay,
+    showFreeSpeechOverlay,
+    showRandomizerOverlay,
+  ]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
@@ -760,7 +788,7 @@ function ActivityPageMobile() {
       welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%205_new.mp3";
     }
 
-    const fullSteps = [
+    return [
       {
         id: 'step-intro',
         title: 'B-01:',
@@ -827,235 +855,47 @@ function ActivityPageMobile() {
         voice: "https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Home%20Page%20Tutorial%205.mp3",
       },
     ];
+  }, [user]);
 
-    if (location.state?.skipTutorialIntro) {
-      return fullSteps.filter((s) => s.id !== 'step-intro');
-    }
-    return fullSteps;
-  }, [user?.speakerLevelNumber, user?.onboardingLevelAnalysis, user?.speakerEntryScore, user?.speaker_entry_score, location.state?.skipTutorialIntro]);
-
-  const assessmentTutorialSteps = useMemo(() => {
-    const sLevel = resolveDashboardTutorialSpeakerLevel(user);
-    const pLevel = user?.progressLevelNumber || 1;
-    const reducedTo = JOURNEY_STAGE_LIMITS[sLevel]?.[pLevel] ?? 30;
-
-    let text = `We noticed that you are a level ${sLevel} speaker, so we reduced Journey ${pLevel} to ${reducedTo} stages for you!`;
-    if (reducedTo >= 30) {
-      text = `Welcome to Journey ${pLevel}! You have ${reducedTo} stages to complete. Let's get started!`;
-    }
-
-    return [
-      {
-        id: 'assessment-notice',
-        title: 'B-01:',
-        text,
-        button: 'Got it!',
-        targetElementId: null,
-        robot: tutorialRobotStep1,
-      },
-    ];
-  }, [user?.speakerLevelNumber, user?.onboardingLevelAnalysis, user?.speakerEntryScore, user?.speaker_entry_score, user?.progressLevelNumber]);
-
-  useEffect(() => {
-    if (typeof document === 'undefined') return undefined;
-    if (showDashboardOverlay) {
-      document.body.classList.add('dashboard-overlay-open');
-    } else {
-      document.body.classList.remove('dashboard-overlay-open');
-    }
-    return () => document.body.classList.remove('dashboard-overlay-open');
-  }, [showDashboardOverlay]);
-
-  const closeDashboardForHomeJourneyTutorial = useCallback(() => {
-    setShowDashboardOverlay(false);
-  }, []);
-
-  const handleTutorialFinish = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(FREE_SPEECH_TUTORIAL_SEEN_KEY, '1');
-    }
-
-    // Persist to database so it doesn't show again on other devices
-    if (user?.id) {
-      updateUserMetadata({ dashboard_tutorial_seen: true }).catch(() => {});
-    }
-
-    const sLevel = resolveDashboardTutorialSpeakerLevel(user);
-    const pLevel = Number(user?.progressLevelNumber || 1);
-    const reducedTo = JOURNEY_STAGE_LIMITS[sLevel]?.[pLevel] ?? 30;
-
-    if (reducedTo < 30) {
-      setShowAssessmentModal(true);
-    }
-  }, [user, updateUserMetadata]);
-
-  const renderTaskCardForShell = useCallback(({ task, isLocked: shellLocked, animationClass = '' }) => {
-    const done = taskState[task.id] === true;
-    const isUnlocked = taskUnlockState[task.id] === true;
-    const isLocked = shellLocked ?? (!done && !isUnlocked);
-    const shouldAnimateStamp = done && recentStampedTaskId === task.id;
-    const progress = taskProgress[task.id] || { current: 0, target: 1 };
-    const canShowProgress = !isLocked && progress.target > 1;
-    const progressPctForTask = Math.max(0, Math.min(100, Math.round((progress.current / progress.target) * 100)));
-    const clampedProgressCurrent = Math.min(progress.current, progress.target);
-    const ctaLabel = done
-      ? 'Completed'
-      : isLocked
-        ? 'Locked'
-        : progress.current > 0
-          ? `Continue ${clampedProgressCurrent}/${progress.target}`
-          : 'Start';
-    const w = task.weights || {};
-    const weightsLine = [w.vis, w.voc, w.ver].some((n) => Number.isFinite(n))
-      ? `VVV weights — Visual ${Math.round(Number(w.vis) * 100)}% · Vocal ${Math.round(Number(w.voc) * 100)}% · Verbal ${Math.round(Number(w.ver) * 100)}%`
-      : null;
-
+  const renderTaskCardForShell = useCallback((task) => {
+    const isCompleted = isActivityTaskCompleted(task.id, activityMetrics);
     return (
-      <div key={task.id} className={`page-card activity-task-card${done ? ' done' : ''}${isLocked ? ' locked' : ''} ${animationClass}`.trim()}>
-        <div className="activity-task-top">
-          <div className="activity-task-heading">
-            <span className={`activity-task-name${done ? ' done' : ''}`}>{task.title}</span>
-            {done ? (
-              <span className={`activity-task-done-stamp${shouldAnimateStamp ? ' popping' : ''}`}>DONE</span>
-            ) : null}
-          </div>
-          <span className="activity-task-xp">+ {getTaskXp(task.id)} EXP</span>
+      <div className={`activity-mobile-task-card ${isCompleted ? 'is-completed' : ''}`}>
+        <div className="task-card-icon">
+          <FaVolumeUp />
         </div>
-
-        <p className="activity-task-detail">{task.objective || task.detail}</p>
-        {weightsLine ? <p className="activity-task-detail" style={{ opacity: 0.85, fontSize: '0.9em' }}>{weightsLine}</p> : null}
-
-        {isLocked ? (
-          <p className="activity-task-lock-note">Finish previous activities first to unlock this step.</p>
-        ) : null}
-
-        <div className="activity-task-actions">
-          <Button
-            variant="practice"
-            className={`activity-action-btn${isLocked ? ' is-locked' : ''}${canShowProgress ? ' with-progress' : ''}`}
-            onClick={() => handleTaskAction(task)}
-            disabled={isLocked || done}
-          >
-            {canShowProgress ? (
-              <span className="activity-action-progress-fill" style={{ width: `${progressPctForTask}%` }} />
-            ) : null}
-            <span className="activity-action-btn-text">{ctaLabel}</span>
-          </Button>
+        <div className="task-card-info">
+          <p className="task-card-title">{task.title}</p>
+          <p className="task-card-subtitle">{task.description}</p>
         </div>
       </div>
     );
-  }, [taskState, taskUnlockState, taskProgress, recentStampedTaskId, handleTaskAction]);
+  }, [activityMetrics]);
 
   return (
-    <div className="activity-page-mobile-root activity-page--skyward-entrance">
-      <style>
-        {`
-          @media (max-width: 767px) {
-            /*
-             * Mobile viewport: prerequisite banner inside SkywardJourney — stack logo above title,
-             * tighten padding, keep copy centered for narrow widths.
-             */
-            .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-banner {
-              padding: 4px 10px 6px;
-              border-top: 1.5px solid rgba(52, 211, 153, 0.35);
-              background: linear-gradient(180deg, rgba(236, 253, 245, 0.95) 0%, rgba(209, 250, 229, 0.85) 100%);
-            }
-            .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-banner-inner {
-              max-width: none;
-            }
-            .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-body {
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              text-align: center;
-            }
-            .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-title-row {
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
-              gap: 4px;
-              margin-bottom: 4px;
-              width: 100%;
-            }
-            .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-logo {
-              height: 26px;
-              width: auto;
-              max-width: 80px;
-              flex-shrink: 0;
-              opacity: 1;
-            }
-            .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-title {
-              font-size: 0.65rem;
-              letter-spacing: 0.055em;
-              line-height: 1.25;
-              max-width: 17.5rem;
-              color: #059669;
-              font-weight: 800;
-            }
-            .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-list {
-              font-size: 0.7rem;
-              line-height: 1.32;
-              font-weight: 600;
-              padding: 0 2px;
-              color: #0f766e;
-            }
-            .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-list li {
-              max-width: 18rem;
-            }
-          }
-        `}
-      </style>
+    <div className={`activity-page-mobile-root${entranceFromNav ? ' activity-page--skyward-entrance' : ''}`}>
       <TutorialOverlayMobile
         isOpen={showFreeSpeechTutorial}
-        steps={freeSpeechTutorialSteps}
-        showAudioToggle
-        onCloseDashboard={closeDashboardForHomeJourneyTutorial}
         onClose={() => setShowFreeSpeechTutorial(false)}
-        onFinish={handleTutorialFinish}
+        onFinish={() => {
+          setShowFreeSpeechTutorial(false);
+          updateUserMetadata({ dashboard_tutorial_seen: true });
+          localStorage.setItem(FREE_SPEECH_TUTORIAL_SEEN_KEY, '1');
+        }}
+        steps={freeSpeechTutorialSteps}
+        onCloseDashboard={handleCloseDashboardOverlay}
+        showAudioToggle={true}
       />
-      <TutorialOverlayMobile
-        isOpen={showAssessmentModal}
-        onClose={() => setShowAssessmentModal(false)}
-        onFinish={() => setShowAssessmentModal(false)}
-        steps={assessmentTutorialSteps}
-      />
-      {showCompletionCelebration && (
-        <Confetti
-          width={viewportSize.width}
-          height={viewportSize.height}
-          recycle
-          numberOfPieces={280}
-          gravity={0.24}
-        />
-      )}
-      {showCompletionCelebration && (
-        <div className="activity-clear-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="activity-clear-modal-title">
-          <div className="activity-clear-modal">
-            <h3 id="activity-clear-modal-title" className="activity-clear-modal-title">
-              Congratulations, you've cleared: {completionModalTaskTitle || 'This stage'}
-            </h3>
-            <PushButton
-              className="activity-clear-modal-continue-btn"
-              bgColor="#2d5a27"
-              shadowColor="#1a3b16"
-              textColor="#ffffff"
-              onClick={() => {
-                setShowCompletionCelebration(false);
-                setCompletionModalTaskTitle('');
-              }}
-            >
-              Continue
-            </PushButton>
-          </div>
-        </div>
-      )}
 
       {showRandomizerOverlay && (
         <section className="randomizer-overlay-wrapper activity-mobile-overlay-wrapper" aria-label="Randomizer overlay">
           <div className="bigkas-modal-scrim" aria-hidden="true" onClick={handleCloseRandomizerOverlay} />
-          <div className="randomizer-overlay-content activity-mobile-overlay-content">
+          <div
+            className={`randomizer-overlay-content activity-mobile-overlay-content native-bottom-sheet${randomizerSheet.dragOffset > 0 ? ' is-dragging' : ''}`}
+            style={randomizerSheet.sheetStyle}
+          >
             <div className="randomizer-overlay-card">
+              <div className="native-bottom-sheet-grabber" aria-hidden="true" {...randomizerSheet.dragHandleProps} />
               <div className="randomizer-overlay-card-top">
                 <h2 className="randomizer-overlay-title">
                   <img src={b01ChatHead} alt="" className="randomizer-overlay-title-logo" width={22} height={22} />
@@ -1063,9 +903,9 @@ function ActivityPageMobile() {
                 </h2>
                 <button
                   type="button"
-                  className="dashboard-overlay-close-btn"
+                  className="modal-close-btn-circle"
                   onClick={handleCloseRandomizerOverlay}
-                  aria-label="Close randomizer overlay"
+                  aria-label="Close randomizer"
                 >
                   ×
                 </button>
@@ -1106,15 +946,15 @@ function ActivityPageMobile() {
               </p>
               <div className="randomizer-overlay-actions">
                 <Button
-                  variant="practice"
+                  variant="tutorial"
                   className="randomizer-overlay-randomize-btn"
                   onClick={handleRandomizeTopic}
                   disabled={isRandomizingTopic}
                 >
-                  {isRandomizingTopic ? 'Randomizing...' : 'Generate'}
+                  {isRandomizingTopic ? 'Randomizing...' : (isStreakRecoveryMode ? 'Generate Task' : 'Generate')}
                 </Button>
                 <Button
-                  variant="practice"
+                  variant="neutral"
                   className="randomizer-overlay-start-btn"
                   onClick={handleStartRandomizerTopic}
                   disabled={!randomizerTopic?.title || isRandomizingTopic}
@@ -1123,29 +963,37 @@ function ActivityPageMobile() {
                     ? `Start Task ${Math.min(requiredRecoveryTasks, recoverySessionsToday + 1)} of ${requiredRecoveryTasks}`
                     : 'Start'}
                 </Button>
+                
+                {!isStreakRecoveryMode && (
+                  <Button
+                    variant="practice"
+                    aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                    title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                    className={`tutorial-audio-toggle-btn ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
+                    onClick={handleToggleMute}
+                    style={{ width: '100%', marginTop: '8px' }}
+                  >
+                    {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+                    <span style={{ marginLeft: '8px' }}>
+                      {user?.isAudioMuted ? 'Unmute B-01 Voice' : 'Mute B-01 Voice'}
+                    </span>
+                  </Button>
+                )}
               </div>
             </div>
-            {!isStreakRecoveryMode && (
-              <div className="tutorial-audio-action">
-                <button
-                  type="button"
-                  aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                  title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                  className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
-                  onClick={handleToggleMute}
-                >
-                  {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-                </button>
-              </div>
-            )}
           </div>
         </section>
       )}
+
       {showFreeSpeechOverlay && (
         <section className="randomizer-overlay-wrapper activity-mobile-overlay-wrapper" aria-label="Free speech overlay">
           <div className="bigkas-modal-scrim" aria-hidden="true" onClick={handleCloseFreeSpeechOverlay} />
-          <div className="randomizer-overlay-content activity-mobile-overlay-content">
+          <div
+            className={`randomizer-overlay-content activity-mobile-overlay-content native-bottom-sheet${freeSpeechSheet.dragOffset > 0 ? ' is-dragging' : ''}`}
+            style={freeSpeechSheet.sheetStyle}
+          >
             <div className="randomizer-overlay-card free-speech-overlay-card">
+              <div className="native-bottom-sheet-grabber" aria-hidden="true" {...freeSpeechSheet.dragHandleProps} />
               <div className="randomizer-overlay-card-top">
                 <h2 className="randomizer-overlay-title">
                   <img src={b01ChatHead} alt="" className="randomizer-overlay-title-logo" width={22} height={22} />
@@ -1153,9 +1001,9 @@ function ActivityPageMobile() {
                 </h2>
                 <button
                   type="button"
-                  className="dashboard-overlay-close-btn"
+                  className="modal-close-btn-circle"
                   onClick={handleCloseFreeSpeechOverlay}
-                  aria-label="Close free speech overlay"
+                  aria-label="Close free speech"
                 >
                   ×
                 </button>
@@ -1176,25 +1024,28 @@ function ActivityPageMobile() {
               </label>
               <div className="randomizer-overlay-actions free-speech-overlay-actions">
                 <Button
-                  variant="practice"
+                  variant="neutral"
                   className="randomizer-overlay-start-btn free-speech-overlay-start-btn"
                   onClick={handleStartFreeSpeechOverlay}
                   disabled={!freeSpeechDraftTopic.trim()}
                 >
                   Start
                 </Button>
+
+                <Button
+                  variant="practice"
+                  aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                  title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                  className={`tutorial-audio-toggle-btn ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
+                  onClick={handleToggleMute}
+                  style={{ width: '100%', marginTop: '8px' }}
+                >
+                  {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+                  <span style={{ marginLeft: '8px' }}>
+                    {user?.isAudioMuted ? 'Unmute B-01 Voice' : 'Mute B-01 Voice'}
+                  </span>
+                </Button>
               </div>
-            </div>
-            <div className="tutorial-audio-action">
-              <button
-                type="button"
-                aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
-                onClick={handleToggleMute}
-              >
-                {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-              </button>
             </div>
           </div>
         </section>
@@ -1237,45 +1088,95 @@ function ActivityPageMobile() {
 
       {showDashboardOverlay && (
         <section className="dashboard-overlay-wrapper" aria-label="Dashboard overlay">
-          <div className="bigkas-modal-scrim" aria-hidden="true" onClick={() => setShowDashboardOverlay(false)} />
-          <div className="dashboard-overlay-content no-scrollbar">
+          <div className="bigkas-modal-scrim" aria-hidden="true" onClick={handleCloseDashboardOverlay} />
+          <div
+            className={`dashboard-overlay-content native-bottom-sheet${dashboardSheet.dragOffset > 0 ? ' is-dragging' : ''}`}
+            style={dashboardSheet.sheetStyle}
+          >
+            <div className="native-bottom-sheet-grabber" aria-hidden="true" {...dashboardSheet.dragHandleProps} />
             <div className="dashboard-overlay-header">
               <h2 className="dashboard-overlay-title">Dashboard</h2>
               <button
                 type="button"
-                className="dashboard-overlay-close-btn"
-                onClick={() => setShowDashboardOverlay(false)}
+                className="modal-close-btn-circle"
+                onClick={handleCloseDashboardOverlay}
                 aria-label="Close dashboard"
               >
                 ×
               </button>
             </div>
 
-            <div className="dashboard-overlay-scroll-content">
-              <Button
-                variant="practice"
-                className="activity-mobile-dashboard-btn"
-                style={{ width: '100%', marginBottom: '1rem', height: '44px' }}
-                onClick={() => {
-                  setShowDashboardOverlay(false);
-                  setShowFreeSpeechTutorial(true);
-                }}
-              >
-                Launch Tutorial (Temp)
-              </Button>
-              <Button
-                variant="practice"
-                className="ask-b01-trigger activity-mobile-dashboard-btn"
-                style={{ width: '100%', marginBottom: '1rem', height: '44px' }}
-                onClick={() => {
-                  setShowDashboardOverlay(false);
-                  setIsAskB01ModalOpen(true);
-                }}
-                aria-label="Ask B-01 a question"
-              >
-                <IoChatbubbleEllipsesOutline aria-hidden />
-                <span>Ask B-01</span>
-              </Button>
+            <div className="dashboard-overlay-scroll-content no-scrollbar">
+              {/* Rank Widget */}
+              <section className="new-widget" id="tutorial-target-home-rank">
+                <div className="new-widget-head">
+                  <h3 className="new-widget-title">SPEAKER LEVEL PROGRESSION</h3>
+                  <span className="new-widget-chip">Level</span>
+                </div>
+                <div 
+                  className="new-widget-rank-card"
+                  onClick={() => {
+                    setShowDashboardOverlay(false);
+                    setIsRankModalOpen(true);
+                  }}
+                >
+                  <img src={rankSpriteImage} alt="" className="new-widget-rank-sprite" />
+                  <div className="new-widget-rank-content">
+                    <p className="new-widget-kicker">Current Mastery</p>
+                    <p className="new-widget-value">LEVEL {user?.progressLevelNumber || 1}</p>
+                  </div>
+                </div>
+                <p className="new-widget-caption">
+                  {completedTaskCount}/{tasks.length} Stages Completed
+                  <span className="new-widget-caption-sep"> - </span>
+                  {sidebarProgressPct}% Cleared
+                </p>
+              </section>
+
+              {/* Practice Widget */}
+              <section className="new-widget new-widget--practice" id="tutorial-target-home-practice">
+                <div className="new-widget-head">
+                  <h3 className="new-widget-title">PRACTICE</h3>
+                </div>
+                <p className="new-btn-hint" style={{ marginTop: '-8px', marginBottom: '8px' }}>Choose a mode and jump straight into speaking.</p>
+
+                <div className="new-btn-group">
+                  <div 
+                    className="new-btn-row--card"
+                    onClick={() => {
+                      setShowDashboardOverlay(false);
+                      handleRandomizerClick();
+                    }}
+                  >
+                    <div className="new-btn-visual new-btn-visual--randomizer">
+                      <img src={crystalBallImage} alt="" className="new-btn-visual-img new-btn-visual-img--randomizer" />
+                    </div>
+                    <div className="new-btn-meta">
+                      <p className="new-btn-kicker" style={{ color: '#7c3aed' }}>Mode</p>
+                      <p className="new-btn-label">Randomizer</p>
+                      <p className="new-btn-hint">Instant prompt to warm up.</p>
+                    </div>
+                  </div>
+                  
+                  <div 
+                    className="new-btn-row--card"
+                    onClick={() => {
+                      setShowDashboardOverlay(false);
+                      handleFreeSpeechClick();
+                    }}
+                  >
+                    <div className="new-btn-visual new-btn-visual--speech">
+                      <img src={crownImage} alt="" className="new-btn-visual-img" />
+                    </div>
+                    <div className="new-btn-meta">
+                      <p className="new-btn-kicker" style={{ color: '#f59e0b' }}>Mode</p>
+                      <p className="new-btn-label">Free Speech</p>
+                      <p className="new-btn-hint">Open topic confidence building.</p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
               {/* Streak Widget */}
               <div 
                 className="new-banner-streak" 
@@ -1322,82 +1223,6 @@ function ActivityPageMobile() {
                   <p className="new-streak-copy">Build a daily speaking habit to keep stacking your streak.</p>
                 )}
               </div>
-
-              {/* Rank Widget */}
-              <section className="new-widget" id="tutorial-target-home-rank">
-                <div className="new-widget-head">
-                  <h2 className="new-widget-title">Speaker Level Progression</h2>
-                  <span className="new-widget-chip">Level</span>
-                </div>
-                <div 
-                  className="new-widget-rank-card"
-                  onClick={() => {
-                    setShowDashboardOverlay(false);
-                    setIsRankModalOpen(true);
-                  }}
-                >
-                  <img src={rankSpriteImage} alt="" className="new-widget-rank-sprite" />
-                  <div className="new-widget-rank-content">
-                    <p className="new-widget-kicker">Current Mastery</p>
-                    <p className="new-widget-value">LEVEL {user?.progressLevelNumber || 1}</p>
-                  </div>
-                </div>
-                <p className="new-widget-caption">
-                  {tasks.length > 0 ? (
-                    <>
-                      {completedTaskCount}/{tasks.length} Stages Completed
-                      <span className="new-widget-caption-sep"> - </span>
-                      {sidebarProgressPct}% Cleared
-                    </>
-                  ) : (
-                    'No activities found for this level.'
-                  )}
-                </p>
-              </section>
-
-              {/* Practice Widget */}
-              <section className="new-widget new-widget--practice" id="tutorial-target-home-practice">
-                <div className="new-widget-head">
-                  <h2 className="new-widget-title">Practice</h2>
-                </div>
-                <p className="new-practice-subtitle">Choose a mode and jump straight into speaking.</p>
-
-                <div className="new-btn-group">
-                  <div 
-                    className="new-btn-row--card"
-                    onClick={() => {
-                      setShowDashboardOverlay(false);
-                      handleRandomizerClick();
-                    }}
-                  >
-                    <div className="new-btn-visual new-btn-visual--randomizer">
-                      <img src={crystalBallImage} alt="" className="new-btn-visual-img new-btn-visual-img--randomizer" />
-                    </div>
-                    <div className="new-btn-meta">
-                      <p className="new-btn-kicker" style={{ color: '#7c3aed' }}>Mode</p>
-                      <p className="new-btn-label">Randomizer</p>
-                      <p className="new-btn-hint">Instant prompt to warm up.</p>
-                    </div>
-                  </div>
-                  
-                  <div 
-                    className="new-btn-row--card"
-                    onClick={() => {
-                      setShowDashboardOverlay(false);
-                      handleFreeSpeechClick();
-                    }}
-                  >
-                    <div className="new-btn-visual new-btn-visual--speech">
-                      <img src={crownImage} alt="" className="new-btn-visual-img" />
-                    </div>
-                    <div className="new-btn-meta">
-                      <p className="new-btn-kicker" style={{ color: '#f59e0b' }}>Mode</p>
-                      <p className="new-btn-label">Free Speech</p>
-                      <p className="new-btn-hint">Open topic confidence building.</p>
-                    </div>
-                  </div>
-                </div>
-              </section>
             </div>
           </div>
         </section>
@@ -1419,7 +1244,11 @@ function ActivityPageMobile() {
       {isAskB01ModalOpen && (
         <section className="randomizer-overlay-wrapper ask-b01-modal-wrapper" aria-label="Ask B-01 modal">
           <div className="bigkas-modal-scrim ask-b01-scrim" onClick={() => setIsAskB01ModalOpen(false)} />
-          <div className="ask-b01-modal-card">
+          <div
+            className={`ask-b01-modal-card native-bottom-sheet${askB01Sheet.dragOffset > 0 ? ' is-dragging' : ''}`}
+            style={askB01Sheet.sheetStyle}
+          >
+            <div className="native-bottom-sheet-grabber" aria-hidden="true" {...askB01Sheet.dragHandleProps} />
             <div className="ask-b01-modal-header">
               <h2 className="ask-b01-modal-title">
                 <img src={b01ChatHead} alt="" className="ask-b01-modal-title-logo" />
@@ -1427,7 +1256,7 @@ function ActivityPageMobile() {
               </h2>
               <button
                 type="button"
-                className="dashboard-overlay-close-btn"
+                className="modal-close-btn-circle"
                 onClick={() => setIsAskB01ModalOpen(false)}
                 aria-label="Close"
               >

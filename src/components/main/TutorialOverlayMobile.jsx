@@ -638,12 +638,28 @@ function TutorialOverlayMobile({
               emphasis={stepTextSegment === 0 ? activeStep.emphasis : undefined}
             />
           </p>
-          <button type="button" className="tutorial-bubble-btn" onClick={handleNext} disabled={!isTypingDone}>
-            {activeStep.button}
-          </button>
+
+          <div className="tutorial-bubble-footer">
+            {showAudioToggle && isNarrowViewport && (
+              <div className="tutorial-audio-action-inline">
+                <button
+                  type="button"
+                  onClick={handleToggleMute}
+                  aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                  title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+                  className={`tutorial-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
+                >
+                  {isMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+                </button>
+              </div>
+            )}
+            <button type="button" className="tutorial-bubble-btn" onClick={handleNext} disabled={!isTypingDone}>
+              {activeStep.button}
+            </button>
+          </div>
         </article>
       </div>
-      {showAudioToggle ? (
+      {showAudioToggle && !isNarrowViewport ? (
         <div className="tutorial-audio-action" style={needsDashboardForSpotlight ? { pointerEvents: 'auto' } : undefined}>
           <button
             type="button"

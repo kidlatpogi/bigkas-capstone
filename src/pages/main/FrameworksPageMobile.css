@@ -300,6 +300,7 @@
 }
 
 .fh-mobile-modal-sheet {
+  --native-bottom-sheet-drag-y: 0px;
   width: 100%;
   background: #ffffff;
   border-radius: 32px 32px 0 0;
@@ -308,16 +309,35 @@
   display: flex;
   flex-direction: column;
   padding-bottom: calc(88px + env(safe-area-inset-bottom, 24px));
+  transform: translate3d(0, var(--native-bottom-sheet-drag-y), 0);
+  will-change: transform;
   animation: bigkas-bottom-sheet-panel-in var(--bigkas-bottom-sheet-duration) var(--bigkas-bottom-sheet-ease) both !important;
 }
 
+.fh-mobile-modal-sheet.native-bottom-sheet.is-dragging {
+  animation: none !important;
+  transition: none !important;
+  transform: translate3d(0, var(--native-bottom-sheet-drag-y), 0) !important;
+}
+
+.fh-mobile-modal-sheet.native-bottom-sheet:not(.is-dragging) {
+  transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.24, 1);
+}
+
 .fh-mobile-modal-handle {
-  width: 40px;
+  width: 44px;
   height: 5px;
-  background: #e2e8f0;
+  background: rgba(15, 23, 42, 0.18);
   border-radius: 999px;
   margin: 12px auto;
   flex-shrink: 0;
+  touch-action: none;
+  cursor: grab;
+}
+
+.fh-mobile-modal-sheet.is-dragging .fh-mobile-modal-handle {
+  cursor: grabbing;
+  background: rgba(15, 23, 42, 0.26);
 }
 
 .fh-mobile-modal-header {

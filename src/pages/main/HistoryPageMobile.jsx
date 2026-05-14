@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IoChevronBack, IoChevronForward } from 'react-icons/io5';
 import { buildRoute } from '../../utils/constants';
 import { getSessionMode } from '../../utils/sessionFormatting';
 import { sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
 import { getSpriteUrl } from '../../utils/assetUtils';
+import { useNativeBottomSheetDrag } from '../../hooks/useNativeBottomSheetDrag';
 
 const verbalSprite = getSpriteUrl('common/Verbal.webp');
 const visualSprite = getSpriteUrl('common/Visual.webp');
@@ -178,20 +179,37 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
 
   const adaptivePages = useMemo(() => getAdaptiveHistoryPages(pageCount, safePage), [pageCount, safePage]);
 
-  if (!isOpen) return null;
-
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (selectedSessionId) setSelectedSessionId(null);
     else onClose();
-  };
+  }, [onClose, selectedSessionId]);
+
+  const sheetDrag = useNativeBottomSheetDrag(isOpen && !selectedSessionId, handleClose);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') handleClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleClose, isOpen]);
+
+  if (!isOpen) return null;
 
   return (
     <>
       <div className="bigkas-modal-scrim" onClick={handleClose} style={{ '--scrim-z': 1100 }} aria-hidden="true" />
-      <div className={`history-mobile-sidebar history-visible ${selectedSessionId ? 'history-viewing-session' : ''}`}>
+      <div
+        className={`history-mobile-sidebar history-visible native-bottom-sheet${sheetDrag.isDragging ? ' is-dragging' : ''} ${selectedSessionId ? 'history-viewing-session' : ''}`}
+        style={sheetDrag.sheetStyle}
+      >
         <div className={`history-mobile-container ${selectedSessionId ? 'slide-out-left' : 'slide-in-right'}`}>
           
           <div className="history-mobile-header dashboard-anim-top">
+            {!selectedSessionId && (
+              <div className="native-bottom-sheet-grabber" aria-hidden="true" {...sheetDrag.dragHandleProps} />
+            )}
             <div className="history-mobile-title-row">
               <h2 className="history-mobile-title">History</h2>
               <button type="button" className="dashboard-overlay-close-btn" onClick={onClose} aria-label="Close history">×</button>

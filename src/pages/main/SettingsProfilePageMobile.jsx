@@ -363,36 +363,7 @@ function SettingsProfilePageMobile() {
               </button>
             </div>
 
-            <div className="theme-modal-preview">
-              <div className={`profile-hero-card profile-hero-card--preview hero-theme--${heroTheme}`}>
-                <div className="hero-decoration">
-                  {heroTheme === 'mascot' ? (
-                    <img src={mascotSprite} alt="" className="decoration-img decoration-mascot" />
-                  ) : (
-                    getThemeDecoration(heroTheme) && (
-                      <img 
-                        src={getThemeDecoration(heroTheme)} 
-                        alt="" 
-                        className={`decoration-img ${heroTheme === 'trophy' ? 'decoration-trophy' : 'decoration-rank'}`} 
-                      />
-                    )
-                  )}
-                </div>
-                <div className="hero-avatar-wrapper">
-                  <div className="hero-avatar-ring">
-                    {(avatarLocalUrl || (user?.avatarUrl && !avatarRemoved)) ? (
-                      <img src={avatarLocalUrl || user.avatarUrl} alt="" className="hero-avatar-img" />
-                    ) : (
-                      <div className="hero-avatar-placeholder">{userInitials}</div>
-                    )}
-                  </div>
-                </div>
-                <div className="hero-info">
-                  <h1 className="hero-name">{firstName} {lastName}</h1>
-                  <p className="hero-email">{user?.email}</p>
-                </div>
-              </div>
-            </div>
+
 
             <div className="theme-picker">
               {THEME_CONFIG.map((theme) => {

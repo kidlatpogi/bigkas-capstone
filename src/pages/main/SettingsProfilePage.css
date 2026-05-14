@@ -600,17 +600,18 @@
 .theme-modal-preview {
   width: 100%;
   margin-bottom: clamp(12px, 3vw, 32px);
-  border-radius: 20px;
+  border-radius: var(--sp-radius);
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0,0,0,0.1);
   background: var(--sp-bg);
-  padding: clamp(12px, 3vw, 24px);
+  padding: 0;
 }
 
 .profile-hero-card--preview {
-  transform: scale(0.95);
-  transform-origin: center;
-  border-radius: 20px !important;
+  transform: none;
+  min-height: 200px;
+  border-radius: var(--sp-radius) var(--sp-radius) 0 0 !important;
+  transition: none !important;
 }
 
 /* Fix Avatar Squish in Preview */
@@ -696,6 +697,7 @@
   .sp-modal--wide .profile-hero-card--preview {
     transform: scale(0.92);
     transform-origin: center top;
+    border-radius: 20px !important;
   }
 
   .sp-modal--wide .profile-hero-card--preview .hero-avatar-wrapper {

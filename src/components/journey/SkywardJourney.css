@@ -193,6 +193,7 @@
   min-height: 0;
   overflow: hidden;
   margin-inline: auto;
+  padding: 0 !important;
   border-radius: 24px;
 }
 

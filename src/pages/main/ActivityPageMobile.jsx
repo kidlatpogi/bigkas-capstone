@@ -993,8 +993,11 @@ function ActivityPageMobile() {
              */
             .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-banner {
               width: 100% !important;
+              min-width: 100% !important;
+              align-self: stretch !important;
               margin: 0 !important;
-              padding: 4px 10px 6px;
+              padding: 6px 12px 8px !important;
+              box-sizing: border-box !important;
 
               border-top: 1.5px solid rgba(52, 211, 153, 0.35);
               background: linear-gradient(180deg, rgba(236, 253, 245, 0.95) 0%, rgba(209, 250, 229, 0.85) 100%);
@@ -1042,6 +1045,10 @@ function ActivityPageMobile() {
             .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey-prerequisite-list li {
               max-width: 18rem;
             }
+            .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey.skyward-journey-container {
+              padding: 0 !important;
+              width: 100% !important;
+            }
           }
         `}
       </style>

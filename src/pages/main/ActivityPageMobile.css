@@ -141,6 +141,18 @@
 }
 
 /* =========================================================================
+   BANNER (Mobile) - NOT USED
+   ========================================================================= */
+
+/* Removed - Banner is no longer rendered on mobile */
+
+/* =========================================================================
+   WIDGETS (Mobile) - NOT USED
+   ========================================================================= */
+
+/* Removed - Streak, Rank, and Practice widgets are no longer rendered on mobile */
+
+/* =========================================================================
    JOURNEY HEADER (Mobile) - Ensure Non-Collapsable
    ========================================================================= */
 
@@ -271,24 +283,36 @@
   }
 }
 
+/* Activity Task Cards - Already handled by InnerPages.css */
+
+.activity-task-card {
+  width: 100%;
+}
+
 /* =========================================================================
    OVERLAY ADJUSTMENTS FOR MOBILE
    ========================================================================= */
 
+/* Fixed mute controls must not be clipped by the root; clear bottom nav (~64px) + safe area */
 .activity-page-mobile-root:has(.randomizer-overlay-wrapper),
 .activity-page-mobile-root:has(.tutorial-overlay-wrapper),
-.activity-page-mobile-root:has(.dashboard-overlay-wrapper),
-.activity-page-mobile-root:has(.ask-b01-modal-wrapper) {
+.activity-page-mobile-root:has(.dashboard-overlay-wrapper) {
   overflow: visible;
 }
 
-/* .tutorial-audio-action overrides for mobile practice overlays are now obsolete 
-   as the toggle is integrated into the action buttons area. */
+.activity-page-mobile-root .randomizer-overlay-wrapper .tutorial-audio-action {
+  position: absolute;
+  top: -64px;
+  right: 16px;
+  bottom: auto;
+  z-index: 10;
+}
 
 .activity-page-mobile-root .randomizer-overlay-wrapper,
-.activity-page-mobile-root .activity-mobile-overlay-wrapper,
-.activity-page-mobile-root .dashboard-overlay-wrapper {
+.activity-page-mobile-root .activity-mobile-overlay-wrapper {
   position: fixed !important;
+  /* Cover only the visible area above the bottom nav so flex centering
+     puts the card exactly in the middle of what the user can see. */
   top: 0 !important;
   left: 0 !important;
   right: 0 !important;
@@ -298,41 +322,42 @@
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  padding: 0 !important; /* Standardized to 0 for full width sheet logic */
+  padding: 16px !important;
   box-sizing: border-box !important;
 }
 
-.activity-page-mobile-root .bigkas-modal-scrim {
-  position: absolute !important;
-  inset: 0 !important;
-  z-index: 0 !important;
-  background: rgba(15, 23, 42, 0.65) !important;
-}
-
 @media (max-width: 767px) {
-  .activity-page-mobile-root .activity-mobile-overlay-wrapper,
-  .activity-page-mobile-root .randomizer-overlay-wrapper,
-  .activity-page-mobile-root .dashboard-overlay-wrapper {
+  .activity-page-mobile-root .activity-mobile-overlay-wrapper {
     align-items: flex-end !important;
     padding: 0 !important;
     padding-inline: max(0px, env(safe-area-inset-left, 0px)) max(0px, env(safe-area-inset-right, 0px)) !important;
   }
 
-  .activity-page-mobile-root .dashboard-overlay-content,
-  .activity-page-mobile-root .randomizer-overlay-content {
-    max-height: min(92dvh, calc(100dvh - 82px - env(safe-area-inset-top, 0px)));
+  .activity-page-mobile-root .dashboard-overlay-wrapper {
+    inset: 0 0 calc(64px + env(safe-area-inset-bottom, 0px)) 0;
+  }
+
+  .activity-page-mobile-root .dashboard-overlay-wrapper .dashboard-overlay-content,
+  .dashboard-overlay-content {
+    max-height: min(88dvh, calc(100dvh - 82px - env(safe-area-inset-top, 0px)));
     border-radius: 28px 28px 0 0;
     overflow: hidden;
     box-shadow: 0 -8px 28px rgba(2, 6, 23, 0.18);
-    width: 100% !important;
-    margin: 0 !important;
   }
 }
+
+/* randomizer-overlay-backdrop removed */
 
 .activity-page-mobile-root .randomizer-overlay-content,
 .activity-page-mobile-root .activity-mobile-overlay-content {
   position: relative !important;
-  z-index: 1200;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  margin: 0 auto !important;
+  transform: none !important;
+  z-index: 1200; /* Above scrim (1100) */
   width: 100%;
   max-width: 420px;
   display: flex;
@@ -343,22 +368,6 @@
 
 @media (max-width: 767px) {
   .activity-page-mobile-root .randomizer-overlay-content,
-  .activity-page-mobile-root .randomizer-overlay-card {
-  position: relative !important;
-  width: 100%;
-  padding: 0 24px 24px;
-  background: #FDFDF9;
-  border-radius: 28px 28px 0 0;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  max-height: 82vh;
-  overflow-y: auto;
-  box-sizing: border-box !important;
-  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.15);
-}
-
-  .activity-page-mobile-root .randomizer-overlay-content,
   .activity-page-mobile-root .activity-mobile-overlay-content {
     max-width: 500px;
     animation: bigkas-bottom-sheet-panel-in var(--bigkas-bottom-sheet-duration) var(--bigkas-bottom-sheet-ease) both !important;
@@ -366,6 +375,13 @@
 }
 
 .activity-page-mobile-root .randomizer-overlay-card {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  margin: 0 auto !important;
+  transform: none !important;
   width: 100%;
   padding: 1.5rem;
   background: #FDFDF9;
@@ -403,41 +419,17 @@
   }
 }
 
+/* Desktop uses an upward arrow because the robot sits above the card.
+   On mobile there is no robot above, so hide the pseudo-element. */
+.activity-page-mobile-root .randomizer-overlay-card::before {
+  display: none;
+}
+
 .activity-page-mobile-root .randomizer-overlay-card-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  padding: 24px 0 12px;
-  background: #FDFDF9;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.activity-page-mobile-root .dashboard-overlay-close-btn,
-.activity-page-mobile-root .modal-close-btn-circle {
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  border-radius: 50% !important;
-  background: #f1f5f9 !important;
-  border: none !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  font-size: 20px !important;
-  color: #64748b !important;
-  cursor: pointer !important;
-  padding: 0 !important;
-  transition: all 0.2s ease;
-  box-shadow: none !important;
-}
-
-.activity-page-mobile-root .dashboard-overlay-close-btn:active,
-.activity-page-mobile-root .modal-close-btn-circle:active {
-  background: #e2e8f0 !important;
-  transform: scale(0.92);
 }
 
 .activity-page-mobile-root .randomizer-overlay-title {
@@ -497,7 +489,6 @@
   display: flex;
   gap: 8px;
   width: 100%;
-  flex-wrap: wrap;
 }
 
 .activity-page-mobile-root .randomizer-overlay-randomize-btn.bigkas-btn,
@@ -532,52 +523,11 @@
 
 .activity-page-mobile-root .free-speech-overlay-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
   justify-content: flex-end;
 }
 
 .activity-page-mobile-root .free-speech-overlay-start-btn {
   width: 100%;
-}
-
-.activity-page-mobile-root .tutorial-audio-toggle-btn.bigkas-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 52px !important;
-  font-weight: 700;
-  transition: all 0.2s ease;
-}
-
-.activity-page-mobile-root .tutorial-audio-toggle-btn.is-unmuted {
-  background: #10B981 !important;
-  box-shadow: #047857 0 5px 0 0 !important;
-}
-
-.activity-page-mobile-root .tutorial-audio-toggle-btn.is-unmuted:active {
-  box-shadow: #047857 0 0 0 0 !important;
-}
-
-.activity-page-mobile-root .tutorial-audio-toggle-btn.is-muted {
-  background: #EF4444 !important;
-  box-shadow: #B91C1C 0 5px 0 0 !important;
-}
-
-.activity-page-mobile-root .tutorial-audio-toggle-btn.is-muted:active {
-  box-shadow: #B91C1C 0 0 0 0 !important;
-}
-
-.activity-page-mobile-root .bigkas-btn--neutral {
-  background: #cbd5e1 !important;
-  box-shadow: #94a3b8 0 5px 0 0 !important;
-  color: #334155 !important;
-}
-
-.activity-page-mobile-root .bigkas-btn--neutral:active {
-  box-shadow: none !important;
-  transform: translateY(5px) !important;
 }
 
 /* =========================================================================
@@ -768,6 +718,8 @@ body.randomizer-overlay-open {
 .activity-page-mobile-root .dashboard-overlay-wrapper > .bigkas-modal-scrim {
   z-index: 0;
 }
+
+/* dashboard-overlay-backdrop removed */
 
 .activity-page-mobile-root .dashboard-overlay-wrapper .dashboard-overlay-content,
 .dashboard-overlay-content {

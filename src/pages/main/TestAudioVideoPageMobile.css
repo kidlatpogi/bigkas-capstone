@@ -10,25 +10,26 @@
 .test-av-mobile-back {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 14px;
-  margin: 0 0 0 -8px;
+  gap: 8px;
+  padding: 0 20px;
+  height: 44px;
   border: none;
   border-radius: 999px;
-  background: transparent;
+  background: #059669;
   font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #0f172a;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #fff;
+  box-shadow: 0 4px 0 #047857;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  transition: background 0.15s ease, transform 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .test-av-mobile-back:active {
-  transform: scale(0.98);
-  background: rgba(15, 23, 42, 0.06);
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #047857;
 }
 
 .test-av-flip-btn {
@@ -252,7 +253,7 @@
     background: #34d399;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
     .test-audio-video-mobile .settings-content-wrapper {
         border-radius: 0 0 24px 24px !important;
         padding: 0;
@@ -361,7 +362,7 @@
     box-shadow: 0 0 0 #B1510F;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
     .av-success-banner {
         flex-direction: column;
         gap: 1.25rem;

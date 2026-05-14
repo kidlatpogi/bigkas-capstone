@@ -664,7 +664,7 @@
 }
 
 /* --- Responsive --- */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .profile-hero-card {
     flex-direction: column;
     text-align: center;

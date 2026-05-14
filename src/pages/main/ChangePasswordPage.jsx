@@ -6,6 +6,7 @@ import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import PasswordToggle from '../../components/common/PasswordToggle';
 import './SettingsProfilePage.css';
+import './SettingsProfilePageMobile.css';
 import './ChangePasswordPage.css';
 
 import { getSpriteUrl } from '../../utils/assetUtils';

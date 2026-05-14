@@ -328,7 +328,7 @@ body.settings-mobile-sheet-open {
    Mobile-native preferences shell — hero matches profile hero mass & rhythm
    (no avatar / theme button). Scoped to SettingsPageMobile route only.
    ========================================================================= */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .settings-profile-page--preferences .profile-hero-card--preferences {
     /* ~same vertical footprint as profile hero (avatar + gaps + title block) */
     min-height: clamp(214px, 58vw, 236px);

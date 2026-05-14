@@ -810,7 +810,7 @@ function TutorialOverlayMobile({
             max-width: calc(100vw - 32px) !important;
           }
           .tutorial-overlay-wrapper.is-custom-tutorial.is-practice-step .tutorial-companion-container {
-            top: calc(16px + env(safe-area-inset-top, 0px)) !important;
+            top: calc(16px + 0.5rem + env(safe-area-inset-top, 0px)) !important;
             bottom: auto !important;
           }
           /* Roadmap: Positioned at bottom with 1rem gap above bottom navigation */
@@ -818,6 +818,22 @@ function TutorialOverlayMobile({
             top: auto !important;
             bottom: calc(64px + 1rem + env(safe-area-inset-bottom, 0px)) !important;
             gap: 0.5rem !important;
+          }
+          .activity-page-mobile-root.activity-page--skyward-entrance
+            #tutorial-target-home-journey.tutorial-spotlight-active {
+            max-height: min(45dvh, 22.5rem) !important;
+            overflow: hidden !important;
+          }
+          .activity-page-mobile-root.activity-page--skyward-entrance
+            #tutorial-target-home-journey.tutorial-spotlight-active
+            .skyward-journey-wrap,
+          .activity-page-mobile-root.activity-page--skyward-entrance
+            #tutorial-target-home-journey.tutorial-spotlight-active
+            .skyward-journey.skyward-journey-container.no-scrollbar {
+            height: min(45dvh, 22.5rem) !important;
+            min-height: 0 !important;
+            max-height: min(45dvh, 22.5rem) !important;
+            overflow: hidden !important;
           }
           .tutorial-overlay-wrapper.is-custom-tutorial.is-roadmap-step .tutorial-speech-bubble {
             padding-bottom: 0.65rem !important;

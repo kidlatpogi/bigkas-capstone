@@ -53,7 +53,6 @@
   position: relative;
   overflow: hidden;
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  min-height: 160px; /* Ensure stable height */
 }
 
 /* Theme Variants */
@@ -599,21 +598,18 @@
 }
 
 .theme-modal-preview {
-  width: calc(100% + 80px); /* Negative margin to offset modal padding and hit 800px */
-  margin: 16px -40px 32px -40px;
-  padding: 0;
-  background: transparent;
+  width: 100%;
+  margin-bottom: clamp(12px, 3vw, 32px);
+  border-radius: 20px;
   overflow: hidden;
-  display: block; /* Use block to avoid flex behavior affecting dimensions */
-  box-shadow: none;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  background: var(--sp-bg);
+  padding: 0;
 }
 
 .profile-hero-card--preview {
-  transform: none !important;
+  transform: none;
   border-radius: var(--sp-radius) var(--sp-radius) 0 0 !important;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 48px 40px; /* Explicitly match main hero card padding */
 }
 
 /* Fix Avatar Squish in Preview */
@@ -697,8 +693,9 @@
   }
 
   .sp-modal--wide .profile-hero-card--preview {
-    transform: none !important;
-    padding: 32px 24px;
+    transform: scale(0.92);
+    transform-origin: center top;
+    border-radius: 20px !important;
   }
 
   .sp-modal--wide .profile-hero-card--preview .hero-avatar-wrapper {

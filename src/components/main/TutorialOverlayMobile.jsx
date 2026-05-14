@@ -728,6 +728,10 @@ function TutorialOverlayMobile({
       ) : null}
       {!needsDashboardForSpotlight ? <div className="tutorial-dark-bg" aria-hidden="true" /> : null}
       <style>{`
+        #tutorial-target-home-journey.tutorial-spotlight-active button {
+          pointer-events: none !important;
+          cursor: default !important;
+        }
         .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-speech-bubble--logo::before,
         .tutorial-overlay-wrapper.is-custom-tutorial.is-activity-home-step-3 .tutorial-speech-bubble::before {
           display: none !important;
@@ -818,22 +822,6 @@ function TutorialOverlayMobile({
             top: auto !important;
             bottom: calc(64px + 1rem + env(safe-area-inset-bottom, 0px)) !important;
             gap: 0.5rem !important;
-          }
-          .activity-page-mobile-root.activity-page--skyward-entrance
-            #tutorial-target-home-journey.tutorial-spotlight-active {
-            max-height: min(45dvh, 22.5rem) !important;
-            overflow: hidden !important;
-          }
-          .activity-page-mobile-root.activity-page--skyward-entrance
-            #tutorial-target-home-journey.tutorial-spotlight-active
-            .skyward-journey-wrap,
-          .activity-page-mobile-root.activity-page--skyward-entrance
-            #tutorial-target-home-journey.tutorial-spotlight-active
-            .skyward-journey.skyward-journey-container.no-scrollbar {
-            height: min(45dvh, 22.5rem) !important;
-            min-height: 0 !important;
-            max-height: min(45dvh, 22.5rem) !important;
-            overflow: hidden !important;
           }
           .tutorial-overlay-wrapper.is-custom-tutorial.is-roadmap-step .tutorial-speech-bubble {
             padding-bottom: 0.65rem !important;

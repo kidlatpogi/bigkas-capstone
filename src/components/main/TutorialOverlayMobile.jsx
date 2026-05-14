@@ -786,7 +786,7 @@ function TutorialOverlayMobile({
           }
           /* Home streak (activity step 3): pin speech bubble to top so the streak card stays visible below */
           .tutorial-overlay-wrapper.is-custom-tutorial.is-activity-home-step-3 .tutorial-companion-container {
-            top: calc(16px + env(safe-area-inset-top, 0px)) !important;
+            top: calc(16px + 0.5rem + env(safe-area-inset-top, 0px)) !important;
             bottom: auto !important;
             left: 16px !important;
             transform: none !important;
@@ -869,9 +869,6 @@ function TutorialOverlayMobile({
             width: 100% !important;
             max-width: min(100%, 48rem) !important;
             margin: 0 !important;
-          }
-          .tutorial-overlay-wrapper.is-custom-tutorial.is-activity-home-step-3 .tutorial-speech-bubble {
-            padding-top: calc(clamp(1rem, 2.5vw, 1.5rem) + 0.5rem) !important;
           }
           .tutorial-overlay-wrapper.is-custom-tutorial.is-activity-home-step-1 .tutorial-speech-bubble,
           .tutorial-overlay-wrapper.is-custom-tutorial.is-activity-home-step-2 .tutorial-speech-bubble {

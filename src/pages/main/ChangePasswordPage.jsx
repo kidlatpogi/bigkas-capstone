@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { IoChevronForward, IoLockClosedOutline, IoArrowBackOutline } from 'react-icons/io5';
+import { IoChevronForward, IoLockClosedOutline, IoArrowBackOutline, IoChevronBack } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
@@ -117,6 +117,17 @@ function ChangePasswordPage() {
   return (
     <div className="settings-profile-page">
       <div className="settings-profile-container">
+        <div className="test-av-mobile-nav">
+          <button
+            type="button"
+            className="test-av-mobile-back"
+            onClick={() => navigate(ROUTES.SETTINGS)}
+            aria-label="Back to Settings"
+          >
+            <IoChevronBack aria-hidden />
+            <span>Settings</span>
+          </button>
+        </div>
         {/* Hero Banner */}
         <div className={`profile-hero-card hero-theme--${heroTheme}`}>
           <div className="hero-decoration">

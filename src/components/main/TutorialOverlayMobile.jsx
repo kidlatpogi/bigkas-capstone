@@ -336,6 +336,7 @@ function TutorialOverlayMobile({
     }
     if (activeSpotlightRef.current) {
       activeSpotlightRef.current.classList.remove('tutorial-spotlight-active');
+      activeSpotlightRef.current.style.removeProperty('pointer-events');
       activeSpotlightRef.current = null;
     }
   }, [isOpen, onCloseDashboard, isCustomTutorial, isNarrowViewport]);
@@ -374,6 +375,8 @@ function TutorialOverlayMobile({
     clearAllSpotlights();
     if (activeSpotlightRef.current) {
       activeSpotlightRef.current.classList.remove('tutorial-spotlight-active');
+      activeSpotlightRef.current.style.removeProperty('z-index');
+      activeSpotlightRef.current.style.removeProperty('pointer-events');
       activeSpotlightRef.current = null;
     }
 
@@ -381,6 +384,8 @@ function TutorialOverlayMobile({
     const spotlightZIndex =
       isCustomTutorial && targetId === 'tutorial-target-home-journey' ? '4600' : '4800';
     const needsDashboard =
+      targetId === 'tutorial-target-home-streak' || targetId === 'tutorial-target-home-rank' || targetId === 'tutorial-target-home-practice';
+    const shouldDisableTargetClicks =
       targetId === 'tutorial-target-home-streak' || targetId === 'tutorial-target-home-rank' || targetId === 'tutorial-target-home-practice';
     const maxAttempts = needsDashboard ? 48 : 6;
     const retryMs = needsDashboard ? 80 : 60;
@@ -394,6 +399,9 @@ function TutorialOverlayMobile({
       if (nextEl) {
         nextEl.classList.add('tutorial-spotlight-active');
         nextEl.style.setProperty('z-index', spotlightZIndex, 'important');
+        if (shouldDisableTargetClicks) {
+          nextEl.style.setProperty('pointer-events', 'none', 'important');
+        }
         activeSpotlightRef.current = nextEl;
         if (targetId === 'tutorial-target-home-practice') {
           const scrollContainer = document.querySelector('.dashboard-overlay-scroll-content') || document.querySelector('.dashboard-overlay-content');
@@ -407,6 +415,10 @@ function TutorialOverlayMobile({
               if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
             }, 60);
           }
+        } else if (targetId === 'tutorial-target-home-journey') {
+          try {
+            nextEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } catch (e) {}
         } else {
           try {
             nextEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -430,6 +442,7 @@ function TutorialOverlayMobile({
       if (activeSpotlightRef.current) {
         activeSpotlightRef.current.classList.remove('tutorial-spotlight-active');
         activeSpotlightRef.current.style.removeProperty('z-index');
+        activeSpotlightRef.current.style.removeProperty('pointer-events');
         activeSpotlightRef.current = null;
       }
     };
@@ -585,6 +598,8 @@ function TutorialOverlayMobile({
     if (isLast) {
       if (activeSpotlightRef.current) {
         activeSpotlightRef.current.classList.remove('tutorial-spotlight-active');
+        activeSpotlightRef.current.style.removeProperty('z-index');
+        activeSpotlightRef.current.style.removeProperty('pointer-events');
         activeSpotlightRef.current = null;
       }
       onFinish?.();

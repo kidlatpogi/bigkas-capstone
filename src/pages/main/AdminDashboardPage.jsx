@@ -150,6 +150,9 @@ function AdminDashboardPage() {
   const [contentTab, setContentTab] = useState('activities');
   const [creatingContent, setCreatingContent] = useState(false);
   const [editingContent, setEditingContent] = useState(null);
+  const [contentLevelLimit, setContentLevelLimit] = useState(5);
+  const [pendingContentSave, setPendingContentSave] = useState(null);
+  const [pendingLevelAdd, setPendingLevelAdd] = useState(null);
 
   const [creatingAdmin, setCreatingAdmin] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -442,6 +445,17 @@ function AdminDashboardPage() {
   const [savingUser, setSavingUser] = useState(false);
   const [userForm, setUserForm] = useState(USER_FORM_INITIAL);
 
+  const highestActivityLevel = useMemo(() => {
+    const levels = activities.map(a => Number(a.target_level) || 0);
+    if (editingContent?.target_level) levels.push(Number(editingContent.target_level) || 0);
+    return Math.max(5, contentLevelLimit, ...levels);
+  }, [activities, contentLevelLimit, editingContent]);
+
+  const targetLevelOptions = useMemo(
+    () => Array.from({ length: highestActivityLevel }, (_, i) => i + 1),
+    [highestActivityLevel]
+  );
+
   const filteredAuditLogs = useMemo(() => {
     let res = auditLogs;
     if (auditSearchQuery.trim()) {
@@ -472,18 +486,62 @@ function AdminDashboardPage() {
     } else showToast('Setting updated');
   };
 
-  const handleSaveContent = async (e) => {
-    e.preventDefault();
-    const data = Object.fromEntries(new FormData(e.target));
+  const performSaveContent = async (data) => {
     setIsContentLoading(true);
     const { error } = editingContent ? await supabase.from(contentTab).update(data).eq('id', editingContent.id) : await supabase.from(contentTab).insert([data]);
     setIsContentLoading(false);
     if (error) showToast(error.message, 'error');
     else {
-      showToast('Saved successfully'); setCreatingContent(false); setEditingContent(null);
-      const { data: ref } = await supabase.from(contentTab).select('*').order('created_at', { ascending: false });
+      showToast('Saved successfully');
+      setCreatingContent(false);
+      setEditingContent(null);
+      setPendingContentSave(null);
+      const query = supabase.from(contentTab).select('*');
+      const { data: ref } = contentTab === 'activities'
+        ? await query.order('target_level', { ascending: true }).order('activity_order', { ascending: true })
+        : await query.order('created_at', { ascending: false });
       if (contentTab === 'activities') setActivities(ref || []); else setModules(ref || []);
     }
+  };
+
+  const handleSaveContent = async (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(e.target));
+    if (contentTab === 'activities') {
+      data.target_level = Number(data.target_level);
+      data.activity_order = Number(data.activity_order);
+    } else {
+      data.level_number = Number(data.level_number);
+    }
+    const duplicateActivity = contentTab === 'activities'
+      ? activities.find(a =>
+          String(a.id) !== String(editingContent?.id) &&
+          Number(a.target_level) === Number(data.target_level) &&
+          Number(a.activity_order) === Number(data.activity_order)
+        )
+      : null;
+    setPendingContentSave({
+      data,
+      duplicateActivity,
+      mode: editingContent ? 'edit' : 'create',
+      type: contentTab,
+    });
+  };
+
+  const confirmContentSave = async () => {
+    if (!pendingContentSave) return;
+    await performSaveContent(pendingContentSave.data);
+  };
+
+  const requestNextTargetLevel = () => {
+    setPendingLevelAdd(highestActivityLevel + 1);
+  };
+
+  const confirmNextTargetLevel = () => {
+    if (!pendingLevelAdd) return;
+    setContentLevelLimit(prev => Math.max(prev, pendingLevelAdd));
+    setPendingLevelAdd(null);
+    showToast(`Level ${pendingLevelAdd} added to the dropdown`);
   };
 
   const handleDeleteContent = async (id, type) => {
@@ -959,7 +1017,12 @@ function AdminDashboardPage() {
           {contentTab === 'activities' ? (
             <>
               <AdminUserField label="Target Level">
-                <input name="target_level" type="number" min="1" max="5" defaultValue={editingContent?.target_level || 1} placeholder="Level" required />
+                <div className="admin-level-picker">
+                  <select name="target_level" defaultValue={editingContent?.target_level || 1} required>
+                    {targetLevelOptions.map(level => <option key={level} value={level}>Level {level}</option>)}
+                  </select>
+                  <button type="button" className="admin-btn admin-btn--ghost" onClick={requestNextTargetLevel}>Add Level</button>
+                </div>
               </AdminUserField>
               <AdminUserField label="Activity Order">
                 <input name="activity_order" type="number" min="1" defaultValue={editingContent?.activity_order || 1} placeholder="Order" required />
@@ -983,6 +1046,37 @@ function AdminDashboardPage() {
             <button type="submit" className="admin-btn admin-btn--primary" disabled={isContentLoading}>{isContentLoading ? 'Saving...' : editingContent ? 'Save Changes' : 'Create'}</button>
           </div>
         </form>
+      </div></div>, document.body)}
+
+      {pendingContentSave && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setPendingContentSave(null)}><div className="admin-modal admin-confirm-modal admin-warning-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+        <h3>{pendingContentSave.duplicateActivity ? 'Overwrite Activity Slot?' : `Confirm ${pendingContentSave.mode === 'edit' ? 'Changes' : 'New Item'}?`}</h3>
+        {pendingContentSave.duplicateActivity ? (
+          <p>
+            Level {pendingContentSave.data.target_level}, order {pendingContentSave.data.activity_order} already has
+            <strong> {pendingContentSave.duplicateActivity.title || 'an activity'}</strong>. Continue only if this replacement is intentional.
+          </p>
+        ) : (
+          <p>
+            Review this {pendingContentSave.type === 'activities' ? 'activity' : 'module'} before saving. This change will be written to the database after confirmation.
+          </p>
+        )}
+        <div className="admin-modal-actions">
+          <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setPendingContentSave(null)}>Cancel</button>
+          <button type="button" className={`admin-btn ${pendingContentSave.duplicateActivity ? 'admin-btn--danger' : 'admin-btn--primary'}`} onClick={confirmContentSave} disabled={isContentLoading}>
+            {isContentLoading ? 'Saving...' : pendingContentSave.duplicateActivity ? 'Overwrite Slot' : 'Confirm Save'}
+          </button>
+        </div>
+      </div></div>, document.body)}
+
+      {pendingLevelAdd && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setPendingLevelAdd(null)}><div className="admin-modal admin-confirm-modal admin-warning-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+        <h3>Add Level {pendingLevelAdd}?</h3>
+        <p>
+          This only adds Level {pendingLevelAdd} to the admin dropdown. Confirm that the database rules and learner content already support this level before saving activities to it.
+        </p>
+        <div className="admin-modal-actions">
+          <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setPendingLevelAdd(null)}>Cancel</button>
+          <button type="button" className="admin-btn admin-btn--primary" onClick={confirmNextTargetLevel}>Add Level</button>
+        </div>
       </div></div>, document.body)}
 
       {inspectingLog && createPortal(<div className="admin-modal-backdrop"><div className="admin-modal"><h3>Audit Details</h3><pre><code>{JSON.stringify(inspectingLog.new_values, null, 2)}</code></pre><button onClick={() => setInspectingLog(null)} className="admin-btn">Close</button></div></div>, document.body)}

@@ -40,6 +40,7 @@ const PIE_COLORS = ['#33d2a4', '#51dfb5', '#7bedcc', '#a8f5e1'];
 const USER_FORM_INITIAL = {
   email: '',
   password: '',
+  confirm_password: '',
   first_name: '',
   last_name: '',
   username: '',
@@ -102,10 +103,30 @@ function AdminUserField({ label, help, children }) {
   );
 }
 
+function AdminPasswordInput({ value, onChange, placeholder, required = true }) {
+  const [isVisible, setIsVisible] = useState(false);
+  return (
+    <div className="admin-password-control">
+      <input
+        type={isVisible ? 'text' : 'password'}
+        required={required}
+        minLength={6}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+      />
+      <button type="button" onClick={() => setIsVisible(prev => !prev)} aria-label={isVisible ? 'Hide password' : 'Show password'}>
+        {isVisible ? 'Hide' : 'Show'}
+      </button>
+    </div>
+  );
+}
+
 function userToForm(user) {
   return {
     email: '',
     password: '',
+    confirm_password: '',
     first_name: user?.first_name || '',
     last_name: user?.last_name || '',
     username: user?.username || '',
@@ -592,6 +613,10 @@ function AdminDashboardPage() {
 
   const submitCreateUser = async (e) => {
     e.preventDefault();
+    if (userForm.password !== userForm.confirm_password) {
+      showToast('Passwords do not match', 'error');
+      return;
+    }
     setSavingUser(true);
     try {
       const { data, error: signUpError } = await supabase.auth.signUp({
@@ -925,11 +950,11 @@ function AdminDashboardPage() {
                   </label>
                   <label className="admin-create-field">
                     <span>Password</span>
-                    <input type="password" required minLength={6} placeholder="Password" value={createAdminForm.password} onChange={e => setCreateAdminForm(p => ({ ...p, password: e.target.value }))} />
+                    <AdminPasswordInput placeholder="Password" value={createAdminForm.password} onChange={e => setCreateAdminForm(p => ({ ...p, password: e.target.value }))} />
                   </label>
                   <label className="admin-create-field">
                     <span>Confirm Password</span>
-                    <input type="password" required minLength={6} placeholder="Confirm password" value={createAdminForm.confirm_password} onChange={e => setCreateAdminForm(p => ({ ...p, confirm_password: e.target.value }))} />
+                    <AdminPasswordInput placeholder="Confirm password" value={createAdminForm.confirm_password} onChange={e => setCreateAdminForm(p => ({ ...p, confirm_password: e.target.value }))} />
                   </label>
                   <label className="admin-create-field admin-create-field--full">
                     <span>Administrator Role</span>
@@ -971,8 +996,8 @@ function AdminDashboardPage() {
           <AdminUserField label="Email" help="Login email used for the Supabase auth account.">
             <input type="email" required placeholder="user@email.com" value={userForm.email} onChange={e => setUserForm(p => ({ ...p, email: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Temporary Password" help="Initial password for the new user; minimum 6 characters.">
-            <input type="password" required minLength={6} placeholder="Temporary password" value={userForm.password} onChange={e => setUserForm(p => ({ ...p, password: e.target.value }))} />
+          <AdminUserField label="Username" help="Unique public handle stored in profiles.username.">
+            <input type="text" placeholder="username" value={userForm.username} onChange={e => setUserForm(p => ({ ...p, username: e.target.value }))} />
           </AdminUserField>
           <AdminUserField label="First Name">
             <input type="text" placeholder="First name" value={userForm.first_name} onChange={e => setUserForm(p => ({ ...p, first_name: e.target.value }))} />
@@ -980,8 +1005,11 @@ function AdminDashboardPage() {
           <AdminUserField label="Last Name">
             <input type="text" placeholder="Last name" value={userForm.last_name} onChange={e => setUserForm(p => ({ ...p, last_name: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Username" help="Unique public handle stored in profiles.username.">
-            <input type="text" placeholder="username" value={userForm.username} onChange={e => setUserForm(p => ({ ...p, username: e.target.value }))} />
+          <AdminUserField label="Password" help="Password for this user account; minimum 6 characters.">
+            <AdminPasswordInput placeholder="Password" value={userForm.password} onChange={e => setUserForm(p => ({ ...p, password: e.target.value }))} />
+          </AdminUserField>
+          <AdminUserField label="Confirm Password" help="Must match the password above.">
+            <AdminPasswordInput placeholder="Confirm password" value={userForm.confirm_password} onChange={e => setUserForm(p => ({ ...p, confirm_password: e.target.value }))} />
           </AdminUserField>
           <AdminUserField label="System Role" help="Controls platform permissions: user, admin, or superadmin.">
             <select value={userForm.role} onChange={e => setUserForm(p => ({ ...p, role: e.target.value }))}>

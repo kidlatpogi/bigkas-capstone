@@ -827,6 +827,35 @@
   box-sizing: border-box;
 }
 
+.admin-password-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  width: 100%;
+}
+
+.admin-password-control input {
+  border-radius: 10px 0 0 10px;
+  border-right: 0;
+}
+
+.admin-password-control button {
+  min-width: 64px;
+  border: 1px solid var(--border);
+  border-radius: 0 10px 10px 0;
+  background: #f8fbf3;
+  color: var(--accent-dark);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.admin-password-control:focus-within button {
+  border-color: #10B981;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
 .admin-create-form select {
   min-height: 44px;
 }

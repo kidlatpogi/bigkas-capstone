@@ -17,7 +17,15 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend
+  Legend,
+  Radar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Funnel,
+  FunnelChart,
+  LabelList
 } from 'recharts';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
@@ -82,6 +90,7 @@ function AdminDashboardPage() {
   const [role, setRole] = useState('');
   const [activePage, setActivePage] = useState('overview');
   const [globalFilter, setGlobalFilter] = useState('30d');
+  const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
 
   const [profiles, setProfiles] = useState([]);
   const [sessions, setSessions] = useState([]);
@@ -99,6 +108,12 @@ function AdminDashboardPage() {
   const [userPage, setUserPage] = useState(1);
   const USERS_PER_PAGE = 10;
   const [archivingUserId, setArchivingUserId] = useState(null);
+  const [activities, setActivities] = useState([]);
+  const [modules, setModules] = useState([]);
+  const [isContentLoading, setIsContentLoading] = useState(false);
+  const [contentTab, setContentTab] = useState('activities');
+  const [creatingContent, setCreatingContent] = useState(false);
+  const [editingContent, setEditingContent] = useState(null);
 
   const [creatingAdmin, setCreatingAdmin] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -145,36 +160,34 @@ function AdminDashboardPage() {
           throw new Error('Access denied: admin privileges required.');
         }
 
-        const [profilesRes, sessionsRes, metricsRes, settingsRes] = await Promise.all([
-          supabase
-            .from('profiles')
-            .select('*')
-            .order('created_at', { ascending: false }),
-          supabase
-            .from('sessions')
-            .select('id, user_id, created_at, duration, session_origin, session_mode, speaking_mode')
-            .order('created_at', { ascending: true }),
-          supabase
-            .from('session_metrics')
-            .select('session_id, overall_score, fluency_score, confidence_score, pronunciation_score'),
+        const [profilesRes, sessionsRes, metricsRes, activitiesRes, modulesRes, settingsRes] = await Promise.all([
+          supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+          supabase.from('sessions').select('*').order('created_at', { ascending: true }),
+          supabase.from('session_metrics').select('session_id, overall_score, verbal_score, confidence_score, pronunciation_score'),
+          supabase.from('activities').select('*').order('target_level', { ascending: true }).order('activity_order', { ascending: true }),
+          supabase.from('modules').select('*').order('level_number', { ascending: true }).order('lesson_number', { ascending: true }),
           roleProfile.role === 'superadmin' ? supabase.from('system_settings').select('*') : Promise.resolve({ data: [] })
         ]);
 
         if (profilesRes.error) throw profilesRes.error;
         if (sessionsRes.error) throw sessionsRes.error;
         if (metricsRes.error) throw metricsRes.error;
+        if (activitiesRes.error) throw activitiesRes.error;
+        if (modulesRes.error) throw modulesRes.error;
+
+        if (settingsRes.data && settingsRes.data.length > 0) {
+          const sMap = {};
+          settingsRes.data.forEach(s => sMap[s.key] = s.value === 'true');
+          setSystemSettings(prev => ({ ...prev, ...sMap }));
+        }
 
         if (!active) return;
         setRole(roleProfile.role);
         setProfiles(profilesRes.data || []);
         setSessions(sessionsRes.data || []);
         setMetrics(metricsRes.data || []);
-        
-        if (settingsRes.data && settingsRes.data.length > 0) {
-          const sMap = {};
-          settingsRes.data.forEach(s => sMap[s.key] = s.value === 'true');
-          setSystemSettings(prev => ({ ...prev, ...sMap }));
-        }
+        setActivities(activitiesRes.data || []);
+        setModules(modulesRes.data || []);
       } catch (e) {
         if (active) setError(e.message || 'Failed to load admin dashboard.');
       } finally {
@@ -192,13 +205,12 @@ function AdminDashboardPage() {
       try {
         const { data, error: auditErr } = await supabase
           .from('audit_logs')
-          .select('id, action, entity_type, entity_id, actor_id, created_at, old_values, new_values, ip_address')
+          .select('*')
           .order('created_at', { ascending: false })
           .limit(1000);
         if (auditErr) throw auditErr;
         if (!active) return;
-        const logs = data || [];
-        setAuditLogs(logs);
+        setAuditLogs(data || []);
       } catch (e) {
         if (active) setError(e.message || 'Failed to load admin settings data.');
       }
@@ -207,11 +219,7 @@ function AdminDashboardPage() {
     return () => { active = false; };
   }, [isSuperadmin, activePage]);
 
-  const visibleUsers = useMemo(
-    () => profiles.filter((p) => !p.archived_at),
-    [profiles],
-  );
-
+  const visibleUsers = useMemo(() => profiles.filter((p) => !p.archived_at), [profiles]);
   const profileById = useMemo(() => {
     const map = new Map();
     visibleUsers.forEach((p) => map.set(p.id, p));
@@ -235,7 +243,7 @@ function AdminDashboardPage() {
     const map = new Map();
     metrics.forEach((m) => map.set(m.session_id, {
       overall: Number(m.overall_score),
-      fluency: Number(m.fluency_score),
+      verbal: Number(m.verbal_score),
       confidence: Number(m.confidence_score),
       pronunciation: Number(m.pronunciation_score)
     }));
@@ -255,14 +263,7 @@ function AdminDashboardPage() {
     const now = new Date();
     const oneWeekAgo = shiftRange(now, 'day', -7);
     const twoWeeksAgo = shiftRange(now, 'day', -14);
-
-    // TOTAL USERS
     const totalUsers = visibleUsers.length;
-    const usersLastWeek = visibleUsers.filter(p => new Date(p.created_at) < oneWeekAgo).length;
-    const usersNewThisWeek = totalUsers - usersLastWeek;
-    const usersDeltaText = usersNewThisWeek > 0 ? `+${usersNewThisWeek} new this week` : 'No new users this week';
-
-    // ACTIVE THIS WEEK
     const activeThisWeekSet = new Set();
     const activeLastWeekSet = new Set();
     sessions.forEach(s => {
@@ -273,184 +274,144 @@ function AdminDashboardPage() {
     const activeThisWeek = activeThisWeekSet.size;
     const activeLastWeek = activeLastWeekSet.size;
     const activeDelta = activeThisWeek - activeLastWeek;
-    const activeDeltaText = activeDelta >= 0 ? `+${activeDelta} vs last week` : `${activeDelta} vs last week`;
-
-    // SPEECHES ANALYZED
-    const totalSpeeches = sessions.length;
-    const speechesLastWeekCount = sessions.filter(s => new Date(s.created_at) >= oneWeekAgo).length;
-    const speechesPrevWeekCount = sessions.filter(s => {
-      const d = new Date(s.created_at);
-      return d >= twoWeeksAgo && d < oneWeekAgo;
-    }).length;
-    const speechDelta = speechesLastWeekCount - speechesPrevWeekCount;
-    const speechDeltaText = speechDelta >= 0 ? `+${speechesLastWeekCount} this week` : `${speechDelta} vs last week`;
-
     return {
-      totalUsers, usersDeltaText,
-      activeThisWeek, activeDeltaText,
-      totalSpeeches, speechDeltaText
+      totalUsers,
+      usersDeltaText: `+${visibleUsers.filter(p => new Date(p.created_at) >= oneWeekAgo).length} new this week`,
+      activeThisWeek,
+      activeDeltaText: activeDelta >= 0 ? `+${activeDelta} vs last week` : `${activeDelta} vs last week`,
+      totalSpeeches: sessions.length,
+      speechDeltaText: `+${sessions.filter(s => new Date(s.created_at) >= oneWeekAgo).length} this week`
     };
   }, [visibleUsers, sessions]);
 
   const joinTrendData = useMemo(() => {
     const days = 14;
     const now = new Date();
-    const counts = Array.from({ length: days }).map((_, i) => {
+    return Array.from({ length: days }).map((_, i) => {
       const d = new Date(now);
       d.setDate(now.getDate() - (days - 1) + i);
+      const dayStart = new Date(d.setHours(0, 0, 0, 0)).getTime();
+      const dayEnd = dayStart + 86400000;
       return {
         date: `${d.getMonth() + 1}/${d.getDate()}`,
-        timestamp: d.setHours(0, 0, 0, 0),
+        users: visibleUsers.filter(p => {
+          const ms = new Date(p.created_at).getTime();
+          return ms >= dayStart && ms < dayEnd;
+        }).length
       };
     });
-
-    counts.forEach(day => {
-      const nextDayMs = day.timestamp + 86400000;
-      day.users = visibleUsers.filter(p => {
-        const createdMs = new Date(p.created_at).getTime();
-        return createdMs >= day.timestamp && createdMs < nextDayMs;
-      }).length;
-    });
-
-    return counts;
   }, [visibleUsers]);
 
-  const levelBarData = useMemo(
-    () => levelDistribution.map((item) => ({ level: item.label, users: item.value })),
-    [levelDistribution],
-  );
+  const levelBarData = useMemo(() => levelDistribution.map(i => ({ level: i.label, users: i.value })), [levelDistribution]);
 
   const timeAllocation = useMemo(() => {
     const totals = { Activities: 0, Randomizer: 0, 'Free Speech': 0 };
-    filteredSessions.forEach((s) => { totals[modeOf(s)] += Number(s.duration || 0); });
-    return Object.entries(totals)
-      .map(([label, value]) => ({ name: label, value: Math.round(value / 60) }))
-      .filter(d => d.value > 0);
+    filteredSessions.forEach(s => totals[modeOf(s)] += Number(s.duration || 0));
+    return Object.entries(totals).map(([name, value]) => ({ name, value: Math.round(value / 60) })).filter(d => d.value > 0);
   }, [filteredSessions]);
 
-  const grind = useMemo(() => {
-    const totals = new Map();
-    filteredSessions.forEach((s) => totals.set(s.user_id, (totals.get(s.user_id) || 0) + Number(s.duration || 0)));
-    return Array.from(totals.entries())
-      .map(([id, sec]) => {
-        const prof = profileById.get(id);
-        return {
-          id,
-          username: prof?.username || getDisplayName(prof, id),
-          initial: (prof?.username || prof?.first_name || 'U')[0].toUpperCase(),
-          value: Math.round(sec / 60)
-        };
-      })
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 5);
-  }, [filteredSessions, profileById]);
+  const mostConsistent = useMemo(() => {
+    const activityMap = new Map();
+    sessions.forEach(s => {
+      const day = new Date(s.created_at).toDateString();
+      const set = activityMap.get(s.user_id) || new Set();
+      set.add(day);
+      activityMap.set(s.user_id, set);
+    });
+    return Array.from(activityMap.entries()).map(([id, set]) => {
+      const p = profileById.get(id);
+      return { id, username: getDisplayName(p, id), initial: (p?.username || 'U')[0].toUpperCase(), value: set.size };
+    }).sort((a, b) => b.value - a.value).slice(0, 5);
+  }, [sessions, profileById]);
 
   const risers = useMemo(() => {
     const byUser = new Map();
-    filteredSessions.forEach((s) => {
+    sessions.forEach(s => {
       const scores = metricBySession.get(s.id);
-      if (!scores || !Number.isFinite(scores.overall)) return;
+      if (!scores) return;
       const list = byUser.get(s.user_id) || [];
-      list.push({ created_at: s.created_at, score: scores.overall });
+      list.push({ d: new Date(s.created_at).getTime(), s: scores.overall });
       byUser.set(s.user_id, list);
     });
-    return Array.from(byUser.entries())
-      .map(([id, list]) => {
-        if (list.length < 2) return null;
-        const sorted = [...list].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-        const prof = profileById.get(id);
-        return {
-          id,
-          username: prof?.username || getDisplayName(prof, id),
-          initial: (prof?.username || prof?.first_name || 'U')[0].toUpperCase(),
-          value: Number((sorted[sorted.length - 1].score - sorted[0].score).toFixed(1))
-        };
-      })
-      .filter(Boolean)
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 5);
-  }, [filteredSessions, metricBySession, profileById]);
+    return Array.from(byUser.entries()).map(([id, list]) => {
+      if (list.length < 2) return null;
+      const sorted = list.sort((a, b) => a.d - b.d);
+      const diff = Number((sorted[sorted.length - 1].s - sorted[0].s).toFixed(1));
+      const p = profileById.get(id);
+      return { id, username: getDisplayName(p, id), initial: (p?.username || 'U')[0].toUpperCase(), value: diff };
+    }).filter(u => u && u.value > 0).sort((a, b) => b.value - a.value).slice(0, 5);
+  }, [sessions, metricBySession, profileById]);
 
   const multiDimProgress = useMemo(() => {
     const buckets = new Map();
-    filteredSessions.forEach((s) => {
+    filteredSessions.forEach(s => {
       const scores = metricBySession.get(s.id);
-      if (!scores || !Number.isFinite(scores.fluency)) return;
+      if (!scores || !Number.isFinite(scores.verbal)) return;
       const d = new Date(s.created_at);
-      if (Number.isNaN(d.getTime())) return;
       const key = `${d.getMonth() + 1}/${d.getDate()}`;
-      const cur = buckets.get(key) || { f: 0, c: 0, p: 0, count: 0 };
-      cur.f += scores.fluency;
-      cur.c += scores.confidence;
-      cur.p += scores.pronunciation;
-      cur.count += 1;
+      const cur = buckets.get(key) || { v: 0, c: 0, p: 0, n: 0 };
+      cur.v += scores.verbal; cur.c += scores.confidence; cur.p += scores.pronunciation; cur.n++;
       buckets.set(key, cur);
     });
-    return Array.from(buckets.entries())
-      .map(([label, v]) => ({
-        label,
-        fluency_score: Number((v.f / v.count).toFixed(1)),
-        confidence_score: Number((v.c / v.count).toFixed(1)),
-        pronunciation_score: Number((v.p / v.count).toFixed(1)),
-      }))
-      .sort((a, b) => {
-        const [m1, d1] = a.label.split('/').map(Number);
-        const [m2, d2] = b.label.split('/').map(Number);
-        if (m1 !== m2) return m1 - m2;
-        return d1 - d2;
-      });
+    return Array.from(buckets.entries()).map(([label, b]) => ({
+      label, verbal_score: Number((b.v/b.n).toFixed(1)), confidence_score: Number((b.c/b.n).toFixed(1)), pronunciation_score: Number((b.p/b.n).toFixed(1))
+    })).sort((a,b) => {
+      const [m1, d1] = a.label.split('/').map(Number); const [m2, d2] = b.label.split('/').map(Number);
+      return m1 !== m2 ? m1 - m2 : d1 - d2;
+    });
   }, [filteredSessions, metricBySession]);
 
-  const filteredUsers = useMemo(() => {
-    let result = profiles; // Including archived for now, but we'll show status
+  const masteryRadarData = useMemo(() => {
+    let vSum = 0, viSum = 0, voSum = 0, count = 0;
+    metrics.forEach(m => {
+      if (!Number.isFinite(Number(m.verbal_score))) return;
+      vSum += Number(m.verbal_score);
+      viSum += Number(m.confidence_score);
+      voSum += Number(m.pronunciation_score);
+      count++;
+    });
+    if (count === 0) return [];
+    return [
+      { subject: 'Verbal (Words)', A: Number((vSum / count).toFixed(1)), fullMark: 100 },
+      { subject: 'Visual (Body Language)', A: Number((viSum / count).toFixed(1)), fullMark: 100 },
+      { subject: 'Vocal (Tone)', A: Number((voSum / count).toFixed(1)), fullMark: 100 },
+    ];
+  }, [metrics]);
 
+  const courseFunnelData = useMemo(() => {
+    return [1, 2, 3, 4, 5].map(lv => ({
+      value: profiles.filter(p => Number(p.current_level) >= lv).length,
+      name: `Journey ${lv}`,
+      fill: PIE_COLORS[lv % PIE_COLORS.length]
+    })).filter(d => d.value > 0);
+  }, [profiles]);
+
+  const filteredUsers = useMemo(() => {
+    let res = profiles;
     if (userSearchQuery.trim()) {
       const q = userSearchQuery.toLowerCase();
-      result = result.filter((p) => {
-        const nameMatch = (p.first_name || '').toLowerCase().includes(q);
-        const userMatch = (p.username || '').toLowerCase().includes(q);
-        return nameMatch || userMatch;
-      });
+      res = res.filter(p => (p.first_name || '').toLowerCase().includes(q) || (p.username || '').toLowerCase().includes(q));
     }
-
-    if (userLevelFilter !== 'all') {
-      result = result.filter((p) => Number(p.current_level) === Number(userLevelFilter));
-    }
-
-    return result;
+    if (userLevelFilter !== 'all') res = res.filter(p => Number(p.current_level) === Number(userLevelFilter));
+    return res;
   }, [profiles, userSearchQuery, userLevelFilter]);
 
   const paginatedUsers = useMemo(() => {
-    const startIndex = (userPage - 1) * USERS_PER_PAGE;
-    return filteredUsers.slice(startIndex, startIndex + USERS_PER_PAGE);
+    const start = (userPage - 1) * USERS_PER_PAGE;
+    return filteredUsers.slice(start, start + USERS_PER_PAGE);
   }, [filteredUsers, userPage]);
 
   const totalUserPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE);
 
-  const handleNextUserPage = () => {
-    if (userPage < totalUserPages) setUserPage((prev) => prev + 1);
-  };
-
-  const handlePrevUserPage = () => {
-    if (userPage > 1) setUserPage((prev) => prev - 1);
-  };
-
   const filteredAuditLogs = useMemo(() => {
-    let result = auditLogs;
+    let res = auditLogs;
     if (auditSearchQuery.trim()) {
       const q = auditSearchQuery.toLowerCase();
-      result = result.filter(log => {
-        const actorName = getDisplayName(profiles.find(p => p.id === log.actor_id), log.actor_id).toLowerCase();
-        return actorName.includes(q) || String(log.actor_id).toLowerCase().includes(q);
-      });
+      res = res.filter(l => getDisplayName(profiles.find(p => p.id === l.actor_id), l.actor_id).toLowerCase().includes(q));
     }
-    if (auditActionFilter !== 'all') {
-      result = result.filter(log => log.action.toLowerCase() === auditActionFilter.toLowerCase());
-    }
-    if (auditEntityFilter !== 'all') {
-      result = result.filter(log => log.entity_type.toLowerCase() === auditEntityFilter.toLowerCase());
-    }
-    return result;
+    if (auditActionFilter !== 'all') res = res.filter(l => l.action.toLowerCase() === auditActionFilter.toLowerCase());
+    if (auditEntityFilter !== 'all') res = res.filter(l => l.entity_type.toLowerCase() === auditEntityFilter.toLowerCase());
+    return res;
   }, [auditLogs, auditSearchQuery, auditActionFilter, auditEntityFilter, profiles]);
 
   const paginatedAuditLogs = useMemo(() => {
@@ -460,180 +421,78 @@ function AdminDashboardPage() {
 
   const totalAuditPages = Math.ceil(filteredAuditLogs.length / AUDIT_PER_PAGE);
 
-  useEffect(() => {
-    setAuditPage(1);
-  }, [auditSearchQuery, auditActionFilter, auditEntityFilter]);
-
-  const getActionBadgeClass = (action) => {
-    const a = action.toLowerCase();
-    if (a.includes('create') || a.includes('insert')) return 'is-active';
-    if (a.includes('update')) return 'is-update';
-    if (a.includes('delete') || a.includes('archive')) return 'is-archived';
-    return '';
-  };
-
-  useEffect(() => {
-    setUserPage(1); // Reset page when filters change
-  }, [userSearchQuery, userLevelFilter]);
-
-  const onLogout = () => {
-    setShowLogoutConfirm(true);
-  };
-
-  const handleCancelLogout = () => {
-    setShowLogoutConfirm(false);
-  };
-
-  const handleConfirmLogout = async () => {
-    setShowLogoutConfirm(false);
-    await logout();
-    navigate(ROUTES.HOME, { replace: true });
-  };
-
-  const openEditUser = (user) => {
-    setEditingUser(user);
-  };
-
-  const archiveUser = async () => {
-    if (!archivingUserId) return;
-    const userId = archivingUserId;
-    const { error: archiveError } = await supabase
-      .from('profiles')
-      .update({ archived_at: new Date().toISOString() })
-      .eq('id', userId);
-    if (archiveError) {
-      setError(archiveError.message || 'Failed to archive user.');
-      setArchivingUserId(null);
-      return;
-    }
-    setProfiles((prev) => prev.map((p) => (p.id === userId ? { ...p, archived_at: new Date().toISOString() } : p)));
-    setArchivingUserId(null);
-  };
-
-  const submitCreateAdmin = async (e) => {
-    e.preventDefault();
-    if (!isSuperadmin) return;
-    setCreatingAdmin(true);
-    const email = String(createAdminForm.email || '').trim();
-    const password = String(createAdminForm.password || '');
-    const firstName = String(createAdminForm.first_name || '').trim();
-    const username = String(createAdminForm.username || '').trim();
-    const newRole = createAdminForm.role || 'admin';
-
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { first_name: firstName, username, role: newRole } },
-    });
-
-    if (signUpError || !data?.user?.id) {
-      setCreatingAdmin(false);
-      showToast(signUpError?.message || 'Failed to create admin auth account.', 'error');
-      return;
-    }
-
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({ role: newRole, first_name: firstName || null, username: username || null })
-      .eq('id', data.user.id);
-
-    setCreatingAdmin(false);
-    if (profileError) {
-      showToast(`Auth created, but role update failed: ${profileError.message}`, 'error');
-      return;
-    }
-
-    showToast('Admin account created successfully.', 'success');
-    setCreateAdminForm({ email: '', password: '', first_name: '', username: '', role: 'admin' });
-    
-    // Refresh profiles to show new admin
-    const { data: newProfiles } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-    if (newProfiles) setProfiles(newProfiles);
-  };
+  const onLogout = () => setShowLogoutConfirm(true);
 
   const toggleSetting = async (key, currentValue) => {
     const newValue = !currentValue;
     setSystemSettings(prev => ({ ...prev, [key]: newValue }));
-    
-    const { error } = await supabase
-      .from('system_settings')
-      .upsert({ key, value: String(newValue) }, { onConflict: 'key' });
-      
+    const { error } = await supabase.from('system_settings').upsert({ key, value: String(newValue) }, { onConflict: 'key' });
     if (error) {
       setSystemSettings(prev => ({ ...prev, [key]: currentValue }));
       showToast('Failed to update setting', 'error');
-    } else {
-      showToast('Setting updated successfully', 'success');
+    } else showToast('Setting updated');
+  };
+
+  const handleSaveContent = async (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(e.target));
+    setIsContentLoading(true);
+    const { error } = editingContent ? await supabase.from(contentTab).update(data).eq('id', editingContent.id) : await supabase.from(contentTab).insert([data]);
+    setIsContentLoading(false);
+    if (error) showToast(error.message, 'error');
+    else {
+      showToast('Saved successfully'); setCreatingContent(false); setEditingContent(null);
+      const { data: ref } = await supabase.from(contentTab).select('*').order('created_at', { ascending: false });
+      if (contentTab === 'activities') setActivities(ref || []); else setModules(ref || []);
     }
+  };
+
+  const handleDeleteContent = async (id, type) => {
+    if (!window.confirm('Delete this item?')) return;
+    const { error } = await supabase.from(type).delete().eq('id', id);
+    if (error) showToast(error.message, 'error');
+    else {
+      showToast('Deleted');
+      if (type === 'activities') setActivities(prev => prev.filter(a => a.id !== id));
+      else setModules(prev => prev.filter(m => m.id !== id));
+    }
+  };
+
+  const submitCreateAdmin = async (e) => {
+    e.preventDefault();
+    setCreatingAdmin(true);
+    const { email, password, first_name, username, role: newRole } = createAdminForm;
+    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { first_name, username, role: newRole } } });
+    if (error) showToast(error.message, 'error');
+    else {
+      await supabase.from('profiles').update({ role: newRole, first_name, username }).eq('id', data.user.id);
+      showToast('Admin created'); setCreateAdminForm({ email: '', password: '', first_name: '', username: '', role: 'admin' });
+      const { data: ps } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      if (ps) setProfiles(ps);
+    }
+    setCreatingAdmin(false);
   };
 
   const navItems = [
     { key: 'overview', label: 'Overview', icon: HiOutlineHomeModern, show: true },
     { key: 'analytics', label: 'Analytics', icon: HiOutlineChartBarSquare, show: true },
     { key: 'users', label: 'User Management', icon: HiOutlineUsers, show: true },
+    { key: 'content', label: 'Content Hub', icon: HiOutlineChartBarSquare, show: true },
     { key: 'settings', label: 'Admin Settings', icon: HiOutlineCog6Tooth, show: isSuperadmin },
     { key: 'audit', label: 'Audit Logs', icon: HiOutlineCog6Tooth, show: isSuperadmin },
-  ].filter((i) => i.show);
-
-  const logoutModal = showLogoutConfirm && typeof document !== 'undefined'
-    ? createPortal(
-      <div className="admin-logout-modal-backdrop" role="presentation" onClick={handleCancelLogout}>
-        <div
-          className="admin-logout-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="admin-logout-title"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <h3 id="admin-logout-title">Log out?</h3>
-          <p>Are you sure you want to log out?</p>
-          <div className="admin-logout-modal-actions">
-            <button
-              type="button"
-              className="admin-logout-modal-btn admin-logout-modal-btn--cancel"
-              onClick={handleCancelLogout}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="admin-logout-modal-btn admin-logout-modal-btn--confirm"
-              onClick={handleConfirmLogout}
-            >
-              Log Out
-            </button>
-          </div>
-        </div>
-      </div>,
-      document.body,
-    )
-    : null;
+  ].filter(i => i.show);
 
   return (
-    <>
-      <div className="admin-dashboard-page admin-layout" style={{ ['--admin-sidebar-width']: `${SIDEBAR_WIDTH}px` }}>
+    <div className="admin-dashboard-page admin-layout" style={{ '--admin-sidebar-width': `${SIDEBAR_WIDTH}px` }}>
       <aside className="admin-rail">
         <div className="admin-rail-inner">
-          <div className="admin-rail-brand">
-            <p>BIGKAS</p>
-            <small>Admin Center</small>
-          </div>
+          <div className="admin-rail-brand"><p>BIGKAS</p><small>Admin Center</small></div>
           <nav className="admin-rail-nav">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const active = activePage === item.key;
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  className={`admin-rail-btn ${active ? 'is-active' : ''}`}
-                  onClick={() => setActivePage(item.key)}
-                >
-                  <Icon size={18} />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
+            {navItems.map(item => (
+              <button key={item.key} type="button" className={`admin-rail-btn ${activePage === item.key ? 'is-active' : ''}`} onClick={() => setActivePage(item.key)}>
+                <item.icon size={18} /><span>{item.label}</span>
+              </button>
+            ))}
           </nav>
           <button type="button" className="admin-logout admin-logout--rail" onClick={onLogout}>Log Out</button>
         </div>
@@ -655,84 +514,32 @@ function AdminDashboardPage() {
             <section className="admin-grid admin-grid-4">
               <article className="admin-card admin-kpi-card">
                 <p className="admin-kpi-label">TOTAL USERS</p>
-                {loading ? <Skeleton width={60} height={40} /> : <p className="admin-kpi-value">{kpis.totalUsers}</p>}
-                <p className="admin-kpi-footer">{loading ? <Skeleton width={100} /> : kpis.usersDeltaText}</p>
+                <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : kpis.totalUsers}</p>
+                <p className="admin-kpi-footer">{kpis.usersDeltaText}</p>
               </article>
               <article className="admin-card admin-kpi-card">
                 <p className="admin-kpi-label">ACTIVE THIS WEEK</p>
-                {loading ? <Skeleton width={60} height={40} /> : <p className="admin-kpi-value">{kpis.activeThisWeek}</p>}
-                <p className="admin-kpi-footer">{loading ? <Skeleton width={100} /> : kpis.activeDeltaText}</p>
+                <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : kpis.activeThisWeek}</p>
+                <p className="admin-kpi-footer">{kpis.activeDeltaText}</p>
               </article>
               <article className="admin-card admin-kpi-card">
                 <p className="admin-kpi-label">SPEECHES ANALYZED</p>
-                {loading ? <Skeleton width={60} height={40} /> : <p className="admin-kpi-value">{kpis.totalSpeeches}</p>}
-                <p className="admin-kpi-footer">{loading ? <Skeleton width={100} /> : kpis.speechDeltaText}</p>
+                <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : kpis.totalSpeeches}</p>
+                <p className="admin-kpi-footer">{kpis.speechDeltaText}</p>
               </article>
               <article className="admin-card admin-kpi-card">
                 <p className="admin-kpi-label">PRIVACY COMPLIANCE</p>
-                <div className="admin-privacy-status">
-                  <HiCheckCircle size={30} />
-                  <p className="admin-kpi-value admin-kpi-value--privacy">ACTIVE</p>
-                </div>
+                <div className="admin-privacy-status"><HiCheckCircle size={30} /><p className="admin-kpi-value admin-kpi-value--privacy">ACTIVE</p></div>
                 <p className="admin-kpi-footer">{RETENTION_DAYS}-day auto-purge</p>
               </article>
             </section>
-
             <section className="admin-grid admin-grid-2">
-              <article className="admin-card">
-                <div className="admin-card-head">
-                  <h3>User Join Trend</h3>
-                </div>
-                <div className="admin-chart-container">
-                  {loading ? (
-                    <Skeleton height="100%" borderRadius={16} />
-                  ) : joinTrendData.every(d => d.users === 0) ? (
-                    <div className="admin-empty-chart">No data available yet</div>
-                  ) : (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <AreaChart data={joinTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                        <defs>
-                          <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#33D2A4" stopOpacity={0.15}/>
-                            <stop offset="95%" stopColor="#33D2A4" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <XAxis dataKey="date" tick={{ fill: '#bdc3c7', fontSize: 12 }} tickLine={false} axisLine={false} />
-                        <YAxis allowDecimals={false} tick={{ fill: '#bdc3c7', fontSize: 12 }} tickLine={false} axisLine={false} />
-                        <Tooltip 
-                          contentStyle={{ borderRadius: '12px', border: '1px solid #BDC3C7', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
-                          formatter={(value) => [`${value} New Users`, 'Joined']} 
-                        />
-                        <Area type="monotone" dataKey="users" stroke="#33D2A4" strokeWidth={3} fillOpacity={1} fill="url(#colorUsers)" />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  )}
-                </div>
-              </article>
-
-              <article className="admin-card">
-                <h3>User Level Distribution</h3>
-                <div className="admin-chart-container">
-                  {loading ? (
-                    <Skeleton height="100%" borderRadius={16} />
-                  ) : levelBarData.every(d => d.users === 0) ? (
-                    <div className="admin-empty-chart">No data available yet</div>
-                  ) : (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={levelBarData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                        <XAxis dataKey="level" tick={{ fill: '#bdc3c7', fontSize: 12 }} tickLine={false} axisLine={false} />
-                        <YAxis allowDecimals={false} tick={{ fill: '#bdc3c7', fontSize: 12 }} tickLine={false} axisLine={false} />
-                        <Tooltip 
-                          cursor={{ fill: '#f9fafb' }}
-                          contentStyle={{ borderRadius: '12px', border: '1px solid #BDC3C7', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
-                          formatter={(value) => [`${value}`, 'Users']} 
-                        />
-                        <Bar dataKey="users" fill="#33D2A4" radius={[8, 8, 0, 0]} barSize={40} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  )}
-                </div>
-              </article>
+              <article className="admin-card"><h3>User Join Trend</h3><div className="admin-chart-container">
+                <ResponsiveContainer width="100%" height={300}><AreaChart data={joinTrendData}><XAxis dataKey="date" /><YAxis /><Tooltip /><Area type="monotone" dataKey="users" stroke="#33D2A4" fill="#33D2A433" /></AreaChart></ResponsiveContainer>
+              </div></article>
+              <article className="admin-card"><h3>User Level Distribution</h3><div className="admin-chart-container">
+                <ResponsiveContainer width="100%" height={300}><BarChart data={levelBarData}><XAxis dataKey="level" /><YAxis /><Tooltip /><Bar dataKey="users" fill="#33D2A4" radius={[8,8,0,0]} /></BarChart></ResponsiveContainer>
+              </div></article>
             </section>
           </>
         )}
@@ -740,89 +547,70 @@ function AdminDashboardPage() {
         {activePage === 'analytics' && (
           <>
             <div className="admin-global-filter">
-              <label htmlFor="global-date-filter">Global Date Filter:</label>
-              <select 
-                id="global-date-filter" 
-                value={globalFilter} 
-                onChange={(e) => setGlobalFilter(e.target.value)}
-                className="admin-filter-select"
-              >
-                <option value="7d">Last 7 Days</option>
-                <option value="30d">Last 30 Days</option>
-                <option value="ytd">Year to Date</option>
-                <option value="all">All Time</option>
+              <label>Global Filter:</label>
+              <select value={globalFilter} onChange={e => setGlobalFilter(e.target.value)} className="admin-filter-select">
+                <option value="7d">Last 7 Days</option><option value="30d">Last 30 Days</option><option value="ytd">Year to Date</option><option value="all">All Time</option>
               </select>
             </div>
             <section className="admin-grid admin-grid-2">
-              <article className="admin-card">
-                <h3>Improvement Over Time</h3>
-                <div className="admin-chart-container">
-                  {loading ? (
-                    <Skeleton height="100%" borderRadius={16} />
-                  ) : multiDimProgress.length === 0 ? (
-                    <div className="admin-empty-chart">No data available yet</div>
-                  ) : (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={multiDimProgress} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#BDC3C7" />
-                        <XAxis dataKey="label" tick={{ fill: '#bdc3c7', fontSize: 12 }} tickLine={false} axisLine={false} />
-                        <YAxis allowDecimals={false} tick={{ fill: '#bdc3c7', fontSize: 12 }} tickLine={false} axisLine={false} />
-                        <Tooltip 
-                          contentStyle={{ borderRadius: '12px', border: '1px solid #BDC3C7', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
-                        />
-                        <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                        <Line type="monotone" dataKey="fluency_score" name="Fluency" stroke="#33D2A4" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                        <Line type="monotone" dataKey="confidence_score" name="Confidence" stroke="#2C3E50" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                        <Line type="monotone" dataKey="pronunciation_score" name="Pronunciation" stroke="#BDC3C7" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  )}
-                </div>
-              </article>
-              <article className="admin-card">
-                <h3>Time Allocation (minutes)</h3>
-                <div className="admin-chart-container">
-                  {loading ? (
-                    <Skeleton height="100%" borderRadius={16} />
-                  ) : timeAllocation.length === 0 ? (
-                    <div className="admin-empty-chart">No data available yet</div>
-                  ) : (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <PieChart>
-                        <Pie
-                          data={timeAllocation}
-                          dataKey="value"
-                          nameKey="name"
-                          cx="50%"
-                          cy="50%"
-                          outerRadius={100}
-                          innerRadius={60}
-                          paddingAngle={5}
-                        >
-                          {timeAllocation.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value) => [`${value} min`, 'Duration']} />
-                        <Legend layout="vertical" verticalAlign="middle" align="right" />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  )}
-                </div>
-              </article>
+              <article className="admin-card"><h3>Improvement Over Time</h3><div className="admin-chart-container">
+                <ResponsiveContainer width="100%" height={300}><LineChart data={multiDimProgress}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="label" /><YAxis /><Tooltip /><Legend /><Line type="monotone" dataKey="verbal_score" name="Verbal" stroke="#33D2A4" strokeWidth={3} /><Line type="monotone" dataKey="confidence_score" name="Confidence" stroke="#2C3E50" strokeWidth={3} /><Line type="monotone" dataKey="pronunciation_score" name="Pronunciation" stroke="#BDC3C7" strokeWidth={3} /></LineChart></ResponsiveContainer>
+              </div></article>
+              <article className="admin-card"><h3>Time Allocation (min)</h3><div className="admin-chart-container">
+                <ResponsiveContainer width="100%" height={300}><PieChart><Pie data={timeAllocation} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} innerRadius={60}>{timeAllocation.map((e,i) => <Cell key={i} fill={PIE_COLORS[i % 4]} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer>
+              </div></article>
             </section>
             <section className="admin-grid admin-grid-2">
+              <article className="admin-card"><h3>Most Consistent Users</h3><LeaderboardList items={mostConsistent} suffix="days" /></article>
+              <article className="admin-card"><h3>Fastest Risers (Lifetime)</h3><LeaderboardList items={risers} suffix="pts" /></article>
+            </section>
+
+            <section className="admin-grid admin-grid-2">
               <article className="admin-card">
-                <h3>The Grind</h3>
-                {loading ? <Skeleton count={5} height={40} style={{ marginBottom: 8 }} /> : (
-                  <LeaderboardList items={grind} suffix="hrs" emptyMsg="No active users found for this period" />
-                )}
+                <h3>Skill Mastery (Mehrabian's Rule)</h3>
+                <div className="admin-chart-container">
+                  {masteryRadarData.length === 0 ? (
+                    <div className="admin-empty-chart">No mastery data available yet</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <RadarChart cx="50%" cy="50%" outerRadius="80%" data={masteryRadarData}>
+                        <PolarGrid stroke="#BDC3C7" />
+                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#bdc3c7', fontSize: 12 }} />
+                        <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#bdc3c7', fontSize: 10 }} />
+                        <Radar
+                          name="Global Mastery"
+                          dataKey="A"
+                          stroke="#33D2A4"
+                          fill="#33D2A4"
+                          fillOpacity={0.4}
+                        />
+                        <Tooltip />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
               </article>
+
               <article className="admin-card">
-                <h3>Fastest Risers</h3>
-                {loading ? <Skeleton count={5} height={40} style={{ marginBottom: 8 }} /> : (
-                  <LeaderboardList items={risers} suffix="pts" emptyMsg="No active users found for this period" />
-                )}
+                <h3>Course Progression Funnel</h3>
+                <div className="admin-chart-container">
+                  {courseFunnelData.length === 0 ? (
+                    <div className="admin-empty-chart">No progression data available yet</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <FunnelChart>
+                        <Tooltip />
+                        <Funnel
+                          dataKey="value"
+                          data={courseFunnelData}
+                          isAnimationActive
+                        >
+                          <LabelList position="right" fill="#bdc3c7" content={({ name, value }) => `${name}: ${value}`} />
+                        </Funnel>
+                      </FunnelChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
               </article>
             </section>
           </>
@@ -830,93 +618,27 @@ function AdminDashboardPage() {
 
         {activePage === 'users' && (
           <section className="admin-card">
-            <div className="admin-table-controls">
-              <h3>User Management</h3>
-              <div className="admin-table-actions">
-                <div className="admin-search-box">
-                  <HiMagnifyingGlass className="admin-search-icon" />
-                  <input 
-                    type="text" 
-                    placeholder="Search users..." 
-                    value={userSearchQuery}
-                    onChange={(e) => setUserSearchQuery(e.target.value)}
-                  />
-                </div>
-                <select 
-                  className="admin-filter-select"
-                  value={userLevelFilter}
-                  onChange={(e) => setUserLevelFilter(e.target.value)}
-                >
-                  <option value="all">All Journeys</option>
-                  <option value="1">Journey 1</option>
-                  <option value="2">Journey 2</option>
-                  <option value="3">Journey 3</option>
-                  <option value="4">Journey 4</option>
-                  <option value="5">Journey 5</option>
-                </select>
-              </div>
-            </div>
+            <div className="admin-table-controls"><h3>User Management</h3><div className="admin-search-box"><HiMagnifyingGlass /><input type="text" placeholder="Search..." value={userSearchQuery} onChange={e => setUserSearchQuery(e.target.value)} /></div></div>
+            <div className="admin-table-wrap"><table className="admin-table">
+              <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Journey</th><th>Points</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody>{paginatedUsers.map(u => <tr key={u.id}><td>{getDisplayName(u,u.id)}</td><td>{u.username}</td><td>{u.role}</td><td>J-{u.current_level}</td><td>{u.speaker_points}</td><td><span className={`admin-status-badge ${u.archived_at ? 'is-archived' : 'is-active'}`}>{u.archived_at ? 'Archived' : 'Active'}</span></td><td><button onClick={() => setEditingUser(u)} className="admin-action-btn"><HiOutlinePencilSquare /></button></td></tr>)}</tbody>
+            </table></div>
+          </section>
+        )}
 
-            {!filteredUsers.length ? (
-              <div className="admin-empty-chart">No users found matching your criteria.</div>
-            ) : (
-              <>
-                <div className="admin-table-wrap">
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Username</th>
-                        <th>Role</th>
-                        <th>Journey</th>
-                        <th>Proficiency</th>
-                        <th>Points</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {paginatedUsers.map((u) => (
-                        <tr key={u.id}>
-                          <td>{getDisplayName(u, u.id)}</td>
-                          <td>{u.username || '-'}</td>
-                          <td>
-                            <span className={`admin-role-badge ${u.role === 'admin' || u.role === 'superadmin' ? 'is-admin' : ''}`}>
-                              {u.role || 'user'}
-                            </span>
-                          </td>
-                          <td>J-{u.current_level || 1}</td>
-                          <td>L-{u.speaker_level || 1}</td>
-                          <td>{u.speaker_points || 0}</td>
-                          <td>
-                            <span className={`admin-status-badge ${u.archived_at ? 'is-archived' : 'is-active'}`}>
-                              {u.archived_at ? 'Archived' : 'Active'}
-                            </span>
-                          </td>
-                          <td className="admin-actions">
-                            <button type="button" className="admin-icon-btn admin-icon-btn--edit" onClick={() => openEditUser(u)} title="Edit User">
-                              <HiOutlinePencilSquare size={18} />
-                            </button>
-                            <button type="button" className="admin-icon-btn admin-icon-btn--danger" onClick={() => setArchivingUserId(u.id)} title="Archive User" disabled={!!u.archived_at}>
-                              <HiOutlineTrash size={18} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="admin-pagination">
-                  <span className="admin-pagination-info">
-                    Showing {(userPage - 1) * USERS_PER_PAGE + 1} to {Math.min(userPage * USERS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length} entries
-                  </span>
-                  <div className="admin-pagination-controls">
-                    <button type="button" disabled={userPage === 1} onClick={handlePrevUserPage}>Previous</button>
-                    <button type="button" disabled={userPage === totalUserPages || totalUserPages === 0} onClick={handleNextUserPage}>Next</button>
-                  </div>
-                </div>
-              </>
-            )}
+        {activePage === 'content' && (
+          <section className="admin-content-hub">
+            <div className="admin-tabs">
+              <button className={`admin-tab-btn ${contentTab === 'activities' ? 'is-active' : ''}`} onClick={() => setContentTab('activities')}>Activities</button>
+              <button className={`admin-tab-btn ${contentTab === 'modules' ? 'is-active' : ''}`} onClick={() => setContentTab('modules')}>Modules</button>
+            </div>
+            <div className="admin-card">
+              <div className="admin-card-head"><h3>{contentTab === 'activities' ? 'Activity Management' : 'Module Management'}</h3><button onClick={() => setCreatingContent(true)} className="admin-btn admin-btn--primary">Add New</button></div>
+              <div className="admin-table-wrap"><table className="admin-table">
+                <thead><tr><th>Order/Lvl</th><th>Title</th><th>Created</th><th>Actions</th></tr></thead>
+                <tbody>{(contentTab === 'activities' ? activities : modules).map(item => <tr key={item.id}><td>{contentTab === 'activities' ? item.activity_order : item.level_number}</td><td><strong>{item.title}</strong></td><td>{new Date(item.created_at).toLocaleDateString()}</td><td className="admin-actions-cell"><button onClick={() => setEditingContent(item)} className="admin-action-btn"><HiOutlinePencilSquare /></button><button onClick={() => handleDeleteContent(item.id, contentTab)} className="admin-action-btn is-delete"><HiOutlineTrash /></button></td></tr>)}</tbody>
+              </table></div>
+            </div>
           </section>
         )}
 
@@ -926,113 +648,24 @@ function AdminDashboardPage() {
               <article className="admin-card">
                 <h3>Create Administrator</h3>
                 <form className="admin-create-form" onSubmit={submitCreateAdmin}>
-                  <input
-                    type="email"
-                    required
-                    placeholder="admin@email.com"
-                    value={createAdminForm.email}
-                    onChange={(e) => setCreateAdminForm((prev) => ({ ...prev, email: e.target.value }))}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Username"
-                    value={createAdminForm.username}
-                    onChange={(e) => setCreateAdminForm((prev) => ({ ...prev, username: e.target.value }))}
-                  />
-                  <input
-                    type="text"
-                    placeholder="First Name"
-                    value={createAdminForm.first_name}
-                    onChange={(e) => setCreateAdminForm((prev) => ({ ...prev, first_name: e.target.value }))}
-                  />
-                  <input
-                    type="password"
-                    required
-                    minLength={6}
-                    placeholder="Temporary Password"
-                    value={createAdminForm.password}
-                    onChange={(e) => setCreateAdminForm((prev) => ({ ...prev, password: e.target.value }))}
-                  />
-                  <select
-                    value={createAdminForm.role}
-                    onChange={(e) => setCreateAdminForm((prev) => ({ ...prev, role: e.target.value }))}
-                    style={{ gridColumn: '1 / -1' }}
-                  >
-                    <option value="admin">Admin</option>
-                    <option value="superadmin">Superadmin</option>
-                  </select>
-                  <button type="submit" className="admin-btn admin-btn--primary" disabled={creatingAdmin} style={{ gridColumn: '1 / -1' }}>
-                    {creatingAdmin ? 'Creating...' : 'Create Admin'}
-                  </button>
+                  <input type="email" required placeholder="Email" value={createAdminForm.email} onChange={e => setCreateAdminForm(p => ({ ...p, email: e.target.value }))} />
+                  <input type="password" required placeholder="Password" value={createAdminForm.password} onChange={e => setCreateAdminForm(p => ({ ...p, password: e.target.value }))} />
+                  <input type="text" placeholder="First Name" value={createAdminForm.first_name} onChange={e => setCreateAdminForm(p => ({ ...p, first_name: e.target.value }))} />
+                  <input type="text" placeholder="Username" value={createAdminForm.username} onChange={e => setCreateAdminForm(p => ({ ...p, username: e.target.value }))} />
+                  <select value={createAdminForm.role} onChange={e => setCreateAdminForm(p => ({ ...p, role: e.target.value }))} className="admin-filter-select"><option value="admin">Admin</option><option value="superadmin">Superadmin</option></select>
+                  <button type="submit" className="admin-btn admin-btn--primary" disabled={creatingAdmin}>{creatingAdmin ? 'Creating...' : 'Create Admin'}</button>
                 </form>
               </article>
-
               <article className="admin-card">
                 <h3>Active Administrators</h3>
-                <div className="admin-roster-list">
-                  {profiles.filter(p => p.role === 'admin' || p.role === 'superadmin').map(admin => (
-                    <div key={admin.id} className="admin-roster-item">
-                      <div className="admin-lb-avatar">{(admin.username || admin.first_name || 'A')[0].toUpperCase()}</div>
-                      <div className="admin-roster-info">
-                        <strong>{getDisplayName(admin, admin.id)}</strong>
-                      </div>
-                      <span className={`admin-role-badge ${admin.role === 'superadmin' ? 'is-admin' : ''}`}>
-                        {admin.role}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                <div className="admin-roster-list">{profiles.filter(p => p.role === 'admin' || p.role === 'superadmin').map(a => <div key={a.id} className="admin-roster-item"><strong>{getDisplayName(a, a.id)}</strong><span>{a.role}</span></div>)}</div>
               </article>
             </div>
-
             <div className="admin-settings-col">
               <article className="admin-card">
                 <h3>Platform Configurations</h3>
-                
-                <div className="admin-setting-item">
-                  <div className="admin-setting-info">
-                    <strong>Platform Maintenance Mode</strong>
-                    <p>Disables login for non-admin users and displays a maintenance screen.</p>
-                  </div>
-                  <label className="admin-toggle">
-                    <input 
-                      type="checkbox" 
-                      checked={systemSettings.maintenance_mode} 
-                      onChange={() => toggleSetting('maintenance_mode', systemSettings.maintenance_mode)} 
-                    />
-                    <span className="admin-toggle-slider"></span>
-                  </label>
-                </div>
-
-                <div className="admin-setting-item">
-                  <div className="admin-setting-info">
-                    <strong>Enable AI Failover Logging</strong>
-                    <p>Records all failed AI prompt generations to the database for debugging.</p>
-                  </div>
-                  <label className="admin-toggle">
-                    <input 
-                      type="checkbox" 
-                      checked={systemSettings.failover_logging} 
-                      onChange={() => toggleSetting('failover_logging', systemSettings.failover_logging)} 
-                    />
-                    <span className="admin-toggle-slider"></span>
-                  </label>
-                </div>
-
-                <div className="admin-setting-item">
-                  <div className="admin-setting-info">
-                    <strong>Capstone Defense Data Mode</strong>
-                    <p>Injects mock chart data across the dashboard for presentation purposes.</p>
-                  </div>
-                  <label className="admin-toggle">
-                    <input 
-                      type="checkbox" 
-                      checked={systemSettings.defense_data_mode} 
-                      onChange={() => toggleSetting('defense_data_mode', systemSettings.defense_data_mode)} 
-                    />
-                    <span className="admin-toggle-slider"></span>
-                  </label>
-                </div>
+                <div className="admin-setting-item"><div><strong>Maintenance Mode</strong><p>Disable non-admin access</p></div><button onClick={() => toggleSetting('maintenance_mode', systemSettings.maintenance_mode)} className={`admin-btn ${systemSettings.maintenance_mode ? 'admin-btn--danger' : 'admin-btn--ghost'}`}>{systemSettings.maintenance_mode ? 'ON' : 'OFF'}</button></div>
+                <div className="admin-setting-item"><div><strong>AI Failover Logging</strong><p>Record debug data</p></div><button onClick={() => toggleSetting('failover_logging', systemSettings.failover_logging)} className={`admin-btn ${systemSettings.failover_logging ? 'admin-btn--primary' : 'admin-btn--ghost'}`}>{systemSettings.failover_logging ? 'ON' : 'OFF'}</button></div>
               </article>
             </div>
           </section>
@@ -1040,175 +673,35 @@ function AdminDashboardPage() {
 
         {activePage === 'audit' && isSuperadmin && (
           <section className="admin-card">
-            <div className="admin-table-controls">
-              <h3>Audit Logs</h3>
-              <div className="admin-table-actions">
-                <div className="admin-search-box">
-                  <HiMagnifyingGlass className="admin-search-icon" />
-                  <input 
-                    type="text" 
-                    placeholder="Search by Actor Name/ID..." 
-                    value={auditSearchQuery}
-                    onChange={(e) => setAuditSearchQuery(e.target.value)}
-                  />
-                </div>
-                <select 
-                  className="admin-filter-select"
-                  value={auditActionFilter}
-                  onChange={(e) => setAuditActionFilter(e.target.value)}
-                >
-                  <option value="all">All Actions</option>
-                  <option value="create">Create</option>
-                  <option value="update">Update</option>
-                  <option value="delete">Delete / Archive</option>
-                </select>
-                <select 
-                  className="admin-filter-select"
-                  value={auditEntityFilter}
-                  onChange={(e) => setAuditEntityFilter(e.target.value)}
-                >
-                  <option value="all">All Entities</option>
-                  <option value="profiles">Profiles</option>
-                  <option value="sessions">Sessions</option>
-                  <option value="system_settings">System Settings</option>
-                </select>
-              </div>
-            </div>
-
-            {loading ? (
-              <Skeleton count={10} height={40} style={{ marginBottom: 8 }} />
-            ) : !filteredAuditLogs.length ? (
-              <p className="admin-empty-chart">No audit logs found matching your criteria.</p>
-            ) : (
-              <>
-                <div className="admin-table-wrap">
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Timestamp</th>
-                        <th>Actor</th>
-                        <th>Action</th>
-                        <th>Entity</th>
-                        <th>IP Address</th>
-                        <th>Details</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {paginatedAuditLogs.map((log) => (
-                        <tr key={log.id}>
-                          <td>{new Date(log.created_at).toLocaleString()}</td>
-                          <td>
-                            <strong>{getDisplayName(profiles.find(p => p.id === log.actor_id), log.actor_id)}</strong>
-                            <div style={{ fontSize: '0.75rem', color: '#BDC3C7' }}>{String(log.actor_id || '').slice(0, 8)}</div>
-                          </td>
-                          <td>
-                            <span className={`admin-status-badge ${getActionBadgeClass(log.action)}`}>
-                              {log.action}
-                            </span>
-                          </td>
-                          <td style={{ textTransform: 'capitalize' }}>{String(log.entity_type).replace('_', ' ')}</td>
-                          <td style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#BDC3C7' }}>
-                            {log.ip_address || 'N/A'}
-                          </td>
-                          <td>
-                            <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setInspectingLog(log)}>
-                              Inspect Payload
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="admin-pagination">
-                  <span className="admin-pagination-info">
-                    Showing {(auditPage - 1) * AUDIT_PER_PAGE + 1} to {Math.min(auditPage * AUDIT_PER_PAGE, filteredAuditLogs.length)} of {filteredAuditLogs.length} entries
-                  </span>
-                  <div className="admin-pagination-controls">
-                    <button type="button" disabled={auditPage === 1} onClick={() => setAuditPage(prev => prev - 1)}>Previous</button>
-                    <button type="button" disabled={auditPage === totalAuditPages || totalAuditPages === 0} onClick={() => setAuditPage(prev => prev + 1)}>Next</button>
-                  </div>
-                </div>
-              </>
-            )}
+            <div className="admin-card-head"><h3>System Audit Logs</h3><div className="admin-search-box"><HiMagnifyingGlass /><input type="text" placeholder="Search Actor..." value={auditSearchQuery} onChange={e => setAuditSearchQuery(e.target.value)} /></div></div>
+            <div className="admin-table-wrap"><table className="admin-table">
+              <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Entity</th><th>Details</th></tr></thead>
+              <tbody>{paginatedAuditLogs.map(l => <tr key={l.id}><td>{new Date(l.created_at).toLocaleString()}</td><td>{getDisplayName(profiles.find(p => p.id === l.actor_id), l.actor_id)}</td><td>{l.action}</td><td>{l.entity_type}</td><td><button onClick={() => setInspectingLog(l)} className="admin-action-btn"><HiMagnifyingGlass /></button></td></tr>)}</tbody>
+            </table></div>
+            {totalAuditPages > 1 && <div className="admin-pagination"><button disabled={auditPage === 1} onClick={() => setAuditPage(p => p - 1)}>Prev</button><span>{auditPage} / {totalAuditPages}</span><button disabled={auditPage === totalAuditPages} onClick={() => setAuditPage(p => p + 1)}>Next</button></div>}
           </section>
         )}
       </section>
 
-        {editingUser && (
-          <div className="admin-modal-backdrop" role="presentation" onClick={() => setEditingUser(null)}>
-            <div className="admin-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-              <h3>View User</h3>
-            <label htmlFor="admin-edit-first-name">First Name</label>
-            <input
-              id="admin-edit-first-name"
-              type="text"
-              value={editingUser.first_name || ''}
-              readOnly
-            />
-            <label htmlFor="admin-edit-username">Username</label>
-            <input
-              id="admin-edit-username"
-              type="text"
-              value={editingUser.username || ''}
-              readOnly
-            />
-            <label htmlFor="admin-edit-last-name">Last Name</label>
-            <input
-              id="admin-edit-last-name"
-              type="text"
-              value={editingUser.last_name || ''}
-              readOnly
-            />
-            <div className="admin-modal-actions">
-              <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setEditingUser(null)}>Close</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {editingUser && createPortal(<div className="admin-modal-backdrop"><div className="admin-modal"><h3>Edit Role</h3><p>{getDisplayName(editingUser)}</p><div className="admin-role-grid">{['user','admin','superadmin'].map(r => <button key={r} onClick={() => { supabase.from('profiles').update({ role: r }).eq('id', editingUser.id); setProfiles(p => p.map(u => u.id === editingUser.id ? { ...u, role: r } : u)); setEditingUser(null); }} className={`admin-role-opt ${editingUser.role === r ? 'is-selected' : ''}`}>{r.toUpperCase()}</button>)}</div><button onClick={() => setEditingUser(null)} className="admin-btn">Close</button></div></div>, document.body)}
 
-      {archivingUserId && (
-        <div className="admin-modal-backdrop" role="presentation" onClick={() => setArchivingUserId(null)}>
-          <div className="admin-modal admin-confirm-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-            <h3>Archive User</h3>
-            <p>Are you sure you want to archive <strong>{getDisplayName(profiles.find(p => p.id === archivingUserId))}</strong>? They will lose access to the platform.</p>
-            <div className="admin-modal-actions">
-              <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setArchivingUserId(null)}>Cancel</button>
-              <button type="button" className="admin-btn admin-btn--danger" onClick={archiveUser}>Confirm Archive</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {inspectingLog && (
-        <div className="admin-modal-backdrop" role="presentation" onClick={() => setInspectingLog(null)}>
-          <div className="admin-modal admin-payload-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-            <div className="admin-card-head">
-              <h3>Payload Inspector</h3>
-              <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setInspectingLog(null)}>Close</button>
-            </div>
-            <div className="admin-payload-content">
-              <div className="admin-payload-section">
-                <strong>Old Values</strong>
-                <pre><code>{inspectingLog.old_values ? JSON.stringify(inspectingLog.old_values, null, 2) : 'None'}</code></pre>
-              </div>
-              <div className="admin-payload-section">
-                <strong>New Values</strong>
-                <pre><code>{inspectingLog.new_values ? JSON.stringify(inspectingLog.new_values, null, 2) : 'None'}</code></pre>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-        {toastMessage && (
-          <div className={`admin-toast ${toastMessage.type}`}>
-            {toastMessage.text}
-          </div>
+      {(creatingContent || editingContent) && createPortal(<div className="admin-modal-backdrop"><div className="admin-modal"><h3>{editingContent ? 'Edit' : 'Create'} {contentTab}</h3><form onSubmit={handleSaveContent} className="admin-content-form">
+        <input name="title" defaultValue={editingContent?.title} placeholder="Title" required />
+        {contentTab === 'activities' ? (
+          <div className="admin-form-row"><input name="target_level" type="number" defaultValue={editingContent?.target_level || 1} placeholder="Lvl" required /><input name="activity_order" type="number" defaultValue={editingContent?.activity_order || 1} placeholder="Order" required /></div>
+        ) : (
+          <div className="admin-form-row"><input name="level_number" type="number" defaultValue={editingContent?.level_number || 1} placeholder="Lvl" required /><input name="lesson_number" defaultValue={editingContent?.lesson_number} placeholder="Lesson" required /></div>
         )}
-      </div>
-      {logoutModal}
-    </>
+        <textarea name="objective" defaultValue={editingContent?.objective || editingContent?.content} placeholder="Content/Objective" required />
+        <button type="submit" className="admin-btn admin-btn--primary" disabled={isContentLoading}>{isContentLoading ? 'Saving...' : 'Save'}</button>
+        <button type="button" onClick={() => { setCreatingContent(false); setEditingContent(null); }} className="admin-btn">Cancel</button>
+      </form></div></div>, document.body)}
+
+      {inspectingLog && createPortal(<div className="admin-modal-backdrop"><div className="admin-modal"><h3>Audit Details</h3><pre><code>{JSON.stringify(inspectingLog.new_values, null, 2)}</code></pre><button onClick={() => setInspectingLog(null)} className="admin-btn">Close</button></div></div>, document.body)}
+
+      {toastMessage && <div className={`admin-toast ${toastMessage.type}`}>{toastMessage.text}</div>}
+      {showLogoutConfirm && createPortal(<div className="admin-logout-modal-backdrop"><div className="admin-logout-modal"><h3>Log out?</h3><button onClick={async () => { await logout(); navigate(ROUTES.HOME); }}>Confirm</button><button onClick={() => setShowLogoutConfirm(false)}>Cancel</button></div></div>, document.body)}
+    </div>
   );
 }
 

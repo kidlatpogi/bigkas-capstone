@@ -791,12 +791,31 @@
 .admin-create-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 14px 12px;
+  align-items: start;
+}
+
+.admin-create-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-create-field--full {
+  grid-column: 1 / -1;
+}
+
+.admin-create-field span {
+  color: var(--accent-dark);
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1.2;
 }
 
 .admin-create-form input,
 .admin-create-form select {
-  min-height: 40px;
+  width: 100%;
+  min-height: 42px;
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 0 10px;
@@ -805,6 +824,7 @@
   font-family: inherit;
   font-size: 0.95rem;
   font-weight: 600;
+  box-sizing: border-box;
 }
 
 .admin-create-form select {

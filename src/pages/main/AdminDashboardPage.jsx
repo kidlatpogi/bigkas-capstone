@@ -159,7 +159,9 @@ function AdminDashboardPage() {
   const [createAdminForm, setCreateAdminForm] = useState({
     email: '',
     password: '',
+    confirm_password: '',
     first_name: '',
+    last_name: '',
     username: '',
     role: 'admin',
   });
@@ -680,13 +682,17 @@ function AdminDashboardPage() {
 
   const submitCreateAdmin = async (e) => {
     e.preventDefault();
+    if (createAdminForm.password !== createAdminForm.confirm_password) {
+      showToast('Passwords do not match', 'error');
+      return;
+    }
     setCreatingAdmin(true);
-    const { email, password, first_name, username, role: newRole } = createAdminForm;
-    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { first_name, username, role: newRole } } });
+    const { email, password, first_name, last_name, username, role: newRole } = createAdminForm;
+    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { first_name, last_name, username, role: newRole } } });
     if (error) showToast(error.message, 'error');
     else {
-      await supabase.from('profiles').update({ role: newRole, first_name, username }).eq('id', data.user.id);
-      showToast('Admin created'); setCreateAdminForm({ email: '', password: '', first_name: '', username: '', role: 'admin' });
+      await supabase.from('profiles').update({ role: newRole, first_name, last_name, username }).eq('id', data.user.id);
+      showToast('Admin created'); setCreateAdminForm({ email: '', password: '', confirm_password: '', first_name: '', last_name: '', username: '', role: 'admin' });
       const { data: ps } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
       if (ps) setProfiles(ps);
     }
@@ -901,11 +907,34 @@ function AdminDashboardPage() {
               <article className="admin-card">
                 <h3>Create Administrator</h3>
                 <form className="admin-create-form" onSubmit={submitCreateAdmin}>
-                  <input type="email" required placeholder="Email" value={createAdminForm.email} onChange={e => setCreateAdminForm(p => ({ ...p, email: e.target.value }))} />
-                  <input type="password" required placeholder="Password" value={createAdminForm.password} onChange={e => setCreateAdminForm(p => ({ ...p, password: e.target.value }))} />
-                  <input type="text" placeholder="First Name" value={createAdminForm.first_name} onChange={e => setCreateAdminForm(p => ({ ...p, first_name: e.target.value }))} />
-                  <input type="text" placeholder="Username" value={createAdminForm.username} onChange={e => setCreateAdminForm(p => ({ ...p, username: e.target.value }))} />
-                  <select value={createAdminForm.role} onChange={e => setCreateAdminForm(p => ({ ...p, role: e.target.value }))} className="admin-filter-select"><option value="admin">Admin</option><option value="superadmin">Superadmin</option></select>
+                  <label className="admin-create-field">
+                    <span>Email</span>
+                    <input type="email" required placeholder="admin@email.com" value={createAdminForm.email} onChange={e => setCreateAdminForm(p => ({ ...p, email: e.target.value }))} />
+                  </label>
+                  <label className="admin-create-field">
+                    <span>Username</span>
+                    <input type="text" placeholder="admin_username" value={createAdminForm.username} onChange={e => setCreateAdminForm(p => ({ ...p, username: e.target.value }))} />
+                  </label>
+                  <label className="admin-create-field">
+                    <span>First Name</span>
+                    <input type="text" placeholder="First name" value={createAdminForm.first_name} onChange={e => setCreateAdminForm(p => ({ ...p, first_name: e.target.value }))} />
+                  </label>
+                  <label className="admin-create-field">
+                    <span>Last Name</span>
+                    <input type="text" placeholder="Last name" value={createAdminForm.last_name} onChange={e => setCreateAdminForm(p => ({ ...p, last_name: e.target.value }))} />
+                  </label>
+                  <label className="admin-create-field">
+                    <span>Password</span>
+                    <input type="password" required minLength={6} placeholder="Password" value={createAdminForm.password} onChange={e => setCreateAdminForm(p => ({ ...p, password: e.target.value }))} />
+                  </label>
+                  <label className="admin-create-field">
+                    <span>Confirm Password</span>
+                    <input type="password" required minLength={6} placeholder="Confirm password" value={createAdminForm.confirm_password} onChange={e => setCreateAdminForm(p => ({ ...p, confirm_password: e.target.value }))} />
+                  </label>
+                  <label className="admin-create-field admin-create-field--full">
+                    <span>Administrator Role</span>
+                    <select value={createAdminForm.role} onChange={e => setCreateAdminForm(p => ({ ...p, role: e.target.value }))} className="admin-filter-select"><option value="admin">Admin</option><option value="superadmin">Superadmin</option></select>
+                  </label>
                   <button type="submit" className="admin-btn admin-btn--primary" disabled={creatingAdmin}>{creatingAdmin ? 'Creating...' : 'Create Admin'}</button>
                 </form>
               </article>

@@ -1,155 +1,254 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import BackButton from '../../components/common/BackButton';
+import PasswordToggle from '../../components/common/PasswordToggle';
+import PushButton from '../../components/common/PushButton';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import { isValidEmail } from '../../utils/validators';
 import { getAssetUrl } from '../../utils/assetUtils';
-import PushButton from '../../components/common/PushButton';
-import PasswordToggle from '../../components/common/PasswordToggle';
-import BackButton from '../../components/common/BackButton';
 import './AdminLoginPage.css';
 
 const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
+const ADMIN_LOGIN_LOCKOUT_UNTIL_KEY = 'bigkas_admin_login_lockout_until';
 
-export default function AdminLoginPage() {
+function getStoredLockoutSeconds() {
+  if (typeof window === 'undefined') return 0;
+
+  const rawValue = window.localStorage.getItem(ADMIN_LOGIN_LOCKOUT_UNTIL_KEY);
+  const lockoutUntil = rawValue ? Number.parseInt(rawValue, 10) : 0;
+
+  if (!Number.isFinite(lockoutUntil)) {
+    window.localStorage.removeItem(ADMIN_LOGIN_LOCKOUT_UNTIL_KEY);
+    return 0;
+  }
+
+  const secondsRemaining = Math.ceil((lockoutUntil - Date.now()) / 1000);
+
+  if (secondsRemaining <= 0) {
+    window.localStorage.removeItem(ADMIN_LOGIN_LOCKOUT_UNTIL_KEY);
+    return 0;
+  }
+
+  return secondsRemaining;
+}
+
+function formatCountdown(seconds) {
+  const safeSeconds = Math.max(0, seconds);
+  const minutes = Math.floor(safeSeconds / 60);
+  const remainingSeconds = safeSeconds % 60;
+
+  return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
+}
+
+export default function AdminLoginPage({ managePageClass = true }) {
   const navigate = useNavigate();
   const { adminLogin, isLoading } = useAuthContext();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+  const [lockoutSeconds, setLockoutSeconds] = useState(() => getStoredLockoutSeconds());
 
-  // Handle page-specific body classes for theming
   useEffect(() => {
-    document.body.classList.add('admin-skyward-theme');
-    return () => document.body.classList.remove('admin-skyward-theme');
-  }, []);
+    if (!managePageClass) return undefined;
+
+    document.documentElement.classList.add('admin-login-page-active');
+    document.body.classList.add('admin-login-page-active');
+
+    return () => {
+      document.documentElement.classList.remove('admin-login-page-active');
+      document.body.classList.remove('admin-login-page-active');
+    };
+  }, [managePageClass]);
+
+  useEffect(() => {
+    if (lockoutSeconds <= 0) return undefined;
+
+    const timer = window.setInterval(() => {
+      setLockoutSeconds(getStoredLockoutSeconds());
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [lockoutSeconds]);
+
+  const isLockedOut = lockoutSeconds > 0;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+
     if (errors[name] || errors.submit) {
-      setErrors(prev => ({ ...prev, [name]: null, submit: null }));
+      setErrors((prev) => ({ ...prev, [name]: null, submit: null }));
     }
   };
 
   const validate = () => {
-    const next = {};
-    if (!formData.email) next.email = 'Email required';
-    else if (!isValidEmail(formData.email)) next.email = 'Invalid format';
-    if (!formData.password) next.password = 'Password required';
-    setErrors(next);
-    return Object.keys(next).length === 0;
+    const nextErrors = {};
+
+    if (!formData.email) {
+      nextErrors.email = 'Email is required';
+    } else if (!isValidEmail(formData.email)) {
+      nextErrors.email = 'Please enter a valid email address';
+    }
+
+    if (!formData.password) {
+      nextErrors.password = 'Password is required';
+    }
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isLoading || !validate()) return;
+
+    if (isLockedOut || isLoading || !validate()) return;
 
     const result = await adminLogin(formData.email, formData.password);
+
     if (result.success) {
+      setFormData({ email: '', password: '' });
+      setLockoutSeconds(0);
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(ADMIN_LOGIN_LOCKOUT_UNTIL_KEY);
+      }
       navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
-    } else {
-      setErrors({ submit: result.error || 'Access Denied' });
+      return;
     }
+
+    if (result.code === 'account_locked') {
+      const seconds = Number.isFinite(result.lockoutSeconds)
+        ? Math.max(0, Math.ceil(result.lockoutSeconds))
+        : 0;
+      setLockoutSeconds(seconds);
+
+      if (typeof window !== 'undefined' && seconds > 0) {
+        window.localStorage.setItem(
+          ADMIN_LOGIN_LOCKOUT_UNTIL_KEY,
+          String(Date.now() + seconds * 1000)
+        );
+      }
+    }
+
+    setFormData((prev) => ({ ...prev, password: '' }));
+    setErrors({
+      submit:
+        result.error ||
+        'Admin access denied. Check your credentials and try again.'
+    });
   };
 
   return (
-    <div className="admin-skyward-container">
-      {/* Cinematic Background Elements */}
-      <div className="aurora-bg"></div>
-      <div className="grid-overlay"></div>
+    <div className="auth-page">
+      <div className="auth-brand-panel">
+        <BackButton
+          className="auth-back-btn"
+          onClick={() => navigate(ROUTES.HOME)}
+          aria-label="Back to home"
+        />
 
-      <BackButton className="admin-back-top" onClick={() => navigate(ROUTES.HOME)} />
+        <div className="auth-brand-content">
+          <div className="admin-logo-wrapper">
+            <img src={bigkasLogo} alt="BIGKAS" className="admin-auth-logo" />
+            <h1 className="auth-brand-name">BIGKAS</h1>
+          </div>
+          <p className="auth-brand-tagline">RESTRICTED ADMIN ACCESS</p>
+          <div className="auth-brand-line" />
+          <ul className="auth-brand-features">
+            <li>01 HIDDEN ENTRY ROUTE</li>
+            <li>02 PASSWORD LOGIN WITH LOCKOUT</li>
+          </ul>
+        </div>
+      </div>
 
-      <main className="admin-content">
-        <motion.div 
-          className="admin-glass-card"
-          initial={{ opacity: 0, y: 30, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
+      <div className="auth-form-panel">
+        <BackButton
+          className="auth-mobile-back"
+          onClick={() => navigate(ROUTES.HOME)}
+          aria-label="Back to home"
+        />
+
+        <motion.div
+          className="auth-form-container floating-card"
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
         >
-          {/* Brand Header */}
-          <header className="admin-header">
-            <motion.img 
-              src={bigkasLogo} 
-              alt="Bigkas Logo" 
-              className="admin-logo"
-              initial={{ rotate: -10, opacity: 0 }}
-              animate={{ rotate: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-            />
-            <h1 className="admin-title">BIGKAS <span className="admin-subtitle">ADMIN</span></h1>
-            <div className="admin-badge">RESTRICTED ACCESS</div>
-          </header>
+          <motion.h2
+            className="auth-form-title"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            ADMIN LOGIN
+          </motion.h2>
 
-          <form className="admin-form" onSubmit={handleSubmit}>
-            <AnimatePresence>
-              {errors.submit && (
-                <motion.div 
-                  className="admin-error-banner"
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                >
-                  {errors.submit}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <div className="input-field">
-              <label>IDENTIFIER</label>
-              <div className="input-wrapper">
-                <input 
-                  type="email"
-                  name="email"
-                  placeholder="admin@bigkas.site"
-                  value={formData.email}
-                  onChange={handleChange}
-                  autoComplete="email"
-                />
-                {errors.email && <span className="field-err">{errors.email}</span>}
+          <form className="auth-form" onSubmit={handleSubmit} noValidate>
+            {errors.submit && (
+              <div className="auth-error-banner" role="alert">
+                {errors.submit}
               </div>
+            )}
+
+            <div className="form-group">
+              <label htmlFor="admin-email" className="form-label">
+                EMAIL ADDRESS
+              </label>
+              <input
+                id="admin-email"
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className={`form-input ${errors.email ? 'input-error' : ''}`}
+                placeholder="enter admin email"
+                autoComplete="email"
+                disabled={isLockedOut || isLoading}
+              />
+              {errors.email && <span className="form-error">{errors.email}</span>}
             </div>
 
-            <div className="input-field">
-              <label>SECURITY KEY</label>
-              <div className="input-wrapper">
-                <input 
+            <div className="form-group">
+              <label htmlFor="admin-password" className="form-label">
+                PASSWORD
+              </label>
+              <div className="password-input-wrapper">
+                <input
+                  id="admin-password"
                   type={showPassword ? 'text' : 'password'}
                   name="password"
-                  placeholder="••••••••"
                   value={formData.password}
                   onChange={handleChange}
+                  className={`form-input ${errors.password ? 'input-error' : ''}`}
+                  placeholder="enter password"
                   autoComplete="current-password"
+                  disabled={isLockedOut || isLoading}
                 />
-                <PasswordToggle 
-                  isVisible={showPassword} 
-                  onToggle={() => setShowPassword(!showPassword)}
+                <PasswordToggle
+                  isVisible={showPassword}
+                  onToggle={() => setShowPassword((prev) => !prev)}
+                  disabled={isLockedOut || isLoading}
+                  label="admin password"
                 />
-                {errors.password && <span className="field-err">{errors.password}</span>}
               </div>
+              {errors.password && <span className="form-error">{errors.password}</span>}
             </div>
 
-            <div className="admin-actions">
-              <PushButton
-                type="submit"
-                disabled={isLoading}
-                bgColor="var(--emerald-600)"
-                shadowColor="var(--emerald-800)"
-                textColor="white"
-                className="admin-submit-btn"
-              >
-                {isLoading ? "AUTHORIZING..." : "ACCESS SYSTEM"}
-              </PushButton>
-            </div>
+            <PushButton
+              type="submit"
+              disabled={isLockedOut || isLoading}
+              className="auth-submit-btn"
+              bgColor="#059669"
+              shadowColor="#064e3b"
+              textColor="#ffffff"
+            >
+              {isLoading && <span className="btn-loader" aria-hidden="true" />}
+              {isLockedOut ? `LOCKED (${formatCountdown(lockoutSeconds)})` : 'ENTER ADMIN'}
+            </PushButton>
           </form>
-
-          <footer className="admin-footer">
-            <p>System v4.0.0 | Secured by Supabase RBAC</p>
-          </footer>
         </motion.div>
-      </main>
+      </div>
     </div>
   );
 }

@@ -136,6 +136,33 @@ function AdminPasswordInput({ value, onChange, placeholder, required = true }) {
   );
 }
 
+async function createConfirmedAdminUser(payload) {
+  const { data, error } = await supabase.functions.invoke('admin-create-confirmed-user', {
+    body: payload,
+  });
+
+  if (error) {
+    let functionMessage = '';
+    try {
+      const details = await error.context?.json?.();
+      functionMessage = details?.error || details?.message || '';
+    } catch {
+      functionMessage = '';
+    }
+    throw new Error(functionMessage || error.message || 'Failed to create user account.');
+  }
+
+  if (data?.error) {
+    throw new Error(data.error);
+  }
+
+  if (!data?.user?.id) {
+    throw new Error('User account was not created.');
+  }
+
+  return data;
+}
+
 function userToForm(user) {
   return {
     email: '',
@@ -305,6 +332,10 @@ function AdminDashboardPage() {
   }, [isSuperadmin, activePage]);
 
   const visibleUsers = useMemo(() => profiles.filter((p) => !isDeletedProfile(p)), [profiles]);
+  const activeAdministrators = useMemo(
+    () => visibleUsers.filter((p) => p.role === 'admin' || p.role === 'superadmin'),
+    [visibleUsers]
+  );
 
   const recordAuditLog = async ({ action, entityType, entityId = null, oldValues = null, newValues = null }) => {
     if (!currentAdminId) return;
@@ -874,37 +905,18 @@ function AdminDashboardPage() {
     }
     setSavingUser(true);
     try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
+      const { user, profile } = await createConfirmedAdminUser({
         email: userForm.email.trim(),
         password: userForm.password,
-        options: {
-          data: {
-            first_name: userForm.first_name.trim(),
-            last_name: userForm.last_name.trim(),
-            username: userForm.username.trim(),
-            role: userForm.role,
-          },
-        },
-      });
-      if (signUpError) throw signUpError;
-      if (!data?.user?.id) throw new Error('User account was not created.');
-
-      const payload = {
         ...profilePayloadFromUserForm(),
-        archived_at: null,
-      };
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update(payload)
-        .eq('id', data.user.id);
-      if (profileError) throw profileError;
+      });
 
       await recordAuditLog({
         action: 'create',
         entityType: 'profiles',
-        entityId: data.user.id,
+        entityId: user.id,
         oldValues: null,
-        newValues: { id: data.user.id, ...payload },
+        newValues: profile || { id: user.id, ...profilePayloadFromUserForm(), archived_at: null },
       });
       showToast('User created');
       setCreatingUser(false);
@@ -989,22 +1001,31 @@ function AdminDashboardPage() {
       return;
     }
     setCreatingAdmin(true);
-    const { email, password, first_name, last_name, username, role: newRole } = createAdminForm;
-    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { first_name, last_name, username, role: newRole } } });
-    if (error) showToast(error.message, 'error');
-    else {
-      const profileUpdate = { role: newRole, first_name, last_name, username };
-      await supabase.from('profiles').update(profileUpdate).eq('id', data.user.id);
+    try {
+      const { email, password, first_name, last_name, username, role: newRole } = createAdminForm;
+      const { user, profile } = await createConfirmedAdminUser({
+        email,
+        password,
+        first_name,
+        last_name,
+        username,
+        role: newRole,
+        current_level: 1,
+        speaker_level: 1,
+        speaker_points: 0,
+      });
       await recordAuditLog({
         action: 'create',
         entityType: 'profiles',
-        entityId: data.user.id,
+        entityId: user.id,
         oldValues: null,
-        newValues: { id: data.user.id, ...profileUpdate },
+        newValues: profile || { id: user.id, role: newRole, first_name, last_name, username },
       });
       showToast('Admin created'); setCreateAdminForm({ email: '', password: '', confirm_password: '', first_name: '', last_name: '', username: '', role: 'admin' });
       const { data: ps } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
       if (ps) setProfiles(ps);
+    } catch (error) {
+      showToast(error.message || 'Failed to create admin', 'error');
     }
     setCreatingAdmin(false);
   };
@@ -1286,7 +1307,13 @@ function AdminDashboardPage() {
               </article>
               <article className="admin-card">
                 <h3>Active Administrators</h3>
-                <div className="admin-roster-list">{profiles.filter(p => p.role === 'admin' || p.role === 'superadmin').map(a => <div key={a.id} className="admin-roster-item"><strong>{getDisplayName(a, a.id)}</strong><span>{a.role}</span></div>)}</div>
+                <div className="admin-roster-list">
+                  {activeAdministrators.length ? (
+                    activeAdministrators.map(a => <div key={a.id} className="admin-roster-item"><strong>{getDisplayName(a, a.id)}</strong><span>{a.role}</span></div>)
+                  ) : (
+                    <div className="admin-empty-chart">No active administrators</div>
+                  )}
+                </div>
               </article>
             </div>
             <div className="admin-settings-col">

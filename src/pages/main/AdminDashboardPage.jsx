@@ -1081,7 +1081,26 @@ function AdminDashboardPage() {
 
         {activePage === 'audit' && isSuperadmin && (
           <section className="admin-card">
-            <div className="admin-card-head"><h3>System Audit Logs</h3><div className="admin-search-box"><HiMagnifyingGlass /><input type="text" placeholder="Search Actor..." value={auditSearchQuery} onChange={e => setAuditSearchQuery(e.target.value)} /></div></div>
+            <div className="admin-card-head">
+              <h3>System Audit Logs</h3>
+              <div className="admin-audit-filters">
+                <div className="admin-search-box"><HiMagnifyingGlass /><input type="text" placeholder="Search Actor..." value={auditSearchQuery} onChange={e => { setAuditSearchQuery(e.target.value); setAuditPage(1); }} /></div>
+                <select className="admin-filter-select" value={auditActionFilter} onChange={e => { setAuditActionFilter(e.target.value); setAuditPage(1); }}>
+                  <option value="all">All Actions</option>
+                  <option value="create">Create</option>
+                  <option value="update">Update</option>
+                  <option value="delete">Delete</option>
+                  <option value="restore">Restore</option>
+                </select>
+                <select className="admin-filter-select" value={auditEntityFilter} onChange={e => { setAuditEntityFilter(e.target.value); setAuditPage(1); }}>
+                  <option value="all">All Entities</option>
+                  <option value="profiles">Profiles</option>
+                  <option value="activities">Activities</option>
+                  <option value="modules">Modules</option>
+                  <option value="system_settings">Settings</option>
+                </select>
+              </div>
+            </div>
             <div className="admin-table-wrap"><table className="admin-table">
               <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Entity</th><th>Details</th></tr></thead>
               <tbody>{paginatedAuditLogs.map(l => <tr key={l.id}><td>{new Date(l.created_at).toLocaleString()}</td><td>{getDisplayName(profiles.find(p => p.id === l.actor_id), l.actor_id)}</td><td>{l.action}</td><td>{l.entity_type}</td><td><button onClick={() => setInspectingLog(l)} className="admin-action-btn"><HiMagnifyingGlass /></button></td></tr>)}</tbody>
@@ -1237,7 +1256,30 @@ function AdminDashboardPage() {
         </div>
       </div></div>, document.body)}
 
-      {inspectingLog && createPortal(<div className="admin-modal-backdrop"><div className="admin-modal"><h3>Audit Details</h3><pre><code>{JSON.stringify(inspectingLog.new_values, null, 2)}</code></pre><button onClick={() => setInspectingLog(null)} className="admin-btn">Close</button></div></div>, document.body)}
+      {inspectingLog && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setInspectingLog(null)}><div className="admin-modal admin-payload-modal admin-audit-details-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+        <div className="admin-card-head">
+          <div>
+            <h3>Audit Details</h3>
+            <p className="admin-modal-subtitle">{inspectingLog.action} / {inspectingLog.entity_type}</p>
+          </div>
+          <button type="button" onClick={() => setInspectingLog(null)} className="admin-btn admin-btn--ghost">Close</button>
+        </div>
+        <div className="admin-audit-summary">
+          <span><strong>Time</strong>{new Date(inspectingLog.created_at).toLocaleString()}</span>
+          <span><strong>Actor</strong>{getDisplayName(profiles.find(p => p.id === inspectingLog.actor_id), inspectingLog.actor_id)}</span>
+          <span><strong>Entity ID</strong>{inspectingLog.entity_id || 'N/A'}</span>
+        </div>
+        <div className="admin-payload-content">
+          <section className="admin-payload-section">
+            <h4>Before</h4>
+            <pre><code>{JSON.stringify(inspectingLog.old_values || {}, null, 2)}</code></pre>
+          </section>
+          <section className="admin-payload-section">
+            <h4>After</h4>
+            <pre><code>{JSON.stringify(inspectingLog.new_values || {}, null, 2)}</code></pre>
+          </section>
+        </div>
+      </div></div>, document.body)}
 
       {toastMessage && <div className={`admin-toast ${toastMessage.type}`}>{toastMessage.text}</div>}
       {showLogoutConfirm && createPortal(<div className="admin-logout-modal-backdrop"><div className="admin-logout-modal"><h3>Log out?</h3><button onClick={async () => { await logout(); navigate(ROUTES.HOME); }}>Confirm</button><button onClick={() => setShowLogoutConfirm(false)}>Cancel</button></div></div>, document.body)}

@@ -1185,6 +1185,47 @@
   flex-direction: column;
 }
 
+.admin-audit-details-modal {
+  width: min(860px, calc(100% - 32px));
+  max-height: calc(100vh - 48px);
+  gap: 14px;
+  padding: 24px;
+}
+
+.admin-modal-subtitle {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.admin-audit-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-audit-summary span {
+  min-width: 0;
+  border: 1px solid #d7e0e8;
+  border-radius: 12px;
+  background: #f8fafc;
+  padding: 10px 12px;
+  color: #2c3e50;
+  font-size: 0.86rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.admin-audit-summary strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #64748b;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
 .admin-payload-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1196,6 +1237,13 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
+}
+
+.admin-payload-section h4 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 0.95rem;
 }
 
 .admin-payload-section pre {
@@ -1210,6 +1258,8 @@
   color: #374151;
   white-space: pre-wrap;
   word-wrap: break-word;
+  max-height: 46vh;
+  overflow: auto;
 }
 
 @media (max-width: 768px) {

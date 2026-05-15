@@ -1502,7 +1502,14 @@ function AdminDashboardPage() {
       </div></div>, document.body)}
 
       {toastMessage && <div className={`admin-toast ${toastMessage.type}`}>{toastMessage.text}</div>}
-      {showLogoutConfirm && createPortal(<div className="admin-logout-modal-backdrop"><div className="admin-logout-modal"><h3>Log out?</h3><button onClick={async () => { await logout(); navigate(ROUTES.HOME); }}>Confirm</button><button onClick={() => setShowLogoutConfirm(false)}>Cancel</button></div></div>, document.body)}
+      {showLogoutConfirm && createPortal(<div className="admin-logout-modal-backdrop" role="presentation" onClick={() => setShowLogoutConfirm(false)}><div className="admin-logout-modal" role="dialog" aria-modal="true" aria-labelledby="admin-logout-title" onClick={e => e.stopPropagation()}>
+        <h3 id="admin-logout-title">Log out?</h3>
+        <p>You will be returned to the public home page.</p>
+        <div className="admin-logout-modal-actions">
+          <button type="button" className="admin-logout-modal-btn admin-logout-modal-btn--cancel" onClick={() => setShowLogoutConfirm(false)}>Cancel</button>
+          <button type="button" className="admin-logout-modal-btn admin-logout-modal-btn--confirm" onClick={async () => { await logout(); navigate(ROUTES.HOME); }}>Log Out</button>
+        </div>
+      </div></div>, document.body)}
     </div>
   );
 }

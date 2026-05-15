@@ -167,8 +167,9 @@
 
 .admin-logout-modal {
   width: min(92vw, 360px);
-  border-radius: 14px;
-  padding: 18px;
+  border: 1px solid rgba(203, 213, 225, 0.9);
+  border-radius: 16px;
+  padding: 22px;
   background: #ffffff;
   color: #0f172a;
   box-shadow: 0 14px 36px rgba(2, 12, 26, 0.28);
@@ -176,7 +177,7 @@
 
 .admin-logout-modal h3 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1.18rem;
   font-weight: 800;
 }
 
@@ -187,7 +188,7 @@
 }
 
 .admin-logout-modal-actions {
-  margin-top: 16px;
+  margin-top: 20px;
   display: flex;
   justify-content: flex-end;
   gap: 10px;
@@ -195,22 +196,37 @@
 
 .admin-logout-modal-btn {
   min-height: 38px;
-  padding: 0 14px;
+  padding: 0 16px;
   border-radius: 10px;
-  border: 0;
+  border: 1px solid transparent;
   font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.admin-logout-modal-btn:hover {
+  transform: translateY(-1px);
 }
 
 .admin-logout-modal-btn--cancel {
-  background: #e2e8f0;
-  color: #1e293b;
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.admin-logout-modal-btn--cancel:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
 }
 
 .admin-logout-modal-btn--confirm {
-  background: red;
+  background: #b91c1c;
   color: #ffffff;
+}
+
+.admin-logout-modal-btn--confirm:hover {
+  background: #991b1b;
 }
 
 .admin-grid {

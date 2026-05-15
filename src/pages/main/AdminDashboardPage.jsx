@@ -190,6 +190,7 @@ function AdminDashboardPage() {
   const [creatingContent, setCreatingContent] = useState(false);
   const [editingContent, setEditingContent] = useState(null);
   const [contentPage, setContentPage] = useState(1);
+  const [contentLevelFilter, setContentLevelFilter] = useState('all');
   const CONTENT_PER_PAGE = 10;
   const [contentLevelLimit, setContentLevelLimit] = useState(5);
   const [pendingContentSave, setPendingContentSave] = useState(null);
@@ -515,15 +516,27 @@ function AdminDashboardPage() {
   }, [totalUserPages]);
 
   const contentItems = contentTab === 'activities' ? activities : modules;
-  const totalContentPages = Math.max(1, Math.ceil(contentItems.length / CONTENT_PER_PAGE));
+  const contentLevelOptions = useMemo(() => {
+    const activityLevels = activities.map(a => Number(a.target_level) || 0);
+    const moduleLevels = modules.map(m => Number(m.level_number) || 0);
+    return Array.from({ length: Math.max(5, contentLevelLimit, ...activityLevels, ...moduleLevels) }, (_, i) => i + 1);
+  }, [activities, modules, contentLevelLimit]);
+  const filteredContentItems = useMemo(() => {
+    if (contentLevelFilter === 'all') return contentItems;
+    return contentItems.filter(item => {
+      const level = contentTab === 'activities' ? item.target_level : item.level_number;
+      return Number(level) === Number(contentLevelFilter);
+    });
+  }, [contentItems, contentLevelFilter, contentTab]);
+  const totalContentPages = Math.max(1, Math.ceil(filteredContentItems.length / CONTENT_PER_PAGE));
   const paginatedContentItems = useMemo(() => {
     const start = (contentPage - 1) * CONTENT_PER_PAGE;
-    return contentItems.slice(start, start + CONTENT_PER_PAGE);
-  }, [contentItems, contentPage]);
+    return filteredContentItems.slice(start, start + CONTENT_PER_PAGE);
+  }, [filteredContentItems, contentPage]);
 
   useEffect(() => {
     setContentPage(1);
-  }, [contentTab]);
+  }, [contentTab, contentLevelFilter]);
 
   useEffect(() => {
     setContentPage(page => Math.min(page, totalContentPages));
@@ -1058,13 +1071,22 @@ function AdminDashboardPage() {
               <button className={`admin-tab-btn ${contentTab === 'modules' ? 'is-active' : ''}`} onClick={() => setContentTab('modules')}>Modules</button>
             </div>
             <div className="admin-card">
-              <div className="admin-card-head"><h3>{contentTab === 'activities' ? 'Activity Management' : 'Module Management'}</h3><button onClick={() => setCreatingContent(true)} className="admin-btn admin-btn--primary">Add New</button></div>
+              <div className="admin-card-head">
+                <h3>{contentTab === 'activities' ? 'Activity Management' : 'Module Management'}</h3>
+                <div className="admin-content-head-actions">
+                  <select className="admin-filter-select" value={contentLevelFilter} onChange={e => setContentLevelFilter(e.target.value)} aria-label="Filter content by journey">
+                    <option value="all">All Journeys</option>
+                    {contentLevelOptions.map(level => <option key={level} value={level}>Journey {level}</option>)}
+                  </select>
+                  <button onClick={() => setCreatingContent(true)} className="admin-btn admin-btn--primary">Add New</button>
+                </div>
+              </div>
               <div className="admin-table-wrap"><table className="admin-table">
                 <thead><tr><th>Order/Lvl</th><th>Title</th><th>Created</th><th>Actions</th></tr></thead>
                 <tbody>{paginatedContentItems.map(item => <tr key={item.id}><td>{contentTab === 'activities' ? item.activity_order : item.level_number}</td><td><strong>{item.title}</strong></td><td>{new Date(item.created_at).toLocaleDateString()}</td><td className="admin-actions-cell"><button onClick={() => setEditingContent(item)} className="admin-action-btn"><HiOutlinePencilSquare /></button><button onClick={() => handleDeleteContent(item.id, contentTab)} className="admin-action-btn is-delete"><HiOutlineTrash /></button></td></tr>)}</tbody>
               </table></div>
               <div className="admin-pagination">
-                <span className="admin-pagination-info">Showing {contentItems.length ? ((contentPage - 1) * CONTENT_PER_PAGE) + 1 : 0}-{Math.min(contentPage * CONTENT_PER_PAGE, contentItems.length)} of {contentItems.length}</span>
+                <span className="admin-pagination-info">Showing {filteredContentItems.length ? ((contentPage - 1) * CONTENT_PER_PAGE) + 1 : 0}-{Math.min(contentPage * CONTENT_PER_PAGE, filteredContentItems.length)} of {filteredContentItems.length}</span>
                 <div className="admin-pagination-controls">
                   <button type="button" disabled={contentPage === 1} onClick={() => setContentPage(p => Math.max(1, p - 1))}>Prev</button>
                   <button type="button" disabled>{contentPage} / {totalContentPages}</button>

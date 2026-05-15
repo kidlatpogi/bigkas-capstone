@@ -330,6 +330,16 @@ function AdminDashboardPage() {
 
   const filteredSessions = useMemo(() => {
     if (globalFilter === 'all') return sessions;
+    if (globalFilter === 'custom') {
+      const start = customDateRange.start ? new Date(`${customDateRange.start}T00:00:00`).getTime() : null;
+      const end = customDateRange.end ? new Date(`${customDateRange.end}T23:59:59.999`).getTime() : null;
+      return sessions.filter(s => {
+        const sessionTime = new Date(s.created_at).getTime();
+        if (start && sessionTime < start) return false;
+        if (end && sessionTime > end) return false;
+        return true;
+      });
+    }
     const now = new Date();
     let days = 30;
     if (globalFilter === '7d') days = 7;
@@ -339,7 +349,7 @@ function AdminDashboardPage() {
     }
     const cutoff = shiftRange(now, 'day', -days).getTime();
     return sessions.filter(s => new Date(s.created_at).getTime() >= cutoff);
-  }, [sessions, globalFilter]);
+  }, [sessions, globalFilter, customDateRange]);
 
   const metricBySession = useMemo(() => {
     const map = new Map();
@@ -1079,8 +1089,12 @@ function AdminDashboardPage() {
               </div>
               <div className="admin-analytics-filters">
                 <label><span>Date Range</span><select value={globalFilter} onChange={e => setGlobalFilter(e.target.value)} className="admin-filter-select">
-                  <option value="7d">Last 7 Days</option><option value="30d">Last 30 Days</option><option value="ytd">Year to Date</option><option value="all">All Time</option>
-                </select><small>Controls the sessions included below.</small></label>
+                  <option value="7d">Last 7 Days</option><option value="30d">Last 30 Days</option><option value="ytd">Year to Date</option><option value="all">All Time</option><option value="custom">Custom Range</option>
+                </select>{globalFilter === 'custom' && <div className="admin-custom-date-range admin-custom-date-range--analytics">
+                  <input type="date" value={customDateRange.start} onChange={e => setCustomDateRange(prev => ({ ...prev, start: e.target.value }))} aria-label="Analytics start date" />
+                  <span>to</span>
+                  <input type="date" value={customDateRange.end} onChange={e => setCustomDateRange(prev => ({ ...prev, end: e.target.value }))} aria-label="Analytics end date" />
+                </div>}<small>{globalFilter === 'custom' ? 'Select an exact session date window.' : 'Controls the sessions included below.'}</small></label>
                 <label><span>Journey</span><select value={analyticsJourneyFilter} onChange={e => setAnalyticsJourneyFilter(e.target.value)} className="admin-filter-select">
                   <option value="all">All Journeys</option><option value="1">Journey 1</option><option value="2">Journey 2</option><option value="3">Journey 3</option><option value="4">Journey 4</option><option value="5">Journey 5</option>
                 </select><small>Filters learners by current journey.</small></label>

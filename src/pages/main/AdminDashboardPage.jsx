@@ -18,14 +18,6 @@ import {
   Pie,
   Cell,
   Legend,
-  Radar,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Funnel,
-  FunnelChart,
-  LabelList
 } from 'recharts';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
@@ -80,6 +72,12 @@ function formatAuditAction(action) {
   const normalized = String(action || '').trim();
   if (!normalized) return 'Unknown';
   return normalized.charAt(0).toUpperCase() + normalized.slice(1).toLowerCase();
+}
+
+function average(values) {
+  const valid = values.map(Number).filter(Number.isFinite);
+  if (!valid.length) return 0;
+  return Number((valid.reduce((sum, value) => sum + value, 0) / valid.length).toFixed(1));
 }
 
 function modeOf(session) {
@@ -164,6 +162,11 @@ function AdminDashboardPage() {
   const [activePage, setActivePage] = useState('overview');
   const [globalFilter, setGlobalFilter] = useState('30d');
   const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
+  const [analyticsJourneyFilter, setAnalyticsJourneyFilter] = useState('all');
+  const [analyticsRoleFilter, setAnalyticsRoleFilter] = useState('all');
+  const [analyticsStatusFilter, setAnalyticsStatusFilter] = useState('active');
+  const [analyticsOriginFilter, setAnalyticsOriginFilter] = useState('all');
+  const [analyticsModeFilter, setAnalyticsModeFilter] = useState('all');
 
   const [profiles, setProfiles] = useState([]);
   const [sessions, setSessions] = useState([]);
@@ -246,7 +249,7 @@ function AdminDashboardPage() {
         const [profilesRes, sessionsRes, metricsRes, activitiesRes, modulesRes, settingsRes] = await Promise.all([
           supabase.from('profiles').select('*').order('created_at', { ascending: false }),
           supabase.from('sessions').select('*').order('created_at', { ascending: true }),
-          supabase.from('session_metrics').select('session_id, overall_score, verbal_score, confidence_score, pronunciation_score'),
+          supabase.from('session_metrics').select('session_id, overall_score, visual_score, vocal_score, verbal_score, visual_avg, vocal_avg, verbal_avg, confidence_score, pronunciation_score'),
           supabase.from('activities').select('*').order('target_level', { ascending: true }).order('activity_order', { ascending: true }),
           supabase.from('modules').select('*').order('level_number', { ascending: true }).order('lesson_number', { ascending: true }),
           roleProfile.role === 'superadmin' ? supabase.from('system_settings').select('*') : Promise.resolve({ data: [] })
@@ -304,11 +307,6 @@ function AdminDashboardPage() {
   }, [isSuperadmin, activePage]);
 
   const visibleUsers = useMemo(() => profiles.filter((p) => !isDeletedProfile(p)), [profiles]);
-  const profileById = useMemo(() => {
-    const map = new Map();
-    visibleUsers.forEach((p) => map.set(p.id, p));
-    return map;
-  }, [visibleUsers]);
 
   const recordAuditLog = async ({ action, entityType, entityId = null, oldValues = null, newValues = null }) => {
     if (!currentAdminId) return;
@@ -349,7 +347,9 @@ function AdminDashboardPage() {
     const map = new Map();
     metrics.forEach((m) => map.set(m.session_id, {
       overall: Number(m.overall_score),
-      verbal: Number(m.verbal_score),
+      visual: Number(m.visual_score ?? m.visual_avg ?? m.confidence_score),
+      vocal: Number(m.vocal_score ?? m.vocal_avg ?? m.pronunciation_score),
+      verbal: Number(m.verbal_score ?? m.verbal_avg),
       confidence: Number(m.confidence_score),
       pronunciation: Number(m.pronunciation_score)
     }));
@@ -410,87 +410,224 @@ function AdminDashboardPage() {
 
   const levelBarData = useMemo(() => levelDistribution.map(i => ({ level: i.label, users: i.value })), [levelDistribution]);
 
-  const timeAllocation = useMemo(() => {
-    const totals = { Activities: 0, Randomizer: 0, 'Free Speech': 0 };
-    filteredSessions.forEach(s => totals[modeOf(s)] += Number(s.duration || 0));
-    return Object.entries(totals).map(([name, value]) => ({ name, value: Math.round(value / 60) })).filter(d => d.value > 0);
-  }, [filteredSessions]);
+  const analyticsUsers = useMemo(() => {
+    return profiles.filter((p) => {
+      if (analyticsStatusFilter === 'active' && isDeletedProfile(p)) return false;
+      if (analyticsStatusFilter === 'deleted' && !isDeletedProfile(p)) return false;
+      if (analyticsRoleFilter !== 'all' && p.role !== analyticsRoleFilter) return false;
+      if (analyticsJourneyFilter !== 'all' && Number(p.current_level) !== Number(analyticsJourneyFilter)) return false;
+      return true;
+    });
+  }, [profiles, analyticsStatusFilter, analyticsRoleFilter, analyticsJourneyFilter]);
 
-  const mostConsistent = useMemo(() => {
+  const analyticsUserIds = useMemo(() => new Set(analyticsUsers.map(u => u.id)), [analyticsUsers]);
+
+  const analyticsSessions = useMemo(() => {
+    return filteredSessions.filter((s) => {
+      if (!analyticsUserIds.has(s.user_id)) return false;
+      if (analyticsOriginFilter !== 'all' && s.session_origin !== analyticsOriginFilter) return false;
+      if (analyticsModeFilter !== 'all' && modeOf(s) !== analyticsModeFilter) return false;
+      return true;
+    });
+  }, [filteredSessions, analyticsUserIds, analyticsOriginFilter, analyticsModeFilter]);
+
+  const analyticsCompletedSessions = useMemo(
+    () => analyticsSessions.filter(s => s.status === 'completed'),
+    [analyticsSessions]
+  );
+
+  const analyticsMetricRows = useMemo(() => {
+    return analyticsSessions.map((session) => ({
+      session,
+      scores: metricBySession.get(session.id)
+    })).filter(row => row.scores);
+  }, [analyticsSessions, metricBySession]);
+
+  const analyticsKpis = useMemo(() => {
+    const now = new Date();
+    const weekAgo = shiftRange(now, 'day', -7);
+    const activeUserCount = new Set(analyticsSessions.filter(s => new Date(s.created_at) >= weekAgo).map(s => s.user_id)).size;
+    const scoreRows = analyticsMetricRows.map(row => row.scores);
+    return {
+      totalUsers: analyticsUsers.length,
+      activeUsers: activeUserCount,
+      completedSessions: analyticsCompletedSessions.length,
+      avgOverall: average(scoreRows.map(s => s.overall)),
+      avgVisual: average(scoreRows.map(s => s.visual)),
+      avgVocal: average(scoreRows.map(s => s.vocal)),
+      avgVerbal: average(scoreRows.map(s => s.verbal)),
+      deletedUsers: analyticsUsers.filter(isDeletedProfile).length,
+    };
+  }, [analyticsUsers, analyticsSessions, analyticsCompletedSessions, analyticsMetricRows]);
+
+  const mehrabianTrendData = useMemo(() => {
+    const buckets = new Map();
+    analyticsMetricRows.forEach(({ session, scores }) => {
+      const d = new Date(session.created_at);
+      const key = `${d.getMonth() + 1}/${d.getDate()}`;
+      const bucket = buckets.get(key) || { visual: [], vocal: [], verbal: [], overall: [] };
+      bucket.visual.push(scores.visual);
+      bucket.vocal.push(scores.vocal);
+      bucket.verbal.push(scores.verbal);
+      bucket.overall.push(scores.overall);
+      buckets.set(key, bucket);
+    });
+    return Array.from(buckets.entries()).map(([label, bucket]) => ({
+      label,
+      Visual: average(bucket.visual),
+      Vocal: average(bucket.vocal),
+      Verbal: average(bucket.verbal),
+      Overall: average(bucket.overall),
+    })).sort((a, b) => {
+      const [am, ad] = a.label.split('/').map(Number);
+      const [bm, bd] = b.label.split('/').map(Number);
+      return am !== bm ? am - bm : ad - bd;
+    });
+  }, [analyticsMetricRows]);
+
+  const journeyAnalyticsData = useMemo(() => {
+    return [1, 2, 3, 4, 5].map((level) => {
+      const usersInLevel = analyticsUsers.filter(u => Number(u.current_level) === level);
+      const userIds = new Set(usersInLevel.map(u => u.id));
+      const sessionsInLevel = analyticsMetricRows.filter(({ session }) => userIds.has(session.user_id));
+      return {
+        journey: `Journey ${level}`,
+        users: usersInLevel.length,
+        sessions: sessionsInLevel.length,
+        avgScore: average(sessionsInLevel.map(row => row.scores.overall)),
+      };
+    });
+  }, [analyticsUsers, analyticsMetricRows]);
+
+  const activityAnalytics = useMemo(() => {
+    return activities.filter(activity => (
+      analyticsJourneyFilter === 'all' || Number(activity.target_level) === Number(analyticsJourneyFilter)
+    )).map((activity) => {
+      const rows = analyticsMetricRows.filter(({ session }) => session.activity_id === activity.id);
+      const attempts = rows.length;
+      const completed = rows.filter(({ session }) => session.status === 'completed').length;
+      return {
+        id: activity.id,
+        title: activity.title || `Activity ${activity.activity_order}`,
+        journey: activity.target_level,
+        attempts,
+        completionRate: attempts ? Math.round((completed / attempts) * 100) : 0,
+        avgScore: average(rows.map(row => row.scores.overall)),
+      };
+    });
+  }, [activities, analyticsMetricRows, analyticsJourneyFilter]);
+
+  const activityHighlights = useMemo(() => ({
+    mostAttempted: [...activityAnalytics].filter(a => a.attempts > 0).sort((a, b) => b.attempts - a.attempts).slice(0, 5),
+    leastAttempted: [...activityAnalytics].sort((a, b) => a.attempts - b.attempts).slice(0, 5),
+    lowestScores: [...activityAnalytics].filter(a => a.attempts > 0).sort((a, b) => a.avgScore - b.avgScore).slice(0, 5),
+    bestCompletion: [...activityAnalytics].filter(a => a.attempts > 0).sort((a, b) => b.completionRate - a.completionRate).slice(0, 5),
+  }), [activityAnalytics]);
+
+  const engagementTrendData = useMemo(() => {
+    const days = globalFilter === '7d' ? 7 : 14;
+    const now = new Date();
+    return Array.from({ length: days }).map((_, i) => {
+      const d = new Date(now);
+      d.setDate(now.getDate() - (days - 1) + i);
+      const dayStart = new Date(d.setHours(0, 0, 0, 0)).getTime();
+      const dayEnd = dayStart + 86400000;
+      const daySessions = analyticsSessions.filter(s => {
+        const ms = new Date(s.created_at).getTime();
+        return ms >= dayStart && ms < dayEnd;
+      });
+      return {
+        date: `${d.getMonth() + 1}/${d.getDate()}`,
+        sessions: daySessions.length,
+        activeUsers: new Set(daySessions.map(s => s.user_id)).size,
+      };
+    });
+  }, [analyticsSessions, globalFilter]);
+
+  const sessionModeData = useMemo(() => {
+    const totals = { Activities: 0, Randomizer: 0, 'Free Speech': 0 };
+    analyticsSessions.forEach(s => { totals[modeOf(s)] += 1; });
+    return Object.entries(totals).map(([name, value]) => ({ name, value })).filter(item => item.value > 0);
+  }, [analyticsSessions]);
+
+  const topScoreUsers = useMemo(() => {
+    const byUser = new Map();
+    analyticsMetricRows.forEach(({ session, scores }) => {
+      const row = byUser.get(session.user_id) || [];
+      row.push(scores.overall);
+      byUser.set(session.user_id, row);
+    });
+    return Array.from(byUser.entries()).map(([id, values]) => {
+      const p = profiles.find(profile => profile.id === id);
+      return { id, username: getDisplayName(p, id), initial: (p?.username || 'U')[0].toUpperCase(), value: average(values) };
+    }).sort((a, b) => b.value - a.value).slice(0, 5);
+  }, [analyticsMetricRows, profiles]);
+
+  const analyticsMostConsistent = useMemo(() => {
     const activityMap = new Map();
-    sessions.forEach(s => {
+    analyticsSessions.forEach(s => {
       const day = new Date(s.created_at).toDateString();
       const set = activityMap.get(s.user_id) || new Set();
       set.add(day);
       activityMap.set(s.user_id, set);
     });
     return Array.from(activityMap.entries()).map(([id, set]) => {
-      const p = profileById.get(id);
+      const p = profiles.find(profile => profile.id === id);
       return { id, username: getDisplayName(p, id), initial: (p?.username || 'U')[0].toUpperCase(), value: set.size };
     }).sort((a, b) => b.value - a.value).slice(0, 5);
-  }, [sessions, profileById]);
+  }, [analyticsSessions, profiles]);
 
-  const risers = useMemo(() => {
+  const analyticsRisers = useMemo(() => {
     const byUser = new Map();
-    sessions.forEach(s => {
-      const scores = metricBySession.get(s.id);
-      if (!scores) return;
-      const list = byUser.get(s.user_id) || [];
-      list.push({ d: new Date(s.created_at).getTime(), s: scores.overall });
-      byUser.set(s.user_id, list);
+    analyticsMetricRows.forEach(({ session, scores }) => {
+      const list = byUser.get(session.user_id) || [];
+      list.push({ d: new Date(session.created_at).getTime(), s: scores.overall });
+      byUser.set(session.user_id, list);
     });
     return Array.from(byUser.entries()).map(([id, list]) => {
       if (list.length < 2) return null;
       const sorted = list.sort((a, b) => a.d - b.d);
       const diff = Number((sorted[sorted.length - 1].s - sorted[0].s).toFixed(1));
-      const p = profileById.get(id);
+      const p = profiles.find(profile => profile.id === id);
       return { id, username: getDisplayName(p, id), initial: (p?.username || 'U')[0].toUpperCase(), value: diff };
     }).filter(u => u && u.value > 0).sort((a, b) => b.value - a.value).slice(0, 5);
-  }, [sessions, metricBySession, profileById]);
+  }, [analyticsMetricRows, profiles]);
 
-  const multiDimProgress = useMemo(() => {
-    const buckets = new Map();
-    filteredSessions.forEach(s => {
-      const scores = metricBySession.get(s.id);
-      if (!scores || !Number.isFinite(scores.verbal)) return;
-      const d = new Date(s.created_at);
-      const key = `${d.getMonth() + 1}/${d.getDate()}`;
-      const cur = buckets.get(key) || { v: 0, c: 0, p: 0, n: 0 };
-      cur.v += scores.verbal; cur.c += scores.confidence; cur.p += scores.pronunciation; cur.n++;
-      buckets.set(key, cur);
-    });
-    return Array.from(buckets.entries()).map(([label, b]) => ({
-      label, verbal_score: Number((b.v/b.n).toFixed(1)), confidence_score: Number((b.c/b.n).toFixed(1)), pronunciation_score: Number((b.p/b.n).toFixed(1))
-    })).sort((a,b) => {
-      const [m1, d1] = a.label.split('/').map(Number); const [m2, d2] = b.label.split('/').map(Number);
-      return m1 !== m2 ? m1 - m2 : d1 - d2;
-    });
-  }, [filteredSessions, metricBySession]);
+  const atRiskUsers = useMemo(() => {
+    const now = Date.now();
+    const weekMs = 7 * 86400000;
+    return analyticsUsers.map((user) => {
+      const userSessions = analyticsSessions.filter(s => s.user_id === user.id);
+      const scoredRows = analyticsMetricRows.filter(({ session }) => session.user_id === user.id);
+      const latest = userSessions.reduce((max, s) => Math.max(max, new Date(s.created_at).getTime()), 0);
+      const avgScore = average(scoredRows.map(row => row.scores.overall));
+      const reasons = [];
+      if (!latest || now - latest > weekMs) reasons.push('Inactive 7+ days');
+      if (scoredRows.length >= 2 && avgScore > 0 && avgScore < 60) reasons.push('Low average score');
+      if (userSessions.length >= 3 && Number(user.current_level || 1) <= 1) reasons.push('Still in Journey 1');
+      if (userSessions.some(s => s.status === 'failed' || s.status === 'processing')) reasons.push('Session needs review');
+      return { id: user.id, name: getDisplayName(user, user.id), journey: user.current_level || 1, avgScore, reasons };
+    }).filter(user => user.reasons.length).slice(0, 8);
+  }, [analyticsUsers, analyticsSessions, analyticsMetricRows]);
 
-  const masteryRadarData = useMemo(() => {
-    let vSum = 0, viSum = 0, voSum = 0, count = 0;
-    metrics.forEach(m => {
-      if (!Number.isFinite(Number(m.verbal_score))) return;
-      vSum += Number(m.verbal_score);
-      viSum += Number(m.confidence_score);
-      voSum += Number(m.pronunciation_score);
-      count++;
-    });
-    if (count === 0) return [];
-    return [
-      { subject: 'Verbal (Words)', A: Number((vSum / count).toFixed(1)), fullMark: 100 },
-      { subject: 'Visual (Body Language)', A: Number((viSum / count).toFixed(1)), fullMark: 100 },
-      { subject: 'Vocal (Tone)', A: Number((voSum / count).toFixed(1)), fullMark: 100 },
-    ];
-  }, [metrics]);
-
-  const courseFunnelData = useMemo(() => {
-    return [1, 2, 3, 4, 5].map(lv => ({
-      value: profiles.filter(p => Number(p.current_level) >= lv).length,
-      name: `Journey ${lv}`,
-      fill: PIE_COLORS[lv % PIE_COLORS.length]
-    })).filter(d => d.value > 0);
-  }, [profiles]);
+  const analyticsDetailRows = useMemo(() => {
+    return analyticsUsers.map((user) => {
+      const userSessions = analyticsSessions.filter(s => s.user_id === user.id);
+      const rows = analyticsMetricRows.filter(({ session }) => session.user_id === user.id);
+      return {
+        id: user.id,
+        name: getDisplayName(user, user.id),
+        role: user.role,
+        journey: user.current_level || 1,
+        sessions: userSessions.length,
+        avgOverall: average(rows.map(row => row.scores.overall)),
+        avgVisual: average(rows.map(row => row.scores.visual)),
+        avgVocal: average(rows.map(row => row.scores.vocal)),
+        avgVerbal: average(rows.map(row => row.scores.verbal)),
+        status: isDeletedProfile(user) ? 'Deleted' : 'Active',
+      };
+    }).sort((a, b) => b.sessions - a.sessions || b.avgOverall - a.avgOverall).slice(0, 12);
+  }, [analyticsUsers, analyticsSessions, analyticsMetricRows]);
 
   const filteredUsers = useMemo(() => {
     let res = profiles;
@@ -939,72 +1076,75 @@ function AdminDashboardPage() {
 
         {activePage === 'analytics' && (
           <>
-            <div className="admin-global-filter">
-              <label>Global Filter:</label>
-              <select value={globalFilter} onChange={e => setGlobalFilter(e.target.value)} className="admin-filter-select">
+            <div className="admin-analytics-filters">
+              <label><span>Date Range</span><select value={globalFilter} onChange={e => setGlobalFilter(e.target.value)} className="admin-filter-select">
                 <option value="7d">Last 7 Days</option><option value="30d">Last 30 Days</option><option value="ytd">Year to Date</option><option value="all">All Time</option>
-              </select>
+              </select></label>
+              <label><span>Journey</span><select value={analyticsJourneyFilter} onChange={e => setAnalyticsJourneyFilter(e.target.value)} className="admin-filter-select">
+                <option value="all">All Journeys</option><option value="1">Journey 1</option><option value="2">Journey 2</option><option value="3">Journey 3</option><option value="4">Journey 4</option><option value="5">Journey 5</option>
+              </select></label>
+              <label><span>Role</span><select value={analyticsRoleFilter} onChange={e => setAnalyticsRoleFilter(e.target.value)} className="admin-filter-select">
+                <option value="all">All Roles</option><option value="user">Users</option><option value="admin">Admins</option><option value="superadmin">Superadmins</option>
+              </select></label>
+              <label><span>Status</span><select value={analyticsStatusFilter} onChange={e => setAnalyticsStatusFilter(e.target.value)} className="admin-filter-select">
+                <option value="active">Active Users</option><option value="deleted">Deleted Users</option><option value="all">All Statuses</option>
+              </select></label>
+              <label><span>Origin</span><select value={analyticsOriginFilter} onChange={e => setAnalyticsOriginFilter(e.target.value)} className="admin-filter-select">
+                <option value="all">All Origins</option><option value="training">Training</option><option value="practice">Practice</option><option value="pre-test">Pre-test</option>
+              </select></label>
+              <label><span>Mode</span><select value={analyticsModeFilter} onChange={e => setAnalyticsModeFilter(e.target.value)} className="admin-filter-select">
+                <option value="all">All Modes</option><option value="Activities">Activities</option><option value="Randomizer">Randomizer</option><option value="Free Speech">Free Speech</option>
+              </select></label>
             </div>
+            <section className="admin-grid admin-grid-4">
+              <article className="admin-card admin-kpi-card"><p className="admin-kpi-label">Total Users</p><p className="admin-kpi-value">{analyticsKpis.totalUsers}</p><p className="admin-kpi-footer">Matching current filters</p></article>
+              <article className="admin-card admin-kpi-card"><p className="admin-kpi-label">Active This Week</p><p className="admin-kpi-value">{analyticsKpis.activeUsers}</p><p className="admin-kpi-footer">Users with recent sessions</p></article>
+              <article className="admin-card admin-kpi-card"><p className="admin-kpi-label">Completed Sessions</p><p className="admin-kpi-value">{analyticsKpis.completedSessions}</p><p className="admin-kpi-footer">Completed speech attempts</p></article>
+              <article className="admin-card admin-kpi-card"><p className="admin-kpi-label">Average Overall</p><p className="admin-kpi-value">{analyticsKpis.avgOverall}</p><p className="admin-kpi-footer">Mean session score</p></article>
+            </section>
+            <section className="admin-grid admin-grid-4">
+              <article className="admin-card admin-kpi-card"><p className="admin-kpi-label">Visual</p><p className="admin-kpi-value">{analyticsKpis.avgVisual}</p><p className="admin-kpi-footer">Body language and presence</p></article>
+              <article className="admin-card admin-kpi-card"><p className="admin-kpi-label">Vocal</p><p className="admin-kpi-value">{analyticsKpis.avgVocal}</p><p className="admin-kpi-footer">Voice quality and delivery</p></article>
+              <article className="admin-card admin-kpi-card"><p className="admin-kpi-label">Verbal</p><p className="admin-kpi-value">{analyticsKpis.avgVerbal}</p><p className="admin-kpi-footer">Message structure and wording</p></article>
+              <article className="admin-card admin-kpi-card"><p className="admin-kpi-label">Deleted Users</p><p className="admin-kpi-value">{analyticsKpis.deletedUsers}</p><p className="admin-kpi-footer">Soft-deleted profiles</p></article>
+            </section>
             <section className="admin-grid admin-grid-2">
-              <article className="admin-card"><h3>Mehrabian's Rule Over Time</h3><div className="admin-chart-container">
-                <ResponsiveContainer width="100%" height={300}><LineChart data={multiDimProgress}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="label" /><YAxis /><Tooltip /><Legend /><Line type="monotone" dataKey="confidence_score" name="Visual" stroke="#2C3E50" strokeWidth={3} /><Line type="monotone" dataKey="pronunciation_score" name="Vocal" stroke="#BDC3C7" strokeWidth={3} /><Line type="monotone" dataKey="verbal_score" name="Verbal" stroke="#33D2A4" strokeWidth={3} /></LineChart></ResponsiveContainer>
+              <article className="admin-card"><h3>Mehrabian Performance Over Time</h3><div className="admin-chart-container">
+                {mehrabianTrendData.length ? <ResponsiveContainer width="100%" height={300}><LineChart data={mehrabianTrendData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="label" /><YAxis domain={[0, 100]} /><Tooltip /><Legend /><Line type="monotone" dataKey="Visual" stroke="#2C3E50" strokeWidth={3} /><Line type="monotone" dataKey="Vocal" stroke="#64748B" strokeWidth={3} /><Line type="monotone" dataKey="Verbal" stroke="#33D2A4" strokeWidth={3} /><Line type="monotone" dataKey="Overall" stroke="#F59E0B" strokeWidth={2} /></LineChart></ResponsiveContainer> : <div className="admin-empty-chart">No score data available yet</div>}
               </div></article>
-              <article className="admin-card"><h3>Time Allocation (min)</h3><div className="admin-chart-container">
-                <ResponsiveContainer width="100%" height={300}><PieChart><Pie data={timeAllocation} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} innerRadius={60}>{timeAllocation.map((e,i) => <Cell key={i} fill={PIE_COLORS[i % 4]} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer>
+              <article className="admin-card"><h3>Journey Progress</h3><div className="admin-chart-container">
+                <ResponsiveContainer width="100%" height={300}><BarChart data={journeyAnalyticsData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="journey" /><YAxis /><Tooltip /><Legend /><Bar dataKey="users" name="Users" fill="#33D2A4" radius={[8,8,0,0]} /><Bar dataKey="avgScore" name="Avg Score" fill="#2C3E50" radius={[8,8,0,0]} /></BarChart></ResponsiveContainer>
               </div></article>
             </section>
             <section className="admin-grid admin-grid-2">
-              <article className="admin-card admin-leaderboard-card"><h3>Most Consistent Users</h3><LeaderboardList items={mostConsistent} suffix="days" /></article>
-              <article className="admin-card admin-leaderboard-card"><h3>Fastest Risers (Lifetime)</h3><LeaderboardList items={risers} suffix="pts" /></article>
+              <article className="admin-card"><h3>Activity Analytics</h3><div className="admin-analytics-lists">
+                <div><h4>Most Attempted</h4>{activityHighlights.mostAttempted.length ? activityHighlights.mostAttempted.map(a => <p key={a.id}><strong>{a.title}</strong><span>{a.attempts} attempts</span></p>) : <div className="admin-empty-inline">No attempts yet</div>}</div>
+                <div><h4>Lowest Average Score</h4>{activityHighlights.lowestScores.length ? activityHighlights.lowestScores.map(a => <p key={a.id}><strong>{a.title}</strong><span>{a.avgScore} avg</span></p>) : <div className="admin-empty-inline">No score data yet</div>}</div>
+                <div><h4>Best Completion</h4>{activityHighlights.bestCompletion.length ? activityHighlights.bestCompletion.map(a => <p key={a.id}><strong>{a.title}</strong><span>{a.completionRate}%</span></p>) : <div className="admin-empty-inline">No completion data yet</div>}</div>
+                <div><h4>Least Attempted</h4>{activityHighlights.leastAttempted.length ? activityHighlights.leastAttempted.map(a => <p key={a.id}><strong>{a.title}</strong><span>{a.attempts} attempts</span></p>) : <div className="admin-empty-inline">No attempts yet</div>}</div>
+              </div></article>
+              <article className="admin-card"><h3>User Engagement</h3><div className="admin-chart-container">
+                <ResponsiveContainer width="100%" height={300}><AreaChart data={engagementTrendData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="date" /><YAxis /><Tooltip /><Legend /><Area type="monotone" dataKey="sessions" name="Sessions" stroke="#33D2A4" fill="#33D2A433" /><Area type="monotone" dataKey="activeUsers" name="Active Users" stroke="#2C3E50" fill="#2C3E5033" /></AreaChart></ResponsiveContainer>
+              </div></article>
             </section>
-
             <section className="admin-grid admin-grid-2">
-              <article className="admin-card">
-                <h3>Skill Mastery (Mehrabian's Rule)</h3>
-                <div className="admin-chart-container">
-                  {masteryRadarData.length === 0 ? (
-                    <div className="admin-empty-chart">No mastery data available yet</div>
-                  ) : (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <RadarChart cx="50%" cy="50%" outerRadius="80%" data={masteryRadarData}>
-                        <PolarGrid stroke="#BDC3C7" />
-                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#bdc3c7', fontSize: 12 }} />
-                        <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#bdc3c7', fontSize: 10 }} />
-                        <Radar
-                          name="Global Mastery"
-                          dataKey="A"
-                          stroke="#33D2A4"
-                          fill="#33D2A4"
-                          fillOpacity={0.4}
-                        />
-                        <Tooltip />
-                      </RadarChart>
-                    </ResponsiveContainer>
-                  )}
-                </div>
-              </article>
-
-              <article className="admin-card">
-                <h3>Course Progression Funnel</h3>
-                <div className="admin-chart-container">
-                  {courseFunnelData.length === 0 ? (
-                    <div className="admin-empty-chart">No progression data available yet</div>
-                  ) : (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <FunnelChart>
-                        <Tooltip />
-                        <Funnel
-                          dataKey="value"
-                          data={courseFunnelData}
-                          isAnimationActive
-                        >
-                          <LabelList position="right" fill="#bdc3c7" content={({ name, value }) => `${name}: ${value}`} />
-                        </Funnel>
-                      </FunnelChart>
-                    </ResponsiveContainer>
-                  )}
-                </div>
-              </article>
+              <article className="admin-card"><h3>Session Modes</h3><div className="admin-chart-container">
+                {sessionModeData.length ? <ResponsiveContainer width="100%" height={300}><PieChart><Pie data={sessionModeData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} innerRadius={56}>{sessionModeData.map((entry, index) => <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}</Pie><Tooltip /><Legend /></PieChart></ResponsiveContainer> : <div className="admin-empty-chart">No sessions available yet</div>}
+              </div></article>
+              <article className="admin-card admin-leaderboard-card"><h3>Performance Leaderboards</h3><LeaderboardList items={topScoreUsers} suffix="avg" emptyMsg="No score data available" /><h3 className="admin-subsection-title">Top Improving Users</h3><LeaderboardList items={analyticsRisers} suffix="pts" emptyMsg="No improvement data available" /></article>
+            </section>
+            <section className="admin-grid admin-grid-2">
+              <article className="admin-card"><h3>Risk / Intervention Panel</h3><div className="admin-risk-list">
+                {atRiskUsers.length ? atRiskUsers.map(user => <div key={user.id} className="admin-risk-row"><div><strong>{user.name}</strong><span>Journey {user.journey} · Avg {user.avgScore}</span></div><p>{user.reasons.join(', ')}</p></div>) : <div className="admin-empty-chart">No at-risk users in the current filters</div>}
+              </div></article>
+              <article className="admin-card admin-leaderboard-card"><h3>Most Consistent Users</h3><LeaderboardList items={analyticsMostConsistent} suffix="days" /></article>
+            </section>
+            <section className="admin-card">
+              <div className="admin-card-head"><h3>Detailed Analytics</h3><p className="admin-note">{analyticsDetailRows.length} users shown</p></div>
+              <div className="admin-table-wrap"><table className="admin-table">
+                <thead><tr><th>User</th><th>Role</th><th>Journey</th><th>Sessions</th><th>Overall</th><th>Visual</th><th>Vocal</th><th>Verbal</th><th>Status</th></tr></thead>
+                <tbody>{analyticsDetailRows.map(row => <tr key={row.id}><td><strong>{row.name}</strong></td><td>{row.role}</td><td>J-{row.journey}</td><td>{row.sessions}</td><td>{row.avgOverall}</td><td>{row.avgVisual}</td><td>{row.avgVocal}</td><td>{row.avgVerbal}</td><td><span className={`admin-status-badge ${row.status === 'Deleted' ? 'is-archived' : 'is-active'}`}>{row.status}</span></td></tr>)}</tbody>
+              </table></div>
             </section>
           </>
         )}

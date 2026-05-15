@@ -238,6 +238,19 @@
   .admin-grid-4, .admin-grid-2 {
     grid-template-columns: 1fr;
   }
+
+  .admin-analytics-filters,
+  .admin-analytics-lists {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-risk-row {
+    flex-direction: column;
+  }
+
+  .admin-risk-row p {
+    text-align: left;
+  }
 }
 
 .admin-card {
@@ -364,6 +377,118 @@
   border-color: #10B981;
   box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
   outline: none;
+}
+
+.admin-analytics-filters {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.admin-analytics-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.admin-analytics-filters span {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.admin-analytics-filters .admin-filter-select {
+  width: 100%;
+}
+
+.admin-analytics-lists {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-analytics-lists h4 {
+  margin: 0 0 8px;
+  color: var(--accent-dark);
+  font-size: 0.9rem;
+}
+
+.admin-analytics-lists p,
+.admin-risk-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.admin-analytics-lists strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-analytics-lists span {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.admin-empty-inline {
+  padding: 10px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.admin-subsection-title {
+  margin-top: 18px !important;
+}
+
+.admin-risk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 300px;
+}
+
+.admin-risk-row {
+  align-items: flex-start;
+}
+
+.admin-risk-row div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 180px;
+}
+
+.admin-risk-row strong {
+  color: var(--text);
+}
+
+.admin-risk-row span,
+.admin-risk-row p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.admin-risk-row p {
+  color: #991b1b;
+  text-align: right;
 }
 
 .admin-chart-container {

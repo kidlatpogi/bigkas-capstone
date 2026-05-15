@@ -66,6 +66,10 @@ function getDisplayName(profile, fallbackId = '') {
   return `User ${String(fallbackId).slice(0, 8)}`;
 }
 
+function isDeletedProfile(profile) {
+  return profile?.archived_at !== null && profile?.archived_at !== undefined && profile?.archived_at !== '';
+}
+
 function modeOf(session) {
   const origin = String(session?.session_origin || '').toLowerCase();
   const mode = String(session?.session_mode || '').toLowerCase();
@@ -284,7 +288,7 @@ function AdminDashboardPage() {
     return () => { active = false; };
   }, [isSuperadmin, activePage]);
 
-  const visibleUsers = useMemo(() => profiles.filter((p) => !p.archived_at), [profiles]);
+  const visibleUsers = useMemo(() => profiles.filter((p) => !isDeletedProfile(p)), [profiles]);
   const profileById = useMemo(() => {
     const map = new Map();
     visibleUsers.forEach((p) => map.set(p.id, p));
@@ -475,8 +479,8 @@ function AdminDashboardPage() {
 
   const filteredUsers = useMemo(() => {
     let res = profiles;
-    if (userStatusFilter === 'active') res = res.filter(p => !p.archived_at);
-    if (userStatusFilter === 'deleted') res = res.filter(p => p.archived_at);
+    if (userStatusFilter === 'active') res = res.filter(p => !isDeletedProfile(p));
+    if (userStatusFilter === 'deleted') res = res.filter(p => isDeletedProfile(p));
     if (userSearchQuery.trim()) {
       const q = userSearchQuery.toLowerCase();
       res = res.filter(p => (p.first_name || '').toLowerCase().includes(q) || (p.username || '').toLowerCase().includes(q));
@@ -992,11 +996,11 @@ function AdminDashboardPage() {
                     <td>J-{u.current_level || 1}</td>
                     <td>L-{u.speaker_level || 1}</td>
                     <td>{u.speaker_points || 0}</td>
-                    <td><span className={`admin-status-badge ${u.archived_at ? 'is-archived' : 'is-active'}`}>{u.archived_at ? 'Deleted' : 'Active'}</span></td>
+                    <td><span className={`admin-status-badge ${isDeletedProfile(u) ? 'is-archived' : 'is-active'}`}>{isDeletedProfile(u) ? 'Deleted' : 'Active'}</span></td>
                     <td className="admin-actions-cell">
                       <button type="button" onClick={() => openEditUser(u)} className="admin-action-btn" title="Edit user"><HiOutlinePencilSquare /></button>
-                      <button type="button" onClick={() => requestUserArchiveState(u, !u.archived_at)} className={`admin-action-btn ${u.archived_at ? '' : 'is-delete'}`} title={u.archived_at ? 'Restore user' : 'Delete user'}>
-                        {u.archived_at ? <HiCheckCircle /> : <HiOutlineTrash />}
+                      <button type="button" onClick={() => requestUserArchiveState(u, !isDeletedProfile(u))} className={`admin-action-btn ${isDeletedProfile(u) ? '' : 'is-delete'}`} title={isDeletedProfile(u) ? 'Restore user' : 'Delete user'}>
+                        {isDeletedProfile(u) ? <HiCheckCircle /> : <HiOutlineTrash />}
                       </button>
                     </td>
                   </tr>

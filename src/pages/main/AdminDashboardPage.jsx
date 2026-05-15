@@ -144,6 +144,7 @@ function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [role, setRole] = useState('');
+  const [currentAdminId, setCurrentAdminId] = useState('');
   const [activePage, setActivePage] = useState('overview');
   const [globalFilter, setGlobalFilter] = useState('30d');
   const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
@@ -162,6 +163,7 @@ function AdminDashboardPage() {
   const [pendingArchiveUser, setPendingArchiveUser] = useState(null);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [userLevelFilter, setUserLevelFilter] = useState('all');
+  const [userStatusFilter, setUserStatusFilter] = useState('all');
   const [userPage, setUserPage] = useState(1);
   const USERS_PER_PAGE = 10;
   const [archivingUserId, setArchivingUserId] = useState(null);
@@ -244,6 +246,7 @@ function AdminDashboardPage() {
         }
 
         if (!active) return;
+        setCurrentAdminId(authData.user.id);
         setRole(roleProfile.role);
         setProfiles(profilesRes.data || []);
         setSessions(sessionsRes.data || []);
@@ -287,6 +290,28 @@ function AdminDashboardPage() {
     visibleUsers.forEach((p) => map.set(p.id, p));
     return map;
   }, [visibleUsers]);
+
+  const recordAuditLog = async ({ action, entityType, entityId = null, oldValues = null, newValues = null }) => {
+    if (!currentAdminId) return;
+    const payload = {
+      actor_id: currentAdminId,
+      action,
+      entity_type: entityType,
+      entity_id: entityId,
+      old_values: oldValues,
+      new_values: newValues,
+    };
+    const { data, error: auditError } = await supabase
+      .from('audit_logs')
+      .insert(payload)
+      .select('*')
+      .single();
+    if (auditError) {
+      console.warn('Failed to write audit log:', auditError.message);
+      return;
+    }
+    if (data) setAuditLogs(prev => [data, ...prev]);
+  };
 
   const filteredSessions = useMemo(() => {
     if (globalFilter === 'all') return sessions;
@@ -450,13 +475,15 @@ function AdminDashboardPage() {
 
   const filteredUsers = useMemo(() => {
     let res = profiles;
+    if (userStatusFilter === 'active') res = res.filter(p => !p.archived_at);
+    if (userStatusFilter === 'deleted') res = res.filter(p => p.archived_at);
     if (userSearchQuery.trim()) {
       const q = userSearchQuery.toLowerCase();
       res = res.filter(p => (p.first_name || '').toLowerCase().includes(q) || (p.username || '').toLowerCase().includes(q));
     }
     if (userLevelFilter !== 'all') res = res.filter(p => Number(p.current_level) === Number(userLevelFilter));
     return res;
-  }, [profiles, userSearchQuery, userLevelFilter]);
+  }, [profiles, userSearchQuery, userLevelFilter, userStatusFilter]);
 
   const paginatedUsers = useMemo(() => {
     const start = (userPage - 1) * USERS_PER_PAGE;
@@ -506,15 +533,34 @@ function AdminDashboardPage() {
     if (error) {
       setSystemSettings(prev => ({ ...prev, [key]: currentValue }));
       showToast('Failed to update setting', 'error');
-    } else showToast('Setting updated');
+    } else {
+      showToast('Setting updated');
+      await recordAuditLog({
+        action: 'update',
+        entityType: 'system_settings',
+        oldValues: { key, value: currentValue },
+        newValues: { key, value: newValue },
+      });
+    }
   };
 
   const performSaveContent = async (data) => {
     setIsContentLoading(true);
-    const { error } = editingContent ? await supabase.from(contentTab).update(data).eq('id', editingContent.id) : await supabase.from(contentTab).insert([data]);
+    const isEdit = Boolean(editingContent);
+    const oldContent = editingContent;
+    const { data: savedContent, error } = isEdit
+      ? await supabase.from(contentTab).update(data).eq('id', editingContent.id).select('*').single()
+      : await supabase.from(contentTab).insert([data]).select('*').single();
     setIsContentLoading(false);
     if (error) showToast(error.message, 'error');
     else {
+      await recordAuditLog({
+        action: isEdit ? 'update' : 'create',
+        entityType: contentTab,
+        entityId: savedContent?.id || oldContent?.id || null,
+        oldValues: isEdit ? oldContent : null,
+        newValues: savedContent || data,
+      });
       showToast('Saved successfully');
       setCreatingContent(false);
       setEditingContent(null);
@@ -563,15 +609,31 @@ function AdminDashboardPage() {
   const confirmNextTargetLevel = () => {
     if (!pendingLevelAdd) return;
     setContentLevelLimit(prev => Math.max(prev, pendingLevelAdd));
+    recordAuditLog({
+      action: 'update',
+      entityType: 'admin_level_options',
+      oldValues: { max_target_level: highestActivityLevel },
+      newValues: { max_target_level: pendingLevelAdd },
+    });
     setPendingLevelAdd(null);
     showToast(`Level ${pendingLevelAdd} added to the dropdown`);
   };
 
   const handleDeleteContent = async (id, type) => {
     if (!window.confirm('Delete this item?')) return;
+    const oldContent = type === 'activities'
+      ? activities.find(a => a.id === id)
+      : modules.find(m => m.id === id);
     const { error } = await supabase.from(type).delete().eq('id', id);
     if (error) showToast(error.message, 'error');
     else {
+      await recordAuditLog({
+        action: 'delete',
+        entityType: type,
+        entityId: id,
+        oldValues: oldContent || { id },
+        newValues: null,
+      });
       showToast('Deleted');
       if (type === 'activities') setActivities(prev => prev.filter(a => a.id !== id));
       else setModules(prev => prev.filter(m => m.id !== id));
@@ -644,6 +706,13 @@ function AdminDashboardPage() {
         .eq('id', data.user.id);
       if (profileError) throw profileError;
 
+      await recordAuditLog({
+        action: 'create',
+        entityType: 'profiles',
+        entityId: data.user.id,
+        oldValues: null,
+        newValues: { id: data.user.id, ...payload },
+      });
       showToast('User created');
       setCreatingUser(false);
       setUserForm(USER_FORM_INITIAL);
@@ -667,6 +736,13 @@ function AdminDashboardPage() {
     if (updateError) {
       showToast(updateError.message || 'Failed to update user', 'error');
     } else {
+      await recordAuditLog({
+        action: 'update',
+        entityType: 'profiles',
+        entityId: editingUser.id,
+        oldValues: editingUser,
+        newValues: { ...editingUser, ...payload },
+      });
       showToast('User updated');
       setEditingUser(null);
       setProfiles(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...payload } : u));
@@ -677,6 +753,7 @@ function AdminDashboardPage() {
   const setUserArchiveState = async (user, shouldArchive) => {
     const archivedAt = shouldArchive ? new Date().toISOString() : null;
     const label = shouldArchive ? 'archive' : 'restore';
+    const newValues = { ...user, archived_at: archivedAt };
     const { error: archiveError } = await supabase
       .from('profiles')
       .update({ archived_at: archivedAt, updated_at: new Date().toISOString() })
@@ -685,9 +762,16 @@ function AdminDashboardPage() {
       showToast(archiveError.message || `Failed to ${label} user`, 'error');
       return;
     }
+    await recordAuditLog({
+      action: shouldArchive ? 'delete' : 'restore',
+      entityType: 'profiles',
+      entityId: user.id,
+      oldValues: user,
+      newValues,
+    });
     setProfiles(prev => prev.map(u => u.id === user.id ? { ...u, archived_at: archivedAt } : u));
     setEditingUser(prev => prev?.id === user.id ? { ...prev, archived_at: archivedAt } : prev);
-    showToast(shouldArchive ? 'User archived' : 'User restored');
+    showToast(shouldArchive ? 'User deleted' : 'User restored');
   };
 
   const requestUserArchiveState = (user, shouldArchive) => {
@@ -716,7 +800,15 @@ function AdminDashboardPage() {
     const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { first_name, last_name, username, role: newRole } } });
     if (error) showToast(error.message, 'error');
     else {
-      await supabase.from('profiles').update({ role: newRole, first_name, last_name, username }).eq('id', data.user.id);
+      const profileUpdate = { role: newRole, first_name, last_name, username };
+      await supabase.from('profiles').update(profileUpdate).eq('id', data.user.id);
+      await recordAuditLog({
+        action: 'create',
+        entityType: 'profiles',
+        entityId: data.user.id,
+        oldValues: null,
+        newValues: { id: data.user.id, ...profileUpdate },
+      });
       showToast('Admin created'); setCreateAdminForm({ email: '', password: '', confirm_password: '', first_name: '', last_name: '', username: '', role: 'admin' });
       const { data: ps } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
       if (ps) setProfiles(ps);
@@ -881,6 +973,11 @@ function AdminDashboardPage() {
                   <option value="4">Journey 4</option>
                   <option value="5">Journey 5</option>
                 </select>
+                <select className="admin-filter-select" value={userStatusFilter} onChange={e => { setUserStatusFilter(e.target.value); setUserPage(1); }}>
+                  <option value="all">All Statuses</option>
+                  <option value="active">Active Users</option>
+                  <option value="deleted">Deleted Users</option>
+                </select>
                 <button type="button" className="admin-btn admin-btn--primary" onClick={openCreateUser}>Create User</button>
               </div>
             </div>
@@ -895,7 +992,7 @@ function AdminDashboardPage() {
                     <td>J-{u.current_level || 1}</td>
                     <td>L-{u.speaker_level || 1}</td>
                     <td>{u.speaker_points || 0}</td>
-                    <td><span className={`admin-status-badge ${u.archived_at ? 'is-archived' : 'is-active'}`}>{u.archived_at ? 'Archived' : 'Active'}</span></td>
+                    <td><span className={`admin-status-badge ${u.archived_at ? 'is-archived' : 'is-active'}`}>{u.archived_at ? 'Deleted' : 'Active'}</span></td>
                     <td className="admin-actions-cell">
                       <button type="button" onClick={() => openEditUser(u)} className="admin-action-btn" title="Edit user"><HiOutlinePencilSquare /></button>
                       <button type="button" onClick={() => requestUserArchiveState(u, !u.archived_at)} className={`admin-action-btn ${u.archived_at ? '' : 'is-delete'}`} title={u.archived_at ? 'Restore user' : 'Delete user'}>
@@ -1058,7 +1155,7 @@ function AdminDashboardPage() {
 
       {pendingArchiveUser && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setPendingArchiveUser(null)}><div className="admin-modal admin-confirm-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
         <h3>Delete User?</h3>
-        <p>This will archive <strong>{getDisplayName(pendingArchiveUser, pendingArchiveUser.id)}</strong>. The profile row stays in the database and can be restored later.</p>
+        <p>This will mark <strong>{getDisplayName(pendingArchiveUser, pendingArchiveUser.id)}</strong> as deleted. The profile row stays in the database and can be restored later.</p>
         <div className="admin-modal-actions">
           <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setPendingArchiveUser(null)}>Cancel</button>
           <button type="button" className="admin-btn admin-btn--danger" onClick={confirmArchiveUser}>Delete User</button>

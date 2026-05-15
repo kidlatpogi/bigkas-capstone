@@ -950,17 +950,40 @@ function AdminDashboardPage() {
         </div>
       </div></div>, document.body)}
 
-      {(creatingContent || editingContent) && createPortal(<div className="admin-modal-backdrop"><div className="admin-modal"><h3>{editingContent ? 'Edit' : 'Create'} {contentTab}</h3><form onSubmit={handleSaveContent} className="admin-content-form">
-        <input name="title" defaultValue={editingContent?.title} placeholder="Title" required />
-        {contentTab === 'activities' ? (
-          <div className="admin-form-row"><input name="target_level" type="number" defaultValue={editingContent?.target_level || 1} placeholder="Lvl" required /><input name="activity_order" type="number" defaultValue={editingContent?.activity_order || 1} placeholder="Order" required /></div>
-        ) : (
-          <div className="admin-form-row"><input name="level_number" type="number" defaultValue={editingContent?.level_number || 1} placeholder="Lvl" required /><input name="lesson_number" defaultValue={editingContent?.lesson_number} placeholder="Lesson" required /></div>
-        )}
-        <textarea name="objective" defaultValue={editingContent?.objective || editingContent?.content} placeholder="Content/Objective" required />
-        <button type="submit" className="admin-btn admin-btn--primary" disabled={isContentLoading}>{isContentLoading ? 'Saving...' : 'Save'}</button>
-        <button type="button" onClick={() => { setCreatingContent(false); setEditingContent(null); }} className="admin-btn">Cancel</button>
-      </form></div></div>, document.body)}
+      {(creatingContent || editingContent) && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => { setCreatingContent(false); setEditingContent(null); }}><div className="admin-modal admin-user-modal admin-content-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+        <div className="admin-card-head"><h3>{editingContent ? 'Edit' : 'Create'} {contentTab}</h3><button type="button" onClick={() => { setCreatingContent(false); setEditingContent(null); }} className="admin-btn admin-btn--ghost">Close</button></div>
+        <form onSubmit={handleSaveContent} className="admin-content-form">
+          <AdminUserField label="Title">
+            <input name="title" defaultValue={editingContent?.title} placeholder="Title" required />
+          </AdminUserField>
+          {contentTab === 'activities' ? (
+            <>
+              <AdminUserField label="Target Level">
+                <input name="target_level" type="number" min="1" max="5" defaultValue={editingContent?.target_level || 1} placeholder="Level" required />
+              </AdminUserField>
+              <AdminUserField label="Activity Order">
+                <input name="activity_order" type="number" min="1" defaultValue={editingContent?.activity_order || 1} placeholder="Order" required />
+              </AdminUserField>
+            </>
+          ) : (
+            <>
+              <AdminUserField label="Level Number">
+                <input name="level_number" type="number" min="0" max="5" defaultValue={editingContent?.level_number || 1} placeholder="Level" required />
+              </AdminUserField>
+              <AdminUserField label="Lesson Number">
+                <input name="lesson_number" defaultValue={editingContent?.lesson_number} placeholder="Lesson" required />
+              </AdminUserField>
+            </>
+          )}
+          <AdminUserField label={contentTab === 'activities' ? 'Objective' : 'Content'} help={contentTab === 'activities' ? 'Learning objective shown for this activity.' : 'Lesson content shown inside the learning module.'}>
+            <textarea name={contentTab === 'activities' ? 'objective' : 'content'} defaultValue={editingContent?.objective || editingContent?.content} placeholder={contentTab === 'activities' ? 'Activity objective' : 'Module content'} required />
+          </AdminUserField>
+          <div className="admin-modal-actions">
+            <button type="button" onClick={() => { setCreatingContent(false); setEditingContent(null); }} className="admin-btn admin-btn--ghost">Cancel</button>
+            <button type="submit" className="admin-btn admin-btn--primary" disabled={isContentLoading}>{isContentLoading ? 'Saving...' : editingContent ? 'Save Changes' : 'Create'}</button>
+          </div>
+        </form>
+      </div></div>, document.body)}
 
       {inspectingLog && createPortal(<div className="admin-modal-backdrop"><div className="admin-modal"><h3>Audit Details</h3><pre><code>{JSON.stringify(inspectingLog.new_values, null, 2)}</code></pre><button onClick={() => setInspectingLog(null)} className="admin-btn">Close</button></div></div>, document.body)}
 

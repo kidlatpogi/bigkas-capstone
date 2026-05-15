@@ -37,6 +37,17 @@ import './AdminDashboardPage.css';
 const RETENTION_DAYS = 14;
 const SIDEBAR_WIDTH = 280;
 const PIE_COLORS = ['#33d2a4', '#51dfb5', '#7bedcc', '#a8f5e1'];
+const USER_FORM_INITIAL = {
+  email: '',
+  password: '',
+  first_name: '',
+  last_name: '',
+  username: '',
+  role: 'user',
+  current_level: 1,
+  speaker_level: 1,
+  speaker_points: 0,
+};
 
 function shiftRange(start, unit, amount) {
   const d = new Date(start);
@@ -81,6 +92,30 @@ function LeaderboardList({ items, suffix = '', emptyMsg = 'No data available' })
   );
 }
 
+function AdminUserField({ label, help, children }) {
+  return (
+    <label className="admin-user-field">
+      <span>{label}</span>
+      {help && <small>{help}</small>}
+      {children}
+    </label>
+  );
+}
+
+function userToForm(user) {
+  return {
+    email: '',
+    password: '',
+    first_name: user?.first_name || '',
+    last_name: user?.last_name || '',
+    username: user?.username || '',
+    role: user?.role || 'user',
+    current_level: user?.current_level || 1,
+    speaker_level: user?.speaker_level || 1,
+    speaker_points: user?.speaker_points || 0,
+  };
+}
+
 function AdminDashboardPage() {
   const navigate = useNavigate();
   const { logout } = useAuthContext();
@@ -103,6 +138,7 @@ function AdminDashboardPage() {
   const AUDIT_PER_PAGE = 15;
   const [inspectingLog, setInspectingLog] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
+  const [pendingArchiveUser, setPendingArchiveUser] = useState(null);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [userLevelFilter, setUserLevelFilter] = useState('all');
   const [userPage, setUserPage] = useState(1);
@@ -402,6 +438,9 @@ function AdminDashboardPage() {
   }, [filteredUsers, userPage]);
 
   const totalUserPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE);
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [savingUser, setSavingUser] = useState(false);
+  const [userForm, setUserForm] = useState(USER_FORM_INITIAL);
 
   const filteredAuditLogs = useMemo(() => {
     let res = auditLogs;
@@ -456,6 +495,129 @@ function AdminDashboardPage() {
       if (type === 'activities') setActivities(prev => prev.filter(a => a.id !== id));
       else setModules(prev => prev.filter(m => m.id !== id));
     }
+  };
+
+  const refreshProfiles = async () => {
+    const { data, error: refreshError } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (refreshError) {
+      showToast(refreshError.message || 'Failed to refresh users', 'error');
+      return;
+    }
+    setProfiles(data || []);
+  };
+
+  const openCreateUser = () => {
+    setUserForm(USER_FORM_INITIAL);
+    setCreatingUser(true);
+  };
+
+  const openEditUser = (user) => {
+    setUserForm(userToForm(user));
+    setEditingUser(user);
+  };
+
+  const profilePayloadFromUserForm = () => ({
+    first_name: userForm.first_name.trim() || null,
+    last_name: userForm.last_name.trim() || null,
+    username: userForm.username.trim() || null,
+    role: userForm.role,
+    current_level: Number(userForm.current_level) || 1,
+    speaker_level: Number(userForm.speaker_level) || 1,
+    speaker_points: Number(userForm.speaker_points) || 0,
+    updated_at: new Date().toISOString(),
+  });
+
+  const submitCreateUser = async (e) => {
+    e.preventDefault();
+    setSavingUser(true);
+    try {
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: userForm.email.trim(),
+        password: userForm.password,
+        options: {
+          data: {
+            first_name: userForm.first_name.trim(),
+            last_name: userForm.last_name.trim(),
+            username: userForm.username.trim(),
+            role: userForm.role,
+          },
+        },
+      });
+      if (signUpError) throw signUpError;
+      if (!data?.user?.id) throw new Error('User account was not created.');
+
+      const payload = {
+        ...profilePayloadFromUserForm(),
+        archived_at: null,
+      };
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update(payload)
+        .eq('id', data.user.id);
+      if (profileError) throw profileError;
+
+      showToast('User created');
+      setCreatingUser(false);
+      setUserForm(USER_FORM_INITIAL);
+      await refreshProfiles();
+    } catch (e) {
+      showToast(e.message || 'Failed to create user', 'error');
+    } finally {
+      setSavingUser(false);
+    }
+  };
+
+  const submitUpdateUser = async (e) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    setSavingUser(true);
+    const payload = profilePayloadFromUserForm();
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update(payload)
+      .eq('id', editingUser.id);
+    if (updateError) {
+      showToast(updateError.message || 'Failed to update user', 'error');
+    } else {
+      showToast('User updated');
+      setEditingUser(null);
+      setProfiles(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...payload } : u));
+    }
+    setSavingUser(false);
+  };
+
+  const setUserArchiveState = async (user, shouldArchive) => {
+    const archivedAt = shouldArchive ? new Date().toISOString() : null;
+    const label = shouldArchive ? 'archive' : 'restore';
+    const { error: archiveError } = await supabase
+      .from('profiles')
+      .update({ archived_at: archivedAt, updated_at: new Date().toISOString() })
+      .eq('id', user.id);
+    if (archiveError) {
+      showToast(archiveError.message || `Failed to ${label} user`, 'error');
+      return;
+    }
+    setProfiles(prev => prev.map(u => u.id === user.id ? { ...u, archived_at: archivedAt } : u));
+    setEditingUser(prev => prev?.id === user.id ? { ...prev, archived_at: archivedAt } : prev);
+    showToast(shouldArchive ? 'User archived' : 'User restored');
+  };
+
+  const requestUserArchiveState = (user, shouldArchive) => {
+    if (shouldArchive) {
+      setPendingArchiveUser(user);
+      return;
+    }
+    setUserArchiveState(user, false);
+  };
+
+  const confirmArchiveUser = async () => {
+    if (!pendingArchiveUser) return;
+    const user = pendingArchiveUser;
+    setPendingArchiveUser(null);
+    await setUserArchiveState(user, true);
   };
 
   const submitCreateAdmin = async (e) => {
@@ -553,16 +715,16 @@ function AdminDashboardPage() {
               </select>
             </div>
             <section className="admin-grid admin-grid-2">
-              <article className="admin-card"><h3>Improvement Over Time</h3><div className="admin-chart-container">
-                <ResponsiveContainer width="100%" height={300}><LineChart data={multiDimProgress}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="label" /><YAxis /><Tooltip /><Legend /><Line type="monotone" dataKey="verbal_score" name="Verbal" stroke="#33D2A4" strokeWidth={3} /><Line type="monotone" dataKey="confidence_score" name="Confidence" stroke="#2C3E50" strokeWidth={3} /><Line type="monotone" dataKey="pronunciation_score" name="Pronunciation" stroke="#BDC3C7" strokeWidth={3} /></LineChart></ResponsiveContainer>
+              <article className="admin-card"><h3>Mehrabian's Rule Over Time</h3><div className="admin-chart-container">
+                <ResponsiveContainer width="100%" height={300}><LineChart data={multiDimProgress}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="label" /><YAxis /><Tooltip /><Legend /><Line type="monotone" dataKey="confidence_score" name="Visual" stroke="#2C3E50" strokeWidth={3} /><Line type="monotone" dataKey="pronunciation_score" name="Vocal" stroke="#BDC3C7" strokeWidth={3} /><Line type="monotone" dataKey="verbal_score" name="Verbal" stroke="#33D2A4" strokeWidth={3} /></LineChart></ResponsiveContainer>
               </div></article>
               <article className="admin-card"><h3>Time Allocation (min)</h3><div className="admin-chart-container">
                 <ResponsiveContainer width="100%" height={300}><PieChart><Pie data={timeAllocation} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} innerRadius={60}>{timeAllocation.map((e,i) => <Cell key={i} fill={PIE_COLORS[i % 4]} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer>
               </div></article>
             </section>
             <section className="admin-grid admin-grid-2">
-              <article className="admin-card"><h3>Most Consistent Users</h3><LeaderboardList items={mostConsistent} suffix="days" /></article>
-              <article className="admin-card"><h3>Fastest Risers (Lifetime)</h3><LeaderboardList items={risers} suffix="pts" /></article>
+              <article className="admin-card admin-leaderboard-card"><h3>Most Consistent Users</h3><LeaderboardList items={mostConsistent} suffix="days" /></article>
+              <article className="admin-card admin-leaderboard-card"><h3>Fastest Risers (Lifetime)</h3><LeaderboardList items={risers} suffix="pts" /></article>
             </section>
 
             <section className="admin-grid admin-grid-2">
@@ -618,11 +780,44 @@ function AdminDashboardPage() {
 
         {activePage === 'users' && (
           <section className="admin-card">
-            <div className="admin-table-controls"><h3>User Management</h3><div className="admin-search-box"><HiMagnifyingGlass /><input type="text" placeholder="Search..." value={userSearchQuery} onChange={e => setUserSearchQuery(e.target.value)} /></div></div>
+            <div className="admin-table-controls">
+              <h3>User Management</h3>
+              <div className="admin-table-actions">
+                <div className="admin-search-box"><HiMagnifyingGlass /><input type="text" placeholder="Search..." value={userSearchQuery} onChange={e => setUserSearchQuery(e.target.value)} /></div>
+                <select className="admin-filter-select" value={userLevelFilter} onChange={e => setUserLevelFilter(e.target.value)}>
+                  <option value="all">All Journeys</option>
+                  <option value="1">Journey 1</option>
+                  <option value="2">Journey 2</option>
+                  <option value="3">Journey 3</option>
+                  <option value="4">Journey 4</option>
+                  <option value="5">Journey 5</option>
+                </select>
+                <button type="button" className="admin-btn admin-btn--primary" onClick={openCreateUser}>Create User</button>
+              </div>
+            </div>
             <div className="admin-table-wrap"><table className="admin-table">
-              <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Journey</th><th>Points</th><th>Status</th><th>Actions</th></tr></thead>
-              <tbody>{paginatedUsers.map(u => <tr key={u.id}><td>{getDisplayName(u,u.id)}</td><td>{u.username}</td><td>{u.role}</td><td>J-{u.current_level}</td><td>{u.speaker_points}</td><td><span className={`admin-status-badge ${u.archived_at ? 'is-archived' : 'is-active'}`}>{u.archived_at ? 'Archived' : 'Active'}</span></td><td><button onClick={() => setEditingUser(u)} className="admin-action-btn"><HiOutlinePencilSquare /></button></td></tr>)}</tbody>
+              <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Journey</th><th>Speaking</th><th>Points</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody>
+                {paginatedUsers.map(u => (
+                  <tr key={u.id}>
+                    <td>{getDisplayName(u,u.id)}</td>
+                    <td>{u.username || '-'}</td>
+                    <td><span className={`admin-role-badge ${u.role === 'admin' || u.role === 'superadmin' ? 'is-admin' : ''}`}>{u.role || 'user'}</span></td>
+                    <td>J-{u.current_level || 1}</td>
+                    <td>L-{u.speaker_level || 1}</td>
+                    <td>{u.speaker_points || 0}</td>
+                    <td><span className={`admin-status-badge ${u.archived_at ? 'is-archived' : 'is-active'}`}>{u.archived_at ? 'Archived' : 'Active'}</span></td>
+                    <td className="admin-actions-cell">
+                      <button type="button" onClick={() => openEditUser(u)} className="admin-action-btn" title="Edit user"><HiOutlinePencilSquare /></button>
+                      <button type="button" onClick={() => requestUserArchiveState(u, !u.archived_at)} className={`admin-action-btn ${u.archived_at ? '' : 'is-delete'}`} title={u.archived_at ? 'Restore user' : 'Delete user'}>
+                        {u.archived_at ? <HiCheckCircle /> : <HiOutlineTrash />}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
             </table></div>
+            {totalUserPages > 1 && <div className="admin-pagination"><button disabled={userPage === 1} onClick={() => setUserPage(p => p - 1)}>Prev</button><span>{userPage} / {totalUserPages}</span><button disabled={userPage === totalUserPages} onClick={() => setUserPage(p => p + 1)}>Next</button></div>}
           </section>
         )}
 
@@ -683,7 +878,77 @@ function AdminDashboardPage() {
         )}
       </section>
 
-      {editingUser && createPortal(<div className="admin-modal-backdrop"><div className="admin-modal"><h3>Edit Role</h3><p>{getDisplayName(editingUser)}</p><div className="admin-role-grid">{['user','admin','superadmin'].map(r => <button key={r} onClick={() => { supabase.from('profiles').update({ role: r }).eq('id', editingUser.id); setProfiles(p => p.map(u => u.id === editingUser.id ? { ...u, role: r } : u)); setEditingUser(null); }} className={`admin-role-opt ${editingUser.role === r ? 'is-selected' : ''}`}>{r.toUpperCase()}</button>)}</div><button onClick={() => setEditingUser(null)} className="admin-btn">Close</button></div></div>, document.body)}
+      {creatingUser && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setCreatingUser(false)}><div className="admin-modal admin-user-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+        <div className="admin-card-head"><h3>Create User</h3><button type="button" onClick={() => setCreatingUser(false)} className="admin-btn admin-btn--ghost">Close</button></div>
+        <form className="admin-user-form" onSubmit={submitCreateUser}>
+          <AdminUserField label="Email" help="Login email used for the Supabase auth account.">
+            <input type="email" required placeholder="user@email.com" value={userForm.email} onChange={e => setUserForm(p => ({ ...p, email: e.target.value }))} />
+          </AdminUserField>
+          <AdminUserField label="Temporary Password" help="Initial password for the new user; minimum 6 characters.">
+            <input type="password" required minLength={6} placeholder="Temporary password" value={userForm.password} onChange={e => setUserForm(p => ({ ...p, password: e.target.value }))} />
+          </AdminUserField>
+          <AdminUserField label="First Name">
+            <input type="text" placeholder="First name" value={userForm.first_name} onChange={e => setUserForm(p => ({ ...p, first_name: e.target.value }))} />
+          </AdminUserField>
+          <AdminUserField label="Last Name">
+            <input type="text" placeholder="Last name" value={userForm.last_name} onChange={e => setUserForm(p => ({ ...p, last_name: e.target.value }))} />
+          </AdminUserField>
+          <AdminUserField label="Username" help="Unique public handle stored in profiles.username.">
+            <input type="text" placeholder="username" value={userForm.username} onChange={e => setUserForm(p => ({ ...p, username: e.target.value }))} />
+          </AdminUserField>
+          <AdminUserField label="System Role" help="Controls platform permissions: user, admin, or superadmin.">
+            <select value={userForm.role} onChange={e => setUserForm(p => ({ ...p, role: e.target.value }))}>
+              <option value="user">User</option><option value="admin">Admin</option><option value="superadmin">Superadmin</option>
+            </select>
+          </AdminUserField>
+          <AdminUserField label="Journey Level" help="Current learning journey from 1 to 5.">
+            <input type="number" min="1" max="5" placeholder="Journey level" value={userForm.current_level} onChange={e => setUserForm(p => ({ ...p, current_level: e.target.value }))} />
+          </AdminUserField>
+          <AdminUserField label="Speaker Level" help="Speaking proficiency level from 1 to 5.">
+            <input type="number" min="1" max="5" placeholder="Speaker level" value={userForm.speaker_level} onChange={e => setUserForm(p => ({ ...p, speaker_level: e.target.value }))} />
+          </AdminUserField>
+          <button type="submit" className="admin-btn admin-btn--primary" disabled={savingUser}>{savingUser ? 'Creating...' : 'Create User'}</button>
+        </form>
+      </div></div>, document.body)}
+
+      {editingUser && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setEditingUser(null)}><div className="admin-modal admin-user-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+        <div className="admin-card-head"><h3>Edit User</h3><button type="button" onClick={() => setEditingUser(null)} className="admin-btn admin-btn--ghost">Close</button></div>
+        <form className="admin-user-form" onSubmit={submitUpdateUser}>
+          <AdminUserField label="First Name">
+            <input type="text" placeholder="First name" value={userForm.first_name} onChange={e => setUserForm(p => ({ ...p, first_name: e.target.value }))} />
+          </AdminUserField>
+          <AdminUserField label="Last Name">
+            <input type="text" placeholder="Last name" value={userForm.last_name} onChange={e => setUserForm(p => ({ ...p, last_name: e.target.value }))} />
+          </AdminUserField>
+          <AdminUserField label="Username" help="Unique public handle stored in profiles.username.">
+            <input type="text" placeholder="username" value={userForm.username} onChange={e => setUserForm(p => ({ ...p, username: e.target.value }))} />
+          </AdminUserField>
+          <AdminUserField label="System Role" help="Controls platform permissions: user, admin, or superadmin.">
+            <select value={userForm.role} onChange={e => setUserForm(p => ({ ...p, role: e.target.value }))}>
+              <option value="user">User</option><option value="admin">Admin</option><option value="superadmin">Superadmin</option>
+            </select>
+          </AdminUserField>
+          <AdminUserField label="Journey Level" help="Current learning journey from 1 to 5.">
+            <input type="number" min="1" max="5" placeholder="Journey level" value={userForm.current_level} onChange={e => setUserForm(p => ({ ...p, current_level: e.target.value }))} />
+          </AdminUserField>
+          <AdminUserField label="Speaker Level" help="Speaking proficiency level from 1 to 5.">
+            <input type="number" min="1" max="5" placeholder="Speaker level" value={userForm.speaker_level} onChange={e => setUserForm(p => ({ ...p, speaker_level: e.target.value }))} />
+          </AdminUserField>
+          <div className="admin-modal-actions">
+            <button type="button" onClick={() => requestUserArchiveState(editingUser, !editingUser.archived_at)} className={`admin-btn ${editingUser.archived_at ? 'admin-btn--ghost' : 'admin-btn--danger'}`}>{editingUser.archived_at ? 'Restore User' : 'Delete User'}</button>
+            <button type="submit" className="admin-btn admin-btn--primary" disabled={savingUser}>{savingUser ? 'Saving...' : 'Save Changes'}</button>
+          </div>
+        </form>
+      </div></div>, document.body)}
+
+      {pendingArchiveUser && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setPendingArchiveUser(null)}><div className="admin-modal admin-confirm-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+        <h3>Delete User?</h3>
+        <p>This will archive <strong>{getDisplayName(pendingArchiveUser, pendingArchiveUser.id)}</strong>. The profile row stays in the database and can be restored later.</p>
+        <div className="admin-modal-actions">
+          <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setPendingArchiveUser(null)}>Cancel</button>
+          <button type="button" className="admin-btn admin-btn--danger" onClick={confirmArchiveUser}>Delete User</button>
+        </div>
+      </div></div>, document.body)}
 
       {(creatingContent || editingContent) && createPortal(<div className="admin-modal-backdrop"><div className="admin-modal"><h3>{editingContent ? 'Edit' : 'Create'} {contentTab}</h3><form onSubmit={handleSaveContent} className="admin-content-form">
         <input name="title" defaultValue={editingContent?.title} placeholder="Title" required />

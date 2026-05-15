@@ -163,9 +163,7 @@ function AdminDashboardPage() {
   const [globalFilter, setGlobalFilter] = useState('30d');
   const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
   const [analyticsJourneyFilter, setAnalyticsJourneyFilter] = useState('all');
-  const [analyticsRoleFilter, setAnalyticsRoleFilter] = useState('all');
   const [analyticsStatusFilter, setAnalyticsStatusFilter] = useState('active');
-  const [analyticsOriginFilter, setAnalyticsOriginFilter] = useState('all');
   const [analyticsModeFilter, setAnalyticsModeFilter] = useState('all');
 
   const [profiles, setProfiles] = useState([]);
@@ -412,24 +410,23 @@ function AdminDashboardPage() {
 
   const analyticsUsers = useMemo(() => {
     return profiles.filter((p) => {
+      if (p.role !== 'user') return false;
       if (analyticsStatusFilter === 'active' && isDeletedProfile(p)) return false;
       if (analyticsStatusFilter === 'deleted' && !isDeletedProfile(p)) return false;
-      if (analyticsRoleFilter !== 'all' && p.role !== analyticsRoleFilter) return false;
       if (analyticsJourneyFilter !== 'all' && Number(p.current_level) !== Number(analyticsJourneyFilter)) return false;
       return true;
     });
-  }, [profiles, analyticsStatusFilter, analyticsRoleFilter, analyticsJourneyFilter]);
+  }, [profiles, analyticsStatusFilter, analyticsJourneyFilter]);
 
   const analyticsUserIds = useMemo(() => new Set(analyticsUsers.map(u => u.id)), [analyticsUsers]);
 
   const analyticsSessions = useMemo(() => {
     return filteredSessions.filter((s) => {
       if (!analyticsUserIds.has(s.user_id)) return false;
-      if (analyticsOriginFilter !== 'all' && s.session_origin !== analyticsOriginFilter) return false;
       if (analyticsModeFilter !== 'all' && modeOf(s) !== analyticsModeFilter) return false;
       return true;
     });
-  }, [filteredSessions, analyticsUserIds, analyticsOriginFilter, analyticsModeFilter]);
+  }, [filteredSessions, analyticsUserIds, analyticsModeFilter]);
 
   const analyticsCompletedSessions = useMemo(
     () => analyticsSessions.filter(s => s.status === 'completed'),
@@ -617,7 +614,6 @@ function AdminDashboardPage() {
       return {
         id: user.id,
         name: getDisplayName(user, user.id),
-        role: user.role,
         journey: user.current_level || 1,
         sessions: userSessions.length,
         avgOverall: average(rows.map(row => row.scores.overall)),
@@ -1076,25 +1072,25 @@ function AdminDashboardPage() {
 
         {activePage === 'analytics' && (
           <>
-            <div className="admin-analytics-filters">
-              <label><span>Date Range</span><select value={globalFilter} onChange={e => setGlobalFilter(e.target.value)} className="admin-filter-select">
-                <option value="7d">Last 7 Days</option><option value="30d">Last 30 Days</option><option value="ytd">Year to Date</option><option value="all">All Time</option>
-              </select></label>
-              <label><span>Journey</span><select value={analyticsJourneyFilter} onChange={e => setAnalyticsJourneyFilter(e.target.value)} className="admin-filter-select">
-                <option value="all">All Journeys</option><option value="1">Journey 1</option><option value="2">Journey 2</option><option value="3">Journey 3</option><option value="4">Journey 4</option><option value="5">Journey 5</option>
-              </select></label>
-              <label><span>Role</span><select value={analyticsRoleFilter} onChange={e => setAnalyticsRoleFilter(e.target.value)} className="admin-filter-select">
-                <option value="all">All Roles</option><option value="user">Users</option><option value="admin">Admins</option><option value="superadmin">Superadmins</option>
-              </select></label>
-              <label><span>Status</span><select value={analyticsStatusFilter} onChange={e => setAnalyticsStatusFilter(e.target.value)} className="admin-filter-select">
-                <option value="active">Active Users</option><option value="deleted">Deleted Users</option><option value="all">All Statuses</option>
-              </select></label>
-              <label><span>Origin</span><select value={analyticsOriginFilter} onChange={e => setAnalyticsOriginFilter(e.target.value)} className="admin-filter-select">
-                <option value="all">All Origins</option><option value="training">Training</option><option value="practice">Practice</option><option value="pre-test">Pre-test</option>
-              </select></label>
-              <label><span>Mode</span><select value={analyticsModeFilter} onChange={e => setAnalyticsModeFilter(e.target.value)} className="admin-filter-select">
-                <option value="all">All Modes</option><option value="Activities">Activities</option><option value="Randomizer">Randomizer</option><option value="Free Speech">Free Speech</option>
-              </select></label>
+            <div className="admin-analytics-filter-card">
+              <div className="admin-analytics-filter-copy">
+                <h3>Analytics Filters</h3>
+                <p>Analytics tracks learner accounts only. Admin and superadmin accounts are excluded from these charts and tables.</p>
+              </div>
+              <div className="admin-analytics-filters">
+                <label><span>Date Range</span><select value={globalFilter} onChange={e => setGlobalFilter(e.target.value)} className="admin-filter-select">
+                  <option value="7d">Last 7 Days</option><option value="30d">Last 30 Days</option><option value="ytd">Year to Date</option><option value="all">All Time</option>
+                </select><small>Controls the sessions included below.</small></label>
+                <label><span>Journey</span><select value={analyticsJourneyFilter} onChange={e => setAnalyticsJourneyFilter(e.target.value)} className="admin-filter-select">
+                  <option value="all">All Journeys</option><option value="1">Journey 1</option><option value="2">Journey 2</option><option value="3">Journey 3</option><option value="4">Journey 4</option><option value="5">Journey 5</option>
+                </select><small>Filters learners by current journey.</small></label>
+                <label><span>User Status</span><select value={analyticsStatusFilter} onChange={e => setAnalyticsStatusFilter(e.target.value)} className="admin-filter-select">
+                  <option value="active">Active Learners</option><option value="deleted">Deleted Learners</option><option value="all">All Learners</option>
+                </select><small>Switches active or soft-deleted learners.</small></label>
+                <label><span>Session Type</span><select value={analyticsModeFilter} onChange={e => setAnalyticsModeFilter(e.target.value)} className="admin-filter-select">
+                  <option value="all">All Session Types</option><option value="Activities">Activities</option><option value="Randomizer">Randomizer</option><option value="Free Speech">Free Speech</option>
+                </select><small>Filters sessions by practice mode.</small></label>
+              </div>
             </div>
             <section className="admin-grid admin-grid-4">
               <article className="admin-card admin-kpi-card"><p className="admin-kpi-label">Total Users</p><p className="admin-kpi-value">{analyticsKpis.totalUsers}</p><p className="admin-kpi-footer">Matching current filters</p></article>
@@ -1142,8 +1138,8 @@ function AdminDashboardPage() {
             <section className="admin-card">
               <div className="admin-card-head"><h3>Detailed Analytics</h3><p className="admin-note">{analyticsDetailRows.length} users shown</p></div>
               <div className="admin-table-wrap"><table className="admin-table">
-                <thead><tr><th>User</th><th>Role</th><th>Journey</th><th>Sessions</th><th>Overall</th><th>Visual</th><th>Vocal</th><th>Verbal</th><th>Status</th></tr></thead>
-                <tbody>{analyticsDetailRows.map(row => <tr key={row.id}><td><strong>{row.name}</strong></td><td>{row.role}</td><td>J-{row.journey}</td><td>{row.sessions}</td><td>{row.avgOverall}</td><td>{row.avgVisual}</td><td>{row.avgVocal}</td><td>{row.avgVerbal}</td><td><span className={`admin-status-badge ${row.status === 'Deleted' ? 'is-archived' : 'is-active'}`}>{row.status}</span></td></tr>)}</tbody>
+                <thead><tr><th>User</th><th>Journey</th><th>Sessions</th><th>Overall</th><th>Visual</th><th>Vocal</th><th>Verbal</th><th>Status</th></tr></thead>
+                <tbody>{analyticsDetailRows.map(row => <tr key={row.id}><td><strong>{row.name}</strong></td><td>J-{row.journey}</td><td>{row.sessions}</td><td>{row.avgOverall}</td><td>{row.avgVisual}</td><td>{row.avgVocal}</td><td>{row.avgVerbal}</td><td><span className={`admin-status-badge ${row.status === 'Deleted' ? 'is-archived' : 'is-active'}`}>{row.status}</span></td></tr>)}</tbody>
               </table></div>
             </section>
           </>

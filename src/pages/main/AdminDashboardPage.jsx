@@ -70,6 +70,18 @@ function isDeletedProfile(profile) {
   return profile?.archived_at !== null && profile?.archived_at !== undefined && profile?.archived_at !== '';
 }
 
+function getAuditActionClass(action) {
+  const normalized = String(action || '').toLowerCase();
+  if (['create', 'update', 'delete', 'restore'].includes(normalized)) return `is-${normalized}`;
+  return 'is-default';
+}
+
+function formatAuditAction(action) {
+  const normalized = String(action || '').trim();
+  if (!normalized) return 'Unknown';
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1).toLowerCase();
+}
+
 function modeOf(session) {
   const origin = String(session?.session_origin || '').toLowerCase();
   const mode = String(session?.session_mode || '').toLowerCase();
@@ -1139,7 +1151,7 @@ function AdminDashboardPage() {
             </div>
             <div className="admin-table-wrap"><table className="admin-table">
               <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Entity</th><th>Details</th></tr></thead>
-              <tbody>{paginatedAuditLogs.map(l => <tr key={l.id}><td>{new Date(l.created_at).toLocaleString()}</td><td>{getDisplayName(profiles.find(p => p.id === l.actor_id), l.actor_id)}</td><td>{l.action}</td><td>{l.entity_type}</td><td><button onClick={() => setInspectingLog(l)} className="admin-action-btn"><HiMagnifyingGlass /></button></td></tr>)}</tbody>
+              <tbody>{paginatedAuditLogs.map(l => <tr key={l.id}><td>{new Date(l.created_at).toLocaleString()}</td><td>{getDisplayName(profiles.find(p => p.id === l.actor_id), l.actor_id)}</td><td><span className={`admin-audit-action-badge ${getAuditActionClass(l.action)}`}>{formatAuditAction(l.action)}</span></td><td>{l.entity_type}</td><td><button onClick={() => setInspectingLog(l)} className="admin-action-btn"><HiMagnifyingGlass /></button></td></tr>)}</tbody>
             </table></div>
             {totalAuditPages > 1 && <div className="admin-pagination"><button disabled={auditPage === 1} onClick={() => setAuditPage(p => p - 1)}>Prev</button><span>{auditPage} / {totalAuditPages}</span><button disabled={auditPage === totalAuditPages} onClick={() => setAuditPage(p => p + 1)}>Next</button></div>}
           </section>

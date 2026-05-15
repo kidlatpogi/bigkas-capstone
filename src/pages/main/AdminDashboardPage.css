@@ -638,6 +638,50 @@
   color: #991b1b;
 }
 
+.admin-audit-action-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 78px;
+  padding: 5px 12px;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: capitalize;
+}
+
+.admin-audit-action-badge.is-create {
+  background: rgba(51, 210, 164, 0.16);
+  border-color: rgba(30, 132, 73, 0.18);
+  color: #1e8449;
+}
+
+.admin-audit-action-badge.is-update {
+  background: #e0f2fe;
+  border-color: #bae6fd;
+  color: #0369a1;
+}
+
+.admin-audit-action-badge.is-delete {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.admin-audit-action-badge.is-restore {
+  background: #ecfdf5;
+  border-color: #bbf7d0;
+  color: #047857;
+}
+
+.admin-audit-action-badge.is-default {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #4b5563;
+}
+
 .admin-role-badge {
   background: #f3f4f6;
   color: #4b5563;

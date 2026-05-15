@@ -167,10 +167,6 @@ function AdminLoginPage({ managePageClass = true }) {
             </li>
             <li>
               <span className="feature-num">02</span>
-              <span className="feature-text">SERVER-SIDE EMAIL ALLOWLIST</span>
-            </li>
-            <li>
-              <span className="feature-num">03</span>
               <span className="feature-text">PASSWORD LOGIN WITH LOCKOUT</span>
             </li>
           </ul>
@@ -201,7 +197,7 @@ function AdminLoginPage({ managePageClass = true }) {
                 className={`form-input ${errors.email ? 'form-input-error' : ''}`}
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="admin@bigkas.site"
+                placeholder="enter admin email"
                 disabled={isLoading || lockoutSeconds > 0}
                 autoComplete="username"
               />

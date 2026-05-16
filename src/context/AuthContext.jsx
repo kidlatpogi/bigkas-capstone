@@ -16,7 +16,7 @@ const LOGIN_COOLDOWN_SCHEDULE_SECONDS = [30, 120, 900];
 const LOGIN_GUARD_RESET_WINDOW_MS = 24 * 60 * 60 * 1000;
 let loginGuardRpcDisabled = false;
 
-function buildLockoutMessage(waitSeconds, failedAttempts = 0) {
+function buildLockoutMessage(waitSeconds) {
   const seconds = Math.max(1, Number(waitSeconds) || 1);
   
   // Differentiate message based on duration (matching the scale)
@@ -489,6 +489,7 @@ export function AuthProvider({ children }) {
   const [pendingEmail, setPendingEmail] = useState(null);
   const signupCooldownUntilRef = useRef(0);
   const signupInProgressRef = useRef(false);
+  const adminLoginInProgressRef = useRef(false);
 
   const resolveAvatarUrl = useCallback((avatarValue) => {
     if (!avatarValue) return null;
@@ -756,6 +757,10 @@ export function AuthProvider({ children }) {
       // Skip auth state changes while signup is in progress to prevent race conditions
       // that would reset pendingEmailVerification or cause unwanted navigation
       if (signupInProgressRef.current) return;
+      // Admin login performs an additional role check after Supabase accepts
+      // credentials. Do not publish the session as a regular user before that
+      // check finishes, or public routes can briefly render the user login flow.
+      if (adminLoginInProgressRef.current) return;
 
       const blockedAccount = getAccountBlockedMessage(session?.user?.user_metadata || {});
       if (blockedAccount) {
@@ -975,12 +980,11 @@ export function AuthProvider({ children }) {
 
     setIsLoading(true);
     setError(null);
+    adminLoginInProgressRef.current = true;
 
     try {
       // First login with Supabase
       const { data, error: err } = await supabase.auth.signInWithPassword({ email, password });
-
-      setIsLoading(false);
 
       if (err) {
         const normalizedError = normalizeLoginError(err, email);
@@ -1022,6 +1026,8 @@ export function AuthProvider({ children }) {
       if (!emailConfirmed) {
         setPendingEmailVerification(true);
         setPendingEmail(email);
+        setUser(null);
+        clearAdminSession();
         const message = 'Verify your email address first. Then click resend email below if you need a new link.';
         setError(message);
         await supabase.auth.signOut({ scope: 'local' });
@@ -1041,6 +1047,7 @@ export function AuthProvider({ children }) {
         .single();
 
       if (profileError || !profile || !profile.role) {
+        setUser(null);
         clearAdminSession();
         await supabase.auth.signOut({ scope: 'local' });
         const message = 'Admin profile not found.';
@@ -1053,6 +1060,7 @@ export function AuthProvider({ children }) {
       }
 
       if (profile.role !== 'admin' && profile.role !== 'superadmin') {
+        setUser(null);
         clearAdminSession();
         await supabase.auth.signOut({ scope: 'local' });
         const message = 'Access Denied: Admin privileges required.';
@@ -1070,8 +1078,9 @@ export function AuthProvider({ children }) {
       persistAdminSession();
       await registerLoginSuccess('admin', normalizedEmail);
       return { success: true, user: buildUser(data.session) };
-    } catch (err) {
-      setIsLoading(false);
+    } catch {
+      setUser(null);
+      clearAdminSession();
       const message = 'Admin login failed. Please try again.';
       setError(message);
       return {
@@ -1079,6 +1088,9 @@ export function AuthProvider({ children }) {
         code: 'admin_login_error',
         error: message,
       };
+    } finally {
+      adminLoginInProgressRef.current = false;
+      setIsLoading(false);
     }
   }, [buildUser, clearAdminSession, persistAdminSession]);
 

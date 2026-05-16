@@ -41,6 +41,15 @@ const USER_FORM_INITIAL = {
   speaker_level: 1,
   speaker_points: 0,
 };
+const ADMIN_FORM_INITIAL = {
+  email: '',
+  password: '',
+  confirm_password: '',
+  first_name: '',
+  last_name: '',
+  username: '',
+  role: 'admin',
+};
 
 function shiftRange(start, unit, amount) {
   const d = new Date(start);
@@ -64,6 +73,10 @@ function isDeletedProfile(profile) {
     profile?.archived_at !== undefined &&
     profile?.archived_at !== ''
   );
+}
+
+function isAdminProfile(profile) {
+  return profile?.role === 'admin' || profile?.role === 'superadmin';
 }
 
 function getAuditActionClass(action) {
@@ -229,15 +242,9 @@ function AdminDashboardPage() {
 
   const [creatingAdmin, setCreatingAdmin] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [createAdminForm, setCreateAdminForm] = useState({
-    email: '',
-    password: '',
-    confirm_password: '',
-    first_name: '',
-    last_name: '',
-    username: '',
-    role: 'admin',
-  });
+  const [createAdminForm, setCreateAdminForm] = useState(ADMIN_FORM_INITIAL);
+  const [editingAdmin, setEditingAdmin] = useState(null);
+  const [adminAccountForm, setAdminAccountForm] = useState(ADMIN_FORM_INITIAL);
   const [systemSettings, setSystemSettings] = useState({
     maintenance_mode: false,
     failover_logging: true,
@@ -334,10 +341,13 @@ function AdminDashboardPage() {
     return () => { active = false; };
   }, [isSuperadmin, activePage]);
 
-  const visibleUsers = useMemo(() => profiles.filter((p) => !isDeletedProfile(p)), [profiles]);
-  const activeAdministrators = useMemo(
-    () => visibleUsers.filter((p) => p.role === 'admin' || p.role === 'superadmin'),
-    [visibleUsers]
+  const adminAccounts = useMemo(
+    () => profiles.filter(isAdminProfile),
+    [profiles]
+  );
+  const visibleUsers = useMemo(
+    () => profiles.filter((p) => p.role === 'user' && !isDeletedProfile(p)),
+    [profiles]
   );
 
   const recordAuditLog = async ({ action, entityType, entityId = null, oldValues = null, newValues = null }) => {
@@ -670,7 +680,7 @@ function AdminDashboardPage() {
   }, [analyticsUsers, analyticsSessions, analyticsMetricRows]);
 
   const filteredUsers = useMemo(() => {
-    let res = profiles;
+    let res = profiles.filter(p => p.role === 'user');
     if (userStatusFilter === 'active') res = res.filter(p => !isDeletedProfile(p));
     if (userStatusFilter === 'deleted') res = res.filter(p => isDeletedProfile(p));
     if (userSearchQuery.trim()) {
@@ -889,14 +899,36 @@ function AdminDashboardPage() {
     setEditingUser(user);
   };
 
+  const openEditAdmin = (admin) => {
+    setAdminAccountForm({
+      ...ADMIN_FORM_INITIAL,
+      first_name: admin?.first_name || '',
+      last_name: admin?.last_name || '',
+      username: admin?.username || '',
+      role: isAdminProfile(admin) ? admin.role : 'admin',
+    });
+    setEditingAdmin(admin);
+  };
+
   const profilePayloadFromUserForm = () => ({
     first_name: userForm.first_name.trim() || null,
     last_name: userForm.last_name.trim() || null,
     username: userForm.username.trim() || null,
-    role: userForm.role,
+    role: 'user',
     current_level: Number(userForm.current_level) || 1,
     speaker_level: Number(userForm.speaker_level) || 1,
     speaker_points: Number(userForm.speaker_points) || 0,
+    updated_at: new Date().toISOString(),
+  });
+
+  const profilePayloadFromAdminForm = () => ({
+    first_name: adminAccountForm.first_name.trim() || null,
+    last_name: adminAccountForm.last_name.trim() || null,
+    username: adminAccountForm.username.trim() || null,
+    role: adminAccountForm.role === 'superadmin' ? 'superadmin' : 'admin',
+    current_level: 1,
+    speaker_level: 1,
+    speaker_points: 0,
     updated_at: new Date().toISOString(),
   });
 
@@ -979,7 +1011,34 @@ function AdminDashboardPage() {
     });
     setProfiles(prev => prev.map(u => u.id === user.id ? { ...u, archived_at: archivedAt } : u));
     setEditingUser(prev => prev?.id === user.id ? { ...prev, archived_at: archivedAt } : prev);
-    showToast(shouldArchive ? 'User deleted' : 'User restored');
+    setEditingAdmin(prev => prev?.id === user.id ? { ...prev, archived_at: archivedAt } : prev);
+    showToast(`${isAdminProfile(user) ? 'Admin' : 'User'} ${shouldArchive ? 'deleted' : 'restored'}`);
+  };
+
+  const submitUpdateAdmin = async (e) => {
+    e.preventDefault();
+    if (!editingAdmin) return;
+    setCreatingAdmin(true);
+    const payload = profilePayloadFromAdminForm();
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update(payload)
+      .eq('id', editingAdmin.id);
+    if (updateError) {
+      showToast(updateError.message || 'Failed to update admin', 'error');
+    } else {
+      await recordAuditLog({
+        action: 'update',
+        entityType: 'profiles',
+        entityId: editingAdmin.id,
+        oldValues: editingAdmin,
+        newValues: { ...editingAdmin, ...payload },
+      });
+      showToast('Admin updated');
+      setEditingAdmin(null);
+      setProfiles(prev => prev.map(u => u.id === editingAdmin.id ? { ...u, ...payload } : u));
+    }
+    setCreatingAdmin(false);
   };
 
   const requestUserArchiveState = (user, shouldArchive) => {
@@ -1024,7 +1083,7 @@ function AdminDashboardPage() {
         oldValues: null,
         newValues: profile || { id: user.id, role: newRole, first_name, last_name, username },
       });
-      showToast('Admin created'); setCreateAdminForm({ email: '', password: '', confirm_password: '', first_name: '', last_name: '', username: '', role: 'admin' });
+      showToast('Admin created'); setCreateAdminForm(ADMIN_FORM_INITIAL);
       const { data: ps } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
       if (ps) setProfiles(ps);
     } catch (error) {
@@ -1309,12 +1368,31 @@ function AdminDashboardPage() {
                 </form>
               </article>
               <article className="admin-card">
-                <h3>Active Administrators</h3>
+                <h3>Administrator Accounts</h3>
                 <div className="admin-roster-list">
-                  {activeAdministrators.length ? (
-                    activeAdministrators.map(a => <div key={a.id} className="admin-roster-item"><strong>{getDisplayName(a, a.id)}</strong><span>{a.role}</span></div>)
+                  {adminAccounts.length ? (
+                    adminAccounts.map(a => (
+                      <div key={a.id} className="admin-roster-item">
+                        <div className="admin-roster-info">
+                          <strong>{getDisplayName(a, a.id)}</strong>
+                          <span>{a.role} - {isDeletedProfile(a) ? 'Deleted' : 'Active'}</span>
+                        </div>
+                        <div className="admin-roster-actions">
+                          <button type="button" className="admin-action-btn" onClick={() => openEditAdmin(a)} title="Edit admin"><HiOutlinePencilSquare /></button>
+                          <button
+                            type="button"
+                            className={`admin-action-btn ${isDeletedProfile(a) ? '' : 'is-delete'}`}
+                            onClick={() => requestUserArchiveState(a, !isDeletedProfile(a))}
+                            disabled={a.id === currentAdminId}
+                            title={a.id === currentAdminId ? 'You cannot delete your own admin account' : isDeletedProfile(a) ? 'Restore admin' : 'Delete admin'}
+                          >
+                            {isDeletedProfile(a) ? <HiCheckCircle /> : <HiOutlineTrash />}
+                          </button>
+                        </div>
+                      </div>
+                    ))
                   ) : (
-                    <div className="admin-empty-chart">No active administrators</div>
+                    <div className="admin-empty-chart">No administrator accounts</div>
                   )}
                 </div>
               </article>
@@ -1381,11 +1459,6 @@ function AdminDashboardPage() {
           <AdminUserField label="Confirm Password" help="Must match the password above.">
             <AdminPasswordInput placeholder="Confirm password" value={userForm.confirm_password} onChange={e => setUserForm(p => ({ ...p, confirm_password: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="System Role" help="Controls platform permissions: user, admin, or superadmin.">
-            <select value={userForm.role} onChange={e => setUserForm(p => ({ ...p, role: e.target.value }))}>
-              <option value="user">User</option><option value="admin">Admin</option><option value="superadmin">Superadmin</option>
-            </select>
-          </AdminUserField>
           <AdminUserField label="Journey Level" help="Current learning journey from 1 to 5.">
             <input type="number" min="1" max="5" placeholder="Journey level" value={userForm.current_level} onChange={e => setUserForm(p => ({ ...p, current_level: e.target.value }))} />
           </AdminUserField>
@@ -1408,11 +1481,6 @@ function AdminDashboardPage() {
           <AdminUserField label="Username" help="Unique public handle stored in profiles.username.">
             <input type="text" placeholder="username" value={userForm.username} onChange={e => setUserForm(p => ({ ...p, username: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="System Role" help="Controls platform permissions: user, admin, or superadmin.">
-            <select value={userForm.role} onChange={e => setUserForm(p => ({ ...p, role: e.target.value }))}>
-              <option value="user">User</option><option value="admin">Admin</option><option value="superadmin">Superadmin</option>
-            </select>
-          </AdminUserField>
           <AdminUserField label="Journey Level" help="Current learning journey from 1 to 5.">
             <input type="number" min="1" max="5" placeholder="Journey level" value={userForm.current_level} onChange={e => setUserForm(p => ({ ...p, current_level: e.target.value }))} />
           </AdminUserField>
@@ -1426,12 +1494,43 @@ function AdminDashboardPage() {
         </form>
       </div></div>, document.body)}
 
+      {editingAdmin && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setEditingAdmin(null)}><div className="admin-modal admin-user-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+        <div className="admin-card-head"><h3>Edit Administrator</h3><button type="button" onClick={() => setEditingAdmin(null)} className="admin-btn admin-btn--ghost">Close</button></div>
+        <form className="admin-user-form" onSubmit={submitUpdateAdmin}>
+          <AdminUserField label="First Name">
+            <input type="text" placeholder="First name" value={adminAccountForm.first_name} onChange={e => setAdminAccountForm(p => ({ ...p, first_name: e.target.value }))} />
+          </AdminUserField>
+          <AdminUserField label="Last Name">
+            <input type="text" placeholder="Last name" value={adminAccountForm.last_name} onChange={e => setAdminAccountForm(p => ({ ...p, last_name: e.target.value }))} />
+          </AdminUserField>
+          <AdminUserField label="Username" help="Unique public handle stored in profiles.username.">
+            <input type="text" placeholder="admin_username" value={adminAccountForm.username} onChange={e => setAdminAccountForm(p => ({ ...p, username: e.target.value }))} />
+          </AdminUserField>
+          <AdminUserField label="Administrator Role" help="Controls admin dashboard permissions.">
+            <select value={adminAccountForm.role} onChange={e => setAdminAccountForm(p => ({ ...p, role: e.target.value }))}>
+              <option value="admin">Admin</option><option value="superadmin">Superadmin</option>
+            </select>
+          </AdminUserField>
+          <div className="admin-modal-actions">
+            <button
+              type="button"
+              onClick={() => requestUserArchiveState(editingAdmin, !isDeletedProfile(editingAdmin))}
+              className={`admin-btn ${isDeletedProfile(editingAdmin) ? 'admin-btn--ghost' : 'admin-btn--danger'}`}
+              disabled={editingAdmin.id === currentAdminId}
+            >
+              {isDeletedProfile(editingAdmin) ? 'Restore Admin' : 'Delete Admin'}
+            </button>
+            <button type="submit" className="admin-btn admin-btn--primary" disabled={creatingAdmin}>{creatingAdmin ? 'Saving...' : 'Save Changes'}</button>
+          </div>
+        </form>
+      </div></div>, document.body)}
+
       {pendingArchiveUser && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setPendingArchiveUser(null)}><div className="admin-modal admin-confirm-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
-        <h3>Delete User?</h3>
+        <h3>Delete {isAdminProfile(pendingArchiveUser) ? 'Admin' : 'User'}?</h3>
         <p>This will mark <strong>{getDisplayName(pendingArchiveUser, pendingArchiveUser.id)}</strong> as deleted. The profile row stays in the database and can be restored later.</p>
         <div className="admin-modal-actions">
           <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setPendingArchiveUser(null)}>Cancel</button>
-          <button type="button" className="admin-btn admin-btn--danger" onClick={confirmArchiveUser}>Delete User</button>
+          <button type="button" className="admin-btn admin-btn--danger" onClick={confirmArchiveUser}>Delete {isAdminProfile(pendingArchiveUser) ? 'Admin' : 'User'}</button>
         </div>
       </div></div>, document.body)}
 

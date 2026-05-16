@@ -1131,6 +1131,7 @@ body:has(.admin-dashboard-page) .main-content {
 .admin-roster-item {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   padding: 10px 12px;
   border-radius: 12px;
@@ -1142,11 +1143,25 @@ body:has(.admin-dashboard-page) .main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .admin-roster-info strong {
   font-size: 0.9rem;
   color: var(--text);
+}
+
+.admin-roster-info span {
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.admin-roster-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .admin-setting-item {

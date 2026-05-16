@@ -4,9 +4,7 @@ import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks
 import { fetchActivities } from '../../services/activitiesService';
 import {
   getActivityMetrics,
-  getActivityTaskProgress,
   getBigkasLevelFromUser,
-  getTaskXp,
   isActivityTaskCompleted,
   GLOBAL_ACTIVITY_SCOPE,
 } from '../../utils/activityProgress';
@@ -68,10 +66,10 @@ function SkywardJourneyShell({
     return filterActivitiesForJourney(allTasks, speakerPlacementLevel, pLevel);
   }, [allTasks, speakerPlacementLevel, selectedLevel]);
 
-  const activityMetrics = useMemo(
-    () => getActivityMetrics(scopeKey),
-    [scopeKey, metricsSyncKey],
-  );
+  const activityMetrics = useMemo(() => {
+    void metricsSyncKey;
+    return getActivityMetrics(scopeKey);
+  }, [scopeKey, metricsSyncKey]);
 
   const taskState = useMemo(() => {
     return tasks.reduce((state, task) => {
@@ -89,28 +87,29 @@ function SkywardJourneyShell({
     return curr > rec;
   }, [selectedLevel, recommendedLevel]);
 
-  // A level is "passed" if the user's recommended level is higher than this level.
-  const isPassedLevel = useMemo(() => {
-    const curr = Number(selectedLevel);
-    const rec = Number(recommendedLevel);
-    return rec > curr;
-  }, [selectedLevel, recommendedLevel]);
+  const unlockedThroughLevel = useMemo(() => {
+    const placementLevel = Number(speakerPlacementLevel) || 1;
+    const progressLevel = Number(recommendedLevel) || 1;
+    return Math.max(1, Math.min(5, Math.max(placementLevel, progressLevel)));
+  }, [speakerPlacementLevel, recommendedLevel]);
   
+  const prevLevelCheckKey = useMemo(
+    () => `${selectedLevel}:${scopeKey}:${metricsSyncKey}`,
+    [selectedLevel, scopeKey, metricsSyncKey],
+  );
+  const [prevLevelCompletion, setPrevLevelCompletion] = useState({ key: null, done: false });
+  const hasImplicitPrevUnlock = selectedLevel <= 1 || selectedLevel <= unlockedThroughLevel;
   /**
    * Cross-level sequence check:
    * Node 1 of Journey N should be locked until the LAST node of Journey N-1 is finished.
+   * A user's saved progress/recommended level is already an unlock, even when an older
+   * diagnostic score resolves to a lower speaker placement.
    */
-  const [isPrevLevelDone, setIsPrevLevelDone] = useState(false);
+  const isPrevLevelDone = hasImplicitPrevUnlock
+    || (prevLevelCompletion.key === prevLevelCheckKey && prevLevelCompletion.done);
 
   useEffect(() => {
-    setIsPrevLevelDone(selectedLevel <= 1 || selectedLevel <= speakerPlacementLevel);
-  }, [selectedLevel, speakerPlacementLevel]);
-
-  useEffect(() => {
-    if (selectedLevel <= 1 || selectedLevel <= speakerPlacementLevel) {
-      setIsPrevLevelDone(true);
-      return;
-    }
+    if (hasImplicitPrevUnlock) return undefined;
     
     let cancelled = false;
     const checkPrev = async () => {
@@ -121,22 +120,22 @@ function SkywardJourneyShell({
         if (cancelled) return;
         
         if (!prevRows || prevRows.length === 0) {
-          setIsPrevLevelDone(true);
+          setPrevLevelCompletion({ key: prevLevelCheckKey, done: true });
           return;
         }
         
         const lastTask = prevRows[prevRows.length - 1];
         const isDone = isActivityTaskCompleted(lastTask.id, activityMetrics);
-        setIsPrevLevelDone(isDone);
+        setPrevLevelCompletion({ key: prevLevelCheckKey, done: isDone });
       } catch (e) {
         console.error('Failed to check cross-level sequence:', e);
-        setIsPrevLevelDone(false);
+        setPrevLevelCompletion({ key: prevLevelCheckKey, done: false });
       }
     };
     
     checkPrev();
     return () => { cancelled = true; };
-  }, [selectedLevel, speakerPlacementLevel, activityMetrics]);
+  }, [selectedLevel, activityMetrics, hasImplicitPrevUnlock, prevLevelCheckKey]);
 
   const taskUnlockState = useMemo(() => {
     const state = {};
@@ -148,7 +147,7 @@ function SkywardJourneyShell({
       previousCompleted = taskState[task.id] === true;
     }
     return state;
-  }, [tasks, taskState, isPassedLevel, isPrevLevelDone]);
+  }, [tasks, taskState, isPrevLevelDone]);
 
   const activeTaskId = useMemo(
     () => getActiveTaskId(tasks, taskState, taskUnlockState),

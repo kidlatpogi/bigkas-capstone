@@ -253,6 +253,7 @@ function AdminDashboardPage() {
   const [auditPage, setAuditPage] = useState(1);
   const AUDIT_PER_PAGE = 15;
   const [inspectingLog, setInspectingLog] = useState(null);
+  const [adminStatusFilter, setAdminStatusFilter] = useState('all');
   const [editingUser, setEditingUser] = useState(null);
   const [pendingArchiveUser, setPendingArchiveUser] = useState(null);
   const [userSearchQuery, setUserSearchQuery] = useState('');
@@ -375,8 +376,19 @@ function AdminDashboardPage() {
   }, [isSuperadmin, activePage]);
 
   const adminAccounts = useMemo(
-    () => profiles.filter(isAdminProfile),
-    [profiles]
+    () => profiles
+      .filter(isAdminProfile)
+      .filter((profile) => {
+        if (adminStatusFilter === 'active') return !isDeletedProfile(profile);
+        if (adminStatusFilter === 'deleted') return isDeletedProfile(profile);
+        return true;
+      })
+      .sort((a, b) => {
+        const deletedDelta = Number(isDeletedProfile(a)) - Number(isDeletedProfile(b));
+        if (deletedDelta !== 0) return deletedDelta;
+        return getDisplayName(a, a.id).localeCompare(getDisplayName(b, b.id));
+      }),
+    [profiles, adminStatusFilter]
   );
   const visibleUsers = useMemo(
     () => profiles.filter((p) => p.role === 'user' && !isDeletedProfile(p)),
@@ -1397,35 +1409,6 @@ function AdminDashboardPage() {
                   <button type="submit" className="admin-btn admin-btn--primary" disabled={creatingAdmin}>{creatingAdmin ? 'Creating...' : 'Create Admin'}</button>
                 </form>
               </article>
-              <article className="admin-card">
-                <h3>Administrator Accounts</h3>
-                <div className="admin-roster-list">
-                  {adminAccounts.length ? (
-                    adminAccounts.map(a => (
-                      <div key={a.id} className="admin-roster-item">
-                        <div className="admin-roster-info">
-                          <strong>{getDisplayName(a, a.id)}</strong>
-                          <span>{a.role} - {isDeletedProfile(a) ? 'Deleted' : 'Active'}</span>
-                        </div>
-                        <div className="admin-roster-actions">
-                          <button type="button" className="admin-action-btn" onClick={() => openEditAdmin(a)} title="Edit admin"><HiOutlinePencilSquare /></button>
-                          <button
-                            type="button"
-                            className={`admin-action-btn ${isDeletedProfile(a) ? '' : 'is-delete'}`}
-                            onClick={() => requestUserArchiveState(a, !isDeletedProfile(a))}
-                            disabled={a.id === currentAdminId}
-                            title={a.id === currentAdminId ? 'You cannot delete your own admin account' : isDeletedProfile(a) ? 'Restore admin' : 'Delete admin'}
-                          >
-                            {isDeletedProfile(a) ? <HiCheckCircle /> : <HiOutlineTrash />}
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="admin-empty-chart">No administrator accounts</div>
-                  )}
-                </div>
-              </article>
             </div>
             <div className="admin-settings-col">
               <article className="admin-card">
@@ -1434,6 +1417,47 @@ function AdminDashboardPage() {
                 <div className="admin-setting-item"><div><strong>AI Failover Logging</strong><p>Record debug data</p></div><button onClick={() => toggleSetting('failover_logging', systemSettings.failover_logging)} className={`admin-btn ${systemSettings.failover_logging ? 'admin-btn--primary' : 'admin-btn--ghost'}`}>{systemSettings.failover_logging ? 'ON' : 'OFF'}</button></div>
               </article>
             </div>
+            <article className="admin-card admin-accounts-card">
+              <div className="admin-card-head">
+                <h3>Administrator Accounts</h3>
+                <select
+                  className="admin-filter-select admin-roster-filter"
+                  value={adminStatusFilter}
+                  onChange={e => setAdminStatusFilter(e.target.value)}
+                  aria-label="Filter administrator accounts by status"
+                >
+                  <option value="all">All Admins</option>
+                  <option value="active">Active Admins</option>
+                  <option value="deleted">Deleted Admins</option>
+                </select>
+              </div>
+              <div className="admin-roster-list">
+                {adminAccounts.length ? (
+                  adminAccounts.map(a => (
+                    <div key={a.id} className={`admin-roster-item ${isDeletedProfile(a) ? 'is-deleted' : 'is-active'}`}>
+                      <div className="admin-roster-info">
+                        <strong>{getDisplayName(a, a.id)}</strong>
+                        <span>{a.role} - {isDeletedProfile(a) ? 'Deleted' : 'Active'}</span>
+                      </div>
+                      <div className="admin-roster-actions">
+                        <button type="button" className="admin-action-btn" onClick={() => openEditAdmin(a)} title="Edit admin"><HiOutlinePencilSquare /></button>
+                        <button
+                          type="button"
+                          className={`admin-action-btn ${isDeletedProfile(a) ? '' : 'is-delete'}`}
+                          onClick={() => requestUserArchiveState(a, !isDeletedProfile(a))}
+                          disabled={a.id === currentAdminId}
+                          title={a.id === currentAdminId ? 'You cannot delete your own admin account' : isDeletedProfile(a) ? 'Restore admin' : 'Delete admin'}
+                        >
+                          {isDeletedProfile(a) ? <HiCheckCircle /> : <HiOutlineTrash />}
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="admin-empty-chart">No {adminStatusFilter === 'all' ? '' : `${adminStatusFilter} `}administrator accounts</div>
+                )}
+              </div>
+            </article>
           </section>
         )}
 

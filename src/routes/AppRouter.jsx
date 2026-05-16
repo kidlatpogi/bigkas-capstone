@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { Routes, Route, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { useAuthContext } from '../context/useAuthContext';
 import { ENV } from '../config/env';
@@ -46,9 +46,8 @@ const PracticePage = lazy(() => import('../pages/main/PracticePage'));
 // Components
 const SideNav = lazy(() => import('../components/common/SideNav'));
 const BottomNav = lazy(() => import('../components/common/BottomNav'));
-import { getAssetUrl } from '../utils/assetUtils';
 
-const bigkasLogo = "data:image/webp;base64,UklGRmYBAABXRUJQVlA4IFoBAABwCwCdASoQABAAPlEkj0WjIyIhKBAAgCcJaW7AAWzAD8AA/v/p///9f//v/P///T///2P//8P//6v//6P//4P//2P//v///+7//+p///T///R///P///L///G///E///A///8AAP79AQAA"; 
+const bigkasLogo = 'https://assets.bigkas.site/Images/Bigkas-Logo.webp';
 
 /**
  * ActivityPageWrapper - Conditionally renders desktop or mobile version

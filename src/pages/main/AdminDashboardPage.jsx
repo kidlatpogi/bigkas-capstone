@@ -391,6 +391,7 @@ function AdminDashboardPage() {
   const { logout } = useAuthContext();
 
   const [loading, setLoading] = useState(true);
+  const [coreLoaded, setCoreLoaded] = useState(false);
   const [error, setError] = useState('');
   const [role, setRole] = useState('');
   const [currentAdminId, setCurrentAdminId] = useState('');
@@ -458,6 +459,7 @@ function AdminDashboardPage() {
     let active = true;
     async function loadCore() {
       setLoading(true);
+      setCoreLoaded(false);
       setError('');
       try {
         const { data: authData, error: authError } = await supabase.auth.getUser();
@@ -506,7 +508,10 @@ function AdminDashboardPage() {
       } catch (e) {
         if (active) setError(e.message || 'Failed to load admin dashboard.');
       } finally {
-        if (active) setLoading(false);
+        if (active) {
+          setCoreLoaded(true);
+          setLoading(false);
+        }
       }
     }
     loadCore();
@@ -693,7 +698,7 @@ function AdminDashboardPage() {
       return Number.isFinite(createdAt) && createdAt < cutoff;
     }).length;
 
-    if (loading) {
+    if (!coreLoaded) {
       return { label: 'Checking', status: 'checking', icon: 'checking', footer: `${RETENTION_DAYS}-day retention check` };
     }
 
@@ -707,7 +712,7 @@ function AdminDashboardPage() {
     }
 
     return { label: 'Active', status: 'online', icon: 'success', footer: `No sessions past ${RETENTION_DAYS} days` };
-  }, [loading, sessions]);
+  }, [coreLoaded, sessions]);
 
   const joinTrendData = useMemo(() => {
     const days = 14;

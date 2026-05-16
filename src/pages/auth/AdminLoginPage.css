@@ -174,25 +174,25 @@ body.admin-login-page-active .password-input-wrapper {
 }
 
 body.admin-login-page-active .password-input-wrapper .form-input {
-  padding-right: 60px;
+  padding-right: 58px;
 }
 
 body.admin-login-page-active .password-toggle,
 body.admin-login-page-active .pw-toggle-btn {
   position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
+  right: 1.5px;
+  top: 1.5px;
+  bottom: 1.5px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  min-width: 36px;
-  height: 36px;
+  width: 46px;
+  min-width: 46px;
   color: var(--admin-emerald-dark);
   background: #f8fafc;
-  border: 1px solid rgba(5, 150, 105, 0.25);
-  border-radius: 10px;
+  border: 0;
+  border-left: 1px solid rgba(5, 150, 105, 0.25);
+  border-radius: 0 10px 10px 0;
   font-family: inherit;
   cursor: pointer;
   padding: 0;

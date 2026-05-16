@@ -1,8 +1,4 @@
-import { Eye, EyeOff } from 'lucide-react';
-
 function PasswordToggle({ isVisible, onToggle, label = 'password', disabled = false }) {
-  const Icon = isVisible ? EyeOff : Eye;
-
   return (
     <button
       type="button"
@@ -13,7 +9,7 @@ function PasswordToggle({ isVisible, onToggle, label = 'password', disabled = fa
       tabIndex={0}
       disabled={disabled}
     >
-      <Icon aria-hidden="true" size={18} strokeWidth={2.4} />
+      {isVisible ? 'Hide' : 'Show'}
     </button>
   );
 }

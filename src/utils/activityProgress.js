@@ -87,6 +87,11 @@ export function mapPercentToEntryScore(percent0to100) {
 export function resolveSpeakerEntryScore(user) {
   if (!user) return 1.0;
   const meta = user;
+  const ln = Number(meta.speakerLevelNumber ?? meta.speaker_level_number);
+  if (Number.isFinite(ln) && ln > 1 && ln <= 5) {
+    const band = BIGKAS_LEVELS[Math.round(ln) - 1];
+    return band ? (Number(band.number) || 1.0) : 1.0;
+  }
   const direct = Number(meta.speakerEntryScore ?? meta.speaker_entry_score);
   if (Number.isFinite(direct) && direct >= 1 && direct <= 5) {
     return Math.round(direct * 100) / 100;
@@ -95,7 +100,6 @@ export function resolveSpeakerEntryScore(user) {
   if (Number.isFinite(fs) && fs > 0) {
     return mapPercentToEntryScore(fs);
   }
-  const ln = Number(meta.speakerLevelNumber ?? meta.speaker_level_number);
   if (Number.isFinite(ln) && ln >= 1 && ln <= 5) {
     const band = BIGKAS_LEVELS[ln - 1];
     return band ? (Number(band.number) || 1.0) : 1.0;

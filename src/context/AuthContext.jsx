@@ -14,6 +14,7 @@ const LOGIN_GUARD_PREFIX = 'bigkas_login_guard_v1';
 const MAX_LOGIN_ATTEMPTS = 3;
 const LOGIN_COOLDOWN_SCHEDULE_SECONDS = [30, 120, 900];
 const LOGIN_GUARD_RESET_WINDOW_MS = 24 * 60 * 60 * 1000;
+const GENERIC_LOGIN_FAILURE_MESSAGE = 'Wrong email or password.';
 let loginGuardRpcDisabled = false;
 
 function buildLockoutMessage(waitSeconds) {
@@ -336,12 +337,8 @@ function normalizeLoginError(err, email) {
     code.includes('account_deleted')
   ) {
     return {
-      code: code.includes('account_deleted') || msg.includes('permanently deleted')
-        ? 'account_deleted'
-        : 'account_deactivated',
-      message: msg.includes('permanently deleted') || code.includes('account_deleted')
-        ? 'Account deleted. Contact admin for assistance.'
-        : 'Account deactivated. Contact admin for assistance.',
+      code: 'invalid_credentials',
+      message: GENERIC_LOGIN_FAILURE_MESSAGE,
       requiresEmailConfirmation: false,
     };
   }
@@ -366,7 +363,7 @@ function normalizeLoginError(err, email) {
   ) {
     return {
       code: 'invalid_credentials',
-      message: 'Wrong email or password.',
+      message: GENERIC_LOGIN_FAILURE_MESSAGE,
       requiresEmailConfirmation: false,
     };
   }
@@ -420,15 +417,15 @@ function isBlockedByClient(error) {
 function getAccountBlockedMessage(meta = {}) {
   if (parseMetadataBoolean(meta.account_deleted)) {
     return {
-      code: 'account_deleted',
-      message: 'Account deleted. Contact admin for assistance.',
+      code: 'invalid_credentials',
+      message: GENERIC_LOGIN_FAILURE_MESSAGE,
     };
   }
 
   if (parseMetadataBoolean(meta.account_deactivated)) {
     return {
-      code: 'account_deactivated',
-      message: 'Account deactivated. Contact admin for assistance.',
+      code: 'invalid_credentials',
+      message: GENERIC_LOGIN_FAILURE_MESSAGE,
     };
   }
 
@@ -598,21 +595,21 @@ export function AuthProvider({ children }) {
     const { profile, error } = await loadSessionProfile(userId);
 
     if (error || !profile) {
-      const message = 'Account profile not found. Contact admin for assistance.';
+      const message = GENERIC_LOGIN_FAILURE_MESSAGE;
       setError(message);
       setUser(null);
       clearAdminSession();
       await supabase.auth.signOut({ scope: 'local' });
-      return { code: 'profile_not_found', message };
+      return { code: 'invalid_credentials', message };
     }
 
     if (isArchivedProfile(profile)) {
-      const message = 'Account deleted. Contact admin for assistance.';
+      const message = GENERIC_LOGIN_FAILURE_MESSAGE;
       setError(message);
       setUser(null);
       clearAdminSession();
       await supabase.auth.signOut({ scope: 'local' });
-      return { code: 'account_deleted', message };
+      return { code: 'invalid_credentials', message };
     }
 
     return null;
@@ -634,7 +631,7 @@ export function AuthProvider({ children }) {
 
       if (profile) {
         if (isArchivedProfile(profile)) {
-          setError('Account deleted. Contact admin for assistance.');
+          setError(GENERIC_LOGIN_FAILURE_MESSAGE);
           setUser(null);
           clearAdminSession();
           await supabase.auth.signOut({ scope: 'local' });
@@ -983,13 +980,11 @@ export function AuthProvider({ children }) {
       const meta = data.user?.user_metadata || {};
       if (parseMetadataBoolean(meta.account_deactivated) || parseMetadataBoolean(meta.account_deleted)) {
         await supabase.auth.signOut({ scope: 'local' });
-        const blockedMessage = parseMetadataBoolean(meta.account_deleted)
-          ? 'Account deleted. Contact admin for assistance.'
-          : 'Account deactivated. Contact admin for assistance.';
+        const blockedMessage = GENERIC_LOGIN_FAILURE_MESSAGE;
         setError(blockedMessage);
         return {
           success: false,
-          code: parseMetadataBoolean(meta.account_deleted) ? 'account_deleted' : 'account_deactivated',
+          code: 'invalid_credentials',
           error: blockedMessage,
         };
       }
@@ -1130,11 +1125,11 @@ export function AuthProvider({ children }) {
         setUser(null);
         clearAdminSession();
         await supabase.auth.signOut({ scope: 'local' });
-        const message = 'Admin profile not found.';
+        const message = GENERIC_LOGIN_FAILURE_MESSAGE;
         setError(message);
         return {
           success: false,
-          code: 'admin_profile_not_found',
+          code: 'invalid_credentials',
           error: message,
         };
       }
@@ -1143,11 +1138,11 @@ export function AuthProvider({ children }) {
         setUser(null);
         clearAdminSession();
         await supabase.auth.signOut({ scope: 'local' });
-        const message = 'Account deleted. Contact admin for assistance.';
+        const message = GENERIC_LOGIN_FAILURE_MESSAGE;
         setError(message);
         return {
           success: false,
-          code: 'account_deleted',
+          code: 'invalid_credentials',
           error: message,
         };
       }

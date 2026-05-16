@@ -1002,7 +1002,7 @@ function AdminDashboardPage() {
       .update({ archived_at: archivedAt, updated_at: updatedAt })
       .eq('id', user.id)
       .select('*')
-      .single();
+      .maybeSingle();
     if (archiveError) {
       showToast(archiveError.message || `Failed to ${label} user`, 'error');
       return;

@@ -183,6 +183,36 @@ async function createConfirmedAdminUser(payload) {
   return data;
 }
 
+async function setProfileArchiveStateWithAdminFunction(userId, shouldArchive) {
+  const { data, error } = await supabase.functions.invoke('admin-set-profile-archive-state', {
+    body: {
+      user_id: userId,
+      should_archive: shouldArchive,
+    },
+  });
+
+  if (error) {
+    let functionMessage = '';
+    try {
+      const details = await error.context?.json?.();
+      functionMessage = details?.error || details?.message || '';
+    } catch {
+      functionMessage = '';
+    }
+    throw new Error(functionMessage || error.message || 'Failed to update profile archive state.');
+  }
+
+  if (data?.error) {
+    throw new Error(data.error);
+  }
+
+  if (!data?.profile?.id) {
+    throw new Error('Profile archive state was not updated.');
+  }
+
+  return data.profile;
+}
+
 function userToForm(user) {
   return {
     email: '',
@@ -994,20 +1024,14 @@ function AdminDashboardPage() {
   };
 
   const setUserArchiveState = async (user, shouldArchive) => {
-    const archivedAt = shouldArchive ? new Date().toISOString() : null;
-    const updatedAt = new Date().toISOString();
     const label = shouldArchive ? 'archive' : 'restore';
-    const { data: updatedProfile, error: archiveError } = await supabase
-      .from('profiles')
-      .update({ archived_at: archivedAt, updated_at: updatedAt })
-      .eq('id', user.id)
-      .select('*')
-      .maybeSingle();
-    if (archiveError) {
-      showToast(archiveError.message || `Failed to ${label} user`, 'error');
+    let newValues;
+    try {
+      newValues = await setProfileArchiveStateWithAdminFunction(user.id, shouldArchive);
+    } catch (error) {
+      showToast(error.message || `Failed to ${label} user`, 'error');
       return;
     }
-    const newValues = updatedProfile || { ...user, archived_at: archivedAt, updated_at: updatedAt };
     await recordAuditLog({
       action: shouldArchive ? 'delete' : 'restore',
       entityType: 'profiles',

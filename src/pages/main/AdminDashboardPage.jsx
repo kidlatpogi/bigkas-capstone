@@ -30,6 +30,7 @@ import './AdminDashboardPage.css';
 const RETENTION_DAYS = 14;
 const SIDEBAR_WIDTH = 280;
 const SERVICE_HEALTH_TIMEOUT_MS = 8000;
+const DASHBOARD_QUERY_TIMEOUT_MS = 12000;
 const PIE_COLORS = ['#33d2a4', '#51dfb5', '#7bedcc', '#a8f5e1'];
 const USER_FORM_INITIAL = {
   email: '',
@@ -152,6 +153,19 @@ async function probeServiceHealth(candidates) {
     detail: 'Health endpoint unavailable',
     checkedUrl: candidates[0]?.url || '',
   };
+}
+
+async function withTimeout(promise, label, timeoutMs = DASHBOARD_QUERY_TIMEOUT_MS) {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = window.setTimeout(() => reject(new Error(`${label} request timed out.`)), timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
 }
 
 function isDeletedProfile(profile) {
@@ -478,33 +492,60 @@ function AdminDashboardPage() {
           throw new Error('Access denied: admin privileges required.');
         }
 
-        const [adminProfiles, sessionsRes, metricsRes, activitiesRes, modulesRes, moduleViewsRes, completionsRes] = await Promise.all([
-          fetchAdminProfiles(),
-          supabase.from('sessions').select('*').order('created_at', { ascending: true }),
-          supabase.from('session_metrics').select('session_id, overall_score, visual_score, vocal_score, verbal_score, visual_avg, vocal_avg, verbal_avg, confidence_score, pronunciation_score'),
-          supabase.from('activities').select('*').order('target_level', { ascending: true }).order('activity_order', { ascending: true }),
-          supabase.from('modules').select('*').order('level_number', { ascending: true }).order('lesson_number', { ascending: true }),
-          supabase.from('module_views').select('*').order('viewed_at', { ascending: false }),
-          supabase.from('user_activity_completions').select('*').order('completed_at', { ascending: false }),
-        ]);
-
-        if (sessionsRes.error) throw sessionsRes.error;
-        if (metricsRes.error) throw metricsRes.error;
-        if (activitiesRes.error) throw activitiesRes.error;
-        if (modulesRes.error) throw modulesRes.error;
-        if (moduleViewsRes.error) throw moduleViewsRes.error;
-        if (completionsRes.error) throw completionsRes.error;
-
         if (!active) return;
         setCurrentAdminId(authData.user.id);
         setRole(roleProfile.role);
-        setProfiles(adminProfiles);
-        setSessions(sessionsRes.data || []);
-        setMetrics(metricsRes.data || []);
-        setActivities(activitiesRes.data || []);
-        setModules(modulesRes.data || []);
-        setModuleViews(moduleViewsRes.data || []);
-        setActivityCompletions(completionsRes.data || []);
+
+        const results = await Promise.allSettled([
+          withTimeout(fetchAdminProfiles(), 'Profiles'),
+          withTimeout(supabase.from('sessions').select('*').order('created_at', { ascending: true }), 'Sessions'),
+          withTimeout(supabase.from('session_metrics').select('session_id, overall_score, visual_score, vocal_score, verbal_score, visual_avg, vocal_avg, verbal_avg, confidence_score, pronunciation_score'), 'Session metrics'),
+          withTimeout(supabase.from('activities').select('*').order('target_level', { ascending: true }).order('activity_order', { ascending: true }), 'Activities'),
+          withTimeout(supabase.from('modules').select('*').order('level_number', { ascending: true }).order('lesson_number', { ascending: true }), 'Modules'),
+          withTimeout(supabase.from('module_views').select('*').order('viewed_at', { ascending: false }), 'Module views'),
+          withTimeout(supabase.from('user_activity_completions').select('*').order('completed_at', { ascending: false }), 'Activity completions'),
+        ]);
+
+        const [
+          adminProfilesResult,
+          sessionsResult,
+          metricsResult,
+          activitiesResult,
+          modulesResult,
+          moduleViewsResult,
+          completionsResult,
+        ] = results;
+
+        const getResultData = (result, label) => {
+          if (result.status === 'rejected') {
+            console.warn(`[AdminDashboard] ${label} load failed:`, result.reason?.message || result.reason);
+            return [];
+          }
+
+          if (result.value?.error) {
+            console.warn(`[AdminDashboard] ${label} load failed:`, result.value.error.message);
+            return [];
+          }
+
+          return Array.isArray(result.value) ? result.value : (result.value?.data || []);
+        };
+
+        const failedLabels = results
+          .map((result, index) => ({ result, label: ['profiles', 'sessions', 'metrics', 'activities', 'modules', 'module views', 'activity completions'][index] }))
+          .filter(({ result }) => result.status === 'rejected' || result.value?.error)
+          .map(({ label }) => label);
+
+        if (!active) return;
+        setProfiles(getResultData(adminProfilesResult, 'Profiles'));
+        setSessions(getResultData(sessionsResult, 'Sessions'));
+        setMetrics(getResultData(metricsResult, 'Session metrics'));
+        setActivities(getResultData(activitiesResult, 'Activities'));
+        setModules(getResultData(modulesResult, 'Modules'));
+        setModuleViews(getResultData(moduleViewsResult, 'Module views'));
+        setActivityCompletions(getResultData(completionsResult, 'Activity completions'));
+        if (failedLabels.length) {
+          setError(`Some dashboard data did not load: ${failedLabels.join(', ')}.`);
+        }
       } catch (e) {
         if (active) setError(e.message || 'Failed to load admin dashboard.');
       } finally {
@@ -1478,41 +1519,50 @@ function AdminDashboardPage() {
               </article>
               <article className="admin-card admin-kpi-card">
                 <p className="admin-kpi-label">PRIVACY COMPLIANCE</p>
-                <div className={`admin-privacy-status admin-privacy-status--${privacyCompliance.status}`}>
-                  {privacyCompliance.icon === 'success' && <HiCheckCircle size={30} />}
-                  <p className="admin-kpi-value admin-kpi-value--privacy">{privacyCompliance.label}</p>
-                </div>
-                <p className="admin-kpi-footer">{privacyCompliance.footer}</p>
+                {loading ? (
+                  <>
+                    <Skeleton width={150} height={42} />
+                    <p className="admin-kpi-footer"><Skeleton width={130} /></p>
+                  </>
+                ) : (
+                  <>
+                    <div className={`admin-privacy-status admin-privacy-status--${privacyCompliance.status}`}>
+                      {privacyCompliance.icon === 'success' && <HiCheckCircle size={30} />}
+                      <p className="admin-kpi-value admin-kpi-value--privacy">{privacyCompliance.label}</p>
+                    </div>
+                    <p className="admin-kpi-footer">{privacyCompliance.footer}</p>
+                  </>
+                )}
               </article>
             </section>
             <section className="admin-grid admin-grid-2">
               <article className={`admin-card admin-health-card admin-health-card--${serviceHealth.huggingFace.status}`}>
                 <div>
                   <p className="admin-kpi-label">HUGGING FACE BACKEND</p>
-                  <h3>{serviceHealth.huggingFace.label}</h3>
-                  <p>{serviceHealth.huggingFace.detail}</p>
+                  <h3>{serviceHealth.huggingFace.status === 'checking' ? <Skeleton width={110} /> : serviceHealth.huggingFace.label}</h3>
+                  <p>{serviceHealth.huggingFace.status === 'checking' ? <Skeleton width={210} /> : serviceHealth.huggingFace.detail}</p>
                 </div>
                 <span className="admin-health-latency">
-                  {serviceHealth.huggingFace.latencyMs == null ? 'Checking...' : `${serviceHealth.huggingFace.latencyMs} ms`}
+                  {serviceHealth.huggingFace.latencyMs == null ? <Skeleton width={72} /> : `${serviceHealth.huggingFace.latencyMs} ms`}
                 </span>
               </article>
               <article className={`admin-card admin-health-card admin-health-card--${serviceHealth.cloudflare.status}`}>
                 <div>
                   <p className="admin-kpi-label">CLOUDFLARE AI WORKER</p>
-                  <h3>{serviceHealth.cloudflare.label}</h3>
-                  <p>{serviceHealth.cloudflare.detail}</p>
+                  <h3>{serviceHealth.cloudflare.status === 'checking' ? <Skeleton width={110} /> : serviceHealth.cloudflare.label}</h3>
+                  <p>{serviceHealth.cloudflare.status === 'checking' ? <Skeleton width={210} /> : serviceHealth.cloudflare.detail}</p>
                 </div>
                 <span className="admin-health-latency">
-                  {serviceHealth.cloudflare.latencyMs == null ? 'Checking...' : `${serviceHealth.cloudflare.latencyMs} ms`}
+                  {serviceHealth.cloudflare.latencyMs == null ? <Skeleton width={72} /> : `${serviceHealth.cloudflare.latencyMs} ms`}
                 </span>
               </article>
             </section>
             <section className="admin-grid admin-grid-2">
               <article className="admin-card"><h3>User Join Trend</h3><div className="admin-chart-container">
-                <ResponsiveContainer width="100%" height={300}><AreaChart data={joinTrendData}><XAxis dataKey="date" /><YAxis /><Tooltip /><Area type="monotone" dataKey="users" stroke="#33D2A4" fill="#33D2A433" /></AreaChart></ResponsiveContainer>
+                {loading ? <Skeleton height={300} /> : <ResponsiveContainer width="100%" height={300}><AreaChart data={joinTrendData}><XAxis dataKey="date" /><YAxis /><Tooltip /><Area type="monotone" dataKey="users" stroke="#33D2A4" fill="#33D2A433" /></AreaChart></ResponsiveContainer>}
               </div></article>
               <article className="admin-card"><h3>User Level Distribution</h3><div className="admin-chart-container">
-                <ResponsiveContainer width="100%" height={300}><BarChart data={levelBarData}><XAxis dataKey="level" /><YAxis /><Tooltip /><Bar dataKey="users" fill="#33D2A4" radius={[8,8,0,0]} /></BarChart></ResponsiveContainer>
+                {loading ? <Skeleton height={300} /> : <ResponsiveContainer width="100%" height={300}><BarChart data={levelBarData}><XAxis dataKey="level" /><YAxis /><Tooltip /><Bar dataKey="users" fill="#33D2A4" radius={[8,8,0,0]} /></BarChart></ResponsiveContainer>}
               </div></article>
             </section>
           </>

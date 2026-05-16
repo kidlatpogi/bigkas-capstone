@@ -109,13 +109,40 @@ function buildDistribution(items, getValue, sortMode = 'count_desc') {
 function getAuditActionClass(action) {
   const normalized = String(action || '').toLowerCase();
   if (['create', 'update', 'delete', 'restore'].includes(normalized)) return `is-${normalized}`;
+  if (normalized.startsWith('login_')) return 'is-security';
   return 'is-default';
 }
 
 function formatAuditAction(action) {
   const normalized = String(action || '').trim();
   if (!normalized) return 'Unknown';
-  return normalized.charAt(0).toUpperCase() + normalized.slice(1).toLowerCase();
+  return normalized
+    .split('_')
+    .filter(Boolean)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function normalizeAuthSecurityEvent(event) {
+  return {
+    id: `auth-security-${event.id}`,
+    actor_id: event.user_id || null,
+    action: event.event_type,
+    entity_type: 'auth_security',
+    entity_id: event.user_id || null,
+    old_values: null,
+    new_values: {
+      scope: event.scope,
+      email_hash: event.email_hash,
+      email_domain: event.email_domain,
+      reason_code: event.reason_code,
+      ip_address: event.ip_address,
+      user_agent: event.user_agent,
+      metadata: event.metadata || {},
+    },
+    created_at: event.created_at,
+    is_security_event: true,
+  };
 }
 
 function average(values) {
@@ -301,6 +328,7 @@ function AdminDashboardPage() {
   const [moduleViews, setModuleViews] = useState([]);
   const [activityCompletions, setActivityCompletions] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
+  const [authSecurityEvents, setAuthSecurityEvents] = useState([]);
   const [auditSearchQuery, setAuditSearchQuery] = useState('');
   const [auditActionFilter, setAuditActionFilter] = useState('all');
   const [auditEntityFilter, setAuditEntityFilter] = useState('all');
@@ -418,14 +446,25 @@ function AdminDashboardPage() {
     let active = true;
     async function loadSettingsData() {
       try {
-        const { data, error: auditErr } = await supabase
-          .from('audit_logs')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(1000);
+        const [auditRes, securityRes] = await Promise.all([
+          supabase
+            .from('audit_logs')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(1000),
+          supabase
+            .from('auth_security_events')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(1000),
+        ]);
+        const { data, error: auditErr } = auditRes;
+        const { data: securityEvents, error: securityErr } = securityRes;
         if (auditErr) throw auditErr;
+        if (securityErr) throw securityErr;
         if (!active) return;
         setAuditLogs(data || []);
+        setAuthSecurityEvents(securityEvents || []);
       } catch (e) {
         if (active) setError(e.message || 'Failed to load admin settings data.');
       }
@@ -916,16 +955,26 @@ function AdminDashboardPage() {
     [highestActivityLevel]
   );
 
+  const combinedAuditLogs = useMemo(
+    () => [...auditLogs, ...authSecurityEvents.map(normalizeAuthSecurityEvent)]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+    [auditLogs, authSecurityEvents]
+  );
+
   const filteredAuditLogs = useMemo(() => {
-    let res = auditLogs;
+    let res = combinedAuditLogs;
     if (auditSearchQuery.trim()) {
       const q = auditSearchQuery.toLowerCase();
-      res = res.filter(l => getDisplayName(profiles.find(p => p.id === l.actor_id), l.actor_id).toLowerCase().includes(q));
+      res = res.filter((l) => {
+        const actorName = getDisplayName(profiles.find(p => p.id === l.actor_id), l.actor_id || 'unknown login').toLowerCase();
+        const payload = JSON.stringify(l.new_values || {}).toLowerCase();
+        return actorName.includes(q) || payload.includes(q);
+      });
     }
     if (auditActionFilter !== 'all') res = res.filter(l => l.action.toLowerCase() === auditActionFilter.toLowerCase());
     if (auditEntityFilter !== 'all') res = res.filter(l => l.entity_type.toLowerCase() === auditEntityFilter.toLowerCase());
     return res;
-  }, [auditLogs, auditSearchQuery, auditActionFilter, auditEntityFilter, profiles]);
+  }, [combinedAuditLogs, auditSearchQuery, auditActionFilter, auditEntityFilter, profiles]);
 
   const paginatedAuditLogs = useMemo(() => {
     const start = (auditPage - 1) * AUDIT_PER_PAGE;
@@ -1625,6 +1674,9 @@ function AdminDashboardPage() {
                   <option value="update">Update</option>
                   <option value="delete">Delete</option>
                   <option value="restore">Restore</option>
+                  <option value="login_failed">Login Failed</option>
+                  <option value="login_blocked">Login Blocked</option>
+                  <option value="login_success">Login Success</option>
                 </select>
                 <select className="admin-filter-select" value={auditEntityFilter} onChange={e => { setAuditEntityFilter(e.target.value); setAuditPage(1); }}>
                   <option value="all">All Entities</option>
@@ -1632,12 +1684,13 @@ function AdminDashboardPage() {
                   <option value="activities">Activities</option>
                   <option value="modules">Modules</option>
                   <option value="system_settings">Settings</option>
+                  <option value="auth_security">Auth Security</option>
                 </select>
               </div>
             </div>
             <div className="admin-table-wrap"><table className="admin-table">
               <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Entity</th><th>Details</th></tr></thead>
-              <tbody>{paginatedAuditLogs.map(l => <tr key={l.id}><td>{new Date(l.created_at).toLocaleString()}</td><td>{getDisplayName(profiles.find(p => p.id === l.actor_id), l.actor_id)}</td><td><span className={`admin-audit-action-badge ${getAuditActionClass(l.action)}`}>{formatAuditAction(l.action)}</span></td><td>{l.entity_type}</td><td><button onClick={() => setInspectingLog(l)} className="admin-action-btn"><HiMagnifyingGlass /></button></td></tr>)}</tbody>
+              <tbody>{paginatedAuditLogs.map(l => <tr key={l.id}><td>{new Date(l.created_at).toLocaleString()}</td><td>{getDisplayName(profiles.find(p => p.id === l.actor_id), l.actor_id || 'Unknown login')}</td><td><span className={`admin-audit-action-badge ${getAuditActionClass(l.action)}`}>{formatAuditAction(l.action)}</span></td><td>{l.entity_type}</td><td><button onClick={() => setInspectingLog(l)} className="admin-action-btn"><HiMagnifyingGlass /></button></td></tr>)}</tbody>
             </table></div>
             {totalAuditPages > 1 && <div className="admin-pagination"><button disabled={auditPage === 1} onClick={() => setAuditPage(p => p - 1)}>Prev</button><span>{auditPage} / {totalAuditPages}</span><button disabled={auditPage === totalAuditPages} onClick={() => setAuditPage(p => p + 1)}>Next</button></div>}
           </section>
@@ -1821,7 +1874,7 @@ function AdminDashboardPage() {
         </div>
         <div className="admin-audit-summary">
           <span><strong>Time</strong>{new Date(inspectingLog.created_at).toLocaleString()}</span>
-          <span><strong>Actor</strong>{getDisplayName(profiles.find(p => p.id === inspectingLog.actor_id), inspectingLog.actor_id)}</span>
+          <span><strong>Actor</strong>{getDisplayName(profiles.find(p => p.id === inspectingLog.actor_id), inspectingLog.actor_id || 'Unknown login')}</span>
           <span><strong>Entity ID</strong>{inspectingLog.entity_id || 'N/A'}</span>
         </div>
         <div className="admin-payload-content">

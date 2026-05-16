@@ -894,6 +894,12 @@ body:has(.admin-dashboard-page) .main-content {
   color: #047857;
 }
 
+.admin-audit-action-badge.is-security {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #9a3412;
+}
+
 .admin-audit-action-badge.is-default {
   background: #f3f4f6;
   border-color: #e5e7eb;

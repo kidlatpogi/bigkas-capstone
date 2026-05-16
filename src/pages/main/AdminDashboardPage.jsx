@@ -237,6 +237,33 @@ async function setProfileArchiveStateWithAdminFunction(userId, shouldArchive) {
   return data.profile;
 }
 
+async function fetchAdminProfiles() {
+  const { data, error } = await supabase.functions.invoke('admin-list-profiles', {
+    body: {},
+  });
+
+  if (error) {
+    let functionMessage = '';
+    try {
+      const details = await error.context?.json?.();
+      functionMessage = details?.error || details?.message || '';
+    } catch {
+      functionMessage = '';
+    }
+    throw new Error(functionMessage || error.message || 'Failed to load profiles.');
+  }
+
+  if (data?.error) {
+    throw new Error(data.error);
+  }
+
+  if (!Array.isArray(data?.profiles)) {
+    throw new Error('Profiles were not loaded.');
+  }
+
+  return data.profiles;
+}
+
 function userToForm(user) {
   return {
     email: '',
@@ -342,8 +369,8 @@ function AdminDashboardPage() {
           throw new Error('Access denied: admin privileges required.');
         }
 
-        const [profilesRes, sessionsRes, metricsRes, activitiesRes, modulesRes, moduleViewsRes, completionsRes, settingsRes] = await Promise.all([
-          supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+        const [adminProfiles, sessionsRes, metricsRes, activitiesRes, modulesRes, moduleViewsRes, completionsRes, settingsRes] = await Promise.all([
+          fetchAdminProfiles(),
           supabase.from('sessions').select('*').order('created_at', { ascending: true }),
           supabase.from('session_metrics').select('session_id, overall_score, visual_score, vocal_score, verbal_score, visual_avg, vocal_avg, verbal_avg, confidence_score, pronunciation_score'),
           supabase.from('activities').select('*').order('target_level', { ascending: true }).order('activity_order', { ascending: true }),
@@ -353,7 +380,6 @@ function AdminDashboardPage() {
           roleProfile.role === 'superadmin' ? supabase.from('system_settings').select('*') : Promise.resolve({ data: [] })
         ]);
 
-        if (profilesRes.error) throw profilesRes.error;
         if (sessionsRes.error) throw sessionsRes.error;
         if (metricsRes.error) throw metricsRes.error;
         if (activitiesRes.error) throw activitiesRes.error;
@@ -370,7 +396,7 @@ function AdminDashboardPage() {
         if (!active) return;
         setCurrentAdminId(authData.user.id);
         setRole(roleProfile.role);
-        setProfiles(profilesRes.data || []);
+        setProfiles(adminProfiles);
         setSessions(sessionsRes.data || []);
         setMetrics(metricsRes.data || []);
         setActivities(activitiesRes.data || []);

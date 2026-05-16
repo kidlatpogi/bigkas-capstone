@@ -90,7 +90,7 @@ function getDemographicValue(profile, key) {
   return 'Not provided';
 }
 
-function buildDistribution(items, getValue) {
+function buildDistribution(items, getValue, sortMode = 'count_desc') {
   const counts = new Map();
   items.forEach((item) => {
     const value = getValue(item) || 'Not provided';
@@ -98,7 +98,12 @@ function buildDistribution(items, getValue) {
   });
   return Array.from(counts.entries())
     .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
+    .sort((a, b) => {
+      if (sortMode === 'count_asc') return a.value - b.value || a.name.localeCompare(b.name);
+      if (sortMode === 'label_asc') return a.name.localeCompare(b.name);
+      if (sortMode === 'label_desc') return b.name.localeCompare(a.name);
+      return b.value - a.value || a.name.localeCompare(b.name);
+    });
 }
 
 function getAuditActionClass(action) {
@@ -261,6 +266,7 @@ function AdminDashboardPage() {
   const [analyticsJourneyFilter, setAnalyticsJourneyFilter] = useState('all');
   const [analyticsStatusFilter, setAnalyticsStatusFilter] = useState('active');
   const [analyticsModeFilter, setAnalyticsModeFilter] = useState('all');
+  const [demographicSort, setDemographicSort] = useState('count_desc');
 
   const [profiles, setProfiles] = useState([]);
   const [sessions, setSessions] = useState([]);
@@ -708,9 +714,9 @@ function AdminDashboardPage() {
   }, [modules, analyticsJourneyFilter, analyticsModuleViews]);
 
   const demographicAnalytics = useMemo(() => ({
-    gender: buildDistribution(analyticsUsers, profile => getDemographicValue(profile, 'gender')),
-    ageRange: buildDistribution(analyticsUsers, profile => getDemographicValue(profile, 'age_range')),
-  }), [analyticsUsers]);
+    gender: buildDistribution(analyticsUsers, profile => getDemographicValue(profile, 'gender'), demographicSort),
+    ageRange: buildDistribution(analyticsUsers, profile => getDemographicValue(profile, 'age_range'), demographicSort),
+  }), [analyticsUsers, demographicSort]);
 
   const engagementTrendData = useMemo(() => {
     const days = globalFilter === '7d' ? 7 : 14;
@@ -1358,7 +1364,22 @@ function AdminDashboardPage() {
               <article className="admin-card"><h3>Most Viewed Learning Modules</h3><div className="admin-analytics-lists admin-analytics-lists--single">
                 <div>{moduleHighlights.length ? moduleHighlights.map(module => <p key={module.id}><strong>{module.title}</strong><span>{module.views} views</span></p>) : <div className="admin-empty-inline">No module views yet</div>}</div>
               </div></article>
-              <article className="admin-card"><h3>Learner Demographics</h3><div className="admin-analytics-lists">
+              <article className="admin-card">
+                <div className="admin-card-head">
+                  <h3>Learner Demographics</h3>
+                  <select
+                    className="admin-filter-select admin-demographic-sort"
+                    value={demographicSort}
+                    onChange={e => setDemographicSort(e.target.value)}
+                    aria-label="Sort learner demographics"
+                  >
+                    <option value="count_desc">Highest Count</option>
+                    <option value="count_asc">Lowest Count</option>
+                    <option value="label_asc">A to Z</option>
+                    <option value="label_desc">Z to A</option>
+                  </select>
+                </div>
+                <div className="admin-analytics-lists">
                 <div><h4>Gender</h4>{demographicAnalytics.gender.length ? demographicAnalytics.gender.map(item => <p key={item.name}><strong>{item.name}</strong><span>{item.value}</span></p>) : <div className="admin-empty-inline">No gender data yet</div>}</div>
                 <div><h4>Age Group</h4>{demographicAnalytics.ageRange.length ? demographicAnalytics.ageRange.map(item => <p key={item.name}><strong>{item.name}</strong><span>{item.value}</span></p>) : <div className="admin-empty-inline">No age data yet</div>}</div>
               </div></article>

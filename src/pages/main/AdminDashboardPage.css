@@ -487,6 +487,10 @@ body:has(.admin-dashboard-page) .main-content {
   grid-template-columns: 1fr;
 }
 
+.admin-demographic-sort {
+  width: min(180px, 100%);
+}
+
 .admin-analytics-lists h4 {
   margin: 0 0 8px;
   color: var(--accent-dark);

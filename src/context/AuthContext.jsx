@@ -435,6 +435,11 @@ function getAccountBlockedMessage(meta = {}) {
   return null;
 }
 
+function isArchivedProfile(profile) {
+  if (profile?.archived_at === null || profile?.archived_at === undefined) return false;
+  return String(profile.archived_at).trim() !== '';
+}
+
 function deriveOnboardingStage(meta = {}, profile = {}) {
   const explicitStage = ['profiling', 'pretest', 'analyzing', 'completed'].includes(meta.onboarding_stage)
     ? meta.onboarding_stage
@@ -489,6 +494,7 @@ export function AuthProvider({ children }) {
   const [pendingEmail, setPendingEmail] = useState(null);
   const signupCooldownUntilRef = useRef(0);
   const signupInProgressRef = useRef(false);
+  const loginInProgressRef = useRef(false);
   const adminLoginInProgressRef = useRef(false);
 
   const resolveAvatarUrl = useCallback((avatarValue) => {
@@ -563,24 +569,59 @@ export function AuthProvider({ children }) {
     };
   }, [resolveAvatarUrl]);
 
+  const loadSessionProfile = useCallback(async (userId) => {
+    if (!userId) return { profile: null, error: null };
+
+    const selectProfile = () =>
+      supabase
+        .from('profiles')
+        .select('role, archived_at, is_profiling_completed, is_pre_test_completed, dashboard_tutorial_seen, current_level, speaker_level, diagnostic_score, diagnostic_completed_at')
+        .eq('id', userId)
+        .single();
+
+    let { data: profile, error } = await selectProfile();
+
+    if (error && isJwtExpiredError(error)) {
+      const { session: fresh, error: refErr } = await ensureFreshAccessToken();
+      if (!refErr && fresh) {
+        ({ data: profile, error } = await selectProfile());
+      }
+    }
+
+    return { profile, error };
+  }, []);
+
+  const rejectArchivedSession = useCallback(async (session) => {
+    const userId = session?.user?.id;
+    if (!userId) return null;
+
+    const { profile, error } = await loadSessionProfile(userId);
+
+    if (error || !profile) {
+      const message = 'Account profile not found. Contact admin for assistance.';
+      setError(message);
+      setUser(null);
+      clearAdminSession();
+      await supabase.auth.signOut({ scope: 'local' });
+      return { code: 'profile_not_found', message };
+    }
+
+    if (isArchivedProfile(profile)) {
+      const message = 'Account deleted. Contact admin for assistance.';
+      setError(message);
+      setUser(null);
+      clearAdminSession();
+      await supabase.auth.signOut({ scope: 'local' });
+      return { code: 'account_deleted', message };
+    }
+
+    return null;
+  }, [clearAdminSession, loadSessionProfile]);
+
   const fetchAndMergeProfile = useCallback(async (userId) => {
     if (!userId) return;
     try {
-      const selectProfile = () =>
-        supabase
-          .from('profiles')
-          .select('is_profiling_completed, is_pre_test_completed, dashboard_tutorial_seen, current_level, speaker_level, diagnostic_score, diagnostic_completed_at')
-          .eq('id', userId)
-          .single();
-
-      let { data: profile, error } = await selectProfile();
-
-      if (error && isJwtExpiredError(error)) {
-        const { session: fresh, error: refErr } = await ensureFreshAccessToken();
-        if (!refErr && fresh) {
-          ({ data: profile, error } = await selectProfile());
-        }
-      }
+      const { profile, error } = await loadSessionProfile(userId);
 
       if (error) {
         if (error.code !== 'PGRST116') { // PGRST116 is 'no rows found'
@@ -592,6 +633,14 @@ export function AuthProvider({ children }) {
       }
 
       if (profile) {
+        if (isArchivedProfile(profile)) {
+          setError('Account deleted. Contact admin for assistance.');
+          setUser(null);
+          clearAdminSession();
+          await supabase.auth.signOut({ scope: 'local' });
+          return;
+        }
+
         setUser(prev => {
           if (prev?.id !== userId) return prev;
 
@@ -627,7 +676,7 @@ export function AuthProvider({ children }) {
     } catch (err) {
       console.error('Bigkas Auth: unexpected error fetching profile:', err);
     }
-  }, []);
+  }, [clearAdminSession, loadSessionProfile]);
 
   useEffect(() => {
     if (!user?.id || !user?.onboardingStage) return;
@@ -734,6 +783,15 @@ export function AuthProvider({ children }) {
         return;
       }
 
+      const blockedProfile = await rejectArchivedSession(session);
+      if (blockedProfile) {
+        isBootstrapped = true;
+        clearTimeout(bootstrapTimeout);
+        setIsLoading(false);
+        setIsInitializing(false);
+        return;
+      }
+
       const nextUser = buildUser(session);
       setUser(nextUser);
       if (!nextUser) {
@@ -753,10 +811,13 @@ export function AuthProvider({ children }) {
       setIsInitializing(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       // Skip auth state changes while signup is in progress to prevent race conditions
       // that would reset pendingEmailVerification or cause unwanted navigation
       if (signupInProgressRef.current) return;
+      // User password login performs an archived-profile check after Supabase accepts
+      // credentials. Keep the session unpublished until that check finishes.
+      if (loginInProgressRef.current) return;
       // Admin login performs an additional role check after Supabase accepts
       // credentials. Do not publish the session as a regular user before that
       // check finishes, or public routes can briefly render the user login flow.
@@ -772,6 +833,9 @@ export function AuthProvider({ children }) {
         void supabase.auth.signOut({ scope: 'local' });
         return;
       }
+
+      const blockedProfile = await rejectArchivedSession(session);
+      if (blockedProfile) return;
 
       const nextUser = buildUser(session);
       const emailConfirmed = !!session?.user?.email_confirmed_at;
@@ -801,7 +865,7 @@ export function AuthProvider({ children }) {
       clearTimeout(bootstrapTimeout);
       subscription.unsubscribe();
     };
-  }, [buildUser, clearAdminSession, fetchAndMergeProfile]);
+  }, [buildUser, clearAdminSession, fetchAndMergeProfile, rejectArchivedSession]);
 
   /* ── Refresh JWT when the tab becomes visible (background tabs throttle auto-refresh timers) ── */
   useEffect(() => {
@@ -853,6 +917,7 @@ export function AuthProvider({ children }) {
     setIsLoading(true);
     setError(null);
     clearAdminSession();
+    loginInProgressRef.current = true;
 
     try {
       // Direct Supabase login (no gateway)
@@ -929,9 +994,22 @@ export function AuthProvider({ children }) {
         };
       }
 
+      const blockedProfile = await rejectArchivedSession(data.session);
+      if (blockedProfile) {
+        return {
+          success: false,
+          code: blockedProfile.code,
+          error: blockedProfile.message,
+        };
+      }
+
       setPendingEmailVerification(false);
       setPendingEmail(null);
-  await registerLoginSuccess('user', normalizedEmail);
+      setUser(buildUser(data.session));
+      if (data.user?.id) {
+        void fetchAndMergeProfile(data.user.id);
+      }
+      await registerLoginSuccess('user', normalizedEmail);
       return { success: true, user: buildUser(data.session) };
     } catch (networkError) {
       setIsLoading(false);
@@ -943,8 +1021,10 @@ export function AuthProvider({ children }) {
       const message = networkError?.message || 'An unexpected error occurred during login. Please try again.';
       setError(message);
       return { success: false, error: message };
+    } finally {
+      loginInProgressRef.current = false;
     }
-  }, [buildUser, clearAdminSession]);
+  }, [buildUser, clearAdminSession, fetchAndMergeProfile, rejectArchivedSession]);
 
   /* ── Admin Login ── */
   const adminLogin = useCallback(async (email, password) => {
@@ -1042,7 +1122,7 @@ export function AuthProvider({ children }) {
       // Authorize admin access strictly from public.profiles.role
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, archived_at')
         .eq('id', data.user.id)
         .single();
 
@@ -1055,6 +1135,19 @@ export function AuthProvider({ children }) {
         return {
           success: false,
           code: 'admin_profile_not_found',
+          error: message,
+        };
+      }
+
+      if (isArchivedProfile(profile)) {
+        setUser(null);
+        clearAdminSession();
+        await supabase.auth.signOut({ scope: 'local' });
+        const message = 'Account deleted. Contact admin for assistance.';
+        setError(message);
+        return {
+          success: false,
+          code: 'account_deleted',
           error: message,
         };
       }

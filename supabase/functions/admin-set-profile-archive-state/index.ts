@@ -112,5 +112,44 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: updateError?.message || 'Profile archive state was not updated.' }, 400);
   }
 
+  const { data: authUserData, error: getAuthUserError } = await supabaseAdmin.auth.admin.getUserById(targetId);
+
+  if (getAuthUserError || !authUserData?.user) {
+    const rollbackArchivedAt = shouldArchive ? null : targetProfile.archived_at || null;
+    await supabaseAdmin
+      .from('profiles')
+      .update({ archived_at: rollbackArchivedAt, updated_at: new Date().toISOString() })
+      .eq('id', targetId);
+
+    return jsonResponse({ error: getAuthUserError?.message || 'Auth user not found.' }, 400);
+  }
+
+  const existingAppMetadata = authUserData.user.app_metadata || {};
+  const existingUserMetadata = authUserData.user.user_metadata || {};
+  const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(targetId, {
+    ban_duration: shouldArchive ? '876000h' : 'none',
+    app_metadata: {
+      ...existingAppMetadata,
+      account_archived: shouldArchive,
+      account_archived_at: archivedAt,
+    },
+    user_metadata: {
+      ...existingUserMetadata,
+      account_deactivated: shouldArchive,
+      account_deleted: shouldArchive,
+      account_deleted_at: archivedAt,
+    },
+  });
+
+  if (authUpdateError) {
+    const rollbackArchivedAt = shouldArchive ? null : targetProfile.archived_at || null;
+    await supabaseAdmin
+      .from('profiles')
+      .update({ archived_at: rollbackArchivedAt, updated_at: new Date().toISOString() })
+      .eq('id', targetId);
+
+    return jsonResponse({ error: authUpdateError.message || 'Auth user archive state was not updated.' }, 400);
+  }
+
   return jsonResponse({ profile });
 });

@@ -59,12 +59,11 @@ function getDisplayName(profile, fallbackId = '') {
 }
 
 function isDeletedProfile(profile) {
-  const isArchive = profile?.is_archive;
   return (
     profile?.archived_at !== null &&
     profile?.archived_at !== undefined &&
     profile?.archived_at !== ''
-  ) || isArchive === true || isArchive === 1 || isArchive === '1' || String(isArchive).toLowerCase() === 'true';
+  );
 }
 
 function getAuditActionClass(action) {
@@ -920,7 +919,7 @@ function AdminDashboardPage() {
         entityType: 'profiles',
         entityId: user.id,
         oldValues: null,
-        newValues: profile || { id: user.id, ...profilePayloadFromUserForm(), archived_at: null, is_archive: false },
+        newValues: profile || { id: user.id, ...profilePayloadFromUserForm(), archived_at: null },
       });
       showToast('User created');
       setCreatingUser(false);
@@ -961,12 +960,11 @@ function AdminDashboardPage() {
 
   const setUserArchiveState = async (user, shouldArchive) => {
     const archivedAt = shouldArchive ? new Date().toISOString() : null;
-    const isArchive = shouldArchive;
     const label = shouldArchive ? 'archive' : 'restore';
-    const newValues = { ...user, archived_at: archivedAt, is_archive: isArchive };
+    const newValues = { ...user, archived_at: archivedAt };
     const { error: archiveError } = await supabase
       .from('profiles')
-      .update({ archived_at: archivedAt, is_archive: isArchive, updated_at: new Date().toISOString() })
+      .update({ archived_at: archivedAt, updated_at: new Date().toISOString() })
       .eq('id', user.id);
     if (archiveError) {
       showToast(archiveError.message || `Failed to ${label} user`, 'error');
@@ -979,8 +977,8 @@ function AdminDashboardPage() {
       oldValues: user,
       newValues,
     });
-    setProfiles(prev => prev.map(u => u.id === user.id ? { ...u, archived_at: archivedAt, is_archive: isArchive } : u));
-    setEditingUser(prev => prev?.id === user.id ? { ...prev, archived_at: archivedAt, is_archive: isArchive } : prev);
+    setProfiles(prev => prev.map(u => u.id === user.id ? { ...u, archived_at: archivedAt } : u));
+    setEditingUser(prev => prev?.id === user.id ? { ...prev, archived_at: archivedAt } : prev);
     showToast(shouldArchive ? 'User deleted' : 'User restored');
   };
 

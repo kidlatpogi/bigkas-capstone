@@ -352,10 +352,62 @@ body:has(.admin-dashboard-page) .main-content {
   gap: 0.5rem;
 }
 
+.admin-privacy-status--warning .admin-kpi-value {
+  color: #b45309;
+}
+
+.admin-privacy-status--checking .admin-kpi-value {
+  color: var(--muted);
+}
+
 .admin-kpi-footer {
   margin: 0.6rem 0 0;
   font-size: 0.78rem;
   color: var(--muted);
+}
+
+.admin-health-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 128px;
+  border-left: 6px solid #94a3b8;
+}
+
+.admin-health-card h3 {
+  margin: 0;
+  color: var(--text);
+}
+
+.admin-health-card p:not(.admin-kpi-label) {
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+
+.admin-health-card--online {
+  border-left-color: #10b981;
+}
+
+.admin-health-card--degraded,
+.admin-health-card--checking {
+  border-left-color: #f59e0b;
+}
+
+.admin-health-card--down {
+  border-left-color: #ef4444;
+}
+
+.admin-health-latency {
+  flex: 0 0 auto;
+  min-width: 92px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #f8fafc;
+  color: var(--text);
+  font-weight: 800;
+  text-align: center;
 }
 
 .admin-note {

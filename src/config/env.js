@@ -8,6 +8,7 @@ const normalizedAdminLoginSlug = (import.meta.env.VITE_ADMIN_LOGIN_SLUG || '')
   .replace(/^\/+|\/+$/g, '');
 
 const PROD_PYTHON_SERVICE_FALLBACK = 'https://kidlatpogi17-capstone-bigkas-backend.hf.space';
+const PROD_CLOUDFLARE_AI_WORKER_FALLBACK = 'https://b01-ai-worker.dzeref4000.workers.dev';
 
 function normalizeBaseUrl(url) {
   return String(url || '').trim().replace(/\/+$/, '');
@@ -35,6 +36,9 @@ export const ENV = {
   SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY,
   PYTHON_SERVICE_URL: resolveBackendBaseUrl(),
   API_BASE_URL: resolveBackendBaseUrl(),
+  CLOUDFLARE_AI_WORKER_URL:
+    normalizeBaseUrl(import.meta.env.VITE_CLOUDFLARE_AI_WORKER_URL) ||
+    PROD_CLOUDFLARE_AI_WORKER_FALLBACK,
   ENABLE_SESSION_PERSISTENCE: import.meta.env.VITE_ENABLE_SESSION_PERSISTENCE !== 'false',
   ENABLE_DAILY_QUOTE_FETCH:
     (import.meta.env.PROD && import.meta.env.VITE_ENABLE_DAILY_QUOTE_FETCH !== 'false') ||

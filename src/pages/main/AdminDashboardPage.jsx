@@ -24,10 +24,12 @@ import 'react-loading-skeleton/dist/skeleton.css';
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
+import { ENV } from '../../config/env';
 import './AdminDashboardPage.css';
 
 const RETENTION_DAYS = 14;
 const SIDEBAR_WIDTH = 280;
+const SERVICE_HEALTH_TIMEOUT_MS = 8000;
 const PIE_COLORS = ['#33d2a4', '#51dfb5', '#7bedcc', '#a8f5e1'];
 const USER_FORM_INITIAL = {
   email: '',
@@ -72,6 +74,84 @@ function getArchivedAt(profile) {
   const archivedAt = String(profile.archived_at).trim();
   if (!archivedAt || archivedAt.toLowerCase() === 'null') return null;
   return archivedAt;
+}
+
+function getHealthUrl(baseUrl, path) {
+  return `${String(baseUrl || '').replace(/\/+$/, '')}${path}`;
+}
+
+async function probeHealthEndpoint(url, options = {}) {
+  const startedAt = performance.now();
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), SERVICE_HEALTH_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(url, {
+      cache: 'no-store',
+      ...options,
+      headers: {
+        Accept: 'application/json',
+        ...(options.headers || {}),
+      },
+      signal: controller.signal,
+    });
+    const latencyMs = Math.round(performance.now() - startedAt);
+    const contentType = response.headers.get('content-type') || '';
+
+    if (contentType.includes('text/html')) {
+      return {
+        status: 'degraded',
+        label: 'Starting',
+        detail: 'Service returned startup page',
+        latencyMs,
+      };
+    }
+
+    if (!response.ok) {
+      return {
+        status: 'down',
+        label: 'Offline',
+        detail: `HTTP ${response.status}`,
+        latencyMs,
+      };
+    }
+
+    return {
+      status: 'online',
+      label: 'Healthy',
+      detail: `HTTP ${response.status}`,
+      latencyMs,
+    };
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
+async function probeServiceHealth(candidates) {
+  for (const candidate of candidates) {
+    try {
+      const result = await probeHealthEndpoint(candidate.url, candidate.options);
+      if (result.status === 'online' || result.status === 'degraded') {
+        return { ...result, checkedUrl: candidate.url };
+      }
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        return {
+          status: 'down',
+          label: 'Timeout',
+          detail: `No response within ${SERVICE_HEALTH_TIMEOUT_MS / 1000}s`,
+          checkedUrl: candidate.url,
+        };
+      }
+    }
+  }
+
+  return {
+    status: 'down',
+    label: 'Offline',
+    detail: 'Health endpoint unavailable',
+    checkedUrl: candidates[0]?.url || '',
+  };
 }
 
 function isDeletedProfile(profile) {
@@ -327,6 +407,10 @@ function AdminDashboardPage() {
   const [metrics, setMetrics] = useState([]);
   const [moduleViews, setModuleViews] = useState([]);
   const [activityCompletions, setActivityCompletions] = useState([]);
+  const [serviceHealth, setServiceHealth] = useState({
+    huggingFace: { status: 'checking', label: 'Checking', detail: 'Checking backend health', latencyMs: null },
+    cloudflare: { status: 'checking', label: 'Checking', detail: 'Checking Worker health', latencyMs: null },
+  });
   const [auditLogs, setAuditLogs] = useState([]);
   const [authSecurityEvents, setAuthSecurityEvents] = useState([]);
   const [auditSearchQuery, setAuditSearchQuery] = useState('');
@@ -428,6 +512,35 @@ function AdminDashboardPage() {
     loadCore();
     return () => { active = false; };
   }, [navigate]);
+
+  useEffect(() => {
+    if (activePage !== 'overview') return;
+    let active = true;
+
+    async function loadServiceHealth() {
+      setServiceHealth({
+        huggingFace: { status: 'checking', label: 'Checking', detail: 'Checking backend health', latencyMs: null },
+        cloudflare: { status: 'checking', label: 'Checking', detail: 'Checking Worker health', latencyMs: null },
+      });
+
+      const [huggingFace, cloudflare] = await Promise.all([
+        probeServiceHealth([
+          { url: getHealthUrl(ENV.PYTHON_SERVICE_URL, '/health') },
+          { url: getHealthUrl(ENV.PYTHON_SERVICE_URL, '/api/health') },
+        ]),
+        probeServiceHealth([
+          { url: getHealthUrl(ENV.CLOUDFLARE_AI_WORKER_URL, '/health') },
+          { url: getHealthUrl(ENV.CLOUDFLARE_AI_WORKER_URL, '/random-topic') },
+        ]),
+      ]);
+
+      if (!active) return;
+      setServiceHealth({ huggingFace, cloudflare });
+    }
+
+    loadServiceHealth();
+    return () => { active = false; };
+  }, [activePage]);
 
   useEffect(() => {
     if (!isSuperadmin || (activePage !== 'settings' && activePage !== 'audit')) return;
@@ -572,6 +685,29 @@ function AdminDashboardPage() {
       speechDeltaText: `+${sessions.filter(s => new Date(s.created_at) >= oneWeekAgo).length} this week`
     };
   }, [visibleUsers, sessions]);
+
+  const privacyCompliance = useMemo(() => {
+    const cutoff = shiftRange(new Date(), 'day', -RETENTION_DAYS).getTime();
+    const retainedPastWindow = sessions.filter((session) => {
+      const createdAt = new Date(session.created_at).getTime();
+      return Number.isFinite(createdAt) && createdAt < cutoff;
+    }).length;
+
+    if (loading) {
+      return { label: 'Checking', status: 'checking', icon: 'checking', footer: `${RETENTION_DAYS}-day retention check` };
+    }
+
+    if (retainedPastWindow > 0) {
+      return {
+        label: 'Review',
+        status: 'warning',
+        icon: 'warning',
+        footer: `${retainedPastWindow} session${retainedPastWindow === 1 ? '' : 's'} past ${RETENTION_DAYS} days`,
+      };
+    }
+
+    return { label: 'Active', status: 'online', icon: 'success', footer: `No sessions past ${RETENTION_DAYS} days` };
+  }, [loading, sessions]);
 
   const joinTrendData = useMemo(() => {
     const days = 14;
@@ -1337,8 +1473,33 @@ function AdminDashboardPage() {
               </article>
               <article className="admin-card admin-kpi-card">
                 <p className="admin-kpi-label">PRIVACY COMPLIANCE</p>
-                <div className="admin-privacy-status"><HiCheckCircle size={30} /><p className="admin-kpi-value admin-kpi-value--privacy">ACTIVE</p></div>
-                <p className="admin-kpi-footer">{RETENTION_DAYS}-day auto-purge</p>
+                <div className={`admin-privacy-status admin-privacy-status--${privacyCompliance.status}`}>
+                  {privacyCompliance.icon === 'success' && <HiCheckCircle size={30} />}
+                  <p className="admin-kpi-value admin-kpi-value--privacy">{privacyCompliance.label}</p>
+                </div>
+                <p className="admin-kpi-footer">{privacyCompliance.footer}</p>
+              </article>
+            </section>
+            <section className="admin-grid admin-grid-2">
+              <article className={`admin-card admin-health-card admin-health-card--${serviceHealth.huggingFace.status}`}>
+                <div>
+                  <p className="admin-kpi-label">HUGGING FACE BACKEND</p>
+                  <h3>{serviceHealth.huggingFace.label}</h3>
+                  <p>{serviceHealth.huggingFace.detail}</p>
+                </div>
+                <span className="admin-health-latency">
+                  {serviceHealth.huggingFace.latencyMs == null ? 'Checking...' : `${serviceHealth.huggingFace.latencyMs} ms`}
+                </span>
+              </article>
+              <article className={`admin-card admin-health-card admin-health-card--${serviceHealth.cloudflare.status}`}>
+                <div>
+                  <p className="admin-kpi-label">CLOUDFLARE AI WORKER</p>
+                  <h3>{serviceHealth.cloudflare.label}</h3>
+                  <p>{serviceHealth.cloudflare.detail}</p>
+                </div>
+                <span className="admin-health-latency">
+                  {serviceHealth.cloudflare.latencyMs == null ? 'Checking...' : `${serviceHealth.cloudflare.latencyMs} ms`}
+                </span>
               </article>
             </section>
             <section className="admin-grid admin-grid-2">

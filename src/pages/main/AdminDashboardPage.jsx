@@ -831,7 +831,11 @@ function AdminDashboardPage() {
       res = res.filter(p => (p.first_name || '').toLowerCase().includes(q) || (p.username || '').toLowerCase().includes(q));
     }
     if (userLevelFilter !== 'all') res = res.filter(p => Number(p.current_level) === Number(userLevelFilter));
-    return res;
+    return [...res].sort((a, b) => {
+      const statusDelta = Number(isDeletedProfile(a)) - Number(isDeletedProfile(b));
+      if (statusDelta !== 0) return statusDelta;
+      return getDisplayName(a, a.id).localeCompare(getDisplayName(b, b.id));
+    });
   }, [profiles, userSearchQuery, userLevelFilter, userStatusFilter]);
 
   const paginatedUsers = useMemo(() => {

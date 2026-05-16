@@ -67,12 +67,15 @@ function getDisplayName(profile, fallbackId = '') {
   return `User ${String(fallbackId).slice(0, 8)}`;
 }
 
+function getArchivedAt(profile) {
+  if (profile?.archived_at === null || profile?.archived_at === undefined) return null;
+  const archivedAt = String(profile.archived_at).trim();
+  if (!archivedAt || archivedAt.toLowerCase() === 'null') return null;
+  return archivedAt;
+}
+
 function isDeletedProfile(profile) {
-  return (
-    profile?.archived_at !== null &&
-    profile?.archived_at !== undefined &&
-    profile?.archived_at !== ''
-  );
+  return Boolean(getArchivedAt(profile));
 }
 
 function isAdminProfile(profile) {
@@ -992,16 +995,19 @@ function AdminDashboardPage() {
 
   const setUserArchiveState = async (user, shouldArchive) => {
     const archivedAt = shouldArchive ? new Date().toISOString() : null;
+    const updatedAt = new Date().toISOString();
     const label = shouldArchive ? 'archive' : 'restore';
-    const newValues = { ...user, archived_at: archivedAt };
-    const { error: archiveError } = await supabase
+    const { data: updatedProfile, error: archiveError } = await supabase
       .from('profiles')
-      .update({ archived_at: archivedAt, updated_at: new Date().toISOString() })
-      .eq('id', user.id);
+      .update({ archived_at: archivedAt, updated_at: updatedAt })
+      .eq('id', user.id)
+      .select('*')
+      .single();
     if (archiveError) {
       showToast(archiveError.message || `Failed to ${label} user`, 'error');
       return;
     }
+    const newValues = updatedProfile || { ...user, archived_at: archivedAt, updated_at: updatedAt };
     await recordAuditLog({
       action: shouldArchive ? 'delete' : 'restore',
       entityType: 'profiles',
@@ -1009,9 +1015,9 @@ function AdminDashboardPage() {
       oldValues: user,
       newValues,
     });
-    setProfiles(prev => prev.map(u => u.id === user.id ? { ...u, archived_at: archivedAt } : u));
-    setEditingUser(prev => prev?.id === user.id ? { ...prev, archived_at: archivedAt } : prev);
-    setEditingAdmin(prev => prev?.id === user.id ? { ...prev, archived_at: archivedAt } : prev);
+    setProfiles(prev => prev.map(u => u.id === user.id ? { ...u, ...newValues } : u));
+    setEditingUser(prev => prev?.id === user.id ? { ...prev, ...newValues } : prev);
+    setEditingAdmin(prev => prev?.id === user.id ? { ...prev, ...newValues } : prev);
     showToast(`${isAdminProfile(user) ? 'Admin' : 'User'} ${shouldArchive ? 'deleted' : 'restored'}`);
   };
 

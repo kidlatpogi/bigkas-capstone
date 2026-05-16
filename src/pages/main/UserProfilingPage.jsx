@@ -8,7 +8,6 @@ import { getAssetUrl, getSpriteUrl, getVoiceUrl } from '../../utils/assetUtils';
 
 const waveWebm = getAssetUrl('Sprites/Robot Animated/Wave-webm.webm');
 const waveMp4 = getAssetUrl('Sprites/Robot Animated/Wave-mp4.mp4');
-const robotReadyImage = getSpriteUrl('Robot/0015.webp');
 const robotQuestionImage = getSpriteUrl('Robot/0012.webp');
 
 const introVoice1 = getVoiceUrl('Introductions/Intro 1.mp3');
@@ -77,11 +76,6 @@ function getSpeakerLevelNumber(score) {
   return 1;
 }
 
-function scoreMap(answer, values = {}) {
-  if (!answer) return values.defaultValue ?? 0;
-  return values[answer] ?? values.defaultValue ?? 0;
-}
-
 function computeBaselineScore(form) {
   const scoring = { Yes: 2, Sometimes: 6, No: 10 };
   let total = 0;
@@ -112,8 +106,6 @@ function isQuestionAnswered(question, value) {
 function UserProfilingPage() {
   const navigate = useNavigate();
   const { updateUserMetadata, user, isAdminAuthenticated } = useAuthContext();
-  const introFirstMessage =
-    "Hello! I'm B-01, your personal guide on this exciting journey to master public speaking.";
   const introSecondMessage =
     'Before we begin, we need to assess your current Public Speaking Level. This includes 2 demographic questions, 10 short profiling questions and one small speaking pre-test. These tests ensure I can customize your experience and guide you smoothly throughout your entire journey!';
   const readyMessage =
@@ -141,8 +133,6 @@ function UserProfilingPage() {
 
   const totalSteps = QUESTIONS.length;
   const currentQuestion = QUESTIONS[currentIndex] || QUESTIONS[0];
-  const progress = Math.round(((currentIndex + 1) / totalSteps) * 100);
-
   const baselineScore = useMemo(() => computeBaselineScore(form), [form]);
   const baselineLevelNumber = useMemo(() => getSpeakerLevelNumber(baselineScore), [baselineScore]);
 
@@ -445,6 +435,11 @@ function UserProfilingPage() {
     console.log('[Profiling] Validation passed. Submitting profile...');
 
     const payload = {
+      demographic_profile: {
+        gender: workingForm.gender,
+        age_range: workingForm.age_range,
+        completed_at: new Date().toISOString(),
+      },
       speaker_profile: {
         completed_at: new Date().toISOString(),
         baseline_score: baselineScore,
@@ -562,15 +557,6 @@ function UserProfilingPage() {
 
     setScreen('demographics');
     setDemographicIndex(0);
-  };
-
-  const handleBackToIntro = () => {
-    stopAllIntroAudios();
-    setIntroStep(0);
-    setIsIntroTypingDone(false);
-    setIsReadyTypingDone(false);
-    setIsOutroTypingDone(false);
-    setScreen('intro');
   };
 
   if (isAdminAuthenticated) return null;

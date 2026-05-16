@@ -14,9 +14,10 @@ const LOGIN_GUARD_PREFIX = 'bigkas_login_guard_v1';
 const MAX_LOGIN_ATTEMPTS = 3;
 const LOGIN_COOLDOWN_SCHEDULE_SECONDS = [30, 120, 900];
 const LOGIN_GUARD_RESET_WINDOW_MS = 24 * 60 * 60 * 1000;
+const GENERIC_LOGIN_FAILURE_MESSAGE = 'Wrong email or password.';
 let loginGuardRpcDisabled = false;
 
-function buildLockoutMessage(waitSeconds, failedAttempts = 0) {
+function buildLockoutMessage(waitSeconds) {
   const seconds = Math.max(1, Number(waitSeconds) || 1);
   
   // Differentiate message based on duration (matching the scale)
@@ -336,12 +337,8 @@ function normalizeLoginError(err, email) {
     code.includes('account_deleted')
   ) {
     return {
-      code: code.includes('account_deleted') || msg.includes('permanently deleted')
-        ? 'account_deleted'
-        : 'account_deactivated',
-      message: msg.includes('permanently deleted') || code.includes('account_deleted')
-        ? 'Account deleted. Contact admin for assistance.'
-        : 'Account deactivated. Contact admin for assistance.',
+      code: 'invalid_credentials',
+      message: GENERIC_LOGIN_FAILURE_MESSAGE,
       requiresEmailConfirmation: false,
     };
   }
@@ -366,7 +363,7 @@ function normalizeLoginError(err, email) {
   ) {
     return {
       code: 'invalid_credentials',
-      message: 'Wrong email or password.',
+      message: GENERIC_LOGIN_FAILURE_MESSAGE,
       requiresEmailConfirmation: false,
     };
   }
@@ -420,19 +417,24 @@ function isBlockedByClient(error) {
 function getAccountBlockedMessage(meta = {}) {
   if (parseMetadataBoolean(meta.account_deleted)) {
     return {
-      code: 'account_deleted',
-      message: 'Account deleted. Contact admin for assistance.',
+      code: 'invalid_credentials',
+      message: GENERIC_LOGIN_FAILURE_MESSAGE,
     };
   }
 
   if (parseMetadataBoolean(meta.account_deactivated)) {
     return {
-      code: 'account_deactivated',
-      message: 'Account deactivated. Contact admin for assistance.',
+      code: 'invalid_credentials',
+      message: GENERIC_LOGIN_FAILURE_MESSAGE,
     };
   }
 
   return null;
+}
+
+function isArchivedProfile(profile) {
+  if (profile?.archived_at === null || profile?.archived_at === undefined) return false;
+  return String(profile.archived_at).trim() !== '';
 }
 
 function deriveOnboardingStage(meta = {}, profile = {}) {
@@ -489,6 +491,8 @@ export function AuthProvider({ children }) {
   const [pendingEmail, setPendingEmail] = useState(null);
   const signupCooldownUntilRef = useRef(0);
   const signupInProgressRef = useRef(false);
+  const loginInProgressRef = useRef(false);
+  const adminLoginInProgressRef = useRef(false);
 
   const resolveAvatarUrl = useCallback((avatarValue) => {
     if (!avatarValue) return null;
@@ -562,24 +566,59 @@ export function AuthProvider({ children }) {
     };
   }, [resolveAvatarUrl]);
 
+  const loadSessionProfile = useCallback(async (userId) => {
+    if (!userId) return { profile: null, error: null };
+
+    const selectProfile = () =>
+      supabase
+        .from('profiles')
+        .select('role, archived_at, is_profiling_completed, is_pre_test_completed, dashboard_tutorial_seen, current_level, speaker_level, diagnostic_score, diagnostic_completed_at')
+        .eq('id', userId)
+        .single();
+
+    let { data: profile, error } = await selectProfile();
+
+    if (error && isJwtExpiredError(error)) {
+      const { session: fresh, error: refErr } = await ensureFreshAccessToken();
+      if (!refErr && fresh) {
+        ({ data: profile, error } = await selectProfile());
+      }
+    }
+
+    return { profile, error };
+  }, []);
+
+  const rejectArchivedSession = useCallback(async (session) => {
+    const userId = session?.user?.id;
+    if (!userId) return null;
+
+    const { profile, error } = await loadSessionProfile(userId);
+
+    if (error || !profile) {
+      const message = GENERIC_LOGIN_FAILURE_MESSAGE;
+      setError(message);
+      setUser(null);
+      clearAdminSession();
+      await supabase.auth.signOut({ scope: 'local' });
+      return { code: 'invalid_credentials', message };
+    }
+
+    if (isArchivedProfile(profile)) {
+      const message = GENERIC_LOGIN_FAILURE_MESSAGE;
+      setError(message);
+      setUser(null);
+      clearAdminSession();
+      await supabase.auth.signOut({ scope: 'local' });
+      return { code: 'invalid_credentials', message };
+    }
+
+    return null;
+  }, [clearAdminSession, loadSessionProfile]);
+
   const fetchAndMergeProfile = useCallback(async (userId) => {
     if (!userId) return;
     try {
-      const selectProfile = () =>
-        supabase
-          .from('profiles')
-          .select('is_profiling_completed, is_pre_test_completed, dashboard_tutorial_seen, current_level, speaker_level, diagnostic_score, diagnostic_completed_at')
-          .eq('id', userId)
-          .single();
-
-      let { data: profile, error } = await selectProfile();
-
-      if (error && isJwtExpiredError(error)) {
-        const { session: fresh, error: refErr } = await ensureFreshAccessToken();
-        if (!refErr && fresh) {
-          ({ data: profile, error } = await selectProfile());
-        }
-      }
+      const { profile, error } = await loadSessionProfile(userId);
 
       if (error) {
         if (error.code !== 'PGRST116') { // PGRST116 is 'no rows found'
@@ -591,6 +630,14 @@ export function AuthProvider({ children }) {
       }
 
       if (profile) {
+        if (isArchivedProfile(profile)) {
+          setError(GENERIC_LOGIN_FAILURE_MESSAGE);
+          setUser(null);
+          clearAdminSession();
+          await supabase.auth.signOut({ scope: 'local' });
+          return;
+        }
+
         setUser(prev => {
           if (prev?.id !== userId) return prev;
 
@@ -626,7 +673,7 @@ export function AuthProvider({ children }) {
     } catch (err) {
       console.error('Bigkas Auth: unexpected error fetching profile:', err);
     }
-  }, []);
+  }, [clearAdminSession, loadSessionProfile]);
 
   useEffect(() => {
     if (!user?.id || !user?.onboardingStage) return;
@@ -733,6 +780,15 @@ export function AuthProvider({ children }) {
         return;
       }
 
+      const blockedProfile = await rejectArchivedSession(session);
+      if (blockedProfile) {
+        isBootstrapped = true;
+        clearTimeout(bootstrapTimeout);
+        setIsLoading(false);
+        setIsInitializing(false);
+        return;
+      }
+
       const nextUser = buildUser(session);
       setUser(nextUser);
       if (!nextUser) {
@@ -752,10 +808,17 @@ export function AuthProvider({ children }) {
       setIsInitializing(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       // Skip auth state changes while signup is in progress to prevent race conditions
       // that would reset pendingEmailVerification or cause unwanted navigation
       if (signupInProgressRef.current) return;
+      // User password login performs an archived-profile check after Supabase accepts
+      // credentials. Keep the session unpublished until that check finishes.
+      if (loginInProgressRef.current) return;
+      // Admin login performs an additional role check after Supabase accepts
+      // credentials. Do not publish the session as a regular user before that
+      // check finishes, or public routes can briefly render the user login flow.
+      if (adminLoginInProgressRef.current) return;
 
       const blockedAccount = getAccountBlockedMessage(session?.user?.user_metadata || {});
       if (blockedAccount) {
@@ -767,6 +830,9 @@ export function AuthProvider({ children }) {
         void supabase.auth.signOut({ scope: 'local' });
         return;
       }
+
+      const blockedProfile = await rejectArchivedSession(session);
+      if (blockedProfile) return;
 
       const nextUser = buildUser(session);
       const emailConfirmed = !!session?.user?.email_confirmed_at;
@@ -796,7 +862,7 @@ export function AuthProvider({ children }) {
       clearTimeout(bootstrapTimeout);
       subscription.unsubscribe();
     };
-  }, [buildUser, clearAdminSession, fetchAndMergeProfile]);
+  }, [buildUser, clearAdminSession, fetchAndMergeProfile, rejectArchivedSession]);
 
   /* ── Refresh JWT when the tab becomes visible (background tabs throttle auto-refresh timers) ── */
   useEffect(() => {
@@ -848,6 +914,7 @@ export function AuthProvider({ children }) {
     setIsLoading(true);
     setError(null);
     clearAdminSession();
+    loginInProgressRef.current = true;
 
     try {
       // Direct Supabase login (no gateway)
@@ -913,20 +980,31 @@ export function AuthProvider({ children }) {
       const meta = data.user?.user_metadata || {};
       if (parseMetadataBoolean(meta.account_deactivated) || parseMetadataBoolean(meta.account_deleted)) {
         await supabase.auth.signOut({ scope: 'local' });
-        const blockedMessage = parseMetadataBoolean(meta.account_deleted)
-          ? 'Account deleted. Contact admin for assistance.'
-          : 'Account deactivated. Contact admin for assistance.';
+        const blockedMessage = GENERIC_LOGIN_FAILURE_MESSAGE;
         setError(blockedMessage);
         return {
           success: false,
-          code: parseMetadataBoolean(meta.account_deleted) ? 'account_deleted' : 'account_deactivated',
+          code: 'invalid_credentials',
           error: blockedMessage,
+        };
+      }
+
+      const blockedProfile = await rejectArchivedSession(data.session);
+      if (blockedProfile) {
+        return {
+          success: false,
+          code: blockedProfile.code,
+          error: blockedProfile.message,
         };
       }
 
       setPendingEmailVerification(false);
       setPendingEmail(null);
-  await registerLoginSuccess('user', normalizedEmail);
+      setUser(buildUser(data.session));
+      if (data.user?.id) {
+        void fetchAndMergeProfile(data.user.id);
+      }
+      await registerLoginSuccess('user', normalizedEmail);
       return { success: true, user: buildUser(data.session) };
     } catch (networkError) {
       setIsLoading(false);
@@ -938,8 +1016,10 @@ export function AuthProvider({ children }) {
       const message = networkError?.message || 'An unexpected error occurred during login. Please try again.';
       setError(message);
       return { success: false, error: message };
+    } finally {
+      loginInProgressRef.current = false;
     }
-  }, [buildUser, clearAdminSession]);
+  }, [buildUser, clearAdminSession, fetchAndMergeProfile, rejectArchivedSession]);
 
   /* ── Admin Login ── */
   const adminLogin = useCallback(async (email, password) => {
@@ -975,12 +1055,11 @@ export function AuthProvider({ children }) {
 
     setIsLoading(true);
     setError(null);
+    adminLoginInProgressRef.current = true;
 
     try {
       // First login with Supabase
       const { data, error: err } = await supabase.auth.signInWithPassword({ email, password });
-
-      setIsLoading(false);
 
       if (err) {
         const normalizedError = normalizeLoginError(err, email);
@@ -1022,6 +1101,8 @@ export function AuthProvider({ children }) {
       if (!emailConfirmed) {
         setPendingEmailVerification(true);
         setPendingEmail(email);
+        setUser(null);
+        clearAdminSession();
         const message = 'Verify your email address first. Then click resend email below if you need a new link.';
         setError(message);
         await supabase.auth.signOut({ scope: 'local' });
@@ -1036,23 +1117,38 @@ export function AuthProvider({ children }) {
       // Authorize admin access strictly from public.profiles.role
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, archived_at')
         .eq('id', data.user.id)
         .single();
 
       if (profileError || !profile || !profile.role) {
+        setUser(null);
         clearAdminSession();
         await supabase.auth.signOut({ scope: 'local' });
-        const message = 'Admin profile not found.';
+        const message = GENERIC_LOGIN_FAILURE_MESSAGE;
         setError(message);
         return {
           success: false,
-          code: 'admin_profile_not_found',
+          code: 'invalid_credentials',
+          error: message,
+        };
+      }
+
+      if (isArchivedProfile(profile)) {
+        setUser(null);
+        clearAdminSession();
+        await supabase.auth.signOut({ scope: 'local' });
+        const message = GENERIC_LOGIN_FAILURE_MESSAGE;
+        setError(message);
+        return {
+          success: false,
+          code: 'invalid_credentials',
           error: message,
         };
       }
 
       if (profile.role !== 'admin' && profile.role !== 'superadmin') {
+        setUser(null);
         clearAdminSession();
         await supabase.auth.signOut({ scope: 'local' });
         const message = 'Access Denied: Admin privileges required.';
@@ -1070,8 +1166,9 @@ export function AuthProvider({ children }) {
       persistAdminSession();
       await registerLoginSuccess('admin', normalizedEmail);
       return { success: true, user: buildUser(data.session) };
-    } catch (err) {
-      setIsLoading(false);
+    } catch {
+      setUser(null);
+      clearAdminSession();
       const message = 'Admin login failed. Please try again.';
       setError(message);
       return {
@@ -1079,6 +1176,9 @@ export function AuthProvider({ children }) {
         code: 'admin_login_error',
         error: message,
       };
+    } finally {
+      adminLoginInProgressRef.current = false;
+      setIsLoading(false);
     }
   }, [buildUser, clearAdminSession, persistAdminSession]);
 
@@ -1333,6 +1433,12 @@ export function AuthProvider({ children }) {
     }
     if (updates.dashboard_tutorial_seen !== undefined) {
       profileUpdates.dashboard_tutorial_seen = !!updates.dashboard_tutorial_seen;
+    }
+    if (updates.demographic_profile !== undefined) {
+      profileUpdates.demographic_profile = updates.demographic_profile;
+    }
+    if (updates.speaker_profile !== undefined) {
+      profileUpdates.speaker_profile = updates.speaker_profile;
     }
     if (updates.is_audio_muted !== undefined) {
       if (typeof window !== 'undefined') {

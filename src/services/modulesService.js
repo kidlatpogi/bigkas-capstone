@@ -58,27 +58,42 @@ export async function fetchModules() {
     // Attempt query with timestamps enabled
     const { data, error } = await supabase
       .from('modules')
-      .select('level_number, level_name, lesson_number, title, content, date_started, date_ended')
+        .select('id, level_number, level_name, lesson_number, title, content, date_started, date_ended')
       .order('lesson_number', { ascending: true });
 
     if (!error && data && data.length > 0) {
       return data;
     }
-  } catch (err) {
+  } catch {
     try {
       // Graceful column fallback if the database has not yet executed the ALTER migration
       const { data, error } = await supabase
         .from('modules')
-        .select('level_number, level_name, lesson_number, title, content')
+        .select('id, level_number, level_name, lesson_number, title, content')
         .order('lesson_number', { ascending: true });
 
       if (!error && data && data.length > 0) {
         return data;
       }
-    } catch (fallbackErr) {
+    } catch {
       // Ignore
     }
   }
   
   return DEFAULT_MODULES;
+}
+
+export async function recordModuleView(moduleId) {
+  if (!moduleId) return;
+  const { data: authData } = await supabase.auth.getUser();
+  const userId = authData?.user?.id;
+  if (!userId) return;
+
+  const { error } = await supabase
+    .from('module_views')
+    .insert({ user_id: userId, module_id: moduleId });
+
+  if (error) {
+    console.warn('Failed to record module view:', error.message);
+  }
 }

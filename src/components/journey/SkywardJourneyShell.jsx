@@ -57,14 +57,16 @@ function SkywardJourneyShell({
 
   /* ── Data fetching scoped to this component ── */
   const { tasks: allTasks, loading, error } = useActivitiesJourneyTasks(selectedLevel);
-
-  // Apply the same filtering as the sidebar to ensure the map shows the correct number of stages.
-  const tasks = useMemo(() => {
+  const speakerPlacementLevel = useMemo(() => {
     const levelProgress = getBigkasLevelFromUser(user);
-    const sLevel = Math.max(1, Math.min(5, Number(levelProgress?.levelNumber) || 1));
+    return Math.max(1, Math.min(5, Number(levelProgress?.levelNumber) || 1));
+  }, [user]);
+
+  // Keep all stages visible; earlier journeys are optional for users placed above them.
+  const tasks = useMemo(() => {
     const pLevel = Math.max(1, Math.min(5, Number(selectedLevel) || 1));
-    return filterActivitiesForJourney(allTasks, sLevel, pLevel);
-  }, [allTasks, user, selectedLevel]);
+    return filterActivitiesForJourney(allTasks, speakerPlacementLevel, pLevel);
+  }, [allTasks, speakerPlacementLevel, selectedLevel]);
 
   const activityMetrics = useMemo(
     () => getActivityMetrics(scopeKey),
@@ -101,11 +103,11 @@ function SkywardJourneyShell({
   const [isPrevLevelDone, setIsPrevLevelDone] = useState(false);
 
   useEffect(() => {
-    setIsPrevLevelDone(selectedLevel <= 1);
-  }, [selectedLevel]);
+    setIsPrevLevelDone(selectedLevel <= 1 || selectedLevel <= speakerPlacementLevel);
+  }, [selectedLevel, speakerPlacementLevel]);
 
   useEffect(() => {
-    if (selectedLevel <= 1) {
+    if (selectedLevel <= 1 || selectedLevel <= speakerPlacementLevel) {
       setIsPrevLevelDone(true);
       return;
     }
@@ -134,7 +136,7 @@ function SkywardJourneyShell({
     
     checkPrev();
     return () => { cancelled = true; };
-  }, [selectedLevel, activityMetrics]);
+  }, [selectedLevel, speakerPlacementLevel, activityMetrics]);
 
   const taskUnlockState = useMemo(() => {
     const state = {};

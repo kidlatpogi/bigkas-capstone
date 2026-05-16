@@ -24,6 +24,7 @@ import 'react-loading-skeleton/dist/skeleton.css';
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
+import { validatePassword } from '../../utils/validators';
 import { ENV } from '../../config/env';
 import './AdminDashboardPage.css';
 
@@ -328,7 +329,7 @@ function AdminPasswordInput({ value, onChange, placeholder, required = true }) {
       <input
         type={isVisible ? 'text' : 'password'}
         required={required}
-        minLength={6}
+        minLength={8}
         placeholder={placeholder}
         value={value}
         onChange={onChange}
@@ -338,6 +339,17 @@ function AdminPasswordInput({ value, onChange, placeholder, required = true }) {
       </button>
     </div>
   );
+}
+
+function getAdminPasswordValidationMessage(password, confirmPassword) {
+  const passwordValidation = validatePassword(password);
+  if (!passwordValidation.isValid) {
+    return passwordValidation.errors[0];
+  }
+  if (password !== confirmPassword) {
+    return 'Passwords do not match';
+  }
+  return '';
 }
 
 async function createConfirmedAdminUser(payload) {
@@ -1323,8 +1335,9 @@ function AdminDashboardPage() {
 
   const submitCreateUser = async (e) => {
     e.preventDefault();
-    if (userForm.password !== userForm.confirm_password) {
-      showToast('Passwords do not match', 'error');
+    const passwordError = getAdminPasswordValidationMessage(userForm.password, userForm.confirm_password);
+    if (passwordError) {
+      showToast(passwordError, 'error');
       return;
     }
     setSavingUser(true);
@@ -1444,8 +1457,9 @@ function AdminDashboardPage() {
 
   const submitCreateAdmin = async (e) => {
     e.preventDefault();
-    if (createAdminForm.password !== createAdminForm.confirm_password) {
-      showToast('Passwords do not match', 'error');
+    const passwordError = getAdminPasswordValidationMessage(createAdminForm.password, createAdminForm.confirm_password);
+    if (passwordError) {
+      showToast(passwordError, 'error');
       return;
     }
     setCreatingAdmin(true);
@@ -1889,7 +1903,7 @@ function AdminDashboardPage() {
           <AdminUserField label="Last Name">
             <input type="text" placeholder="Last name" value={userForm.last_name} onChange={e => setUserForm(p => ({ ...p, last_name: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Password" help="Password for this user account; minimum 6 characters.">
+          <AdminUserField label="Password" help="At least 8 characters with uppercase, lowercase, and a number.">
             <AdminPasswordInput placeholder="Password" value={userForm.password} onChange={e => setUserForm(p => ({ ...p, password: e.target.value }))} />
           </AdminUserField>
           <AdminUserField label="Confirm Password" help="Must match the password above.">

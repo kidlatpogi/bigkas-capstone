@@ -28,7 +28,7 @@ import { useJourneyRemoteState } from '../../hooks/useJourneyRemoteState';
 import { ensureJourneyStarted, updateJourneyCurrentActivity, updateUserProgressLevel } from '../../services/journeyProgressService';
 import { RANDOM_TOPICS } from '../../utils/practiceData';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
-import { filterActivitiesForJourney, JOURNEY_STAGE_LIMITS } from '../../utils/journeyFiltering';
+import { filterActivitiesForJourney } from '../../utils/journeyFiltering';
 
 const iconFire = getAssetUrl('icons/Icon-Fire.svg');
 const robotMorningImage = getSpriteUrl('Robot/0018.webp');
@@ -230,17 +230,19 @@ function ActivityPage() {
   );
   const [entranceFromNav] = useState(() => location.state?.skywardEntrance === true);
   const scopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
-  /** Activities are filtered by `target_level` = Bigkas rank (same as dashboard `levelProgress.levelName`). */
-  const { tasks: allTasks, loading: activitiesLoading, error: activitiesError } = useActivitiesJourneyTasks(user?.progressLevelNumber || 1);
-
   const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
-  const currentJourneyNumber = Math.max(1, Math.min(5, Number(user?.progressLevelNumber || user?.progress_level_number || 1) || 1));
+  const storedJourneyNumber = Math.max(1, Math.min(5, Number(user?.progressLevelNumber || user?.progress_level_number || 1) || 1));
+  const placementJourneyNumber = Math.max(1, Math.min(5, Number(levelProgress?.levelNumber) || 1));
+  const currentJourneyNumber = Math.max(storedJourneyNumber, placementJourneyNumber);
+  /** Activities are filtered by `target_level` = Bigkas rank (same as dashboard `levelProgress.levelName`). */
+  const { tasks: allTasks, loading: activitiesLoading, error: activitiesError } = useActivitiesJourneyTasks(currentJourneyNumber);
+
   const tasks = useMemo(() => {
     // We use the derived level number (from getBigkasLevelFromUser) to ensure 
     // the filtering matches the rank shown in the UI (e.g. Silver = Level 2).
     const sLevel = levelProgress?.levelNumber || 1;
-    return filterActivitiesForJourney(allTasks, sLevel, user?.progressLevelNumber || 1);
-  }, [allTasks, levelProgress?.levelNumber, user?.progressLevelNumber]);
+    return filterActivitiesForJourney(allTasks, sLevel, currentJourneyNumber);
+  }, [allTasks, levelProgress?.levelNumber, currentJourneyNumber]);
   const { metricsSyncKey, refreshJourney } = useJourneyRemoteState(user);
   const stampResetTimeoutRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -366,7 +368,7 @@ function ActivityPage() {
     if (!user?.id || tasks.length === 0 || activitiesLoading) return;
 
     if (completedTaskCount === tasks.length) {
-      const currentLevel = Number(user.progressLevelNumber || 1);
+      const currentLevel = Number(currentJourneyNumber || 1);
       if (currentLevel < 5) {
         const nextLevel = currentLevel + 1;
 
@@ -391,7 +393,7 @@ function ActivityPage() {
       // Reset if user somehow goes back (e.g. data sync)
       isAdvancingRef.current = null;
     }
-  }, [completedTaskCount, tasks.length, user?.id, user?.progressLevelNumber, activitiesLoading, updateUserMetadata]);
+  }, [completedTaskCount, tasks.length, user?.id, currentJourneyNumber, activitiesLoading, updateUserMetadata]);
 
   const sessionCountsByDay = useMemo(() => {
     const counts = new Map();
@@ -682,17 +684,23 @@ function ActivityPage() {
       welcomeText = "Welcome! I’ve analyzed your profile and we’re starting from the ground up. You’ll be taking the full 30-stage path for Journey 1 to ensure your vocal and visual foundations are unbreakable. Let’s build your mastery, stage by stage.";
       welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%201.mp3";
     } else if (level === 2) {
-      welcomeText = "Welcome! Based on your level, I’ve optimized your curriculum. Since you already show solid potential, I’ve trimmed Journey 1 down to 20 essential stages. We’ll move faster through the basics so you can reach the advanced challenges sooner. Let’s begin.";
       welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%202.mp3";
     } else if (level === 3) {
-      welcomeText = "Welcome back. Your experience allows us to skip the fluff. I’ve recalibrated your Journey 1 to just 15 high-impact stages, and Journey 2 to 20. We’re focusing only on the core essentials before we dive into the deep technical training. Systems ready?";
       welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%203.mp3";
     } else if (level === 4) {
-      welcomeText = "Welcome! Your skills are advanced, so I’ve streamlined your training. I’ve cut Journeys 1, 2, and 3 down to the bare essentials, removing over 40 stages of repetitive drills. We’re moving fast through the basics to get you straight to the Specialist training. Let’s get to work.";
       welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%204.mp3";
     } else if (level >= 5) {
-      welcomeText = "Welcome, Expert. We’re skipping the grind. I’ve compressed Journeys 1 through 4 into a rapid-fire calibration to respect your expertise. We’re fast-forwarding past the basics so you can focus entirely on the high-stakes challenges of the final Journey. Mastery starts here.";
       welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%205_new.mp3";
+    }
+
+    if (level === 2) {
+      welcomeText = "Welcome! Based on your level, your main path starts at Journey 2. Journey 1 still has its full 30-stage path available as optional practice whenever you want to review the foundations. Let's begin.";
+    } else if (level === 3) {
+      welcomeText = "Welcome back. Your main path starts at Journey 3, and Journeys 1 and 2 remain fully available as optional practice. You can review earlier foundations whenever you want, or continue with the challenge matched to your level. Systems ready?";
+    } else if (level === 4) {
+      welcomeText = "Welcome! Your main path starts at Journey 4. Journeys 1, 2, and 3 are still complete and available as optional practice if you want extra polishing before the specialist work. Let's get to work.";
+    } else if (level >= 5) {
+      welcomeText = "Welcome, Expert. Your main path starts at Journey 5, while Journeys 1 through 4 remain fully available as optional practice. You can revisit any foundation path whenever it helps. Mastery starts here.";
     }
 
     const fullSteps = [
@@ -770,14 +778,8 @@ function ActivityPage() {
   }, [user?.speakerLevelNumber, user?.onboardingLevelAnalysis, user?.speakerEntryScore, user?.speaker_entry_score, location.state?.skipTutorialIntro]);
 
   const assessmentTutorialSteps = useMemo(() => {
-    const sLevel = resolveDashboardTutorialSpeakerLevel(user);
-    const pLevel = user?.progressLevelNumber || 1;
-    const reducedTo = JOURNEY_STAGE_LIMITS[sLevel]?.[pLevel] ?? 30;
-
-    let text = `We noticed that you are a level ${sLevel} speaker, so we reduced Journey ${pLevel} to ${reducedTo} stages for you!`;
-    if (reducedTo >= 30) {
-      text = `Welcome to Journey ${pLevel}! You have ${reducedTo} stages to complete. Let's get started!`;
-    }
+    const pLevel = currentJourneyNumber;
+    const text = `Welcome to Journey ${pLevel}! You have the full 30-stage path to complete. Earlier journeys remain optional practice when your assessed level is higher.`;
 
     return [
       {
@@ -789,7 +791,7 @@ function ActivityPage() {
         robot: tutorialRobotStep1,
       },
     ];
-  }, [user?.speakerLevelNumber, user?.onboardingLevelAnalysis, user?.speakerEntryScore, user?.speaker_entry_score, user?.progressLevelNumber]);
+  }, [currentJourneyNumber]);
 
   useEffect(() => {
     if (user?.isAudioMuted) return;
@@ -1037,14 +1039,6 @@ function ActivityPage() {
       updateUserMetadata({ dashboard_tutorial_seen: true }).catch(() => { });
     }
 
-    const sLevel = resolveDashboardTutorialSpeakerLevel(user);
-    const pLevel = Number(user?.progressLevelNumber || 1);
-    const reducedTo = JOURNEY_STAGE_LIMITS[sLevel]?.[pLevel] ?? 30;
-
-    // Show assessment modal if the current journey has reduced stages for this user
-    if (reducedTo < 30) {
-      setShowAssessmentModal(true);
-    }
   }, [user, updateUserMetadata]);
 
   const handleCloseFreeSpeechOverlay = useCallback(() => {

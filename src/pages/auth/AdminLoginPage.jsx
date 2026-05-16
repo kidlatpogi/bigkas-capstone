@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import BackButton from '../../components/common/BackButton';
 import PasswordToggle from '../../components/common/PasswordToggle';
 import PushButton from '../../components/common/PushButton';
@@ -169,20 +168,12 @@ export default function AdminLoginPage({ managePageClass = true }) {
           aria-label="Back to home"
         />
 
-        <motion.div
+        <div
           className="auth-form-container floating-card"
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
         >
-          <motion.h2
-            className="auth-form-title"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
+          <h2 className="auth-form-title">
             ADMIN LOGIN
-          </motion.h2>
+          </h2>
 
           <form className="auth-form" onSubmit={handleSubmit} noValidate>
             {errors.submit && (
@@ -247,7 +238,7 @@ export default function AdminLoginPage({ managePageClass = true }) {
               {isLockedOut ? `LOCKED (${formatCountdown(lockoutSeconds)})` : 'ENTER ADMIN'}
             </PushButton>
           </form>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

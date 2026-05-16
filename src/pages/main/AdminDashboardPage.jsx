@@ -27,10 +27,11 @@ import { ROUTES } from '../../utils/constants';
 import { ENV } from '../../config/env';
 import './AdminDashboardPage.css';
 
-const RETENTION_DAYS = 14;
 const SIDEBAR_WIDTH = 280;
 const SERVICE_HEALTH_TIMEOUT_MS = 8000;
 const DASHBOARD_QUERY_TIMEOUT_MS = 12000;
+const SERVICE_HEALTH_CACHE_KEY = 'bigkas_admin_service_health_v1';
+const SERVICE_HEALTH_CACHE_TTL_MS = 5 * 60 * 1000;
 const PIE_COLORS = ['#33d2a4', '#51dfb5', '#7bedcc', '#a8f5e1'];
 const USER_FORM_INITIAL = {
   email: '',
@@ -165,6 +166,44 @@ async function withTimeout(promise, label, timeoutMs = DASHBOARD_QUERY_TIMEOUT_M
     return await Promise.race([promise, timeout]);
   } finally {
     window.clearTimeout(timeoutId);
+  }
+}
+
+function getDefaultServiceHealth() {
+  return {
+    huggingFace: { status: 'checking', label: 'Checking', detail: 'Checking backend health', latencyMs: null },
+    cloudflare: { status: 'checking', label: 'Checking', detail: 'Checking Worker health', latencyMs: null },
+  };
+}
+
+function readCachedServiceHealth() {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const raw = window.localStorage.getItem(SERVICE_HEALTH_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.value || Date.now() - Number(parsed.timestamp || 0) > SERVICE_HEALTH_CACHE_TTL_MS) {
+      window.localStorage.removeItem(SERVICE_HEALTH_CACHE_KEY);
+      return null;
+    }
+    return parsed.value;
+  } catch {
+    window.localStorage.removeItem(SERVICE_HEALTH_CACHE_KEY);
+    return null;
+  }
+}
+
+function writeCachedServiceHealth(value) {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.localStorage.setItem(SERVICE_HEALTH_CACHE_KEY, JSON.stringify({
+      timestamp: Date.now(),
+      value,
+    }));
+  } catch {
+    // Health cache is an optimization only.
   }
 }
 
@@ -405,7 +444,6 @@ function AdminDashboardPage() {
   const { logout } = useAuthContext();
 
   const [loading, setLoading] = useState(true);
-  const [coreLoaded, setCoreLoaded] = useState(false);
   const [error, setError] = useState('');
   const [role, setRole] = useState('');
   const [currentAdminId, setCurrentAdminId] = useState('');
@@ -422,10 +460,7 @@ function AdminDashboardPage() {
   const [metrics, setMetrics] = useState([]);
   const [moduleViews, setModuleViews] = useState([]);
   const [activityCompletions, setActivityCompletions] = useState([]);
-  const [serviceHealth, setServiceHealth] = useState({
-    huggingFace: { status: 'checking', label: 'Checking', detail: 'Checking backend health', latencyMs: null },
-    cloudflare: { status: 'checking', label: 'Checking', detail: 'Checking Worker health', latencyMs: null },
-  });
+  const [serviceHealth, setServiceHealth] = useState(() => readCachedServiceHealth() || getDefaultServiceHealth());
   const [auditLogs, setAuditLogs] = useState([]);
   const [authSecurityEvents, setAuthSecurityEvents] = useState([]);
   const [auditSearchQuery, setAuditSearchQuery] = useState('');
@@ -473,7 +508,6 @@ function AdminDashboardPage() {
     let active = true;
     async function loadCore() {
       setLoading(true);
-      setCoreLoaded(false);
       setError('');
       try {
         const { data: authData, error: authError } = await supabase.auth.getUser();
@@ -550,7 +584,6 @@ function AdminDashboardPage() {
         if (active) setError(e.message || 'Failed to load admin dashboard.');
       } finally {
         if (active) {
-          setCoreLoaded(true);
           setLoading(false);
         }
       }
@@ -564,10 +597,13 @@ function AdminDashboardPage() {
     let active = true;
 
     async function loadServiceHealth() {
-      setServiceHealth({
-        huggingFace: { status: 'checking', label: 'Checking', detail: 'Checking backend health', latencyMs: null },
-        cloudflare: { status: 'checking', label: 'Checking', detail: 'Checking Worker health', latencyMs: null },
-      });
+      const cached = readCachedServiceHealth();
+      if (cached) {
+        setServiceHealth(cached);
+        return;
+      }
+
+      setServiceHealth(getDefaultServiceHealth());
 
       const [huggingFace, cloudflare] = await Promise.all([
         probeServiceHealth([
@@ -581,7 +617,9 @@ function AdminDashboardPage() {
       ]);
 
       if (!active) return;
-      setServiceHealth({ huggingFace, cloudflare });
+      const nextHealth = { huggingFace, cloudflare };
+      setServiceHealth(nextHealth);
+      writeCachedServiceHealth(nextHealth);
     }
 
     loadServiceHealth();
@@ -731,29 +769,6 @@ function AdminDashboardPage() {
       speechDeltaText: `+${sessions.filter(s => new Date(s.created_at) >= oneWeekAgo).length} this week`
     };
   }, [visibleUsers, sessions]);
-
-  const privacyCompliance = useMemo(() => {
-    const cutoff = shiftRange(new Date(), 'day', -RETENTION_DAYS).getTime();
-    const retainedPastWindow = sessions.filter((session) => {
-      const createdAt = new Date(session.created_at).getTime();
-      return Number.isFinite(createdAt) && createdAt < cutoff;
-    }).length;
-
-    if (!coreLoaded) {
-      return { label: 'Checking', status: 'checking', icon: 'checking', footer: `${RETENTION_DAYS}-day retention check` };
-    }
-
-    if (retainedPastWindow > 0) {
-      return {
-        label: 'Review',
-        status: 'warning',
-        icon: 'warning',
-        footer: `${retainedPastWindow} session${retainedPastWindow === 1 ? '' : 's'} past ${RETENTION_DAYS} days`,
-      };
-    }
-
-    return { label: 'Active', status: 'online', icon: 'success', footer: `No sessions past ${RETENTION_DAYS} days` };
-  }, [coreLoaded, sessions]);
 
   const joinTrendData = useMemo(() => {
     const days = 14;
@@ -1501,7 +1516,7 @@ function AdminDashboardPage() {
 
         {activePage === 'overview' && (
           <>
-            <section className="admin-grid admin-grid-4">
+            <section className="admin-grid admin-grid-3">
               <article className="admin-card admin-kpi-card">
                 <p className="admin-kpi-label">TOTAL USERS</p>
                 <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : kpis.totalUsers}</p>
@@ -1516,23 +1531,6 @@ function AdminDashboardPage() {
                 <p className="admin-kpi-label">SPEECHES ANALYZED</p>
                 <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : kpis.totalSpeeches}</p>
                 <p className="admin-kpi-footer">{kpis.speechDeltaText}</p>
-              </article>
-              <article className="admin-card admin-kpi-card">
-                <p className="admin-kpi-label">PRIVACY COMPLIANCE</p>
-                {loading ? (
-                  <>
-                    <Skeleton width={150} height={42} />
-                    <p className="admin-kpi-footer"><Skeleton width={130} /></p>
-                  </>
-                ) : (
-                  <>
-                    <div className={`admin-privacy-status admin-privacy-status--${privacyCompliance.status}`}>
-                      {privacyCompliance.icon === 'success' && <HiCheckCircle size={30} />}
-                      <p className="admin-kpi-value admin-kpi-value--privacy">{privacyCompliance.label}</p>
-                    </div>
-                    <p className="admin-kpi-footer">{privacyCompliance.footer}</p>
-                  </>
-                )}
               </article>
             </section>
             <section className="admin-grid admin-grid-2">

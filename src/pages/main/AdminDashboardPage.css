@@ -246,6 +246,10 @@ body:has(.admin-dashboard-page) .main-content {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.admin-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .admin-grid-2 > .admin-accounts-card {
   grid-column: 1 / -1;
 }
@@ -262,7 +266,7 @@ body:has(.admin-dashboard-page) .main-content {
 }
 
 @media (max-width: 900px) {
-  .admin-grid-4, .admin-grid-2 {
+  .admin-grid-4, .admin-grid-3, .admin-grid-2 {
     grid-template-columns: 1fr;
   }
 
@@ -340,24 +344,6 @@ body:has(.admin-dashboard-page) .main-content {
   line-height: 1;
   font-weight: 900;
   color: var(--accent-dark);
-}
-
-.admin-kpi-value--privacy {
-  font-size: clamp(2.2rem, 4.5vw, 3rem);
-}
-
-.admin-privacy-status {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.admin-privacy-status--warning .admin-kpi-value {
-  color: #b45309;
-}
-
-.admin-privacy-status--checking .admin-kpi-value {
-  color: var(--muted);
 }
 
 .admin-kpi-footer {

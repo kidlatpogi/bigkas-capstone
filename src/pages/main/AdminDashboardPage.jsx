@@ -59,7 +59,12 @@ function getDisplayName(profile, fallbackId = '') {
 }
 
 function isDeletedProfile(profile) {
-  return profile?.archived_at !== null && profile?.archived_at !== undefined && profile?.archived_at !== '';
+  const isArchive = profile?.is_archive;
+  return (
+    profile?.archived_at !== null &&
+    profile?.archived_at !== undefined &&
+    profile?.archived_at !== ''
+  ) || isArchive === true || isArchive === 1 || isArchive === '1' || String(isArchive).toLowerCase() === 'true';
 }
 
 function getAuditActionClass(action) {
@@ -210,7 +215,6 @@ function AdminDashboardPage() {
   const [userStatusFilter, setUserStatusFilter] = useState('all');
   const [userPage, setUserPage] = useState(1);
   const USERS_PER_PAGE = 10;
-  const [archivingUserId, setArchivingUserId] = useState(null);
   const [activities, setActivities] = useState([]);
   const [modules, setModules] = useState([]);
   const [isContentLoading, setIsContentLoading] = useState(false);
@@ -916,7 +920,7 @@ function AdminDashboardPage() {
         entityType: 'profiles',
         entityId: user.id,
         oldValues: null,
-        newValues: profile || { id: user.id, ...profilePayloadFromUserForm(), archived_at: null },
+        newValues: profile || { id: user.id, ...profilePayloadFromUserForm(), archived_at: null, is_archive: false },
       });
       showToast('User created');
       setCreatingUser(false);
@@ -957,11 +961,12 @@ function AdminDashboardPage() {
 
   const setUserArchiveState = async (user, shouldArchive) => {
     const archivedAt = shouldArchive ? new Date().toISOString() : null;
+    const isArchive = shouldArchive;
     const label = shouldArchive ? 'archive' : 'restore';
-    const newValues = { ...user, archived_at: archivedAt };
+    const newValues = { ...user, archived_at: archivedAt, is_archive: isArchive };
     const { error: archiveError } = await supabase
       .from('profiles')
-      .update({ archived_at: archivedAt, updated_at: new Date().toISOString() })
+      .update({ archived_at: archivedAt, is_archive: isArchive, updated_at: new Date().toISOString() })
       .eq('id', user.id);
     if (archiveError) {
       showToast(archiveError.message || `Failed to ${label} user`, 'error');
@@ -974,8 +979,8 @@ function AdminDashboardPage() {
       oldValues: user,
       newValues,
     });
-    setProfiles(prev => prev.map(u => u.id === user.id ? { ...u, archived_at: archivedAt } : u));
-    setEditingUser(prev => prev?.id === user.id ? { ...prev, archived_at: archivedAt } : prev);
+    setProfiles(prev => prev.map(u => u.id === user.id ? { ...u, archived_at: archivedAt, is_archive: isArchive } : u));
+    setEditingUser(prev => prev?.id === user.id ? { ...prev, archived_at: archivedAt, is_archive: isArchive } : prev);
     showToast(shouldArchive ? 'User deleted' : 'User restored');
   };
 
@@ -1417,7 +1422,7 @@ function AdminDashboardPage() {
             <input type="number" min="1" max="5" placeholder="Speaker level" value={userForm.speaker_level} onChange={e => setUserForm(p => ({ ...p, speaker_level: e.target.value }))} />
           </AdminUserField>
           <div className="admin-modal-actions">
-            <button type="button" onClick={() => requestUserArchiveState(editingUser, !editingUser.archived_at)} className={`admin-btn ${editingUser.archived_at ? 'admin-btn--ghost' : 'admin-btn--danger'}`}>{editingUser.archived_at ? 'Restore User' : 'Delete User'}</button>
+            <button type="button" onClick={() => requestUserArchiveState(editingUser, !isDeletedProfile(editingUser))} className={`admin-btn ${isDeletedProfile(editingUser) ? 'admin-btn--ghost' : 'admin-btn--danger'}`}>{isDeletedProfile(editingUser) ? 'Restore User' : 'Delete User'}</button>
             <button type="submit" className="admin-btn admin-btn--primary" disabled={savingUser}>{savingUser ? 'Saving...' : 'Save Changes'}</button>
           </div>
         </form>

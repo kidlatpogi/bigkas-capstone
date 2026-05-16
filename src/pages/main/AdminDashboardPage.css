@@ -15,11 +15,18 @@
   color: var(--text);
   background: var(--bg);
   min-height: 100vh;
-  width: calc(100% + var(--app-sidebar-width, 0px));
+  min-height: 100dvh;
+  width: 100%;
   max-width: none;
-  margin: 0 0 0 calc(var(--app-sidebar-width, 0px) * -1);
+  margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+
+body:has(.admin-dashboard-page) .main-content {
+  --app-sidebar-width: 0px;
+  padding-left: 0;
+  background: #fffefe;
 }
 
 .admin-layout {

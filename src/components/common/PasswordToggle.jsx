@@ -1,22 +1,19 @@
-/**
- * PasswordToggle — Reusable password visibility toggle button
- * Uses Show/Hide text instead of eye icons (matching Login design)
- * 
- * NOTE: Eye icons have been intentionally removed in favor of
- * clear, accessible "Show"/"Hide" text buttons for better UX
- * across Login and Create Account pages
- */
+import { Eye, EyeOff } from 'lucide-react';
+
 function PasswordToggle({ isVisible, onToggle, label = 'password', disabled = false }) {
+  const Icon = isVisible ? EyeOff : Eye;
+
   return (
     <button
       type="button"
       className="pw-toggle-btn"
       aria-label={isVisible ? `Hide ${label}` : `Show ${label}`}
+      title={isVisible ? `Hide ${label}` : `Show ${label}`}
       onClick={onToggle}
       tabIndex={0}
       disabled={disabled}
     >
-      {isVisible ? 'Hide' : 'Show'}
+      <Icon aria-hidden="true" size={18} strokeWidth={2.4} />
     </button>
   );
 }

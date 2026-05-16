@@ -174,25 +174,43 @@ body.admin-login-page-active .password-input-wrapper {
 }
 
 body.admin-login-page-active .password-input-wrapper .form-input {
-  padding-right: 78px;
+  padding-right: 60px;
 }
 
 body.admin-login-page-active .password-toggle,
 body.admin-login-page-active .pw-toggle-btn {
   position: absolute;
-  right: 8px;
+  right: 10px;
   top: 50%;
   transform: translateY(-50%);
-  min-width: 58px;
-  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
   color: var(--admin-emerald-dark);
-  background: var(--admin-emerald-light);
+  background: #f8fafc;
   border: 1px solid rgba(5, 150, 105, 0.25);
-  border-radius: 9px;
+  border-radius: 10px;
   font-family: inherit;
-  font-size: 0.78rem;
-  font-weight: 900;
   cursor: pointer;
+  padding: 0;
+  z-index: 2;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+body.admin-login-page-active .password-toggle:hover,
+body.admin-login-page-active .pw-toggle-btn:hover {
+  background: var(--admin-emerald-light);
+  border-color: rgba(5, 150, 105, 0.45);
+  color: var(--admin-emerald);
+}
+
+body.admin-login-page-active .password-toggle:focus-visible,
+body.admin-login-page-active .pw-toggle-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.18);
 }
 
 body.admin-login-page-active .password-toggle:disabled,

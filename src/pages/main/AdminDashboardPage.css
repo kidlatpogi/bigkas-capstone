@@ -483,6 +483,10 @@ body:has(.admin-dashboard-page) .main-content {
   gap: 14px;
 }
 
+.admin-analytics-lists--single {
+  grid-template-columns: 1fr;
+}
+
 .admin-analytics-lists h4 {
   margin: 0 0 8px;
   color: var(--accent-dark);

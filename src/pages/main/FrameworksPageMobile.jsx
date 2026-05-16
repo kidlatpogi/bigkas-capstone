@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { IoSearch, IoClose } from 'react-icons/io5';
-import { fetchModules } from '../../services/modulesService';
+import { fetchModules, recordModuleView } from '../../services/modulesService';
 import { useNativeBottomSheetDrag } from '../../hooks/useNativeBottomSheetDrag';
 import { ROUTES } from '../../utils/constants';
 import '../../components/common/Button.css';
@@ -206,6 +206,11 @@ export default function FrameworksPageMobile() {
     return list;
   }, [modules, activeTab, query]);
 
+  const openModule = useCallback((module) => {
+    setActiveModal(module);
+    recordModuleView(module?.id);
+  }, []);
+
   return (
     <div className="fh-mobile-root activity-page--skyward-entrance no-scrollbar">
       <div className="fh-mobile-header dashboard-anim-top">
@@ -274,7 +279,7 @@ export default function FrameworksPageMobile() {
               <ModuleCard
                 key={`${module.level_number}-${module.lesson_number}`}
                 module={module}
-                onOpen={setActiveModal}
+                onOpen={openModule}
                 index={index}
               />
             ))}

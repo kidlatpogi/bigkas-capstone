@@ -1346,6 +1346,12 @@ export function AuthProvider({ children }) {
     if (updates.dashboard_tutorial_seen !== undefined) {
       profileUpdates.dashboard_tutorial_seen = !!updates.dashboard_tutorial_seen;
     }
+    if (updates.demographic_profile !== undefined) {
+      profileUpdates.demographic_profile = updates.demographic_profile;
+    }
+    if (updates.speaker_profile !== undefined) {
+      profileUpdates.speaker_profile = updates.speaker_profile;
+    }
     if (updates.is_audio_muted !== undefined) {
       if (typeof window !== 'undefined') {
         window.localStorage.setItem('bigkas_global_audio_muted_v1', updates.is_audio_muted ? '1' : '0');

@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IoChevronDown } from 'react-icons/io5';
 import FrameworksPageMobile from './FrameworksPageMobile';
-import { fetchModules } from '../../services/modulesService';
+import { fetchModules, recordModuleView } from '../../services/modulesService';
 import { ROUTES } from '../../utils/constants';
 import '../../components/common/Button.css';
 import './FrameworksPage.css';
@@ -231,6 +231,11 @@ export default function FrameworksPage() {
     return list;
   }, [modules, activeTab, query, sortOrder]);
 
+  const openModule = useCallback((module) => {
+    setActiveModal(module);
+    recordModuleView(module?.id);
+  }, []);
+
   if (windowWidth < 768) {
     return <FrameworksPageMobile />;
   }
@@ -319,7 +324,7 @@ export default function FrameworksPage() {
             <ModuleCard
               key={`${module.level_number}-${module.lesson_number}`}
               module={module}
-              onOpen={setActiveModal}
+              onOpen={openModule}
               animationClass={`dashboard-anim-bottom dashboard-anim-delay-${Math.min(index + 2, 9)}`}
             />
           ))}

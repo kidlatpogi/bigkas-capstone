@@ -82,6 +82,25 @@ function isAdminProfile(profile) {
   return profile?.role === 'admin' || profile?.role === 'superadmin';
 }
 
+function getDemographicValue(profile, key) {
+  const directValue = profile?.demographic_profile?.[key];
+  if (directValue) return String(directValue);
+  const responseValue = profile?.speaker_profile?.responses?.[key];
+  if (responseValue) return String(responseValue);
+  return 'Not provided';
+}
+
+function buildDistribution(items, getValue) {
+  const counts = new Map();
+  items.forEach((item) => {
+    const value = getValue(item) || 'Not provided';
+    counts.set(value, (counts.get(value) || 0) + 1);
+  });
+  return Array.from(counts.entries())
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
+}
+
 function getAuditActionClass(action) {
   const normalized = String(action || '').toLowerCase();
   if (['create', 'update', 'delete', 'restore'].includes(normalized)) return `is-${normalized}`;
@@ -246,6 +265,8 @@ function AdminDashboardPage() {
   const [profiles, setProfiles] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [metrics, setMetrics] = useState([]);
+  const [moduleViews, setModuleViews] = useState([]);
+  const [activityCompletions, setActivityCompletions] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [auditSearchQuery, setAuditSearchQuery] = useState('');
   const [auditActionFilter, setAuditActionFilter] = useState('all');
@@ -315,12 +336,14 @@ function AdminDashboardPage() {
           throw new Error('Access denied: admin privileges required.');
         }
 
-        const [profilesRes, sessionsRes, metricsRes, activitiesRes, modulesRes, settingsRes] = await Promise.all([
+        const [profilesRes, sessionsRes, metricsRes, activitiesRes, modulesRes, moduleViewsRes, completionsRes, settingsRes] = await Promise.all([
           supabase.from('profiles').select('*').order('created_at', { ascending: false }),
           supabase.from('sessions').select('*').order('created_at', { ascending: true }),
           supabase.from('session_metrics').select('session_id, overall_score, visual_score, vocal_score, verbal_score, visual_avg, vocal_avg, verbal_avg, confidence_score, pronunciation_score'),
           supabase.from('activities').select('*').order('target_level', { ascending: true }).order('activity_order', { ascending: true }),
           supabase.from('modules').select('*').order('level_number', { ascending: true }).order('lesson_number', { ascending: true }),
+          supabase.from('module_views').select('*').order('viewed_at', { ascending: false }),
+          supabase.from('user_activity_completions').select('*').order('completed_at', { ascending: false }),
           roleProfile.role === 'superadmin' ? supabase.from('system_settings').select('*') : Promise.resolve({ data: [] })
         ]);
 
@@ -329,6 +352,8 @@ function AdminDashboardPage() {
         if (metricsRes.error) throw metricsRes.error;
         if (activitiesRes.error) throw activitiesRes.error;
         if (modulesRes.error) throw modulesRes.error;
+        if (moduleViewsRes.error) throw moduleViewsRes.error;
+        if (completionsRes.error) throw completionsRes.error;
 
         if (settingsRes.data && settingsRes.data.length > 0) {
           const sMap = {};
@@ -344,6 +369,8 @@ function AdminDashboardPage() {
         setMetrics(metricsRes.data || []);
         setActivities(activitiesRes.data || []);
         setModules(modulesRes.data || []);
+        setModuleViews(moduleViewsRes.data || []);
+        setActivityCompletions(completionsRes.data || []);
       } catch (e) {
         if (active) setError(e.message || 'Failed to load admin dashboard.');
       } finally {
@@ -527,6 +554,32 @@ function AdminDashboardPage() {
     });
   }, [filteredSessions, analyticsUserIds, analyticsModeFilter]);
 
+  const analyticsModuleViews = useMemo(() => {
+    const isInRange = (value) => {
+      if (globalFilter === 'all') return true;
+      const viewedTime = new Date(value).getTime();
+      if (globalFilter === 'custom') {
+        const start = customDateRange.start ? new Date(`${customDateRange.start}T00:00:00`).getTime() : null;
+        const end = customDateRange.end ? new Date(`${customDateRange.end}T23:59:59.999`).getTime() : null;
+        if (start && viewedTime < start) return false;
+        if (end && viewedTime > end) return false;
+        return true;
+      }
+      const now = new Date();
+      if (globalFilter === 'ytd') return viewedTime >= new Date(now.getFullYear(), 0, 1).getTime();
+      const days = globalFilter === '7d' ? 7 : 30;
+      return viewedTime >= shiftRange(now, 'day', -days).getTime();
+    };
+
+    return moduleViews.filter((view) => (
+      analyticsUserIds.has(view.user_id) && isInRange(view.viewed_at)
+    ));
+  }, [moduleViews, analyticsUserIds, globalFilter, customDateRange]);
+
+  const analyticsActivityCompletions = useMemo(() => {
+    return activityCompletions.filter((completion) => analyticsUserIds.has(completion.user_id));
+  }, [activityCompletions, analyticsUserIds]);
+
   const analyticsCompletedSessions = useMemo(
     () => analyticsSessions.filter(s => s.status === 'completed'),
     [analyticsSessions]
@@ -544,6 +597,16 @@ function AdminDashboardPage() {
     const weekAgo = shiftRange(now, 'day', -7);
     const activeUserCount = new Set(analyticsSessions.filter(s => new Date(s.created_at) >= weekAgo).map(s => s.user_id)).size;
     const scoreRows = analyticsMetricRows.map(row => row.scores);
+    const eligibleActivities = activities.filter(activity => (
+      analyticsJourneyFilter === 'all' || Number(activity.target_level) === Number(analyticsJourneyFilter)
+    ));
+    const eligibleActivityIds = new Set(eligibleActivities.map(activity => activity.id));
+    const completedKeys = new Set(
+      analyticsActivityCompletions
+        .filter(completion => eligibleActivityIds.has(completion.activity_id))
+        .map(completion => `${completion.user_id}:${completion.activity_id}`)
+    );
+    const completionPossible = analyticsUsers.length * eligibleActivities.length;
     return {
       totalUsers: analyticsUsers.length,
       activeUsers: activeUserCount,
@@ -553,8 +616,9 @@ function AdminDashboardPage() {
       avgVocal: average(scoreRows.map(s => s.vocal)),
       avgVerbal: average(scoreRows.map(s => s.verbal)),
       deletedUsers: analyticsUsers.filter(isDeletedProfile).length,
+      completionRate: completionPossible ? Math.round((completedKeys.size / completionPossible) * 100) : 0,
     };
-  }, [analyticsUsers, analyticsSessions, analyticsCompletedSessions, analyticsMetricRows]);
+  }, [analyticsUsers, analyticsSessions, analyticsCompletedSessions, analyticsMetricRows, activities, analyticsJourneyFilter, analyticsActivityCompletions]);
 
   const mehrabianTrendData = useMemo(() => {
     const buckets = new Map();
@@ -601,24 +665,52 @@ function AdminDashboardPage() {
     )).map((activity) => {
       const rows = analyticsMetricRows.filter(({ session }) => session.activity_id === activity.id);
       const attempts = rows.length;
-      const completed = rows.filter(({ session }) => session.status === 'completed').length;
+      const uniqueAttemptUsers = new Set(rows.map(({ session }) => session.user_id));
+      const completedUsers = new Set(
+        analyticsActivityCompletions
+          .filter(completion => completion.activity_id === activity.id)
+          .map(completion => completion.user_id)
+      );
       return {
         id: activity.id,
         title: activity.title || `Activity ${activity.activity_order}`,
         journey: activity.target_level,
         attempts,
-        completionRate: attempts ? Math.round((completed / attempts) * 100) : 0,
+        replays: Math.max(0, attempts - uniqueAttemptUsers.size),
+        completionRate: analyticsUsers.length ? Math.round((completedUsers.size / analyticsUsers.length) * 100) : 0,
         avgScore: average(rows.map(row => row.scores.overall)),
       };
     });
-  }, [activities, analyticsMetricRows, analyticsJourneyFilter]);
+  }, [activities, analyticsMetricRows, analyticsJourneyFilter, analyticsActivityCompletions, analyticsUsers]);
 
   const activityHighlights = useMemo(() => ({
     mostAttempted: [...activityAnalytics].filter(a => a.attempts > 0).sort((a, b) => b.attempts - a.attempts).slice(0, 5),
+    mostReplayed: [...activityAnalytics].filter(a => a.replays > 0).sort((a, b) => b.replays - a.replays).slice(0, 5),
     leastAttempted: [...activityAnalytics].sort((a, b) => a.attempts - b.attempts).slice(0, 5),
     lowestScores: [...activityAnalytics].filter(a => a.attempts > 0).sort((a, b) => a.avgScore - b.avgScore).slice(0, 5),
     bestCompletion: [...activityAnalytics].filter(a => a.attempts > 0).sort((a, b) => b.completionRate - a.completionRate).slice(0, 5),
   }), [activityAnalytics]);
+
+  const moduleHighlights = useMemo(() => {
+    return modules.filter(module => (
+      analyticsJourneyFilter === 'all' || Number(module.level_number) === Number(analyticsJourneyFilter)
+    )).map((module) => {
+      const views = analyticsModuleViews.filter(view => view.module_id === module.id);
+      return {
+        id: module.id || `${module.level_number}-${module.lesson_number}`,
+        title: module.title || `Module ${module.lesson_number}`,
+        views: views.length,
+        uniqueViewers: new Set(views.map(view => view.user_id)).size,
+      };
+    }).filter(module => module.views > 0)
+      .sort((a, b) => b.views - a.views || b.uniqueViewers - a.uniqueViewers)
+      .slice(0, 5);
+  }, [modules, analyticsJourneyFilter, analyticsModuleViews]);
+
+  const demographicAnalytics = useMemo(() => ({
+    gender: buildDistribution(analyticsUsers, profile => getDemographicValue(profile, 'gender')),
+    ageRange: buildDistribution(analyticsUsers, profile => getDemographicValue(profile, 'age_range')),
+  }), [analyticsUsers]);
 
   const engagementTrendData = useMemo(() => {
     const days = globalFilter === '7d' ? 7 : 14;
@@ -1241,7 +1333,7 @@ function AdminDashboardPage() {
               <article className="admin-card admin-kpi-card"><p className="admin-kpi-label">Visual</p><p className="admin-kpi-value">{analyticsKpis.avgVisual}</p><p className="admin-kpi-footer">Body language and presence</p></article>
               <article className="admin-card admin-kpi-card"><p className="admin-kpi-label">Vocal</p><p className="admin-kpi-value">{analyticsKpis.avgVocal}</p><p className="admin-kpi-footer">Voice quality and delivery</p></article>
               <article className="admin-card admin-kpi-card"><p className="admin-kpi-label">Verbal</p><p className="admin-kpi-value">{analyticsKpis.avgVerbal}</p><p className="admin-kpi-footer">Message structure and wording</p></article>
-              <article className="admin-card admin-kpi-card"><p className="admin-kpi-label">Deleted Users</p><p className="admin-kpi-value">{analyticsKpis.deletedUsers}</p><p className="admin-kpi-footer">Soft-deleted profiles</p></article>
+              <article className="admin-card admin-kpi-card"><p className="admin-kpi-label">Completion Rate</p><p className="admin-kpi-value">{analyticsKpis.completionRate}%</p><p className="admin-kpi-footer">Completed stages across selected learners</p></article>
             </section>
             <section className="admin-grid admin-grid-2">
               <article className="admin-card"><h3>Mehrabian Performance Over Time</h3><div className="admin-chart-container">
@@ -1254,12 +1346,21 @@ function AdminDashboardPage() {
             <section className="admin-grid admin-grid-2">
               <article className="admin-card"><h3>Activity Analytics</h3><div className="admin-analytics-lists">
                 <div><h4>Most Attempted</h4>{activityHighlights.mostAttempted.length ? activityHighlights.mostAttempted.map(a => <p key={a.id}><strong>{a.title}</strong><span>{a.attempts} attempts</span></p>) : <div className="admin-empty-inline">No attempts yet</div>}</div>
+                <div><h4>Most Replayed Stages</h4>{activityHighlights.mostReplayed.length ? activityHighlights.mostReplayed.map(a => <p key={a.id}><strong>{a.title}</strong><span>{a.replays} replays</span></p>) : <div className="admin-empty-inline">No replay data yet</div>}</div>
                 <div><h4>Lowest Average Score</h4>{activityHighlights.lowestScores.length ? activityHighlights.lowestScores.map(a => <p key={a.id}><strong>{a.title}</strong><span>{a.avgScore} avg</span></p>) : <div className="admin-empty-inline">No score data yet</div>}</div>
                 <div><h4>Best Completion</h4>{activityHighlights.bestCompletion.length ? activityHighlights.bestCompletion.map(a => <p key={a.id}><strong>{a.title}</strong><span>{a.completionRate}%</span></p>) : <div className="admin-empty-inline">No completion data yet</div>}</div>
-                <div><h4>Least Attempted</h4>{activityHighlights.leastAttempted.length ? activityHighlights.leastAttempted.map(a => <p key={a.id}><strong>{a.title}</strong><span>{a.attempts} attempts</span></p>) : <div className="admin-empty-inline">No attempts yet</div>}</div>
               </div></article>
               <article className="admin-card"><h3>User Engagement</h3><div className="admin-chart-container">
                 <ResponsiveContainer width="100%" height={300}><AreaChart data={engagementTrendData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="date" /><YAxis /><Tooltip /><Legend /><Area type="monotone" dataKey="sessions" name="Sessions" stroke="#33D2A4" fill="#33D2A433" /><Area type="monotone" dataKey="activeUsers" name="Active Users" stroke="#2C3E50" fill="#2C3E5033" /></AreaChart></ResponsiveContainer>
+              </div></article>
+            </section>
+            <section className="admin-grid admin-grid-2">
+              <article className="admin-card"><h3>Most Viewed Learning Modules</h3><div className="admin-analytics-lists admin-analytics-lists--single">
+                <div>{moduleHighlights.length ? moduleHighlights.map(module => <p key={module.id}><strong>{module.title}</strong><span>{module.views} views</span></p>) : <div className="admin-empty-inline">No module views yet</div>}</div>
+              </div></article>
+              <article className="admin-card"><h3>Learner Demographics</h3><div className="admin-analytics-lists">
+                <div><h4>Gender</h4>{demographicAnalytics.gender.length ? demographicAnalytics.gender.map(item => <p key={item.name}><strong>{item.name}</strong><span>{item.value}</span></p>) : <div className="admin-empty-inline">No gender data yet</div>}</div>
+                <div><h4>Age Group</h4>{demographicAnalytics.ageRange.length ? demographicAnalytics.ageRange.map(item => <p key={item.name}><strong>{item.name}</strong><span>{item.value}</span></p>) : <div className="admin-empty-inline">No age data yet</div>}</div>
               </div></article>
             </section>
             <section className="admin-grid admin-grid-2">

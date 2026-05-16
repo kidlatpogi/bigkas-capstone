@@ -17,6 +17,13 @@ const LoginPageMobile = lazy(() => import('./LoginPageMobile'));
 const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 
 const LOGIN_LOCKOUT_UNTIL_KEY = 'bigkas_login_lockout_until';
+const LOGIN_LOCKOUT_SECONDS = 30;
+
+function normalizeLockoutSeconds(value) {
+  const seconds = Math.ceil(Number(value) || 0);
+  if (!Number.isFinite(seconds) || seconds <= 0) return 0;
+  return Math.min(LOGIN_LOCKOUT_SECONDS, seconds);
+}
 
 const INSIGHT_WORDS = [
   { text: 'Visual', size: '1rem', opacity: 0.8, top: '15%', left: '12%', delay: 0 },
@@ -52,7 +59,15 @@ function getStoredLockoutSeconds() {
     return 0;
   }
 
-  return remaining;
+  const clampedRemaining = normalizeLockoutSeconds(remaining);
+  if (clampedRemaining !== remaining) {
+    window.localStorage.setItem(
+      LOGIN_LOCKOUT_UNTIL_KEY,
+      new Date(Date.now() + clampedRemaining * 1000).toISOString()
+    );
+  }
+
+  return clampedRemaining;
 }
 
 function formatCountdown(seconds) {
@@ -283,8 +298,8 @@ function LoginPageDesktop({ managePageClass = true }) {
       setShowUnverified(true);
       setFormData({ email: '', password: '' });
     } else if (result.code === 'account_locked') {
-      const lockSeconds = Math.max(1, Number(result.lockoutSeconds || 60));
-      const unlockTime = result.unlockTime || new Date(Date.now() + lockSeconds * 1000).toISOString();
+      const lockSeconds = normalizeLockoutSeconds(result.lockoutSeconds) || LOGIN_LOCKOUT_SECONDS;
+      const unlockTime = new Date(Date.now() + lockSeconds * 1000).toISOString();
       window.localStorage.setItem(LOGIN_LOCKOUT_UNTIL_KEY, unlockTime);
       setLockoutSeconds(lockSeconds);
       setFormData({ email: '', password: '' });

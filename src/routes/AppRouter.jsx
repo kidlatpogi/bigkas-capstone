@@ -246,6 +246,7 @@ function ProtectedRoute() {
   if (
     user?.onboardingStage === 'pretest' &&
     pathname !== ROUTES.USER_PRETEST &&
+    pathname !== ROUTES.USER_ANALYZING &&
     !pathname.startsWith(ROUTES.TRAINING) &&
     !pathname.startsWith('/session')
   ) {

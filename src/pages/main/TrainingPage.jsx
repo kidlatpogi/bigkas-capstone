@@ -1046,6 +1046,7 @@ function TrainingPage() {
       // 6. Execute Backend Analysis
       console.log('[TrainingPage] Sending to AI analysis engine...');
       setAnalysisProgress(20);
+      setAnalysisStatusMessage('Connecting to analysis backend...');
       
       const profilingKeys = [
         'visual_eye_contact', 'visual_gestures', 'visual_energy',
@@ -1069,6 +1070,7 @@ function TrainingPage() {
           visualAnalysis: visualScoresRef.current,
           topic: freeTopic || 'General Speaking',
           profilingAnswers,
+          userId: user?.id,
           onProgress: (p, msg) => {
             setAnalysisProgress(p);
             if (msg) {
@@ -1100,7 +1102,7 @@ function TrainingPage() {
       try {
         const metadataUpdates = {};
 
-        if (sessionType !== 'pre-test') {
+        if (!isPreTestSession) {
           const remotePoints = Math.max(0, Math.floor(Number(user?.speakerPoints ?? 0) || 0));
           let pointsBefore = getTotalActivityPoints(activityScopeKey);
           if (remotePoints > pointsBefore) {
@@ -1158,15 +1160,30 @@ function TrainingPage() {
                    return safeUpdateMetadata(updates, false);
                  }
               }
+              return result;
             } catch (e) {
               console.warn('Background metadata update failed:', e);
+              return { success: false, error: e?.message || 'Metadata update failed.' };
             }
           };
           
-          safeUpdateMetadata(metadataUpdates);
+          if (isPreTestSession) {
+            const metadataResult = await safeUpdateMetadata(metadataUpdates);
+            if (!metadataResult?.success) {
+              throw new Error(
+                metadataResult?.error ||
+                'Analysis was saved, but onboarding status could not be updated. Please try again.'
+              );
+            }
+          } else {
+            safeUpdateMetadata(metadataUpdates);
+          }
         }
       } catch (metaErr) {
         console.warn('[TrainingPage] Metadata/Points update failed, but session was saved:', metaErr);
+        if (isPreTestSession) {
+          throw metaErr;
+        }
       }
 
       // 8. Finalize and Navigate
@@ -1186,7 +1203,7 @@ function TrainingPage() {
         // Clear session cache upon successful analysis/completion
         clearSessionCache();
         
-        if (sessionType === 'pre-test') {
+        if (isPreTestSession) {
           console.log('[TrainingPage] Pre-test detected. Navigating to onboarding result reveal...');
           navigate(ROUTES.USER_ANALYZING, { replace: true, state: { sessionId: finalSessionId } });
         } else {
@@ -1649,7 +1666,7 @@ function TrainingPage() {
       {status === 'analysing' && (
         <div className="tp-overlay">
           <section className="tp-analysing-view">
-            <div className="profiling-unit" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+            <div className="tp-analysis-unit">
               <article className="analyzing-bubble" aria-label="Analyzing session">
                 <p className="analyzing-bubble-kicker">B-01:</p>
                 <p className="analyzing-bubble-title">Analyzing your session...</p>
@@ -1682,7 +1699,7 @@ function TrainingPage() {
       {(status === 'error' || status === 'missing-data') && (
         <div className="tp-overlay">
           <section className="tp-analysing-view tp-error-view">
-            <div className="profiling-unit">
+            <div className="tp-analysis-unit">
               <article className="analyzing-bubble analyzing-bubble--error" aria-label="Error message">
                 <p className="analyzing-bubble-kicker">B-01:</p>
                 <p className="analyzing-bubble-title">

@@ -11,6 +11,13 @@ import './AdminLoginPage.css';
 
 const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 const ADMIN_LOGIN_LOCKOUT_UNTIL_KEY = 'bigkas_admin_login_lockout_until';
+const LOGIN_LOCKOUT_SECONDS = 30;
+
+function normalizeLockoutSeconds(value) {
+  const seconds = Math.ceil(Number(value) || 0);
+  if (!Number.isFinite(seconds) || seconds <= 0) return 0;
+  return Math.min(LOGIN_LOCKOUT_SECONDS, seconds);
+}
 
 function getStoredLockoutSeconds() {
   if (typeof window === 'undefined') return 0;
@@ -30,7 +37,15 @@ function getStoredLockoutSeconds() {
     return 0;
   }
 
-  return secondsRemaining;
+  const clampedRemaining = normalizeLockoutSeconds(secondsRemaining);
+  if (clampedRemaining !== secondsRemaining) {
+    window.localStorage.setItem(
+      ADMIN_LOGIN_LOCKOUT_UNTIL_KEY,
+      String(Date.now() + clampedRemaining * 1000)
+    );
+  }
+
+  return clampedRemaining;
 }
 
 function formatCountdown(seconds) {
@@ -117,9 +132,7 @@ export default function AdminLoginPage({ managePageClass = true }) {
     }
 
     if (result.code === 'account_locked') {
-      const seconds = Number.isFinite(result.lockoutSeconds)
-        ? Math.max(0, Math.ceil(result.lockoutSeconds))
-        : 0;
+      const seconds = normalizeLockoutSeconds(result.lockoutSeconds) || LOGIN_LOCKOUT_SECONDS;
       setLockoutSeconds(seconds);
 
       if (typeof window !== 'undefined' && seconds > 0) {

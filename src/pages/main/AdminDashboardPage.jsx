@@ -341,6 +341,18 @@ function AdminPasswordInput({ value, onChange, placeholder, required = true }) {
   );
 }
 
+function AdminLevelSelect({ value, onChange, label }) {
+  return (
+    <select value={String(value || 1)} onChange={onChange} aria-label={label}>
+      {[1, 2, 3, 4, 5].map(level => (
+        <option key={level} value={level}>
+          Level {level}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 function getAdminPasswordValidationMessage(password, confirmPassword) {
   const passwordValidation = validatePassword(password);
   if (!passwordValidation.isValid) {
@@ -404,6 +416,36 @@ async function setProfileArchiveStateWithAdminFunction(userId, shouldArchive) {
 
   if (!data?.profile?.id) {
     throw new Error('Profile archive state was not updated.');
+  }
+
+  return data.profile;
+}
+
+async function updateProfileWithAdminFunction(userId, payload) {
+  const { data, error } = await supabase.functions.invoke('admin-update-profile', {
+    body: {
+      user_id: userId,
+      ...payload,
+    },
+  });
+
+  if (error) {
+    let functionMessage = '';
+    try {
+      const details = await error.context?.json?.();
+      functionMessage = details?.error || details?.message || '';
+    } catch {
+      functionMessage = '';
+    }
+    throw new Error(functionMessage || error.message || 'Failed to update user.');
+  }
+
+  if (data?.error) {
+    throw new Error(data.error);
+  }
+
+  if (!data?.profile?.id) {
+    throw new Error('User profile was not updated.');
   }
 
   return data.profile;
@@ -1279,15 +1321,13 @@ function AdminDashboardPage() {
   };
 
   const refreshProfiles = async () => {
-    const { data, error: refreshError } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (refreshError) {
+    try {
+      const nextProfiles = await fetchAdminProfiles();
+      setProfiles(nextProfiles);
+    } catch (refreshError) {
       showToast(refreshError.message || 'Failed to refresh users', 'error');
       return;
     }
-    setProfiles(data || []);
   };
 
   const openCreateUser = () => {
@@ -1316,8 +1356,8 @@ function AdminDashboardPage() {
     last_name: userForm.last_name.trim() || null,
     username: userForm.username.trim() || null,
     role: 'user',
-    current_level: Number(userForm.current_level) || 1,
-    speaker_level: Number(userForm.speaker_level) || 1,
+    current_level: Math.min(5, Math.max(1, Number(userForm.current_level) || 1)),
+    speaker_level: Math.min(5, Math.max(1, Number(userForm.speaker_level) || 1)),
     speaker_points: Number(userForm.speaker_points) || 0,
     updated_at: new Date().toISOString(),
   });
@@ -1371,25 +1411,24 @@ function AdminDashboardPage() {
     if (!editingUser) return;
     setSavingUser(true);
     const payload = profilePayloadFromUserForm();
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update(payload)
-      .eq('id', editingUser.id);
-    if (updateError) {
-      showToast(updateError.message || 'Failed to update user', 'error');
-    } else {
+    try {
+      const updatedProfile = await updateProfileWithAdminFunction(editingUser.id, payload);
       await recordAuditLog({
         action: 'update',
         entityType: 'profiles',
         entityId: editingUser.id,
         oldValues: editingUser,
-        newValues: { ...editingUser, ...payload },
+        newValues: updatedProfile,
       });
       showToast('User updated');
       setEditingUser(null);
-      setProfiles(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...payload } : u));
+      setProfiles(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...updatedProfile } : u));
+      await refreshProfiles();
+    } catch (updateError) {
+      showToast(updateError.message || 'Failed to update user', 'error');
+    } finally {
+      setSavingUser(false);
     }
-    setSavingUser(false);
   };
 
   const setUserArchiveState = async (user, shouldArchive) => {
@@ -1910,12 +1949,14 @@ function AdminDashboardPage() {
             <AdminPasswordInput placeholder="Confirm password" value={userForm.confirm_password} onChange={e => setUserForm(p => ({ ...p, confirm_password: e.target.value }))} />
           </AdminUserField>
           <AdminUserField label="Journey Level" help="Current learning journey from 1 to 5.">
-            <input type="number" min="1" max="5" placeholder="Journey level" value={userForm.current_level} onChange={e => setUserForm(p => ({ ...p, current_level: e.target.value }))} />
+            <AdminLevelSelect label="Journey level" value={userForm.current_level} onChange={e => setUserForm(p => ({ ...p, current_level: e.target.value }))} />
           </AdminUserField>
           <AdminUserField label="Speaker Level" help="Speaking proficiency level from 1 to 5.">
-            <input type="number" min="1" max="5" placeholder="Speaker level" value={userForm.speaker_level} onChange={e => setUserForm(p => ({ ...p, speaker_level: e.target.value }))} />
+            <AdminLevelSelect label="Speaker level" value={userForm.speaker_level} onChange={e => setUserForm(p => ({ ...p, speaker_level: e.target.value }))} />
           </AdminUserField>
-          <button type="submit" className="admin-btn admin-btn--primary" disabled={savingUser}>{savingUser ? 'Creating...' : 'Create User'}</button>
+          <div className="admin-modal-actions admin-modal-actions--end">
+            <button type="submit" className="admin-btn admin-btn--primary" disabled={savingUser}>{savingUser ? 'Creating...' : 'Create User'}</button>
+          </div>
         </form>
       </div></div>, document.body)}
 
@@ -1932,10 +1973,10 @@ function AdminDashboardPage() {
             <input type="text" placeholder="username" value={userForm.username} onChange={e => setUserForm(p => ({ ...p, username: e.target.value }))} />
           </AdminUserField>
           <AdminUserField label="Journey Level" help="Current learning journey from 1 to 5.">
-            <input type="number" min="1" max="5" placeholder="Journey level" value={userForm.current_level} onChange={e => setUserForm(p => ({ ...p, current_level: e.target.value }))} />
+            <AdminLevelSelect label="Journey level" value={userForm.current_level} onChange={e => setUserForm(p => ({ ...p, current_level: e.target.value }))} />
           </AdminUserField>
           <AdminUserField label="Speaker Level" help="Speaking proficiency level from 1 to 5.">
-            <input type="number" min="1" max="5" placeholder="Speaker level" value={userForm.speaker_level} onChange={e => setUserForm(p => ({ ...p, speaker_level: e.target.value }))} />
+            <AdminLevelSelect label="Speaker level" value={userForm.speaker_level} onChange={e => setUserForm(p => ({ ...p, speaker_level: e.target.value }))} />
           </AdminUserField>
           <div className="admin-modal-actions">
             <button type="button" onClick={() => requestUserArchiveState(editingUser, !isDeletedProfile(editingUser))} className={`admin-btn ${isDeletedProfile(editingUser) ? 'admin-btn--ghost' : 'admin-btn--danger'}`}>{isDeletedProfile(editingUser) ? 'Restore User' : 'Delete User'}</button>

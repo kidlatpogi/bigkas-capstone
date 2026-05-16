@@ -14,6 +14,8 @@ const SESSION_TITLE_COLUMN_SUPPORT_KEY = 'bigkas_session_title_column_supported_
 const SESSION_VIDEO_CACHE_KEY = 'bigkas_session_video_cache_v1';
 const SESSION_MEDIA_BUCKET = 'session-recordings';
 const SESSIONS_CACHE_TTL_MS = 15000;
+const ANALYSIS_POST_TIMEOUT_MS = 60000;
+const AUTH_PREP_TIMEOUT_MS = 5000;
 const SESSIONS_SELECT_QUERY = `
   id,
   user_id,
@@ -394,6 +396,41 @@ function isObjectTooLargeError(error) {
     || message.includes('payload too large');
 }
 
+async function fetchWithTimeout(url, options = {}, timeoutMs = ANALYSIS_POST_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error(`Analysis request timed out after ${Math.round(timeoutMs / 1000)} seconds.`);
+    }
+    if (error instanceof TypeError) {
+      throw new Error('Could not connect to the analysis backend. Check that the backend is online and that CORS allows this app origin.');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function withTimeout(promise, label, timeoutMs = AUTH_PREP_TIMEOUT_MS) {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(`${label} timed out after ${Math.round(timeoutMs / 1000)} seconds.`)), timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 async function uploadSessionMediaBlob({ userId, blob, kind }) {
   if (!blob || !userId) return null;
 
@@ -693,22 +730,25 @@ export function SessionProvider({ children }) {
     visualAnalysis = null,
     topic = '',
     profilingAnswers = [],
+    userId = null,
     onProgress = null,
   }) => {
-    const uid = await getUserId();
+    console.log('[SessionContext] analyseAndSave started.');
+    const uid = userId || await withTimeout(getUserId(), 'Reading authenticated user');
     if (!uid) return { success: false, error: 'Not authenticated' };
     dispatch({ type: 'SET_ANALYSING', payload: true });
     try {
       const apiUrl = ENV.PYTHON_SERVICE_URL;
-      // 0. Ensure session is fresh (prevents "exp" claim errors after long waits)
-      const { data: { session: currentSession }, error: sessionErr } = await supabase.auth.refreshSession();
-      if (sessionErr) {
-        console.warn('[SessionContext] Session refresh warning:', sessionErr.message);
-        if (sessionErr.message?.includes('expired') || sessionErr.status === 401 || sessionErr.status === 403) {
-           await supabase.auth.signOut({ scope: 'local' });
-        }
+      if (onProgress) onProgress(20, 'Preparing session data...');
+
+      let authSession = null;
+      try {
+        const { data } = await withTimeout(supabase.auth.getSession(), 'Reading auth session');
+        authSession = data?.session || null;
+      } catch (sessionErr) {
+        console.warn('[SessionContext] Auth session read skipped:', sessionErr.message);
       }
-      const authSession = currentSession;
+
       const baseVisualMetrics = {
         overall_score: toNumeric(visualAnalysis?.overall_score, 0),
         eye_contact_score: toNumeric(visualAnalysis?.eye_contact_score, 0),
@@ -729,10 +769,7 @@ export function SessionProvider({ children }) {
       formData.append('session_origin', normalizeSessionOriginForPersistence(scriptType));
       formData.append('speaking_mode', String(speakingMode || '').trim());
 
-      if (onProgress) onProgress(20);
-
-      // 3. BACKGROUND PERSISTENCE (Non-blocking)
-      const backgroundPersistence = (async () => {
+      const startBackgroundPersistence = () => (async () => {
         try {
           console.log('[SessionContext] Starting background media upload...');
           const audioStorageUrl = await uploadSessionMediaBlob({ userId: uid, blob: audioBlob, kind: 'audio' });
@@ -751,20 +788,18 @@ export function SessionProvider({ children }) {
       })();
 
       // 4. MAIN ANALYSIS (Blocking initial POST)
-      console.log('[SessionContext] Requesting AI Analysis (No artificial timeout)...');
+      console.log('[SessionContext] Requesting AI Analysis...');
       
       let analysisResult;
       let postAttempts = 0;
-      const maxPostAttempts = 5;
+      const maxPostAttempts = 3;
 
       while (postAttempts < maxPostAttempts) {
         postAttempts += 1;
         try {
           console.log(`[SessionContext] POST attempt ${postAttempts}/${maxPostAttempts}...`);
           
-          // No AbortController — let the browser manage the connection
-          // HF cold starts can take 2-3 minutes; aborting early causes the loop
-          const res = await fetch(`${apiUrl}/api/analyze-speech`, {
+          const res = await fetchWithTimeout(`${apiUrl}/api/analyze-speech`, {
             method: 'POST',
             headers: authSession?.access_token ? { Authorization: `Bearer ${authSession.access_token}` } : undefined,
             body: formData,
@@ -782,6 +817,7 @@ export function SessionProvider({ children }) {
           if (!res.ok) throw new Error(`Server returned ${res.status}: ${responseText.slice(0, 200)}`);
           
           analysisResult = JSON.parse(responseText);
+          console.log('[SessionContext] Initial analysis response:', analysisResult);
           break; // Success!
         } catch (err) {
           console.warn(`[SessionContext] POST attempt ${postAttempts} failed:`, err.message);
@@ -797,6 +833,10 @@ export function SessionProvider({ children }) {
           await new Promise((r) => setTimeout(r, backoff));
         }
       }
+      if (!analysisResult) {
+        throw new Error('Analysis backend did not return a job id. Please check the backend logs and CORS settings.');
+      }
+      const backgroundPersistence = startBackgroundPersistence();
       console.log('[SessionContext] Initial server response received:', analysisResult.status);
 
       // 5. ADAPTIVE POLLING LOGIC
@@ -807,6 +847,7 @@ export function SessionProvider({ children }) {
         let attempts = 0;
         const maxAttempts = 200; 
         let currentProgressPercent = 0;
+        let consecutiveStatusFailures = 0;
 
         const updateProgress = (p, msg = null) => {
           if (typeof p === 'number' && p > currentProgressPercent) {
@@ -835,6 +876,10 @@ export function SessionProvider({ children }) {
             sRes = await fetch(`${apiUrl}/api/analysis-status/${jobId}`, { signal: sController.signal });
           } catch (fetchErr) {
             console.warn('[SessionContext] Status check fetch failed:', fetchErr.message);
+            consecutiveStatusFailures += 1;
+            if (consecutiveStatusFailures >= 5) {
+              throw new Error('Could not reach the analysis status endpoint. The backend may have restarted or CORS may be blocking status checks.');
+            }
             continue;
           } finally {
             clearTimeout(sTimeoutId);
@@ -844,21 +889,35 @@ export function SessionProvider({ children }) {
             if (sRes.status === 404) {
               throw new Error('Analysis job was lost. The server may have restarted. Please try a shorter recording.');
             }
+            consecutiveStatusFailures += 1;
+            if (consecutiveStatusFailures >= 10) {
+              throw new Error(`Analysis status endpoint kept returning HTTP ${sRes.status}. Please try again.`);
+            }
             continue; // Retry on other errors (500, 502, 503, 504)
           }
+          consecutiveStatusFailures = 0;
           
           let sData;
           try {
             const responseText = await sRes.text();
             if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
               console.warn('[SessionContext] Received HTML response from backend (likely Hugging Face restarting). Retrying...');
+              consecutiveStatusFailures += 1;
+              if (consecutiveStatusFailures >= 5) {
+                throw new Error('Analysis backend is still starting and did not return status JSON. Please try again in a minute.');
+              }
               continue; 
             }
             sData = JSON.parse(responseText);
           } catch (e) {
             console.warn('[SessionContext] Polling received invalid JSON. Retrying...', e);
+            consecutiveStatusFailures += 1;
+            if (consecutiveStatusFailures >= 5) {
+              throw new Error('Analysis status response was invalid too many times. Please try again.');
+            }
             continue; 
           }
+          console.log('[SessionContext] Analysis status:', sData.status, sData.progress, sData.message);
           
           // Detect HTML (Hugging Face Starting/Restarting page)
 
@@ -880,6 +939,10 @@ export function SessionProvider({ children }) {
           if (sData.status === 'error') throw new Error(sData.error || 'AI analysis failed.');
           if (attempts >= maxAttempts) throw new Error('Analysis timed out.');
         }
+      }
+
+      if (analysisResult?.status === 'completed' && analysisResult?.data) {
+        analysisResult = analysisResult.data;
       }
 
       console.log('[SessionContext] AI Analysis complete.');

@@ -434,6 +434,8 @@ function UserProfilingPage() {
     setIsSubmitting(true);
     console.log('[Profiling] Validation passed. Submitting profile...');
 
+    const submittedBaselineScore = computeBaselineScore(workingForm);
+    const submittedBaselineLevelNumber = getSpeakerLevelNumber(submittedBaselineScore);
     const payload = {
       demographic_profile: {
         gender: workingForm.gender,
@@ -442,8 +444,8 @@ function UserProfilingPage() {
       },
       speaker_profile: {
         completed_at: new Date().toISOString(),
-        baseline_score: baselineScore,
-        baseline_level_number: baselineLevelNumber,
+        baseline_score: submittedBaselineScore,
+        baseline_level_number: submittedBaselineLevelNumber,
         responses: { ...workingForm },
       },
       profiling_completed: true,
@@ -458,6 +460,8 @@ function UserProfilingPage() {
       return;
     }
 
+    console.log('[Profiling] Profile saved. Showing pre-test intro.');
+    setIsOutroTypingDone(false);
     setScreen('outro');
   };
 
@@ -840,11 +844,12 @@ function UserProfilingPage() {
               </p>
               <div className="profiling-intro-actions profiling-intro-actions--end">
                 <div className="profiling-submit-btn">
-                  <button type="button" onClick={continueToPretest} disabled={!isOutroTypingDone}>
-                    Continue
+                  <button type="button" onClick={continueToPretest} disabled={!isOutroTypingDone || isSubmitting}>
+                    {isSubmitting ? 'Saving...' : 'Continue'}
                   </button>
                 </div>
               </div>
+              {error && <p className="profiling-error">{error}</p>}
             </article>
 
             <div className="profiling-intro-robot">

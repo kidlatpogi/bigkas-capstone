@@ -22,7 +22,12 @@ DEFAULT_CORS_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "https://bigkas.site",
+    "https://www.bigkas.site",
 ]
+DEFAULT_CORS_ORIGIN_REGEX = (
+    r"https://([a-z0-9-]+\.)?(bigkas\.site|netlify\.app|vercel\.app|pages\.dev)"
+)
 
 
 def _parse_origins(raw_origins: str) -> List[str]:
@@ -61,6 +66,7 @@ async def log_requests(request, call_next):
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_parse_origins(os.getenv("CORS_ORIGINS", ",".join(DEFAULT_CORS_ORIGINS))),
+    allow_origin_regex=os.getenv("CORS_ORIGIN_REGEX", DEFAULT_CORS_ORIGIN_REGEX),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

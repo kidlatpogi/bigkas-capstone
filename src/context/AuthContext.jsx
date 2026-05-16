@@ -12,25 +12,20 @@ const ADMIN_SESSION_KEY = 'bigkas_admin_session';
 const LOGIN_GUARD_NOT_CONFIGURED_CODES = ['42883', 'PGRST202', '42P01'];
 const LOGIN_GUARD_PREFIX = 'bigkas_login_guard_v1';
 const MAX_LOGIN_ATTEMPTS = 3;
-const LOGIN_COOLDOWN_SCHEDULE_SECONDS = [30, 120, 900];
+const LOGIN_LOCKOUT_SECONDS = 30;
 const LOGIN_GUARD_RESET_WINDOW_MS = 24 * 60 * 60 * 1000;
 const GENERIC_LOGIN_FAILURE_MESSAGE = 'Wrong email or password.';
 let loginGuardRpcDisabled = false;
 
+function normalizeLoginLockoutSeconds(value) {
+  const seconds = Math.ceil(Number(value) || 0);
+  if (!Number.isFinite(seconds) || seconds <= 0) return 0;
+  return Math.min(LOGIN_LOCKOUT_SECONDS, seconds);
+}
+
 function buildLockoutMessage(waitSeconds) {
-  const seconds = Math.max(1, Number(waitSeconds) || 1);
-  
-  // Differentiate message based on duration (matching the scale)
-  if (seconds <= 60) {
-    return `Temporary cooldown active. Please wait ${seconds}s before trying again.`;
-  }
-  
-  if (seconds < 3600) {
-    const minutes = Math.ceil(seconds / 60);
-    return `Account temporarily locked due to multiple failed attempts. Try again in ${minutes}m.`;
-  }
-  
-  return `Account locked for security reasons. Please try again later or contact support.`;
+  const seconds = Math.max(1, normalizeLoginLockoutSeconds(waitSeconds) || LOGIN_LOCKOUT_SECONDS);
+  return `Temporary cooldown active. Please wait ${seconds}s before trying again.`;
 }
 
 function isLoginGuardNotConfigured(error) {
@@ -98,13 +93,24 @@ function getLocalLoginLockStatus(scope, email) {
 
   const now = Date.now();
   if (state.lockUntil > now) {
+    const remainingSeconds = normalizeLoginLockoutSeconds((state.lockUntil - now) / 1000);
+    const correctedLockUntil = now + remainingSeconds * 1000;
+    if (remainingSeconds > 0 && correctedLockUntil < state.lockUntil) {
+      writeLocalLoginGuardState(scope, email, {
+        ...state,
+        cooldownStep: 1,
+        lockUntil: correctedLockUntil,
+      });
+    }
+
     return {
       isLocked: true,
-      remainingSeconds: Math.max(1, Math.ceil((state.lockUntil - now) / 1000)),
+      remainingSeconds,
       error: null,
     };
   }
 
+  clearLocalLoginGuardState(scope, email);
   return { isLocked: false, remainingSeconds: 0, error: null };
 }
 
@@ -117,22 +123,41 @@ function registerLocalLoginFailure(scope, email) {
     lastFailedAt: 0,
   };
 
-  const outsideResetWindow = !current.lastFailedAt || (now - current.lastFailedAt) > LOGIN_GUARD_RESET_WINDOW_MS;
-  const baseState = outsideResetWindow
+  if (current.lockUntil > now) {
+    const lockoutSeconds = normalizeLoginLockoutSeconds((current.lockUntil - now) / 1000);
+    const correctedLockUntil = now + lockoutSeconds * 1000;
+    if (lockoutSeconds > 0 && correctedLockUntil < current.lockUntil) {
+      writeLocalLoginGuardState(scope, email, {
+        ...current,
+        cooldownStep: 1,
+        lockUntil: correctedLockUntil,
+      });
+    }
+
+    return {
+      locked: true,
+      lockoutSeconds,
+      error: null,
+    };
+  }
+
+  const shouldResetState =
+    current.lockUntil > 0 ||
+    !current.lastFailedAt ||
+    (now - current.lastFailedAt) > LOGIN_GUARD_RESET_WINDOW_MS;
+  const baseState = shouldResetState
     ? { failedAttempts: 0, cooldownStep: 0, lockUntil: 0, lastFailedAt: 0 }
     : current;
 
   const failedAttempts = baseState.failedAttempts + 1;
   if (failedAttempts >= MAX_LOGIN_ATTEMPTS) {
-    const cooldownStep = Math.min(baseState.cooldownStep + 1, LOGIN_COOLDOWN_SCHEDULE_SECONDS.length);
-    const lockSeconds = LOGIN_COOLDOWN_SCHEDULE_SECONDS[cooldownStep - 1];
     writeLocalLoginGuardState(scope, email, {
       failedAttempts: 0,
-      cooldownStep,
-      lockUntil: now + (lockSeconds * 1000),
+      cooldownStep: 1,
+      lockUntil: now + (LOGIN_LOCKOUT_SECONDS * 1000),
       lastFailedAt: now,
     });
-    return { locked: true, lockoutSeconds: lockSeconds, error: null };
+    return { locked: true, lockoutSeconds: LOGIN_LOCKOUT_SECONDS, error: null };
   }
 
   writeLocalLoginGuardState(scope, email, {
@@ -192,11 +217,14 @@ async function getLoginLockStatus(scope, email) {
   }
 
   const row = Array.isArray(data) ? data[0] : data;
+  const remainingSeconds = normalizeLoginLockoutSeconds(row?.remaining_seconds);
   return {
     isLocked: !!row?.is_locked,
-    remainingSeconds: Math.max(0, Number(row?.remaining_seconds || 0)),
+    remainingSeconds,
     failedAttempts: Number(row?.failed_attempts || 0),
-    unlockTime: row?.unlock_time || (row?.is_locked ? new Date(Date.now() + Number(row.remaining_seconds) * 1000).toISOString() : null),
+    unlockTime: row?.is_locked && remainingSeconds > 0
+      ? new Date(Date.now() + remainingSeconds * 1000).toISOString()
+      : null,
     error: null,
     guardNotConfigured: false,
   };
@@ -231,11 +259,14 @@ async function registerLoginFailure(scope, email) {
   }
 
   const row = Array.isArray(data) ? data[0] : data;
+  const lockoutSeconds = normalizeLoginLockoutSeconds(row?.lockout_seconds);
   return {
     locked: !!row?.locked,
-    lockoutSeconds: Math.max(0, Number(row?.lockout_seconds || 0)),
+    lockoutSeconds,
     failedAttempts: Number(row?.failed_attempts || 0),
-    unlockTime: row?.unlock_time,
+    unlockTime: lockoutSeconds > 0
+      ? new Date(Date.now() + lockoutSeconds * 1000).toISOString()
+      : null,
     error: null,
     guardNotConfigured: false,
   };
@@ -303,16 +334,17 @@ function normalizeLoginError(err, email) {
     const remainingSeconds = Number(err?.remainingSeconds || 0);
     const unlockTimeMs = err?.unlockTime ? Date.parse(err.unlockTime) : NaN;
     const fallbackSeconds = Number.isFinite(unlockTimeMs)
-      ? Math.max(1, Math.ceil((unlockTimeMs - Date.now()) / 1000))
-      : 60;
+      ? normalizeLoginLockoutSeconds((unlockTimeMs - Date.now()) / 1000)
+      : LOGIN_LOCKOUT_SECONDS;
     const waitSeconds = Number.isFinite(remainingSeconds) && remainingSeconds > 0
-      ? Math.max(1, Math.ceil(remainingSeconds))
+      ? normalizeLoginLockoutSeconds(remainingSeconds)
       : fallbackSeconds;
+    const lockoutSeconds = Math.max(1, waitSeconds || LOGIN_LOCKOUT_SECONDS);
     return {
       code: 'account_locked',
-      message: `Too many failed attempts. Try again in ${waitSeconds}s.`,
+      message: `Too many failed attempts. Try again in ${lockoutSeconds}s.`,
       requiresEmailConfirmation: false,
-      lockoutSeconds: waitSeconds,
+      lockoutSeconds,
     };
   }
 
@@ -479,6 +511,16 @@ function deriveOnboardingStage(meta = {}, profile = {}) {
 
   if (explicitStage) return explicitStage;
   return 'profiling';
+}
+
+function getOnboardingStageRank(stage) {
+  const ranks = {
+    profiling: 1,
+    pretest: 2,
+    analyzing: 3,
+    completed: 4,
+  };
+  return ranks[stage] || 0;
 }
 
 export function AuthProvider({ children }) {
@@ -698,12 +740,26 @@ export function AuthProvider({ children }) {
       const normalizedProfiling = parseMetadataBoolean(meta.profiling_completed) || hasSpeakerProfileData(meta.speaker_profile);
       const normalizedPretest = parseMetadataBoolean(meta.pretest_completed);
       const normalizedPretestScripted = parseMetadataBoolean(meta.pretest_scripted_completed);
+      const normalizedPretestFree = parseMetadataBoolean(meta.pretest_free_completed);
+
+      const remoteMetadataIsAhead =
+        getOnboardingStageRank(normalizedStage) > getOnboardingStageRank(user.onboardingStage) ||
+        (normalizedProfiling && !user.profilingCompleted) ||
+        (normalizedPretest && !user.pretestCompleted) ||
+        (normalizedPretestScripted && !user.pretestScriptedCompleted) ||
+        (normalizedPretestFree && !user.pretestFreeCompleted);
+
+      if (remoteMetadataIsAhead) {
+        setUser(buildUser({ user: data.user }));
+        return;
+      }
 
       if (
         normalizedStage === user.onboardingStage &&
         normalizedProfiling === user.profilingCompleted &&
         normalizedPretest === user.pretestCompleted &&
-        normalizedPretestScripted === user.pretestScriptedCompleted
+        normalizedPretestScripted === user.pretestScriptedCompleted &&
+        normalizedPretestFree === user.pretestFreeCompleted
       ) {
         return;
       }
@@ -715,6 +771,7 @@ export function AuthProvider({ children }) {
           profiling_completed: user.profilingCompleted,
           pretest_completed: user.pretestCompleted,
           pretest_scripted_completed: user.pretestScriptedCompleted,
+          pretest_free_completed: user.pretestFreeCompleted,
         },
       });
     };
@@ -724,7 +781,7 @@ export function AuthProvider({ children }) {
     return () => {
       isCancelled = true;
     };
-  }, [user?.id, user?.onboardingStage, user?.profilingCompleted, user?.pretestCompleted, user?.pretestScriptedCompleted]);
+  }, [buildUser, user?.id, user?.onboardingStage, user?.profilingCompleted, user?.pretestCompleted, user?.pretestScriptedCompleted, user?.pretestFreeCompleted]);
 
   /* ── Restore session on mount ── */
   useEffect(() => {

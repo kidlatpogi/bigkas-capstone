@@ -1139,6 +1139,10 @@ body:has(.admin-dashboard-page) .main-content {
   gap: 1.5rem;
 }
 
+.admin-settings-col--wide {
+  grid-column: 1 / -1;
+}
+
 .admin-roster-list {
   display: flex;
   flex-direction: column;

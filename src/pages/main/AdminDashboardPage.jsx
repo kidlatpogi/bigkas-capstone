@@ -361,11 +361,6 @@ function AdminDashboardPage() {
   const [createAdminForm, setCreateAdminForm] = useState(ADMIN_FORM_INITIAL);
   const [editingAdmin, setEditingAdmin] = useState(null);
   const [adminAccountForm, setAdminAccountForm] = useState(ADMIN_FORM_INITIAL);
-  const [systemSettings, setSystemSettings] = useState({
-    maintenance_mode: false,
-    failover_logging: true,
-    defense_data_mode: false,
-  });
   const [toastMessage, setToastMessage] = useState(null);
 
   const showToast = (msg, type = 'success') => {
@@ -397,7 +392,7 @@ function AdminDashboardPage() {
           throw new Error('Access denied: admin privileges required.');
         }
 
-        const [adminProfiles, sessionsRes, metricsRes, activitiesRes, modulesRes, moduleViewsRes, completionsRes, settingsRes] = await Promise.all([
+        const [adminProfiles, sessionsRes, metricsRes, activitiesRes, modulesRes, moduleViewsRes, completionsRes] = await Promise.all([
           fetchAdminProfiles(),
           supabase.from('sessions').select('*').order('created_at', { ascending: true }),
           supabase.from('session_metrics').select('session_id, overall_score, visual_score, vocal_score, verbal_score, visual_avg, vocal_avg, verbal_avg, confidence_score, pronunciation_score'),
@@ -405,7 +400,6 @@ function AdminDashboardPage() {
           supabase.from('modules').select('*').order('level_number', { ascending: true }).order('lesson_number', { ascending: true }),
           supabase.from('module_views').select('*').order('viewed_at', { ascending: false }),
           supabase.from('user_activity_completions').select('*').order('completed_at', { ascending: false }),
-          roleProfile.role === 'superadmin' ? supabase.from('system_settings').select('*') : Promise.resolve({ data: [] })
         ]);
 
         if (sessionsRes.error) throw sessionsRes.error;
@@ -414,12 +408,6 @@ function AdminDashboardPage() {
         if (modulesRes.error) throw modulesRes.error;
         if (moduleViewsRes.error) throw moduleViewsRes.error;
         if (completionsRes.error) throw completionsRes.error;
-
-        if (settingsRes.data && settingsRes.data.length > 0) {
-          const sMap = {};
-          settingsRes.data.forEach(s => sMap[s.key] = s.value === 'true');
-          setSystemSettings(prev => ({ ...prev, ...sMap }));
-        }
 
         if (!active) return;
         setCurrentAdminId(authData.user.id);
@@ -984,24 +972,6 @@ function AdminDashboardPage() {
   const totalAuditPages = Math.ceil(filteredAuditLogs.length / AUDIT_PER_PAGE);
 
   const onLogout = () => setShowLogoutConfirm(true);
-
-  const toggleSetting = async (key, currentValue) => {
-    const newValue = !currentValue;
-    setSystemSettings(prev => ({ ...prev, [key]: newValue }));
-    const { error } = await supabase.from('system_settings').upsert({ key, value: String(newValue) }, { onConflict: 'key' });
-    if (error) {
-      setSystemSettings(prev => ({ ...prev, [key]: currentValue }));
-      showToast('Failed to update setting', 'error');
-    } else {
-      showToast('Setting updated');
-      await recordAuditLog({
-        action: 'update',
-        entityType: 'system_settings',
-        oldValues: { key, value: currentValue },
-        newValues: { key, value: newValue },
-      });
-    }
-  };
 
   const performSaveContent = async (data) => {
     setIsContentLoading(true);
@@ -1575,7 +1545,7 @@ function AdminDashboardPage() {
 
         {activePage === 'settings' && isSuperadmin && (
           <section className="admin-grid admin-grid-2">
-            <div className="admin-settings-col">
+            <div className="admin-settings-col admin-settings-col--wide">
               <article className="admin-card">
                 <h3>Create Administrator</h3>
                 <form className="admin-create-form" onSubmit={submitCreateAdmin}>
@@ -1609,13 +1579,6 @@ function AdminDashboardPage() {
                   </label>
                   <button type="submit" className="admin-btn admin-btn--primary" disabled={creatingAdmin}>{creatingAdmin ? 'Creating...' : 'Create Admin'}</button>
                 </form>
-              </article>
-            </div>
-            <div className="admin-settings-col">
-              <article className="admin-card">
-                <h3>Platform Configurations</h3>
-                <div className="admin-setting-item"><div><strong>Maintenance Mode</strong><p>Disable non-admin access</p></div><button onClick={() => toggleSetting('maintenance_mode', systemSettings.maintenance_mode)} className={`admin-btn ${systemSettings.maintenance_mode ? 'admin-btn--danger' : 'admin-btn--ghost'}`}>{systemSettings.maintenance_mode ? 'ON' : 'OFF'}</button></div>
-                <div className="admin-setting-item"><div><strong>AI Failover Logging</strong><p>Record debug data</p></div><button onClick={() => toggleSetting('failover_logging', systemSettings.failover_logging)} className={`admin-btn ${systemSettings.failover_logging ? 'admin-btn--primary' : 'admin-btn--ghost'}`}>{systemSettings.failover_logging ? 'ON' : 'OFF'}</button></div>
               </article>
             </div>
             <article className="admin-card admin-accounts-card">

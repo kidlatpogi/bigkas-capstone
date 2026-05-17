@@ -11,7 +11,7 @@ import { buildStagePassResultForSession } from '../../utils/passingScore';
 const verbalSprite = getSpriteUrl('common/Verbal.webp');
 const visualSprite = getSpriteUrl('common/Visual.webp');
 const vocalSprite = getSpriteUrl('common/Vocal.webp');
-import DetailedFeedbackPage from '../session/DetailedFeedbackPage';
+import DetailedFeedbackPageMobile from '../session/DetailedFeedbackPageMobile';
 import './HistoryPage.css';
 import './HistoryPageMobile.css';
 
@@ -380,7 +380,7 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
                 </button>
              </div>
              <div className="history-mobile-session-view-content">
-                <DetailedFeedbackPage 
+                <DetailedFeedbackPageMobile
                   sessionIdProp={selectedSessionId} 
                   isInnerView={true} 
                   initialShowDetailed={innerViewMode === 'detailed'}

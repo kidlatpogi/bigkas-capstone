@@ -444,6 +444,8 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
   const isPreTest = mode === 'Pre-Test';
   const isPostTest = mode === 'Post-Test';
   const isFreeSession = getSessionSpeechType(session) === 'Free Speech';
+  const stagePassResult = locationState?.stagePassResult;
+  const showStageRetryMessage = stagePassResult?.isActivityStage && stagePassResult?.passed === false;
   const replayAction = useMemo(() => buildReplayAction(session, navigate, isFreeSession), [session, navigate, isFreeSession]);
 
   const shouldCelebrateScore = (res) => {
@@ -638,6 +640,19 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
             </div>
           </div>
         </section>
+
+        {showStageRetryMessage && (
+          <section className="stage-pass-card dashboard-anim-bottom dashboard-anim-delay-2" role="status">
+            <div>
+              <p className="stage-pass-kicker">Stage requirement</p>
+              <h2 className="stage-pass-title">Keep going. This stage needs one more try.</h2>
+              <p className="stage-pass-message">{stagePassResult.message}</p>
+            </div>
+            {stagePassResult.requiredText ? (
+              <span className="stage-pass-chip">{stagePassResult.requiredText}</span>
+            ) : null}
+          </section>
+        )}
 
         {/* Overview Widgets */}
         <div className="sr-overview-row dashboard-anim-bottom dashboard-anim-delay-3">

@@ -349,6 +349,8 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
   const isPreTest = mode === 'Pre-Test';
   const isPostTest = mode === 'Post-Test';
   const isFreeSession = session ? getSessionSpeechType(session) === 'Free Speech' : false;
+  const stagePassResult = locationState?.stagePassResult;
+  const showStageRetryMessage = stagePassResult?.isActivityStage && stagePassResult?.passed === false;
   const replayAction = useMemo(
     () => (session ? buildReplayAction(session, navigate, isFreeSession) : { label: 'Train Again', onClick: () => {} }),
     [session, navigate, isFreeSession],
@@ -548,6 +550,17 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
             )}
           </div>
         </section>
+
+        {showStageRetryMessage && (
+          <section className="stage-pass-card stage-pass-card--mobile dashboard-anim-bottom dashboard-anim-delay-2" role="status">
+            <p className="stage-pass-kicker">Stage requirement</p>
+            <h2 className="stage-pass-title">Keep going. This stage needs one more try.</h2>
+            <p className="stage-pass-message">{stagePassResult.message}</p>
+            {stagePassResult.requiredText ? (
+              <span className="stage-pass-chip">{stagePassResult.requiredText}</span>
+            ) : null}
+          </section>
+        )}
 
         {!showDetailed && (
           <div className="sr-overview-row dashboard-anim-bottom dashboard-anim-delay-3">

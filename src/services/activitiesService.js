@@ -8,7 +8,7 @@ export async function fetchActivities(currentLevel = 1) {
   const queryActivities = () =>
     supabase
       .from('activities')
-      .select('id, target_level, activity_order, title, phase_name, objective, purpose')
+      .select('id, target_level, activity_order, title, phase_name, objective, purpose, passing_score')
       .eq('target_level', currentLevel)
       .order('activity_order', { ascending: true });
 
@@ -48,6 +48,8 @@ export function buildJourneyTasksFromActivities(rows) {
       target_level: row.target_level,
       activity_order: row.activity_order,
       activityOrder: row.activity_order,
+      passing_score: row.passing_score,
+      passingScore: row.passing_score,
     };
   });
 }

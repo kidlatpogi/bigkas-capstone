@@ -23,6 +23,7 @@ import {
   appendSpeakerPointsHistory,
   createSpeakerPointsHistoryEntry,
 } from '../../utils/speakerPointsHistory';
+import { buildStageRetryMessage, evaluatePassingScore, formatPassingScore } from '../../utils/passingScore';
 import { useVisualAnalysis } from '../../hooks/useVisualAnalysis';
 import { getSpriteUrl } from '../../utils/assetUtils';
 import './TrainingPage.css';
@@ -1098,6 +1099,24 @@ function TrainingPage() {
         
         // Finalize UI
         setAnalysisProgress(100);
+        const fromActivity = String(state?.fromActivityTaskId || '').trim();
+        const stagePassingScore = state?.step?.passingScore ?? state?.step?.passing_score ?? null;
+        const stagePassEvaluation = fromActivity
+          ? evaluatePassingScore(result.data, stagePassingScore)
+          : { passed: true, criteria: [], failedCriteria: [] };
+        const stagePassResult = fromActivity
+          ? {
+              isActivityStage: true,
+              passed: stagePassEvaluation.passed,
+              requiredText: formatPassingScore(stagePassingScore),
+              message: stagePassEvaluation.passed
+                ? ''
+                : buildStageRetryMessage(state?.step?.title || state?.step?.objective, stagePassEvaluation),
+              criteria: stagePassEvaluation.criteria,
+              activityId: fromActivity,
+              activityTitle: state?.step?.title || '',
+            }
+          : null;
 
       try {
         const metadataUpdates = {};
@@ -1118,12 +1137,11 @@ function TrainingPage() {
             recordActivityEvent({ type: 'randomizer-session-complete', sessionId: result.data.id }, activityScopeKey);
           }
 
-          const fromActivity = String(state?.fromActivityTaskId || '').trim();
-          if (fromActivity) {
+          if (fromActivity && stagePassEvaluation.passed) {
             recordActivityEvent({ type: 'activity-complete', activityId: fromActivity }, activityScopeKey);
           }
 
-          const earnedByScore = getScoreRewardPoints(normalizedSessionScore, recordingDurationSec);
+          const earnedByScore = getScoreRewardPoints(normalizedSessionScore, recordingDurationSecRef.current);
           if (earnedByScore > 0) addPointsToSpeakerProgress(earnedByScore, activityScopeKey);
           
           const pointsAfter = getTotalActivityPoints(activityScopeKey);
@@ -1209,7 +1227,7 @@ function TrainingPage() {
         } else {
           // Default to "Performance Overview" (summary view) for regular sessions
           navigate(buildRoute.detailedFeedback(finalSessionId), { 
-            state: { ...result.data, showDetailed: false } 
+            state: { ...result.data, showDetailed: false, stagePassResult } 
           });
         }
       } else {

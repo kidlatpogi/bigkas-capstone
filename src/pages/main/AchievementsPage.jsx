@@ -13,7 +13,11 @@ import {
   acknowledgeAllPublishedUnlockedBadges,
   syncUnlockedBadgeIds,
 } from '../../utils/achievementNavBadge';
-import { syncClaimableAchievements, claimAchievement as removeNotif } from '../../utils/achievementClaims';
+import {
+  ACHIEVEMENTS_UPDATED_EVENT,
+  syncClaimableAchievements,
+  claimAchievement as removeNotif,
+} from '../../utils/achievementClaims';
 import { fetchUserAchievements, claimAchievementInDB } from '../../services/achievementsService';
 import './AchievementsPage.css';
 
@@ -53,7 +57,10 @@ export default function AchievementsPage() {
   const { tasks, loading: tasksLoading } = useActivitiesJourneyTasks(currentLevelNumber);
   const { metricsSyncKey } = useJourneyRemoteState(user);
   const scopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
-  const activityMetrics = useMemo(() => getActivityMetrics(scopeKey), [scopeKey, metricsSyncKey]);
+  const activityMetrics = useMemo(() => {
+    void metricsSyncKey;
+    return getActivityMetrics(scopeKey);
+  }, [scopeKey, metricsSyncKey]);
 
   const loadAchievements = useCallback(async () => {
     if (!user?.id) return;
@@ -62,7 +69,7 @@ export default function AchievementsPage() {
     try {
       const data = await fetchUserAchievements(user.id, user);
       setAchievements(data);
-      syncClaimableAchievements(data);
+      syncClaimableAchievements(data, user.id);
       syncUnlockedBadgeIds(data.filter((a) => a.claimed).map((a) => a.id));
       acknowledgeAllPublishedUnlockedBadges();
     } catch (err) {
@@ -70,19 +77,43 @@ export default function AchievementsPage() {
     } finally {
       setLoadingBadges(false);
     }
-  }, [user?.id, user?.profilingCompleted, user?.pretestCompleted]);
+  }, [user]);
 
   useEffect(() => { loadAchievements(); }, [loadAchievements]);
+
+  useEffect(() => {
+    if (!user?.id) return undefined;
+    const handleAchievementsUpdated = (event) => {
+      const detail = event.detail || {};
+      if (String(detail.userId || '') !== String(user.id) || detail.action !== 'claimed' || !detail.id) return;
+      const claimedId = String(detail.id);
+      const unlockedAt = detail.unlockedAt || new Date().toISOString();
+      setAchievements((prev) =>
+        prev.map((a) => (
+          String(a.id) === claimedId
+            ? { ...a, claimed: true, claimable: false, unlocked: true, unlockedAt }
+            : a
+        ))
+      );
+      setSelectedBadge((badge) => (
+        badge && String(badge.id) === claimedId
+          ? { ...badge, claimed: true, claimable: false, unlocked: true, unlockedAt }
+          : badge
+      ));
+    };
+    window.addEventListener(ACHIEVEMENTS_UPDATED_EVENT, handleAchievementsUpdated);
+    return () => window.removeEventListener(ACHIEVEMENTS_UPDATED_EVENT, handleAchievementsUpdated);
+  }, [user?.id]);
 
   const markBadgeClaimed = useCallback((badge, unlockedAt) => {
     setAchievements((prev) =>
       prev.map((a) => a.id === badge.id ? { ...a, claimed: true, claimable: false, unlocked: true, unlockedAt } : a)
     );
-    removeNotif(badge.id);
+    removeNotif(badge.id, user?.id, { unlockedAt });
     syncUnlockedBadgeIds(
       achievements.filter((a) => a.claimed || a.id === badge.id).map((a) => a.id)
     );
-  }, [achievements]);
+  }, [achievements, user?.id]);
 
   const handleClaim = useCallback(async (badge) => {
     if (!user?.id || claimingId) return;

@@ -21,6 +21,10 @@ import {
   claimAchievement,
   claimAllAchievements,
 } from '../../utils/achievementClaims';
+import {
+  getPublishedUnlockedBadgeIds,
+  syncUnlockedBadgeIds,
+} from '../../utils/achievementNavBadge';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import { claimAchievementInDB, unclaimAllAchievementsInDB } from '../../services/achievementsService';
 import './SideNav.css';
@@ -41,10 +45,10 @@ export default function SideNav() {
   const { user, logout } = useAuthContext();
   const displayName = user?.name || user?.nickname || user?.firstName || 'Speaker';
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [claimableCount, setClaimableCount] = useState(() => getClaimableAchievementsCount());
+  const [claimableCount, setClaimableCount] = useState(() => getClaimableAchievementsCount(user?.id));
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notifTrayOpen, setNotifTrayOpen] = useState(false);
-  const [claimables, setClaimables] = useState(() => getClaimableAchievements());
+  const [claimables, setClaimables] = useState(() => getClaimableAchievements(user?.id));
   const [notifTab, setNotifTab] = useState('all');
   const [unclaiming, setUnclaiming] = useState(false);
   const [claimingId, setClaimingId] = useState(null);
@@ -57,8 +61,8 @@ export default function SideNav() {
 
   useEffect(() => {
     const sync = () => {
-      setClaimableCount(getClaimableAchievementsCount());
-      setClaimables(getClaimableAchievements());
+      setClaimableCount(getClaimableAchievementsCount(user?.id));
+      setClaimables(getClaimableAchievements(user?.id));
     };
     sync();
     window.addEventListener('storage', sync);
@@ -67,7 +71,7 @@ export default function SideNav() {
       window.removeEventListener('storage', sync);
       window.removeEventListener(ACHIEVEMENTS_UPDATED_EVENT, sync);
     };
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     if (isSettingsRoute) {
@@ -116,7 +120,7 @@ export default function SideNav() {
   };
 
   const handleClearAll = () => {
-    claimAllAchievements();
+    claimAllAchievements(user?.id);
     setClaimables([]);
     setClaimableCount(0);
   };
@@ -137,11 +141,12 @@ export default function SideNav() {
     if (!user?.id || claimingId) return;
     setClaimingId(item.id);
     try {
-      await claimAchievementInDB(user.id, item.id);
-      claimAchievement(item.id);
+      const unlockedAt = await claimAchievementInDB(user.id, item.id);
+      claimAchievement(item.id, user.id, { unlockedAt });
+      syncUnlockedBadgeIds([...new Set([...getPublishedUnlockedBadgeIds(), String(item.id)])]);
       setClaimables((prev) => prev.filter((entry) => String(entry.id) !== String(item.id)));
       setClaimableCount((prev) => Math.max(0, prev - 1));
-      setCongratsBadge(item);
+      setCongratsBadge({ ...item, unlockedAt });
     } catch (err) {
       console.error('Failed to claim achievement:', err);
       handleClaimNavigate();

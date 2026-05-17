@@ -8,6 +8,7 @@ import { buildRoute, ROUTES } from '../../utils/constants';
 
 // Lazy load heavy components to reduce initial Script Evaluation time
 const TutorialOverlay = lazy(() => import('../../components/main/TutorialOverlay'));
+const TutorialOverlayMobile = lazy(() => import('../../components/main/TutorialOverlayMobile'));
 const ConfirmationModal = lazy(() => import('../../components/common/ConfirmationModal'));
 
 import {
@@ -327,6 +328,9 @@ function TrainingPage() {
   const [hintContent, setHintContent] = useState('');
   const [showMicWarning, setShowMicWarning] = useState(false);
   const [isFreeCompactLayout, setIsFreeCompactLayout] = useState(false);
+  const [isMobileTutorialViewport, setIsMobileTutorialViewport] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches,
+  );
   const [isTutorialOverlayOpen, setIsTutorialOverlayOpen] = useState(() => {
     // Only consider showing for free pre-test sessions
     if (!isFreePretestSession) return false;
@@ -351,6 +355,22 @@ function TrainingPage() {
       window.sessionStorage.setItem('bigkas_pretest_tutorial_seen', '1');
     }
   };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const mediaQuery = window.matchMedia('(max-width: 768px)');
+    const handleViewportChange = (event) => setIsMobileTutorialViewport(event.matches);
+
+    setIsMobileTutorialViewport(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleViewportChange);
+      return () => mediaQuery.removeEventListener('change', handleViewportChange);
+    }
+
+    mediaQuery.addListener(handleViewportChange);
+    return () => mediaQuery.removeListener(handleViewportChange);
+  }, []);
 
   const isTutorialOverlayOpenRef = useRef(isTutorialOverlayOpen);
   const isInitializingPreviewRef = useRef(false);
@@ -1864,11 +1884,19 @@ function TrainingPage() {
       )}
 
       <Suspense fallback={null}>
-        <TutorialOverlay
-          isOpen={hasActivePretestTutorial}
-          showAudioToggle={hasActivePretestTutorial}
-          onClose={handleCloseTutorial}
-        />
+        {isMobileTutorialViewport ? (
+          <TutorialOverlayMobile
+            isOpen={hasActivePretestTutorial}
+            showAudioToggle={hasActivePretestTutorial}
+            onClose={handleCloseTutorial}
+          />
+        ) : (
+          <TutorialOverlay
+            isOpen={hasActivePretestTutorial}
+            showAudioToggle={hasActivePretestTutorial}
+            onClose={handleCloseTutorial}
+          />
+        )}
 
         <ConfirmationModal
           isOpen={showExitConfirm}

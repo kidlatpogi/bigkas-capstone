@@ -152,7 +152,7 @@ function UserProfilingPage() {
     'Before we begin, we need to assess your current Public Speaking Level. This includes 2 demographic questions, 10 short profiling questions and one small speaking pre-test. These tests ensure I can customize your experience and guide you smoothly throughout your entire journey!';
   const readyMessage =
     "Awesome! Since you're ready, let's jump right into your 10 profiling questions! And don't worry, you can answer every single one with a simple Yes, Sometimes, or No.";
-  const outroFirstMessage = "You've made it to the final step! To wrap things up, let's try a quick Free Speech Pre-test.";
+  const outroFirstMessage = "You've made it to the final step! To wrap things up, let's try a quick speaking pre-test.";
   const outroMissionMessage =
     "Speak for at least 30 seconds on the topic, 'Tell me about yourself.' Don't overthink it—just be you and let your voice lead the way!";
 
@@ -173,6 +173,7 @@ function UserProfilingPage() {
     return window.localStorage.getItem(INTRO_MUTE_KEY) === '1';
   });
   const audioMap = useRef({});
+  const hasSubmittedProfileRef = useRef(false);
 
   const totalSteps = QUESTIONS.length;
   const currentQuestion = QUESTIONS[currentIndex] || QUESTIONS[0];
@@ -450,11 +451,12 @@ function UserProfilingPage() {
       return;
     }
 
+    if (hasSubmittedProfileRef.current) return;
+
+    hasSubmittedProfileRef.current = true;
     setError('');
     stopAllIntroAudios();
     setIsProfileSaved(false);
-    setIsOutroTypingDone(false);
-    setScreen('outro');
     setIsSubmitting(true);
     console.log('[Profiling] Validation passed. Submitting profile...');
 
@@ -491,13 +493,16 @@ function UserProfilingPage() {
     setIsSubmitting(false);
 
     if (!result?.success) {
+      hasSubmittedProfileRef.current = false;
       setError(result?.error || 'Failed to save your profile. Please try again.');
       setScreen('questions');
       return;
     }
 
     console.log('[Profiling] Profile saved. Pre-test intro is ready.');
+    setIsOutroTypingDone(false);
     setIsProfileSaved(true);
+    setScreen('outro');
   };
 
   const continueToPretest = async () => {

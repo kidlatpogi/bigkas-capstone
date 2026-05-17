@@ -177,15 +177,15 @@
 }
 
 .tutorial-audio-toggle.is-unmuted:hover {
-  box-shadow: #047857 0 4px 0 0;
+  box-shadow: #047857 0 3px 0 0;
 }
 
 .tutorial-audio-toggle.is-muted:hover {
-  box-shadow: #B91C1C 0 4px 0 0;
+  box-shadow: #B91C1C 0 3px 0 0;
 }
 
 .tutorial-audio-toggle:active {
-  transform: translateY(6px);
+  transform: translateY(5px);
 }
 
 .tutorial-audio-toggle.is-unmuted:active {
@@ -199,6 +199,30 @@
 .tutorial-audio-toggle svg {
   width: clamp(1.1rem, 2.1vw, 1.35rem);
   height: clamp(1.1rem, 2.1vw, 1.35rem);
+}
+
+.tutorial-speech-bubble .tutorial-audio-toggle:hover {
+  transform: translateY(2px) !important;
+}
+
+.tutorial-speech-bubble .tutorial-audio-toggle.is-unmuted:hover {
+  box-shadow: #047857 0 3px 0 0 !important;
+}
+
+.tutorial-speech-bubble .tutorial-audio-toggle.is-muted:hover {
+  box-shadow: #B91C1C 0 3px 0 0 !important;
+}
+
+.tutorial-speech-bubble .tutorial-audio-toggle:active {
+  transform: translateY(5px) !important;
+}
+
+.tutorial-speech-bubble .tutorial-audio-toggle.is-unmuted:active {
+  box-shadow: #047857 0 0 0 0 !important;
+}
+
+.tutorial-speech-bubble .tutorial-audio-toggle.is-muted:active {
+  box-shadow: #B91C1C 0 0 0 0 !important;
 }
 
 .tutorial-spotlight-active {

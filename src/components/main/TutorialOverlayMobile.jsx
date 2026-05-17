@@ -203,8 +203,11 @@ function TutorialOverlayMobile({
   const useRobotArtForHomeIntro =
     activeStep?.id === 'step-intro' || activeStep?.id === 'step-companion';
   const useLogoCompanion = Boolean(
-    isCustomTutorial
-      && (activeStep?.id === 'step-streak' || (isNarrowViewport && !useRobotArtForHomeIntro)),
+    (!isCustomTutorial && isNarrowViewport)
+      || (
+        isCustomTutorial
+        && (activeStep?.id === 'step-streak' || (isNarrowViewport && !useRobotArtForHomeIntro))
+      ),
   );
 
   const companionSrc = useMemo(() => {
@@ -733,6 +736,7 @@ function TutorialOverlayMobile({
           cursor: default !important;
         }
         .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-speech-bubble--logo::before,
+        .tutorial-overlay-wrapper.is-default-tutorial .tutorial-speech-bubble--logo::before,
         .tutorial-overlay-wrapper.is-custom-tutorial.is-activity-home-step-3 .tutorial-speech-bubble::before {
           display: none !important;
           content: none !important;
@@ -852,13 +856,13 @@ function TutorialOverlayMobile({
             transform: translateY(2px) !important;
           }
           .tutorial-bubble-footer .tutorial-audio-toggle.is-unmuted:hover {
-            box-shadow: #047857 0 4px 0 0 !important;
+            box-shadow: #047857 0 3px 0 0 !important;
           }
           .tutorial-bubble-footer .tutorial-audio-toggle.is-muted:hover {
-            box-shadow: #B91C1C 0 4px 0 0 !important;
+            box-shadow: #B91C1C 0 3px 0 0 !important;
           }
           .tutorial-bubble-footer .tutorial-audio-toggle:active {
-            transform: translateY(6px) !important;
+            transform: translateY(5px) !important;
           }
           .tutorial-bubble-footer .tutorial-audio-toggle.is-unmuted:active {
             box-shadow: #047857 0 0 0 0 !important;
@@ -888,6 +892,14 @@ function TutorialOverlayMobile({
             width: 100% !important;
             max-width: min(100%, 48rem) !important;
             margin: 0 !important;
+          }
+          .tutorial-overlay-wrapper.is-default-tutorial .tutorial-speech-bubble--logo {
+            width: 100% !important;
+            max-width: min(100%, 48rem) !important;
+            margin: 0 !important;
+          }
+          .tutorial-overlay-wrapper.is-default-tutorial .tutorial-companion-container {
+            align-items: stretch !important;
           }
           .tutorial-overlay-wrapper.is-custom-tutorial.is-activity-home-step-1 .tutorial-speech-bubble,
           .tutorial-overlay-wrapper.is-custom-tutorial.is-activity-home-step-2 .tutorial-speech-bubble {

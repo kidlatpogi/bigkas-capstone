@@ -188,7 +188,7 @@ export function buildStagePassResultForSession(session) {
     explicitPassingScore ??
     (targetLevel != null && activityOrder != null
       ? getDefaultPassingScoreForActivity(targetLevel, activityOrder)
-      : []);
+      : VISUAL_60);
   const normalizedPassingScore = normalizePassingScore(passingScore);
 
   if (!normalizedPassingScore.length) return null;

@@ -250,6 +250,23 @@
   border-radius: 50%;
 }
 
+.history-mobile-stage-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--stage-goal-bg, rgba(37, 99, 235, 0.08));
+  border: 1px solid var(--stage-goal-border, rgba(37, 99, 235, 0.22));
+  font-family: 'Fredoka', sans-serif;
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 .history-mobile-item-date {
   font-family: 'Fredoka', sans-serif;
   font-size: 0.75rem;

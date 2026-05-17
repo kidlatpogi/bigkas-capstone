@@ -437,6 +437,11 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
 
                     <div className="history-item-row-right">
                       <div className="history-item-performance-section">
+                        {stageGoal ? (
+                          <span className={`history-item-stage-status ${stageGoal.passed ? 'history-item-stage-status--unlocked' : 'history-item-stage-status--next'}`}>
+                            {stageGoal.passed ? 'Stage unlocked' : 'Next goal'}
+                          </span>
+                        ) : null}
                         <span className="history-item-badge" style={{ borderColor: tier.color, backgroundColor: `${tier.color}15` }}>
                           <span className="history-item-badge-dot" style={{ backgroundColor: tier.color }} />
                           {tier.label}

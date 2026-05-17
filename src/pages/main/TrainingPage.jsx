@@ -243,12 +243,15 @@ function TrainingPage() {
   const isFreePretestSession = isPreTestSession;
 
   const MIN_RECORDING_SECONDS = useMemo(() => {
+    if (isFreePretestSession) {
+      return DEFAULT_MIN_RECORDING_SECONDS;
+    }
     const match = objectiveText.match(/(\d+)\s+Seconds/i) || objectiveText.match(/for\s+(\d+)\s+s/i);
     if (match && match[1]) {
       return parseInt(match[1], 10);
     }
     return DEFAULT_MIN_RECORDING_SECONDS;
-  }, [objectiveText]);
+  }, [isFreePretestSession, objectiveText]);
 
   /* Recording state */
   const [status, setStatus] = useState(() => {

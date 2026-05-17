@@ -154,7 +154,7 @@ function UserProfilingPage() {
     "Awesome! Since you're ready, let's jump right into your 10 profiling questions! And don't worry, you can answer every single one with a simple Yes, Sometimes, or No.";
   const outroFirstMessage = "You've made it to the final step! To wrap things up, let's try a quick speaking pre-test.";
   const outroMissionMessage =
-    "Speak for at least 30 seconds on the topic, 'Tell me about yourself.' Don't overthink it—just be you and let your voice lead the way!";
+    "Speak for at least 20 seconds on the topic, 'Tell me about yourself.' Don't overthink it—just be you and let your voice lead the way!";
 
   const [screen, setScreen] = useState(() => (user?.profilingCompleted ? 'outro' : 'intro'));
   const [introStep, setIntroStep] = useState(() => (user?.profilingCompleted ? 2 : 0));
@@ -902,7 +902,7 @@ function UserProfilingPage() {
                 <br />
                 {isOutroTypingDone ? (
                   <>
-                    Speak for at least <strong>30 seconds</strong> on the topic,{' '}
+                    Speak for at least <strong>20 seconds</strong> on the topic,{' '}
                     <strong>&apos;Tell me about yourself.&apos;</strong> Don&apos;t overthink it—just be
                     you and let your voice lead the way!
                   </>

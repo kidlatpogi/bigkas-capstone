@@ -5,7 +5,7 @@ import { ROUTES } from '../../utils/constants';
 const PRETEST_TRAINING_STATE = {
   freeTopic: 'Tell me about yourself',
   focus: 'free',
-  objective: 'Speak for 30 Seconds about yourself.',
+  objective: 'Speak for 20 Seconds about yourself.',
   sessionType: 'pre-test',
 };
 

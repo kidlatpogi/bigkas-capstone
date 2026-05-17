@@ -104,6 +104,7 @@
 
 .rank-modal-item-info {
   flex: 1;
+  min-width: 0;
 }
 
 .rank-modal-item-label {
@@ -146,4 +147,64 @@
   border-color: #cbd5e1;
   transform: translateX(4px);
   background: #f8fafc;
+}
+
+@media (max-width: 768px) {
+  .rank-modal-overlay {
+    padding: 74px 16px 16px;
+    padding-left: 16px;
+    align-items: flex-start;
+  }
+
+  .rank-modal-card {
+    max-width: 360px;
+    width: min(100%, 360px);
+    max-height: calc(100vh - 90px - env(safe-area-inset-bottom, 0px));
+    border-radius: 28px;
+  }
+
+  .rank-modal-header {
+    padding: 24px 28px;
+  }
+
+  .rank-modal-list {
+    padding: 18px 20px 24px;
+    gap: 12px;
+    max-height: calc(100vh - 190px - env(safe-area-inset-bottom, 0px));
+  }
+
+  .rank-modal-item {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr);
+    grid-template-areas:
+      "visual info"
+      "visual badge";
+    align-items: center;
+    column-gap: 14px;
+    row-gap: 8px;
+    padding: 16px;
+  }
+
+  .rank-modal-item-visual {
+    grid-area: visual;
+  }
+
+  .rank-modal-item-info {
+    grid-area: info;
+  }
+
+  .rank-modal-item-name {
+    font-size: 1.1rem;
+    line-height: 1.25;
+  }
+
+  .rank-modal-current-badge {
+    grid-area: badge;
+    justify-self: start;
+    width: fit-content;
+    max-width: 100%;
+    padding: 4px 10px;
+    font-size: 0.68rem;
+    line-height: 1;
+  }
 }

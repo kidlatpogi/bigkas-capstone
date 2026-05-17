@@ -13,6 +13,8 @@ import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import TutorialOverlay from '../../components/main/TutorialOverlay';
 import { getSpriteUrl } from '../../utils/assetUtils';
+import { getBigkasLevelFromUser } from '../../utils/activityProgress';
+import { readStoredProfileTheme } from '../../utils/profileTheme';
 
 const mascotSprite = getSpriteUrl('Robot/0002.webp');
 const bronzeRank = getSpriteUrl('Rank/rank-bronze.webp');
@@ -95,9 +97,11 @@ export default function TestAudioVideoPage() {
   const micOkRef = useRef(false);
   const successTriggeredRef = useRef(false);
   
-  const [heroTheme] = useState(() => {
-    return localStorage.getItem('pref_hero_theme') || 'emerald';
-  });
+  const userLevel = useMemo(() => getBigkasLevelFromUser(user), [user]);
+  const heroTheme = useMemo(
+    () => readStoredProfileTheme(user?.id, THEME_CONFIG, userLevel.levelNumber),
+    [user?.id, userLevel.levelNumber],
+  );
 
   const getThemeDecoration = (themeId) => {
     const config = THEME_CONFIG.find(t => t.id === themeId);

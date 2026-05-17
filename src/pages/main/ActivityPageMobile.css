@@ -917,6 +917,31 @@ body.randomizer-overlay-open {
   margin: 0 4px;
 }
 
+.dashboard-overlay-content .new-widget--prestige {
+  gap: 12px;
+}
+
+.dashboard-overlay-content .activity-prestige-card {
+  grid-template-columns: 56px 1fr;
+  min-height: 78px;
+  padding: 12px;
+  border-radius: 18px;
+}
+
+.dashboard-overlay-content .activity-prestige-trophy {
+  width: 54px;
+  height: 54px;
+}
+
+.dashboard-overlay-content .activity-prestige-title {
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.dashboard-overlay-content .activity-prestige-level {
+  font-size: 12px;
+}
+
 .dashboard-overlay-content .new-btn-group {
   display: flex;
   flex-direction: column;

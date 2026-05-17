@@ -9,8 +9,15 @@ import './SettingsProfilePage.css';
 import { getSpriteUrl } from '../../utils/assetUtils';
 
 import { getBigkasLevelFromUser } from '../../utils/activityProgress';
+import {
+  getClaimedTrophyLevels,
+  getFeaturedTrophy,
+  getTrophyTitle,
+  setFeaturedTrophyLevel,
+} from '../../utils/trophyClaims';
 
 const mascotSprite = getSpriteUrl('Robot/0002.webp');
+const trophySprite = getSpriteUrl('Thropies/Thropy.png');
 
 const THEME_CONFIG = [
   { id: 'emerald', label: 'Default', requires: 0, decoration: null, className: 'emerald' },
@@ -43,6 +50,8 @@ function SettingsProfilePage() {
   const [heroTheme, setHeroTheme] = useState(() => {
     return localStorage.getItem('pref_hero_theme') || 'emerald';
   });
+  const [claimedTrophyLevels, setClaimedTrophyLevels] = useState(() => getClaimedTrophyLevels(user?.id));
+  const [featuredTrophy, setFeaturedTrophy] = useState(() => getFeaturedTrophy(user?.id));
 
   const userLevel = useMemo(() => getBigkasLevelFromUser(user), [user]);
   const currentLevelNumber = userLevel.levelNumber;
@@ -65,6 +74,11 @@ function SettingsProfilePage() {
   useEffect(() => {
     localStorage.setItem('pref_hero_theme', heroTheme);
   }, [heroTheme]);
+
+  useEffect(() => {
+    setClaimedTrophyLevels(getClaimedTrophyLevels(user?.id));
+    setFeaturedTrophy(getFeaturedTrophy(user?.id));
+  }, [user?.id]);
 
   const hasChanges = useMemo(() => {
     return firstName !== initialSnapshot.firstName ||
@@ -154,6 +168,11 @@ function SettingsProfilePage() {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || '?';
   }, [firstName, lastName]);
 
+  const handleFeatureTrophy = useCallback((level) => {
+    const next = setFeaturedTrophyLevel(user?.id, level);
+    setFeaturedTrophy(getFeaturedTrophy(user?.id) || (next ? { level: next, label: `Level ${next} Trophy`, title: getTrophyTitle(next) } : null));
+  }, [user?.id]);
+
   return (
     <div className="settings-profile-page dashboard-page-new">
       <div className="settings-profile-container">
@@ -193,6 +212,34 @@ function SettingsProfilePage() {
           <div className="hero-info">
             <h1 className="hero-name">{firstName} {lastName}</h1>
             <p className="hero-email">{user?.email}</p>
+            {featuredTrophy ? (
+              <div className="hero-featured-trophy" aria-label={`Featured trophy: ${featuredTrophy.title}`}>
+                <img src={trophySprite} alt="" className="hero-featured-trophy-img" width="28" height="28" />
+                <div className="hero-featured-trophy-copy">
+                  <span className="hero-featured-trophy-label">Featured Trophy</span>
+                  <strong>{featuredTrophy.title}</strong>
+                </div>
+              </div>
+            ) : null}
+            <div className="hero-trophy-shelf" aria-label="Claimed trophy shelf">
+              {[1, 2, 3, 4, 5].map((level) => {
+                const isClaimed = claimedTrophyLevels.includes(level);
+                const isFeatured = featuredTrophy?.level === level;
+                return (
+                  <button
+                    key={level}
+                    type="button"
+                    className={`hero-trophy-token${isClaimed ? ' is-claimed' : ' is-locked'}${isFeatured ? ' is-featured' : ''}`}
+                    disabled={!isClaimed}
+                    onClick={() => handleFeatureTrophy(level)}
+                    aria-label={isClaimed ? `Feature ${getTrophyTitle(level)}` : `Level ${level} trophy locked`}
+                  >
+                    <img src={trophySprite} alt="" width="22" height="22" />
+                    <span>{level}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <button 

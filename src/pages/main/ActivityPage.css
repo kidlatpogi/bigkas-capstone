@@ -600,6 +600,58 @@ html {
   gap: 8px;
 }
 
+.new-widget--prestige {
+  padding: 20px;
+}
+
+.activity-prestige-card {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  align-items: center;
+  gap: 14px;
+  min-height: 84px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(245, 158, 11, 0.22);
+  background:
+    radial-gradient(circle at 18% 15%, rgba(251, 191, 36, 0.2) 0%, rgba(251, 191, 36, 0) 38%),
+    linear-gradient(180deg, #ffffff 0%, #fffaf0 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.92) inset,
+    0 -3px 0 rgba(245, 158, 11, 0.1) inset,
+    0 10px 20px rgba(120, 53, 15, 0.08);
+}
+
+.activity-prestige-trophy {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 10px rgba(120, 53, 15, 0.18));
+}
+
+.activity-prestige-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.activity-prestige-title {
+  margin: 0;
+  color: #111827;
+  font-size: clamp(1rem, 0.95rem + 0.25vw, 1.18rem);
+  font-weight: 850;
+  line-height: 1.18;
+}
+
+.activity-prestige-level {
+  margin: 0;
+  color: #64748b;
+  font-size: clamp(0.78rem, 0.74rem + 0.18vw, 0.88rem);
+  font-weight: 800;
+  line-height: 1.3;
+}
+
 .new-practice-subtitle {
   margin: 0;
   font-size: clamp(0.82rem, 0.78rem + 0.2vw, 0.92rem);

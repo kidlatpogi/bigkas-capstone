@@ -279,6 +279,8 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
     return null;
   }, [currentSession, locationState, sessionId]);
   const session = useMemo(() => mergeSessionActivity(rawSession, activityLookup), [activityLookup, rawSession]);
+  const isFreshTrainingResult = !isInnerView && locationState?.id === sessionId && locationState?.showDetailed === false;
+  const shouldShowBreadcrumb = !isInnerView && !isFreshTrainingResult;
 
   useEffect(() => {
     if (!rawSession && sessionId) fetchSessionById(sessionId);
@@ -552,7 +554,7 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
 
   return (
     <div className={`df-mobile-root no-scrollbar${isInnerView ? ' df-mobile-root--inner' : ''}`}>
-      {!isInnerView && (
+      {shouldShowBreadcrumb && (
         <nav className="df-mobile-breadcrumb">
           <button
             type="button"

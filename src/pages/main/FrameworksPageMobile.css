@@ -384,6 +384,9 @@
 
 .fh-mobile-modal-body {
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .fh-mobile-modal-focus {
@@ -392,7 +395,7 @@
   padding: 16px;
   display: grid;
   gap: 6px;
-  margin-bottom: 14px;
+  margin-bottom: 0;
 }
 
 .fh-mobile-modal-focus span,
@@ -423,7 +426,7 @@
   border-radius: 16px;
   padding: 14px;
   background: #f8fafc;
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 
 .fh-mobile-lesson-map span {
@@ -474,7 +477,7 @@
 
 .fh-mobile-module-sections {
   display: grid;
-  gap: 10px;
+  gap: 16px;
 }
 
 .fh-mobile-module-section {

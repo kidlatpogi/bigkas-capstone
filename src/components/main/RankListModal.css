@@ -165,6 +165,20 @@
 
   .rank-modal-header {
     padding: 24px 28px;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    justify-content: stretch;
+    text-align: center;
+  }
+
+  .rank-modal-title {
+    grid-column: 2;
+    justify-self: center;
+  }
+
+  .rank-modal-header .dashboard-overlay-close-btn {
+    grid-column: 3;
+    justify-self: end;
   }
 
   .rank-modal-list {

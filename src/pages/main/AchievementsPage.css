@@ -587,6 +587,33 @@
   text-transform: capitalize;
 }
 
+.badge-journey-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  margin: -4px 0 10px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  color: #2563eb;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+  z-index: 2;
+}
+
+.badge-journey-chip--modal {
+  margin: -6px 0 12px;
+}
+
 .checkmark-icon {
   color: #059669;
   font-size: 1.2rem;
@@ -701,6 +728,12 @@
 [data-theme='dark'] .trophy-progress-text,
 [data-theme='dark'] .badge-progress-text {
   color: #94A3B8;
+}
+
+[data-theme='dark'] .badge-journey-chip {
+  background: rgba(96, 165, 250, 0.12);
+  border-color: rgba(96, 165, 250, 0.28);
+  color: #93c5fd;
 }
 
 /* ── Badge Detail Modal ── */

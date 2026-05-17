@@ -41,6 +41,11 @@ function formatDate(iso) {
   }
 }
 
+function formatJourneyStage(badge) {
+  if (!badge?.journeyNumber || !badge?.stageNumber) return null;
+  return `Journey ${badge.journeyNumber} • Stage ${String(badge.stageNumber).padStart(2, '0')}`;
+}
+
 export default function AchievementsPage() {
   const { user } = useAuthContext();
   const [filterStatus, setFilterStatus] = useState('all');
@@ -161,6 +166,11 @@ export default function AchievementsPage() {
     else if (sortBy === 'name-desc') result.sort((a, b) => b.name.localeCompare(a.name));
     else if (sortBy === 'newest') result.sort((a, b) => (new Date(b.unlockedAt || b.createdAt)) - (new Date(a.unlockedAt || a.createdAt)));
     else if (sortBy === 'oldest') result.sort((a, b) => (new Date(a.unlockedAt || a.createdAt)) - (new Date(b.unlockedAt || b.createdAt)));
+    else result.sort((a, b) => (
+      (Number(a.journeyNumber) || 999) - (Number(b.journeyNumber) || 999) ||
+      (Number(a.stageNumber) || 999) - (Number(b.stageNumber) || 999) ||
+      a.name.localeCompare(b.name)
+    ));
     return result;
   }, [achievements, filterStatus, sortBy]);
 
@@ -250,6 +260,7 @@ export default function AchievementsPage() {
             <div className="badge-icon-wrapper">
               <img src={badge.badgeUrl ?? badgeImg} alt={badge.name} className="badge-img" loading="lazy" width="100" height="100" onError={(e) => { e.currentTarget.src = badgeImg; }} />
             </div>
+            {formatJourneyStage(badge) && <span className="badge-journey-chip">{formatJourneyStage(badge)}</span>}
             <h3 className="badge-title">{badge.name}{badge.claimed && <IoCheckmarkCircle className="checkmark-icon" aria-label="Claimed" />}</h3>
             <div className="badge-progress-container">
               <div className="badge-progress-bar" role="progressbar" aria-valuenow={badge.claimed ? 1 : 0} aria-valuemin={0} aria-valuemax={1}>
@@ -276,6 +287,7 @@ export default function AchievementsPage() {
             <div className={`badge-modal-icon ${!selectedBadge.claimed && !selectedBadge.claimable ? 'locked' : ''}`}>
               <img src={selectedBadge.badgeUrl ?? badgeImg} alt={selectedBadge.name} className="badge-modal-img" loading="lazy" width="120" height="120" onError={(e) => { e.currentTarget.src = badgeImg; }} />
             </div>
+            {formatJourneyStage(selectedBadge) && <span className="badge-journey-chip badge-journey-chip--modal">{formatJourneyStage(selectedBadge)}</span>}
             <h2 id="badge-modal-title" className="badge-modal-title">{selectedBadge.name}{selectedBadge.claimed && <IoCheckmarkCircle className="checkmark-icon" aria-label="Claimed" />}</h2>
             {!selectedBadge.claimed ? (
               <>

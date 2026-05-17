@@ -1,4 +1,7 @@
 import { createContext, useState, useEffect, useCallback, useRef } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Browser } from '@capacitor/browser';
 import { supabase, ensureFreshAccessToken, isJwtExpiredError } from '../lib/supabase';
 import { ENV } from '../config/env';
 import { normalizeSpeakerPointsHistory } from '../utils/speakerPointsHistory';
@@ -17,6 +20,7 @@ const LOGIN_GUARD_RESET_WINDOW_MS = 24 * 60 * 60 * 1000;
 const GENERIC_LOGIN_FAILURE_MESSAGE = 'Wrong email or password.';
 const PROFILE_GUARD_TIMEOUT_MS = 2500;
 const PROFILE_CACHE_TTL_MS = 10_000;
+const NATIVE_AUTH_REDIRECT_URL = 'org.nationalu.bigkas://auth/callback';
 let loginGuardRpcDisabled = false;
 const profileRequestCache = new Map();
 
@@ -313,6 +317,21 @@ async function registerLoginSuccess(scope, email) {
 function getWebRedirectPath(path = '/') {
   if (typeof window === 'undefined') return undefined;
   return `${window.location.origin}${path}`;
+}
+
+function getOAuthRedirectPath(path = '/') {
+  return Capacitor.isNativePlatform() ? NATIVE_AUTH_REDIRECT_URL : getWebRedirectPath(path);
+}
+
+function getAuthParamsFromUrl(url) {
+  const parsed = new URL(url);
+  const params = new URLSearchParams(parsed.search);
+  const hash = parsed.hash.startsWith('#') ? parsed.hash.slice(1) : parsed.hash;
+  const hashParams = new URLSearchParams(hash);
+  hashParams.forEach((value, key) => {
+    if (!params.has(key)) params.set(key, value);
+  });
+  return params;
 }
 
 function getSignupCooldownUntil() {
@@ -986,6 +1005,69 @@ export function AuthProvider({ children }) {
     };
   }, [buildUser, clearAdminSession, fetchAndMergeProfile, rejectArchivedSession]);
 
+  /* ── Native OAuth deep-link completion ── */
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return undefined;
+
+    let isDisposed = false;
+
+    const completeNativeOAuth = async (url) => {
+      if (!url || !String(url).startsWith(NATIVE_AUTH_REDIRECT_URL)) return;
+      try {
+        const params = getAuthParamsFromUrl(url);
+        const errorDescription = params.get('error_description') || params.get('error');
+        if (errorDescription) {
+          throw new Error(errorDescription);
+        }
+
+        const code = params.get('code');
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+
+        if (code) {
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeError) throw exchangeError;
+        } else if (accessToken && refreshToken) {
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (sessionError) throw sessionError;
+        } else {
+          return;
+        }
+
+        await Browser.close().catch(() => {});
+        if (!isDisposed && typeof window !== 'undefined' && window.location.pathname === '/login') {
+          window.history.replaceState(null, '', '/dashboard');
+          window.dispatchEvent(new Event('popstate'));
+        }
+      } catch (authError) {
+        await Browser.close().catch(() => {});
+        if (!isDisposed) {
+          const message = authError?.message || 'Google sign-in failed. Please try again.';
+          setError(message);
+          setIsLoading(false);
+        }
+      }
+    };
+
+    let listenerHandle;
+    CapacitorApp.getLaunchUrl()
+      .then((launch) => completeNativeOAuth(launch?.url))
+      .catch(() => {});
+    CapacitorApp.addListener('appUrlOpen', ({ url }) => {
+      void completeNativeOAuth(url);
+    }).then((handle) => {
+      listenerHandle = handle;
+    });
+
+    return () => {
+      isDisposed = true;
+      listenerHandle?.remove?.();
+    };
+  }, []);
+
   /* ── Refresh JWT when the tab becomes visible (background tabs throttle auto-refresh timers) ── */
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -1454,13 +1536,13 @@ export function AuthProvider({ children }) {
     setError(null);
     clearAdminSession();
 
-    const redirectTo = getWebRedirectPath('/dashboard');
+    const redirectTo = getOAuthRedirectPath('/dashboard');
 
-    const { error: err } = await supabase.auth.signInWithOAuth({
+    const { data, error: err } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo,
-        skipBrowserRedirect: false,
+        skipBrowserRedirect: Capacitor.isNativePlatform(),
       },
     });
 
@@ -1473,6 +1555,10 @@ export function AuthProvider({ children }) {
       }
       setError(err.message);
       return { success: false, error: err.message };
+    }
+
+    if (Capacitor.isNativePlatform() && data?.url) {
+      await Browser.open({ url: data.url });
     }
 
     return { success: true };

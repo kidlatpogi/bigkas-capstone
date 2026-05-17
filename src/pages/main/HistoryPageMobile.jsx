@@ -42,6 +42,10 @@ function mergeSessionActivity(session, activityLookup) {
   };
 }
 
+function formatCompactStageRequirement(requiredText) {
+  return String(requiredText || '').replace(/\s+Score\b/g, '').trim();
+}
+
 // --- Helpers (1:1 with HistoryPage) ---
 function toFivePointScore(rawScore) {
   const numeric = Number(rawScore);
@@ -278,6 +282,7 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
                 const pillars = resolveSessionPillars(s);
                 const stageGoal = buildStagePassResultForSession(sessionForStage);
                 const stageGoalColor = stageGoal?.passed ? '#059669' : '#2563EB';
+                const stageRequirement = formatCompactStageRequirement(stageGoal?.requiredText);
                 const dateObj = new Date(s.created_at);
                 const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                 
@@ -304,7 +309,7 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
                           </span>
                           {stageGoal ? (
                             <span className="history-mobile-stage-status" style={{ color: stageGoalColor }}>
-                              {stageGoal.passed ? 'Stage unlocked' : 'Next goal'}
+                              {stageGoal.passed ? 'Unlocked' : 'Next'}
                             </span>
                           ) : null}
                           <p className="history-mobile-item-date">{formattedDate}</p>
@@ -318,10 +323,10 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
                     {stageGoal ? (
                       <div className={`history-mobile-stage-goal ${stageGoal.passed ? 'history-mobile-stage-goal--unlocked' : 'history-mobile-stage-goal--next'}`}>
                         <span className="history-mobile-stage-goal-label">
-                          {stageGoal.passed ? 'Stage unlocked' : 'Next goal ready'}
+                          {stageGoal.passed ? 'Unlocked' : 'Next goal'}
                         </span>
-                        {stageGoal.requiredText ? (
-                          <span className="history-mobile-stage-goal-text">{stageGoal.requiredText}</span>
+                        {stageRequirement ? (
+                          <span className="history-mobile-stage-goal-text">{stageRequirement}</span>
                         ) : null}
                       </div>
                     ) : null}

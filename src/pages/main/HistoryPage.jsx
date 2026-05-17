@@ -46,6 +46,10 @@ function mergeSessionActivity(session, activityLookup) {
   };
 }
 
+function formatCompactStageRequirement(requiredText) {
+  return String(requiredText || '').replace(/\s+Score\b/g, '').trim();
+}
+
 function toFivePointScore(rawScore) {
   const numeric = Number(rawScore);
   if (!Number.isFinite(numeric)) return 1;
@@ -372,6 +376,7 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                 const lacksSummary = buildLacksSummary(pillars);
                 const stageGoal = buildStagePassResultForSession(sessionForStage);
                 const stageGoalColor = stageGoal?.passed ? '#059669' : '#2563EB';
+                const stageRequirement = formatCompactStageRequirement(stageGoal?.requiredText);
                 const delay = Math.min(index + 2, 9);
                 const dateObj = new Date(s.created_at);
                 const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -407,10 +412,10 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                         {stageGoal ? (
                           <div className={`history-item-stage-goal ${stageGoal.passed ? 'history-item-stage-goal--unlocked' : 'history-item-stage-goal--next'}`}>
                             <span className="history-item-stage-goal-label">
-                              {stageGoal.passed ? 'Stage unlocked' : 'Next goal ready'}
+                              {stageGoal.passed ? 'Unlocked' : 'Next goal'}
                             </span>
-                            {stageGoal.requiredText ? (
-                              <span className="history-item-stage-goal-text">{stageGoal.requiredText}</span>
+                            {stageRequirement ? (
+                              <span className="history-item-stage-goal-text">{stageRequirement}</span>
                             ) : null}
                           </div>
                         ) : null}
@@ -439,7 +444,7 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                       <div className="history-item-performance-section">
                         {stageGoal ? (
                           <span className={`history-item-stage-status ${stageGoal.passed ? 'history-item-stage-status--unlocked' : 'history-item-stage-status--next'}`}>
-                            {stageGoal.passed ? 'Stage unlocked' : 'Next goal'}
+                            {stageGoal.passed ? 'Unlocked' : 'Next'}
                           </span>
                         ) : null}
                         <span className="history-item-badge" style={{ borderColor: tier.color, backgroundColor: `${tier.color}15` }}>

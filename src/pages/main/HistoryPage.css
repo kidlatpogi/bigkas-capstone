@@ -437,10 +437,13 @@
 .history-item-stage-goal {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  align-self: center;
+  gap: 6px;
   width: fit-content;
+  min-width: 0;
   max-width: 100%;
-  padding: 5px 10px;
+  padding: 4px 9px;
   border-radius: 999px;
   border: 1px solid var(--stage-goal-border, rgba(37, 99, 235, 0.22));
   background: var(--stage-goal-bg, rgba(37, 99, 235, 0.08));
@@ -450,7 +453,7 @@
 
 .history-item-stage-goal-label {
   flex: 0 0 auto;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 900;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -462,7 +465,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.74rem;
+  font-size: 0.7rem;
   font-weight: 800;
 }
 
@@ -553,14 +556,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 24px;
-  padding: 3px 10px;
+  min-height: 22px;
+  padding: 3px 8px;
   border-radius: 999px;
   border: 1px solid var(--stage-goal-border, rgba(37, 99, 235, 0.22));
   background: var(--stage-goal-bg, rgba(37, 99, 235, 0.08));
   color: var(--stage-goal-color, #2563eb);
   font-family: 'Fredoka', sans-serif;
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   font-weight: 900;
   letter-spacing: 0.03em;
   line-height: 1;
@@ -808,15 +811,15 @@
   }
 
   .history-item-stage-goal {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 2px;
-    width: 100%;
+    align-items: center;
+    flex-direction: row;
+    gap: 6px;
+    width: fit-content;
     border-radius: 14px;
   }
 
   .history-item-stage-goal-text {
-    white-space: normal;
+    white-space: nowrap;
   }
 
   .history-item-pillars {

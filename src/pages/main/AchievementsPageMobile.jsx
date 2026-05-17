@@ -21,6 +21,7 @@ import {
   claimAllAchievements as clearAllNotifs,
 } from '../../utils/achievementClaims';
 import { fetchUserAchievements, claimAchievementInDB } from '../../services/achievementsService';
+import { claimTrophyLevel, getClaimedTrophyLevels } from '../../utils/trophyClaims';
 import './AchievementsPageMobile.css';
 
 const trophyImg     = getSpriteUrl('Thropies/Thropy.png');
@@ -56,6 +57,7 @@ export default function AchievementsPageMobile() {
   const [claimingId, setClaimingId] = useState(null);
   const [congratsBadge, setCongratsBadge] = useState(null);
   const [congratsQueue, setCongratsQueue] = useState([]);
+  const [claimedTrophyLevels, setClaimedTrophyLevels] = useState(() => getClaimedTrophyLevels(user?.id));
 
   const currentLevelNumber = user?.speakerLevelNumber || 1;
   const { tasks, loading: tasksLoading } = useActivitiesJourneyTasks(currentLevelNumber);
@@ -65,6 +67,10 @@ export default function AchievementsPageMobile() {
     void metricsSyncKey;
     return getActivityMetrics(scopeKey);
   }, [scopeKey, metricsSyncKey]);
+
+  useEffect(() => {
+    setClaimedTrophyLevels(getClaimedTrophyLevels(user?.id));
+  }, [user?.id]);
 
   const loadAchievements = useCallback(async () => {
     if (!user?.id) return;
@@ -190,9 +196,22 @@ export default function AchievementsPageMobile() {
       const isLocked = lvl > currentLevelNumber;
       const total = isCurrentLevel ? tasks.length : 0;
       const current = isCurrentLevel ? tasks.filter((t) => isActivityTaskCompleted(t.id, activityMetrics)).length : 0;
-      return { id: lvl, name: RANK_NAMES[lvl - 1], rankImg: RANK_IMGS[lvl - 1], total, current, isCompleted, isLocked };
+      const claimed = claimedTrophyLevels.includes(lvl);
+      return { id: lvl, name: RANK_NAMES[lvl - 1], rankImg: RANK_IMGS[lvl - 1], total, current, isCompleted, isLocked, claimed, claimable: isCompleted && !claimed };
     });
-  }, [currentLevelNumber, tasks, activityMetrics]);
+  }, [currentLevelNumber, tasks, activityMetrics, claimedTrophyLevels]);
+
+  const handleClaimTrophy = useCallback((trophy) => {
+    if (!trophy?.claimable) return;
+    const next = claimTrophyLevel(user?.id, trophy.id);
+    setClaimedTrophyLevels(next);
+    setCongratsBadge({
+      id: `trophy-${trophy.id}`,
+      name: `Level ${trophy.id} Trophy`,
+      description: `You claimed your Level ${trophy.id} completion trophy.`,
+      badgeUrl: trophyImg,
+    });
+  }, [user?.id]);
 
   const filteredBadges = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
@@ -284,7 +303,7 @@ export default function AchievementsPageMobile() {
             <div className="trophy-showcase-card">
               <div className="trophy-podium-scroll no-scrollbar">
                 {trophies.map((trophy) => (
-                  <div key={trophy.id} className={`trophy-podium-item ${trophy.isLocked ? 'locked' : ''}`}>
+                  <div key={trophy.id} className={`trophy-podium-item ${trophy.isLocked ? 'locked' : ''} ${trophy.claimable ? 'trophy-podium-item--claimable' : ''} ${trophy.claimed ? 'trophy-podium-item--claimed' : ''}`}>
                     <div className="podium-rank-badge">
                       <img src={trophy.rankImg} alt={`Level ${trophy.id}`} className="rank-icon" loading="lazy" width="36" height="36" />
                       <span className="rank-name">LEVEL {trophy.id}</span>
@@ -295,7 +314,12 @@ export default function AchievementsPageMobile() {
                         <div className="podium-progress-bar" role="progressbar" aria-valuenow={trophy.current} aria-valuemin={0} aria-valuemax={trophy.total || 1}>
                           <div className="podium-progress-fill" style={{ width: trophy.isCompleted ? '100%' : trophy.total > 0 ? `${(trophy.current / trophy.total) * 100}%` : '0%' }} />
                         </div>
-                        <span className="podium-count">{trophy.isLocked ? 'LOCKED' : trophy.isCompleted ? 'DONE' : tasksLoading ? '…' : `${trophy.current}/${trophy.total}`}</span>
+                        <span className="podium-count">{trophy.isLocked ? 'LOCKED' : trophy.claimed ? 'CLAIMED' : trophy.claimable ? 'READY' : trophy.isCompleted ? 'DONE' : tasksLoading ? '…' : `${trophy.current}/${trophy.total}`}</span>
+                        {trophy.claimable && (
+                          <button type="button" className="podium-claim-btn" onClick={() => handleClaimTrophy(trophy)}>
+                            Claim
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -19,6 +19,7 @@ import {
   claimAchievement as removeNotif,
 } from '../../utils/achievementClaims';
 import { fetchUserAchievements, claimAchievementInDB } from '../../services/achievementsService';
+import { claimTrophyLevel, getClaimedTrophyLevels } from '../../utils/trophyClaims';
 import './AchievementsPage.css';
 
 const trophyImg   = getSpriteUrl('Thropies/Thropy.png');
@@ -57,6 +58,7 @@ export default function AchievementsPage() {
   const [claimingId, setClaimingId] = useState(null);
   const [congratsBadge, setCongratsBadge] = useState(null);
   const [congratsQueue, setCongratsQueue] = useState([]);
+  const [claimedTrophyLevels, setClaimedTrophyLevels] = useState(() => getClaimedTrophyLevels(user?.id));
 
   const currentLevelNumber = user?.speakerLevelNumber || 1;
   const { tasks, loading: tasksLoading } = useActivitiesJourneyTasks(currentLevelNumber);
@@ -66,6 +68,10 @@ export default function AchievementsPage() {
     void metricsSyncKey;
     return getActivityMetrics(scopeKey);
   }, [scopeKey, metricsSyncKey]);
+
+  useEffect(() => {
+    setClaimedTrophyLevels(getClaimedTrophyLevels(user?.id));
+  }, [user?.id]);
 
   const loadAchievements = useCallback(async () => {
     if (!user?.id) return;
@@ -150,9 +156,22 @@ export default function AchievementsPage() {
       const isLocked       = lvl > currentLevelNumber;
       const total = isCurrentLevel ? tasks.length : 0;
       const current = isCurrentLevel ? tasks.filter((t) => isActivityTaskCompleted(t.id, activityMetrics)).length : 0;
-      return { id: lvl, name: RANK_NAMES[lvl - 1], rankImg: RANK_IMGS[lvl - 1], total, current, isCompleted, isLocked };
+      const claimed = claimedTrophyLevels.includes(lvl);
+      return { id: lvl, name: RANK_NAMES[lvl - 1], rankImg: RANK_IMGS[lvl - 1], total, current, isCompleted, isLocked, claimed, claimable: isCompleted && !claimed };
     });
-  }, [currentLevelNumber, tasks, activityMetrics]);
+  }, [currentLevelNumber, tasks, activityMetrics, claimedTrophyLevels]);
+
+  const handleClaimTrophy = useCallback((trophy) => {
+    if (!trophy?.claimable) return;
+    const next = claimTrophyLevel(user?.id, trophy.id);
+    setClaimedTrophyLevels(next);
+    setCongratsBadge({
+      id: `trophy-${trophy.id}`,
+      name: `Level ${trophy.id} Trophy`,
+      description: `You claimed your Level ${trophy.id} completion trophy.`,
+      badgeUrl: trophyImg,
+    });
+  }, [user?.id]);
 
   const filteredBadges = useMemo(() => {
     let result = achievements.filter((a) => {
@@ -189,7 +208,7 @@ export default function AchievementsPage() {
 
       <section className="trophy-showcase-card dashboard-anim-top dashboard-anim-delay-1" aria-label="Trophy showcase">
         {trophies.map((trophy) => (
-          <div key={trophy.id} className={`trophy-item ${trophy.isLocked ? 'locked' : ''}`}>
+          <div key={trophy.id} className={`trophy-item ${trophy.isLocked ? 'locked' : ''} ${trophy.claimable ? 'trophy-item--claimable' : ''} ${trophy.claimed ? 'trophy-item--claimed' : ''}`}>
             <div className="trophy-rank-badge">
               <img src={trophy.rankImg} alt={`Level ${trophy.id} ${trophy.name}`} className="rank-icon" loading="lazy" width="40" height="40" />
               <span className="rank-name">LEVEL {trophy.id}</span>
@@ -202,8 +221,13 @@ export default function AchievementsPage() {
                 <div className="trophy-progress-fill" style={{ width: trophy.isCompleted ? '100%' : trophy.total > 0 ? `${(trophy.current / trophy.total) * 100}%` : '0%' }} />
               </div>
               <span className="trophy-progress-text">
-                {trophy.isLocked ? 'Locked' : trophy.isCompleted ? 'Completed' : tasksLoading ? '…' : `${trophy.current}/${trophy.total}`}
+                {trophy.isLocked ? 'Locked' : trophy.claimed ? 'Claimed' : trophy.claimable ? 'Ready' : trophy.isCompleted ? 'Completed' : tasksLoading ? '…' : `${trophy.current}/${trophy.total}`}
               </span>
+              {trophy.claimable && (
+                <button type="button" className="trophy-claim-btn" onClick={() => handleClaimTrophy(trophy)}>
+                  Claim Trophy
+                </button>
+              )}
             </div>
           </div>
         ))}

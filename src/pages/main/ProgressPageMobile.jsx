@@ -28,7 +28,7 @@ import {
   createSpeakerPointsHistoryEntry,
 } from '../../utils/speakerPointsHistory';
 import { getSpriteUrl } from '../../utils/assetUtils';
-import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
+import { useAllActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 
 const heroRobotImage = getSpriteUrl('Robot/0018.webp');
 const visualSprite = getSpriteUrl('common/Visual.webp');
@@ -110,8 +110,7 @@ function ProgressPageMobile() {
   const [range, setRange] = useState('All');
   const [pillarRange, setPillarRange] = useState('All');
   const [showMobileHistory, setShowMobileHistory] = useState(false);
-  const currentJourneyNumber = useMemo(() => getBigkasLevelFromUser(user).levelNumber || 1, [user]);
-  const { tasks: activityTasks } = useActivitiesJourneyTasks(currentJourneyNumber);
+  const { tasks: activityTasks } = useAllActivitiesJourneyTasks();
 
   const userSessions = useMemo(() => {
     const userId = String(user?.id || '').trim();

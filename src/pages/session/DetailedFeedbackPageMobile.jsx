@@ -19,6 +19,7 @@ import { getSessionMode, getSessionSpeechType } from '../../utils/sessionFormatt
 import { sanitizeRecommendationLines } from '../../utils/analysisTranscript';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import { buildStagePassResultForSession } from '../../utils/passingScore';
+import { useAllActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 
 const BIGKAS_LOGO_URL = 'https://assets.bigkas.site/Images/Bigkas-Logo.webp';
 const verbalSprite = getSpriteUrl('common/Verbal.webp');
@@ -267,8 +268,11 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
     if (locationState?.showDetailed !== undefined) return !!locationState.showDetailed;
     return initialShowDetailed || isInnerView === false;
   });
+  const { tasks: fallbackActivityTasks } = useAllActivitiesJourneyTasks();
+  const providedActivityTasks = Array.isArray(activityTasks) ? activityTasks : [];
+  const effectiveActivityTasks = providedActivityTasks.length ? providedActivityTasks : fallbackActivityTasks;
 
-  const activityLookup = useMemo(() => buildActivityLookup(activityTasks), [activityTasks]);
+  const activityLookup = useMemo(() => buildActivityLookup(effectiveActivityTasks), [effectiveActivityTasks]);
   const rawSession = useMemo(() => {
     if (locationState?.id === sessionId) return locationState;
     if (currentSession?.id === sessionId) return currentSession;

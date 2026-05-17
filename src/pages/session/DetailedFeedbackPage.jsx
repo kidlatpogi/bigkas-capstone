@@ -20,6 +20,7 @@ import { getSessionMode, getSessionSpeechType } from '../../utils/sessionFormatt
 import { sanitizeRecommendationLines, sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import { buildStagePassResultForSession } from '../../utils/passingScore';
+import { useAllActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 
 const heroRobotImage = getSpriteUrl('Robot/0018.webp');
 const verbalSprite = getSpriteUrl('common/Verbal.webp');
@@ -278,6 +279,9 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
     if (locationState?.showDetailed !== undefined) return !!locationState.showDetailed;
     return initialShowDetailed || isInnerView === false;
   });
+  const { tasks: fallbackActivityTasks } = useAllActivitiesJourneyTasks();
+  const providedActivityTasks = Array.isArray(activityTasks) ? activityTasks : [];
+  const effectiveActivityTasks = providedActivityTasks.length ? providedActivityTasks : fallbackActivityTasks;
   const avoidSectionRef = useRef(null);
 
   const [windowSize, setWindowSize] = useState({
@@ -301,7 +305,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
     return Number.isFinite(Number(locationState?.confidence_score));
   }, [locationState, sessionId]);
 
-  const activityLookup = useMemo(() => buildActivityLookup(activityTasks), [activityTasks]);
+  const activityLookup = useMemo(() => buildActivityLookup(effectiveActivityTasks), [effectiveActivityTasks]);
   const rawSession = useMemo(() => {
     if (hasCompleteLocationState) return locationState;
     if (String(currentSession?.id || '') === String(sessionId || '')) return currentSession;
@@ -530,7 +534,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
         isInnerView={isInnerView}
         onCloseInner={onCloseInner}
         initialShowDetailed={initialShowDetailed}
-        activityTasks={activityTasks}
+        activityTasks={effectiveActivityTasks}
       />
     );
   }

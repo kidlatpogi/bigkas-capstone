@@ -126,6 +126,7 @@ export default function AchievementsPageMobile() {
     syncUnlockedBadgeIds(
       achievements.filter((a) => a.claimed || a.id === badge.id).map((a) => a.id)
     );
+    acknowledgeAllPublishedUnlockedBadges();
   }, [achievements, user?.id]);
 
   const handleClaim = useCallback(async (badge) => {
@@ -160,6 +161,7 @@ export default function AchievementsPageMobile() {
           ...claimed.map((a) => a.id),
         ]),
       ]);
+      acknowledgeAllPublishedUnlockedBadges();
       clearAllNotifs(user.id);
       setCongratsBadge(claimed[0]);
       if (claimed.length > 1) setCongratsQueue(claimed.slice(1));

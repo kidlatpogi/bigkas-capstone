@@ -779,31 +779,16 @@ function ActivityPageMobile() {
 
   const freeSpeechTutorialSteps = useMemo(() => {
     const level = resolveDashboardTutorialSpeakerLevel(user);
-    let welcomeText = "Welcome aboard! You made it, and I know you're going to do great things here. Let me give you a quick, guided tour of your Home screen so you know exactly where everything is.";
-    let welcomeVoice = null;
-    
-    if (level === 1) {
-      welcomeText = "Welcome! I’ve analyzed your profile and we’re starting from the ground up. You’ll be taking the full 30-stage path for Journey 1 to ensure your vocal and visual foundations are unbreakable. Let’s build your mastery, stage by stage.";
-      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%201.mp3";
-    } else if (level === 2) {
-      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%202.mp3";
-    } else if (level === 3) {
-      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%203.mp3";
-    } else if (level === 4) {
-      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%204.mp3";
-    } else if (level >= 5) {
-      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%205_new.mp3";
-    }
-
-    if (level === 2) {
-      welcomeText = "Welcome! Based on your level, your main path starts at Journey 2. Journey 1 still has its full 30-stage path available as optional practice whenever you want to review the foundations. Let's begin.";
-    } else if (level === 3) {
-      welcomeText = "Welcome back. Your main path starts at Journey 3, and Journeys 1 and 2 remain fully available as optional practice. You can review earlier foundations whenever you want, or continue with the challenge matched to your level. Systems ready?";
-    } else if (level === 4) {
-      welcomeText = "Welcome! Your main path starts at Journey 4. Journeys 1, 2, and 3 are still complete and available as optional practice if you want extra polishing before the specialist work. Let's get to work.";
-    } else if (level >= 5) {
-      welcomeText = "Welcome, Expert. Your main path starts at Journey 5, while Journeys 1 through 4 remain fully available as optional practice. You can revisit any foundation path whenever it helps. Mastery starts here.";
-    }
+    const safeLevel = Math.min(5, Math.max(1, Math.round(Number(level) || 1)));
+    const welcomeLines = {
+      1: "Welcome! I've analyzed your profile, and we're starting from the ground up. Your main path begins with Journey 1, where you'll build the foundations of confident speaking one stage at a time.",
+      2: "Welcome! Based on your level, your main path begins with Journey 2. Journey 1 stays available as optional practice whenever you want to review the foundations.",
+      3: "Welcome! Based on your level, your main path begins with Journey 3. Journeys 1 and 2 stay available as optional practice whenever you want to review the foundations.",
+      4: "Welcome! Based on your level, your main path begins with Journey 4. Journeys 1 through 3 stay available as optional practice whenever you want to review the foundations.",
+      5: "Welcome! Based on your level, your main path begins with Journey 5. Journeys 1 through 4 stay available as optional practice whenever you want to review the foundations.",
+    };
+    const welcomeText = welcomeLines[safeLevel];
+    const welcomeVoice = `https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level_${safeLevel}_NEW.mp3`;
 
     const fullSteps = [
       {

@@ -20,6 +20,8 @@ import { useNativeBottomSheetDrag } from '../../hooks/useNativeBottomSheetDrag';
 import './SettingsProfilePageMobile.css';
 import './SettingsPageMobile.css';
 import { getSpriteUrl } from '../../utils/assetUtils';
+import { getBigkasLevelFromUser } from '../../utils/activityProgress';
+import { readStoredProfileTheme } from '../../utils/profileTheme';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
 
 const mascotSprite = getSpriteUrl('Robot/0001.webp');
@@ -94,9 +96,11 @@ function SettingsPageMobile() {
 
   const [legalModal, setLegalModal] = useState({ isOpen: false, type: '', title: '', content: '' });
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [heroTheme] = useState(() => {
-    return localStorage.getItem('pref_hero_theme') || 'emerald';
-  });
+  const userLevel = useMemo(() => getBigkasLevelFromUser(user), [user]);
+  const heroTheme = useMemo(
+    () => readStoredProfileTheme(user?.id, THEME_CONFIG, userLevel.levelNumber),
+    [user?.id, userLevel.levelNumber],
+  );
 
   const getThemeDecoration = (themeId) => {
     const config = THEME_CONFIG.find(t => t.id === themeId);

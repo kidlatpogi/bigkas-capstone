@@ -19,6 +19,8 @@ import { formatDate, formatDuration } from '../../utils/formatters';
 import { getSessionMode, getSessionSpeechType } from '../../utils/sessionFormatting';
 import { sanitizeRecommendationLines, sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
+import { buildStagePassResultForSession } from '../../utils/passingScore';
+import { useAllActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 
 const heroRobotImage = getSpriteUrl('Robot/0018.webp');
 const verbalSprite = getSpriteUrl('common/Verbal.webp');
@@ -34,6 +36,29 @@ const FOREST_GREEN = '#059669';
 const SOFT_SAGE = '#059669';
 const VIBRANT_ORANGE = '#F97316';
 const SESSION_MEDIA_BUCKET = 'session-recordings';
+
+function buildActivityLookup(activityTasks) {
+  const lookup = new Map();
+  if (!Array.isArray(activityTasks)) return lookup;
+  activityTasks.forEach((activity) => {
+    const id = String(activity?.id || '').trim();
+    if (id) lookup.set(id, activity);
+  });
+  return lookup;
+}
+
+function mergeSessionActivity(session, activityLookup) {
+  const activity = activityLookup.get(String(session?.activity_id || '').trim());
+  if (!activity) return session;
+  return {
+    ...session,
+    activity_title: session.activity_title || activity.title || activity.objective || null,
+    activity_objective: session.activity_objective || activity.objective || null,
+    activity_target_level: session.activity_target_level ?? activity.target_level ?? null,
+    activity_order: session.activity_order ?? activity.activity_order ?? activity.activityOrder ?? null,
+    passing_score: session.passing_score ?? activity.passing_score ?? activity.passingScore ?? null,
+  };
+}
 
 function score100to15(val) {
   const v = Math.max(0, Math.min(100, Number(val) || 0));
@@ -242,7 +267,7 @@ function buildReplayAction(session, navigate, isFree) {
   };
 }
 
-function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initialShowDetailed = false }) {
+function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initialShowDetailed = false, activityTasks = [] }) {
   const navigate = useNavigate();
   const { sessionId: paramSessionId } = useParams();
   const sessionId = sessionIdProp || paramSessionId;
@@ -254,6 +279,9 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
     if (locationState?.showDetailed !== undefined) return !!locationState.showDetailed;
     return initialShowDetailed || isInnerView === false;
   });
+  const { tasks: fallbackActivityTasks } = useAllActivitiesJourneyTasks();
+  const providedActivityTasks = Array.isArray(activityTasks) ? activityTasks : [];
+  const effectiveActivityTasks = providedActivityTasks.length ? providedActivityTasks : fallbackActivityTasks;
   const avoidSectionRef = useRef(null);
 
   const [windowSize, setWindowSize] = useState({
@@ -277,16 +305,18 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
     return Number.isFinite(Number(locationState?.confidence_score));
   }, [locationState, sessionId]);
 
-  const session = useMemo(() => {
+  const activityLookup = useMemo(() => buildActivityLookup(effectiveActivityTasks), [effectiveActivityTasks]);
+  const rawSession = useMemo(() => {
     if (hasCompleteLocationState) return locationState;
     if (String(currentSession?.id || '') === String(sessionId || '')) return currentSession;
     return null;
   }, [currentSession, hasCompleteLocationState, locationState, sessionId]);
+  const session = useMemo(() => mergeSessionActivity(rawSession, activityLookup), [activityLookup, rawSession]);
 
   useEffect(() => {
-    if (session) return;
+    if (rawSession) return;
     fetchSessionById(sessionId);
-  }, [fetchSessionById, session, sessionId]);
+  }, [fetchSessionById, rawSession, sessionId]);
 
   const tripleV = useMemo(() => getTripleVScores(session || {}), [session]);
   const pillars = useMemo(() => {
@@ -301,8 +331,8 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
 
     return [
       { key: 'visual', label: 'Visual', desc: 'Overall consistency', score: tripleV.visualAvg, subMetrics: visualSubMetrics },
-      { key: 'vocal', label: 'Vocal', desc: 'Overall consistency', score: tripleV.vocalAvg, subMetrics: vocalSubMetrics },
       { key: 'verbal', label: 'Verbal', desc: 'Overall consistency', score: tripleV.verbalAvg, subMetrics: [] },
+      { key: 'vocal', label: 'Vocal', desc: 'Overall consistency', score: tripleV.vocalAvg, subMetrics: vocalSubMetrics },
     ];
   }, [session, tripleV]);
 
@@ -444,6 +474,22 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
   const isPreTest = mode === 'Pre-Test';
   const isPostTest = mode === 'Post-Test';
   const isFreeSession = getSessionSpeechType(session) === 'Free Speech';
+  const stagePassResult = useMemo(() => {
+    const supplied = locationState?.stagePassResult;
+    const derived = buildStagePassResultForSession(session);
+    if (!supplied) return derived;
+    return {
+      ...derived,
+      ...supplied,
+      requiredText: supplied.requiredText || derived?.requiredText || '',
+      message: supplied.message || derived?.message || (
+        supplied.passed
+          ? `Great work. You reached ${supplied.requiredText || 'the stage goal'} and unlocked the next step.`
+          : ''
+      ),
+    };
+  }, [locationState?.stagePassResult, session]);
+  const showStageGoalMessage = stagePassResult?.isActivityStage;
   const replayAction = useMemo(() => buildReplayAction(session, navigate, isFreeSession), [session, navigate, isFreeSession]);
 
   const shouldCelebrateScore = (res) => {
@@ -487,6 +533,8 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
         sessionIdProp={sessionId}
         isInnerView={isInnerView}
         onCloseInner={onCloseInner}
+        initialShowDetailed={initialShowDetailed}
+        activityTasks={effectiveActivityTasks}
       />
     );
   }
@@ -639,6 +687,21 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
           </div>
         </section>
 
+        {showStageGoalMessage && (
+          <section className={`stage-pass-card ${stagePassResult.passed ? 'stage-pass-card--unlocked' : 'stage-pass-card--next-goal'} dashboard-anim-bottom dashboard-anim-delay-2`} role="status">
+            <div>
+              <p className="stage-pass-kicker">Stage goal</p>
+              <h2 className="stage-pass-title">
+                {stagePassResult.passed ? 'Stage unlocked from this session.' : 'You are close to unlocking this stage.'}
+              </h2>
+              <p className="stage-pass-message">{stagePassResult.message}</p>
+            </div>
+            {stagePassResult.requiredText ? (
+              <span className="stage-pass-chip">{stagePassResult.requiredText}</span>
+            ) : null}
+          </section>
+        )}
+
         {/* Overview Widgets */}
         <div className="sr-overview-row dashboard-anim-bottom dashboard-anim-delay-3">
           <div className="progress-stat-card new-banner-widget overall-score-card">
@@ -733,15 +796,15 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
               const scorePercent = scoreBarPercent(p.score);
               return (
                 <div key={p.key} className={`pillar-card sr-pillar-progress-card dashboard-anim-bottom dashboard-anim-delay-${4 + index}`} id={`pillar-${p.key}`}>
-                  <div className="new-widget-head">
-                    <h2 className="new-widget-title">{p.label}</h2>
-                    <span className="new-widget-chip" style={{ background: `${tier.color}20`, color: tier.color }}>{tier.label}</span>
+                  <div className="progress-pillar-head">
+                    <h2 className="progress-pillar-title">{p.label}</h2>
+                    <span className="progress-pillar-chip" style={{ background: `${tier.color}20`, color: tier.color }}>{tier.label}</span>
                   </div>
-                  <div className="new-widget-rank-card">
-                    <img src={pillarIcons[p.key]} alt="" className="new-widget-rank-sprite" />
-                    <div className="new-widget-rank-content">
-                      <p className="new-widget-kicker">Score</p>
-                      <p className="new-widget-value">{Math.round(scorePercent)}%</p>
+                  <div className="progress-pillar-rank-card">
+                    <img src={pillarIcons[p.key]} alt="" className="progress-pillar-sprite" />
+                    <div className="progress-pillar-content">
+                      <p className="progress-pillar-kicker">Score</p>
+                      <p className="progress-pillar-value">{Math.round(scorePercent)}%</p>
                     </div>
                   </div>
                   <div className="progress-pillar-track-header">

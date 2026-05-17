@@ -6,17 +6,45 @@ import { getSessionMode } from '../../utils/sessionFormatting';
 import { sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
 import { getSpriteUrl } from '../../utils/assetUtils';
 import { useNativeBottomSheetDrag } from '../../hooks/useNativeBottomSheetDrag';
+import { buildStagePassResultForSession } from '../../utils/passingScore';
 
 const verbalSprite = getSpriteUrl('common/Verbal.webp');
 const visualSprite = getSpriteUrl('common/Visual.webp');
 const vocalSprite = getSpriteUrl('common/Vocal.webp');
-import DetailedFeedbackPage from '../session/DetailedFeedbackPage';
+import DetailedFeedbackPageMobile from '../session/DetailedFeedbackPageMobile';
 import './HistoryPage.css';
 import './HistoryPageMobile.css';
 
 const HISTORY_FILTERS = ['All', 'Daily', 'Weekly', 'Monthly', 'Yearly'];
 const HISTORY_SCORE_SORT_OPTIONS = [5, 4, 3, 2, 1];
 const HISTORY_SCORE_SORT_NONE = '';
+
+function buildActivityLookup(activityTasks) {
+  const lookup = new Map();
+  if (!Array.isArray(activityTasks)) return lookup;
+  activityTasks.forEach((activity) => {
+    const id = String(activity?.id || '').trim();
+    if (id) lookup.set(id, activity);
+  });
+  return lookup;
+}
+
+function mergeSessionActivity(session, activityLookup) {
+  const activity = activityLookup.get(String(session?.activity_id || '').trim());
+  if (!activity) return session;
+  return {
+    ...session,
+    activity_title: session.activity_title || activity.title || activity.objective || null,
+    activity_objective: session.activity_objective || activity.objective || null,
+    activity_target_level: session.activity_target_level ?? activity.target_level ?? null,
+    activity_order: session.activity_order ?? activity.activity_order ?? activity.activityOrder ?? null,
+    passing_score: session.passing_score ?? activity.passing_score ?? activity.passingScore ?? null,
+  };
+}
+
+function formatCompactStageRequirement(requiredText) {
+  return String(requiredText || '').replace(/\s+Score\b/g, '').trim();
+}
 
 // --- Helpers (1:1 with HistoryPage) ---
 function toFivePointScore(rawScore) {
@@ -65,7 +93,7 @@ function buildLacksSummary(pillars) {
   const sorted = [...pillars].sort((a, b) => a.score - b.score);
   const weakest = sorted.filter((pillar) => pillar.score <= 2.5);
   const shortlist = (weakest.length ? weakest : sorted.slice(0, 1)).slice(0, 2);
-  return `Lacks: ${shortlist.map((pillar) => pillar.lackHint).join(' • ')}`;
+  return `Focus: ${shortlist.map((pillar) => pillar.lackHint).join(' • ')}`;
 }
 
 function getScoreBandBounds(scoreTarget) {
@@ -118,7 +146,7 @@ function getAdaptiveHistoryPages(pageCount, activePage) {
 }
 
 // --- Main Component ---
-export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], isLoading }) {
+export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], isLoading, activityTasks = [] }) {
   const navigate = useNavigate();
   const [historyFilter, setHistoryFilter] = useState('All');
   const [scoreSortTarget, setScoreSortTarget] = useState(HISTORY_SCORE_SORT_NONE);
@@ -178,6 +206,7 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
   }, [safePage, historySessions]);
 
   const adaptivePages = useMemo(() => getAdaptiveHistoryPages(pageCount, safePage), [pageCount, safePage]);
+  const activityLookup = useMemo(() => buildActivityLookup(activityTasks), [activityTasks]);
 
   const handleClose = useCallback(() => {
     if (selectedSessionId) setSelectedSessionId(null);
@@ -247,9 +276,13 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
           <div className="history-mobile-scroll-content">
             <div className="history-mobile-list">
               {paginatedSessions.map((s) => {
+                const sessionForStage = mergeSessionActivity(s, activityLookup);
                 const score = toFivePointScore(s.confidence_score);
                 const tier = getScoreTier15(score);
                 const pillars = resolveSessionPillars(s);
+                const stageGoal = buildStagePassResultForSession(sessionForStage);
+                const stageGoalColor = stageGoal?.passed ? '#059669' : '#2563EB';
+                const stageRequirement = formatCompactStageRequirement(stageGoal?.requiredText);
                 const dateObj = new Date(s.created_at);
                 const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                 
@@ -258,11 +291,17 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
                     key={s.id}
                     className="history-mobile-item dashboard-anim-bottom"
                     onClick={() => setSelectedSessionId(s.id)}
-                    style={{ '--tier-color': tier.color, '--tier-border': `${tier.color}2e` }}
+                    style={{
+                      '--tier-color': tier.color,
+                      '--tier-border': `${tier.color}2e`,
+                      '--stage-goal-color': stageGoalColor,
+                      '--stage-goal-bg': `${stageGoalColor}12`,
+                      '--stage-goal-border': `${stageGoalColor}36`,
+                    }}
                   >
                     <div className="history-mobile-item-top">
                       <div className="history-mobile-item-info">
-                        <h3 className="history-mobile-item-title">{truncateToWords(buildSessionTitleOrTopic(s))}</h3>
+                        <h3 className="history-mobile-item-title">{truncateToWords(buildSessionTitleOrTopic(sessionForStage))}</h3>
                         <div className="history-mobile-item-meta">
                           <span className="history-mobile-item-badge" style={{ borderColor: tier.color, backgroundColor: `${tier.color}15`, color: tier.color }}>
                             <span className="history-mobile-item-badge-dot" style={{ backgroundColor: tier.color }} />
@@ -275,6 +314,17 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
                         <div className="history-mobile-item-score-inner">{Math.round(score15ToPercent(score))}%</div>
                       </div>
                     </div>
+
+                    {stageGoal ? (
+                      <div className={`history-mobile-stage-goal ${stageGoal.passed ? 'history-mobile-stage-goal--unlocked' : 'history-mobile-stage-goal--next'}`}>
+                        <span className="history-mobile-stage-goal-label">
+                          {stageGoal.passed ? 'Unlocked' : 'Next goal'}
+                        </span>
+                        {stageRequirement ? (
+                          <span className="history-mobile-stage-goal-text">{stageRequirement}</span>
+                        ) : null}
+                      </div>
+                    ) : null}
                     
                     <div className="history-mobile-pillar-grid">
                       {pillars.map(p => (
@@ -330,10 +380,11 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
                 </button>
              </div>
              <div className="history-mobile-session-view-content">
-                <DetailedFeedbackPage 
+                <DetailedFeedbackPageMobile
                   sessionIdProp={selectedSessionId} 
                   isInnerView={true} 
                   initialShowDetailed={innerViewMode === 'detailed'}
+                  activityTasks={activityTasks}
                   onCloseInner={() => {
                     if (innerViewMode === 'detailed') {
                       setInnerViewMode('results');

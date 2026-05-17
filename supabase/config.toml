@@ -1,0 +1,14 @@
+[functions.admin-create-confirmed-user]
+verify_jwt = false
+
+[functions.admin-list-profiles]
+verify_jwt = false
+
+[functions.admin-set-profile-archive-state]
+verify_jwt = false
+
+[functions.admin-update-profile]
+verify_jwt = false
+
+[functions.admin-apply-stage-progress]
+verify_jwt = false

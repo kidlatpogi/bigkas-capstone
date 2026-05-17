@@ -15,6 +15,13 @@ const PasswordToggle = lazy(() => import('../../components/common/PasswordToggle
 const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 
 const LOGIN_LOCKOUT_UNTIL_KEY = 'bigkas_login_lockout_until';
+const LOGIN_LOCKOUT_SECONDS = 30;
+
+function normalizeLockoutSeconds(value) {
+  const seconds = Math.ceil(Number(value) || 0);
+  if (!Number.isFinite(seconds) || seconds <= 0) return 0;
+  return Math.min(LOGIN_LOCKOUT_SECONDS, seconds);
+}
 
 const INSIGHT_WORDS = [
   { text: 'Visual', size: '0.85rem', opacity: 0.6, top: '15%', left: '12%', delay: 0 },
@@ -27,9 +34,25 @@ function getStoredLockoutSeconds() {
   const storedUnlockTime = window.localStorage.getItem(LOGIN_LOCKOUT_UNTIL_KEY);
   if (!storedUnlockTime) return 0;
   const unlockTimeMs = Date.parse(storedUnlockTime);
-  if (!Number.isFinite(unlockTimeMs)) return 0;
+  if (!Number.isFinite(unlockTimeMs)) {
+    window.localStorage.removeItem(LOGIN_LOCKOUT_UNTIL_KEY);
+    return 0;
+  }
   const remaining = Math.ceil((unlockTimeMs - Date.now()) / 1000);
-  return remaining <= 0 ? 0 : remaining;
+  if (remaining <= 0) {
+    window.localStorage.removeItem(LOGIN_LOCKOUT_UNTIL_KEY);
+    return 0;
+  }
+
+  const clampedRemaining = normalizeLockoutSeconds(remaining);
+  if (clampedRemaining !== remaining) {
+    window.localStorage.setItem(
+      LOGIN_LOCKOUT_UNTIL_KEY,
+      new Date(Date.now() + clampedRemaining * 1000).toISOString()
+    );
+  }
+
+  return clampedRemaining;
 }
 
 function formatCountdown(seconds) {
@@ -91,7 +114,13 @@ function LoginPageMobile({ managePageClass = true }) {
   useEffect(() => {
     if (lockoutSeconds <= 0) return;
     const interval = setInterval(() => {
-      setLockoutSeconds((prev) => (prev <= 1 ? 0 : prev - 1));
+      setLockoutSeconds((prev) => {
+        if (prev <= 1) {
+          window.localStorage.removeItem(LOGIN_LOCKOUT_UNTIL_KEY);
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
     return () => clearInterval(interval);
   }, [lockoutSeconds]);
@@ -144,7 +173,12 @@ function LoginPageMobile({ managePageClass = true }) {
     } else if (result.requiresEmailConfirmation) {
       setShowUnverified(true);
     } else if (result.code === 'account_locked') {
-      setLockoutSeconds(60);
+      const lockSeconds = normalizeLockoutSeconds(result.lockoutSeconds) || LOGIN_LOCKOUT_SECONDS;
+      window.localStorage.setItem(
+        LOGIN_LOCKOUT_UNTIL_KEY,
+        new Date(Date.now() + lockSeconds * 1000).toISOString()
+      );
+      setLockoutSeconds(lockSeconds);
     } else {
       setErrors({ submit: result.error });
       setFormData({ email: '', password: '' });
@@ -285,7 +319,8 @@ function LoginPageMobile({ managePageClass = true }) {
 
             <Suspense fallback={<div style={{ height: '56px' }} />}>
               <PushButton
-                type="submit"
+                type="button"
+                onClick={handleLogin}
                 disabled={isLoading || lockoutSeconds > 0}
                 bgColor="#047857" /* High contrast emerald-700 */
                 shadowColor="#065f46"

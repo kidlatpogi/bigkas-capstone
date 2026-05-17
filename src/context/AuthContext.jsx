@@ -1,4 +1,7 @@
 import { createContext, useState, useEffect, useCallback, useRef } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Browser } from '@capacitor/browser';
 import { supabase, ensureFreshAccessToken, isJwtExpiredError } from '../lib/supabase';
 import { ENV } from '../config/env';
 import { normalizeSpeakerPointsHistory } from '../utils/speakerPointsHistory';
@@ -12,25 +15,38 @@ const ADMIN_SESSION_KEY = 'bigkas_admin_session';
 const LOGIN_GUARD_NOT_CONFIGURED_CODES = ['42883', 'PGRST202', '42P01'];
 const LOGIN_GUARD_PREFIX = 'bigkas_login_guard_v1';
 const MAX_LOGIN_ATTEMPTS = 3;
-const LOGIN_COOLDOWN_SCHEDULE_SECONDS = [30, 120, 900];
+const LOGIN_LOCKOUT_SECONDS = 30;
 const LOGIN_GUARD_RESET_WINDOW_MS = 24 * 60 * 60 * 1000;
 const GENERIC_LOGIN_FAILURE_MESSAGE = 'Wrong email or password.';
+const PROFILE_GUARD_TIMEOUT_MS = 2500;
+const PROFILE_CACHE_TTL_MS = 10_000;
+const NATIVE_AUTH_REDIRECT_URL = 'org.nationalu.bigkas://auth/callback';
+const NATIVE_AUTH_BRIDGE_URL = 'https://bigkas.site/auth/native-callback';
 let loginGuardRpcDisabled = false;
+const profileRequestCache = new Map();
+
+function withTimeout(promise, label, timeoutMs = PROFILE_GUARD_TIMEOUT_MS) {
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = window.setTimeout(() => {
+      reject(new Error(`${label} timed out`));
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    window.clearTimeout(timeoutId);
+  });
+}
+
+function normalizeLoginLockoutSeconds(value) {
+  const seconds = Math.ceil(Number(value) || 0);
+  if (!Number.isFinite(seconds) || seconds <= 0) return 0;
+  return Math.min(LOGIN_LOCKOUT_SECONDS, seconds);
+}
 
 function buildLockoutMessage(waitSeconds) {
-  const seconds = Math.max(1, Number(waitSeconds) || 1);
-  
-  // Differentiate message based on duration (matching the scale)
-  if (seconds <= 60) {
-    return `Temporary cooldown active. Please wait ${seconds}s before trying again.`;
-  }
-  
-  if (seconds < 3600) {
-    const minutes = Math.ceil(seconds / 60);
-    return `Account temporarily locked due to multiple failed attempts. Try again in ${minutes}m.`;
-  }
-  
-  return `Account locked for security reasons. Please try again later or contact support.`;
+  const seconds = Math.max(1, normalizeLoginLockoutSeconds(waitSeconds) || LOGIN_LOCKOUT_SECONDS);
+  return `Temporary cooldown active. Please wait ${seconds}s before trying again.`;
 }
 
 function isLoginGuardNotConfigured(error) {
@@ -98,13 +114,24 @@ function getLocalLoginLockStatus(scope, email) {
 
   const now = Date.now();
   if (state.lockUntil > now) {
+    const remainingSeconds = normalizeLoginLockoutSeconds((state.lockUntil - now) / 1000);
+    const correctedLockUntil = now + remainingSeconds * 1000;
+    if (remainingSeconds > 0 && correctedLockUntil < state.lockUntil) {
+      writeLocalLoginGuardState(scope, email, {
+        ...state,
+        cooldownStep: 1,
+        lockUntil: correctedLockUntil,
+      });
+    }
+
     return {
       isLocked: true,
-      remainingSeconds: Math.max(1, Math.ceil((state.lockUntil - now) / 1000)),
+      remainingSeconds,
       error: null,
     };
   }
 
+  clearLocalLoginGuardState(scope, email);
   return { isLocked: false, remainingSeconds: 0, error: null };
 }
 
@@ -117,22 +144,41 @@ function registerLocalLoginFailure(scope, email) {
     lastFailedAt: 0,
   };
 
-  const outsideResetWindow = !current.lastFailedAt || (now - current.lastFailedAt) > LOGIN_GUARD_RESET_WINDOW_MS;
-  const baseState = outsideResetWindow
+  if (current.lockUntil > now) {
+    const lockoutSeconds = normalizeLoginLockoutSeconds((current.lockUntil - now) / 1000);
+    const correctedLockUntil = now + lockoutSeconds * 1000;
+    if (lockoutSeconds > 0 && correctedLockUntil < current.lockUntil) {
+      writeLocalLoginGuardState(scope, email, {
+        ...current,
+        cooldownStep: 1,
+        lockUntil: correctedLockUntil,
+      });
+    }
+
+    return {
+      locked: true,
+      lockoutSeconds,
+      error: null,
+    };
+  }
+
+  const shouldResetState =
+    current.lockUntil > 0 ||
+    !current.lastFailedAt ||
+    (now - current.lastFailedAt) > LOGIN_GUARD_RESET_WINDOW_MS;
+  const baseState = shouldResetState
     ? { failedAttempts: 0, cooldownStep: 0, lockUntil: 0, lastFailedAt: 0 }
     : current;
 
   const failedAttempts = baseState.failedAttempts + 1;
   if (failedAttempts >= MAX_LOGIN_ATTEMPTS) {
-    const cooldownStep = Math.min(baseState.cooldownStep + 1, LOGIN_COOLDOWN_SCHEDULE_SECONDS.length);
-    const lockSeconds = LOGIN_COOLDOWN_SCHEDULE_SECONDS[cooldownStep - 1];
     writeLocalLoginGuardState(scope, email, {
       failedAttempts: 0,
-      cooldownStep,
-      lockUntil: now + (lockSeconds * 1000),
+      cooldownStep: 1,
+      lockUntil: now + (LOGIN_LOCKOUT_SECONDS * 1000),
       lastFailedAt: now,
     });
-    return { locked: true, lockoutSeconds: lockSeconds, error: null };
+    return { locked: true, lockoutSeconds: LOGIN_LOCKOUT_SECONDS, error: null };
   }
 
   writeLocalLoginGuardState(scope, email, {
@@ -192,11 +238,14 @@ async function getLoginLockStatus(scope, email) {
   }
 
   const row = Array.isArray(data) ? data[0] : data;
+  const remainingSeconds = normalizeLoginLockoutSeconds(row?.remaining_seconds);
   return {
     isLocked: !!row?.is_locked,
-    remainingSeconds: Math.max(0, Number(row?.remaining_seconds || 0)),
+    remainingSeconds,
     failedAttempts: Number(row?.failed_attempts || 0),
-    unlockTime: row?.unlock_time || (row?.is_locked ? new Date(Date.now() + Number(row.remaining_seconds) * 1000).toISOString() : null),
+    unlockTime: row?.is_locked && remainingSeconds > 0
+      ? new Date(Date.now() + remainingSeconds * 1000).toISOString()
+      : null,
     error: null,
     guardNotConfigured: false,
   };
@@ -231,11 +280,14 @@ async function registerLoginFailure(scope, email) {
   }
 
   const row = Array.isArray(data) ? data[0] : data;
+  const lockoutSeconds = normalizeLoginLockoutSeconds(row?.lockout_seconds);
   return {
     locked: !!row?.locked,
-    lockoutSeconds: Math.max(0, Number(row?.lockout_seconds || 0)),
+    lockoutSeconds,
     failedAttempts: Number(row?.failed_attempts || 0),
-    unlockTime: row?.unlock_time,
+    unlockTime: lockoutSeconds > 0
+      ? new Date(Date.now() + lockoutSeconds * 1000).toISOString()
+      : null,
     error: null,
     guardNotConfigured: false,
   };
@@ -266,6 +318,21 @@ async function registerLoginSuccess(scope, email) {
 function getWebRedirectPath(path = '/') {
   if (typeof window === 'undefined') return undefined;
   return `${window.location.origin}${path}`;
+}
+
+function getOAuthRedirectPath(path = '/') {
+  return Capacitor.isNativePlatform() ? NATIVE_AUTH_BRIDGE_URL : getWebRedirectPath(path);
+}
+
+function getAuthParamsFromUrl(url) {
+  const parsed = new URL(url);
+  const params = new URLSearchParams(parsed.search);
+  const hash = parsed.hash.startsWith('#') ? parsed.hash.slice(1) : parsed.hash;
+  const hashParams = new URLSearchParams(hash);
+  hashParams.forEach((value, key) => {
+    if (!params.has(key)) params.set(key, value);
+  });
+  return params;
 }
 
 function getSignupCooldownUntil() {
@@ -303,16 +370,17 @@ function normalizeLoginError(err, email) {
     const remainingSeconds = Number(err?.remainingSeconds || 0);
     const unlockTimeMs = err?.unlockTime ? Date.parse(err.unlockTime) : NaN;
     const fallbackSeconds = Number.isFinite(unlockTimeMs)
-      ? Math.max(1, Math.ceil((unlockTimeMs - Date.now()) / 1000))
-      : 60;
+      ? normalizeLoginLockoutSeconds((unlockTimeMs - Date.now()) / 1000)
+      : LOGIN_LOCKOUT_SECONDS;
     const waitSeconds = Number.isFinite(remainingSeconds) && remainingSeconds > 0
-      ? Math.max(1, Math.ceil(remainingSeconds))
+      ? normalizeLoginLockoutSeconds(remainingSeconds)
       : fallbackSeconds;
+    const lockoutSeconds = Math.max(1, waitSeconds || LOGIN_LOCKOUT_SECONDS);
     return {
       code: 'account_locked',
-      message: `Too many failed attempts. Try again in ${waitSeconds}s.`,
+      message: `Too many failed attempts. Try again in ${lockoutSeconds}s.`,
       requiresEmailConfirmation: false,
-      lockoutSeconds: waitSeconds,
+      lockoutSeconds,
     };
   }
 
@@ -481,6 +549,16 @@ function deriveOnboardingStage(meta = {}, profile = {}) {
   return 'profiling';
 }
 
+function getOnboardingStageRank(stage) {
+  const ranks = {
+    profiling: 1,
+    pretest: 2,
+    analyzing: 3,
+    completed: 4,
+  };
+  return ranks[stage] || 0;
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => getStoredAdminSession());
@@ -493,6 +571,11 @@ export function AuthProvider({ children }) {
   const signupInProgressRef = useRef(false);
   const loginInProgressRef = useRef(false);
   const adminLoginInProgressRef = useRef(false);
+  const currentUserIdRef = useRef(null);
+
+  useEffect(() => {
+    currentUserIdRef.current = user?.id || null;
+  }, [user?.id]);
 
   const resolveAvatarUrl = useCallback((avatarValue) => {
     if (!avatarValue) return null;
@@ -568,39 +651,66 @@ export function AuthProvider({ children }) {
 
   const loadSessionProfile = useCallback(async (userId) => {
     if (!userId) return { profile: null, error: null };
+    const cached = profileRequestCache.get(userId);
+    const now = Date.now();
+    if (cached && cached.expiresAt > now) {
+      if (cached.promise) return cached.promise;
+      return { profile: cached.profile, error: cached.error };
+    }
 
     const selectProfile = () =>
       supabase
         .from('profiles')
         .select('role, archived_at, is_profiling_completed, is_pre_test_completed, dashboard_tutorial_seen, current_level, speaker_level, diagnostic_score, diagnostic_completed_at')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
-    let { data: profile, error } = await selectProfile();
+    const request = (async () => {
+      let { data: profile, error } = await selectProfile();
 
-    if (error && isJwtExpiredError(error)) {
-      const { session: fresh, error: refErr } = await ensureFreshAccessToken();
-      if (!refErr && fresh) {
-        ({ data: profile, error } = await selectProfile());
+      if (error && isJwtExpiredError(error)) {
+        const { session: fresh, error: refErr } = await ensureFreshAccessToken();
+        if (!refErr && fresh) {
+          ({ data: profile, error } = await selectProfile());
+        }
       }
-    }
 
-    return { profile, error };
+      const result = { profile, error };
+      profileRequestCache.set(userId, {
+        ...result,
+        expiresAt: Date.now() + PROFILE_CACHE_TTL_MS,
+      });
+      return result;
+    })();
+
+    profileRequestCache.set(userId, {
+      promise: request,
+      expiresAt: now + PROFILE_CACHE_TTL_MS,
+    });
+
+    return request;
   }, []);
 
   const rejectArchivedSession = useCallback(async (session) => {
     const userId = session?.user?.id;
     if (!userId) return null;
 
-    const { profile, error } = await loadSessionProfile(userId);
+    let profile = null;
+    let error = null;
 
-    if (error || !profile) {
-      const message = GENERIC_LOGIN_FAILURE_MESSAGE;
-      setError(message);
-      setUser(null);
-      clearAdminSession();
-      await supabase.auth.signOut({ scope: 'local' });
-      return { code: 'invalid_credentials', message };
+    try {
+      ({ profile, error } = await withTimeout(
+        loadSessionProfile(userId),
+        'Archived profile check',
+      ));
+    } catch (err) {
+      console.warn('Bigkas Auth: archived-profile check timed out:', err);
+      return null;
+    }
+
+    if (error) {
+      console.warn('Bigkas Auth: archived-profile check skipped:', error);
+      return null;
     }
 
     if (isArchivedProfile(profile)) {
@@ -698,12 +808,26 @@ export function AuthProvider({ children }) {
       const normalizedProfiling = parseMetadataBoolean(meta.profiling_completed) || hasSpeakerProfileData(meta.speaker_profile);
       const normalizedPretest = parseMetadataBoolean(meta.pretest_completed);
       const normalizedPretestScripted = parseMetadataBoolean(meta.pretest_scripted_completed);
+      const normalizedPretestFree = parseMetadataBoolean(meta.pretest_free_completed);
+
+      const remoteMetadataIsAhead =
+        getOnboardingStageRank(normalizedStage) > getOnboardingStageRank(user.onboardingStage) ||
+        (normalizedProfiling && !user.profilingCompleted) ||
+        (normalizedPretest && !user.pretestCompleted) ||
+        (normalizedPretestScripted && !user.pretestScriptedCompleted) ||
+        (normalizedPretestFree && !user.pretestFreeCompleted);
+
+      if (remoteMetadataIsAhead) {
+        setUser(buildUser({ user: data.user }));
+        return;
+      }
 
       if (
         normalizedStage === user.onboardingStage &&
         normalizedProfiling === user.profilingCompleted &&
         normalizedPretest === user.pretestCompleted &&
-        normalizedPretestScripted === user.pretestScriptedCompleted
+        normalizedPretestScripted === user.pretestScriptedCompleted &&
+        normalizedPretestFree === user.pretestFreeCompleted
       ) {
         return;
       }
@@ -715,6 +839,7 @@ export function AuthProvider({ children }) {
           profiling_completed: user.profilingCompleted,
           pretest_completed: user.pretestCompleted,
           pretest_scripted_completed: user.pretestScriptedCompleted,
+          pretest_free_completed: user.pretestFreeCompleted,
         },
       });
     };
@@ -724,7 +849,7 @@ export function AuthProvider({ children }) {
     return () => {
       isCancelled = true;
     };
-  }, [user?.id, user?.onboardingStage, user?.profilingCompleted, user?.pretestCompleted, user?.pretestScriptedCompleted]);
+  }, [buildUser, user?.id, user?.onboardingStage, user?.profilingCompleted, user?.pretestCompleted, user?.pretestScriptedCompleted, user?.pretestFreeCompleted]);
 
   /* ── Restore session on mount ── */
   useEffect(() => {
@@ -791,6 +916,9 @@ export function AuthProvider({ children }) {
 
       const nextUser = buildUser(session);
       setUser(nextUser);
+      if (nextUser?.id) {
+        void fetchAndMergeProfile(nextUser.id);
+      }
       if (!nextUser) {
         clearAdminSession();
       }
@@ -819,6 +947,20 @@ export function AuthProvider({ children }) {
       // credentials. Do not publish the session as a regular user before that
       // check finishes, or public routes can briefly render the user login flow.
       if (adminLoginInProgressRef.current) return;
+
+      if (!isBootstrapped && _event !== 'SIGNED_OUT') return;
+
+      if (_event === 'TOKEN_REFRESHED' && session?.user?.id === currentUserIdRef.current) {
+        return;
+      }
+
+      if (_event === 'SIGNED_OUT') {
+        setPendingEmailVerification(false);
+        setPendingEmail(null);
+        setUser(null);
+        clearAdminSession();
+        return;
+      }
 
       const blockedAccount = getAccountBlockedMessage(session?.user?.user_metadata || {});
       if (blockedAccount) {
@@ -863,6 +1005,69 @@ export function AuthProvider({ children }) {
       subscription.unsubscribe();
     };
   }, [buildUser, clearAdminSession, fetchAndMergeProfile, rejectArchivedSession]);
+
+  /* ── Native OAuth deep-link completion ── */
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return undefined;
+
+    let isDisposed = false;
+
+    const completeNativeOAuth = async (url) => {
+      if (!url || !String(url).startsWith(NATIVE_AUTH_REDIRECT_URL)) return;
+      try {
+        const params = getAuthParamsFromUrl(url);
+        const errorDescription = params.get('error_description') || params.get('error');
+        if (errorDescription) {
+          throw new Error(errorDescription);
+        }
+
+        const code = params.get('code');
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+
+        if (code) {
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeError) throw exchangeError;
+        } else if (accessToken && refreshToken) {
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (sessionError) throw sessionError;
+        } else {
+          return;
+        }
+
+        await Browser.close().catch(() => {});
+        if (!isDisposed && typeof window !== 'undefined' && window.location.pathname === '/login') {
+          window.history.replaceState(null, '', '/dashboard');
+          window.dispatchEvent(new Event('popstate'));
+        }
+      } catch (authError) {
+        await Browser.close().catch(() => {});
+        if (!isDisposed) {
+          const message = authError?.message || 'Google sign-in failed. Please try again.';
+          setError(message);
+          setIsLoading(false);
+        }
+      }
+    };
+
+    let listenerHandle;
+    CapacitorApp.getLaunchUrl()
+      .then((launch) => completeNativeOAuth(launch?.url))
+      .catch(() => {});
+    CapacitorApp.addListener('appUrlOpen', ({ url }) => {
+      void completeNativeOAuth(url);
+    }).then((handle) => {
+      listenerHandle = handle;
+    });
+
+    return () => {
+      isDisposed = true;
+      listenerHandle?.remove?.();
+    };
+  }, []);
 
   /* ── Refresh JWT when the tab becomes visible (background tabs throttle auto-refresh timers) ── */
   useEffect(() => {
@@ -1332,13 +1537,13 @@ export function AuthProvider({ children }) {
     setError(null);
     clearAdminSession();
 
-    const redirectTo = getWebRedirectPath('/dashboard');
+    const redirectTo = getOAuthRedirectPath('/dashboard');
 
-    const { error: err } = await supabase.auth.signInWithOAuth({
+    const { data, error: err } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo,
-        skipBrowserRedirect: false,
+        skipBrowserRedirect: Capacitor.isNativePlatform(),
       },
     });
 
@@ -1351,6 +1556,10 @@ export function AuthProvider({ children }) {
       }
       setError(err.message);
       return { success: false, error: err.message };
+    }
+
+    if (Capacitor.isNativePlatform() && data?.url) {
+      await Browser.open({ url: data.url });
     }
 
     return { success: true };

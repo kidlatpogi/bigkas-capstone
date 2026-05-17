@@ -35,6 +35,7 @@ import {
 } from '../../utils/speakerPointsHistory';
 import { sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
 import { getSpriteUrl } from '../../utils/assetUtils';
+import { useAllActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 
 const heroRobotImage = getSpriteUrl('Robot/0018.webp');
 const visualSprite = getSpriteUrl('common/Visual.webp');
@@ -146,6 +147,7 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
   const [showMobileHistory, setShowMobileHistory] = useState(false);
   const graphRef = useRef(null);
   const [graphWidth, setGraphWidth] = useState(0);
+  const { tasks: activityTasks } = useAllActivitiesJourneyTasks();
 
   useEffect(() => {
     if (!graphRef.current) return;
@@ -643,6 +645,7 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
             onClose={() => setShowMobileHistory(false)}
             userSessions={userSessions}
             isLoading={isLoading}
+            activityTasks={activityTasks}
           />
         ) : (
           <HistoryPage
@@ -650,6 +653,7 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
             onClose={() => setShowMobileHistory(false)}
             userSessions={userSessions}
             isLoading={isLoading}
+            activityTasks={activityTasks}
           />
         )}
       </div>

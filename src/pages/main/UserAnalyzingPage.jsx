@@ -89,19 +89,19 @@ const LEVEL_CONTENT = {
     voice: analyzingLevel1Voice,
   },
   2: {
-    text: "Beep! That was great! Setup is officially complete. You're a Level 2 speaker, so you'll start at Level 1 but with fewer stages to complete. You've already got some great skills to work with! Remember, every pro started as a beginner. Let's build on this foundation and transform that 'stage fright' into 'stage might'!",
+    text: "Beep! That was great! Setup is officially complete. You're a Level 2 speaker, so your main path starts at Level 2. The full Level 1 journey is still available as optional practice whenever you want to review the foundations.",
     voice: analyzingLevel2Voice,
   },
   3: {
-    text: "Whoa, nice job! Setup is completely done. My sensors picked up some seriously good speaking habits, so you're a Level 3 speaker! You'll start at Level 1 with a fast-track through the basics. We're going to keep this momentum going!",
+    text: "Whoa, nice job! Setup is completely done. My sensors picked up some seriously good speaking habits, so you're a Level 3 speaker! Your main path starts at Level 3, and the full earlier journeys stay open as optional practice.",
     voice: analyzingLevel3Voice,
   },
   4: {
-    text: "Wowzers! Setup is clear! Your speech was so smooth it almost blew my circuits! You're a Level 4 speaker. You'll start at Level 1, but you'll fly through it in no time. You're practically a pro already. Let's polish those skills to absolute perfection!",
+    text: "Wowzers! Setup is clear! Your speech was so smooth it almost blew my circuits! You're a Level 4 speaker, so your main path starts at Level 4. Earlier journeys remain fully available as optional practice if you want extra polishing.",
     voice: analyzingLevel4Voice,
   },
   5: {
-    text: "Mind... blown! Setup is completely done. Your speaking skills are off the charts! You're a Level 5 speaker! Even though you're starting at Level 1, you'll only have a few stages before you reach masterclass mode. I might need to take notes from you!",
+    text: "Mind... blown! Setup is completely done. Your speaking skills are off the charts! You're a Level 5 speaker, so your main path starts at Level 5. The full earlier journeys stay available as optional practice.",
     voice: analyzingLevel5Voice,
   },
 };
@@ -304,7 +304,7 @@ function UserAnalyzingPage() {
         speaker_entry_score: mapPercentToEntryScore(analysis.finalScore),
         speaker_level: analysis.levelName,
         speaker_level_number: analysis.levelNumber,
-        progress_level_number: 1,
+        progress_level_number: analysis.levelNumber,
         speaker_points: userSpeakerPoints,
         onboarding_level_analysis: {
           analyzed_at: new Date().toISOString(),
@@ -318,13 +318,12 @@ function UserAnalyzingPage() {
         },
       });
 
-      // Update the profiles table: User always starts at Journey Level 1, 
-      // but their proficiency is stored in speaker_level
+      // Place advanced users on their assessed journey; earlier journeys remain optional.
       if (result?.success && user?.id) {
         const { error: profileError } = await supabase
           .from('profiles')
           .update({
-            current_level: 1,
+            current_level: analysis.levelNumber,
             speaker_level: analysis.levelNumber,
             is_pre_test_completed: true
           })

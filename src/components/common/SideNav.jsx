@@ -1,17 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import {
-  IoChevronDown,
-  IoBookOutline,
-  IoMedalOutline,
-  IoHomeOutline,
-  IoLogOutOutline,
-  IoSettingsOutline,
-  IoStatsChartOutline,
-  IoNotificationsOutline,
-  IoTrophy,
-} from 'react-icons/io5';
+import { IoChevronDown } from '@react-icons/all-files/io5/IoChevronDown';
+import { IoBookOutline } from '@react-icons/all-files/io5/IoBookOutline';
+import { IoMedalOutline } from '@react-icons/all-files/io5/IoMedalOutline';
+import { IoHomeOutline } from '@react-icons/all-files/io5/IoHomeOutline';
+import { IoLogOutOutline } from '@react-icons/all-files/io5/IoLogOutOutline';
+import { IoSettingsOutline } from '@react-icons/all-files/io5/IoSettingsOutline';
+import { IoStatsChartOutline } from '@react-icons/all-files/io5/IoStatsChartOutline';
+import { IoNotificationsOutline } from '@react-icons/all-files/io5/IoNotificationsOutline';
+import { IoTrophy } from '@react-icons/all-files/io5/IoTrophy';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import {
@@ -21,11 +19,15 @@ import {
   claimAchievement,
   claimAllAchievements,
 } from '../../utils/achievementClaims';
-import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
+import {
+  getPublishedUnlockedBadgeIds,
+  syncUnlockedBadgeIds,
+} from '../../utils/achievementNavBadge';
+import { getSpriteUrl } from '../../utils/assetUtils';
 import { claimAchievementInDB, unclaimAllAchievementsInDB } from '../../services/achievementsService';
 import './SideNav.css';
 
-const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
+const bigkasLogo = '/images/bigkas-logo-72.webp';
 const badgeImg = getSpriteUrl('Badges/Badge.png');
 
 const PRIMARY_NAV_ITEMS = [
@@ -41,10 +43,10 @@ export default function SideNav() {
   const { user, logout } = useAuthContext();
   const displayName = user?.name || user?.nickname || user?.firstName || 'Speaker';
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [claimableCount, setClaimableCount] = useState(() => getClaimableAchievementsCount());
+  const [claimableCount, setClaimableCount] = useState(() => getClaimableAchievementsCount(user?.id));
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notifTrayOpen, setNotifTrayOpen] = useState(false);
-  const [claimables, setClaimables] = useState(() => getClaimableAchievements());
+  const [claimables, setClaimables] = useState(() => getClaimableAchievements(user?.id));
   const [notifTab, setNotifTab] = useState('all');
   const [unclaiming, setUnclaiming] = useState(false);
   const [claimingId, setClaimingId] = useState(null);
@@ -57,8 +59,8 @@ export default function SideNav() {
 
   useEffect(() => {
     const sync = () => {
-      setClaimableCount(getClaimableAchievementsCount());
-      setClaimables(getClaimableAchievements());
+      setClaimableCount(getClaimableAchievementsCount(user?.id));
+      setClaimables(getClaimableAchievements(user?.id));
     };
     sync();
     window.addEventListener('storage', sync);
@@ -67,7 +69,7 @@ export default function SideNav() {
       window.removeEventListener('storage', sync);
       window.removeEventListener(ACHIEVEMENTS_UPDATED_EVENT, sync);
     };
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     if (isSettingsRoute) {
@@ -116,7 +118,7 @@ export default function SideNav() {
   };
 
   const handleClearAll = () => {
-    claimAllAchievements();
+    claimAllAchievements(user?.id);
     setClaimables([]);
     setClaimableCount(0);
   };
@@ -137,11 +139,12 @@ export default function SideNav() {
     if (!user?.id || claimingId) return;
     setClaimingId(item.id);
     try {
-      await claimAchievementInDB(user.id, item.id);
-      claimAchievement(item.id);
+      const unlockedAt = await claimAchievementInDB(user.id, item.id);
+      claimAchievement(item.id, user.id, { unlockedAt });
+      syncUnlockedBadgeIds([...new Set([...getPublishedUnlockedBadgeIds(), String(item.id)])]);
       setClaimables((prev) => prev.filter((entry) => String(entry.id) !== String(item.id)));
       setClaimableCount((prev) => Math.max(0, prev - 1));
-      setCongratsBadge(item);
+      setCongratsBadge({ ...item, unlockedAt });
     } catch (err) {
       console.error('Failed to claim achievement:', err);
       handleClaimNavigate();

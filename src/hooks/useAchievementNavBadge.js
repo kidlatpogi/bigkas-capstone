@@ -31,18 +31,22 @@ export function useAchievementNavBadge() {
 
   useEffect(() => {
     return subscribeAchievementBadgeUpdates(() => {
-      setPending(getPendingAchievementBadgeCount());
+      const nextPending = getPendingAchievementBadgeCount();
+      if (isAchievementsPath(location.pathname)) {
+        if (nextPending > 0) acknowledgeAllPublishedUnlockedBadges();
+        setPending(0);
+        return;
+      }
+      setPending(nextPending);
     });
-  }, []);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (isAchievementsPath(location.pathname)) {
-      acknowledgeAllPublishedUnlockedBadges();
-      setPending(0);
-    } else {
-      setPending(getPendingAchievementBadgeCount());
+      const nextPending = getPendingAchievementBadgeCount();
+      if (nextPending > 0) acknowledgeAllPublishedUnlockedBadges();
     }
   }, [location.pathname]);
 
-  return pending;
+  return isAchievementsPath(location.pathname) ? 0 : pending;
 }

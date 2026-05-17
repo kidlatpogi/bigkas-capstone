@@ -1,18 +1,25 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../utils/constants';
-import './UserPretestPage.css';
+
+const PRETEST_TRAINING_STATE = {
+  freeTopic: 'Tell me about yourself',
+  focus: 'free',
+  objective: 'Speak for 20 Seconds about yourself.',
+  sessionType: 'pre-test',
+};
 
 function UserPretestPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('bigkas_current_training_session');
+    }
+
     navigate(ROUTES.TRAINING, {
-      state: {
-        freeTopic: 'Tell me about yourself',
-        focus: 'free',
-        sessionType: 'pre-test',
-      },
+      replace: true,
+      state: PRETEST_TRAINING_STATE,
     });
   }, [navigate]);
 

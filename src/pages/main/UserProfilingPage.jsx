@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Volume2, VolumeX } from 'lucide-react';
 import { useAuthContext } from '../../context/useAuthContext';
@@ -103,6 +103,48 @@ function isQuestionAnswered(question, value) {
   return String(value || '').trim().length > 0;
 }
 
+/**
+ * Stable typewriter component. Keeping this outside UserProfilingPage prevents
+ * parent state updates from remounting the animation after it completes.
+ */
+function Typewriter({ text, onComplete, delay = 18, charsPerTick = 2 }) {
+  const [displayed, setDisplayed] = useState('');
+  const onCompleteRef = useRef(onComplete);
+  const hasCompletedRef = useRef(false);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  useEffect(() => {
+    let index = 0;
+    hasCompletedRef.current = false;
+
+    if (!text) {
+      hasCompletedRef.current = true;
+      onCompleteRef.current?.();
+      return undefined;
+    }
+
+    const timer = window.setInterval(() => {
+      index = Math.min(text.length, index + charsPerTick);
+      setDisplayed(text.slice(0, index));
+
+      if (index >= text.length) {
+        window.clearInterval(timer);
+        if (!hasCompletedRef.current) {
+          hasCompletedRef.current = true;
+          onCompleteRef.current?.();
+        }
+      }
+    }, delay);
+
+    return () => window.clearInterval(timer);
+  }, [text, delay, charsPerTick]);
+
+  return <>{displayed}</>;
+}
+
 function UserProfilingPage() {
   const navigate = useNavigate();
   const { updateUserMetadata, user, isAdminAuthenticated } = useAuthContext();
@@ -110,9 +152,9 @@ function UserProfilingPage() {
     'Before we begin, we need to assess your current Public Speaking Level. This includes 2 demographic questions, 10 short profiling questions and one small speaking pre-test. These tests ensure I can customize your experience and guide you smoothly throughout your entire journey!';
   const readyMessage =
     "Awesome! Since you're ready, let's jump right into your 10 profiling questions! And don't worry, you can answer every single one with a simple Yes, Sometimes, or No.";
-  const outroFirstMessage = "You've made it to the final step! To wrap things up, let's try a quick Free Speech Pre-test.";
+  const outroFirstMessage = "You've made it to the final step! To wrap things up, let's try a quick speaking pre-test.";
   const outroMissionMessage =
-    "Speak for at least 30 seconds on the topic, 'Tell me about yourself.' Don't overthink it—just be you and let your voice lead the way!";
+    "Speak for at least 20 seconds on the topic, 'Tell me about yourself.' Don't overthink it—just be you and let your voice lead the way!";
 
   const [screen, setScreen] = useState(() => (user?.profilingCompleted ? 'outro' : 'intro'));
   const [introStep, setIntroStep] = useState(() => (user?.profilingCompleted ? 2 : 0));
@@ -123,6 +165,7 @@ function UserProfilingPage() {
   const [demographicIndex, setDemographicIndex] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isProfileSaved, setIsProfileSaved] = useState(() => Boolean(user?.profilingCompleted));
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [error, setError] = useState('');
   const [isMuted, setIsMuted] = useState(() => {
@@ -130,11 +173,10 @@ function UserProfilingPage() {
     return window.localStorage.getItem(INTRO_MUTE_KEY) === '1';
   });
   const audioMap = useRef({});
+  const hasSubmittedProfileRef = useRef(false);
 
   const totalSteps = QUESTIONS.length;
   const currentQuestion = QUESTIONS[currentIndex] || QUESTIONS[0];
-  const baselineScore = useMemo(() => computeBaselineScore(form), [form]);
-  const baselineLevelNumber = useMemo(() => getSpeakerLevelNumber(baselineScore), [baselineScore]);
 
   const currentDemographicQuestion = DEMOGRAPHIC_QUESTIONS[demographicIndex] || DEMOGRAPHIC_QUESTIONS[0];
   const canProceedDemographic = currentDemographicQuestion
@@ -145,27 +187,6 @@ function UserProfilingPage() {
       navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
     }
   }, [isAdminAuthenticated, navigate]);
-
-  /**
-   * Internal Typewriter Component to handle animated text reveals
-   */
-  const Typewriter = ({ text, onComplete, delay = 8 }) => {
-    const [displayed, setDisplayed] = useState('');
-    useEffect(() => {
-      let index = 0;
-      setDisplayed('');
-      const timer = setInterval(() => {
-        index++;
-        setDisplayed(text.slice(0, index));
-        if (index >= text.length) {
-          clearInterval(timer);
-          onComplete?.();
-        }
-      }, delay);
-      return () => clearInterval(timer);
-    }, [text, onComplete, delay]);
-    return <>{displayed}</>;
-  };
 
   /**
    * Helper to get or create an audio instance for a source
@@ -430,10 +451,17 @@ function UserProfilingPage() {
       return;
     }
 
+    if (hasSubmittedProfileRef.current) return;
+
+    hasSubmittedProfileRef.current = true;
     setError('');
+    stopAllIntroAudios();
+    setIsProfileSaved(false);
     setIsSubmitting(true);
     console.log('[Profiling] Validation passed. Submitting profile...');
 
+    const submittedBaselineScore = computeBaselineScore(workingForm);
+    const submittedBaselineLevelNumber = getSpeakerLevelNumber(submittedBaselineScore);
     const payload = {
       demographic_profile: {
         gender: workingForm.gender,
@@ -442,11 +470,22 @@ function UserProfilingPage() {
       },
       speaker_profile: {
         completed_at: new Date().toISOString(),
-        baseline_score: baselineScore,
-        baseline_level_number: baselineLevelNumber,
+        baseline_score: submittedBaselineScore,
+        baseline_level_number: submittedBaselineLevelNumber,
         responses: { ...workingForm },
       },
       profiling_completed: true,
+      pretest_completed: false,
+      pretest_scripted_completed: false,
+      pretest_free_completed: false,
+      pretest_completed_at: null,
+      pretest_scripted_session_id: null,
+      pretest_free_session_id: null,
+      pretest_session_id: null,
+      pretest_scripted_score: null,
+      pretest_free_score: null,
+      onboarding_completed: false,
+      onboarding_level_analysis: null,
       onboarding_stage: 'profiling',
     };
 
@@ -454,10 +493,15 @@ function UserProfilingPage() {
     setIsSubmitting(false);
 
     if (!result?.success) {
+      hasSubmittedProfileRef.current = false;
       setError(result?.error || 'Failed to save your profile. Please try again.');
+      setScreen('questions');
       return;
     }
 
+    console.log('[Profiling] Profile saved. Pre-test intro is ready.');
+    setIsOutroTypingDone(false);
+    setIsProfileSaved(true);
     setScreen('outro');
   };
 
@@ -465,11 +509,21 @@ function UserProfilingPage() {
     if (isSubmitting) return;
     stopAllIntroAudios();
     setIsSubmitting(true);
-    const result = await updateUserMetadata({ onboarding_stage: 'pretest' });
+    const result = await updateUserMetadata({
+      onboarding_stage: 'pretest',
+      pretest_completed: false,
+      pretest_scripted_completed: false,
+      pretest_free_completed: false,
+      onboarding_completed: false,
+    });
     setIsSubmitting(false);
     if (!result?.success) {
       setError(result?.error || 'Failed to continue to pre-test. Please try again.');
       return;
+    }
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('bigkas_current_training_session');
+      window.sessionStorage.removeItem('bigkas_pretest_tutorial_seen');
     }
     navigate(ROUTES.USER_PRETEST, { replace: true });
   };
@@ -559,10 +613,24 @@ function UserProfilingPage() {
     setDemographicIndex(0);
   };
 
+  const renderAudioToggle = (className = '') => (
+    <div className={`profiling-intro-audio-action ${className}`.trim()}>
+      <button
+        type="button"
+        onClick={handleToggleMute}
+        aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+        title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+        className={`profiling-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
+      >
+        {isMuted ? <VolumeX aria-hidden="true" /> : <Volume2 aria-hidden="true" />}
+      </button>
+    </div>
+  );
+
   if (isAdminAuthenticated) return null;
 
   return (
-    <div className={`user-profiling-page ${screen !== 'questions' ? 'is-gate-screen' : ''}`}>
+    <div className={`user-profiling-page user-profiling-page--${screen} ${screen !== 'questions' ? 'is-gate-screen' : ''}`}>
       {screen === 'intro' && (
         <section className="profiling-intro profiling-gate--pop">
           <div className="profiling-unit">
@@ -577,7 +645,11 @@ function UserProfilingPage() {
                 </p>
               ) : (
                 <p>
-                  <Typewriter text={introSecondMessage} onComplete={() => setIsIntroTypingDone(true)} />
+                  {isIntroTypingDone ? (
+                    introSecondMessage
+                  ) : (
+                    <Typewriter text={introSecondMessage} onComplete={() => setIsIntroTypingDone(true)} />
+                  )}
                 </p>
               )}
               <div className="profiling-intro-actions">
@@ -823,14 +895,14 @@ function UserProfilingPage() {
               <p className="profiling-pretest-text">
                 <strong>B-01:</strong>
                 <br />
-                <Typewriter text={outroFirstMessage} />
+                {outroFirstMessage}
               </p>
               <p className="profiling-pretest-text profiling-pretest-text--mission">
                 <strong>Your mission:</strong>
                 <br />
                 {isOutroTypingDone ? (
                   <>
-                    Speak for at least <strong>30 seconds</strong> on the topic,{' '}
+                    Speak for at least <strong>20 seconds</strong> on the topic,{' '}
                     <strong>&apos;Tell me about yourself.&apos;</strong> Don&apos;t overthink it—just be
                     you and let your voice lead the way!
                   </>
@@ -840,11 +912,12 @@ function UserProfilingPage() {
               </p>
               <div className="profiling-intro-actions profiling-intro-actions--end">
                 <div className="profiling-submit-btn">
-                  <button type="button" onClick={continueToPretest} disabled={!isOutroTypingDone}>
-                    Continue
+                  <button type="button" onClick={continueToPretest} disabled={!isOutroTypingDone || isSubmitting || !isProfileSaved}>
+                    {isSubmitting ? 'Saving...' : 'Continue'}
                   </button>
                 </div>
               </div>
+              {error && <p className="profiling-error">{error}</p>}
             </article>
 
             <div className="profiling-intro-robot">
@@ -858,17 +931,7 @@ function UserProfilingPage() {
           </div>
         </section>
       )}
-      <div className="profiling-intro-audio-action">
-        <button
-          type="button"
-          onClick={handleToggleMute}
-          aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-          title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-          className={`profiling-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
-        >
-          {isMuted ? <VolumeX aria-hidden="true" /> : <Volume2 aria-hidden="true" />}
-        </button>
-      </div>
+      {renderAudioToggle()}
     </div>
   );
 }

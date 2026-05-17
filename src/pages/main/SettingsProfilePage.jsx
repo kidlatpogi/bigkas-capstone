@@ -9,6 +9,19 @@ import './SettingsProfilePage.css';
 import { getSpriteUrl } from '../../utils/assetUtils';
 
 import { getBigkasLevelFromUser } from '../../utils/activityProgress';
+import {
+  DEFAULT_PROFILE_THEME,
+  getAllowedProfileTheme,
+  readStoredProfileTheme,
+  writeStoredProfileTheme,
+} from '../../utils/profileTheme';
+import {
+  getClaimedTrophyLevels,
+  getFeaturedTrophy,
+  getTrophyImageUrl,
+  getTrophyTitle,
+  setFeaturedTrophyLevel,
+} from '../../utils/trophyClaims';
 
 const mascotSprite = getSpriteUrl('Robot/0002.webp');
 
@@ -40,12 +53,17 @@ function SettingsProfilePage() {
 
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
-  const [heroTheme, setHeroTheme] = useState(() => {
-    return localStorage.getItem('pref_hero_theme') || 'emerald';
-  });
+  const [heroTheme, setHeroTheme] = useState(DEFAULT_PROFILE_THEME);
+  const [heroThemeUserId, setHeroThemeUserId] = useState(null);
+  const [claimedTrophyLevels, setClaimedTrophyLevels] = useState(() => getClaimedTrophyLevels(user?.id));
+  const [featuredTrophy, setFeaturedTrophy] = useState(() => getFeaturedTrophy(user?.id));
 
   const userLevel = useMemo(() => getBigkasLevelFromUser(user), [user]);
   const currentLevelNumber = userLevel.levelNumber;
+  const activeHeroTheme = useMemo(() => {
+    if (heroThemeUserId !== (user?.id || null)) return DEFAULT_PROFILE_THEME;
+    return getAllowedProfileTheme(heroTheme, THEME_CONFIG, currentLevelNumber);
+  }, [currentLevelNumber, heroTheme, heroThemeUserId, user?.id]);
 
   const getThemeDecoration = (themeId) => {
     const config = THEME_CONFIG.find(t => t.id === themeId);
@@ -63,8 +81,24 @@ function SettingsProfilePage() {
   }, [user]);
 
   useEffect(() => {
-    localStorage.setItem('pref_hero_theme', heroTheme);
-  }, [heroTheme]);
+    const nextTheme = readStoredProfileTheme(user?.id, THEME_CONFIG, currentLevelNumber);
+    setHeroTheme(nextTheme);
+    setHeroThemeUserId(user?.id || null);
+  }, [currentLevelNumber, user?.id]);
+
+  useEffect(() => {
+    if (heroThemeUserId !== (user?.id || null)) return;
+    if (activeHeroTheme !== heroTheme) {
+      setHeroTheme(activeHeroTheme);
+      return;
+    }
+    writeStoredProfileTheme(user?.id, activeHeroTheme);
+  }, [activeHeroTheme, heroTheme, heroThemeUserId, user?.id]);
+
+  useEffect(() => {
+    setClaimedTrophyLevels(getClaimedTrophyLevels(user?.id));
+    setFeaturedTrophy(getFeaturedTrophy(user?.id));
+  }, [user?.id]);
 
   const hasChanges = useMemo(() => {
     return firstName !== initialSnapshot.firstName ||
@@ -154,24 +188,29 @@ function SettingsProfilePage() {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || '?';
   }, [firstName, lastName]);
 
+  const handleFeatureTrophy = useCallback((level) => {
+    const next = setFeaturedTrophyLevel(user?.id, level);
+    setFeaturedTrophy(getFeaturedTrophy(user?.id) || (next ? { level: next, label: `Level ${next} Trophy`, title: getTrophyTitle(next) } : null));
+  }, [user?.id]);
+
   return (
     <div className="settings-profile-page dashboard-page-new">
       <div className="settings-profile-container">
-        <div className={`profile-hero-card hero-theme--${heroTheme}`}>
+        <div className={`profile-hero-card hero-theme--${activeHeroTheme}`}>
           <div className="hero-decoration">
-            {heroTheme === 'mascot' ? (
+            {activeHeroTheme === 'mascot' ? (
               <img src={mascotSprite} alt="" className="decoration-img decoration-mascot" />
             ) : (
-              getThemeDecoration(heroTheme) && (
-                <img 
-                  src={getThemeDecoration(heroTheme)} 
-                  alt="" 
-                  className={`decoration-img ${heroTheme === 'trophy' ? 'decoration-trophy' : 'decoration-rank'}`} 
+              getThemeDecoration(activeHeroTheme) && (
+                <img
+                  src={getThemeDecoration(activeHeroTheme)}
+                  alt=""
+                  className={`decoration-img ${activeHeroTheme === 'trophy' ? 'decoration-trophy' : 'decoration-rank'}`}
                 />
               )
             )}
           </div>
-          
+
           <div className="hero-avatar-wrapper">
             <button type="button" className="hero-avatar-btn" onClick={handleAvatarClick} aria-label="Change avatar">
               <div className="hero-avatar-ring">
@@ -193,11 +232,39 @@ function SettingsProfilePage() {
           <div className="hero-info">
             <h1 className="hero-name">{firstName} {lastName}</h1>
             <p className="hero-email">{user?.email}</p>
+            {featuredTrophy ? (
+              <div className="hero-featured-trophy" aria-label={`Featured trophy: ${featuredTrophy.title}`}>
+                <img src={getTrophyImageUrl(featuredTrophy.level)} alt="" className="hero-featured-trophy-img" width="28" height="28" />
+                <div className="hero-featured-trophy-copy">
+                  <span className="hero-featured-trophy-label">Featured Trophy</span>
+                  <strong>{featuredTrophy.title}</strong>
+                </div>
+              </div>
+            ) : null}
+            <div className="hero-trophy-shelf" aria-label="Claimed trophy shelf">
+              {[1, 2, 3, 4, 5].map((level) => {
+                const isClaimed = claimedTrophyLevels.includes(level);
+                const isFeatured = featuredTrophy?.level === level;
+                return (
+                  <button
+                    key={level}
+                    type="button"
+                    className={`hero-trophy-token${isClaimed ? ' is-claimed' : ' is-locked'}${isFeatured ? ' is-featured' : ''}`}
+                    disabled={!isClaimed}
+                    onClick={() => handleFeatureTrophy(level)}
+                    aria-label={isClaimed ? `Feature ${getTrophyTitle(level)}` : `Level ${level} trophy locked`}
+                  >
+                    <img src={getTrophyImageUrl(level)} alt="" width="22" height="22" />
+                    <span>{level}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <button 
-            type="button" 
-            className="hero-theme-trigger" 
+          <button
+            type="button"
+            className="hero-theme-trigger"
             onClick={() => setIsThemeModalOpen(true)}
             aria-label="Change theme"
           >
@@ -265,10 +332,10 @@ function SettingsProfilePage() {
               <div className="settings-form-section">
                 <h2 className="section-heading">Security</h2>
                 <div className="security-actions">
-                  <Button 
-                    variant="practice" 
-                    className="security-btn" 
-                    onClick={() => navigate(ROUTES.CHANGE_PASSWORD)} 
+                  <Button
+                    variant="practice"
+                    className="security-btn"
+                    onClick={() => navigate(ROUTES.CHANGE_PASSWORD)}
                     icon={IoChevronForward}
                   >
                     Change Password
@@ -300,9 +367,9 @@ function SettingsProfilePage() {
       </div>
 
       {isAvatarModalOpen && (
-        <div 
-          className="bigkas-modal-scrim sp-modal-backdrop" 
-          style={{ '--scrim-z': 800 }} 
+        <div
+          className="bigkas-modal-scrim sp-modal-backdrop"
+          style={{ '--scrim-z': 800 }}
           onClick={() => setIsAvatarModalOpen(false)}
         >
           <div className="sp-modal" style={{ width: 'min(400px, 90vw)' }} onClick={(e) => e.stopPropagation()}>
@@ -310,24 +377,24 @@ function SettingsProfilePage() {
             <p style={{ textAlign: 'center', color: 'var(--sp-text-muted)', fontSize: '14px', marginBottom: '12px' }}>
               Update your profile picture
             </p>
-            
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <Button 
-                variant="practice" 
+              <Button
+                variant="practice"
                 onClick={() => fileRef.current?.click()}
               >
                 Upload Photo
               </Button>
-              
-              <Button 
-                variant="danger" 
+
+              <Button
+                variant="danger"
                 onClick={handleRemoveAvatar}
               >
                 Remove Photo
               </Button>
-              
-              <Button 
-                variant="ghost" 
+
+              <Button
+                variant="ghost"
                 onClick={() => setIsAvatarModalOpen(false)}
               >
                 Cancel
@@ -345,25 +412,25 @@ function SettingsProfilePage() {
       )}
 
       {isThemeModalOpen && (
-        <div 
-          className="bigkas-modal-scrim sp-modal-backdrop" 
-          style={{ '--scrim-z': 800 }} 
+        <div
+          className="bigkas-modal-scrim sp-modal-backdrop"
+          style={{ '--scrim-z': 800 }}
           onClick={() => setIsThemeModalOpen(false)}
         >
           <div className="sp-modal sp-modal--wide" onClick={(e) => e.stopPropagation()}>
             <h3 className="sp-modal-title">Customize Profile Theme</h3>
-            
+
             <div className="theme-modal-preview">
-              <div className={`profile-hero-card profile-hero-card--preview hero-theme--${heroTheme}`}>
+              <div className={`profile-hero-card profile-hero-card--preview hero-theme--${activeHeroTheme}`}>
                 <div className="hero-decoration">
-                  {heroTheme === 'mascot' ? (
+                  {activeHeroTheme === 'mascot' ? (
                     <img src={mascotSprite} alt="" className="decoration-img decoration-mascot" />
                   ) : (
-                    getThemeDecoration(heroTheme) && (
-                      <img 
-                        src={getThemeDecoration(heroTheme)} 
-                        alt="" 
-                        className={`decoration-img ${heroTheme === 'trophy' ? 'decoration-trophy' : 'decoration-rank'}`} 
+                    getThemeDecoration(activeHeroTheme) && (
+                      <img
+                        src={getThemeDecoration(activeHeroTheme)}
+                        alt=""
+                        className={`decoration-img ${activeHeroTheme === 'trophy' ? 'decoration-trophy' : 'decoration-rank'}`}
                       />
                     )
                   )}
@@ -387,14 +454,18 @@ function SettingsProfilePage() {
             <div className="theme-picker">
               {THEME_CONFIG.map((theme) => {
                 const isLocked = currentLevelNumber < theme.requires;
-                const isActive = heroTheme === theme.id;
-                
+                const isActive = activeHeroTheme === theme.id;
+
                 return (
-                  <button 
+                  <button
                     key={theme.id}
-                    type="button" 
+                    type="button"
                     className={`theme-option theme-option--${theme.className} ${isActive ? 'is-active' : ''} ${isLocked ? 'theme-option--locked' : ''}`}
-                    onClick={() => !isLocked && setHeroTheme(theme.id)}
+                    onClick={() => {
+                      if (isLocked) return;
+                      setHeroTheme(theme.id);
+                      setHeroThemeUserId(user?.id || null);
+                    }}
                     disabled={isLocked}
                   >
                     <div className="theme-preview">
@@ -413,10 +484,10 @@ function SettingsProfilePage() {
               })}
             </div>
 
-            <Button 
-              type="button" 
+            <Button
+              type="button"
               variant="practice"
-              className="sp-modal-cancel" 
+              className="sp-modal-cancel"
               onClick={() => setIsThemeModalOpen(false)}
             >
               Done

@@ -125,6 +125,38 @@
   flex: 1;
 }
 
+.trophy-item--claimable .trophy-progress-container {
+  border-color: rgba(249, 115, 22, 0.24);
+  background: linear-gradient(180deg, #ffffff 0%, #fffbeb 100%);
+  box-shadow: 0 14px 28px rgba(249, 115, 22, 0.12);
+}
+
+.trophy-item--claimable {
+  cursor: pointer;
+  outline: none;
+}
+
+.trophy-item--claimable .trophy-wrapper,
+.trophy-item--claimable .trophy-progress-container {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.trophy-item--claimable:hover .trophy-wrapper,
+.trophy-item--claimable:focus-visible .trophy-wrapper {
+  transform: translateY(-4px);
+}
+
+.trophy-item--claimable:hover .trophy-progress-container,
+.trophy-item--claimable:focus-visible .trophy-progress-container {
+  border-color: rgba(249, 115, 22, 0.45);
+  box-shadow: 0 18px 34px rgba(249, 115, 22, 0.18);
+}
+
+.trophy-item--claimed .trophy-progress-container {
+  border-color: rgba(5, 150, 105, 0.2);
+  background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
+}
+
 .trophy-wrapper {
   position: relative;
   display: flex;
@@ -297,6 +329,14 @@
   color: #64748B;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+.trophy-item--claimable .trophy-progress-text {
+  color: #ea580c;
+}
+
+.trophy-item--claimed .trophy-progress-text {
+  color: #059669;
 }
 
 /* ── Filter & Sort Bar ── */
@@ -587,6 +627,33 @@
   text-transform: capitalize;
 }
 
+.badge-journey-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  margin: -4px 0 10px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  color: #2563eb;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+  z-index: 2;
+}
+
+.badge-journey-chip--modal {
+  margin: -6px 0 12px;
+}
+
 .checkmark-icon {
   color: #059669;
   font-size: 1.2rem;
@@ -701,6 +768,12 @@
 [data-theme='dark'] .trophy-progress-text,
 [data-theme='dark'] .badge-progress-text {
   color: #94A3B8;
+}
+
+[data-theme='dark'] .badge-journey-chip {
+  background: rgba(96, 165, 250, 0.12);
+  border-color: rgba(96, 165, 250, 0.28);
+  color: #93c5fd;
 }
 
 /* ── Badge Detail Modal ── */

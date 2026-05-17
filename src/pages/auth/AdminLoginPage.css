@@ -180,37 +180,38 @@ body.admin-login-page-active .password-input-wrapper .form-input {
 body.admin-login-page-active .password-toggle,
 body.admin-login-page-active .pw-toggle-btn {
   position: absolute;
-  right: 1.5px;
-  top: 1.5px;
-  bottom: 1.5px;
+  right: 14px;
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 46px;
-  min-width: 46px;
+  width: auto;
+  min-width: 0;
   color: var(--admin-emerald-dark);
-  background: #f8fafc;
+  background: transparent;
   border: 0;
-  border-left: 1px solid rgba(5, 150, 105, 0.25);
-  border-radius: 0 10px 10px 0;
+  border-radius: 0;
   font-family: inherit;
+  font-weight: 900;
+  line-height: 1;
   cursor: pointer;
-  padding: 0;
+  padding: 4px 0;
   z-index: 2;
-  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  transition: color 0.18s ease;
 }
 
 body.admin-login-page-active .password-toggle:hover,
 body.admin-login-page-active .pw-toggle-btn:hover {
-  background: var(--admin-emerald-light);
-  border-color: rgba(5, 150, 105, 0.45);
   color: var(--admin-emerald);
 }
 
 body.admin-login-page-active .password-toggle:focus-visible,
 body.admin-login-page-active .pw-toggle-btn:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.18);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 body.admin-login-page-active .password-toggle:disabled,

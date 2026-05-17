@@ -11,19 +11,33 @@ import worker from "../src/index";
 // `Request` to pass to `worker.fetch()`.
 const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
 
-describe("Hello World worker", () => {
-	it("responds with Hello World! (unit style)", async () => {
-		const request = new IncomingRequest("http://example.com");
+describe("B-01 AI worker", () => {
+	it("responds to health checks with CORS headers (unit style)", async () => {
+		const request = new IncomingRequest("http://example.com/health");
 		// Create an empty context to pass to `worker.fetch()`.
 		const ctx = createExecutionContext();
 		const response = await worker.fetch(request, env, ctx);
 		// Wait for all `Promise`s passed to `ctx.waitUntil()` to settle before running test assertions
 		await waitOnExecutionContext(ctx);
-		expect(await response.text()).toMatchInlineSnapshot(`"Hello World!"`);
+		expect(response.status).toBe(200);
+		expect(response.headers.get("Access-Control-Allow-Origin")).toBe("*");
+		expect(await response.json()).toMatchObject({
+			ok: true,
+			service: "b01-ai-worker",
+			status: "online",
+		});
 	});
 
-	it("responds with Hello World! (integration style)", async () => {
-		const response = await SELF.fetch("https://example.com");
-		expect(await response.text()).toMatchInlineSnapshot(`"Hello World!"`);
+	it("responds to preflight requests with CORS headers (integration style)", async () => {
+		const response = await SELF.fetch("https://example.com/health", {
+			method: "OPTIONS",
+			headers: {
+				Origin: "http://localhost:5173",
+				"Access-Control-Request-Method": "GET",
+			},
+		});
+		expect(response.status).toBe(204);
+		expect(response.headers.get("Access-Control-Allow-Origin")).toBe("*");
+		expect(response.headers.get("Access-Control-Allow-Methods")).toContain("GET");
 	});
 });

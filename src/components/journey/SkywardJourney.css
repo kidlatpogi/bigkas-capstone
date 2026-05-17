@@ -526,6 +526,10 @@
   align-items: stretch;
 }
 
+.skyward-journey-row--milestone {
+  padding-top: 18px;
+}
+
 .skyward-journey-track {
   display: flex;
   justify-content: center;
@@ -593,7 +597,12 @@
 }
 
 .skyward-journey-node--trophy {
-  transform: scale(1.15);
+  border-color: #f5c66a;
+  background: linear-gradient(165deg, #fff8df 0%, #ffe29a 42%, #f8c453 100%);
+  box-shadow:
+    #d49a12 0px 10px 0px 0px,
+    0 0 0 4px rgba(245, 198, 106, 0.36),
+    0 14px 32px rgba(180, 120, 0, 0.24);
 }
 
 /* Boss / milestone — 1.5× footprint */
@@ -638,10 +647,16 @@
 }
 
 .skyward-journey-node-icon--trophy-chest {
-  width: 36px;
-  height: 36px;
+  width: 58px;
+  height: 58px;
   object-fit: contain;
-  filter: drop-shadow(0 3px 6px rgba(11, 57, 84, 0.22));
+  filter: drop-shadow(0 6px 10px rgba(120, 76, 0, 0.24));
+}
+
+.skyward-journey-start-badge--trophy {
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(245, 158, 11, 0.26);
 }
 
 .skyward-journey-node--active {
@@ -1332,6 +1347,37 @@
   font-weight: 800;
 }
 
+.skyward-journey-passing-rate-box {
+  font-family: 'Nunito', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(5, 150, 105, 0.16);
+  background: linear-gradient(180deg, rgba(236, 253, 245, 0.9) 0%, rgba(240, 253, 250, 0.78) 100%);
+  color: #064e3b;
+}
+
+.skyward-journey-passing-rate-label {
+  color: #047857;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.skyward-journey-passing-rate-value {
+  color: #0f172a;
+  font-size: clamp(0.92rem, 0.84rem + 0.18vw, 1rem);
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: right;
+}
+
 .randomizer-overlay-robot-wrap {
   position: relative;
   order: 1;
@@ -1582,6 +1628,23 @@
     color: #475569;
   }
 
+  .skyward-journey-panel-root .skyward-journey-passing-rate-box {
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #ecfdf5;
+    border-color: rgba(5, 150, 105, 0.14);
+  }
+
+  .skyward-journey-panel-root .skyward-journey-passing-rate-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+  }
+
+  .skyward-journey-panel-root .skyward-journey-passing-rate-value {
+    font-size: 0.9rem;
+  }
+
   .skyward-journey-panel-root .randomizer-overlay-topic {
     margin: 0;
     padding: 12px 14px;
@@ -1727,11 +1790,15 @@
   }
 
   .skyward-journey-section {
-    gap: 12px;
+    gap: 30px;
   }
 
   .skyward-journey-section-rows {
     gap: 22px;
+  }
+
+  .skyward-journey-row--milestone {
+    padding-top: 32px;
   }
 
   .skyward-journey-node-shell--start-onboarding {

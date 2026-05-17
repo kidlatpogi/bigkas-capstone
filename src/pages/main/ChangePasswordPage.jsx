@@ -10,6 +10,8 @@ import './SettingsProfilePageMobile.css';
 import './ChangePasswordPage.css';
 
 import { getSpriteUrl } from '../../utils/assetUtils';
+import { getBigkasLevelFromUser } from '../../utils/activityProgress';
+import { readStoredProfileTheme } from '../../utils/profileTheme';
 
 const mascotSprite = getSpriteUrl('Robot/0002.webp');
 const bronzeRank = getSpriteUrl('Rank/rank-bronze.webp');
@@ -66,10 +68,12 @@ function ChangePasswordPage() {
   const [showCur, setShowCur] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showCon, setShowCon] = useState(false);
-  
-  const [heroTheme] = useState(() => {
-    return localStorage.getItem('pref_hero_theme') || 'emerald';
-  });
+
+  const userLevel = useMemo(() => getBigkasLevelFromUser(user), [user]);
+  const heroTheme = useMemo(
+    () => readStoredProfileTheme(user?.id, THEME_CONFIG, userLevel.levelNumber),
+    [user?.id, userLevel.levelNumber],
+  );
 
   const getThemeDecoration = (themeId) => {
     const config = THEME_CONFIG.find(t => t.id === themeId);
@@ -135,10 +139,10 @@ function ChangePasswordPage() {
               <img src={mascotSprite} alt="" className="decoration-img decoration-mascot" />
             ) : (
               getThemeDecoration(heroTheme) && (
-                <img 
-                  src={getThemeDecoration(heroTheme)} 
-                  alt="" 
-                  className={`decoration-img ${heroTheme === 'trophy' ? 'decoration-trophy' : 'decoration-rank'}`} 
+                <img
+                  src={getThemeDecoration(heroTheme)}
+                  alt=""
+                  className={`decoration-img ${heroTheme === 'trophy' ? 'decoration-trophy' : 'decoration-rank'}`}
                 />
               )
             )}
@@ -152,13 +156,13 @@ function ChangePasswordPage() {
 
         <div className="settings-content-wrapper">
           <div className="settings-main-card">
-            
+
             {error && (
               <div className="sp-status-message sp-status-message--error">
                 {error}
               </div>
             )}
-            
+
             {success && (
               <div className="sp-status-message sp-status-message--success">
                 Password changed successfully! Redirecting…
@@ -168,7 +172,7 @@ function ChangePasswordPage() {
             <div className="settings-form">
               <div className="settings-form-section">
                 <h2 className="section-heading">Change Password</h2>
-                
+
                 <PwdField
                   label="Current Password"
                   value={currentPwd}
@@ -201,16 +205,16 @@ function ChangePasswordPage() {
               </div>
 
               <div className="settings-footer-actions">
-                <Button 
-                  variant="ghost" 
-                  onClick={() => navigate(-1)} 
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate(-1)}
                   disabled={isSaving}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  variant="practice" 
-                  onClick={handleSave} 
+                <Button
+                  variant="practice"
+                  onClick={handleSave}
                   disabled={isSaving}
                   isLoading={isSaving}
                 >

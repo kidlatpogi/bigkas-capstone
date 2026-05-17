@@ -104,6 +104,7 @@
 
 .rank-modal-item-info {
   flex: 1;
+  min-width: 0;
 }
 
 .rank-modal-item-label {
@@ -146,4 +147,90 @@
   border-color: #cbd5e1;
   transform: translateX(4px);
   background: #f8fafc;
+}
+
+@media (max-width: 768px) {
+  .rank-modal-overlay {
+    inset: 0 0 calc(64px + env(safe-area-inset-bottom, 0px)) 0;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 16px;
+    padding-left: 16px;
+    align-items: center;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .rank-modal-card {
+    max-width: 360px;
+    width: min(100%, calc(100vw - 32px), 360px);
+    max-height: calc(100dvh - 112px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    border-radius: 28px;
+    min-height: 0;
+  }
+
+  .rank-modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 24px 20px;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    justify-content: stretch;
+    align-items: center;
+    text-align: center;
+    background: #ffffff;
+  }
+
+  .rank-modal-title {
+    grid-column: 2;
+    justify-self: center;
+  }
+
+  .rank-modal-header .dashboard-overlay-close-btn {
+    grid-column: 3;
+    justify-self: end;
+  }
+
+  .rank-modal-list {
+    padding: 18px 20px 24px;
+    gap: 12px;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+  }
+
+  .rank-modal-item {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr);
+    grid-template-areas:
+      "visual info"
+      "visual badge";
+    align-items: center;
+    column-gap: 14px;
+    row-gap: 8px;
+    padding: 16px;
+  }
+
+  .rank-modal-item-visual {
+    grid-area: visual;
+  }
+
+  .rank-modal-item-info {
+    grid-area: info;
+  }
+
+  .rank-modal-item-name {
+    font-size: 1.1rem;
+    line-height: 1.25;
+  }
+
+  .rank-modal-current-badge {
+    grid-area: badge;
+    justify-self: start;
+    width: fit-content;
+    max-width: 100%;
+    padding: 4px 10px;
+    font-size: 0.68rem;
+    line-height: 1;
+  }
 }

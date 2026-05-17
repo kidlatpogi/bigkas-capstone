@@ -1,15 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import Confetti from 'react-confetti';
-import Lottie from 'lottie-react';
 import { useAuthContext } from '../../context/useAuthContext';
 import { useSessions } from '../../hooks/useSessions';
 import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import PushButton from '../../components/common/PushButton';
-import { IoChatbubbleEllipsesOutline, IoSend, IoFlame, IoTrophyOutline } from 'react-icons/io5';
-import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
-import TutorialOverlay from '../../components/main/TutorialOverlay';
+import { IoChatbubbleEllipsesOutline } from '@react-icons/all-files/io5/IoChatbubbleEllipsesOutline';
+import { IoSend } from '@react-icons/all-files/io5/IoSend';
+import { IoFlame } from '@react-icons/all-files/io5/IoFlame';
+import { IoTrophyOutline } from '@react-icons/all-files/io5/IoTrophyOutline';
 import {
   GLOBAL_ACTIVITY_SCOPE,
   getActivityTaskProgress,
@@ -21,14 +20,13 @@ import {
   resolveDashboardTutorialSpeakerLevel,
 } from '../../utils/activityProgress';
 import SkywardJourneyShell from '../../components/journey/SkywardJourneyShell';
-import StreakCalendarModal from '../../components/main/StreakCalendarModal';
-import RankListModal from '../../components/main/RankListModal';
 import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 import { useJourneyRemoteState } from '../../hooks/useJourneyRemoteState';
 import { ensureJourneyStarted, updateJourneyCurrentActivity, updateUserProgressLevel } from '../../services/journeyProgressService';
-import { RANDOM_TOPICS } from '../../utils/practiceData';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
-import { filterActivitiesForJourney, JOURNEY_STAGE_LIMITS } from '../../utils/journeyFiltering';
+import { filterActivitiesForJourney } from '../../utils/journeyFiltering';
+import { FaVolumeMute } from '@react-icons/all-files/fa/FaVolumeMute';
+import { FaVolumeUp } from '@react-icons/all-files/fa/FaVolumeUp';
 
 const iconFire = getAssetUrl('icons/Icon-Fire.svg');
 const robotMorningImage = getSpriteUrl('Robot/0018.webp');
@@ -49,10 +47,26 @@ const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.webp');
 const crystalBallImage = getSpriteUrl('common/crystal-ball.webp');
 const crownImage = getSpriteUrl('common/crown.webp');
 const b01ChatHead = getAssetUrl('Images/Bigkas-Logo.webp');
-import fireAnimationData from '../../assets/Lottie/fire.json';
 import { generateCoachInsights } from '../../utils/coachInsights';
 import './InnerPages.css';
 import './ActivityPage.css';
+
+const Confetti = lazy(() => import('react-confetti'));
+const TutorialOverlay = lazy(() => import('../../components/main/TutorialOverlay'));
+const StreakCalendarModal = lazy(() => import('../../components/main/StreakCalendarModal'));
+const RankListModal = lazy(() => import('../../components/main/RankListModal'));
+const LottieFire = lazy(async () => {
+  const [{ default: Lottie }, { default: fireAnimationData }] = await Promise.all([
+    import('lottie-react'),
+    import('../../assets/Lottie/fire.json'),
+  ]);
+
+  return {
+    default: function LottieFireComponent() {
+      return <Lottie animationData={fireAnimationData} loop />;
+    },
+  };
+});
 
 const DAY_MS = 86_400_000;
 const ACTIVITY_CELEBRATION_STORAGE_KEY = 'bigkas_pending_activity_celebration_v1';
@@ -230,18 +244,20 @@ function ActivityPage() {
   );
   const [entranceFromNav] = useState(() => location.state?.skywardEntrance === true);
   const scopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
-  /** Activities are filtered by `target_level` = Bigkas rank (same as dashboard `levelProgress.levelName`). */
-  const { tasks: allTasks, loading: activitiesLoading, error: activitiesError } = useActivitiesJourneyTasks(user?.progressLevelNumber || 1);
-
   const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
-  const currentJourneyNumber = Math.max(1, Math.min(5, Number(user?.progressLevelNumber || user?.progress_level_number || 1) || 1));
+  const storedJourneyNumber = Math.max(1, Math.min(5, Number(user?.progressLevelNumber || user?.progress_level_number || 1) || 1));
+  const placementJourneyNumber = Math.max(1, Math.min(5, Number(levelProgress?.levelNumber) || 1));
+  const currentJourneyNumber = Math.max(storedJourneyNumber, placementJourneyNumber);
+  /** Activities are filtered by `target_level` = Bigkas rank (same as dashboard `levelProgress.levelName`). */
+  const { tasks: allTasks, loading: activitiesLoading, error: activitiesError } = useActivitiesJourneyTasks(currentJourneyNumber);
+
   const tasks = useMemo(() => {
     // We use the derived level number (from getBigkasLevelFromUser) to ensure 
     // the filtering matches the rank shown in the UI (e.g. Silver = Level 2).
     const sLevel = levelProgress?.levelNumber || 1;
-    return filterActivitiesForJourney(allTasks, sLevel, user?.progressLevelNumber || 1);
-  }, [allTasks, levelProgress?.levelNumber, user?.progressLevelNumber]);
-  const { metricsSyncKey, refreshJourney } = useJourneyRemoteState(user);
+    return filterActivitiesForJourney(allTasks, sLevel, currentJourneyNumber);
+  }, [allTasks, levelProgress?.levelNumber, currentJourneyNumber]);
+  const { journeyStartedAt, metricsSyncKey, remoteLoaded, refreshJourney } = useJourneyRemoteState(user);
   const stampResetTimeoutRef = useRef(null);
   const audioContextRef = useRef(null);
   const previousTaskStateRef = useRef({});
@@ -366,7 +382,7 @@ function ActivityPage() {
     if (!user?.id || tasks.length === 0 || activitiesLoading) return;
 
     if (completedTaskCount === tasks.length) {
-      const currentLevel = Number(user.progressLevelNumber || 1);
+      const currentLevel = Number(currentJourneyNumber || 1);
       if (currentLevel < 5) {
         const nextLevel = currentLevel + 1;
 
@@ -391,7 +407,7 @@ function ActivityPage() {
       // Reset if user somehow goes back (e.g. data sync)
       isAdvancingRef.current = null;
     }
-  }, [completedTaskCount, tasks.length, user?.id, user?.progressLevelNumber, activitiesLoading, updateUserMetadata]);
+  }, [completedTaskCount, tasks.length, user?.id, currentJourneyNumber, activitiesLoading, updateUserMetadata]);
 
   const sessionCountsByDay = useMemo(() => {
     const counts = new Map();
@@ -607,10 +623,8 @@ function ActivityPage() {
     [levelProgress?.levelNumber, levelProgress?.levelName],
   );
 
-  const lottieFireNode = useMemo(() => <Lottie animationData={fireAnimationData} loop={true} />, []);
-
   useEffect(() => {
-    if (!user?.id || activitiesLoading) return undefined;
+    if (!user?.id || activitiesLoading || !remoteLoaded || journeyStartedAt) return undefined;
     let cancelled = false;
     (async () => {
       try {
@@ -623,7 +637,7 @@ function ActivityPage() {
     return () => {
       cancelled = true;
     };
-  }, [user?.id, activitiesLoading, refreshJourney]);
+  }, [user?.id, activitiesLoading, journeyStartedAt, remoteLoaded, refreshJourney]);
 
   const taskState = useMemo(() => {
     return tasks.reduce((state, task) => {
@@ -675,25 +689,16 @@ function ActivityPage() {
 
   const freeSpeechTutorialSteps = useMemo(() => {
     const level = resolveDashboardTutorialSpeakerLevel(user);
-    let welcomeText = "Welcome aboard! You made it, and I know you're going to do great things here. Let me give you a quick, guided tour of your Home screen so you know exactly where everything is.";
-    let welcomeVoice = null;
-
-    if (level === 1) {
-      welcomeText = "Welcome! I’ve analyzed your profile and we’re starting from the ground up. You’ll be taking the full 30-stage path for Journey 1 to ensure your vocal and visual foundations are unbreakable. Let’s build your mastery, stage by stage.";
-      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%201.mp3";
-    } else if (level === 2) {
-      welcomeText = "Welcome! Based on your level, I’ve optimized your curriculum. Since you already show solid potential, I’ve trimmed Journey 1 down to 20 essential stages. We’ll move faster through the basics so you can reach the advanced challenges sooner. Let’s begin.";
-      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%202.mp3";
-    } else if (level === 3) {
-      welcomeText = "Welcome back. Your experience allows us to skip the fluff. I’ve recalibrated your Journey 1 to just 15 high-impact stages, and Journey 2 to 20. We’re focusing only on the core essentials before we dive into the deep technical training. Systems ready?";
-      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%203.mp3";
-    } else if (level === 4) {
-      welcomeText = "Welcome! Your skills are advanced, so I’ve streamlined your training. I’ve cut Journeys 1, 2, and 3 down to the bare essentials, removing over 40 stages of repetitive drills. We’re moving fast through the basics to get you straight to the Specialist training. Let’s get to work.";
-      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%204.mp3";
-    } else if (level >= 5) {
-      welcomeText = "Welcome, Expert. We’re skipping the grind. I’ve compressed Journeys 1 through 4 into a rapid-fire calibration to respect your expertise. We’re fast-forwarding past the basics so you can focus entirely on the high-stakes challenges of the final Journey. Mastery starts here.";
-      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%205_new.mp3";
-    }
+    const safeLevel = Math.min(5, Math.max(1, Math.round(Number(level) || 1)));
+    const welcomeLines = {
+      1: "Welcome! I've analyzed your profile, and we're starting from the ground up. Your main path begins with Journey 1, where you'll build the foundations of confident speaking one stage at a time.",
+      2: "Welcome! Based on your level, your main path begins with Journey 2. Journey 1 stays available as optional practice whenever you want to review the foundations.",
+      3: "Welcome! Based on your level, your main path begins with Journey 3. Journeys 1 and 2 stay available as optional practice whenever you want to review the foundations.",
+      4: "Welcome! Based on your level, your main path begins with Journey 4. Journeys 1 through 3 stay available as optional practice whenever you want to review the foundations.",
+      5: "Welcome! Based on your level, your main path begins with Journey 5. Journeys 1 through 4 stay available as optional practice whenever you want to review the foundations.",
+    };
+    const welcomeText = welcomeLines[safeLevel];
+    const welcomeVoice = `https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level_${safeLevel}_NEW.mp3`;
 
     const fullSteps = [
       {
@@ -770,14 +775,8 @@ function ActivityPage() {
   }, [user?.speakerLevelNumber, user?.onboardingLevelAnalysis, user?.speakerEntryScore, user?.speaker_entry_score, location.state?.skipTutorialIntro]);
 
   const assessmentTutorialSteps = useMemo(() => {
-    const sLevel = resolveDashboardTutorialSpeakerLevel(user);
-    const pLevel = user?.progressLevelNumber || 1;
-    const reducedTo = JOURNEY_STAGE_LIMITS[sLevel]?.[pLevel] ?? 30;
-
-    let text = `We noticed that you are a level ${sLevel} speaker, so we reduced Journey ${pLevel} to ${reducedTo} stages for you!`;
-    if (reducedTo >= 30) {
-      text = `Welcome to Journey ${pLevel}! You have ${reducedTo} stages to complete. Let's get started!`;
-    }
+    const pLevel = currentJourneyNumber;
+    const text = `Welcome to Journey ${pLevel}! You have the full 30-stage path to complete. Earlier journeys remain optional practice when your assessed level is higher.`;
 
     return [
       {
@@ -789,7 +788,7 @@ function ActivityPage() {
         robot: tutorialRobotStep1,
       },
     ];
-  }, [user?.speakerLevelNumber, user?.onboardingLevelAnalysis, user?.speakerEntryScore, user?.speaker_entry_score, user?.progressLevelNumber]);
+  }, [currentJourneyNumber]);
 
   useEffect(() => {
     if (user?.isAudioMuted) return;
@@ -1037,14 +1036,6 @@ function ActivityPage() {
       updateUserMetadata({ dashboard_tutorial_seen: true }).catch(() => { });
     }
 
-    const sLevel = resolveDashboardTutorialSpeakerLevel(user);
-    const pLevel = Number(user?.progressLevelNumber || 1);
-    const reducedTo = JOURNEY_STAGE_LIMITS[sLevel]?.[pLevel] ?? 30;
-
-    // Show assessment modal if the current journey has reduced stages for this user
-    if (reducedTo < 30) {
-      setShowAssessmentModal(true);
-    }
   }, [user, updateUserMetadata]);
 
   const handleCloseFreeSpeechOverlay = useCallback(() => {
@@ -1093,7 +1084,7 @@ function ActivityPage() {
       setIsRandomizingTopic(false);
     }
 
-    // Fallback to local randomization
+    const { RANDOM_TOPICS } = await import('../../utils/practiceData');
     if (!RANDOM_TOPICS.length) return;
     setRandomizerTopic((current) => {
       if (RANDOM_TOPICS.length === 1) return RANDOM_TOPICS[0];
@@ -1271,13 +1262,17 @@ function ActivityPage() {
 
   return (
     <div className={`activity-page-root ${!activitiesLoading ? 'activity-page--skyward-entrance' : ''} ${(showFreeSpeechTutorial || showAssessmentModal) ? 'is-tutorial-active' : ''}`}>
-      <TutorialOverlay
-        isOpen={showFreeSpeechTutorial}
-        steps={freeSpeechTutorialSteps}
-        showAudioToggle
-        onClose={() => setShowFreeSpeechTutorial(false)}
-        onFinish={handleTutorialFinish}
-      />
+      {showFreeSpeechTutorial && (
+        <Suspense fallback={null}>
+          <TutorialOverlay
+            isOpen={showFreeSpeechTutorial}
+            steps={freeSpeechTutorialSteps}
+            showAudioToggle
+            onClose={() => setShowFreeSpeechTutorial(false)}
+            onFinish={handleTutorialFinish}
+          />
+        </Suspense>
+      )}
 
       <div className="activity-page-grid">
         {/* Loading Overlay (Only if no data yet) */}
@@ -1301,13 +1296,15 @@ function ActivityPage() {
         )}
 
         {showCompletionCelebration && (
-          <Confetti
-            width={viewportSize.width}
-            height={viewportSize.height}
-            recycle
-            numberOfPieces={280}
-            gravity={0.24}
-          />
+          <Suspense fallback={null}>
+            <Confetti
+              width={viewportSize.width}
+              height={viewportSize.height}
+              recycle
+              numberOfPieces={280}
+              gravity={0.24}
+            />
+          </Suspense>
         )}
 
         {showCompletionCelebration && (
@@ -1424,9 +1421,9 @@ function ActivityPage() {
                     title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
                     className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
                     onClick={handleToggleMute}
-                  >
-                    {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-                  </button>
+                >
+                  {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+                </button>
                 </div>
               )}
             </div>
@@ -1490,9 +1487,9 @@ function ActivityPage() {
                   title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
                   className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
                   onClick={handleToggleMute}
-                >
-                  {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
-                </button>
+                  >
+                    {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
+                  </button>
               </div>
             </div>
           </section>
@@ -1530,7 +1527,9 @@ function ActivityPage() {
               <div className="new-streak-top" style={{ justifyContent: 'space-between', width: '100%' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div className="new-streak-fire">
-                    {lottieFireNode}
+                    <Suspense fallback={<img src={iconFire} alt="" aria-hidden="true" />}>
+                      <LottieFire />
+                    </Suspense>
                   </div>
                   <div className="new-streak-headline">
                     <div className="new-streak-value">
@@ -1657,24 +1656,36 @@ function ActivityPage() {
           </section>
         </div>
       </div>
-      <StreakCalendarModal
-        isOpen={isStreakModalOpen}
-        onClose={() => setIsStreakModalOpen(false)}
-        sessionCountsByDay={sessionCountsByDay}
-        streakStats={streakStats}
-      />
+      {isStreakModalOpen && (
+        <Suspense fallback={null}>
+          <StreakCalendarModal
+            isOpen={isStreakModalOpen}
+            onClose={() => setIsStreakModalOpen(false)}
+            sessionCountsByDay={sessionCountsByDay}
+            streakStats={streakStats}
+          />
+        </Suspense>
+      )}
 
-      <RankListModal
-        isOpen={isRankModalOpen}
-        onClose={() => setIsRankModalOpen(false)}
-        currentLevelNumber={levelProgress.levelNumber}
-      />
-      <TutorialOverlay
-        isOpen={showAssessmentModal}
-        onClose={() => setShowAssessmentModal(false)}
-        onFinish={() => setShowAssessmentModal(false)}
-        steps={assessmentTutorialSteps}
-      />
+      {isRankModalOpen && (
+        <Suspense fallback={null}>
+          <RankListModal
+            isOpen={isRankModalOpen}
+            onClose={() => setIsRankModalOpen(false)}
+            currentLevelNumber={levelProgress.levelNumber}
+          />
+        </Suspense>
+      )}
+      {showAssessmentModal && (
+        <Suspense fallback={null}>
+          <TutorialOverlay
+            isOpen={showAssessmentModal}
+            onClose={() => setShowAssessmentModal(false)}
+            onFinish={() => setShowAssessmentModal(false)}
+            steps={assessmentTutorialSteps}
+          />
+        </Suspense>
+      )}
 
       {/* Ask B-01 Modal */}
       {isAskB01ModalOpen && (

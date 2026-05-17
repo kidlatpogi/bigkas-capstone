@@ -28,7 +28,7 @@ import { useNativeBottomSheetDrag } from '../../hooks/useNativeBottomSheetDrag';
 import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../services/journeyProgressService';
 import { RANDOM_TOPICS } from '../../utils/practiceData';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
-import { filterActivitiesForJourney, JOURNEY_STAGE_LIMITS } from '../../utils/journeyFiltering';
+import { filterActivitiesForJourney } from '../../utils/journeyFiltering';
 import { generateCoachInsights } from '../../utils/coachInsights';
 import fireAnimationData from '../../assets/Lottie/fire.json';
 import './InnerPages.css';
@@ -218,19 +218,22 @@ function ActivityPageMobile() {
   const Qa = user?.id || GLOBAL_ACTIVITY_SCOPE;
   const activityHistory = useMemo(() => (user?.id ? getActivityCompletionHistory(Qa) : []), [Qa, user?.id]);
   const activityMetrics = useMemo(() => getActivityMetrics(Qa), [Qa]);
+  const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
+  const storedJourneyNumber = Math.max(1, Math.min(5, Number(user?.progressLevelNumber || user?.progress_level_number || 1) || 1));
+  const placementJourneyNumber = Math.max(1, Math.min(5, Number(levelProgress?.levelNumber) || 1));
+  const currentJourneyNumber = Math.max(storedJourneyNumber, placementJourneyNumber);
 
   // Journey & tasks
   const {
     tasks: allTasks,
     loading: activitiesLoading,
     refresh: refreshJourney,
-  } = useActivitiesJourneyTasks(user?.progressLevelNumber || 1);
+  } = useActivitiesJourneyTasks(currentJourneyNumber);
 
-  const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
   const tasks = useMemo(() => {
     const sLevel = levelProgress?.levelNumber || 1;
-    return filterActivitiesForJourney(allTasks, sLevel, user?.progressLevelNumber || 1);
-  }, [allTasks, levelProgress?.levelNumber, user?.progressLevelNumber]);
+    return filterActivitiesForJourney(allTasks, sLevel, currentJourneyNumber);
+  }, [allTasks, levelProgress?.levelNumber, currentJourneyNumber]);
 
   // State
   const [activeTaskId, setActiveTaskId] = useState(null);
@@ -297,9 +300,9 @@ function ActivityPageMobile() {
   }, []);
 
   const recommendedLevel = useMemo(() => {
-    const pLevel = Number(user?.progressLevelNumber || 1);
+    const pLevel = Number(currentJourneyNumber || 1);
     return Math.max(1, Math.min(5, Math.round(pLevel)));
-  }, [user?.progressLevelNumber]);
+  }, [currentJourneyNumber]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -776,25 +779,16 @@ function ActivityPageMobile() {
 
   const freeSpeechTutorialSteps = useMemo(() => {
     const level = resolveDashboardTutorialSpeakerLevel(user);
-    let welcomeText = "Welcome aboard! You made it, and I know you're going to do great things here. Let me give you a quick, guided tour of your Home screen so you know exactly where everything is.";
-    let welcomeVoice = null;
-    
-    if (level === 1) {
-      welcomeText = "Welcome! I’ve analyzed your profile and we’re starting from the ground up. You’ll be taking the full 30-stage path for Journey 1 to ensure your vocal and visual foundations are unbreakable. Let’s build your mastery, stage by stage.";
-      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%201.mp3";
-    } else if (level === 2) {
-      welcomeText = "Welcome! Based on your level, I’ve optimized your curriculum. Since you already show solid potential, I’ve trimmed Journey 1 down to 20 essential stages. We’ll move faster through the basics so you can reach the advanced challenges sooner. Let’s begin.";
-      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%202.mp3";
-    } else if (level === 3) {
-      welcomeText = "Welcome back. Your experience allows us to skip the fluff. I’ve recalibrated your Journey 1 to just 15 high-impact stages, and Journey 2 to 20. We’re focusing only on the core essentials before we dive into the deep technical training. Systems ready?";
-      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%203.mp3";
-    } else if (level === 4) {
-      welcomeText = "Welcome! Your skills are advanced, so I’ve streamlined your training. I’ve cut Journeys 1, 2, and 3 down to the bare essentials, removing over 40 stages of repetitive drills. We’re moving fast through the basics to get you straight to the Specialist training. Let’s get to work.";
-      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%204.mp3";
-    } else if (level >= 5) {
-      welcomeText = "Welcome, Expert. We’re skipping the grind. I’ve compressed Journeys 1 through 4 into a rapid-fire calibration to respect your expertise. We’re fast-forwarding past the basics so you can focus entirely on the high-stakes challenges of the final Journey. Mastery starts here.";
-      welcomeVoice = "https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level%205_new.mp3";
-    }
+    const safeLevel = Math.min(5, Math.max(1, Math.round(Number(level) || 1)));
+    const welcomeLines = {
+      1: "Welcome! I've analyzed your profile, and we're starting from the ground up. Your main path begins with Journey 1, where you'll build the foundations of confident speaking one stage at a time.",
+      2: "Welcome! Based on your level, your main path begins with Journey 2. Journey 1 stays available as optional practice whenever you want to review the foundations.",
+      3: "Welcome! Based on your level, your main path begins with Journey 3. Journeys 1 and 2 stay available as optional practice whenever you want to review the foundations.",
+      4: "Welcome! Based on your level, your main path begins with Journey 4. Journeys 1 through 3 stay available as optional practice whenever you want to review the foundations.",
+      5: "Welcome! Based on your level, your main path begins with Journey 5. Journeys 1 through 4 stay available as optional practice whenever you want to review the foundations.",
+    };
+    const welcomeText = welcomeLines[safeLevel];
+    const welcomeVoice = `https://assets.bigkas.site/Voices/Home%20Page/Welcome/Level_${safeLevel}_NEW.mp3`;
 
     const fullSteps = [
       {
@@ -871,14 +865,8 @@ function ActivityPageMobile() {
   }, [user?.speakerLevelNumber, user?.onboardingLevelAnalysis, user?.speakerEntryScore, user?.speaker_entry_score, location.state?.skipTutorialIntro]);
 
   const assessmentTutorialSteps = useMemo(() => {
-    const sLevel = resolveDashboardTutorialSpeakerLevel(user);
-    const pLevel = user?.progressLevelNumber || 1;
-    const reducedTo = JOURNEY_STAGE_LIMITS[sLevel]?.[pLevel] ?? 30;
-
-    let text = `We noticed that you are a level ${sLevel} speaker, so we reduced Journey ${pLevel} to ${reducedTo} stages for you!`;
-    if (reducedTo >= 30) {
-      text = `Welcome to Journey ${pLevel}! You have ${reducedTo} stages to complete. Let's get started!`;
-    }
+    const pLevel = currentJourneyNumber;
+    const text = `Welcome to Journey ${pLevel}! You have the full 30-stage path to complete. Earlier journeys remain optional practice when your assessed level is higher.`;
 
     return [
       {
@@ -890,7 +878,7 @@ function ActivityPageMobile() {
         robot: tutorialRobotStep1,
       },
     ];
-  }, [user?.speakerLevelNumber, user?.onboardingLevelAnalysis, user?.speakerEntryScore, user?.speaker_entry_score, user?.progressLevelNumber]);
+  }, [currentJourneyNumber]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
@@ -916,13 +904,6 @@ function ActivityPageMobile() {
       updateUserMetadata({ dashboard_tutorial_seen: true }).catch(() => {});
     }
 
-    const sLevel = resolveDashboardTutorialSpeakerLevel(user);
-    const pLevel = Number(user?.progressLevelNumber || 1);
-    const reducedTo = JOURNEY_STAGE_LIMITS[sLevel]?.[pLevel] ?? 30;
-
-    if (reducedTo < 30) {
-      setShowAssessmentModal(true);
-    }
   }, [user, updateUserMetadata]);
 
   const renderTaskCardForShell = useCallback(({ task, isLocked: shellLocked, animationClass = '' }) => {
@@ -1397,7 +1378,7 @@ function ActivityPageMobile() {
                   <img src={rankSpriteImage} alt="" className="new-widget-rank-sprite" />
                   <div className="new-widget-rank-content">
                     <p className="new-widget-kicker">Current Mastery</p>
-                    <p className="new-widget-value">LEVEL {user?.progressLevelNumber || 1}</p>
+                    <p className="new-widget-value">LEVEL {currentJourneyNumber}</p>
                   </div>
                 </div>
                 <p className="new-widget-caption">

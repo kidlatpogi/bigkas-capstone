@@ -2,18 +2,52 @@ export interface Env {
   AI: any;
 }
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Max-Age": "86400",
+};
+
+function jsonResponse(body: unknown, init: ResponseInit = {}) {
+  return new Response(JSON.stringify(body), {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...corsHeaders,
+      ...init.headers,
+    },
+  });
+}
+
+function corsResponse(response: Response) {
+  const headers = new Headers(response.headers);
+  Object.entries(corsHeaders).forEach(([key, value]) => {
+    headers.set(key, value);
+  });
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
-    // 1. Handle CORS
     if (request.method === "OPTIONS") {
       return new Response(null, {
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        },
+        status: 204,
+        headers: corsHeaders,
+      });
+    }
+
+    if (url.pathname === "/health" && request.method === "GET") {
+      return jsonResponse({
+        ok: true,
+        service: "b01-ai-worker",
+        status: "online",
       });
     }
 
@@ -45,11 +79,11 @@ export default {
           ]
         });
 
-        return new Response(JSON.stringify({ message: response.response.trim().replace(/^"|"$/g, '') }), {
-          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+        return jsonResponse({
+          message: response.response.trim().replace(/^"|"$/g, ''),
         });
       } catch (e: any) {
-        return new Response(JSON.stringify({ error: e.message }), { status: 500 });
+        return jsonResponse({ error: e.message }, { status: 500 });
       }
     }
 
@@ -83,11 +117,9 @@ export default {
           finalData = { error: "Topic generation failed" };
         }
 
-        return new Response(JSON.stringify(finalData), {
-          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
-        });
+        return jsonResponse(finalData);
       } catch (e: any) {
-        return new Response(JSON.stringify({ error: e.message }), { status: 500 });
+        return jsonResponse({ error: e.message }, { status: 500 });
       }
     }
 
@@ -141,12 +173,10 @@ export default {
           finalData = { transcript, error: "Analysis failed, but transcription succeeded" };
         }
 
-        return new Response(JSON.stringify({ ...finalData, transcript }), {
-          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
-        });
+        return jsonResponse({ ...finalData, transcript });
 
       } catch (e: any) {
-        return new Response(JSON.stringify({ error: e.message }), { status: 500 });
+        return jsonResponse({ error: e.message }, { status: 500 });
       }
     }
 
@@ -179,18 +209,16 @@ export default {
           stream: true
         });
 
-        return new Response(stream, {
+        return corsResponse(new Response(stream, {
           headers: {
             "Content-Type": "text/event-stream",
-            "Access-Control-Allow-Origin": "*",
           },
-        });
+        }));
       } catch (e: any) {
-        return new Response(JSON.stringify({ error: e.message }), { status: 500 });
+        return jsonResponse({ error: e.message }, { status: 500 });
       }
     }
 
-    return new Response("Not Found", { status: 404 });
+    return corsResponse(new Response("Not Found", { status: 404 }));
   },
 };
-

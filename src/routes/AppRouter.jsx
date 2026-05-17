@@ -11,6 +11,7 @@ const LoginPage = lazy(() => import('../pages/auth/LoginPage'));
 const LandingPage = lazy(() => import('../pages/landing/LandingPage'));
 const RegisterPage = lazy(() => import('../pages/auth/RegisterPage'));
 const VerifyEmailPage = lazy(() => import('../pages/auth/VerifyEmailPage'));
+const NativeAuthCallbackPage = lazy(() => import('../pages/auth/NativeAuthCallbackPage'));
 const ForgotPasswordPage = lazy(() => import('../pages/auth/ForgotPasswordPage'));
 
 // Main Pages
@@ -47,7 +48,7 @@ const PracticePage = lazy(() => import('../pages/main/PracticePage'));
 const SideNav = lazy(() => import('../components/common/SideNav'));
 const BottomNav = lazy(() => import('../components/common/BottomNav'));
 
-const bigkasLogo = 'https://assets.bigkas.site/Images/Bigkas-Logo.webp';
+const bigkasLogo = '/images/bigkas-logo-72.webp';
 
 /**
  * ActivityPageWrapper - Conditionally renders desktop or mobile version
@@ -246,6 +247,7 @@ function ProtectedRoute() {
   if (
     user?.onboardingStage === 'pretest' &&
     pathname !== ROUTES.USER_PRETEST &&
+    pathname !== ROUTES.USER_ANALYZING &&
     !pathname.startsWith(ROUTES.TRAINING) &&
     !pathname.startsWith('/session')
   ) {
@@ -368,6 +370,15 @@ function AppRouter() {
 
   return (
     <Routes>
+      <Route
+        path={ROUTES.NATIVE_AUTH_CALLBACK}
+        element={
+          <Suspense fallback={null}>
+            <NativeAuthCallbackPage />
+          </Suspense>
+        }
+      />
+
       {/* Public Routes - accessible only when not logged in */}
       <Route element={<PublicRoute />}>
         <Route

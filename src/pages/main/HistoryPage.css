@@ -335,7 +335,7 @@
   scrollbar-width: none;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 10px;
   padding: 24px 40px 100px 40px;
 }
 
@@ -357,7 +357,7 @@
   grid-template-columns: minmax(150px, 1fr) minmax(200px, 2.5fr) minmax(180px, 1.2fr);
   gap: 16px;
   align-items: center;
-  min-height: 104px;
+  min-height: 116px;
 }
 
 .history-item:hover {
@@ -417,13 +417,25 @@
   width: 100%;
 }
 
+.history-item-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
 .history-item-info-line {
+  flex: 1 1 auto;
+  min-width: 0;
   font-family: 'Fredoka', sans-serif;
   font-size: clamp(0.8rem, 0.77rem + 0.15vw, 0.88rem);
   font-weight: 600;
   color: #4b5563;
   margin: 0;
   line-height: 1.3;
+  white-space: nowrap;
 }
 
 .history-item-lacks-line {
@@ -432,6 +444,41 @@
   font-weight: 700;
   color: #374151;
   margin: 0;
+}
+
+.history-item-stage-goal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  gap: 6px;
+  width: fit-content;
+  min-width: 0;
+  max-width: 100%;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--stage-goal-border, rgba(37, 99, 235, 0.22));
+  background: var(--stage-goal-bg, rgba(37, 99, 235, 0.08));
+  color: var(--stage-goal-color, #2563eb);
+  font-family: 'Fredoka', sans-serif;
+}
+
+.history-item-stage-goal-label {
+  flex: 0 0 auto;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.history-item-stage-goal-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.7rem;
+  font-weight: 800;
 }
 
 .history-item-pillars {
@@ -754,6 +801,18 @@
   .history-item-lacks-line {
     font-size: 0.68rem;
     line-height: 1.25;
+  }
+
+  .history-item-stage-goal {
+    align-items: center;
+    flex-direction: row;
+    gap: 6px;
+    width: fit-content;
+    border-radius: 14px;
+  }
+
+  .history-item-stage-goal-text {
+    white-space: nowrap;
   }
 
   .history-item-pillars {

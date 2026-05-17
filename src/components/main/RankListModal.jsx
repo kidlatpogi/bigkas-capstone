@@ -42,7 +42,7 @@ export default function RankListModal({ isOpen, onClose, currentLevelNumber }) {
                 onClick={onClose}
                 aria-label="Close ranks"
               >
-                ×
+                &times;
               </button>
             </div>
 
@@ -50,7 +50,7 @@ export default function RankListModal({ isOpen, onClose, currentLevelNumber }) {
               {BIGKAS_LEVELS.map((level) => {
                 const isCurrent = level.number === currentLevelNumber;
                 let sprite = RANK_SPRITES[level.number];
-                
+
                 // Fallback / Extra safety for Level 1 Bronze
                 if (level.number === 1) sprite = rankBronze;
                 if (level.number === 2) sprite = rankSilverImage;
@@ -64,10 +64,10 @@ export default function RankListModal({ isOpen, onClose, currentLevelNumber }) {
                     className={`rank-modal-item ${isCurrent ? 'is-current' : ''}`}
                   >
                     <div className="rank-modal-item-visual">
-                      <img 
-                        src={sprite} 
-                        alt={level.name} 
-                        className="rank-modal-item-sprite" 
+                      <img
+                        src={sprite}
+                        alt={level.name}
+                        className="rank-modal-item-sprite"
                       />
                     </div>
                     <div className="rank-modal-item-info">

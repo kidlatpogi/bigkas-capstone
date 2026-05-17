@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   IoChevronBack,
@@ -9,6 +9,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ROUTES } from '../../utils/constants';
 import TutorialOverlay from '../../components/main/TutorialOverlay';
 import { getSpriteUrl } from '../../utils/assetUtils';
+import { useAuthContext } from '../../context/useAuthContext';
+import { getBigkasLevelFromUser } from '../../utils/activityProgress';
+import { readStoredProfileTheme } from '../../utils/profileTheme';
 import './SettingsProfilePageMobile.css';
 import './SettingsPageMobile.css';
 import './TestAudioVideoPageMobile.css';
@@ -72,6 +75,7 @@ function StatusDot({ status }) {
 export default function TestAudioVideoPageMobile() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuthContext();
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const micStreamRef = useRef(null);
@@ -92,7 +96,11 @@ export default function TestAudioVideoPageMobile() {
   const micOkRef = useRef(false);
   const successTriggeredRef = useRef(false);
 
-  const [heroTheme] = useState(() => localStorage.getItem('pref_hero_theme') || 'emerald');
+  const userLevel = useMemo(() => getBigkasLevelFromUser(user), [user]);
+  const heroTheme = useMemo(
+    () => readStoredProfileTheme(user?.id, THEME_CONFIG, userLevel.levelNumber),
+    [user?.id, userLevel.levelNumber],
+  );
 
   const getThemeDecoration = (themeId) => {
     const config = THEME_CONFIG.find((t) => t.id === themeId);

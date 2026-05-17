@@ -28,6 +28,7 @@ import {
   createSpeakerPointsHistoryEntry,
 } from '../../utils/speakerPointsHistory';
 import { getSpriteUrl } from '../../utils/assetUtils';
+import { useAllActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 
 const heroRobotImage = getSpriteUrl('Robot/0018.webp');
 const visualSprite = getSpriteUrl('common/Visual.webp');
@@ -109,6 +110,7 @@ function ProgressPageMobile() {
   const [range, setRange] = useState('All');
   const [pillarRange, setPillarRange] = useState('All');
   const [showMobileHistory, setShowMobileHistory] = useState(false);
+  const { tasks: activityTasks } = useAllActivitiesJourneyTasks();
 
   const userSessions = useMemo(() => {
     const userId = String(user?.id || '').trim();
@@ -494,6 +496,7 @@ function ProgressPageMobile() {
           onClose={() => setShowMobileHistory(false)}
           userSessions={userSessions}
           isLoading={isLoading}
+          activityTasks={activityTasks}
         />
       </div>
     </div>

@@ -214,6 +214,8 @@
   flex-direction: column;
   gap: 4px;
   z-index: 2;
+  min-width: 0;
+  flex: 1;
 }
 
 .hero-name {
@@ -227,6 +229,112 @@
   font-size: 16px;
   color: rgba(255, 255, 255, 0.9);
   margin: 0;
+}
+
+.hero-featured-trophy {
+  width: fit-content;
+  max-width: min(100%, 320px);
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 18px rgba(2, 6, 23, 0.12);
+}
+
+.hero-featured-trophy-img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.18));
+  flex: 0 0 auto;
+}
+
+.hero-featured-trophy-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.hero-featured-trophy-label {
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.78;
+}
+
+.hero-featured-trophy-copy strong {
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hero-trophy-shelf {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 9px;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+.hero-trophy-token {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.hero-trophy-token img {
+  width: 21px;
+  height: 21px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.2));
+}
+
+.hero-trophy-token span {
+  position: absolute;
+  right: 4px;
+  bottom: 2px;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.hero-trophy-token.is-locked {
+  cursor: default;
+  opacity: 0.34;
+  filter: grayscale(1);
+}
+
+.hero-trophy-token.is-claimed:active,
+.hero-trophy-token.is-claimed:focus-visible {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.hero-trophy-token.is-featured {
+  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.14);
 }
 
 .hero-theme-trigger {
@@ -822,6 +930,29 @@
     font-size: clamp(13px, 3.2vw, 15px);
     word-break: break-word;
     overflow-wrap: anywhere;
+  }
+
+  .hero-featured-trophy {
+    justify-content: center;
+    max-width: 100%;
+    margin-top: 8px;
+  }
+
+  .hero-featured-trophy-copy strong {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .hero-trophy-shelf {
+    justify-content: center;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .hero-trophy-token {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
   }
 
   .hero-theme-trigger {

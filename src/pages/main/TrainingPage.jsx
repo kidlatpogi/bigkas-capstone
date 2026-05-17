@@ -8,6 +8,7 @@ import { buildRoute, ROUTES } from '../../utils/constants';
 
 // Lazy load heavy components to reduce initial Script Evaluation time
 const TutorialOverlay = lazy(() => import('../../components/main/TutorialOverlay'));
+const TutorialOverlayMobile = lazy(() => import('../../components/main/TutorialOverlayMobile'));
 const ConfirmationModal = lazy(() => import('../../components/common/ConfirmationModal'));
 
 import {
@@ -23,6 +24,7 @@ import {
   appendSpeakerPointsHistory,
   createSpeakerPointsHistoryEntry,
 } from '../../utils/speakerPointsHistory';
+import { buildStageRetryMessage, evaluatePassingScore, formatPassingScore } from '../../utils/passingScore';
 import { useVisualAnalysis } from '../../hooks/useVisualAnalysis';
 import { getSpriteUrl } from '../../utils/assetUtils';
 import './TrainingPage.css';
@@ -241,12 +243,15 @@ function TrainingPage() {
   const isFreePretestSession = isPreTestSession;
 
   const MIN_RECORDING_SECONDS = useMemo(() => {
+    if (isFreePretestSession) {
+      return DEFAULT_MIN_RECORDING_SECONDS;
+    }
     const match = objectiveText.match(/(\d+)\s+Seconds/i) || objectiveText.match(/for\s+(\d+)\s+s/i);
     if (match && match[1]) {
       return parseInt(match[1], 10);
     }
     return DEFAULT_MIN_RECORDING_SECONDS;
-  }, [objectiveText]);
+  }, [isFreePretestSession, objectiveText]);
 
   /* Recording state */
   const [status, setStatus] = useState(() => {
@@ -326,6 +331,9 @@ function TrainingPage() {
   const [hintContent, setHintContent] = useState('');
   const [showMicWarning, setShowMicWarning] = useState(false);
   const [isFreeCompactLayout, setIsFreeCompactLayout] = useState(false);
+  const [isMobileTutorialViewport, setIsMobileTutorialViewport] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches,
+  );
   const [isTutorialOverlayOpen, setIsTutorialOverlayOpen] = useState(() => {
     // Only consider showing for free pre-test sessions
     if (!isFreePretestSession) return false;
@@ -350,6 +358,22 @@ function TrainingPage() {
       window.sessionStorage.setItem('bigkas_pretest_tutorial_seen', '1');
     }
   };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const mediaQuery = window.matchMedia('(max-width: 768px)');
+    const handleViewportChange = (event) => setIsMobileTutorialViewport(event.matches);
+
+    setIsMobileTutorialViewport(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleViewportChange);
+      return () => mediaQuery.removeEventListener('change', handleViewportChange);
+    }
+
+    mediaQuery.addListener(handleViewportChange);
+    return () => mediaQuery.removeListener(handleViewportChange);
+  }, []);
 
   const isTutorialOverlayOpenRef = useRef(isTutorialOverlayOpen);
   const isInitializingPreviewRef = useRef(false);
@@ -1046,6 +1070,7 @@ function TrainingPage() {
       // 6. Execute Backend Analysis
       console.log('[TrainingPage] Sending to AI analysis engine...');
       setAnalysisProgress(20);
+      setAnalysisStatusMessage('Connecting to analysis backend...');
       
       const profilingKeys = [
         'visual_eye_contact', 'visual_gestures', 'visual_energy',
@@ -1069,6 +1094,7 @@ function TrainingPage() {
           visualAnalysis: visualScoresRef.current,
           topic: freeTopic || 'General Speaking',
           profilingAnswers,
+          userId: user?.id,
           onProgress: (p, msg) => {
             setAnalysisProgress(p);
             if (msg) {
@@ -1096,11 +1122,29 @@ function TrainingPage() {
         
         // Finalize UI
         setAnalysisProgress(100);
+        const fromActivity = String(state?.fromActivityTaskId || '').trim();
+        const stagePassingScore = state?.step?.passingScore ?? state?.step?.passing_score ?? null;
+        const stagePassEvaluation = fromActivity
+          ? evaluatePassingScore(result.data, stagePassingScore)
+          : { passed: true, criteria: [], failedCriteria: [] };
+        const stagePassResult = fromActivity
+          ? {
+              isActivityStage: true,
+              passed: stagePassEvaluation.passed,
+              requiredText: formatPassingScore(stagePassingScore),
+              message: stagePassEvaluation.passed
+                ? ''
+                : buildStageRetryMessage(state?.step?.title || state?.step?.objective, stagePassEvaluation),
+              criteria: stagePassEvaluation.criteria,
+              activityId: fromActivity,
+              activityTitle: state?.step?.title || '',
+            }
+          : null;
 
       try {
         const metadataUpdates = {};
 
-        if (sessionType !== 'pre-test') {
+        if (!isPreTestSession) {
           const remotePoints = Math.max(0, Math.floor(Number(user?.speakerPoints ?? 0) || 0));
           let pointsBefore = getTotalActivityPoints(activityScopeKey);
           if (remotePoints > pointsBefore) {
@@ -1116,12 +1160,11 @@ function TrainingPage() {
             recordActivityEvent({ type: 'randomizer-session-complete', sessionId: result.data.id }, activityScopeKey);
           }
 
-          const fromActivity = String(state?.fromActivityTaskId || '').trim();
-          if (fromActivity) {
+          if (fromActivity && stagePassEvaluation.passed) {
             recordActivityEvent({ type: 'activity-complete', activityId: fromActivity }, activityScopeKey);
           }
 
-          const earnedByScore = getScoreRewardPoints(normalizedSessionScore, recordingDurationSec);
+          const earnedByScore = getScoreRewardPoints(normalizedSessionScore, recordingDurationSecRef.current);
           if (earnedByScore > 0) addPointsToSpeakerProgress(earnedByScore, activityScopeKey);
           
           const pointsAfter = getTotalActivityPoints(activityScopeKey);
@@ -1158,15 +1201,30 @@ function TrainingPage() {
                    return safeUpdateMetadata(updates, false);
                  }
               }
+              return result;
             } catch (e) {
               console.warn('Background metadata update failed:', e);
+              return { success: false, error: e?.message || 'Metadata update failed.' };
             }
           };
           
-          safeUpdateMetadata(metadataUpdates);
+          if (isPreTestSession) {
+            const metadataResult = await safeUpdateMetadata(metadataUpdates);
+            if (!metadataResult?.success) {
+              throw new Error(
+                metadataResult?.error ||
+                'Analysis was saved, but onboarding status could not be updated. Please try again.'
+              );
+            }
+          } else {
+            safeUpdateMetadata(metadataUpdates);
+          }
         }
       } catch (metaErr) {
         console.warn('[TrainingPage] Metadata/Points update failed, but session was saved:', metaErr);
+        if (isPreTestSession) {
+          throw metaErr;
+        }
       }
 
       // 8. Finalize and Navigate
@@ -1186,13 +1244,13 @@ function TrainingPage() {
         // Clear session cache upon successful analysis/completion
         clearSessionCache();
         
-        if (sessionType === 'pre-test') {
+        if (isPreTestSession) {
           console.log('[TrainingPage] Pre-test detected. Navigating to onboarding result reveal...');
           navigate(ROUTES.USER_ANALYZING, { replace: true, state: { sessionId: finalSessionId } });
         } else {
           // Default to "Performance Overview" (summary view) for regular sessions
           navigate(buildRoute.detailedFeedback(finalSessionId), { 
-            state: { ...result.data, showDetailed: false } 
+            state: { ...result.data, showDetailed: false, stagePassResult } 
           });
         }
       } else {
@@ -1649,7 +1707,7 @@ function TrainingPage() {
       {status === 'analysing' && (
         <div className="tp-overlay">
           <section className="tp-analysing-view">
-            <div className="profiling-unit" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+            <div className="tp-analysis-unit">
               <article className="analyzing-bubble" aria-label="Analyzing session">
                 <p className="analyzing-bubble-kicker">B-01:</p>
                 <p className="analyzing-bubble-title">Analyzing your session...</p>
@@ -1682,7 +1740,7 @@ function TrainingPage() {
       {(status === 'error' || status === 'missing-data') && (
         <div className="tp-overlay">
           <section className="tp-analysing-view tp-error-view">
-            <div className="profiling-unit">
+            <div className="tp-analysis-unit">
               <article className="analyzing-bubble analyzing-bubble--error" aria-label="Error message">
                 <p className="analyzing-bubble-kicker">B-01:</p>
                 <p className="analyzing-bubble-title">
@@ -1829,11 +1887,19 @@ function TrainingPage() {
       )}
 
       <Suspense fallback={null}>
-        <TutorialOverlay
-          isOpen={hasActivePretestTutorial}
-          showAudioToggle={hasActivePretestTutorial}
-          onClose={handleCloseTutorial}
-        />
+        {isMobileTutorialViewport ? (
+          <TutorialOverlayMobile
+            isOpen={hasActivePretestTutorial}
+            showAudioToggle={hasActivePretestTutorial}
+            onClose={handleCloseTutorial}
+          />
+        ) : (
+          <TutorialOverlay
+            isOpen={hasActivePretestTutorial}
+            showAudioToggle={hasActivePretestTutorial}
+            onClose={handleCloseTutorial}
+          />
+        )}
 
         <ConfirmationModal
           isOpen={showExitConfirm}

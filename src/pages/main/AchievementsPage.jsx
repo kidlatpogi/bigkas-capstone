@@ -13,11 +13,15 @@ import {
   acknowledgeAllPublishedUnlockedBadges,
   syncUnlockedBadgeIds,
 } from '../../utils/achievementNavBadge';
-import { syncClaimableAchievements, claimAchievement as removeNotif } from '../../utils/achievementClaims';
+import {
+  ACHIEVEMENTS_UPDATED_EVENT,
+  syncClaimableAchievements,
+  claimAchievement as removeNotif,
+} from '../../utils/achievementClaims';
 import { fetchUserAchievements, claimAchievementInDB } from '../../services/achievementsService';
+import { claimTrophyLevel, getClaimedTrophyLevels, getTrophyImageUrl } from '../../utils/trophyClaims';
 import './AchievementsPage.css';
 
-const trophyImg   = getSpriteUrl('Thropies/Thropy.png');
 const badgeImg    = getSpriteUrl('Badges/Badge.png');
 const rankBronze  = getSpriteUrl('Rank/rank-bronze.webp');
 const rankSilver  = getSpriteUrl('Rank/rank-silver.webp');
@@ -37,6 +41,11 @@ function formatDate(iso) {
   }
 }
 
+function formatJourneyStage(badge) {
+  if (!badge?.journeyNumber || !badge?.stageNumber) return null;
+  return `Journey ${badge.journeyNumber} • Stage ${String(badge.stageNumber).padStart(2, '0')}`;
+}
+
 export default function AchievementsPage() {
   const { user } = useAuthContext();
   const [filterStatus, setFilterStatus] = useState('all');
@@ -48,12 +57,20 @@ export default function AchievementsPage() {
   const [claimingId, setClaimingId] = useState(null);
   const [congratsBadge, setCongratsBadge] = useState(null);
   const [congratsQueue, setCongratsQueue] = useState([]);
+  const [claimedTrophyLevels, setClaimedTrophyLevels] = useState(() => getClaimedTrophyLevels(user?.id));
 
   const currentLevelNumber = user?.speakerLevelNumber || 1;
   const { tasks, loading: tasksLoading } = useActivitiesJourneyTasks(currentLevelNumber);
   const { metricsSyncKey } = useJourneyRemoteState(user);
   const scopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
-  const activityMetrics = useMemo(() => getActivityMetrics(scopeKey), [scopeKey, metricsSyncKey]);
+  const activityMetrics = useMemo(() => {
+    void metricsSyncKey;
+    return getActivityMetrics(scopeKey);
+  }, [scopeKey, metricsSyncKey]);
+
+  useEffect(() => {
+    setClaimedTrophyLevels(getClaimedTrophyLevels(user?.id));
+  }, [user?.id]);
 
   const loadAchievements = useCallback(async () => {
     if (!user?.id) return;
@@ -62,7 +79,7 @@ export default function AchievementsPage() {
     try {
       const data = await fetchUserAchievements(user.id, user);
       setAchievements(data);
-      syncClaimableAchievements(data);
+      syncClaimableAchievements(data, user.id);
       syncUnlockedBadgeIds(data.filter((a) => a.claimed).map((a) => a.id));
       acknowledgeAllPublishedUnlockedBadges();
     } catch (err) {
@@ -70,19 +87,43 @@ export default function AchievementsPage() {
     } finally {
       setLoadingBadges(false);
     }
-  }, [user?.id, user?.profilingCompleted, user?.pretestCompleted]);
+  }, [user]);
 
   useEffect(() => { loadAchievements(); }, [loadAchievements]);
+
+  useEffect(() => {
+    if (!user?.id) return undefined;
+    const handleAchievementsUpdated = (event) => {
+      const detail = event.detail || {};
+      if (String(detail.userId || '') !== String(user.id) || detail.action !== 'claimed' || !detail.id) return;
+      const claimedId = String(detail.id);
+      const unlockedAt = detail.unlockedAt || new Date().toISOString();
+      setAchievements((prev) =>
+        prev.map((a) => (
+          String(a.id) === claimedId
+            ? { ...a, claimed: true, claimable: false, unlocked: true, unlockedAt }
+            : a
+        ))
+      );
+      setSelectedBadge((badge) => (
+        badge && String(badge.id) === claimedId
+          ? { ...badge, claimed: true, claimable: false, unlocked: true, unlockedAt }
+          : badge
+      ));
+    };
+    window.addEventListener(ACHIEVEMENTS_UPDATED_EVENT, handleAchievementsUpdated);
+    return () => window.removeEventListener(ACHIEVEMENTS_UPDATED_EVENT, handleAchievementsUpdated);
+  }, [user?.id]);
 
   const markBadgeClaimed = useCallback((badge, unlockedAt) => {
     setAchievements((prev) =>
       prev.map((a) => a.id === badge.id ? { ...a, claimed: true, claimable: false, unlocked: true, unlockedAt } : a)
     );
-    removeNotif(badge.id);
+    removeNotif(badge.id, user?.id, { unlockedAt });
     syncUnlockedBadgeIds(
       achievements.filter((a) => a.claimed || a.id === badge.id).map((a) => a.id)
     );
-  }, [achievements]);
+  }, [achievements, user?.id]);
 
   const handleClaim = useCallback(async (badge) => {
     if (!user?.id || claimingId) return;
@@ -110,13 +151,26 @@ export default function AchievementsPage() {
   const trophies = useMemo(() => {
     return [1, 2, 3, 4, 5].map((lvl) => {
       const isCurrentLevel = lvl === currentLevelNumber;
-      const isCompleted    = lvl < currentLevelNumber;
-      const isLocked       = lvl > currentLevelNumber;
       const total = isCurrentLevel ? tasks.length : 0;
       const current = isCurrentLevel ? tasks.filter((t) => isActivityTaskCompleted(t.id, activityMetrics)).length : 0;
-      return { id: lvl, name: RANK_NAMES[lvl - 1], rankImg: RANK_IMGS[lvl - 1], total, current, isCompleted, isLocked };
+      const isCompleted    = lvl < currentLevelNumber || (isCurrentLevel && total > 0 && current >= total);
+      const isLocked       = lvl > currentLevelNumber;
+      const claimed = claimedTrophyLevels.includes(lvl);
+      return { id: lvl, name: RANK_NAMES[lvl - 1], rankImg: RANK_IMGS[lvl - 1], trophyImg: getTrophyImageUrl(lvl), total, current, isCompleted, isLocked, claimed, claimable: isCompleted && !claimed };
     });
-  }, [currentLevelNumber, tasks, activityMetrics]);
+  }, [currentLevelNumber, tasks, activityMetrics, claimedTrophyLevels]);
+
+  const handleClaimTrophy = useCallback((trophy) => {
+    if (!trophy?.claimable) return;
+    const next = claimTrophyLevel(user?.id, trophy.id);
+    setClaimedTrophyLevels(next);
+    setCongratsBadge({
+      id: `trophy-${trophy.id}`,
+      name: `Level ${trophy.id} Trophy`,
+      description: `You claimed your Level ${trophy.id} completion trophy.`,
+      badgeUrl: trophy.trophyImg,
+    });
+  }, [user?.id]);
 
   const filteredBadges = useMemo(() => {
     let result = achievements.filter((a) => {
@@ -130,6 +184,11 @@ export default function AchievementsPage() {
     else if (sortBy === 'name-desc') result.sort((a, b) => b.name.localeCompare(a.name));
     else if (sortBy === 'newest') result.sort((a, b) => (new Date(b.unlockedAt || b.createdAt)) - (new Date(a.unlockedAt || a.createdAt)));
     else if (sortBy === 'oldest') result.sort((a, b) => (new Date(a.unlockedAt || a.createdAt)) - (new Date(b.unlockedAt || b.createdAt)));
+    else result.sort((a, b) => (
+      (Number(a.journeyNumber) || 999) - (Number(b.journeyNumber) || 999) ||
+      (Number(a.stageNumber) || 999) - (Number(b.stageNumber) || 999) ||
+      a.name.localeCompare(b.name)
+    ));
     return result;
   }, [achievements, filterStatus, sortBy]);
 
@@ -148,20 +207,34 @@ export default function AchievementsPage() {
 
       <section className="trophy-showcase-card dashboard-anim-top dashboard-anim-delay-1" aria-label="Trophy showcase">
         {trophies.map((trophy) => (
-          <div key={trophy.id} className={`trophy-item ${trophy.isLocked ? 'locked' : ''}`}>
+          <div
+            key={trophy.id}
+            className={`trophy-item ${trophy.isLocked ? 'locked' : ''} ${trophy.claimable ? 'trophy-item--claimable' : ''} ${trophy.claimed ? 'trophy-item--claimed' : ''}`}
+            role={trophy.claimable ? 'button' : undefined}
+            tabIndex={trophy.claimable ? 0 : undefined}
+            aria-label={trophy.claimable ? `Claim Level ${trophy.id} trophy` : undefined}
+            onClick={() => handleClaimTrophy(trophy)}
+            onKeyDown={(event) => {
+              if (!trophy.claimable) return;
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                handleClaimTrophy(trophy);
+              }
+            }}
+          >
             <div className="trophy-rank-badge">
               <img src={trophy.rankImg} alt={`Level ${trophy.id} ${trophy.name}`} className="rank-icon" loading="lazy" width="40" height="40" />
               <span className="rank-name">LEVEL {trophy.id}</span>
             </div>
             <div className="trophy-wrapper">
-              <img src={trophyImg} alt="" className="trophy-img" loading="lazy" width="80" height="80" />
+              <img src={trophy.trophyImg} alt="" className="trophy-img" loading="lazy" width="80" height="80" />
             </div>
             <div className="trophy-progress-container">
               <div className="trophy-progress-bar" role="progressbar" aria-valuenow={trophy.current} aria-valuemin={0} aria-valuemax={trophy.total || 1}>
                 <div className="trophy-progress-fill" style={{ width: trophy.isCompleted ? '100%' : trophy.total > 0 ? `${(trophy.current / trophy.total) * 100}%` : '0%' }} />
               </div>
               <span className="trophy-progress-text">
-                {trophy.isLocked ? 'Locked' : trophy.isCompleted ? 'Completed' : tasksLoading ? '…' : `${trophy.current}/${trophy.total}`}
+                {trophy.isLocked ? 'Locked' : trophy.claimed ? 'Claimed' : trophy.claimable ? 'Ready' : trophy.isCompleted ? 'Completed' : tasksLoading ? '…' : `${trophy.current}/${trophy.total}`}
               </span>
             </div>
           </div>
@@ -219,6 +292,7 @@ export default function AchievementsPage() {
             <div className="badge-icon-wrapper">
               <img src={badge.badgeUrl ?? badgeImg} alt={badge.name} className="badge-img" loading="lazy" width="100" height="100" onError={(e) => { e.currentTarget.src = badgeImg; }} />
             </div>
+            {formatJourneyStage(badge) && <span className="badge-journey-chip">{formatJourneyStage(badge)}</span>}
             <h3 className="badge-title">{badge.name}{badge.claimed && <IoCheckmarkCircle className="checkmark-icon" aria-label="Claimed" />}</h3>
             <div className="badge-progress-container">
               <div className="badge-progress-bar" role="progressbar" aria-valuenow={badge.claimed ? 1 : 0} aria-valuemin={0} aria-valuemax={1}>
@@ -245,6 +319,7 @@ export default function AchievementsPage() {
             <div className={`badge-modal-icon ${!selectedBadge.claimed && !selectedBadge.claimable ? 'locked' : ''}`}>
               <img src={selectedBadge.badgeUrl ?? badgeImg} alt={selectedBadge.name} className="badge-modal-img" loading="lazy" width="120" height="120" onError={(e) => { e.currentTarget.src = badgeImg; }} />
             </div>
+            {formatJourneyStage(selectedBadge) && <span className="badge-journey-chip badge-journey-chip--modal">{formatJourneyStage(selectedBadge)}</span>}
             <h2 id="badge-modal-title" className="badge-modal-title">{selectedBadge.name}{selectedBadge.claimed && <IoCheckmarkCircle className="checkmark-icon" aria-label="Claimed" />}</h2>
             {!selectedBadge.claimed ? (
               <>

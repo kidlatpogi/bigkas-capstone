@@ -5,6 +5,7 @@ import { buildRoute } from '../../utils/constants';
 import { getSessionMode } from '../../utils/sessionFormatting';
 import { sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
 import { getSpriteUrl } from '../../utils/assetUtils';
+import { buildStagePassResultForSession } from '../../utils/passingScore';
 
 const verbalSprite = getSpriteUrl('common/Verbal.webp');
 const visualSprite = getSpriteUrl('common/Visual.webp');
@@ -21,6 +22,33 @@ const HISTORY_SCORE_SORT_OPTIONS = [
   { label: '0-20%', value: '1.0' },
 ];
 const HISTORY_SCORE_SORT_NONE = '';
+
+function buildActivityLookup(activityTasks) {
+  const lookup = new Map();
+  if (!Array.isArray(activityTasks)) return lookup;
+  activityTasks.forEach((activity) => {
+    const id = String(activity?.id || '').trim();
+    if (id) lookup.set(id, activity);
+  });
+  return lookup;
+}
+
+function mergeSessionActivity(session, activityLookup) {
+  const activity = activityLookup.get(String(session?.activity_id || '').trim());
+  if (!activity) return session;
+  return {
+    ...session,
+    activity_title: session.activity_title || activity.title || activity.objective || null,
+    activity_objective: session.activity_objective || activity.objective || null,
+    activity_target_level: session.activity_target_level ?? activity.target_level ?? null,
+    activity_order: session.activity_order ?? activity.activity_order ?? activity.activityOrder ?? null,
+    passing_score: session.passing_score ?? activity.passing_score ?? activity.passingScore ?? null,
+  };
+}
+
+function formatCompactStageRequirement(requiredText) {
+  return String(requiredText || '').replace(/\s+Score\b/g, '').trim();
+}
 
 function toFivePointScore(rawScore) {
   const numeric = Number(rawScore);
@@ -70,7 +98,7 @@ function buildLacksSummary(pillars) {
   const weakest = sorted.filter((pillar) => pillar.score <= 2.5);
   const shortlist = (weakest.length ? weakest : sorted.slice(0, 1)).slice(0, 2);
   const text = shortlist.map((pillar) => pillar.lackHint).join(' • ');
-  return `Lacks: ${text}`;
+  return `Focus: ${text}`;
 }
 
 function sortSessionsByTargetScore(sessions, scoreTarget) {
@@ -150,7 +178,7 @@ function getAdaptiveHistoryPages(pageCount, activePage) {
   return [0, 'start-ellipsis', ...trailingWindow];
 }
 
-export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoading, isMobile = false }) {
+export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoading, isMobile = false, activityTasks = [] }) {
   const navigate = useNavigate();
   const [historyFilter, setHistoryFilter] = useState('All');
   const [scoreSortTarget, setScoreSortTarget] = useState(HISTORY_SCORE_SORT_NONE);
@@ -222,6 +250,7 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
     () => getAdaptiveHistoryPages(paginationPageCount, safeHistoryPage),
     [paginationPageCount, safeHistoryPage]
   );
+  const activityLookup = useMemo(() => buildActivityLookup(activityTasks), [activityTasks]);
 
   if (!isOpen) return null;
 
@@ -339,11 +368,15 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
           <div className="history-overlay-scroll-content">
             <div className="history-list">
               {paginatedHistorySessions.map((s, index) => {
+                const sessionForStage = mergeSessionActivity(s, activityLookup);
                 const mode = getSessionMode(s);
                 const score = toFivePointScore(s.confidence_score);
                 const tier = getScoreTier15(score);
                 const pillars = resolveSessionPillars(s);
                 const lacksSummary = buildLacksSummary(pillars);
+                const stageGoal = buildStagePassResultForSession(sessionForStage);
+                const stageGoalColor = stageGoal?.passed ? '#059669' : '#2563EB';
+                const stageRequirement = formatCompactStageRequirement(stageGoal?.requiredText);
                 const delay = Math.min(index + 2, 9);
                 const dateObj = new Date(s.created_at);
                 const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -360,18 +393,33 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                       '--tier-color': tier.color,
                       '--tier-border': `${tier.color}2e`,
                       '--tier-border-hover': `${tier.color}5a`,
+                      '--stage-goal-color': stageGoalColor,
+                      '--stage-goal-bg': `${stageGoalColor}12`,
+                      '--stage-goal-border': `${stageGoalColor}36`,
                     }}
                   >
                     <div className="history-item-row-left">
                       <div className="history-item-title-section">
-                        <h3 className="history-item-main-title">{buildSessionTitleOrTopic(s)}</h3>
+                        <h3 className="history-item-main-title">{buildSessionTitleOrTopic(sessionForStage)}</h3>
                         <p className="history-item-session-type">{mode}</p>
                       </div>
                     </div>
 
                     <div className="history-item-row-center">
                       <div className="history-item-info-compact">
-                        <p className="history-item-info-line">{formattedDate} • {formattedTime}</p>
+                        <div className="history-item-meta-row">
+                          <p className="history-item-info-line">{formattedDate} • {formattedTime}</p>
+                          {stageGoal ? (
+                            <div className={`history-item-stage-goal ${stageGoal.passed ? 'history-item-stage-goal--unlocked' : 'history-item-stage-goal--next'}`}>
+                              <span className="history-item-stage-goal-label">
+                                {stageGoal.passed ? 'Unlocked' : 'Next goal'}
+                              </span>
+                              {stageRequirement ? (
+                                <span className="history-item-stage-goal-text">{stageRequirement}</span>
+                              ) : null}
+                            </div>
+                          ) : null}
+                        </div>
                         <p className="history-item-lacks-line">{lacksSummary}</p>
                         <div className="history-item-pillars">
                           {pillars.map((pillar) => (
@@ -509,6 +557,7 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                   sessionIdProp={selectedSessionId} 
                   isInnerView={true} 
                   initialShowDetailed={innerViewMode === 'detailed'}
+                  activityTasks={activityTasks}
                   onCloseInner={() => {
                     if (innerViewMode === 'detailed') {
                       setInnerViewMode('results');

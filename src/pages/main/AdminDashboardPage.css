@@ -1408,16 +1408,26 @@ body:has(.admin-dashboard-page) .main-content {
 .admin-user-modal {
   width: min(760px, calc(100% - 32px)) !important;
   max-width: 760px !important;
-  max-height: calc(100vh - 40px);
-  overflow-y: auto;
+  max-height: calc(100dvh - 40px);
+  overflow: hidden;
+  display: flex !important;
+  flex-direction: column;
   padding: 28px 32px !important;
   border-radius: 18px !important;
+}
+
+.admin-user-modal > .admin-card-head {
+  flex: 0 0 auto;
+  margin-bottom: 16px;
 }
 
 .admin-user-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px 20px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .admin-user-field {
@@ -1468,6 +1478,64 @@ body:has(.admin-dashboard-page) .main-content {
   outline: none;
 }
 
+.admin-stage-progress-field {
+  grid-column: 1 / -1;
+}
+
+.admin-stage-progress-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(16, 185, 129, 0.18);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #f8fffb 0%, #f8fafc 100%);
+}
+
+.admin-stage-progress-control {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.admin-stage-progress-control span,
+.admin-stage-progress-check span {
+  color: #047857;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.admin-stage-progress-check {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+}
+
+.admin-stage-progress-check input {
+  width: 18px;
+  min-height: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  accent-color: #10b981;
+}
+
+.admin-stage-progress-summary {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.admin-stage-progress-summary > span {
+  color: #475569;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
 .admin-user-form .admin-btn--primary,
 .admin-user-form .admin-modal-actions {
   grid-column: 1 / -1;
@@ -1477,10 +1545,20 @@ body:has(.admin-dashboard-page) .main-content {
   margin-top: 8px;
   align-items: center;
   justify-content: space-between;
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  padding-top: 12px;
+  background: #ffffff;
 }
 
 .admin-user-form .admin-modal-actions .admin-btn {
   min-width: 132px;
+  min-height: 42px;
+}
+
+.admin-user-form .admin-modal-actions--end {
+  justify-content: flex-end;
 }
 
 .admin-user-form .admin-modal-actions .admin-btn--primary {
@@ -1669,6 +1747,15 @@ body:has(.admin-dashboard-page) .main-content {
 
   .admin-user-form {
     grid-template-columns: 1fr;
+  }
+
+  .admin-stage-progress-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-stage-progress-summary {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .admin-heatmap-axis,

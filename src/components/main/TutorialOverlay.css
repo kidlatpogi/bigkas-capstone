@@ -177,15 +177,15 @@
 }
 
 .tutorial-audio-toggle.is-unmuted:hover {
-  box-shadow: #047857 0 4px 0 0;
+  box-shadow: #047857 0 3px 0 0;
 }
 
 .tutorial-audio-toggle.is-muted:hover {
-  box-shadow: #B91C1C 0 4px 0 0;
+  box-shadow: #B91C1C 0 3px 0 0;
 }
 
 .tutorial-audio-toggle:active {
-  transform: translateY(6px);
+  transform: translateY(5px);
 }
 
 .tutorial-audio-toggle.is-unmuted:active {
@@ -199,6 +199,30 @@
 .tutorial-audio-toggle svg {
   width: clamp(1.1rem, 2.1vw, 1.35rem);
   height: clamp(1.1rem, 2.1vw, 1.35rem);
+}
+
+.tutorial-speech-bubble .tutorial-audio-toggle:hover {
+  transform: translateY(2px) !important;
+}
+
+.tutorial-speech-bubble .tutorial-audio-toggle.is-unmuted:hover {
+  box-shadow: #047857 0 3px 0 0 !important;
+}
+
+.tutorial-speech-bubble .tutorial-audio-toggle.is-muted:hover {
+  box-shadow: #B91C1C 0 3px 0 0 !important;
+}
+
+.tutorial-speech-bubble .tutorial-audio-toggle:active {
+  transform: translateY(5px) !important;
+}
+
+.tutorial-speech-bubble .tutorial-audio-toggle.is-unmuted:active {
+  box-shadow: #047857 0 0 0 0 !important;
+}
+
+.tutorial-speech-bubble .tutorial-audio-toggle.is-muted:active {
+  box-shadow: #B91C1C 0 0 0 0 !important;
 }
 
 .tutorial-spotlight-active {
@@ -547,26 +571,40 @@
   }
 
   .tutorial-overlay-wrapper.is-default-tutorial.is-controls-step .tutorial-companion-container {
-    top: calc(clamp(52px, 8vh, 74px) + env(safe-area-inset-top, 0px));
-    bottom: auto;
-    left: 50%;
-    transform: translateX(-50%);
-    width: min(calc(100vw - clamp(16px, 6vw, 32px)), 54rem);
-    align-items: flex-start;
+    top: calc(clamp(16px, 4vh, 28px) + env(safe-area-inset-top, 0px)) !important;
+    bottom: auto !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: min(calc(100vw - clamp(16px, 6vw, 32px)), 54rem) !important;
+    align-items: stretch !important;
   }
 
   .tutorial-overlay-wrapper.is-default-tutorial.is-soundbar-step .tutorial-companion-container {
-    top: calc(clamp(56px, 9vh, 86px) + env(safe-area-inset-top, 0px));
-    bottom: auto;
-    left: 50%;
-    transform: translateX(-50%);
-    width: min(calc(100vw - clamp(16px, 6vw, 32px)), 54rem);
-    align-items: flex-start;
-    z-index: 5100;
+    top: calc(clamp(16px, 4vh, 28px) + env(safe-area-inset-top, 0px)) !important;
+    bottom: auto !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: min(calc(100vw - clamp(16px, 6vw, 32px)), 54rem) !important;
+    align-items: stretch !important;
+    z-index: 5100 !important;
   }
 
   .tutorial-overlay-wrapper.is-default-tutorial.is-final-step .tutorial-companion-container {
-    top: calc(clamp(8rem, 16vh, 11rem) - 5rem);
+    top: calc(clamp(96px, 15vh, 128px) + env(safe-area-inset-top, 0px)) !important;
+    bottom: auto !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: min(calc(100vw - 32px), 420px) !important;
+    max-width: calc(100vw - 32px) !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+  }
+
+  .tutorial-overlay-wrapper.is-default-tutorial.is-final-step .tutorial-speech-bubble {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
   }
 
   .tutorial-overlay-wrapper.is-default-tutorial:not(.is-final-step) .tutorial-speech-bubble::before {

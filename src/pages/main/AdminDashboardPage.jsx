@@ -24,6 +24,7 @@ import 'react-loading-skeleton/dist/skeleton.css';
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
+import { validatePassword } from '../../utils/validators';
 import { ENV } from '../../config/env';
 import './AdminDashboardPage.css';
 
@@ -44,6 +45,11 @@ const USER_FORM_INITIAL = {
   current_level: 1,
   speaker_level: 1,
   speaker_points: 0,
+};
+const STAGE_PROGRESS_INITIAL = {
+  journey: 1,
+  completeThroughStage: 30,
+  advanceJourney: true,
 };
 const ADMIN_FORM_INITIAL = {
   email: '',
@@ -328,7 +334,7 @@ function AdminPasswordInput({ value, onChange, placeholder, required = true }) {
       <input
         type={isVisible ? 'text' : 'password'}
         required={required}
-        minLength={6}
+        minLength={8}
         placeholder={placeholder}
         value={value}
         onChange={onChange}
@@ -338,6 +344,38 @@ function AdminPasswordInput({ value, onChange, placeholder, required = true }) {
       </button>
     </div>
   );
+}
+
+function AdminLevelSelect({ value, onChange, label }) {
+  return (
+    <select value={String(value || 1)} onChange={onChange} aria-label={label}>
+      {[1, 2, 3, 4, 5].map(level => (
+        <option key={level} value={level}>
+          Level {level}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function clampJourneyLevel(value) {
+  return Math.min(5, Math.max(1, Number(value) || 1));
+}
+
+function clampStageNumber(value, maxStage = 30) {
+  const max = Math.max(1, Number(maxStage) || 30);
+  return Math.min(max, Math.max(1, Number(value) || 1));
+}
+
+function getAdminPasswordValidationMessage(password, confirmPassword) {
+  const passwordValidation = validatePassword(password);
+  if (!passwordValidation.isValid) {
+    return passwordValidation.errors[0];
+  }
+  if (password !== confirmPassword) {
+    return 'Passwords do not match';
+  }
+  return '';
 }
 
 async function createConfirmedAdminUser(payload) {
@@ -395,6 +433,66 @@ async function setProfileArchiveStateWithAdminFunction(userId, shouldArchive) {
   }
 
   return data.profile;
+}
+
+async function updateProfileWithAdminFunction(userId, payload) {
+  const { data, error } = await supabase.functions.invoke('admin-update-profile', {
+    body: {
+      user_id: userId,
+      ...payload,
+    },
+  });
+
+  if (error) {
+    let functionMessage = '';
+    try {
+      const details = await error.context?.json?.();
+      functionMessage = details?.error || details?.message || '';
+    } catch {
+      functionMessage = '';
+    }
+    throw new Error(functionMessage || error.message || 'Failed to update user.');
+  }
+
+  if (data?.error) {
+    throw new Error(data.error);
+  }
+
+  if (!data?.profile?.id) {
+    throw new Error('User profile was not updated.');
+  }
+
+  return data.profile;
+}
+
+async function applyStageProgressWithAdminFunction(userId, payload) {
+  const { data, error } = await supabase.functions.invoke('admin-apply-stage-progress', {
+    body: {
+      user_id: userId,
+      ...payload,
+    },
+  });
+
+  if (error) {
+    let functionMessage = '';
+    try {
+      const details = await error.context?.json?.();
+      functionMessage = details?.error || details?.message || '';
+    } catch {
+      functionMessage = '';
+    }
+    throw new Error(functionMessage || error.message || 'Failed to apply stage progress.');
+  }
+
+  if (data?.error) {
+    throw new Error(data.error);
+  }
+
+  if (!data?.ok) {
+    throw new Error('Stage progress was not updated.');
+  }
+
+  return data;
 }
 
 async function fetchAdminProfiles() {
@@ -472,6 +570,9 @@ function AdminDashboardPage() {
   const [adminStatusFilter, setAdminStatusFilter] = useState('all');
   const [editingUser, setEditingUser] = useState(null);
   const [pendingArchiveUser, setPendingArchiveUser] = useState(null);
+  const [stageProgressForm, setStageProgressForm] = useState(STAGE_PROGRESS_INITIAL);
+  const [pendingStageProgress, setPendingStageProgress] = useState(null);
+  const [applyingStageProgress, setApplyingStageProgress] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [userLevelFilter, setUserLevelFilter] = useState('all');
   const [userStatusFilter, setUserStatusFilter] = useState('all');
@@ -1267,15 +1368,13 @@ function AdminDashboardPage() {
   };
 
   const refreshProfiles = async () => {
-    const { data, error: refreshError } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (refreshError) {
+    try {
+      const nextProfiles = await fetchAdminProfiles();
+      setProfiles(nextProfiles);
+    } catch (refreshError) {
       showToast(refreshError.message || 'Failed to refresh users', 'error');
       return;
     }
-    setProfiles(data || []);
   };
 
   const openCreateUser = () => {
@@ -1285,6 +1384,11 @@ function AdminDashboardPage() {
 
   const openEditUser = (user) => {
     setUserForm(userToForm(user));
+    setStageProgressForm({
+      ...STAGE_PROGRESS_INITIAL,
+      journey: clampJourneyLevel(user?.current_level || 1),
+    });
+    setPendingStageProgress(null);
     setEditingUser(user);
   };
 
@@ -1304,11 +1408,118 @@ function AdminDashboardPage() {
     last_name: userForm.last_name.trim() || null,
     username: userForm.username.trim() || null,
     role: 'user',
-    current_level: Number(userForm.current_level) || 1,
-    speaker_level: Number(userForm.speaker_level) || 1,
+    current_level: Math.min(5, Math.max(1, Number(userForm.current_level) || 1)),
+    speaker_level: Math.min(5, Math.max(1, Number(userForm.speaker_level) || 1)),
     speaker_points: Number(userForm.speaker_points) || 0,
     updated_at: new Date().toISOString(),
   });
+
+  const selectedJourneyActivities = useMemo(() => {
+    const journey = clampJourneyLevel(stageProgressForm.journey);
+    return activities
+      .filter((activity) => Number(activity.target_level) === journey)
+      .sort((a, b) => (Number(a.activity_order) || 0) - (Number(b.activity_order) || 0));
+  }, [activities, stageProgressForm.journey]);
+
+  const selectedJourneyMaxStage = useMemo(() => (
+    selectedJourneyActivities.reduce((max, activity) => Math.max(max, Number(activity.activity_order) || 0), 0) || 30
+  ), [selectedJourneyActivities]);
+
+  const selectedJourneyCompletedCount = useMemo(() => {
+    if (!editingUser?.id) return 0;
+    const completedIds = new Set(
+      activityCompletions
+        .filter((completion) => String(completion.user_id) === String(editingUser.id))
+        .map((completion) => String(completion.activity_id))
+    );
+    return selectedJourneyActivities.filter((activity) => completedIds.has(String(activity.id))).length;
+  }, [activityCompletions, editingUser?.id, selectedJourneyActivities]);
+
+  const requestStageProgressApply = () => {
+    if (!editingUser?.id) return;
+    if (!selectedJourneyActivities.length) {
+      showToast(`No stages were found for Journey ${stageProgressForm.journey}`, 'error');
+      return;
+    }
+
+    const completeThroughStage = clampStageNumber(stageProgressForm.completeThroughStage, selectedJourneyMaxStage);
+    const targetActivities = selectedJourneyActivities.filter((activity) => Number(activity.activity_order) <= completeThroughStage);
+    if (!targetActivities.length) {
+      showToast('Choose at least one stage to complete.', 'error');
+      return;
+    }
+
+    const journey = clampJourneyLevel(stageProgressForm.journey);
+    const shouldAdvance = Boolean(stageProgressForm.advanceJourney && completeThroughStage >= selectedJourneyMaxStage && journey < 5);
+    setPendingStageProgress({
+      user: editingUser,
+      journey,
+      completeThroughStage,
+      targetActivities,
+      shouldAdvance,
+      nextJourneyLevel: shouldAdvance ? Math.max(clampJourneyLevel(userForm.current_level), journey + 1) : clampJourneyLevel(userForm.current_level),
+    });
+  };
+
+  const confirmStageProgressApply = async () => {
+    if (!pendingStageProgress?.user?.id) return;
+    setApplyingStageProgress(true);
+    try {
+      const activityIds = pendingStageProgress.targetActivities.map((activity) => activity.id);
+      const result = await applyStageProgressWithAdminFunction(pendingStageProgress.user.id, {
+        activity_ids: activityIds,
+        advance_to_level: pendingStageProgress.shouldAdvance ? pendingStageProgress.nextJourneyLevel : null,
+      });
+      const completedAt = result.completed_at || new Date().toISOString();
+      const rows = activityIds.map((activityId) => ({
+        user_id: pendingStageProgress.user.id,
+        activity_id: activityId,
+        completed_at: completedAt,
+      }));
+
+      const updatedProfile = result.profile || null;
+      if (updatedProfile) {
+        setProfiles(prev => prev.map(u => u.id === pendingStageProgress.user.id ? { ...u, ...updatedProfile } : u));
+        setEditingUser(prev => prev?.id === pendingStageProgress.user.id ? { ...prev, ...updatedProfile } : prev);
+        setUserForm(prev => ({ ...prev, current_level: updatedProfile.current_level || pendingStageProgress.nextJourneyLevel }));
+      }
+
+      setActivityCompletions(prev => {
+        const existingKeys = new Set(prev.map((completion) => `${completion.user_id}:${completion.activity_id}`));
+        const additions = rows
+          .filter((row) => !existingKeys.has(`${row.user_id}:${row.activity_id}`))
+          .map((row) => ({ ...row, id: `${row.user_id}:${row.activity_id}` }));
+        return [...additions, ...prev];
+      });
+
+      await recordAuditLog({
+        action: 'update',
+        entityType: 'user_activity_completions',
+        entityId: pendingStageProgress.user.id,
+        oldValues: {
+          user_id: pendingStageProgress.user.id,
+          journey: pendingStageProgress.journey,
+          completed_count_before: selectedJourneyCompletedCount,
+          current_level_before: pendingStageProgress.user.current_level,
+        },
+        newValues: {
+          user_id: pendingStageProgress.user.id,
+          journey: pendingStageProgress.journey,
+          complete_through_stage: pendingStageProgress.completeThroughStage,
+          completed_activity_ids: rows.map((row) => row.activity_id),
+          advanced_to_journey: pendingStageProgress.shouldAdvance ? pendingStageProgress.nextJourneyLevel : null,
+          profile: updatedProfile,
+        },
+      });
+
+      showToast(`Marked Journey ${pendingStageProgress.journey} through Stage ${pendingStageProgress.completeThroughStage} complete`);
+      setPendingStageProgress(null);
+    } catch (stageError) {
+      showToast(stageError.message || 'Failed to apply stage progress', 'error');
+    } finally {
+      setApplyingStageProgress(false);
+    }
+  };
 
   const profilePayloadFromAdminForm = () => ({
     first_name: adminAccountForm.first_name.trim() || null,
@@ -1323,8 +1534,9 @@ function AdminDashboardPage() {
 
   const submitCreateUser = async (e) => {
     e.preventDefault();
-    if (userForm.password !== userForm.confirm_password) {
-      showToast('Passwords do not match', 'error');
+    const passwordError = getAdminPasswordValidationMessage(userForm.password, userForm.confirm_password);
+    if (passwordError) {
+      showToast(passwordError, 'error');
       return;
     }
     setSavingUser(true);
@@ -1358,25 +1570,24 @@ function AdminDashboardPage() {
     if (!editingUser) return;
     setSavingUser(true);
     const payload = profilePayloadFromUserForm();
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update(payload)
-      .eq('id', editingUser.id);
-    if (updateError) {
-      showToast(updateError.message || 'Failed to update user', 'error');
-    } else {
+    try {
+      const updatedProfile = await updateProfileWithAdminFunction(editingUser.id, payload);
       await recordAuditLog({
         action: 'update',
         entityType: 'profiles',
         entityId: editingUser.id,
         oldValues: editingUser,
-        newValues: { ...editingUser, ...payload },
+        newValues: updatedProfile,
       });
       showToast('User updated');
       setEditingUser(null);
-      setProfiles(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...payload } : u));
+      setProfiles(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...updatedProfile } : u));
+      await refreshProfiles();
+    } catch (updateError) {
+      showToast(updateError.message || 'Failed to update user', 'error');
+    } finally {
+      setSavingUser(false);
     }
-    setSavingUser(false);
   };
 
   const setUserArchiveState = async (user, shouldArchive) => {
@@ -1444,8 +1655,9 @@ function AdminDashboardPage() {
 
   const submitCreateAdmin = async (e) => {
     e.preventDefault();
-    if (createAdminForm.password !== createAdminForm.confirm_password) {
-      showToast('Passwords do not match', 'error');
+    const passwordError = getAdminPasswordValidationMessage(createAdminForm.password, createAdminForm.confirm_password);
+    if (passwordError) {
+      showToast(passwordError, 'error');
       return;
     }
     setCreatingAdmin(true);
@@ -1889,19 +2101,21 @@ function AdminDashboardPage() {
           <AdminUserField label="Last Name">
             <input type="text" placeholder="Last name" value={userForm.last_name} onChange={e => setUserForm(p => ({ ...p, last_name: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Password" help="Password for this user account; minimum 6 characters.">
+          <AdminUserField label="Password" help="At least 8 characters with uppercase, lowercase, and a number.">
             <AdminPasswordInput placeholder="Password" value={userForm.password} onChange={e => setUserForm(p => ({ ...p, password: e.target.value }))} />
           </AdminUserField>
           <AdminUserField label="Confirm Password" help="Must match the password above.">
             <AdminPasswordInput placeholder="Confirm password" value={userForm.confirm_password} onChange={e => setUserForm(p => ({ ...p, confirm_password: e.target.value }))} />
           </AdminUserField>
           <AdminUserField label="Journey Level" help="Current learning journey from 1 to 5.">
-            <input type="number" min="1" max="5" placeholder="Journey level" value={userForm.current_level} onChange={e => setUserForm(p => ({ ...p, current_level: e.target.value }))} />
+            <AdminLevelSelect label="Journey level" value={userForm.current_level} onChange={e => setUserForm(p => ({ ...p, current_level: e.target.value }))} />
           </AdminUserField>
           <AdminUserField label="Speaker Level" help="Speaking proficiency level from 1 to 5.">
-            <input type="number" min="1" max="5" placeholder="Speaker level" value={userForm.speaker_level} onChange={e => setUserForm(p => ({ ...p, speaker_level: e.target.value }))} />
+            <AdminLevelSelect label="Speaker level" value={userForm.speaker_level} onChange={e => setUserForm(p => ({ ...p, speaker_level: e.target.value }))} />
           </AdminUserField>
-          <button type="submit" className="admin-btn admin-btn--primary" disabled={savingUser}>{savingUser ? 'Creating...' : 'Create User'}</button>
+          <div className="admin-modal-actions admin-modal-actions--end">
+            <button type="submit" className="admin-btn admin-btn--primary" disabled={savingUser}>{savingUser ? 'Creating...' : 'Create User'}</button>
+          </div>
         </form>
       </div></div>, document.body)}
 
@@ -1918,11 +2132,57 @@ function AdminDashboardPage() {
             <input type="text" placeholder="username" value={userForm.username} onChange={e => setUserForm(p => ({ ...p, username: e.target.value }))} />
           </AdminUserField>
           <AdminUserField label="Journey Level" help="Current learning journey from 1 to 5.">
-            <input type="number" min="1" max="5" placeholder="Journey level" value={userForm.current_level} onChange={e => setUserForm(p => ({ ...p, current_level: e.target.value }))} />
+            <AdminLevelSelect label="Journey level" value={userForm.current_level} onChange={e => setUserForm(p => ({ ...p, current_level: e.target.value }))} />
           </AdminUserField>
           <AdminUserField label="Speaker Level" help="Speaking proficiency level from 1 to 5.">
-            <input type="number" min="1" max="5" placeholder="Speaker level" value={userForm.speaker_level} onChange={e => setUserForm(p => ({ ...p, speaker_level: e.target.value }))} />
+            <AdminLevelSelect label="Speaker level" value={userForm.speaker_level} onChange={e => setUserForm(p => ({ ...p, speaker_level: e.target.value }))} />
           </AdminUserField>
+          <div className="admin-user-field admin-stage-progress-field">
+            <span>Stage Progress</span>
+            <small>Admin tool for demos, sync recovery, and support. It marks stages complete using the same journey progress table learners use.</small>
+            <div className="admin-stage-progress-panel">
+              <label className="admin-stage-progress-control">
+                <span>Journey</span>
+                <select
+                  value={stageProgressForm.journey}
+                  onChange={(e) => setStageProgressForm((prev) => ({
+                    ...prev,
+                    journey: clampJourneyLevel(e.target.value),
+                    completeThroughStage: clampStageNumber(prev.completeThroughStage, activities.filter((activity) => Number(activity.target_level) === Number(e.target.value)).length || 30),
+                  }))}
+                  aria-label="Journey to complete"
+                >
+                  {[1, 2, 3, 4, 5].map(level => <option key={level} value={level}>Journey {level}</option>)}
+                </select>
+              </label>
+              <label className="admin-stage-progress-control">
+                <span>Complete Through</span>
+                <select
+                  value={clampStageNumber(stageProgressForm.completeThroughStage, selectedJourneyMaxStage)}
+                  onChange={(e) => setStageProgressForm((prev) => ({ ...prev, completeThroughStage: clampStageNumber(e.target.value, selectedJourneyMaxStage) }))}
+                  aria-label="Complete through stage"
+                >
+                  {Array.from({ length: selectedJourneyMaxStage }, (_, index) => index + 1).map(stage => (
+                    <option key={stage} value={stage}>Stage {stage}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="admin-stage-progress-check">
+                <input
+                  type="checkbox"
+                  checked={stageProgressForm.advanceJourney}
+                  onChange={(e) => setStageProgressForm((prev) => ({ ...prev, advanceJourney: e.target.checked }))}
+                />
+                <span>Advance to the next journey when all stages are completed.</span>
+              </label>
+              <div className="admin-stage-progress-summary">
+                <span>{selectedJourneyCompletedCount}/{selectedJourneyActivities.length || selectedJourneyMaxStage} stages currently complete</span>
+                <button type="button" className="admin-btn admin-btn--ghost" onClick={requestStageProgressApply} disabled={applyingStageProgress}>
+                  Apply Stage Progress
+                </button>
+              </div>
+            </div>
+          </div>
           <div className="admin-modal-actions">
             <button type="button" onClick={() => requestUserArchiveState(editingUser, !isDeletedProfile(editingUser))} className={`admin-btn ${isDeletedProfile(editingUser) ? 'admin-btn--ghost' : 'admin-btn--danger'}`}>{isDeletedProfile(editingUser) ? 'Restore User' : 'Delete User'}</button>
             <button type="submit" className="admin-btn admin-btn--primary" disabled={savingUser}>{savingUser ? 'Saving...' : 'Save Changes'}</button>
@@ -1967,6 +2227,23 @@ function AdminDashboardPage() {
         <div className="admin-modal-actions">
           <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setPendingArchiveUser(null)}>Cancel</button>
           <button type="button" className="admin-btn admin-btn--danger" onClick={confirmArchiveUser}>Delete {isAdminProfile(pendingArchiveUser) ? 'Admin' : 'User'}</button>
+        </div>
+      </div></div>, document.body)}
+
+      {pendingStageProgress && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setPendingStageProgress(null)}><div className="admin-modal admin-confirm-modal admin-warning-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+        <h3>Apply Stage Progress?</h3>
+        <p>
+          This will mark <strong>{pendingStageProgress.targetActivities.length}</strong> stage{pendingStageProgress.targetActivities.length === 1 ? '' : 's'} complete for
+          <strong> {getDisplayName(pendingStageProgress.user, pendingStageProgress.user.id)}</strong> in Journey {pendingStageProgress.journey}, through Stage {pendingStageProgress.completeThroughStage}.
+        </p>
+        {pendingStageProgress.shouldAdvance && (
+          <p>This will also move the learner to Journey {pendingStageProgress.nextJourneyLevel}, making the completed journey trophy ready to claim.</p>
+        )}
+        <div className="admin-modal-actions">
+          <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setPendingStageProgress(null)} disabled={applyingStageProgress}>Cancel</button>
+          <button type="button" className="admin-btn admin-btn--primary" onClick={confirmStageProgressApply} disabled={applyingStageProgress}>
+            {applyingStageProgress ? 'Applying...' : 'Apply Progress'}
+          </button>
         </div>
       </div></div>, document.body)}
 

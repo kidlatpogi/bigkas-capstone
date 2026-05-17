@@ -1,13 +1,17 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IoChevronDown } from 'react-icons/io5';
+import { BookOpen, ClipboardCheck, Compass, Target } from 'lucide-react';
 import FrameworksPageMobile from './FrameworksPageMobile';
 import { fetchModules, recordModuleView } from '../../services/modulesService';
+import { fetchActivities, buildJourneyTasksFromActivities } from '../../services/activitiesService';
+import { fetchUserJourneyProgress } from '../../services/journeyProgressService';
+import { useAuthContext } from '../../context/useAuthContext';
+import { getModuleAssignmentRange, getModuleAssignmentStatus } from '../../utils/moduleAssignments';
 import { ROUTES } from '../../utils/constants';
 import '../../components/common/Button.css';
 import './FrameworksPage.css';
 
-/* ── Level palette ── */
 const LEVEL_COLORS = {
   0: '#F18F01',
   1: '#059669',
@@ -21,7 +25,23 @@ function levelColor(n) {
   return LEVEL_COLORS[n] ?? '#059669';
 }
 
-/* ── Search icon ── */
+function moduleSummary(module) {
+  return module.project_focus || module.objectives || module.content || module.theory || '';
+}
+
+function moduleSearchText(module) {
+  return [
+    module.title,
+    module.lesson_number,
+    module.level_name,
+    module.content,
+    module.project_focus,
+    module.objectives,
+    module.theory,
+    module.assignment,
+  ].filter(Boolean).join(' ').toLowerCase();
+}
+
 function IconSearch() {
   return (
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -31,7 +51,6 @@ function IconSearch() {
   );
 }
 
-/* ── Card thumbnail — colored banner showing lesson number ── */
 function LessonThumb({ module }) {
   const color = levelColor(module.level_number);
   return (
@@ -57,7 +76,6 @@ function LessonThumb({ module }) {
   );
 }
 
-/* ── Level badge (used as author-avatar slot) ── */
 function LevelBadge({ level }) {
   return (
     <span
@@ -65,13 +83,14 @@ function LevelBadge({ level }) {
       style={{ background: levelColor(level), color: '#fff', fontSize: '0.7rem' }}
       aria-hidden="true"
     >
-      L{level}
+      J{level}
     </span>
   );
 }
 
-/* ── Module card ── */
 function ModuleCard({ module, onOpen, animationClass = '' }) {
+  const summary = moduleSummary(module);
+
   return (
     <button
       type="button"
@@ -85,7 +104,7 @@ function ModuleCard({ module, onOpen, animationClass = '' }) {
           <h3 className="fh-card-name">{module.title}</h3>
           <p className="fh-card-author">Lesson {module.lesson_number}</p>
           <p className="fh-card-summary">
-            {module.content.length > 110 ? `${module.content.slice(0, 110)}…` : module.content}
+            {summary.length > 110 ? `${summary.slice(0, 110)}...` : summary}
           </p>
         </div>
       </div>
@@ -93,16 +112,164 @@ function ModuleCard({ module, onOpen, animationClass = '' }) {
   );
 }
 
-/* ── Module detail modal ── */
+function AssignmentCta({ module, status, loading, error, onStart }) {
+  if (Number(module.level_number) === 0) return null;
+
+  const total = status?.totalCount || 0;
+  const completed = status?.completedCount || 0;
+  const done = status?.isCompleted === true;
+  const locked = status?.isLocked === true;
+  const range = getModuleAssignmentRange(module);
+  const nextActivity = status?.nextActivity;
+  const prerequisite = status?.firstIncompletePrerequisite;
+  const rangeText = range
+    ? `Journey ${module.level_number}, stages ${range.start}-${range.end}`
+    : 'the assigned stages';
+
+  return (
+    <div className={`fh-assignment-cta ${done ? 'fh-assignment-cta--complete' : ''}`}>
+      <div>
+        <span>{done ? 'Module Completed' : locked ? 'Previous Stages Required' : 'Assignment Progress'}</span>
+        <strong>{loading ? 'Checking your progress...' : `${completed}/${total || 6} stages completed`}</strong>
+        {error ? (
+          <p>{error}</p>
+        ) : locked ? (
+          <p>
+            Finish Journey {module.level_number}, stages 1-{range.start - 1} before starting this module. Your next required stage is Stage {prerequisite?.activity_order || 1}.
+          </p>
+        ) : (
+          <>
+            <p>
+              This module is completed by passing {rangeText}. Each stage is a short speaking task that practices this lesson.
+            </p>
+            {!done && nextActivity ? (
+              <p className="fh-assignment-next">
+                Next: Stage {nextActivity.activity_order} - {nextActivity.title || nextActivity.objective}
+              </p>
+            ) : null}
+          </>
+        )}
+      </div>
+      <button
+        type="button"
+        className="fh-assignment-btn"
+        onClick={onStart}
+        disabled={loading || done || locked || !status?.nextActivity}
+      >
+        {done ? 'Completed' : locked ? 'Locked' : 'Do Assignment'}
+      </button>
+    </div>
+  );
+}
+
+function ModuleSections({ module }) {
+  const sections = [
+    ['Project Focus', module.project_focus, Compass],
+    ['The Objectives', module.objectives, Target],
+    ['The Theory', module.theory || module.content, BookOpen],
+    ['Assignment', module.assignment, ClipboardCheck],
+  ].filter(([, value]) => value);
+
+  return (
+    <div className="fh-module-sections">
+      {sections.map(([label, value, Icon]) => (
+        <section className={`fh-module-section ${label === 'Assignment' ? 'fh-module-section--assignment' : ''}`} key={label}>
+          <div className="fh-module-section-heading">
+            <span className="fh-module-section-icon"><Icon size={17} strokeWidth={2.3} /></span>
+            <p className="fh-module-section-title">{label}</p>
+          </div>
+          <p className="fh-module-section-text">{value}</p>
+        </section>
+      ))}
+    </div>
+  );
+}
+
 function ModuleModal({ module, onClose }) {
   const navigate = useNavigate();
+  const { user } = useAuthContext();
   const color = levelColor(module.level_number);
+  const [assignmentState, setAssignmentState] = useState({
+    loading: Number(module.level_number) > 0,
+    error: '',
+    status: null,
+  });
 
   useEffect(() => {
     const handler = (e) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAssignmentState() {
+      if (Number(module.level_number) === 0) {
+        setAssignmentState({ loading: false, error: '', status: null });
+        return;
+      }
+
+      if (!user?.id) {
+        setAssignmentState({
+          loading: false,
+          error: 'Sign in to track assignment completion.',
+          status: null,
+        });
+        return;
+      }
+
+      setAssignmentState((current) => ({ ...current, loading: true, error: '' }));
+
+      try {
+        const [activities, progress] = await Promise.all([
+          fetchActivities(module.level_number),
+          fetchUserJourneyProgress(user.id),
+        ]);
+        if (cancelled) return;
+
+        setAssignmentState({
+          loading: false,
+          error: '',
+          status: getModuleAssignmentStatus(module, activities, progress.completedActivityIds),
+        });
+      } catch (err) {
+        if (cancelled) return;
+        setAssignmentState({
+          loading: false,
+          error: err?.message || 'Could not load assignment progress.',
+          status: null,
+        });
+      }
+    }
+
+    loadAssignmentState();
+    return () => {
+      cancelled = true;
+    };
+  }, [module, user?.id]);
+
+  const startAssignment = useCallback(() => {
+    const nextActivity = assignmentState.status?.nextActivity;
+    if (!nextActivity) return;
+
+    const [task] = buildJourneyTasksFromActivities([nextActivity]);
+    const activityPromptTopic = String(task?.detail || task?.objective || task?.title || '').trim();
+
+    navigate(`${ROUTES.TRAINING}?autostart=1`, {
+      state: {
+        freeTopic: activityPromptTopic,
+        objective: task?.objective || task?.detail,
+        focus: 'free',
+        sessionType: 'training',
+        entryPoint: 'activity',
+        autoStartCountdown: true,
+        fromActivityTaskId: task?.id || nextActivity.id,
+        sourceModuleLesson: module.lesson_number,
+        step: task || nextActivity,
+      },
+    });
+  }, [assignmentState.status?.nextActivity, module.lesson_number, navigate]);
 
   return (
     <div
@@ -119,7 +286,7 @@ function ModuleModal({ module, onClose }) {
               className="fh-modal-author"
               style={{ backgroundColor: color, color: '#ffffff' }}
             >
-              {module.level_name} · Lesson {module.lesson_number}
+              {module.level_name} - Lesson {module.lesson_number}
             </span>
             <h2 id="fh-modal-title" className="fh-modal-title">{module.title}</h2>
           </div>
@@ -129,14 +296,43 @@ function ModuleModal({ module, onClose }) {
             onClick={onClose}
             aria-label="Close"
           >
-            ×
+            x
           </button>
         </div>
 
-        <p className="fh-modal-summary">{module.content}</p>
+        <div className="fh-modal-body">
+          <aside className="fh-module-lesson-map" style={{ borderColor: `${color}30` }}>
+            <span className="fh-modal-focus-label">Lesson Map</span>
+            <strong>{module.project_focus || moduleSummary(module)}</strong>
+            <ol>
+              <li>Focus on the skill</li>
+              <li>Read the objective</li>
+              <li>Understand the idea</li>
+              <li>Apply it in practice</li>
+            </ol>
+          </aside>
+
+          <div className="fh-module-lesson-main">
+            <div className="fh-modal-focus" style={{ borderColor: `${color}33`, background: `${color}10` }}>
+              <span className="fh-modal-focus-label">You are learning</span>
+              <strong>{module.title}</strong>
+              <p>{module.objectives || moduleSummary(module)}</p>
+            </div>
+
+          <ModuleSections module={module} />
+
+          <AssignmentCta
+            module={module}
+            status={assignmentState.status}
+            loading={assignmentState.loading}
+            error={assignmentState.error}
+            onStart={startAssignment}
+          />
+        </div>
+        </div>
 
         {module.date_started ? (
-          <div style={{ padding: '0 40px 20px', marginTop: '-16px', fontSize: '0.9rem', color: '#64748b', display: 'flex', gap: '20px', fontWeight: 600 }}>
+          <div className="fh-modal-dates">
             <span>Started: {new Date(module.date_started).toLocaleDateString()}</span>
             {module.date_ended ? <span>Ended: {new Date(module.date_ended).toLocaleDateString()}</span> : null}
           </div>
@@ -166,7 +362,6 @@ function ModuleModal({ module, onClose }) {
   );
 }
 
-/* ── Main page ── */
 export default function FrameworksPage() {
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
@@ -199,7 +394,6 @@ export default function FrameworksPage() {
 
   useEffect(() => { loadModules(); }, [loadModules]);
 
-  /* Derive level tabs from loaded data */
   const levels = useMemo(() => {
     const seen = new Map();
     modules.forEach((m) => {
@@ -215,11 +409,7 @@ export default function FrameworksPage() {
       : modules.filter((m) => m.level_number === activeTab);
 
     if (q) {
-      list = list.filter((m) =>
-        m.title.toLowerCase().includes(q) ||
-        m.content.toLowerCase().includes(q) ||
-        m.lesson_number.includes(q)
-      );
+      list = list.filter((m) => moduleSearchText(m).includes(q));
     }
 
     if (sortOrder === 'az') {
@@ -253,7 +443,7 @@ export default function FrameworksPage() {
             onChange={(e) => setQuery(e.target.value)}
           />
           {query && (
-            <button className="fh-search-clear" onClick={() => setQuery('')}>✕</button>
+            <button className="fh-search-clear" onClick={() => setQuery('')}>x</button>
           )}
         </div>
 
@@ -264,8 +454,8 @@ export default function FrameworksPage() {
             onChange={(e) => setSortOrder(e.target.value)}
           >
             <option value="default">Default Order</option>
-            <option value="az">A – Z</option>
-            <option value="za">Z – A</option>
+            <option value="az">A - Z</option>
+            <option value="za">Z - A</option>
           </select>
           <span className="fh-sort-chevron"><IoChevronDown /></span>
         </div>
@@ -288,14 +478,14 @@ export default function FrameworksPage() {
             className={`fh-tab${activeTab === num ? ' fh-tab--active' : ''}`}
             onClick={() => { setActiveTab(num); setQuery(''); }}
           >
-            Level {num}: {name}
+            Journey {num}: {name}
           </button>
         ))}
       </div>
 
       {loading && (
         <div className="fh-empty dashboard-anim-bottom dashboard-anim-delay-2">
-          Loading modules…
+          Loading modules...
         </div>
       )}
 

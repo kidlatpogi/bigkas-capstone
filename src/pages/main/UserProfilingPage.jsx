@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Volume2, VolumeX } from 'lucide-react';
 import { useAuthContext } from '../../context/useAuthContext';
@@ -103,6 +103,48 @@ function isQuestionAnswered(question, value) {
   return String(value || '').trim().length > 0;
 }
 
+/**
+ * Stable typewriter component. Keeping this outside UserProfilingPage prevents
+ * parent state updates from remounting the animation after it completes.
+ */
+function Typewriter({ text, onComplete, delay = 8 }) {
+  const [displayed, setDisplayed] = useState('');
+  const onCompleteRef = useRef(onComplete);
+  const hasCompletedRef = useRef(false);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  useEffect(() => {
+    let index = 0;
+    hasCompletedRef.current = false;
+
+    if (!text) {
+      hasCompletedRef.current = true;
+      onCompleteRef.current?.();
+      return undefined;
+    }
+
+    const timer = window.setInterval(() => {
+      index += 1;
+      setDisplayed(text.slice(0, index));
+
+      if (index >= text.length) {
+        window.clearInterval(timer);
+        if (!hasCompletedRef.current) {
+          hasCompletedRef.current = true;
+          onCompleteRef.current?.();
+        }
+      }
+    }, delay);
+
+    return () => window.clearInterval(timer);
+  }, [text, delay]);
+
+  return <>{displayed}</>;
+}
+
 function UserProfilingPage() {
   const navigate = useNavigate();
   const { updateUserMetadata, user, isAdminAuthenticated } = useAuthContext();
@@ -133,8 +175,6 @@ function UserProfilingPage() {
 
   const totalSteps = QUESTIONS.length;
   const currentQuestion = QUESTIONS[currentIndex] || QUESTIONS[0];
-  const baselineScore = useMemo(() => computeBaselineScore(form), [form]);
-  const baselineLevelNumber = useMemo(() => getSpeakerLevelNumber(baselineScore), [baselineScore]);
 
   const currentDemographicQuestion = DEMOGRAPHIC_QUESTIONS[demographicIndex] || DEMOGRAPHIC_QUESTIONS[0];
   const canProceedDemographic = currentDemographicQuestion
@@ -145,27 +185,6 @@ function UserProfilingPage() {
       navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
     }
   }, [isAdminAuthenticated, navigate]);
-
-  /**
-   * Internal Typewriter Component to handle animated text reveals
-   */
-  const Typewriter = ({ text, onComplete, delay = 8 }) => {
-    const [displayed, setDisplayed] = useState('');
-    useEffect(() => {
-      let index = 0;
-      setDisplayed('');
-      const timer = setInterval(() => {
-        index++;
-        setDisplayed(text.slice(0, index));
-        if (index >= text.length) {
-          clearInterval(timer);
-          onComplete?.();
-        }
-      }, delay);
-      return () => clearInterval(timer);
-    }, [text, onComplete, delay]);
-    return <>{displayed}</>;
-  };
 
   /**
    * Helper to get or create an audio instance for a source
@@ -581,7 +600,11 @@ function UserProfilingPage() {
                 </p>
               ) : (
                 <p>
-                  <Typewriter text={introSecondMessage} onComplete={() => setIsIntroTypingDone(true)} />
+                  {isIntroTypingDone ? (
+                    introSecondMessage
+                  ) : (
+                    <Typewriter text={introSecondMessage} onComplete={() => setIsIntroTypingDone(true)} />
+                  )}
                 </p>
               )}
               <div className="profiling-intro-actions">

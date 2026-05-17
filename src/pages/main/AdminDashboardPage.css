@@ -1478,6 +1478,64 @@ body:has(.admin-dashboard-page) .main-content {
   outline: none;
 }
 
+.admin-stage-progress-field {
+  grid-column: 1 / -1;
+}
+
+.admin-stage-progress-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(16, 185, 129, 0.18);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #f8fffb 0%, #f8fafc 100%);
+}
+
+.admin-stage-progress-control {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.admin-stage-progress-control span,
+.admin-stage-progress-check span {
+  color: #047857;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.admin-stage-progress-check {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+}
+
+.admin-stage-progress-check input {
+  width: 18px;
+  min-height: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  accent-color: #10b981;
+}
+
+.admin-stage-progress-summary {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.admin-stage-progress-summary > span {
+  color: #475569;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
 .admin-user-form .admin-btn--primary,
 .admin-user-form .admin-modal-actions {
   grid-column: 1 / -1;
@@ -1689,6 +1747,15 @@ body:has(.admin-dashboard-page) .main-content {
 
   .admin-user-form {
     grid-template-columns: 1fr;
+  }
+
+  .admin-stage-progress-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-stage-progress-summary {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .admin-heatmap-axis,

@@ -191,10 +191,10 @@ export default function AchievementsPageMobile() {
   const trophies = useMemo(() => {
     return [1, 2, 3, 4, 5].map((lvl) => {
       const isCurrentLevel = lvl === currentLevelNumber;
-      const isCompleted = lvl < currentLevelNumber;
-      const isLocked = lvl > currentLevelNumber;
       const total = isCurrentLevel ? tasks.length : 0;
       const current = isCurrentLevel ? tasks.filter((t) => isActivityTaskCompleted(t.id, activityMetrics)).length : 0;
+      const isCompleted = lvl < currentLevelNumber || (isCurrentLevel && total > 0 && current >= total);
+      const isLocked = lvl > currentLevelNumber;
       const claimed = claimedTrophyLevels.includes(lvl);
       return { id: lvl, name: RANK_NAMES[lvl - 1], rankImg: RANK_IMGS[lvl - 1], trophyImg: getTrophyImageUrl(lvl), total, current, isCompleted, isLocked, claimed, claimable: isCompleted && !claimed };
     });

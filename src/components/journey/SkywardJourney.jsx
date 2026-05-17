@@ -52,6 +52,7 @@ import { BIGKAS_LEVELS } from '../../utils/activityProgress';
 import { formatPassingScore } from '../../utils/passingScore';
 import SkywardJourneyNodeButton from './SkywardJourneyNodeButton';
 import { getSpriteUrl } from '../../utils/assetUtils';
+import { getTrophyImageUrl } from '../../utils/trophyClaims';
 
 const safetyBarrierImage = getSpriteUrl('common/safety-barrier.png');
 const randomizerRobotImage = getSpriteUrl('Robot/0002.webp');
@@ -1013,10 +1014,16 @@ export default function SkywardJourney({
 
   /** Hero focus: Mathematically pan the map to center the active node using CSS transforms. */
   useLayoutEffect(() => {
+    const lastCompletedIndex = (() => {
+      for (let i = steps.length - 1; i >= 0; i -= 1) {
+        if (steps[i]?.nodeState === NODE_STATE.COMPLETED) return i;
+      }
+      return -1;
+    })();
     const targetIndex =
       scrollToStepIndex != null && scrollToStepIndex >= 0 
         ? scrollToStepIndex 
-        : (activeIndex >= 0 ? activeIndex : 0);
+        : (activeIndex >= 0 ? activeIndex : (lastCompletedIndex >= 0 ? lastCompletedIndex : 0));
     
     // Always proceed if steps exist
     if (steps.length === 0) return undefined;
@@ -1051,7 +1058,7 @@ export default function SkywardJourney({
     return () => {
       window.clearTimeout(t);
     };
-  }, [activeIndex, entranceFromNav, scrollToStepIndex, isMobile]);
+  }, [activeIndex, entranceFromNav, scrollToStepIndex, isMobile, steps]);
 
   /** Wheel pans map vertically while preserving current zoom scale. */
   useEffect(() => {
@@ -1270,6 +1277,7 @@ export default function SkywardJourney({
 
         // A Level End (Square/Monster) triggers if it's Stage 30 of Levels 1-4, OR if the next step jumps to a new level
         const isLevelEnd = !isUltimateBoss && (isStage30 || (!nextStep || nextLevel !== currentLevel));
+        const isCompletedJourneyTrophy = (isUltimateBoss || isLevelEnd) && isDone;
 
         const BossMonsterIcon = getBossMonsterIcon(currentLevel);
         const startStage = sectionTaskIndex === 0;
@@ -1307,8 +1315,8 @@ export default function SkywardJourney({
                 >
                   {(isUltimateBoss || isLevelEnd) ? (
                     <div className="skyward-journey-start-callout" aria-hidden>
-                      <span className="skyward-journey-start-badge" style={{ backgroundColor: '#d32f2f', color: '#fff' }}>
-                        BOSS
+                      <span className={`skyward-journey-start-badge${isCompletedJourneyTrophy ? ' skyward-journey-start-badge--trophy' : ''}`}>
+                        {isCompletedJourneyTrophy ? 'TROPHY' : 'BOSS'}
                       </span>
                     </div>
                   ) : startStage && !isDone && !isActive && !isLockedLevel ? (
@@ -1331,6 +1339,7 @@ export default function SkywardJourney({
                       'skyward-journey-node',
                       `skyward-journey-node--${step.nodeState}`,
                       (isUltimateBoss || isLevelEnd) ? 'skyward-journey-node--boss' : '',
+                      isCompletedJourneyTrophy ? 'skyward-journey-node--trophy' : '',
                       jiggle ? 'skyward-journey-node--jiggle' : '',
                       !isLocked ? 'skyward-journey-node--unlocked' : '',
                       isLocked ? 'skyward-journey-node--locked-teaser' : '',
@@ -1346,7 +1355,16 @@ export default function SkywardJourney({
                     onTouchStart={(event) => event.stopPropagation()}
                     style={undefined}
                   >
-                    {isUltimateBoss ? (
+                    {isCompletedJourneyTrophy ? (
+                      <img
+                        src={getTrophyImageUrl(currentLevel)}
+                        alt=""
+                        className="skyward-journey-node-icon skyward-journey-node-icon--trophy-chest"
+                        width="56"
+                        height="56"
+                        aria-hidden
+                      />
+                    ) : isUltimateBoss ? (
                       <FaGhost
                         className="skyward-journey-node-icon skyward-journey-node-icon--boss"
                         aria-hidden

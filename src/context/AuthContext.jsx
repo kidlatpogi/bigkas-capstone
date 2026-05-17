@@ -21,6 +21,7 @@ const GENERIC_LOGIN_FAILURE_MESSAGE = 'Wrong email or password.';
 const PROFILE_GUARD_TIMEOUT_MS = 2500;
 const PROFILE_CACHE_TTL_MS = 10_000;
 const NATIVE_AUTH_REDIRECT_URL = 'org.nationalu.bigkas://auth/callback';
+const NATIVE_AUTH_BRIDGE_URL = 'https://bigkas.site/auth/native-callback';
 let loginGuardRpcDisabled = false;
 const profileRequestCache = new Map();
 
@@ -320,7 +321,7 @@ function getWebRedirectPath(path = '/') {
 }
 
 function getOAuthRedirectPath(path = '/') {
-  return Capacitor.isNativePlatform() ? NATIVE_AUTH_REDIRECT_URL : getWebRedirectPath(path);
+  return Capacitor.isNativePlatform() ? NATIVE_AUTH_BRIDGE_URL : getWebRedirectPath(path);
 }
 
 function getAuthParamsFromUrl(url) {

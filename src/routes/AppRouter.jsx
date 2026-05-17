@@ -11,6 +11,7 @@ const LoginPage = lazy(() => import('../pages/auth/LoginPage'));
 const LandingPage = lazy(() => import('../pages/landing/LandingPage'));
 const RegisterPage = lazy(() => import('../pages/auth/RegisterPage'));
 const VerifyEmailPage = lazy(() => import('../pages/auth/VerifyEmailPage'));
+const NativeAuthCallbackPage = lazy(() => import('../pages/auth/NativeAuthCallbackPage'));
 const ForgotPasswordPage = lazy(() => import('../pages/auth/ForgotPasswordPage'));
 
 // Main Pages
@@ -369,6 +370,15 @@ function AppRouter() {
 
   return (
     <Routes>
+      <Route
+        path={ROUTES.NATIVE_AUTH_CALLBACK}
+        element={
+          <Suspense fallback={null}>
+            <NativeAuthCallbackPage />
+          </Suspense>
+        }
+      />
+
       {/* Public Routes - accessible only when not logged in */}
       <Route element={<PublicRoute />}>
         <Route

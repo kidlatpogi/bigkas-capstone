@@ -107,7 +107,7 @@ function isQuestionAnswered(question, value) {
  * Stable typewriter component. Keeping this outside UserProfilingPage prevents
  * parent state updates from remounting the animation after it completes.
  */
-function Typewriter({ text, onComplete, delay = 8 }) {
+function Typewriter({ text, onComplete, delay = 18, charsPerTick = 2 }) {
   const [displayed, setDisplayed] = useState('');
   const onCompleteRef = useRef(onComplete);
   const hasCompletedRef = useRef(false);
@@ -127,7 +127,7 @@ function Typewriter({ text, onComplete, delay = 8 }) {
     }
 
     const timer = window.setInterval(() => {
-      index += 1;
+      index = Math.min(text.length, index + charsPerTick);
       setDisplayed(text.slice(0, index));
 
       if (index >= text.length) {
@@ -140,7 +140,7 @@ function Typewriter({ text, onComplete, delay = 8 }) {
     }, delay);
 
     return () => window.clearInterval(timer);
-  }, [text, delay]);
+  }, [text, delay, charsPerTick]);
 
   return <>{displayed}</>;
 }
@@ -165,6 +165,7 @@ function UserProfilingPage() {
   const [demographicIndex, setDemographicIndex] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isProfileSaved, setIsProfileSaved] = useState(() => Boolean(user?.profilingCompleted));
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [error, setError] = useState('');
   const [isMuted, setIsMuted] = useState(() => {
@@ -450,6 +451,10 @@ function UserProfilingPage() {
     }
 
     setError('');
+    stopAllIntroAudios();
+    setIsProfileSaved(false);
+    setIsOutroTypingDone(false);
+    setScreen('outro');
     setIsSubmitting(true);
     console.log('[Profiling] Validation passed. Submitting profile...');
 
@@ -487,12 +492,12 @@ function UserProfilingPage() {
 
     if (!result?.success) {
       setError(result?.error || 'Failed to save your profile. Please try again.');
+      setScreen('questions');
       return;
     }
 
-    console.log('[Profiling] Profile saved. Showing pre-test intro.');
-    setIsOutroTypingDone(false);
-    setScreen('outro');
+    console.log('[Profiling] Profile saved. Pre-test intro is ready.');
+    setIsProfileSaved(true);
   };
 
   const continueToPretest = async () => {
@@ -606,7 +611,7 @@ function UserProfilingPage() {
   if (isAdminAuthenticated) return null;
 
   return (
-    <div className={`user-profiling-page ${screen !== 'questions' ? 'is-gate-screen' : ''}`}>
+    <div className={`user-profiling-page user-profiling-page--${screen} ${screen !== 'questions' ? 'is-gate-screen' : ''}`}>
       {screen === 'intro' && (
         <section className="profiling-intro profiling-gate--pop">
           <div className="profiling-unit">
@@ -871,7 +876,7 @@ function UserProfilingPage() {
               <p className="profiling-pretest-text">
                 <strong>B-01:</strong>
                 <br />
-                <Typewriter text={outroFirstMessage} />
+                {outroFirstMessage}
               </p>
               <p className="profiling-pretest-text profiling-pretest-text--mission">
                 <strong>Your mission:</strong>
@@ -888,7 +893,7 @@ function UserProfilingPage() {
               </p>
               <div className="profiling-intro-actions profiling-intro-actions--end">
                 <div className="profiling-submit-btn">
-                  <button type="button" onClick={continueToPretest} disabled={!isOutroTypingDone || isSubmitting}>
+                  <button type="button" onClick={continueToPretest} disabled={!isOutroTypingDone || isSubmitting || !isProfileSaved}>
                     {isSubmitting ? 'Saving...' : 'Continue'}
                   </button>
                 </div>

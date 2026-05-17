@@ -1236,6 +1236,10 @@
     min-height: 0;
   }
 
+  .user-profiling-page--questions .profiling-question-options-wrap {
+    padding-bottom: calc(4.4rem + env(safe-area-inset-bottom, 0px));
+  }
+
   .profiling-audio-toggle {
     width: 3.25rem;
     height: 3.25rem;
@@ -1248,6 +1252,10 @@
     left: 50%;
     transform: translateX(-50%);
     bottom: calc(clamp(14px, 4vh, 24px) + env(safe-area-inset-bottom, 0px));
+  }
+
+  .user-profiling-page--questions .profiling-intro-audio-action {
+    bottom: calc(0.65rem + env(safe-area-inset-bottom, 0px));
   }
 
   .profiling-card {

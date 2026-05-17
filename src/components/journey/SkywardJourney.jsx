@@ -48,6 +48,7 @@ import SkywardJourneyNodeButton from './SkywardJourneyNodeButton';
 import { getSpriteUrl } from '../../utils/assetUtils';
 import { getTrophyImageUrl } from '../../utils/trophyClaims';
 import { FaBrain } from '@react-icons/all-files/fa/FaBrain';
+import { FaDragon } from '@react-icons/all-files/fa/FaDragon';
 import { FaGhost } from '@react-icons/all-files/fa/FaGhost';
 import { GiGoblinHead } from '@react-icons/all-files/gi/GiGoblinHead';
 import { GiFishMonster } from '@react-icons/all-files/gi/GiFishMonster';
@@ -1316,7 +1317,7 @@ export default function SkywardJourney({
         return (
           <div
             key={step.id}
-            className="skyward-journey-row dashboard-anim-bottom"
+            className={`skyward-journey-row${(isUltimateBoss || isLevelEnd) ? ' skyward-journey-row--milestone' : ''} dashboard-anim-bottom`}
             style={{
               position: 'relative',
               zIndex: isActive ? 320 : ((startStage && !isDone) ? 260 : 1),

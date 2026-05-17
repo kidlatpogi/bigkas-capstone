@@ -47,7 +47,7 @@ const PracticePage = lazy(() => import('../pages/main/PracticePage'));
 const SideNav = lazy(() => import('../components/common/SideNav'));
 const BottomNav = lazy(() => import('../components/common/BottomNav'));
 
-const bigkasLogo = 'https://assets.bigkas.site/Images/Bigkas-Logo.webp';
+const bigkasLogo = '/images/bigkas-logo-72.webp';
 
 /**
  * ActivityPageWrapper - Conditionally renders desktop or mobile version

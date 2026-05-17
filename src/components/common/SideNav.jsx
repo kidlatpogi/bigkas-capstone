@@ -1,17 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import {
-  IoChevronDown,
-  IoBookOutline,
-  IoMedalOutline,
-  IoHomeOutline,
-  IoLogOutOutline,
-  IoSettingsOutline,
-  IoStatsChartOutline,
-  IoNotificationsOutline,
-  IoTrophy,
-} from 'react-icons/io5';
+import { IoChevronDown } from '@react-icons/all-files/io5/IoChevronDown';
+import { IoBookOutline } from '@react-icons/all-files/io5/IoBookOutline';
+import { IoMedalOutline } from '@react-icons/all-files/io5/IoMedalOutline';
+import { IoHomeOutline } from '@react-icons/all-files/io5/IoHomeOutline';
+import { IoLogOutOutline } from '@react-icons/all-files/io5/IoLogOutOutline';
+import { IoSettingsOutline } from '@react-icons/all-files/io5/IoSettingsOutline';
+import { IoStatsChartOutline } from '@react-icons/all-files/io5/IoStatsChartOutline';
+import { IoNotificationsOutline } from '@react-icons/all-files/io5/IoNotificationsOutline';
+import { IoTrophy } from '@react-icons/all-files/io5/IoTrophy';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import {
@@ -25,11 +23,11 @@ import {
   getPublishedUnlockedBadgeIds,
   syncUnlockedBadgeIds,
 } from '../../utils/achievementNavBadge';
-import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
+import { getSpriteUrl } from '../../utils/assetUtils';
 import { claimAchievementInDB, unclaimAllAchievementsInDB } from '../../services/achievementsService';
 import './SideNav.css';
 
-const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
+const bigkasLogo = '/images/bigkas-logo-72.webp';
 const badgeImg = getSpriteUrl('Badges/Badge.png');
 
 const PRIMARY_NAV_ITEMS = [

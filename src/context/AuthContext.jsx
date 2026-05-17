@@ -16,7 +16,9 @@ const LOGIN_LOCKOUT_SECONDS = 30;
 const LOGIN_GUARD_RESET_WINDOW_MS = 24 * 60 * 60 * 1000;
 const GENERIC_LOGIN_FAILURE_MESSAGE = 'Wrong email or password.';
 const PROFILE_GUARD_TIMEOUT_MS = 2500;
+const PROFILE_CACHE_TTL_MS = 10_000;
 let loginGuardRpcDisabled = false;
+const profileRequestCache = new Map();
 
 function withTimeout(promise, label, timeoutMs = PROFILE_GUARD_TIMEOUT_MS) {
   let timeoutId;
@@ -629,6 +631,12 @@ export function AuthProvider({ children }) {
 
   const loadSessionProfile = useCallback(async (userId) => {
     if (!userId) return { profile: null, error: null };
+    const cached = profileRequestCache.get(userId);
+    const now = Date.now();
+    if (cached && cached.expiresAt > now) {
+      if (cached.promise) return cached.promise;
+      return { profile: cached.profile, error: cached.error };
+    }
 
     const selectProfile = () =>
       supabase
@@ -637,16 +645,30 @@ export function AuthProvider({ children }) {
         .eq('id', userId)
         .maybeSingle();
 
-    let { data: profile, error } = await selectProfile();
+    const request = (async () => {
+      let { data: profile, error } = await selectProfile();
 
-    if (error && isJwtExpiredError(error)) {
-      const { session: fresh, error: refErr } = await ensureFreshAccessToken();
-      if (!refErr && fresh) {
-        ({ data: profile, error } = await selectProfile());
+      if (error && isJwtExpiredError(error)) {
+        const { session: fresh, error: refErr } = await ensureFreshAccessToken();
+        if (!refErr && fresh) {
+          ({ data: profile, error } = await selectProfile());
+        }
       }
-    }
 
-    return { profile, error };
+      const result = { profile, error };
+      profileRequestCache.set(userId, {
+        ...result,
+        expiresAt: Date.now() + PROFILE_CACHE_TTL_MS,
+      });
+      return result;
+    })();
+
+    profileRequestCache.set(userId, {
+      promise: request,
+      expiresAt: now + PROFILE_CACHE_TTL_MS,
+    });
+
+    return request;
   }, []);
 
   const rejectArchivedSession = useCallback(async (session) => {

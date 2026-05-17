@@ -151,24 +151,33 @@
 
 @media (max-width: 768px) {
   .rank-modal-overlay {
-    padding: 74px 16px 16px;
+    inset: 0 0 calc(64px + env(safe-area-inset-bottom, 0px)) 0;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 16px;
     padding-left: 16px;
-    align-items: flex-start;
+    align-items: center;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .rank-modal-card {
     max-width: 360px;
-    width: min(100%, 360px);
-    max-height: calc(100vh - 90px - env(safe-area-inset-bottom, 0px));
+    width: min(100%, calc(100vw - 32px), 360px);
+    max-height: calc(100dvh - 112px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
     border-radius: 28px;
+    min-height: 0;
   }
 
   .rank-modal-header {
-    padding: 24px 28px;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 24px 20px;
     display: grid;
     grid-template-columns: 44px minmax(0, 1fr) 44px;
     justify-content: stretch;
+    align-items: center;
     text-align: center;
+    background: #ffffff;
   }
 
   .rank-modal-title {
@@ -184,7 +193,10 @@
   .rank-modal-list {
     padding: 18px 20px 24px;
     gap: 12px;
-    max-height: calc(100vh - 190px - env(safe-area-inset-bottom, 0px));
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
   }
 
   .rank-modal-item {

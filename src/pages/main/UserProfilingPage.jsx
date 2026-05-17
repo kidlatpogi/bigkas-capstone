@@ -781,7 +781,6 @@ function UserProfilingPage() {
                 </div>
                 {error && <p className="profiling-error">{error}</p>}
               </div>
-              {renderAudioToggle('profiling-intro-audio-action--inline')}
             </div>
           </div>
         </section>
@@ -876,7 +875,6 @@ function UserProfilingPage() {
 
                 {error && <p className="profiling-error">{error}</p>}
               </div>
-              {renderAudioToggle('profiling-intro-audio-action--inline')}
             </div>
           </div>
         </section>

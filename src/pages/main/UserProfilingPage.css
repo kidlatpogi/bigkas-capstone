@@ -363,10 +363,6 @@
   margin-top: 0;
 }
 
-.profiling-intro-audio-action--inline {
-  display: none;
-}
-
 .profiling-audio-toggle {
   width: clamp(3.35rem, 6.2vw, 3.8rem);
   height: clamp(3.35rem, 6.2vw, 3.8rem);
@@ -1195,6 +1191,18 @@
     transform: none;
   }
 
+  .user-profiling-page--questions,
+  .user-profiling-page--demographics {
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+
+  .user-profiling-page--questions .profiling-question-stage,
+  .user-profiling-page--demographics .profiling-question-stage {
+    min-height: 100dvh;
+    padding-bottom: calc(5.6rem + env(safe-area-inset-bottom, 0px));
+  }
+
   .profiling-question-bubble {
     width: min(100%, 22rem);
     border-radius: 1.2rem;
@@ -1240,11 +1248,6 @@
     min-height: 0;
   }
 
-  .user-profiling-page--questions .profiling-question-options-wrap,
-  .user-profiling-page--demographics .profiling-question-options-wrap {
-    padding-bottom: 0;
-  }
-
   .profiling-audio-toggle {
     width: 3.25rem;
     height: 3.25rem;
@@ -1259,24 +1262,9 @@
     bottom: calc(clamp(14px, 4vh, 24px) + env(safe-area-inset-bottom, 0px));
   }
 
-  .user-profiling-page--questions > .profiling-intro-audio-action:not(.profiling-intro-audio-action--inline),
-  .user-profiling-page--demographics > .profiling-intro-audio-action:not(.profiling-intro-audio-action--inline) {
-    display: none;
-  }
-
-  .user-profiling-page--questions .profiling-intro-audio-action--inline,
-  .user-profiling-page--demographics .profiling-intro-audio-action--inline {
-    position: static;
-    left: auto;
-    right: auto;
-    bottom: auto;
-    transform: none;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    margin-top: 0.2rem;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-    z-index: 4;
+  .user-profiling-page--questions > .profiling-intro-audio-action,
+  .user-profiling-page--demographics > .profiling-intro-audio-action {
+    bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
   }
 
   .profiling-card {

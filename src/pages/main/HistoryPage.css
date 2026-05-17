@@ -335,7 +335,7 @@
   scrollbar-width: none;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 10px;
   padding: 24px 40px 100px 40px;
 }
 
@@ -357,7 +357,7 @@
   grid-template-columns: minmax(150px, 1fr) minmax(200px, 2.5fr) minmax(180px, 1.2fr);
   gap: 16px;
   align-items: center;
-  min-height: 104px;
+  min-height: 116px;
 }
 
 .history-item:hover {
@@ -550,25 +550,6 @@
   flex-direction: column;
   align-items: center;
   gap: 6px;
-}
-
-.history-item-stage-status {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 22px;
-  padding: 3px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--stage-goal-border, rgba(37, 99, 235, 0.22));
-  background: var(--stage-goal-bg, rgba(37, 99, 235, 0.08));
-  color: var(--stage-goal-color, #2563eb);
-  font-family: 'Fredoka', sans-serif;
-  font-size: 0.62rem;
-  font-weight: 900;
-  letter-spacing: 0.03em;
-  line-height: 1;
-  text-transform: uppercase;
-  white-space: nowrap;
 }
 
 .history-item-badge {

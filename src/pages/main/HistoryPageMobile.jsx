@@ -307,11 +307,6 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
                             <span className="history-mobile-item-badge-dot" style={{ backgroundColor: tier.color }} />
                             {tier.label}
                           </span>
-                          {stageGoal ? (
-                            <span className="history-mobile-stage-status" style={{ color: stageGoalColor }}>
-                              {stageGoal.passed ? 'Unlocked' : 'Next'}
-                            </span>
-                          ) : null}
                           <p className="history-mobile-item-date">{formattedDate}</p>
                         </div>
                       </div>

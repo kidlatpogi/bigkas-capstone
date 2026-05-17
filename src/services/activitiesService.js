@@ -1,29 +1,25 @@
-import { supabase } from '../lib/supabase';
+import { ensureFreshAccessToken, isJwtExpiredError, supabase } from '../lib/supabase';
 import { ROUTES } from '../utils/constants';
 
 /**
  * Fetches curriculum activities from Supabase (ordered journey nodes).
  */
 export async function fetchActivities(currentLevel = 1) {
-  const { data, error } = await supabase
-    .from('activities')
-    .select('id, target_level, activity_order, title, phase_name, objective, purpose')
-    .eq('target_level', currentLevel)
-    .order('activity_order', { ascending: true });
+  const queryActivities = () =>
+    supabase
+      .from('activities')
+      .select('id, target_level, activity_order, title, phase_name, objective, purpose')
+      .eq('target_level', currentLevel)
+      .order('activity_order', { ascending: true });
+
+  let { data, error } = await queryActivities();
+
+  if (error && isJwtExpiredError(error)) {
+    await ensureFreshAccessToken();
+    ({ data, error } = await queryActivities());
+  }
 
   if (error) {
-    if (error.message?.includes('JWT expired')) {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (sessionData?.session) {
-        const retry = await supabase
-          .from('activities')
-          .select('id, target_level, activity_order, title, phase_name, objective, purpose')
-          .eq('target_level', currentLevel)
-          .order('activity_order', { ascending: true });
-        if (!retry.error) return Array.isArray(retry.data) ? retry.data : [];
-      }
-      await supabase.auth.signOut();
-    }
     throw new Error(error.message || 'Failed to load activities');
   }
   return Array.isArray(data) ? data : [];

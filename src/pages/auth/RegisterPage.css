@@ -317,7 +317,7 @@ body.register-page-active {
 
 .pw-toggle-btn {
   position: absolute;
-  right: 12px;
+  right: 16px;
   top: 50%;
   transform: translateY(-50%);
   background: none;
@@ -326,10 +326,21 @@ body.register-page-active {
   font-family: 'Fredoka', sans-serif;
   font-weight: 700;
   font-size: 0.85rem;
+  line-height: 1;
   cursor: pointer;
-  padding: 10px;
+  padding: 4px 0;
   z-index: 10;
   text-transform: capitalize;
+}
+
+.pw-toggle-btn:hover {
+  color: var(--emerald-500);
+}
+
+.pw-toggle-btn:focus-visible {
+  outline: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .input-field-wrap input.is-invalid {

@@ -511,7 +511,8 @@ function LoginPageDesktop({ managePageClass = true }) {
 
                 <m.div variants={itemVariants} className="form-actions-v2">
                   <PushButton
-                    type="submit"
+                    type="button"
+                    onClick={handleLogin}
                     disabled={isLoading || lockoutSeconds > 0}
                     bgColor="#047857"
                     shadowColor="#065f46"

@@ -15,7 +15,21 @@ const MAX_LOGIN_ATTEMPTS = 3;
 const LOGIN_LOCKOUT_SECONDS = 30;
 const LOGIN_GUARD_RESET_WINDOW_MS = 24 * 60 * 60 * 1000;
 const GENERIC_LOGIN_FAILURE_MESSAGE = 'Wrong email or password.';
+const PROFILE_GUARD_TIMEOUT_MS = 2500;
 let loginGuardRpcDisabled = false;
+
+function withTimeout(promise, label, timeoutMs = PROFILE_GUARD_TIMEOUT_MS) {
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = window.setTimeout(() => {
+      reject(new Error(`${label} timed out`));
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    window.clearTimeout(timeoutId);
+  });
+}
 
 function normalizeLoginLockoutSeconds(value) {
   const seconds = Math.ceil(Number(value) || 0);
@@ -535,6 +549,11 @@ export function AuthProvider({ children }) {
   const signupInProgressRef = useRef(false);
   const loginInProgressRef = useRef(false);
   const adminLoginInProgressRef = useRef(false);
+  const currentUserIdRef = useRef(null);
+
+  useEffect(() => {
+    currentUserIdRef.current = user?.id || null;
+  }, [user?.id]);
 
   const resolveAvatarUrl = useCallback((avatarValue) => {
     if (!avatarValue) return null;
@@ -616,7 +635,7 @@ export function AuthProvider({ children }) {
         .from('profiles')
         .select('role, archived_at, is_profiling_completed, is_pre_test_completed, dashboard_tutorial_seen, current_level, speaker_level, diagnostic_score, diagnostic_completed_at')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
     let { data: profile, error } = await selectProfile();
 
@@ -634,15 +653,22 @@ export function AuthProvider({ children }) {
     const userId = session?.user?.id;
     if (!userId) return null;
 
-    const { profile, error } = await loadSessionProfile(userId);
+    let profile = null;
+    let error = null;
 
-    if (error || !profile) {
-      const message = GENERIC_LOGIN_FAILURE_MESSAGE;
-      setError(message);
-      setUser(null);
-      clearAdminSession();
-      await supabase.auth.signOut({ scope: 'local' });
-      return { code: 'invalid_credentials', message };
+    try {
+      ({ profile, error } = await withTimeout(
+        loadSessionProfile(userId),
+        'Archived profile check',
+      ));
+    } catch (err) {
+      console.warn('Bigkas Auth: archived-profile check timed out:', err);
+      return null;
+    }
+
+    if (error) {
+      console.warn('Bigkas Auth: archived-profile check skipped:', error);
+      return null;
     }
 
     if (isArchivedProfile(profile)) {
@@ -848,6 +874,9 @@ export function AuthProvider({ children }) {
 
       const nextUser = buildUser(session);
       setUser(nextUser);
+      if (nextUser?.id) {
+        void fetchAndMergeProfile(nextUser.id);
+      }
       if (!nextUser) {
         clearAdminSession();
       }
@@ -876,6 +905,20 @@ export function AuthProvider({ children }) {
       // credentials. Do not publish the session as a regular user before that
       // check finishes, or public routes can briefly render the user login flow.
       if (adminLoginInProgressRef.current) return;
+
+      if (!isBootstrapped && _event !== 'SIGNED_OUT') return;
+
+      if (_event === 'TOKEN_REFRESHED' && session?.user?.id === currentUserIdRef.current) {
+        return;
+      }
+
+      if (_event === 'SIGNED_OUT') {
+        setPendingEmailVerification(false);
+        setPendingEmail(null);
+        setUser(null);
+        clearAdminSession();
+        return;
+      }
 
       const blockedAccount = getAccountBlockedMessage(session?.user?.user_metadata || {});
       if (blockedAccount) {

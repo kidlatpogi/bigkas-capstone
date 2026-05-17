@@ -319,7 +319,8 @@ function LoginPageMobile({ managePageClass = true }) {
 
             <Suspense fallback={<div style={{ height: '56px' }} />}>
               <PushButton
-                type="submit"
+                type="button"
+                onClick={handleLogin}
                 disabled={isLoading || lockoutSeconds > 0}
                 bgColor="#047857" /* High contrast emerald-700 */
                 shadowColor="#065f46"

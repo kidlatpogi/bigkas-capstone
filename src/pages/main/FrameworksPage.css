@@ -431,11 +431,11 @@
 }
 
 .fh-modal {
-  width: min(44rem, 100%);
-  max-height: 85vh;
+  width: min(68rem, 100%);
+  max-height: 88vh;
   overflow-y: auto;
   background: #ffffff;
-  border-radius: 24px;
+  border-radius: 18px;
   border: 1px solid rgba(11, 57, 84, 0.08);
   box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.05);
   animation: fhModalPop 0.35s cubic-bezier(0.2, 1.1, 0.3, 1) forwards;
@@ -455,14 +455,14 @@
 }
 
 .fh-modal-header {
-  padding: 36px 40px 24px;
+  padding: 30px 34px 22px;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 20px;
   border-bottom: 1px solid rgba(11, 57, 84, 0.06);
   background: #fdfdf9;
-  border-radius: 24px 24px 0 0;
+  border-radius: 18px 18px 0 0;
   flex-shrink: 0;
 }
 
@@ -492,13 +492,232 @@
   letter-spacing: -0.02em;
 }
 
-.fh-modal-summary {
+.fh-modal-body {
+  padding: 28px 34px 34px;
+  display: grid;
+  grid-template-columns: minmax(210px, 0.34fr) minmax(0, 1fr);
+  gap: 18px;
+}
+
+.fh-module-lesson-map {
+  position: sticky;
+  top: 18px;
+  align-self: start;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 16px;
+  padding: 18px;
+  background: #f8fafc;
+}
+
+.fh-module-lesson-map strong {
+  display: block;
+  margin-top: 8px;
+  color: #0f172a;
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+.fh-module-lesson-map ol {
+  margin: 18px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  counter-reset: lesson-map;
+}
+
+.fh-module-lesson-map li {
+  counter-increment: lesson-map;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  color: #475569;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.fh-module-lesson-map li::before {
+  content: counter(lesson-map);
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid rgba(15, 23, 42, 0.09);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.fh-module-lesson-main {
+  min-width: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.fh-modal-focus {
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 14px;
+  padding: 20px;
+  display: grid;
+  gap: 8px;
+}
+
+.fh-modal-focus-label,
+.fh-module-section-title {
   margin: 0;
-  padding: 36px 40px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.fh-modal-focus strong {
+  color: #0f172a;
   font-size: 1.15rem;
-  line-height: 1.75;
+  line-height: 1.35;
+}
+
+.fh-modal-focus p {
+  margin: 0;
+  color: #475569;
+  line-height: 1.55;
+  font-weight: 600;
+}
+
+.fh-module-sections {
+  display: grid;
+  gap: 12px;
+}
+
+.fh-module-section {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 14px;
+  padding: 18px 20px;
+  background: #ffffff;
+}
+
+.fh-module-section--assignment {
+  background: #fffaf0;
+  border-color: rgba(241, 143, 1, 0.24);
+}
+
+.fh-module-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fh-module-section-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+  color: #0f172a;
+  flex-shrink: 0;
+}
+
+.fh-module-section-text {
+  margin: 12px 0 0 44px;
+  font-size: 1rem;
+  line-height: 1.68;
   color: #334155;
   font-weight: 500;
+}
+
+.fh-assignment-cta {
+  border: 1px solid rgba(5, 150, 105, 0.22);
+  border-radius: 16px;
+  padding: 18px 20px;
+  background: linear-gradient(135deg, rgba(5, 150, 105, 0.1), rgba(255, 255, 255, 0.94));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.fh-assignment-cta--complete {
+  border-color: rgba(5, 150, 105, 0.34);
+  background: #ecfdf5;
+}
+
+.fh-assignment-cta span {
+  display: block;
+  margin-bottom: 5px;
+  color: #047857;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fh-assignment-cta strong {
+  display: block;
+  color: #0f172a;
+  font-size: 1.08rem;
+  line-height: 1.35;
+}
+
+.fh-assignment-cta p {
+  margin: 6px 0 0;
+  color: #475569;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  font-weight: 600;
+}
+
+.fh-assignment-next {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+.fh-assignment-btn {
+  height: 48px;
+  min-width: 152px;
+  border: 0;
+  border-radius: 999px;
+  background: #059669;
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: #047857 0 4px 0 0;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+}
+
+.fh-assignment-btn:hover:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: #047857 0 2px 0 0;
+}
+
+.fh-assignment-btn:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow: #047857 0 0 0 0;
+}
+
+.fh-assignment-btn:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.fh-modal-dates {
+  padding: 0 34px 24px;
+  margin-top: -16px;
+  font-size: 0.9rem;
+  color: #64748b;
+  display: flex;
+  gap: 20px;
+  font-weight: 600;
 }
 
 /* Level-0 tutorial CTA: replica of .progress-show-history-btn style and feel, preserving tutorial orange colors */
@@ -543,6 +762,27 @@
 
   .fh-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fh-modal-backdrop {
+    padding-left: 2rem;
+  }
+
+  .fh-modal-body {
+    grid-template-columns: 1fr;
+  }
+
+  .fh-module-lesson-map {
+    position: static;
+  }
+
+  .fh-assignment-cta {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .fh-assignment-btn {
+    width: 100%;
   }
 }
 

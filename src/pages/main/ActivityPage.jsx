@@ -243,7 +243,7 @@ function ActivityPage() {
     const sLevel = levelProgress?.levelNumber || 1;
     return filterActivitiesForJourney(allTasks, sLevel, currentJourneyNumber);
   }, [allTasks, levelProgress?.levelNumber, currentJourneyNumber]);
-  const { metricsSyncKey, refreshJourney } = useJourneyRemoteState(user);
+  const { journeyStartedAt, metricsSyncKey, remoteLoaded, refreshJourney } = useJourneyRemoteState(user);
   const stampResetTimeoutRef = useRef(null);
   const audioContextRef = useRef(null);
   const previousTaskStateRef = useRef({});
@@ -612,7 +612,7 @@ function ActivityPage() {
   const lottieFireNode = useMemo(() => <Lottie animationData={fireAnimationData} loop={true} />, []);
 
   useEffect(() => {
-    if (!user?.id || activitiesLoading) return undefined;
+    if (!user?.id || activitiesLoading || !remoteLoaded || journeyStartedAt) return undefined;
     let cancelled = false;
     (async () => {
       try {
@@ -625,7 +625,7 @@ function ActivityPage() {
     return () => {
       cancelled = true;
     };
-  }, [user?.id, activitiesLoading, refreshJourney]);
+  }, [user?.id, activitiesLoading, journeyStartedAt, remoteLoaded, refreshJourney]);
 
   const taskState = useMemo(() => {
     return tasks.reduce((state, task) => {

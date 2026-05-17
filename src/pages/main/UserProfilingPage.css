@@ -1185,22 +1185,33 @@
   }
 
   .profiling-question-stage {
-    justify-content: center;
+    height: 100dvh;
+    min-height: 100dvh;
+    justify-content: flex-start;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
     padding-top: clamp(1rem, 4.8vw, 1.6rem);
+    padding-bottom: calc(6.4rem + env(safe-area-inset-bottom, 0px));
+    scroll-padding-bottom: calc(6.4rem + env(safe-area-inset-bottom, 0px));
     row-gap: 1rem;
     transform: none;
   }
 
   .user-profiling-page--questions,
   .user-profiling-page--demographics {
-    overflow-y: auto;
-    overscroll-behavior-y: contain;
+    height: 100dvh;
+    overflow: hidden;
   }
 
   .user-profiling-page--questions .profiling-question-stage,
   .user-profiling-page--demographics .profiling-question-stage {
-    min-height: 100dvh;
-    padding-bottom: calc(5.6rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(6.4rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .user-profiling-page--questions .profiling-unit,
+  .user-profiling-page--demographics .profiling-unit {
+    justify-content: flex-start;
   }
 
   .profiling-question-bubble {
@@ -1231,21 +1242,33 @@
     display: grid;
     grid-template-columns: 1fr;
     justify-items: center;
-    gap: 0.65rem;
+    gap: 0.5rem;
   }
 
   .profiling-question-robot-wrap {
     position: relative;
     left: auto;
     bottom: auto;
-    max-width: 19.25rem;
+    max-width: min(15.5rem, 62vw);
     width: 100%;
+  }
+
+  .profiling-question-robot-image {
+    max-height: 28dvh;
   }
 
   .profiling-question-options-wrap {
     max-width: 22rem;
     margin-top: 0.15rem;
     min-height: 0;
+  }
+
+  .profiling-question-options {
+    gap: 0.5rem;
+  }
+
+  .profiling-question-option {
+    height: 42px;
   }
 
   .profiling-audio-toggle {

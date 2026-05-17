@@ -208,7 +208,21 @@ export default function AchievementsPage() {
 
       <section className="trophy-showcase-card dashboard-anim-top dashboard-anim-delay-1" aria-label="Trophy showcase">
         {trophies.map((trophy) => (
-          <div key={trophy.id} className={`trophy-item ${trophy.isLocked ? 'locked' : ''} ${trophy.claimable ? 'trophy-item--claimable' : ''} ${trophy.claimed ? 'trophy-item--claimed' : ''}`}>
+          <div
+            key={trophy.id}
+            className={`trophy-item ${trophy.isLocked ? 'locked' : ''} ${trophy.claimable ? 'trophy-item--claimable' : ''} ${trophy.claimed ? 'trophy-item--claimed' : ''}`}
+            role={trophy.claimable ? 'button' : undefined}
+            tabIndex={trophy.claimable ? 0 : undefined}
+            aria-label={trophy.claimable ? `Claim Level ${trophy.id} trophy` : undefined}
+            onClick={() => handleClaimTrophy(trophy)}
+            onKeyDown={(event) => {
+              if (!trophy.claimable) return;
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                handleClaimTrophy(trophy);
+              }
+            }}
+          >
             <div className="trophy-rank-badge">
               <img src={trophy.rankImg} alt={`Level ${trophy.id} ${trophy.name}`} className="rank-icon" loading="lazy" width="40" height="40" />
               <span className="rank-name">LEVEL {trophy.id}</span>
@@ -223,11 +237,6 @@ export default function AchievementsPage() {
               <span className="trophy-progress-text">
                 {trophy.isLocked ? 'Locked' : trophy.claimed ? 'Claimed' : trophy.claimable ? 'Ready' : trophy.isCompleted ? 'Completed' : tasksLoading ? '…' : `${trophy.current}/${trophy.total}`}
               </span>
-              {trophy.claimable && (
-                <button type="button" className="trophy-claim-btn" onClick={() => handleClaimTrophy(trophy)}>
-                  Claim Trophy
-                </button>
-              )}
             </div>
           </div>
         ))}

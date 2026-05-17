@@ -131,6 +131,27 @@
   box-shadow: 0 14px 28px rgba(249, 115, 22, 0.12);
 }
 
+.trophy-item--claimable {
+  cursor: pointer;
+  outline: none;
+}
+
+.trophy-item--claimable .trophy-wrapper,
+.trophy-item--claimable .trophy-progress-container {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.trophy-item--claimable:hover .trophy-wrapper,
+.trophy-item--claimable:focus-visible .trophy-wrapper {
+  transform: translateY(-4px);
+}
+
+.trophy-item--claimable:hover .trophy-progress-container,
+.trophy-item--claimable:focus-visible .trophy-progress-container {
+  border-color: rgba(249, 115, 22, 0.45);
+  box-shadow: 0 18px 34px rgba(249, 115, 22, 0.18);
+}
+
 .trophy-item--claimed .trophy-progress-container {
   border-color: rgba(5, 150, 105, 0.2);
   background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
@@ -316,38 +337,6 @@
 
 .trophy-item--claimed .trophy-progress-text {
   color: #059669;
-}
-
-.trophy-claim-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  min-height: 34px;
-  margin-top: 2px;
-  padding: 8px 10px;
-  border: none;
-  border-radius: 999px;
-  background: #f97316;
-  color: #ffffff;
-  font-family: 'Fredoka', sans-serif;
-  font-size: 0.76rem;
-  font-weight: 800;
-  line-height: 1;
-  cursor: pointer;
-  box-shadow: #ea580c 0 3px 0 0;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  white-space: nowrap;
-}
-
-.trophy-claim-btn:hover {
-  box-shadow: #ea580c 0 2px 0 0;
-  transform: translateY(1px);
-}
-
-.trophy-claim-btn:active {
-  box-shadow: #ea580c 0 0 0 0;
-  transform: translateY(3px);
 }
 
 /* ── Filter & Sort Bar ── */

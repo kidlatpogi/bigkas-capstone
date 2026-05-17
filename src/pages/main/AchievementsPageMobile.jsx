@@ -303,7 +303,21 @@ export default function AchievementsPageMobile() {
             <div className="trophy-showcase-card">
               <div className="trophy-podium-scroll no-scrollbar">
                 {trophies.map((trophy) => (
-                  <div key={trophy.id} className={`trophy-podium-item ${trophy.isLocked ? 'locked' : ''} ${trophy.claimable ? 'trophy-podium-item--claimable' : ''} ${trophy.claimed ? 'trophy-podium-item--claimed' : ''}`}>
+                  <div
+                    key={trophy.id}
+                    className={`trophy-podium-item ${trophy.isLocked ? 'locked' : ''} ${trophy.claimable ? 'trophy-podium-item--claimable' : ''} ${trophy.claimed ? 'trophy-podium-item--claimed' : ''}`}
+                    role={trophy.claimable ? 'button' : undefined}
+                    tabIndex={trophy.claimable ? 0 : undefined}
+                    aria-label={trophy.claimable ? `Claim Level ${trophy.id} trophy` : undefined}
+                    onClick={() => handleClaimTrophy(trophy)}
+                    onKeyDown={(event) => {
+                      if (!trophy.claimable) return;
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        handleClaimTrophy(trophy);
+                      }
+                    }}
+                  >
                     <div className="podium-rank-badge">
                       <img src={trophy.rankImg} alt={`Level ${trophy.id}`} className="rank-icon" loading="lazy" width="36" height="36" />
                       <span className="rank-name">LEVEL {trophy.id}</span>
@@ -315,11 +329,6 @@ export default function AchievementsPageMobile() {
                           <div className="podium-progress-fill" style={{ width: trophy.isCompleted ? '100%' : trophy.total > 0 ? `${(trophy.current / trophy.total) * 100}%` : '0%' }} />
                         </div>
                         <span className="podium-count">{trophy.isLocked ? 'LOCKED' : trophy.claimed ? 'CLAIMED' : trophy.claimable ? 'READY' : trophy.isCompleted ? 'DONE' : tasksLoading ? '…' : `${trophy.current}/${trophy.total}`}</span>
-                        {trophy.claimable && (
-                          <button type="button" className="podium-claim-btn" onClick={() => handleClaimTrophy(trophy)}>
-                            Claim
-                          </button>
-                        )}
                       </div>
                     </div>
                   </div>

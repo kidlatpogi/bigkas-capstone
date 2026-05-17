@@ -608,6 +608,20 @@ function UserProfilingPage() {
     setDemographicIndex(0);
   };
 
+  const renderAudioToggle = (className = '') => (
+    <div className={`profiling-intro-audio-action ${className}`.trim()}>
+      <button
+        type="button"
+        onClick={handleToggleMute}
+        aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+        title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
+        className={`profiling-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
+      >
+        {isMuted ? <VolumeX aria-hidden="true" /> : <Volume2 aria-hidden="true" />}
+      </button>
+    </div>
+  );
+
   if (isAdminAuthenticated) return null;
 
   return (
@@ -767,6 +781,7 @@ function UserProfilingPage() {
                 </div>
                 {error && <p className="profiling-error">{error}</p>}
               </div>
+              {renderAudioToggle('profiling-intro-audio-action--inline')}
             </div>
           </div>
         </section>
@@ -861,6 +876,7 @@ function UserProfilingPage() {
 
                 {error && <p className="profiling-error">{error}</p>}
               </div>
+              {renderAudioToggle('profiling-intro-audio-action--inline')}
             </div>
           </div>
         </section>
@@ -912,17 +928,7 @@ function UserProfilingPage() {
           </div>
         </section>
       )}
-      <div className="profiling-intro-audio-action">
-        <button
-          type="button"
-          onClick={handleToggleMute}
-          aria-label={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-          title={isMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-          className={`profiling-audio-toggle ${isMuted ? 'is-muted' : 'is-unmuted'}`}
-        >
-          {isMuted ? <VolumeX aria-hidden="true" /> : <Volume2 aria-hidden="true" />}
-        </button>
-      </div>
+      {renderAudioToggle()}
     </div>
   );
 }

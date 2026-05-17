@@ -173,8 +173,29 @@ export function buildStageUnlockedMessage(stageTitle, passingScore, evaluation) 
   ].filter(Boolean).join(' ');
 }
 
+function isActivityStageSession(session) {
+  if (!session) return false;
+  if (session.activity_id) return true;
+
+  const modeText = [
+    session.activity_title,
+    session.activity_objective,
+    session.objective_name,
+    session.session_origin,
+    session.session_mode,
+    session.speaking_mode,
+    session.source,
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  if (modeText.includes('pre-test') || modeText.includes('pretest') || modeText.includes('practice')) {
+    return false;
+  }
+
+  return modeText.includes('activity') || modeText.includes('training') || modeText.includes('journey');
+}
+
 export function buildStagePassResultForSession(session) {
-  if (!session?.activity_id) return null;
+  if (!isActivityStageSession(session)) return null;
 
   const activityTitle = session.activity_title || session.objective_name || session.script_title || session.title || '';
   const targetLevel = session.activity_target_level ?? session.target_level;

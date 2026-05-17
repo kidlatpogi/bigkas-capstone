@@ -32,6 +32,29 @@ const FILLER_WORDS = ['um', 'uh', 'ah', 'like', 'err', 'uhm', 'well', 'basically
 const SESSION_MEDIA_BUCKET = 'session-recordings';
 
 // --- Helpers ---
+function buildActivityLookup(activityTasks) {
+  const lookup = new Map();
+  if (!Array.isArray(activityTasks)) return lookup;
+  activityTasks.forEach((activity) => {
+    const id = String(activity?.id || '').trim();
+    if (id) lookup.set(id, activity);
+  });
+  return lookup;
+}
+
+function mergeSessionActivity(session, activityLookup) {
+  const activity = activityLookup.get(String(session?.activity_id || '').trim());
+  if (!activity) return session;
+  return {
+    ...session,
+    activity_title: session.activity_title || activity.title || activity.objective || null,
+    activity_objective: session.activity_objective || activity.objective || null,
+    activity_target_level: session.activity_target_level ?? activity.target_level ?? null,
+    activity_order: session.activity_order ?? activity.activity_order ?? activity.activityOrder ?? null,
+    passing_score: session.passing_score ?? activity.passing_score ?? activity.passingScore ?? null,
+  };
+}
+
 function score100to15(val) {
   const v = Math.max(0, Math.min(100, Number(val) || 0));
   if (v === 0) return 1.0;
@@ -233,7 +256,7 @@ function buildReplayAction(session, navigate, isFree) {
 }
 
 // --- Component ---
-function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, initialShowDetailed = false }) {
+function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, initialShowDetailed = false, activityTasks = [] }) {
   const navigate = useNavigate();
   const { sessionId: paramSessionId } = useParams();
   const sessionId = sessionIdProp || paramSessionId;
@@ -245,15 +268,17 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
     return initialShowDetailed || isInnerView === false;
   });
 
-  const session = useMemo(() => {
+  const activityLookup = useMemo(() => buildActivityLookup(activityTasks), [activityTasks]);
+  const rawSession = useMemo(() => {
     if (locationState?.id === sessionId) return locationState;
     if (currentSession?.id === sessionId) return currentSession;
     return null;
   }, [currentSession, locationState, sessionId]);
+  const session = useMemo(() => mergeSessionActivity(rawSession, activityLookup), [activityLookup, rawSession]);
 
   useEffect(() => {
-    if (!session && sessionId) fetchSessionById(sessionId);
-  }, [fetchSessionById, session, sessionId]);
+    if (!rawSession && sessionId) fetchSessionById(sessionId);
+  }, [fetchSessionById, rawSession, sessionId]);
 
   useEffect(() => {
     let isMounted = true;

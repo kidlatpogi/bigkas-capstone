@@ -179,11 +179,16 @@ export function buildStagePassResultForSession(session) {
   const activityTitle = session.activity_title || session.objective_name || session.script_title || session.title || '';
   const targetLevel = session.activity_target_level ?? session.target_level;
   const activityOrder = session.activity_order ?? session.activityOrder;
-  const passingScore =
+  const explicitPassingScore =
     session.activity_passing_score ??
     session.passing_score ??
     session.passingScore ??
-    getDefaultPassingScoreForActivity(targetLevel, activityOrder);
+    null;
+  const passingScore =
+    explicitPassingScore ??
+    (targetLevel != null && activityOrder != null
+      ? getDefaultPassingScoreForActivity(targetLevel, activityOrder)
+      : []);
   const normalizedPassingScore = normalizePassingScore(passingScore);
 
   if (!normalizedPassingScore.length) return null;

@@ -23,6 +23,29 @@ const HISTORY_SCORE_SORT_OPTIONS = [
 ];
 const HISTORY_SCORE_SORT_NONE = '';
 
+function buildActivityLookup(activityTasks) {
+  const lookup = new Map();
+  if (!Array.isArray(activityTasks)) return lookup;
+  activityTasks.forEach((activity) => {
+    const id = String(activity?.id || '').trim();
+    if (id) lookup.set(id, activity);
+  });
+  return lookup;
+}
+
+function mergeSessionActivity(session, activityLookup) {
+  const activity = activityLookup.get(String(session?.activity_id || '').trim());
+  if (!activity) return session;
+  return {
+    ...session,
+    activity_title: session.activity_title || activity.title || activity.objective || null,
+    activity_objective: session.activity_objective || activity.objective || null,
+    activity_target_level: session.activity_target_level ?? activity.target_level ?? null,
+    activity_order: session.activity_order ?? activity.activity_order ?? activity.activityOrder ?? null,
+    passing_score: session.passing_score ?? activity.passing_score ?? activity.passingScore ?? null,
+  };
+}
+
 function toFivePointScore(rawScore) {
   const numeric = Number(rawScore);
   if (!Number.isFinite(numeric)) return 1;
@@ -151,7 +174,7 @@ function getAdaptiveHistoryPages(pageCount, activePage) {
   return [0, 'start-ellipsis', ...trailingWindow];
 }
 
-export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoading, isMobile = false }) {
+export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoading, isMobile = false, activityTasks = [] }) {
   const navigate = useNavigate();
   const [historyFilter, setHistoryFilter] = useState('All');
   const [scoreSortTarget, setScoreSortTarget] = useState(HISTORY_SCORE_SORT_NONE);
@@ -223,6 +246,7 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
     () => getAdaptiveHistoryPages(paginationPageCount, safeHistoryPage),
     [paginationPageCount, safeHistoryPage]
   );
+  const activityLookup = useMemo(() => buildActivityLookup(activityTasks), [activityTasks]);
 
   if (!isOpen) return null;
 
@@ -340,12 +364,13 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
           <div className="history-overlay-scroll-content">
             <div className="history-list">
               {paginatedHistorySessions.map((s, index) => {
+                const sessionForStage = mergeSessionActivity(s, activityLookup);
                 const mode = getSessionMode(s);
                 const score = toFivePointScore(s.confidence_score);
                 const tier = getScoreTier15(score);
                 const pillars = resolveSessionPillars(s);
                 const lacksSummary = buildLacksSummary(pillars);
-                const stageGoal = buildStagePassResultForSession(s);
+                const stageGoal = buildStagePassResultForSession(sessionForStage);
                 const stageGoalColor = stageGoal?.passed ? '#059669' : '#2563EB';
                 const delay = Math.min(index + 2, 9);
                 const dateObj = new Date(s.created_at);
@@ -370,7 +395,7 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                   >
                     <div className="history-item-row-left">
                       <div className="history-item-title-section">
-                        <h3 className="history-item-main-title">{buildSessionTitleOrTopic(s)}</h3>
+                        <h3 className="history-item-main-title">{buildSessionTitleOrTopic(sessionForStage)}</h3>
                         <p className="history-item-session-type">{mode}</p>
                       </div>
                     </div>
@@ -525,6 +550,7 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                   sessionIdProp={selectedSessionId} 
                   isInnerView={true} 
                   initialShowDetailed={innerViewMode === 'detailed'}
+                  activityTasks={activityTasks}
                   onCloseInner={() => {
                     if (innerViewMode === 'detailed') {
                       setInnerViewMode('results');

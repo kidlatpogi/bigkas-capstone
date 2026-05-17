@@ -19,6 +19,29 @@ const HISTORY_FILTERS = ['All', 'Daily', 'Weekly', 'Monthly', 'Yearly'];
 const HISTORY_SCORE_SORT_OPTIONS = [5, 4, 3, 2, 1];
 const HISTORY_SCORE_SORT_NONE = '';
 
+function buildActivityLookup(activityTasks) {
+  const lookup = new Map();
+  if (!Array.isArray(activityTasks)) return lookup;
+  activityTasks.forEach((activity) => {
+    const id = String(activity?.id || '').trim();
+    if (id) lookup.set(id, activity);
+  });
+  return lookup;
+}
+
+function mergeSessionActivity(session, activityLookup) {
+  const activity = activityLookup.get(String(session?.activity_id || '').trim());
+  if (!activity) return session;
+  return {
+    ...session,
+    activity_title: session.activity_title || activity.title || activity.objective || null,
+    activity_objective: session.activity_objective || activity.objective || null,
+    activity_target_level: session.activity_target_level ?? activity.target_level ?? null,
+    activity_order: session.activity_order ?? activity.activity_order ?? activity.activityOrder ?? null,
+    passing_score: session.passing_score ?? activity.passing_score ?? activity.passingScore ?? null,
+  };
+}
+
 // --- Helpers (1:1 with HistoryPage) ---
 function toFivePointScore(rawScore) {
   const numeric = Number(rawScore);
@@ -119,7 +142,7 @@ function getAdaptiveHistoryPages(pageCount, activePage) {
 }
 
 // --- Main Component ---
-export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], isLoading }) {
+export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], isLoading, activityTasks = [] }) {
   const navigate = useNavigate();
   const [historyFilter, setHistoryFilter] = useState('All');
   const [scoreSortTarget, setScoreSortTarget] = useState(HISTORY_SCORE_SORT_NONE);
@@ -179,6 +202,7 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
   }, [safePage, historySessions]);
 
   const adaptivePages = useMemo(() => getAdaptiveHistoryPages(pageCount, safePage), [pageCount, safePage]);
+  const activityLookup = useMemo(() => buildActivityLookup(activityTasks), [activityTasks]);
 
   const handleClose = useCallback(() => {
     if (selectedSessionId) setSelectedSessionId(null);
@@ -248,10 +272,11 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
           <div className="history-mobile-scroll-content">
             <div className="history-mobile-list">
               {paginatedSessions.map((s) => {
+                const sessionForStage = mergeSessionActivity(s, activityLookup);
                 const score = toFivePointScore(s.confidence_score);
                 const tier = getScoreTier15(score);
                 const pillars = resolveSessionPillars(s);
-                const stageGoal = buildStagePassResultForSession(s);
+                const stageGoal = buildStagePassResultForSession(sessionForStage);
                 const stageGoalColor = stageGoal?.passed ? '#059669' : '#2563EB';
                 const dateObj = new Date(s.created_at);
                 const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -271,7 +296,7 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
                   >
                     <div className="history-mobile-item-top">
                       <div className="history-mobile-item-info">
-                        <h3 className="history-mobile-item-title">{truncateToWords(buildSessionTitleOrTopic(s))}</h3>
+                        <h3 className="history-mobile-item-title">{truncateToWords(buildSessionTitleOrTopic(sessionForStage))}</h3>
                         <div className="history-mobile-item-meta">
                           <span className="history-mobile-item-badge" style={{ borderColor: tier.color, backgroundColor: `${tier.color}15`, color: tier.color }}>
                             <span className="history-mobile-item-badge-dot" style={{ backgroundColor: tier.color }} />
@@ -354,6 +379,7 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
                   sessionIdProp={selectedSessionId} 
                   isInnerView={true} 
                   initialShowDetailed={innerViewMode === 'detailed'}
+                  activityTasks={activityTasks}
                   onCloseInner={() => {
                     if (innerViewMode === 'detailed') {
                       setInnerViewMode('results');

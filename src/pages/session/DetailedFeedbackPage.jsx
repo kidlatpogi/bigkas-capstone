@@ -36,6 +36,29 @@ const SOFT_SAGE = '#059669';
 const VIBRANT_ORANGE = '#F97316';
 const SESSION_MEDIA_BUCKET = 'session-recordings';
 
+function buildActivityLookup(activityTasks) {
+  const lookup = new Map();
+  if (!Array.isArray(activityTasks)) return lookup;
+  activityTasks.forEach((activity) => {
+    const id = String(activity?.id || '').trim();
+    if (id) lookup.set(id, activity);
+  });
+  return lookup;
+}
+
+function mergeSessionActivity(session, activityLookup) {
+  const activity = activityLookup.get(String(session?.activity_id || '').trim());
+  if (!activity) return session;
+  return {
+    ...session,
+    activity_title: session.activity_title || activity.title || activity.objective || null,
+    activity_objective: session.activity_objective || activity.objective || null,
+    activity_target_level: session.activity_target_level ?? activity.target_level ?? null,
+    activity_order: session.activity_order ?? activity.activity_order ?? activity.activityOrder ?? null,
+    passing_score: session.passing_score ?? activity.passing_score ?? activity.passingScore ?? null,
+  };
+}
+
 function score100to15(val) {
   const v = Math.max(0, Math.min(100, Number(val) || 0));
   if (v === 0) return 1.0;
@@ -243,7 +266,7 @@ function buildReplayAction(session, navigate, isFree) {
   };
 }
 
-function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initialShowDetailed = false }) {
+function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initialShowDetailed = false, activityTasks = [] }) {
   const navigate = useNavigate();
   const { sessionId: paramSessionId } = useParams();
   const sessionId = sessionIdProp || paramSessionId;
@@ -278,16 +301,18 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
     return Number.isFinite(Number(locationState?.confidence_score));
   }, [locationState, sessionId]);
 
-  const session = useMemo(() => {
+  const activityLookup = useMemo(() => buildActivityLookup(activityTasks), [activityTasks]);
+  const rawSession = useMemo(() => {
     if (hasCompleteLocationState) return locationState;
     if (String(currentSession?.id || '') === String(sessionId || '')) return currentSession;
     return null;
   }, [currentSession, hasCompleteLocationState, locationState, sessionId]);
+  const session = useMemo(() => mergeSessionActivity(rawSession, activityLookup), [activityLookup, rawSession]);
 
   useEffect(() => {
-    if (session) return;
+    if (rawSession) return;
     fetchSessionById(sessionId);
-  }, [fetchSessionById, session, sessionId]);
+  }, [fetchSessionById, rawSession, sessionId]);
 
   const tripleV = useMemo(() => getTripleVScores(session || {}), [session]);
   const pillars = useMemo(() => {
@@ -504,6 +529,8 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
         sessionIdProp={sessionId}
         isInnerView={isInnerView}
         onCloseInner={onCloseInner}
+        initialShowDetailed={initialShowDetailed}
+        activityTasks={activityTasks}
       />
     );
   }

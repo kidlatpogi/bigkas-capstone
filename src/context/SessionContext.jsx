@@ -54,13 +54,6 @@ const SESSIONS_SELECT_QUERY = `
   ),
   session_recommendations (
     recommendation_text
-  ),
-  activities (
-    id,
-    title,
-    objective,
-    target_level,
-    activity_order
   )
 `;
 
@@ -184,8 +177,7 @@ function normalizeSessionRow(session) {
   if (!session) return session;
   const cachedTitle = getSessionTitleCacheEntry(session.id);
   const cachedVideoUrl = getSessionVideoCacheEntry(session.id);
-  const activity = Array.isArray(session.activities) ? session.activities[0] : session.activities;
-  const activityTitle = String(activity?.title || '').trim() || null;
+  const activityTitle = String(session.activity_title || '').trim() || null;
   const media = Array.isArray(session.session_media) ? session.session_media[0] : session.session_media;
   const metrics = Array.isArray(session.session_metrics) ? session.session_metrics[0] : session.session_metrics;
   const feedback = Array.isArray(session.session_feedback) ? session.session_feedback[0] : session.session_feedback;
@@ -215,9 +207,9 @@ function normalizeSessionRow(session) {
     activities: undefined,
     activity_id: session.activity_id || null,
     activity_title: activityTitle,
-    activity_objective: activity?.objective ?? null,
-    activity_target_level: activity?.target_level ?? null,
-    activity_order: activity?.activity_order ?? null,
+    activity_objective: session.activity_objective ?? session.objective ?? null,
+    activity_target_level: session.activity_target_level ?? session.target_level ?? null,
+    activity_order: session.activity_order ?? session.activityOrder ?? null,
     speech_type: normalizedSpeechType || null,
     speaking_mode: session.speaking_mode || normalizedSpeechType || null,
     session_origin: normalizedSessionOrigin || null,
@@ -242,7 +234,7 @@ function normalizeSessionRow(session) {
     analysis: media?.analysis || (feedback?.detailed_feedback ? feedback.detailed_feedback : null),
     feedback: feedback?.general_feedback || '',
     detailed_feedback: feedback?.detailed_feedback || '',
-    objective_name: session.objective_name ?? activity?.objective ?? null,
+    objective_name: session.objective_name ?? session.activity_objective ?? session.objective ?? null,
     recommendations,
     recommendation_timestamps,
     audio_url: media?.audio_url || null,

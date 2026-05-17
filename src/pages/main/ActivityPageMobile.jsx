@@ -30,7 +30,6 @@ import { RANDOM_TOPICS } from '../../utils/practiceData';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import { filterActivitiesForJourney } from '../../utils/journeyFiltering';
 import { generateCoachInsights } from '../../utils/coachInsights';
-import { getFeaturedTrophy } from '../../utils/trophyClaims';
 import fireAnimationData from '../../assets/Lottie/fire.json';
 import './InnerPages.css';
 import './ActivityPageMobile.css';
@@ -53,7 +52,6 @@ const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.webp');
 const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.webp');
 const crystalBallImage = getSpriteUrl('common/crystal-ball.webp');
 const crownImage = getSpriteUrl('common/crown.webp');
-const trophySprite = getSpriteUrl('Thropies/Thropy.png');
 const b01ChatHead = getAssetUrl('Images/Bigkas-Logo.webp');
 const B01_SUGGESTIONS = [
   'Summarize my progress so far',
@@ -497,7 +495,6 @@ function ActivityPageMobile() {
     () => getRankSprite(levelProgress?.levelNumber, levelProgress?.levelName),
     [levelProgress?.levelNumber, levelProgress?.levelName],
   );
-  const featuredTrophy = useMemo(() => getFeaturedTrophy(user?.id), [user?.id]);
 
   useEffect(() => {
     if (!user?.id || activitiesLoading) return undefined;
@@ -1396,23 +1393,6 @@ function ActivityPageMobile() {
                   )}
                 </p>
               </section>
-
-              {featuredTrophy ? (
-                <section className="new-widget new-widget--prestige" aria-label="Featured trophy">
-                  <div className="new-widget-head">
-                    <h2 className="new-widget-title">Trophy Shelf</h2>
-                    <span className="new-widget-chip">Featured</span>
-                  </div>
-                  <div className="activity-prestige-card">
-                    <img src={trophySprite} alt="" className="activity-prestige-trophy" width="54" height="54" />
-                    <div className="activity-prestige-copy">
-                      <p className="new-widget-kicker">Bragging Rights</p>
-                      <p className="activity-prestige-title">{featuredTrophy.title}</p>
-                      <p className="activity-prestige-level">Level {featuredTrophy.level} Trophy</p>
-                    </div>
-                  </div>
-                </section>
-              ) : null}
 
               {/* Practice Widget */}
               <section className="new-widget new-widget--practice" id="tutorial-target-home-practice">

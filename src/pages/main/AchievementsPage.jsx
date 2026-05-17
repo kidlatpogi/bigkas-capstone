@@ -19,10 +19,9 @@ import {
   claimAchievement as removeNotif,
 } from '../../utils/achievementClaims';
 import { fetchUserAchievements, claimAchievementInDB } from '../../services/achievementsService';
-import { claimTrophyLevel, getClaimedTrophyLevels } from '../../utils/trophyClaims';
+import { claimTrophyLevel, getClaimedTrophyLevels, getTrophyImageUrl } from '../../utils/trophyClaims';
 import './AchievementsPage.css';
 
-const trophyImg   = getSpriteUrl('Thropies/Thropy.png');
 const badgeImg    = getSpriteUrl('Badges/Badge.png');
 const rankBronze  = getSpriteUrl('Rank/rank-bronze.webp');
 const rankSilver  = getSpriteUrl('Rank/rank-silver.webp');
@@ -157,7 +156,7 @@ export default function AchievementsPage() {
       const total = isCurrentLevel ? tasks.length : 0;
       const current = isCurrentLevel ? tasks.filter((t) => isActivityTaskCompleted(t.id, activityMetrics)).length : 0;
       const claimed = claimedTrophyLevels.includes(lvl);
-      return { id: lvl, name: RANK_NAMES[lvl - 1], rankImg: RANK_IMGS[lvl - 1], total, current, isCompleted, isLocked, claimed, claimable: isCompleted && !claimed };
+      return { id: lvl, name: RANK_NAMES[lvl - 1], rankImg: RANK_IMGS[lvl - 1], trophyImg: getTrophyImageUrl(lvl), total, current, isCompleted, isLocked, claimed, claimable: isCompleted && !claimed };
     });
   }, [currentLevelNumber, tasks, activityMetrics, claimedTrophyLevels]);
 
@@ -169,7 +168,7 @@ export default function AchievementsPage() {
       id: `trophy-${trophy.id}`,
       name: `Level ${trophy.id} Trophy`,
       description: `You claimed your Level ${trophy.id} completion trophy.`,
-      badgeUrl: trophyImg,
+      badgeUrl: trophy.trophyImg,
     });
   }, [user?.id]);
 
@@ -228,7 +227,7 @@ export default function AchievementsPage() {
               <span className="rank-name">LEVEL {trophy.id}</span>
             </div>
             <div className="trophy-wrapper">
-              <img src={trophyImg} alt="" className="trophy-img" loading="lazy" width="80" height="80" />
+              <img src={trophy.trophyImg} alt="" className="trophy-img" loading="lazy" width="80" height="80" />
             </div>
             <div className="trophy-progress-container">
               <div className="trophy-progress-bar" role="progressbar" aria-valuenow={trophy.current} aria-valuemin={0} aria-valuemax={trophy.total || 1}>

@@ -21,10 +21,9 @@ import {
   claimAllAchievements as clearAllNotifs,
 } from '../../utils/achievementClaims';
 import { fetchUserAchievements, claimAchievementInDB } from '../../services/achievementsService';
-import { claimTrophyLevel, getClaimedTrophyLevels } from '../../utils/trophyClaims';
+import { claimTrophyLevel, getClaimedTrophyLevels, getTrophyImageUrl } from '../../utils/trophyClaims';
 import './AchievementsPageMobile.css';
 
-const trophyImg     = getSpriteUrl('Thropies/Thropy.png');
 const badgeImg      = getSpriteUrl('Badges/Badge.png');
 const rankBronze    = getSpriteUrl('Rank/rank-bronze.webp');
 const rankSilver    = getSpriteUrl('Rank/rank-silver.webp');
@@ -197,7 +196,7 @@ export default function AchievementsPageMobile() {
       const total = isCurrentLevel ? tasks.length : 0;
       const current = isCurrentLevel ? tasks.filter((t) => isActivityTaskCompleted(t.id, activityMetrics)).length : 0;
       const claimed = claimedTrophyLevels.includes(lvl);
-      return { id: lvl, name: RANK_NAMES[lvl - 1], rankImg: RANK_IMGS[lvl - 1], total, current, isCompleted, isLocked, claimed, claimable: isCompleted && !claimed };
+      return { id: lvl, name: RANK_NAMES[lvl - 1], rankImg: RANK_IMGS[lvl - 1], trophyImg: getTrophyImageUrl(lvl), total, current, isCompleted, isLocked, claimed, claimable: isCompleted && !claimed };
     });
   }, [currentLevelNumber, tasks, activityMetrics, claimedTrophyLevels]);
 
@@ -209,7 +208,7 @@ export default function AchievementsPageMobile() {
       id: `trophy-${trophy.id}`,
       name: `Level ${trophy.id} Trophy`,
       description: `You claimed your Level ${trophy.id} completion trophy.`,
-      badgeUrl: trophyImg,
+      badgeUrl: trophy.trophyImg,
     });
   }, [user?.id]);
 
@@ -323,7 +322,7 @@ export default function AchievementsPageMobile() {
                       <span className="rank-name">LEVEL {trophy.id}</span>
                     </div>
                     <div className="podium-pillar">
-                      <div className="podium-trophy-wrap"><img src={trophyImg} alt="" className="podium-img" loading="lazy" width="60" height="60" /></div>
+                      <div className="podium-trophy-wrap"><img src={trophy.trophyImg} alt="" className="podium-img" loading="lazy" width="60" height="60" /></div>
                       <div className="podium-stats">
                         <div className="podium-progress-bar" role="progressbar" aria-valuenow={trophy.current} aria-valuemin={0} aria-valuemax={trophy.total || 1}>
                           <div className="podium-progress-fill" style={{ width: trophy.isCompleted ? '100%' : trophy.total > 0 ? `${(trophy.current / trophy.total) * 100}%` : '0%' }} />

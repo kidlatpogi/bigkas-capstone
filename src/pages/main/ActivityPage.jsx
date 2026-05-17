@@ -29,7 +29,6 @@ import { ensureJourneyStarted, updateJourneyCurrentActivity, updateUserProgressL
 import { RANDOM_TOPICS } from '../../utils/practiceData';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import { filterActivitiesForJourney } from '../../utils/journeyFiltering';
-import { getFeaturedTrophy } from '../../utils/trophyClaims';
 
 const iconFire = getAssetUrl('icons/Icon-Fire.svg');
 const robotMorningImage = getSpriteUrl('Robot/0018.webp');
@@ -49,7 +48,6 @@ const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.webp');
 const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.webp');
 const crystalBallImage = getSpriteUrl('common/crystal-ball.webp');
 const crownImage = getSpriteUrl('common/crown.webp');
-const trophySprite = getSpriteUrl('Thropies/Thropy.png');
 const b01ChatHead = getAssetUrl('Images/Bigkas-Logo.webp');
 import fireAnimationData from '../../assets/Lottie/fire.json';
 import { generateCoachInsights } from '../../utils/coachInsights';
@@ -610,7 +608,6 @@ function ActivityPage() {
     () => getRankSprite(levelProgress?.levelNumber, levelProgress?.levelName),
     [levelProgress?.levelNumber, levelProgress?.levelName],
   );
-  const featuredTrophy = useMemo(() => getFeaturedTrophy(user?.id), [user?.id]);
 
   const lottieFireNode = useMemo(() => <Lottie animationData={fireAnimationData} loop={true} />, []);
 
@@ -1596,23 +1593,6 @@ function ActivityPage() {
               )}
             </p>
           </section>
-
-          {featuredTrophy ? (
-            <section className="new-widget new-widget--prestige dashboard-anim-left dashboard-anim-delay-3" aria-label="Featured trophy">
-              <div className="new-widget-head">
-                <h2 className="new-widget-title">Trophy Shelf</h2>
-                <span className="new-widget-chip">Featured</span>
-              </div>
-              <div className="activity-prestige-card">
-                <img src={trophySprite} alt="" className="activity-prestige-trophy" width="58" height="58" />
-                <div className="activity-prestige-copy">
-                  <p className="new-widget-kicker">Bragging Rights</p>
-                  <p className="activity-prestige-title">{featuredTrophy.title}</p>
-                  <p className="activity-prestige-level">Level {featuredTrophy.level} Trophy</p>
-                </div>
-              </div>
-            </section>
-          ) : null}
 
           <section className="new-widget new-widget--practice dashboard-anim-bottom dashboard-anim-delay-4" id="tutorial-target-home-practice">
             <div className="new-widget-head">

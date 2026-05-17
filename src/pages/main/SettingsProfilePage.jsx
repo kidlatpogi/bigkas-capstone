@@ -12,12 +12,12 @@ import { getBigkasLevelFromUser } from '../../utils/activityProgress';
 import {
   getClaimedTrophyLevels,
   getFeaturedTrophy,
+  getTrophyImageUrl,
   getTrophyTitle,
   setFeaturedTrophyLevel,
 } from '../../utils/trophyClaims';
 
 const mascotSprite = getSpriteUrl('Robot/0002.webp');
-const trophySprite = getSpriteUrl('Thropies/Thropy.png');
 
 const THEME_CONFIG = [
   { id: 'emerald', label: 'Default', requires: 0, decoration: null, className: 'emerald' },
@@ -214,7 +214,7 @@ function SettingsProfilePage() {
             <p className="hero-email">{user?.email}</p>
             {featuredTrophy ? (
               <div className="hero-featured-trophy" aria-label={`Featured trophy: ${featuredTrophy.title}`}>
-                <img src={trophySprite} alt="" className="hero-featured-trophy-img" width="28" height="28" />
+                <img src={getTrophyImageUrl(featuredTrophy.level)} alt="" className="hero-featured-trophy-img" width="28" height="28" />
                 <div className="hero-featured-trophy-copy">
                   <span className="hero-featured-trophy-label">Featured Trophy</span>
                   <strong>{featuredTrophy.title}</strong>
@@ -234,7 +234,7 @@ function SettingsProfilePage() {
                     onClick={() => handleFeatureTrophy(level)}
                     aria-label={isClaimed ? `Feature ${getTrophyTitle(level)}` : `Level ${level} trophy locked`}
                   >
-                    <img src={trophySprite} alt="" width="22" height="22" />
+                    <img src={getTrophyImageUrl(level)} alt="" width="22" height="22" />
                     <span>{level}</span>
                   </button>
                 );

@@ -1,3 +1,5 @@
+import { getSpriteUrl } from './assetUtils';
+
 const TROPHY_CLAIMS_KEY = 'bigkas_claimed_trophy_levels_v1';
 const FEATURED_TROPHY_KEY = 'bigkas_featured_trophy_level_v1';
 
@@ -39,6 +41,11 @@ export function getClaimedTrophyLevels(userId) {
 
 export function getTrophyTitle(level) {
   return TROPHY_TITLES[Number(level)] || '';
+}
+
+export function getTrophyImageUrl(level) {
+  const normalizedLevel = Math.min(5, Math.max(1, Number(level) || 1));
+  return getSpriteUrl(`Thropies/Trophy_Level_${normalizedLevel}.webp`);
 }
 
 export function getFeaturedTrophyLevel(userId) {

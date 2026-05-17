@@ -153,8 +153,8 @@ export function buildStageRetryMessage(stageTitle, evaluation) {
     .join(', ');
 
   return [
-    `Good effort. This stage needs ${requirements} before you can advance.`,
-    scores ? `Your result: ${scores}.` : '',
-    `Try ${stageTitle || 'this stage'} again and focus on the required pillar.`,
+    `Great effort. Your next goal is ${requirements} to unlock the next stage.`,
+    scores ? `Current result: ${scores}.` : '',
+    `Revisit ${stageTitle || 'this stage'} and focus on that speaking pillar.`,
   ].filter(Boolean).join(' ');
 }

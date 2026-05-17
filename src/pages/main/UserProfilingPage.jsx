@@ -468,6 +468,17 @@ function UserProfilingPage() {
         responses: { ...workingForm },
       },
       profiling_completed: true,
+      pretest_completed: false,
+      pretest_scripted_completed: false,
+      pretest_free_completed: false,
+      pretest_completed_at: null,
+      pretest_scripted_session_id: null,
+      pretest_free_session_id: null,
+      pretest_session_id: null,
+      pretest_scripted_score: null,
+      pretest_free_score: null,
+      onboarding_completed: false,
+      onboarding_level_analysis: null,
       onboarding_stage: 'profiling',
     };
 
@@ -488,11 +499,21 @@ function UserProfilingPage() {
     if (isSubmitting) return;
     stopAllIntroAudios();
     setIsSubmitting(true);
-    const result = await updateUserMetadata({ onboarding_stage: 'pretest' });
+    const result = await updateUserMetadata({
+      onboarding_stage: 'pretest',
+      pretest_completed: false,
+      pretest_scripted_completed: false,
+      pretest_free_completed: false,
+      onboarding_completed: false,
+    });
     setIsSubmitting(false);
     if (!result?.success) {
       setError(result?.error || 'Failed to continue to pre-test. Please try again.');
       return;
+    }
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('bigkas_current_training_session');
+      window.sessionStorage.removeItem('bigkas_pretest_tutorial_seen');
     }
     navigate(ROUTES.USER_PRETEST, { replace: true });
   };

@@ -807,15 +807,15 @@
   gap: 18px;
   margin: 0 0 20px;
   padding: 18px 20px;
-  border: 1px solid rgba(249, 115, 22, 0.28);
+  border: 1px solid rgba(16, 185, 129, 0.26);
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(255, 247, 237, 0.96), rgba(255, 251, 235, 0.96));
-  box-shadow: 0 12px 28px rgba(124, 45, 18, 0.08);
+  background: linear-gradient(135deg, rgba(236, 253, 245, 0.98), rgba(240, 253, 250, 0.96));
+  box-shadow: 0 12px 28px rgba(6, 95, 70, 0.08);
 }
 
 .stage-pass-kicker {
   margin: 0 0 4px;
-  color: #c2410c;
+  color: #047857;
   font-size: 0.74rem;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -824,7 +824,7 @@
 
 .stage-pass-title {
   margin: 0;
-  color: #7c2d12;
+  color: #064e3b;
   font-size: 1rem;
   font-weight: 900;
   letter-spacing: 0;
@@ -832,7 +832,7 @@
 
 .stage-pass-message {
   margin: 6px 0 0;
-  color: #9a3412;
+  color: #0f766e;
   font-size: 0.92rem;
   font-weight: 650;
   line-height: 1.45;
@@ -845,9 +845,9 @@
   min-height: 34px;
   padding: 8px 12px;
   border-radius: 999px;
-  background: #fff7ed;
-  color: #c2410c;
-  border: 1px solid rgba(249, 115, 22, 0.28);
+  background: #ffffff;
+  color: #047857;
+  border: 1px solid rgba(16, 185, 129, 0.28);
   font-size: 0.78rem;
   font-weight: 900;
   white-space: nowrap;

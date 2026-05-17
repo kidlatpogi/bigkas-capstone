@@ -553,8 +553,8 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
 
         {showStageRetryMessage && (
           <section className="stage-pass-card stage-pass-card--mobile dashboard-anim-bottom dashboard-anim-delay-2" role="status">
-            <p className="stage-pass-kicker">Stage requirement</p>
-            <h2 className="stage-pass-title">Keep going. This stage needs one more try.</h2>
+            <p className="stage-pass-kicker">Stage goal</p>
+            <h2 className="stage-pass-title">You are close to unlocking this stage.</h2>
             <p className="stage-pass-message">{stagePassResult.message}</p>
             {stagePassResult.requiredText ? (
               <span className="stage-pass-chip">{stagePassResult.requiredText}</span>

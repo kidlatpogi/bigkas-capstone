@@ -19,6 +19,15 @@ const METRIC_ALIASES = {
   entry_point: 'overall_score',
 };
 
+const OVERALL_60 = [{ metric: 'overall_score', threshold: 60 }];
+const VISUAL_60 = [{ metric: 'visual_score', threshold: 60 }];
+const VOCAL_60 = [{ metric: 'vocal_score', threshold: 60 }];
+const VERBAL_60 = [{ metric: 'verbal_score', threshold: 60 }];
+const VISUAL_VOCAL_60 = [
+  { metric: 'visual_score', threshold: 60 },
+  { metric: 'vocal_score', threshold: 60 },
+];
+
 function normalizeMetricName(metric) {
   const key = String(metric || '').trim().toLowerCase();
   return METRIC_ALIASES[key] || key;
@@ -66,6 +75,35 @@ export function normalizePassingScore(passingScore) {
     }
   }
   return [];
+}
+
+export function getDefaultPassingScoreForActivity(targetLevel, activityOrder) {
+  const level = Number(targetLevel);
+  const order = Number(activityOrder);
+
+  if (level === 1) {
+    if (order >= 1 && order <= 10) return VISUAL_60;
+    if (order >= 11 && order <= 20) return VOCAL_60;
+    if (order >= 21 && order <= 29) return VERBAL_60;
+    if (order === 30) return OVERALL_60;
+  }
+
+  if (level === 2) {
+    if ((order >= 1 && order <= 22) || [24, 25, 29].includes(order)) return VOCAL_60;
+    if ([23, 26, 27, 28].includes(order)) return VISUAL_VOCAL_60;
+    if (order === 30) return OVERALL_60;
+  }
+
+  if (level === 3 && order >= 1 && order <= 29) return VERBAL_60;
+
+  if (level === 4) {
+    if ((order >= 1 && order <= 22) || [24, 25, 27].includes(order)) return VISUAL_VOCAL_60;
+    if ([23, 26, 28, 29, 30].includes(order)) return OVERALL_60;
+  }
+
+  if (level === 5) return OVERALL_60;
+
+  return OVERALL_60;
 }
 
 export function formatPassingScore(passingScore) {

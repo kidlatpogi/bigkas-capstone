@@ -1332,6 +1332,37 @@
   font-weight: 800;
 }
 
+.skyward-journey-passing-rate-box {
+  font-family: 'Nunito', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(5, 150, 105, 0.16);
+  background: linear-gradient(180deg, rgba(236, 253, 245, 0.9) 0%, rgba(240, 253, 250, 0.78) 100%);
+  color: #064e3b;
+}
+
+.skyward-journey-passing-rate-label {
+  color: #047857;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.skyward-journey-passing-rate-value {
+  color: #0f172a;
+  font-size: clamp(0.92rem, 0.84rem + 0.18vw, 1rem);
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: right;
+}
+
 .randomizer-overlay-robot-wrap {
   position: relative;
   order: 1;
@@ -1580,6 +1611,23 @@
     font-size: 0.875rem;
     line-height: 1.5;
     color: #475569;
+  }
+
+  .skyward-journey-panel-root .skyward-journey-passing-rate-box {
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #ecfdf5;
+    border-color: rgba(5, 150, 105, 0.14);
+  }
+
+  .skyward-journey-panel-root .skyward-journey-passing-rate-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+  }
+
+  .skyward-journey-panel-root .skyward-journey-passing-rate-value {
+    font-size: 0.9rem;
   }
 
   .skyward-journey-panel-root .randomizer-overlay-topic {

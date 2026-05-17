@@ -49,6 +49,7 @@ import {
   NODE_STATE,
 } from './journeyConstants';
 import { BIGKAS_LEVELS } from '../../utils/activityProgress';
+import { formatPassingScore } from '../../utils/passingScore';
 import SkywardJourneyNodeButton from './SkywardJourneyNodeButton';
 import { getSpriteUrl } from '../../utils/assetUtils';
 
@@ -1232,6 +1233,11 @@ export default function SkywardJourney({
     };
   }, [selectedStep, steps]);
 
+  const selectedPassingRateText = useMemo(() => {
+    const rawPassingScore = selectedStep?.task?.passingScore ?? selectedStep?.task?.passing_score;
+    return formatPassingScore(rawPassingScore);
+  }, [selectedStep]);
+
   const sections = [];
   const sectionMeta = [];
 
@@ -1744,6 +1750,13 @@ export default function SkywardJourney({
                         <div className="skyward-journey-purpose-box">
                           <span className="skyward-journey-purpose-label">B-01's Purpose:</span>
                           <p className="skyward-journey-purpose-text">{selectedStep.task.purpose}</p>
+                        </div>
+                      )}
+
+                      {selectedPassingRateText && (
+                        <div className="skyward-journey-passing-rate-box">
+                          <span className="skyward-journey-passing-rate-label">Passing rate:</span>
+                          <span className="skyward-journey-passing-rate-value">{selectedPassingRateText}</span>
                         </div>
                       )}
                       

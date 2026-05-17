@@ -1,5 +1,8 @@
 import { ensureFreshAccessToken, isJwtExpiredError, supabase } from '../lib/supabase';
 import { ROUTES } from '../utils/constants';
+import { getDefaultPassingScoreForActivity } from '../utils/passingScore';
+
+const ACTIVITY_COLUMNS = 'id, target_level, activity_order, title, phase_name, objective, purpose';
 
 /**
  * Fetches curriculum activities from Supabase (ordered journey nodes).
@@ -8,7 +11,7 @@ export async function fetchActivities(currentLevel = 1) {
   const queryActivities = () =>
     supabase
       .from('activities')
-      .select('id, target_level, activity_order, title, phase_name, objective, purpose, passing_score')
+      .select(ACTIVITY_COLUMNS)
       .eq('target_level', currentLevel)
       .order('activity_order', { ascending: true });
 
@@ -34,6 +37,7 @@ export function buildJourneyTasksFromActivities(rows) {
     const phaseName = String(row.phase_name || '').trim();
     const title = String(row.title || '').trim();
     const objective = String(row.objective || '').trim() || `Activity ${row.activity_order ?? index + 1}`;
+    const passingScore = row.passing_score ?? getDefaultPassingScoreForActivity(row.target_level, row.activity_order);
     return {
       id: row.id,
       title: title || objective,
@@ -48,8 +52,8 @@ export function buildJourneyTasksFromActivities(rows) {
       target_level: row.target_level,
       activity_order: row.activity_order,
       activityOrder: row.activity_order,
-      passing_score: row.passing_score,
-      passingScore: row.passing_score,
+      passing_score: passingScore,
+      passingScore,
     };
   });
 }

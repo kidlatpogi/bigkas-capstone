@@ -407,18 +407,20 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
 
                     <div className="history-item-row-center">
                       <div className="history-item-info-compact">
-                        <p className="history-item-info-line">{formattedDate} • {formattedTime}</p>
+                        <div className="history-item-meta-row">
+                          <p className="history-item-info-line">{formattedDate} • {formattedTime}</p>
+                          {stageGoal ? (
+                            <div className={`history-item-stage-goal ${stageGoal.passed ? 'history-item-stage-goal--unlocked' : 'history-item-stage-goal--next'}`}>
+                              <span className="history-item-stage-goal-label">
+                                {stageGoal.passed ? 'Unlocked' : 'Next goal'}
+                              </span>
+                              {stageRequirement ? (
+                                <span className="history-item-stage-goal-text">{stageRequirement}</span>
+                              ) : null}
+                            </div>
+                          ) : null}
+                        </div>
                         <p className="history-item-lacks-line">{lacksSummary}</p>
-                        {stageGoal ? (
-                          <div className={`history-item-stage-goal ${stageGoal.passed ? 'history-item-stage-goal--unlocked' : 'history-item-stage-goal--next'}`}>
-                            <span className="history-item-stage-goal-label">
-                              {stageGoal.passed ? 'Unlocked' : 'Next goal'}
-                            </span>
-                            {stageRequirement ? (
-                              <span className="history-item-stage-goal-text">{stageRequirement}</span>
-                            ) : null}
-                          </div>
-                        ) : null}
                         <div className="history-item-pillars">
                           {pillars.map((pillar) => (
                             <div

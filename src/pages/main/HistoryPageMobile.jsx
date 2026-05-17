@@ -6,6 +6,7 @@ import { getSessionMode } from '../../utils/sessionFormatting';
 import { sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
 import { getSpriteUrl } from '../../utils/assetUtils';
 import { useNativeBottomSheetDrag } from '../../hooks/useNativeBottomSheetDrag';
+import { buildStagePassResultForSession } from '../../utils/passingScore';
 
 const verbalSprite = getSpriteUrl('common/Verbal.webp');
 const visualSprite = getSpriteUrl('common/Visual.webp');
@@ -65,7 +66,7 @@ function buildLacksSummary(pillars) {
   const sorted = [...pillars].sort((a, b) => a.score - b.score);
   const weakest = sorted.filter((pillar) => pillar.score <= 2.5);
   const shortlist = (weakest.length ? weakest : sorted.slice(0, 1)).slice(0, 2);
-  return `Lacks: ${shortlist.map((pillar) => pillar.lackHint).join(' • ')}`;
+  return `Focus: ${shortlist.map((pillar) => pillar.lackHint).join(' • ')}`;
 }
 
 function getScoreBandBounds(scoreTarget) {
@@ -250,6 +251,8 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
                 const score = toFivePointScore(s.confidence_score);
                 const tier = getScoreTier15(score);
                 const pillars = resolveSessionPillars(s);
+                const stageGoal = buildStagePassResultForSession(s);
+                const stageGoalColor = stageGoal?.passed ? '#059669' : '#2563EB';
                 const dateObj = new Date(s.created_at);
                 const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                 
@@ -258,7 +261,13 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
                     key={s.id}
                     className="history-mobile-item dashboard-anim-bottom"
                     onClick={() => setSelectedSessionId(s.id)}
-                    style={{ '--tier-color': tier.color, '--tier-border': `${tier.color}2e` }}
+                    style={{
+                      '--tier-color': tier.color,
+                      '--tier-border': `${tier.color}2e`,
+                      '--stage-goal-color': stageGoalColor,
+                      '--stage-goal-bg': `${stageGoalColor}12`,
+                      '--stage-goal-border': `${stageGoalColor}36`,
+                    }}
                   >
                     <div className="history-mobile-item-top">
                       <div className="history-mobile-item-info">
@@ -275,6 +284,17 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
                         <div className="history-mobile-item-score-inner">{Math.round(score15ToPercent(score))}%</div>
                       </div>
                     </div>
+
+                    {stageGoal ? (
+                      <div className={`history-mobile-stage-goal ${stageGoal.passed ? 'history-mobile-stage-goal--unlocked' : 'history-mobile-stage-goal--next'}`}>
+                        <span className="history-mobile-stage-goal-label">
+                          {stageGoal.passed ? 'Stage unlocked' : 'Next goal ready'}
+                        </span>
+                        {stageGoal.requiredText ? (
+                          <span className="history-mobile-stage-goal-text">{stageGoal.requiredText}</span>
+                        ) : null}
+                      </div>
+                    ) : null}
                     
                     <div className="history-mobile-pillar-grid">
                       {pillars.map(p => (

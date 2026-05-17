@@ -434,6 +434,38 @@
   margin: 0;
 }
 
+.history-item-stage-goal {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--stage-goal-border, rgba(37, 99, 235, 0.22));
+  background: var(--stage-goal-bg, rgba(37, 99, 235, 0.08));
+  color: var(--stage-goal-color, #2563eb);
+  font-family: 'Fredoka', sans-serif;
+}
+
+.history-item-stage-goal-label {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.history-item-stage-goal-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
 .history-item-pillars {
   display: flex;
   gap: 8px;
@@ -754,6 +786,18 @@
   .history-item-lacks-line {
     font-size: 0.68rem;
     line-height: 1.25;
+  }
+
+  .history-item-stage-goal {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    border-radius: 14px;
+  }
+
+  .history-item-stage-goal-text {
+    white-space: normal;
   }
 
   .history-item-pillars {

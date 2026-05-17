@@ -18,6 +18,7 @@ import { formatDate, formatDuration } from '../../utils/formatters';
 import { getSessionMode, getSessionSpeechType } from '../../utils/sessionFormatting';
 import { sanitizeRecommendationLines } from '../../utils/analysisTranscript';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
+import { buildStagePassResultForSession } from '../../utils/passingScore';
 
 const BIGKAS_LOGO_URL = 'https://assets.bigkas.site/Images/Bigkas-Logo.webp';
 const verbalSprite = getSpriteUrl('common/Verbal.webp');
@@ -349,8 +350,22 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
   const isPreTest = mode === 'Pre-Test';
   const isPostTest = mode === 'Post-Test';
   const isFreeSession = session ? getSessionSpeechType(session) === 'Free Speech' : false;
-  const stagePassResult = locationState?.stagePassResult;
-  const showStageRetryMessage = stagePassResult?.isActivityStage && stagePassResult?.passed === false;
+  const stagePassResult = useMemo(() => {
+    const supplied = locationState?.stagePassResult;
+    const derived = buildStagePassResultForSession(session);
+    if (!supplied) return derived;
+    return {
+      ...derived,
+      ...supplied,
+      requiredText: supplied.requiredText || derived?.requiredText || '',
+      message: supplied.message || derived?.message || (
+        supplied.passed
+          ? `Great work. You reached ${supplied.requiredText || 'the stage goal'} and unlocked the next step.`
+          : ''
+      ),
+    };
+  }, [locationState?.stagePassResult, session]);
+  const showStageGoalMessage = stagePassResult?.isActivityStage;
   const replayAction = useMemo(
     () => (session ? buildReplayAction(session, navigate, isFreeSession) : { label: 'Train Again', onClick: () => {} }),
     [session, navigate, isFreeSession],
@@ -405,8 +420,8 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
     if (!session) {
       return [
         { key: 'visual', label: 'Visual', desc: 'Overall consistency', score: tripleV.visualAvg, subMetrics: [] },
-        { key: 'vocal', label: 'Vocal', desc: 'Overall consistency', score: tripleV.vocalAvg, subMetrics: [] },
         { key: 'verbal', label: 'Verbal', desc: 'Overall consistency', score: tripleV.verbalAvg, subMetrics: [] },
+        { key: 'vocal', label: 'Vocal', desc: 'Overall consistency', score: tripleV.vocalAvg, subMetrics: [] },
       ];
     }
     const visualSubMetrics = [
@@ -420,8 +435,8 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
 
     return [
       { key: 'visual', label: 'Visual', desc: 'Overall consistency', score: tripleV.visualAvg, subMetrics: visualSubMetrics },
-      { key: 'vocal', label: 'Vocal', desc: 'Overall consistency', score: tripleV.vocalAvg, subMetrics: vocalSubMetrics },
       { key: 'verbal', label: 'Verbal', desc: 'Overall consistency', score: tripleV.verbalAvg, subMetrics: [] },
+      { key: 'vocal', label: 'Vocal', desc: 'Overall consistency', score: tripleV.vocalAvg, subMetrics: vocalSubMetrics },
     ];
   }, [session, tripleV]);
 
@@ -551,10 +566,12 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
           </div>
         </section>
 
-        {showStageRetryMessage && (
-          <section className="stage-pass-card stage-pass-card--mobile dashboard-anim-bottom dashboard-anim-delay-2" role="status">
+        {showStageGoalMessage && (
+          <section className={`stage-pass-card stage-pass-card--mobile ${stagePassResult.passed ? 'stage-pass-card--unlocked' : 'stage-pass-card--next-goal'} dashboard-anim-bottom dashboard-anim-delay-2`} role="status">
             <p className="stage-pass-kicker">Stage goal</p>
-            <h2 className="stage-pass-title">You are close to unlocking this stage.</h2>
+            <h2 className="stage-pass-title">
+              {stagePassResult.passed ? 'Stage unlocked from this session.' : 'You are close to unlocking this stage.'}
+            </h2>
             <p className="stage-pass-message">{stagePassResult.message}</p>
             {stagePassResult.requiredText ? (
               <span className="stage-pass-chip">{stagePassResult.requiredText}</span>
@@ -674,15 +691,15 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
                   className={`pillar-card sr-pillar-progress-card dashboard-anim-bottom dashboard-anim-delay-${4 + index}`}
                   id={`pillar-${p.key}`}
                 >
-                  <div className="new-widget-head">
-                    <h2 className="new-widget-title">{p.label}</h2>
-                    <span className="new-widget-chip" style={{ background: `${tier.color}20`, color: tier.color }}>{tier.label}</span>
+                  <div className="progress-pillar-head">
+                    <h2 className="progress-pillar-title">{p.label}</h2>
+                    <span className="progress-pillar-chip" style={{ background: `${tier.color}20`, color: tier.color }}>{tier.label}</span>
                   </div>
-                  <div className="new-widget-rank-card">
-                    <img src={pillarIcons[p.key]} alt="" className="new-widget-rank-sprite" />
-                    <div className="new-widget-rank-content">
-                      <p className="new-widget-kicker">Score</p>
-                      <p className="new-widget-value">{Math.round(scorePercent)}%</p>
+                  <div className="progress-pillar-rank-card">
+                    <img src={pillarIcons[p.key]} alt="" className="progress-pillar-sprite" />
+                    <div className="progress-pillar-content">
+                      <p className="progress-pillar-kicker">Score</p>
+                      <p className="progress-pillar-value">{Math.round(scorePercent)}%</p>
                     </div>
                   </div>
                   <div className="progress-pillar-track-header">

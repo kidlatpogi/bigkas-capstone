@@ -280,6 +280,38 @@
   color: #111827;
 }
 
+.history-mobile-stage-goal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--stage-goal-border, rgba(37, 99, 235, 0.22));
+  background: var(--stage-goal-bg, rgba(37, 99, 235, 0.08));
+  color: var(--stage-goal-color, #2563eb);
+  font-family: 'Fredoka', sans-serif;
+}
+
+.history-mobile-stage-goal-label {
+  flex: 0 0 auto;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.history-mobile-stage-goal-text {
+  min-width: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: right;
+}
+
 .history-mobile-pillar-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -415,4 +447,16 @@
   overflow-y: auto;
   position: relative;
   background: #FDFDF9;
+}
+
+@media (max-width: 420px) {
+  .history-mobile-stage-goal {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .history-mobile-stage-goal-text {
+    text-align: left;
+  }
 }

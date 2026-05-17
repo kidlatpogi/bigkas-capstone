@@ -158,3 +158,48 @@ export function buildStageRetryMessage(stageTitle, evaluation) {
     `Revisit ${stageTitle || 'this stage'} and focus on that speaking pillar.`,
   ].filter(Boolean).join(' ');
 }
+
+export function buildStageUnlockedMessage(stageTitle, passingScore, evaluation) {
+  const requirementText = formatPassingScore(passingScore) || 'the stage goal';
+  const criteria = Array.isArray(evaluation?.criteria) ? evaluation.criteria : [];
+  const scores = criteria
+    .map((item) => `${item.label}: ${item.value == null ? 'not available' : `${Math.round(item.value)}%`}`)
+    .join(', ');
+
+  return [
+    `Great work. You reached ${requirementText} and unlocked the next step.`,
+    scores ? `Current result: ${scores}.` : '',
+    `Keep building on ${stageTitle || 'this stage'} with the same momentum.`,
+  ].filter(Boolean).join(' ');
+}
+
+export function buildStagePassResultForSession(session) {
+  if (!session?.activity_id) return null;
+
+  const activityTitle = session.activity_title || session.objective_name || session.script_title || session.title || '';
+  const targetLevel = session.activity_target_level ?? session.target_level;
+  const activityOrder = session.activity_order ?? session.activityOrder;
+  const passingScore =
+    session.activity_passing_score ??
+    session.passing_score ??
+    session.passingScore ??
+    getDefaultPassingScoreForActivity(targetLevel, activityOrder);
+  const normalizedPassingScore = normalizePassingScore(passingScore);
+
+  if (!normalizedPassingScore.length) return null;
+
+  const evaluation = evaluatePassingScore(session, normalizedPassingScore);
+
+  return {
+    isActivityStage: true,
+    passed: evaluation.passed,
+    requiredText: formatPassingScore(normalizedPassingScore),
+    message: evaluation.passed
+      ? buildStageUnlockedMessage(activityTitle, normalizedPassingScore, evaluation)
+      : buildStageRetryMessage(activityTitle, evaluation),
+    criteria: evaluation.criteria,
+    failedCriteria: evaluation.failedCriteria,
+    activityId: session.activity_id,
+    activityTitle,
+  };
+}

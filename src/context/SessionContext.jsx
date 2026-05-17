@@ -54,6 +54,13 @@ const SESSIONS_SELECT_QUERY = `
   ),
   session_recommendations (
     recommendation_text
+  ),
+  activities (
+    id,
+    title,
+    objective,
+    target_level,
+    activity_order
   )
 `;
 
@@ -208,6 +215,9 @@ function normalizeSessionRow(session) {
     activities: undefined,
     activity_id: session.activity_id || null,
     activity_title: activityTitle,
+    activity_objective: activity?.objective ?? null,
+    activity_target_level: activity?.target_level ?? null,
+    activity_order: activity?.activity_order ?? null,
     speech_type: normalizedSpeechType || null,
     speaking_mode: session.speaking_mode || normalizedSpeechType || null,
     session_origin: normalizedSessionOrigin || null,

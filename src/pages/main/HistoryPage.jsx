@@ -5,6 +5,7 @@ import { buildRoute } from '../../utils/constants';
 import { getSessionMode } from '../../utils/sessionFormatting';
 import { sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
 import { getSpriteUrl } from '../../utils/assetUtils';
+import { buildStagePassResultForSession } from '../../utils/passingScore';
 
 const verbalSprite = getSpriteUrl('common/Verbal.webp');
 const visualSprite = getSpriteUrl('common/Visual.webp');
@@ -70,7 +71,7 @@ function buildLacksSummary(pillars) {
   const weakest = sorted.filter((pillar) => pillar.score <= 2.5);
   const shortlist = (weakest.length ? weakest : sorted.slice(0, 1)).slice(0, 2);
   const text = shortlist.map((pillar) => pillar.lackHint).join(' • ');
-  return `Lacks: ${text}`;
+  return `Focus: ${text}`;
 }
 
 function sortSessionsByTargetScore(sessions, scoreTarget) {
@@ -344,6 +345,8 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                 const tier = getScoreTier15(score);
                 const pillars = resolveSessionPillars(s);
                 const lacksSummary = buildLacksSummary(pillars);
+                const stageGoal = buildStagePassResultForSession(s);
+                const stageGoalColor = stageGoal?.passed ? '#059669' : '#2563EB';
                 const delay = Math.min(index + 2, 9);
                 const dateObj = new Date(s.created_at);
                 const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -360,6 +363,9 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                       '--tier-color': tier.color,
                       '--tier-border': `${tier.color}2e`,
                       '--tier-border-hover': `${tier.color}5a`,
+                      '--stage-goal-color': stageGoalColor,
+                      '--stage-goal-bg': `${stageGoalColor}12`,
+                      '--stage-goal-border': `${stageGoalColor}36`,
                     }}
                   >
                     <div className="history-item-row-left">
@@ -373,6 +379,16 @@ export default function HistoryPage({ isOpen, onClose, userSessions = [], isLoad
                       <div className="history-item-info-compact">
                         <p className="history-item-info-line">{formattedDate} • {formattedTime}</p>
                         <p className="history-item-lacks-line">{lacksSummary}</p>
+                        {stageGoal ? (
+                          <div className={`history-item-stage-goal ${stageGoal.passed ? 'history-item-stage-goal--unlocked' : 'history-item-stage-goal--next'}`}>
+                            <span className="history-item-stage-goal-label">
+                              {stageGoal.passed ? 'Stage unlocked' : 'Next goal ready'}
+                            </span>
+                            {stageGoal.requiredText ? (
+                              <span className="history-item-stage-goal-text">{stageGoal.requiredText}</span>
+                            ) : null}
+                          </div>
+                        ) : null}
                         <div className="history-item-pillars">
                           {pillars.map((pillar) => (
                             <div

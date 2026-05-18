@@ -177,6 +177,18 @@ function isStartNode(step, index) {
   return Number(step?.stageNumber) === 1 || Number(step?.task?.activity_order) === 1 || index === 0;
 }
 
+function isFinalStageStep(step) {
+  const stageNumber = Number(step?.stageNumber ?? step?.task?.activity_order ?? step?.task?.activityOrder);
+  const title = String(step?.title ?? step?.task?.title ?? '').toLowerCase();
+  return stageNumber === 30 || title.includes('final boss') || title.includes('final stage');
+}
+
+function getTooltipTitle(step) {
+  if (isFinalStageStep(step)) return 'Final Stage';
+  const objective = String(step?.task?.objective ?? step?.objective ?? '').trim();
+  return objective || step?.title || 'Lesson';
+}
+
 function getPhaseIcon(step) {
   const phase = getStepPhaseName(step).toLowerCase();
   switch (true) {
@@ -686,6 +698,12 @@ const TooltipTitle = styled.h3`
   text-transform: uppercase;
   letter-spacing: 1.5px;
   margin-top: 8px; /* space for absolute close btn */
+  max-width: 100%;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
 `;
 
 const TooltipDescription = styled.p`
@@ -735,20 +753,42 @@ function computeTooltipLayout(nodeEl, forceBottom = false) {
   // Use window height for 25% calculation as requested
   const isTopArea = rect.top < viewportHeight * 0.25;
 
-  const placement = (isTopArea || forceBottom) ? 'bottom' : 'top';
+  let placement = (isTopArea || forceBottom) ? 'bottom' : 'top';
+  const spaceAbove = rect.top - TOOLTIP_GAP - TOOLTIP_VIEW_MARGIN;
+  const spaceBelow = viewportHeight - rect.bottom - TOOLTIP_GAP - TOOLTIP_VIEW_MARGIN;
+
+  if (placement === 'bottom' && spaceBelow < TOOLTIP_EST_HEIGHT && spaceAbove > spaceBelow) {
+    placement = 'top';
+  } else if (placement === 'top' && spaceAbove < TOOLTIP_EST_HEIGHT && spaceBelow > spaceAbove) {
+    placement = 'bottom';
+  }
 
   let top = placement === 'bottom' ? rect.bottom + TOOLTIP_GAP : rect.top - TOOLTIP_GAP;
   
   // Clamping to ensure visibility within viewport
-  const minTop = TOOLTIP_VIEW_MARGIN + (placement === 'bottom' ? 0 : 40); // 40 is a safety for the top edge
-  const maxTop = viewportHeight - TOOLTIP_VIEW_MARGIN - (placement === 'bottom' ? 40 : 0);
+  const minTop = placement === 'top'
+    ? Math.min(viewportHeight - TOOLTIP_VIEW_MARGIN, TOOLTIP_VIEW_MARGIN + TOOLTIP_EST_HEIGHT)
+    : TOOLTIP_VIEW_MARGIN;
+  const maxTop = placement === 'bottom'
+    ? Math.max(TOOLTIP_VIEW_MARGIN, viewportHeight - TOOLTIP_VIEW_MARGIN - TOOLTIP_EST_HEIGHT)
+    : viewportHeight - TOOLTIP_VIEW_MARGIN;
   
   top = Math.max(minTop, Math.min(maxTop, top));
 
   const tooltipWidth = Math.min(TOOLTIP_MAX_WIDTH, Math.max(0, viewportWidth - (TOOLTIP_VIEW_MARGIN * 2)));
   const halfTooltipWidth = tooltipWidth / 2;
   const preferredLeft = isMobileViewport ? (viewportWidth / 2) : cx;
-  const minLeft = TOOLTIP_VIEW_MARGIN + halfTooltipWidth;
+  const navEl = !isMobileViewport
+    ? document.querySelector('aside[aria-label="Main navigation"], [role="complementary"][aria-label="Main navigation"]')
+    : null;
+  const navRect = navEl?.getBoundingClientRect();
+  const visibleLeftEdge = navRect && navRect.left <= TOOLTIP_VIEW_MARGIN && navRect.right > TOOLTIP_VIEW_MARGIN
+    ? navRect.right
+    : 0;
+  const minLeft = Math.max(
+    TOOLTIP_VIEW_MARGIN + halfTooltipWidth,
+    visibleLeftEdge + TOOLTIP_VIEW_MARGIN + halfTooltipWidth,
+  );
   const maxLeft = Math.max(minLeft, viewportWidth - TOOLTIP_VIEW_MARGIN - halfTooltipWidth);
   const left = Math.max(minLeft, Math.min(maxLeft, preferredLeft));
 
@@ -801,11 +841,8 @@ export const JourneyTooltip = ({ step, themeColor, onStart, onClose, nodeRef, fo
       >
         <IoClose />
       </TooltipCloseBtn>
-      <TooltipTitle>
-        {(() => {
-          const obj = String(step.task?.objective ?? step.objective ?? '').trim();
-          return obj || step.title || 'Lesson';
-        })()}
+      <TooltipTitle title={getTooltipTitle(step)}>
+        {getTooltipTitle(step)}
       </TooltipTitle>
       <TooltipDescription $nodeState={step.nodeState}>
         {isLocked

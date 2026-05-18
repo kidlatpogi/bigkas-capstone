@@ -93,7 +93,7 @@ export async function persistActivityCompletion(userId, activityId) {
 
   const { error } = await supabase.from('user_activity_completions').upsert(
     { user_id: uid, activity_id: aid },
-    { onConflict: 'user_id,activity_id' },
+    { onConflict: 'user_id,activity_id', ignoreDuplicates: true },
   );
 
   if (error) {

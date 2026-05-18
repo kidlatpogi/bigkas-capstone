@@ -1,2 +1,0 @@
-import{h as t,r as o}from"./vendor-framework-C-2crD7L.js";import{R as r}from"./index-wJpfPq9y.js";import"./vendor-supabase-DWrHOPJX.js";const s={freeTopic:"Tell me about yourself",focus:"free",objective:"Speak for 20 Seconds about yourself.",sessionType:"pre-test"};function f(){const e=t();return o.useEffect(()=>{typeof window<"u"&&window.localStorage.removeItem("bigkas_current_training_session"),e(r.TRAINING,{replace:!0,state:s})},[e]),null}export{f as default};
-//# sourceMappingURL=UserPretestPage-o_aHtq_U.js.map

@@ -1,2 +1,1 @@
 function e(t,a={}){if(!t)return"N/A";const r=new Date(t);if(isNaN(r.getTime()))return"N/A";const n={year:"numeric",month:"long",day:"numeric",...a};try{return new Intl.DateTimeFormat("en-US",n).format(r)}catch(o){return console.error("[formatDate] Error formatting date:",o),"N/A"}}function i(t){const a=Math.floor(t/60),r=Math.floor(t%60);return`${a.toString().padStart(2,"0")}:${r.toString().padStart(2,"0")}`}export{i as a,e as f};
-//# sourceMappingURL=formatters--PJxeCbK.js.map

@@ -31,10 +31,11 @@ import './InnerPages.css';
 import './ActivityPageMobile.css';
 import './ActivityPage.css';
 
+const loadRankListModal = () => import('../../components/main/RankListModal');
 const Confetti = lazy(() => import('react-confetti'));
 const TutorialOverlayMobile = lazy(() => import('../../components/main/TutorialOverlayMobile'));
 const StreakCalendarModal = lazy(() => import('../../components/main/StreakCalendarModal'));
-const RankListModal = lazy(() => import('../../components/main/RankListModal'));
+const RankListModal = lazy(loadRankListModal);
 const LottieFire = lazy(async () => {
   const [{ default: Lottie }, { default: fireAnimationData }] = await Promise.all([
     import('lottie-react'),
@@ -66,6 +67,41 @@ const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.webp');
 const crystalBallImage = getSpriteUrl('common/crystal-ball.webp');
 const crownImage = getSpriteUrl('common/crown.webp');
 const b01ChatHead = getAssetUrl('Images/Bigkas-Logo.webp');
+
+const RANK_MODAL_IMAGE_URLS = [
+  rankBronze,
+  rankSilverImage,
+  rankGoldImage,
+  rankMythrilImage,
+  rankLegendaryImage,
+];
+
+let rankModalWarmPromise;
+let rankModalImagesWarmed = false;
+
+function warmRankModalAssets() {
+  rankModalWarmPromise ||= loadRankListModal().catch(() => {
+    rankModalWarmPromise = undefined;
+  });
+
+  if (rankModalImagesWarmed || typeof window === 'undefined') return rankModalWarmPromise;
+  rankModalImagesWarmed = true;
+  RANK_MODAL_IMAGE_URLS.forEach((href) => {
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.href = href;
+    document.head.appendChild(link);
+
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = href;
+    img.decode?.().catch(() => {});
+  });
+
+  return rankModalWarmPromise;
+}
+
 const B01_SUGGESTIONS = [
   'Summarize my progress so far',
   'How can I improve my confidence?',
@@ -310,6 +346,20 @@ function ActivityPageMobile() {
     onResize();
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const idleId = window.requestIdleCallback
+      ? window.requestIdleCallback(() => warmRankModalAssets())
+      : window.setTimeout(() => warmRankModalAssets(), 1200);
+    return () => {
+      if (window.cancelIdleCallback && window.requestIdleCallback) {
+        window.cancelIdleCallback(idleId);
+      } else {
+        window.clearTimeout(idleId);
+      }
+    };
   }, []);
 
   const recommendedLevel = useMemo(() => {
@@ -937,7 +987,7 @@ function ActivityPageMobile() {
     const progressPctForTask = Math.max(0, Math.min(100, Math.round((progress.current / progress.target) * 100)));
     const clampedProgressCurrent = Math.min(progress.current, progress.target);
     const ctaLabel = done
-      ? 'Completed'
+      ? 'Retake'
       : isLocked
         ? 'Locked'
         : progress.current > 0
@@ -972,7 +1022,7 @@ function ActivityPageMobile() {
             variant="practice"
             className={`activity-action-btn${isLocked ? ' is-locked' : ''}${canShowProgress ? ' with-progress' : ''}`}
             onClick={() => handleTaskAction(task)}
-            disabled={isLocked || done}
+            disabled={isLocked}
           >
             {canShowProgress ? (
               <span className="activity-action-progress-fill" style={{ width: `${progressPctForTask}%` }} />
@@ -1403,6 +1453,8 @@ function ActivityPageMobile() {
                 </div>
                 <div 
                   className="new-widget-rank-card"
+                  onPointerEnter={warmRankModalAssets}
+                  onFocus={warmRankModalAssets}
                   onClick={() => {
                     setShowDashboardOverlay(false);
                     setIsRankModalOpen(true);

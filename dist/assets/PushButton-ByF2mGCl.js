@@ -41,4 +41,3 @@ import{j as t}from"./vendor-framework-C-2crD7L.js";import{u as l}from"./styled-c
     box-shadow: ${o=>o.$shadowColor||"rgb(201, 46, 70)"} 0px 10px 0px 0px;
   }
 `,c=({children:o,onClick:r,type:s="button",disabled:a=!1,className:n,bgColor:e,shadowColor:p,textColor:x})=>t.jsx(d,{className:n,$bgColor:e,$shadowColor:p,$textColor:x,children:t.jsx("button",{type:s,onClick:r,disabled:a,children:o})});export{c as default};
-//# sourceMappingURL=PushButton-ByF2mGCl.js.map

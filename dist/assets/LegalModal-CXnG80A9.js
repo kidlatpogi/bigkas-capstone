@@ -90,4 +90,3 @@ import{j as t}from"./vendor-framework-C-2crD7L.js";import{u as e}from"./styled-c
     transition: 100ms;
   }
 `,y=({isOpen:i,onClose:o,title:a,content:n})=>t.jsx(p,{children:i&&t.jsx(s,{initial:{opacity:0},animate:{opacity:1},exit:{opacity:0},onClick:o,children:t.jsxs(l,{initial:{scale:.9,opacity:0,y:20},animate:{scale:1,opacity:1,y:0},exit:{scale:.9,opacity:0,y:20},onClick:d=>d.stopPropagation(),children:[t.jsx(c,{children:t.jsx(x,{children:a})}),t.jsx(b,{children:n}),t.jsx(f,{children:t.jsx(h,{onClick:o,children:"Close"})})]})})});export{y as default};
-//# sourceMappingURL=LegalModal-CXnG80A9.js.map

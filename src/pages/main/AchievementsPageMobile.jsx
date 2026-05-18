@@ -45,6 +45,14 @@ function formatJourneyStage(badge) {
   return `Journey ${badge.journeyNumber} • Stage ${String(badge.stageNumber).padStart(2, '0')}`;
 }
 
+function getTrophyImagePriorityProps(trophy, currentLevelNumber) {
+  const isCurrentTrophy = trophy.id === currentLevelNumber;
+  return {
+    loading: isCurrentTrophy ? 'eager' : 'lazy',
+    fetchPriority: isCurrentTrophy ? 'high' : 'auto',
+  };
+}
+
 export default function AchievementsPageMobile() {
   const { user } = useAuthContext();
   const [searchTerm, setSearchTerm] = useState('');
@@ -322,7 +330,16 @@ export default function AchievementsPageMobile() {
                       <span className="rank-name">LEVEL {trophy.id}</span>
                     </div>
                     <div className="podium-pillar">
-                      <div className="podium-trophy-wrap"><img src={trophy.trophyImg} alt="" className="podium-img" loading="lazy" width="60" height="60" /></div>
+                      <div className="podium-trophy-wrap">
+                        <img
+                          src={trophy.trophyImg}
+                          alt=""
+                          className="podium-img"
+                          width="60"
+                          height="60"
+                          {...getTrophyImagePriorityProps(trophy, currentLevelNumber)}
+                        />
+                      </div>
                       <div className="podium-stats">
                         <div className="podium-progress-bar" role="progressbar" aria-valuenow={trophy.current} aria-valuemin={0} aria-valuemax={trophy.total || 1}>
                           <div className="podium-progress-fill" style={{ width: trophy.isCompleted ? '100%' : trophy.total > 0 ? `${(trophy.current / trophy.total) * 100}%` : '0%' }} />

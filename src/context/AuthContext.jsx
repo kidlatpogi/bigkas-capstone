@@ -385,6 +385,10 @@ function cleanWebOAuthUrl(defaultPath = ROUTES.ACTIVITY) {
     : currentPath;
 
   window.history.replaceState(null, '', targetPath);
+  const navigationEvent = typeof PopStateEvent === 'function'
+    ? new PopStateEvent('popstate', { state: null })
+    : new Event('popstate');
+  window.dispatchEvent(navigationEvent);
 }
 
 async function completeWebOAuthCallback() {

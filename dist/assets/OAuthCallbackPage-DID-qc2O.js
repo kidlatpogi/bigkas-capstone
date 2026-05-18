@@ -1,1 +1,0 @@
-import{h as i,r as s}from"./vendor-framework-CmdwDIpY.js";import{u,R as r}from"./index-Den8tWAr.js";import"./vendor-supabase-DaITVRM7.js";function f(){const t=i(),{isAuthenticated:e,isInitializing:a}=u();return s.useEffect(()=>{a||t(e?r.ACTIVITY:r.LOGIN,{replace:!0})},[e,a,t]),null}export{f as default};

@@ -1172,8 +1172,6 @@ export function AuthProvider({ children }) {
       // check finishes, or public routes can briefly render the user login flow.
       if (adminLoginInProgressRef.current) return;
 
-      if (!isBootstrapped && _event !== 'SIGNED_OUT') return;
-
       if (_event === 'TOKEN_REFRESHED' && session?.user?.id === currentUserIdRef.current) {
         return;
       }
@@ -1762,7 +1760,7 @@ export function AuthProvider({ children }) {
     clearAdminSession();
 
     rememberOAuthReturnPath(ROUTES.ACTIVITY);
-    const redirectTo = getOAuthRedirectPath(ROUTES.ACTIVITY);
+    const redirectTo = getOAuthRedirectPath(ROUTES.HOME);
 
     const { data, error: err } = await supabase.auth.signInWithOAuth({
       provider: 'google',

@@ -1,15 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import Confetti from 'react-confetti';
-import Lottie from 'lottie-react';
 import { useAuthContext } from '../../context/useAuthContext';
 import { useSessions } from '../../hooks/useSessions';
 import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import PushButton from '../../components/common/PushButton';
-import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
-import { IoChatbubbleEllipsesOutline, IoSend, IoTrophyOutline } from 'react-icons/io5';
-import TutorialOverlayMobile from '../../components/main/TutorialOverlayMobile';
+import { FaVolumeMute } from '@react-icons/all-files/fa/FaVolumeMute';
+import { FaVolumeUp } from '@react-icons/all-files/fa/FaVolumeUp';
+import { IoChatbubbleEllipsesOutline } from '@react-icons/all-files/io5/IoChatbubbleEllipsesOutline';
+import { IoSend } from '@react-icons/all-files/io5/IoSend';
+import { IoTrophyOutline } from '@react-icons/all-files/io5/IoTrophyOutline';
 import {
   GLOBAL_ACTIVITY_SCOPE,
   getActivityTaskProgress,
@@ -21,19 +21,32 @@ import {
   resolveDashboardTutorialSpeakerLevel,
 } from '../../utils/activityProgress';
 import SkywardJourneyShell from '../../components/journey/SkywardJourneyShell';
-import StreakCalendarModal from '../../components/main/StreakCalendarModal';
-import RankListModal from '../../components/main/RankListModal';
 import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 import { useNativeBottomSheetDrag } from '../../hooks/useNativeBottomSheetDrag';
 import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../services/journeyProgressService';
-import { RANDOM_TOPICS } from '../../utils/practiceData';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import { filterActivitiesForJourney } from '../../utils/journeyFiltering';
 import { generateCoachInsights } from '../../utils/coachInsights';
-import fireAnimationData from '../../assets/Lottie/fire.json';
 import './InnerPages.css';
 import './ActivityPageMobile.css';
 import './ActivityPage.css';
+
+const Confetti = lazy(() => import('react-confetti'));
+const TutorialOverlayMobile = lazy(() => import('../../components/main/TutorialOverlayMobile'));
+const StreakCalendarModal = lazy(() => import('../../components/main/StreakCalendarModal'));
+const RankListModal = lazy(() => import('../../components/main/RankListModal'));
+const LottieFire = lazy(async () => {
+  const [{ default: Lottie }, { default: fireAnimationData }] = await Promise.all([
+    import('lottie-react'),
+    import('../../assets/Lottie/fire.json'),
+  ]);
+
+  return {
+    default: function LottieFireComponent() {
+      return <Lottie animationData={fireAnimationData} loop />;
+    },
+  };
+});
 
 const iconFire = getAssetUrl('icons/Icon-Fire.svg');
 const robotMorningImage = getSpriteUrl('Robot/0018.webp');
@@ -663,7 +676,8 @@ function ActivityPageMobile() {
       setIsRandomizingTopic(false);
     }
 
-    // Fallback to local randomization
+    // Fallback to local randomization only when the worker cannot supply a prompt.
+    const { RANDOM_TOPICS } = await import('../../utils/practiceData');
     if (!RANDOM_TOPICS.length) return;
     setRandomizerTopic((current) => {
       if (RANDOM_TOPICS.length === 1) return RANDOM_TOPICS[0];
@@ -1040,28 +1054,38 @@ function ActivityPageMobile() {
           }
         `}
       </style>
-      <TutorialOverlayMobile
-        isOpen={showFreeSpeechTutorial}
-        steps={freeSpeechTutorialSteps}
-        showAudioToggle
-        onCloseDashboard={closeDashboardForHomeJourneyTutorial}
-        onClose={() => setShowFreeSpeechTutorial(false)}
-        onFinish={handleTutorialFinish}
-      />
-      <TutorialOverlayMobile
-        isOpen={showAssessmentModal}
-        onClose={() => setShowAssessmentModal(false)}
-        onFinish={() => setShowAssessmentModal(false)}
-        steps={assessmentTutorialSteps}
-      />
+      {showFreeSpeechTutorial && (
+        <Suspense fallback={null}>
+          <TutorialOverlayMobile
+            isOpen={showFreeSpeechTutorial}
+            steps={freeSpeechTutorialSteps}
+            showAudioToggle
+            onCloseDashboard={closeDashboardForHomeJourneyTutorial}
+            onClose={() => setShowFreeSpeechTutorial(false)}
+            onFinish={handleTutorialFinish}
+          />
+        </Suspense>
+      )}
+      {showAssessmentModal && (
+        <Suspense fallback={null}>
+          <TutorialOverlayMobile
+            isOpen={showAssessmentModal}
+            onClose={() => setShowAssessmentModal(false)}
+            onFinish={() => setShowAssessmentModal(false)}
+            steps={assessmentTutorialSteps}
+          />
+        </Suspense>
+      )}
       {showCompletionCelebration && (
-        <Confetti
-          width={viewportSize.width}
-          height={viewportSize.height}
-          recycle
-          numberOfPieces={280}
-          gravity={0.24}
-        />
+        <Suspense fallback={null}>
+          <Confetti
+            width={viewportSize.width}
+            height={viewportSize.height}
+            recycle
+            numberOfPieces={280}
+            gravity={0.24}
+          />
+        </Suspense>
       )}
       {showCompletionCelebration && (
         <div className="activity-clear-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="activity-clear-modal-title">
@@ -1334,7 +1358,9 @@ function ActivityPageMobile() {
               >
                 <div className="new-streak-top">
                   <div className="new-streak-fire">
-                    <Lottie animationData={fireAnimationData} loop={true} />
+                    <Suspense fallback={<img src={iconFire} alt="" aria-hidden="true" />}>
+                      <LottieFire />
+                    </Suspense>
                   </div>
                   <div className="new-streak-headline">
                     <div className="new-streak-value">{streakStats.currentStreak}</div>
@@ -1449,18 +1475,26 @@ function ActivityPageMobile() {
         </section>
       )}
 
-      <StreakCalendarModal
-        isOpen={isStreakModalOpen}
-        onClose={() => setIsStreakModalOpen(false)}
-        sessionCountsByDay={sessionCountsByDay}
-        streakStats={streakStats}
-      />
+      {isStreakModalOpen && (
+        <Suspense fallback={null}>
+          <StreakCalendarModal
+            isOpen={isStreakModalOpen}
+            onClose={() => setIsStreakModalOpen(false)}
+            sessionCountsByDay={sessionCountsByDay}
+            streakStats={streakStats}
+          />
+        </Suspense>
+      )}
 
-      <RankListModal
-        isOpen={isRankModalOpen}
-        onClose={() => setIsRankModalOpen(false)}
-        currentLevelNumber={levelProgress.levelNumber}
-      />
+      {isRankModalOpen && (
+        <Suspense fallback={null}>
+          <RankListModal
+            isOpen={isRankModalOpen}
+            onClose={() => setIsRankModalOpen(false)}
+            currentLevelNumber={levelProgress.levelNumber}
+          />
+        </Suspense>
+      )}
 
       {isAskB01ModalOpen && (
         <section className="randomizer-overlay-wrapper ask-b01-modal-wrapper" aria-label="Ask B-01 modal">

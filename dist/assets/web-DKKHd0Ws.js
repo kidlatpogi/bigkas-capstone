@@ -1,2 +1,0 @@
-import{W as n}from"./index-BvEOtUIm.js";import"./vendor-motion-Dc5yExsh.js";import"./vendor-framework-D3vCv3Kb.js";import"./vendor-supabase-DWrHOPJX.js";class e extends n{constructor(){super(),this._lastWindow=null}async open(o){this._lastWindow=window.open(o.url,o.windowName||"_blank")}async close(){return new Promise((o,s)=>{this._lastWindow!=null?(this._lastWindow.close(),this._lastWindow=null,o()):s("No active window to close!")})}}const a=new e;export{a as Browser,e as BrowserWeb};
-//# sourceMappingURL=web-DKKHd0Ws.js.map

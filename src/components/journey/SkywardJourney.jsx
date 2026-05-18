@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import styled from 'styled-components';
-import { motion, AnimatePresence } from 'framer-motion';
 import { IoChatbubbleEllipses } from '@react-icons/all-files/io5/IoChatbubbleEllipses';
 import { IoCheckmarkCircle } from '@react-icons/all-files/io5/IoCheckmarkCircle';
 import { IoClose } from '@react-icons/all-files/io5/IoClose';
@@ -65,6 +64,17 @@ const rankMythrilImage = getSpriteUrl('Rank/rank-mythril.webp');
 const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.webp');
 const BIGKAS_PREREQ_LOGO_URL = 'https://assets.bigkas.site/Images/Bigkas-Logo.webp';
 import './SkywardJourney.css';
+
+const MotionTooltipFrame = React.lazy(async () => {
+  const { motion } = await import('framer-motion');
+  const MotionDiv = motion.div;
+
+  return {
+    default: function MotionTooltipFrameComponent(props) {
+      return React.createElement(MotionDiv, props);
+    },
+  };
+});
 
 const IoSparkles = (props) => GenIcon({
   tag: 'svg',
@@ -774,6 +784,56 @@ export const JourneyTooltip = ({ step, themeColor, onStart, onClose, nodeRef, fo
     return null;
   }
 
+  const frameStyle = {
+    maxWidth: 'min(30rem, calc(100vw - 24px))',
+    width: '100%',
+    transformOrigin: layout.placement === 'bottom' ? 'top center' : 'bottom center',
+  };
+
+  const tooltipContent = (
+    <TooltipBox $placement={layout.placement} $nodeState={step.nodeState} $themeColor={themeColor}>
+      <TooltipCloseBtn
+        $nodeState={step.nodeState}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+      >
+        <IoClose />
+      </TooltipCloseBtn>
+      <TooltipTitle>
+        {(() => {
+          const obj = String(step.task?.objective ?? step.objective ?? '').trim();
+          return obj || step.title || 'Lesson';
+        })()}
+      </TooltipTitle>
+      <TooltipDescription $nodeState={step.nodeState}>
+        {isLocked
+          ? 'Finish previous stages to unlock!'
+          : ''}
+      </TooltipDescription>
+      <TooltipStartButton
+        type="button"
+        $nodeState={step.nodeState}
+        disabled={isLocked}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!isLocked) onStart(step);
+        }}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        {isLocked
+          ? 'LOCKED'
+          : step.nodeState === NODE_STATE.ACTIVE
+            ? 'CONTINUE'
+            : step.nodeState === NODE_STATE.COMPLETED
+              ? 'REVIEW'
+              : 'START'}
+      </TooltipStartButton>
+    </TooltipBox>
+  );
+
   const bubble = (
     <div
       className="skyward-journey-tooltip-anchor"
@@ -788,59 +848,17 @@ export const JourneyTooltip = ({ step, themeColor, onStart, onClose, nodeRef, fo
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
     >
-      <motion.div
-        initial={{ opacity: 0, scale: 0 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0 }}
-        transition={{ duration: 0.22, ease: 'easeInOut' }}
-        style={{
-          maxWidth: 'min(30rem, calc(100vw - 24px))',
-          width: '100%',
-          transformOrigin: layout.placement === 'bottom' ? 'top center' : 'bottom center',
-        }}
-      >
-        <TooltipBox $placement={layout.placement} $nodeState={step.nodeState} $themeColor={themeColor}>
-          <TooltipCloseBtn
-            $nodeState={step.nodeState}
-            onClick={(e) => {
-              e.stopPropagation();
-              onClose();
-            }}
-          >
-            <IoClose />
-          </TooltipCloseBtn>
-          <TooltipTitle>
-            {(() => {
-              const obj = String(step.task?.objective ?? step.objective ?? '').trim();
-              return obj || step.title || 'Lesson';
-            })()}
-          </TooltipTitle>
-          <TooltipDescription $nodeState={step.nodeState}>
-            {isLocked
-              ? 'Finish previous stages to unlock!'
-              : ''}
-          </TooltipDescription>
-          <TooltipStartButton
-            type="button"
-            $nodeState={step.nodeState}
-            disabled={isLocked}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (!isLocked) onStart(step);
-            }}
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            {isLocked
-              ? 'LOCKED'
-              : step.nodeState === NODE_STATE.ACTIVE
-                ? 'CONTINUE'
-                : step.nodeState === NODE_STATE.COMPLETED
-                  ? 'REVIEW'
-                  : 'START'}
-          </TooltipStartButton>
-        </TooltipBox>
-      </motion.div>
+      <React.Suspense fallback={<div style={frameStyle}>{tooltipContent}</div>}>
+        <MotionTooltipFrame
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0 }}
+          transition={{ duration: 0.22, ease: 'easeInOut' }}
+          style={frameStyle}
+        >
+          {tooltipContent}
+        </MotionTooltipFrame>
+      </React.Suspense>
     </div>
   );
 
@@ -1405,29 +1423,27 @@ export default function SkywardJourney({
                       <JourneyNodeIcon step={step} index={i} />
                     )}
                   </SkywardJourneyNodeButton>
-                  <AnimatePresence>
-                    {tooltipNodeId === step.id && (
-                      <JourneyTooltip
-                        key={step.id}
-                        step={step}
-                        onStart={() => {
-                          setTooltipNodeId(null);
-                          if (step.onActivate) step.onActivate();
-                          else setPanelOpenId(step.id);
-                        }}
-                        onClose={() => setTooltipNodeId(null)}
-                        nodeRef={{ get current() { return nodeRefs.current[i]; } }}
-                        themeColor={
-                          step.nodeState === 'active' 
-                            ? '#f18f01' 
-                            : step.nodeState === 'completed' 
-                              ? '#10b981' 
-                              : '#ffffff'
-                        }
-                        forceBottom={i >= steps.length - 2}
-                      />
-                    )}
-                  </AnimatePresence>
+                  {tooltipNodeId === step.id && (
+                    <JourneyTooltip
+                      key={step.id}
+                      step={step}
+                      onStart={() => {
+                        setTooltipNodeId(null);
+                        if (step.onActivate) step.onActivate();
+                        else setPanelOpenId(step.id);
+                      }}
+                      onClose={() => setTooltipNodeId(null)}
+                      nodeRef={{ get current() { return nodeRefs.current[i]; } }}
+                      themeColor={
+                        step.nodeState === 'active' 
+                          ? '#f18f01' 
+                          : step.nodeState === 'completed' 
+                            ? '#10b981' 
+                            : '#ffffff'
+                      }
+                      forceBottom={i >= steps.length - 2}
+                    />
+                  )}
                   <div
                     className={`level-label level-label--side-${labelSide}`}
                     aria-hidden

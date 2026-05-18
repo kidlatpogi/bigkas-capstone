@@ -12,7 +12,6 @@
     <link rel="dns-prefetch" href="https://pkshjglggqfuostxpllo.supabase.co" />
     <link rel="dns-prefetch" href="https://kidlatpogi17-capstone-bigkas-backend.hf.space" />
     
-    <link rel="modulepreload" href="data:text/jsx;base64,aW1wb3J0IHsgU3RyaWN0TW9kZSB9IGZyb20gJ3JlYWN0JzsNCmltcG9ydCB7IGNyZWF0ZVJvb3QgfSBmcm9tICdyZWFjdC1kb20vY2xpZW50JzsNCmltcG9ydCB7IEJyb3dzZXJSb3V0ZXIgfSBmcm9tICdyZWFjdC1yb3V0ZXItZG9tJzsNCmltcG9ydCB7IEF1dGhQcm92aWRlciB9IGZyb20gJy4vY29udGV4dC9BdXRoQ29udGV4dCc7DQppbXBvcnQgeyBTZXNzaW9uUHJvdmlkZXIgfSBmcm9tICcuL2NvbnRleHQvU2Vzc2lvbkNvbnRleHQnOw0KaW1wb3J0IEFwcFJvdXRlciBmcm9tICcuL3JvdXRlcy9BcHBSb3V0ZXInOw0KDQovLyBTdHlsZXMNCmltcG9ydCAnLi9zdHlsZXMvZ2xvYmFscy5jc3MnOw0KaW1wb3J0ICcuL3N0eWxlcy9kYXNoYm9hcmQtb3ZlcmxheS1jbG9zZS1idG4uY3NzJzsNCmltcG9ydCAnLi9zdHlsZXMvbW9iaWxlVmlld3BvcnQuY3NzJzsNCmltcG9ydCAnLi9pbmRleC5jc3MnOw0KaW1wb3J0ICcuL3N0eWxlcy9iaWdrYXMtYm90dG9tLXNoZWV0LW1vdGlvbi5jc3MnOw0KDQovKioNCiAqIEJpZ2thcyBXZWIgQXBwbGljYXRpb24NCiAqIEEgcHJvbnVuY2lhdGlvbiBwcmFjdGljZSBhcHANCiAqLw0KY3JlYXRlUm9vdChkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgncm9vdCcpKS5yZW5kZXIoDQogIDxTdHJpY3RNb2RlPg0KICAgIDxCcm93c2VyUm91dGVyPg0KICAgICAgPEF1dGhQcm92aWRlcj4NCiAgICAgICAgPFNlc3Npb25Qcm92aWRlcj4NCiAgICAgICAgICA8QXBwUm91dGVyIC8+DQogICAgICAgIDwvU2Vzc2lvblByb3ZpZGVyPg0KICAgICAgPC9BdXRoUHJvdmlkZXI+DQogICAgPC9Ccm93c2VyUm91dGVyPg0KICA8L1N0cmljdE1vZGU+LA0KKTsNCg0KLy8gUmVnaXN0ZXIgU2VydmljZSBXb3JrZXIgZm9yIGFzc2V0IGNhY2hpbmcNCmlmICgnc2VydmljZVdvcmtlcicgaW4gbmF2aWdhdG9yKSB7DQogIHdpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdsb2FkJywgKCkgPT4gew0KICAgIG5hdmlnYXRvci5zZXJ2aWNlV29ya2VyLnJlZ2lzdGVyKCcvc3cuanMnKS50aGVuKHJlZ2lzdHJhdGlvbiA9PiB7DQogICAgICBjb25zb2xlLmxvZygnU1cgcmVnaXN0ZXJlZDogJywgcmVnaXN0cmF0aW9uKTsNCiAgICB9KS5jYXRjaChyZWdpc3RyYXRpb25FcnJvciA9PiB7DQogICAgICBjb25zb2xlLmxvZygnU1cgcmVnaXN0cmF0aW9uIGZhaWxlZDogJywgcmVnaXN0cmF0aW9uRXJyb3IpOw0KICAgIH0pOw0KICB9KTsNCn0NCg==" />
     <link rel="icon" type="image/webp" href="https://assets.bigkas.site/Images/Bigkas-Logo.webp" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="Bigkas is an AI-powered public speaking platform designed to help you master your voice, presence, and impact through interactive training and real-time feedback." />
@@ -21,15 +20,24 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Bigkas" />
-    <link rel="manifest" href="/manifest.json" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     </noscript>
     <title>Bigkas — Master Speaking</title>
-    <script type="module" crossorigin src="/assets/index-BvEOtUIm.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/vendor-framework-D3vCv3Kb.js">
-    <link rel="modulepreload" crossorigin href="/assets/vendor-motion-Dc5yExsh.js">
+    <script>
+      window.addEventListener('load', function () {
+        var schedule = window.requestIdleCallback || function (callback) { return window.setTimeout(callback, 1); };
+        schedule(function () {
+          var manifestLink = document.createElement('link');
+          manifestLink.rel = 'manifest';
+          manifestLink.href = '/manifest.json';
+          document.head.appendChild(manifestLink);
+        });
+      });
+    </script>
+    <script type="module" crossorigin src="/assets/index-DQxM6Eq6.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/vendor-framework-C-2crD7L.js">
     <link rel="modulepreload" crossorigin href="/assets/vendor-supabase-DWrHOPJX.js">
     <link rel="stylesheet" crossorigin href="/assets/index-DgyE8ddR.css">
   </head>

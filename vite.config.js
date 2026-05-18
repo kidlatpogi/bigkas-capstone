@@ -26,21 +26,45 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-icons-core': ['react-icons/io5'],
-          'vendor-icons-extra': [
-            'react-icons/fa',
-            'react-icons/gi',
-            'react-icons/si',
-            'react-icons/lu',
-            'react-icons/hi2',
-            'react-icons/fi'
-          ],
-          'vendor-charts': ['recharts'],
-          'vendor-lottie': ['lottie-react'],
-          'vendor-motion': ['framer-motion'],
-          'vendor-supabase': ['@supabase/supabase-js'],
-          'vendor-framework': ['react', 'react-dom', 'react-router-dom'],
+        manualChunks(id) {
+          const normalizedId = id.replaceAll('\\', '/');
+          if (!normalizedId.includes('/node_modules/')) return undefined;
+          if (
+            normalizedId.includes('/node_modules/react/') ||
+            normalizedId.includes('/node_modules/react-dom/') ||
+            normalizedId.includes('/node_modules/react-router/') ||
+            normalizedId.includes('/node_modules/react-router-dom/') ||
+            normalizedId.includes('/node_modules/scheduler/')
+          ) {
+            return 'vendor-framework';
+          }
+          if (
+            normalizedId.includes('/node_modules/framer-motion/') ||
+            normalizedId.includes('/node_modules/motion-dom/') ||
+            normalizedId.includes('/node_modules/motion-utils/')
+          ) {
+            return 'vendor-motion';
+          }
+          if (normalizedId.includes('/node_modules/@supabase/')) return 'vendor-supabase';
+          if (
+            normalizedId.includes('/node_modules/lottie-react/') ||
+            normalizedId.includes('/node_modules/lottie-web/')
+          ) {
+            return 'vendor-lottie';
+          }
+          if (normalizedId.includes('/node_modules/recharts/')) return 'vendor-charts';
+          if (normalizedId.includes('/node_modules/react-icons/io5/')) return 'vendor-icons-core';
+          if (
+            normalizedId.includes('/node_modules/react-icons/fa/') ||
+            normalizedId.includes('/node_modules/react-icons/gi/') ||
+            normalizedId.includes('/node_modules/react-icons/si/') ||
+            normalizedId.includes('/node_modules/react-icons/lu/') ||
+            normalizedId.includes('/node_modules/react-icons/hi2/') ||
+            normalizedId.includes('/node_modules/react-icons/fi/')
+          ) {
+            return 'vendor-icons-extra';
+          }
+          return undefined;
         },
       },
     },

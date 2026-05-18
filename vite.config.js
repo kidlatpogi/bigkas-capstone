@@ -49,7 +49,6 @@ function htmlPerformanceHintsPlugin() {
           const bundleKey = `assets/${fileName}`;
           const cssAsset = bundle[bundleKey];
           if (!cssAsset || cssAsset.type !== 'asset' || typeof cssAsset.source !== 'string') return match;
-          delete bundle[bundleKey];
           return `<style data-inline-entry-css>${cssAsset.source}</style>`;
         },
       );

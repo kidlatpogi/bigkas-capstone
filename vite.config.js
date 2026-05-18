@@ -141,6 +141,8 @@ export default defineConfig({
     include: ['react', 'react-dom', 'react-router-dom'],
   },
   build: {
+    target: 'es2019',
+    cssTarget: 'chrome61',
     sourcemap: false,
     rollupOptions: {
       output: {

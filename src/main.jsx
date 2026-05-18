@@ -15,6 +15,19 @@ import './styles/bigkas-bottom-sheet-motion.css';
 
 const isNativePlatform = Capacitor.isNativePlatform();
 
+if (typeof String.prototype.replaceAll !== 'function') {
+  String.prototype.replaceAll = function replaceAll(searchValue, replaceValue) {
+    const source = String(this);
+    if (searchValue instanceof RegExp) {
+      if (!searchValue.global) {
+        throw new TypeError('String.prototype.replaceAll called with a non-global RegExp argument');
+      }
+      return source.replace(searchValue, replaceValue);
+    }
+    return source.split(String(searchValue)).join(String(replaceValue));
+  };
+}
+
 function clearNativeWebCaches() {
   if (!isNativePlatform || typeof window === 'undefined') return;
 

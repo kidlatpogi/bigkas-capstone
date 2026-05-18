@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../context/useAuthContext';
 import { isValidEmail } from '../../utils/validators';
 import { ROUTES } from '../../utils/constants';
-import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
+import { LazyMotion, domAnimation, motion as Motion, AnimatePresence } from 'framer-motion';
 import { getAssetUrl } from '../../utils/assetUtils';
 import googleIcon from '../../assets/logos/google-icon.svg';
 import './LoginPageMobile.css';
@@ -55,18 +55,11 @@ function getStoredLockoutSeconds() {
   return clampedRemaining;
 }
 
-function formatCountdown(seconds) {
-  const safeSeconds = Math.max(0, Math.floor(Number(seconds) || 0));
-  const minutes = Math.floor(safeSeconds / 60);
-  const remaining = safeSeconds % 60;
-  return `${String(minutes).padStart(2, '0')}:${String(remaining).padStart(2, '0')}`;
-}
-
 function resolvePostLoginRoute(user) {
   if (user?.onboardingStage === 'profiling') return ROUTES.USER_PROFILING;
   if (user?.onboardingStage === 'pretest') return ROUTES.USER_PRETEST;
   if (user?.onboardingStage === 'analyzing') return ROUTES.USER_ANALYZING;
-  return ROUTES.HOME;
+  return ROUTES.ACTIVITY;
 }
 
 /**
@@ -214,10 +207,10 @@ function LoginPageMobile({ managePageClass = true }) {
           <div className="auth-mobile-header-accent" />
           
           <div className="auth-mobile-visual-content">
-            <m.div className="auth-mobile-hero-text" initial="hidden" animate="visible" variants={itemVariants}>
+            <Motion.div className="auth-mobile-hero-text" initial="hidden" animate="visible" variants={itemVariants}>
               <h2>Master <span>Public Speaking</span></h2>
               <p>Your AI-powered journey to excellence starts here.</p>
-            </m.div>
+            </Motion.div>
           </div>
 
         {/* Floating Insight Words in BG */}
@@ -262,7 +255,7 @@ function LoginPageMobile({ managePageClass = true }) {
           <form className="auth-form" onSubmit={handleLogin}>
             <AnimatePresence mode="wait">
               {(showAccountCreated || showAccountVerified || resendSuccess || errors.submit || showUnverified) && (
-                <m.div 
+                <Motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
@@ -274,7 +267,7 @@ function LoginPageMobile({ managePageClass = true }) {
                       {resendLoading ? '...' : resendCooldown > 0 ? `(${resendCooldown}s)` : 'Resend'}
                     </button>
                   )}
-                </m.div>
+                </Motion.div>
               )}
             </AnimatePresence>
 

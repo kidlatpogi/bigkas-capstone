@@ -5,9 +5,9 @@ import { useAuthContext } from '../../context/useAuthContext';
 import { isValidEmail } from '../../utils/validators';
 import { ROUTES } from '../../utils/constants';
 import PasswordToggle from '../../components/common/PasswordToggle';
-import { motion, AnimatePresence, LazyMotion, domAnimation, m } from 'framer-motion';
+import { AnimatePresence, LazyMotion, domAnimation, motion as Motion } from 'framer-motion';
 import PushButton from '../../components/common/PushButton';
-import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
+import { getAssetUrl } from '../../utils/assetUtils';
 import googleIcon from '../../assets/logos/google-icon.svg';
 import './LoginPage.css';
 
@@ -81,7 +81,7 @@ function resolvePostLoginRoute(user) {
   if (user?.onboardingStage === 'profiling') return ROUTES.USER_PROFILING;
   if (user?.onboardingStage === 'pretest') return ROUTES.USER_PRETEST;
   if (user?.onboardingStage === 'analyzing') return ROUTES.USER_ANALYZING;
-  return ROUTES.HOME;
+  return ROUTES.ACTIVITY;
 }
 
 /**
@@ -349,10 +349,6 @@ function LoginPageDesktop({ managePageClass = true }) {
     }
   };
 
-  const lockoutMessage = lockoutSeconds > 0
-    ? `Too many attempts. Try again in ${formatCountdown(lockoutSeconds)}`
-    : null;
-
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.1 } },
@@ -371,7 +367,7 @@ function LoginPageDesktop({ managePageClass = true }) {
       data-layout={layoutMode}
     >
       <div className="auth-container">
-        <m.div
+        <Motion.div
           className="auth-card"
           variants={containerVariants}
           initial="hidden"
@@ -379,7 +375,7 @@ function LoginPageDesktop({ managePageClass = true }) {
         >
           {/* Left Side: Branding & Visuals */}
           <div className="auth-visual-side">
-            <m.div variants={itemVariants} className="auth-brand-logo">
+            <Motion.div variants={itemVariants} className="auth-brand-logo">
               <img 
                 src={bigkasLogo} 
                 alt="Bigkas" 
@@ -389,10 +385,10 @@ function LoginPageDesktop({ managePageClass = true }) {
                 loading="eager" 
               />
               <span>Bigkas</span>
-            </m.div>
+            </Motion.div>
             
             <div className="auth-visual-content">
-              <m.div 
+              <Motion.div
                 className="auth-robot-img-wrap auth-robot-floating"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -408,7 +404,7 @@ function LoginPageDesktop({ managePageClass = true }) {
                   width="460"
                   height="460"
                 />
-              </m.div>
+              </Motion.div>
 
               {/* Floating Insight Cloud */}
               {INSIGHT_WORDS.map((word, i) => (
@@ -427,12 +423,12 @@ function LoginPageDesktop({ managePageClass = true }) {
                   {word.text}
                 </div>
               ))}
-              <m.h2 variants={itemVariants} className="auth-hero-tagline">
+              <Motion.h2 variants={itemVariants} className="auth-hero-tagline">
                 Master <span>Public Speaking</span>
-              </m.h2>
-              <m.p variants={itemVariants} className="auth-hero-desc">
+              </Motion.h2>
+              <Motion.p variants={itemVariants} className="auth-hero-desc">
                 Your AI-powered journey to public speaking excellence starts here.
-              </m.p>
+              </Motion.p>
             </div>
             
           </div>
@@ -440,13 +436,13 @@ function LoginPageDesktop({ managePageClass = true }) {
           {/* Right Side: Login Form */}
           <div className="auth-form-side">
             <div className="auth-form-inner">
-              <m.h1 variants={itemVariants} className="auth-form-headline">Welcome Back</m.h1>
-              <m.p variants={itemVariants} className="auth-form-subline">Please enter your credentials to continue</m.p>
+              <Motion.h1 variants={itemVariants} className="auth-form-headline">Welcome Back</Motion.h1>
+              <Motion.p variants={itemVariants} className="auth-form-subline">Please enter your credentials to continue</Motion.p>
 
               <form className="auth-form" onSubmit={handleLogin}>
                 <AnimatePresence mode="wait">
                   {(showAccountCreated || showAccountVerified || resendSuccess || errors.submit || showUnverified) && (
-                    <m.div 
+                    <Motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
@@ -465,11 +461,11 @@ function LoginPageDesktop({ managePageClass = true }) {
                           </button>
                         )}
                       </div>
-                    </m.div>
+                    </Motion.div>
                   )}
                 </AnimatePresence>
 
-                <m.div variants={itemVariants} className="form-group-v2">
+                <Motion.div variants={itemVariants} className="form-group-v2">
                   <label htmlFor="email">Email Address</label>
                   <div className="input-field-wrap">
                     <input
@@ -485,9 +481,9 @@ function LoginPageDesktop({ managePageClass = true }) {
                     />
                   </div>
                   {errors.email && <span className="field-error">{errors.email}</span>}
-                </m.div>
+                </Motion.div>
 
-                <m.div variants={itemVariants} className="form-group-v2">
+                <Motion.div variants={itemVariants} className="form-group-v2">
                   <label htmlFor="password">Password</label>
                   <div className="input-field-wrap">
                       <input
@@ -507,9 +503,9 @@ function LoginPageDesktop({ managePageClass = true }) {
                       <Link to={ROUTES.FORGOT_PASSWORD} className="forgot-pw-link">Forgot Password?</Link>
                     </div>
                     {errors.password && <span className="field-error">{errors.password}</span>}
-                </m.div>
+                </Motion.div>
 
-                <m.div variants={itemVariants} className="form-actions-v2">
+                <Motion.div variants={itemVariants} className="form-actions-v2">
                   <PushButton
                     type="button"
                     onClick={handleLogin}
@@ -519,13 +515,13 @@ function LoginPageDesktop({ managePageClass = true }) {
                   >
                     {isLoading ? <span className="loading-spinner" /> : lockoutSeconds > 0 ? `Locked (${lockoutSeconds}s)` : 'LOGIN'}
                   </PushButton>
-                </m.div>
+                </Motion.div>
 
-                <m.div variants={itemVariants} className="divider-v2">
+                <Motion.div variants={itemVariants} className="divider-v2">
                   <span>OR</span>
-                </m.div>
+                </Motion.div>
 
-                <m.div variants={itemVariants}>
+                <Motion.div variants={itemVariants}>
                   <button 
                     type="button" 
                     className="google-signin-btn-v2" 
@@ -536,15 +532,15 @@ function LoginPageDesktop({ managePageClass = true }) {
                     <img src={googleIcon} alt="" width="20" height="20" loading="eager" />
                     Continue with Google
                   </button>
-                </m.div>
+                </Motion.div>
 
-                <m.div variants={itemVariants} className="signup-prompt-v2">
+                <Motion.div variants={itemVariants} className="signup-prompt-v2">
                   Don't have an account? <Link to={ROUTES.REGISTER}>Create one now</Link>
-                </m.div>
+                </Motion.div>
               </form>
             </div>
           </div>
-        </m.div>
+        </Motion.div>
       </div>
     </div>
     </LazyMotion>

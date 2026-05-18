@@ -52,6 +52,25 @@ function buildLockoutMessage(waitSeconds) {
   return `Temporary cooldown active. Please wait ${seconds}s before trying again.`;
 }
 
+function isOAuthBackedUser(authUser) {
+  const appMetadata = authUser?.app_metadata || {};
+  const primaryProvider = String(appMetadata.provider || '').toLowerCase();
+  const providers = Array.isArray(appMetadata.providers)
+    ? appMetadata.providers.map((provider) => String(provider || '').toLowerCase())
+    : [];
+
+  return (
+    (primaryProvider && primaryProvider !== 'email') ||
+    providers.some((provider) => provider && provider !== 'email')
+  );
+}
+
+function hasVerifiedAuthIdentity(authUser) {
+  if (!authUser) return false;
+  if (authUser.email_confirmed_at || authUser.confirmed_at) return true;
+  return isOAuthBackedUser(authUser);
+}
+
 function isLoginGuardNotConfigured(error) {
   const code = String(error?.code || '');
   const message = String(error?.message || '').toLowerCase();
@@ -1182,7 +1201,7 @@ export function AuthProvider({ children }) {
       if (blockedProfile) return;
 
       const nextUser = buildUser(session);
-      const emailConfirmed = !!session?.user?.email_confirmed_at;
+      const emailConfirmed = hasVerifiedAuthIdentity(session?.user);
 
       if (session?.user && !emailConfirmed) {
         setPendingEmailVerification(true);
@@ -1371,7 +1390,7 @@ export function AuthProvider({ children }) {
         };
       }
 
-      const emailConfirmed = !!data.user?.email_confirmed_at;
+      const emailConfirmed = hasVerifiedAuthIdentity(data.user);
       if (!emailConfirmed) {
         setPendingEmailVerification(true);
         setPendingEmail(email);
@@ -1507,7 +1526,7 @@ export function AuthProvider({ children }) {
         };
       }
 
-      const emailConfirmed = !!data.user?.email_confirmed_at;
+      const emailConfirmed = hasVerifiedAuthIdentity(data.user);
       if (!emailConfirmed) {
         setPendingEmailVerification(true);
         setPendingEmail(email);

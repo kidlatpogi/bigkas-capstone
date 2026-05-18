@@ -770,6 +770,9 @@ export function SessionProvider({ children }) {
       ));
       formData.append('session_origin', normalizeSessionOriginForPersistence(scriptType));
       formData.append('speaking_mode', String(speakingMode || '').trim());
+      if (activityId) {
+        formData.append('activity_id', String(activityId));
+      }
 
       const startBackgroundPersistence = () => (async () => {
         try {
@@ -960,12 +963,17 @@ export function SessionProvider({ children }) {
             console.log('[SessionContext] Finalizing session metadata and media links in background...');
             
             // B. Update session metadata
+            const sessionUpdates = {
+              session_origin: normalizeSessionOriginForPersistence(scriptType) || 'training',
+              speaking_mode: String(speakingMode || '').trim() || null,
+            };
+            if (activityId) {
+              sessionUpdates.activity_id = String(activityId);
+            }
+
             const { error: sessErr } = await supabase
               .from('sessions')
-              .update({
-                session_origin: normalizeSessionOriginForPersistence(scriptType) || 'training',
-                speaking_mode: String(speakingMode || '').trim() || null,
-              })
+              .update(sessionUpdates)
               .eq('id', backendSessionId);
             if (sessErr) console.warn('[SessionContext] Session metadata update failed:', sessErr.message);
 
@@ -987,6 +995,9 @@ export function SessionProvider({ children }) {
       // Add created_at if missing for immediate UI feedback (like DetailedFeedbackPage)
       if (!analysisResult.created_at) {
         analysisResult.created_at = new Date().toISOString();
+      }
+      if (activityId && !analysisResult.activity_id) {
+        analysisResult.activity_id = String(activityId);
       }
 
       // Ensure the new session is immediately available in the global state

@@ -1,0 +1,2 @@
+const i="emerald",f="pref_hero_theme",s=e=>e?`pref_hero_theme:${e}`:f,d=(e,r,o)=>{const n=i,t=r.find(c=>c.id===e);return!t||Number(o||0)<Number(t.requires||0)?n:t.id},a=(e,r,o)=>{if(typeof window>"u")return i;const n=s(e),t=window.localStorage.getItem(n);return t?d(t,r,o):e?i:d(window.localStorage.getItem(f),r,o)},l=(e,r)=>{typeof window>"u"||window.localStorage.setItem(s(e),r)};export{i as D,d as g,a as r,l as w};
+//# sourceMappingURL=profileTheme-CCikKID_.js.map

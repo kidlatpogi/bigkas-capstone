@@ -906,12 +906,19 @@ function ActivityPageMobile() {
 
   }, [user, updateUserMetadata]);
 
-  const renderTaskCardForShell = useCallback(({ task, isLocked: shellLocked, animationClass = '' }) => {
-    const done = taskState[task.id] === true;
-    const isUnlocked = taskUnlockState[task.id] === true;
+  const renderTaskCardForShell = useCallback(({
+    task,
+    done: shellDone,
+    isUnlocked: shellUnlocked,
+    isLocked: shellLocked,
+    progress: shellProgress,
+    animationClass = '',
+  }) => {
+    const done = shellDone ?? taskState[task.id] === true;
+    const isUnlocked = shellUnlocked ?? taskUnlockState[task.id] === true;
     const isLocked = shellLocked ?? (!done && !isUnlocked);
     const shouldAnimateStamp = done && recentStampedTaskId === task.id;
-    const progress = taskProgress[task.id] || { current: 0, target: 1 };
+    const progress = shellProgress || taskProgress[task.id] || { current: 0, target: 1 };
     const canShowProgress = !isLocked && progress.target > 1;
     const progressPctForTask = Math.max(0, Math.min(100, Math.round((progress.current / progress.target) * 100)));
     const clampedProgressCurrent = Math.min(progress.current, progress.target);

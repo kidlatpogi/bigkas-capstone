@@ -81,29 +81,60 @@ export function mapPercentToEntryScore(percent0to100) {
   return Math.round((1 + (p / 100) * 4) * 100) / 100;
 }
 
+function normalizeStoredLevelNumber(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return null;
+  const rounded = Math.round(number);
+  if (rounded < 1 || rounded > 5) return null;
+  return rounded;
+}
+
+function levelNumberToEntryScore(levelNumber) {
+  const level = normalizeStoredLevelNumber(levelNumber);
+  if (!level) return null;
+  const band = BIGKAS_LEVELS[level - 1];
+  return band ? (Number(band.number) || 1.0) : 1.0;
+}
+
 /**
  * Resolves 1.0–5.0 entry score from user metadata / onboarding analysis.
  */
 export function resolveSpeakerEntryScore(user) {
   if (!user) return 1.0;
   const meta = user;
-  const ln = Number(meta.speakerLevelNumber ?? meta.speaker_level_number);
-  if (Number.isFinite(ln) && ln > 1 && ln <= 5) {
-    const band = BIGKAS_LEVELS[Math.round(ln) - 1];
-    return band ? (Number(band.number) || 1.0) : 1.0;
+  const levelCandidates = [
+    meta.speakerLevelNumber,
+    meta.speaker_level_number,
+    meta.progressLevelNumber,
+    meta.progress_level_number,
+    meta.currentLevel,
+    meta.current_level,
+    meta.onboardingLevelAnalysis?.estimated_level_number,
+    meta.onboarding_level_analysis?.estimated_level_number,
+  ];
+
+  for (const candidate of levelCandidates) {
+    const level = normalizeStoredLevelNumber(candidate);
+    if (level && level > 1) {
+      return levelNumberToEntryScore(level);
+    }
   }
+
   const direct = Number(meta.speakerEntryScore ?? meta.speaker_entry_score);
   if (Number.isFinite(direct) && direct >= 1 && direct <= 5) {
     return Math.round(direct * 100) / 100;
   }
-  const fs = Number(meta.onboardingLevelAnalysis?.final_score);
+
+  const fs = Number(meta.onboardingLevelAnalysis?.final_score ?? meta.onboarding_level_analysis?.final_score);
   if (Number.isFinite(fs) && fs > 0) {
     return mapPercentToEntryScore(fs);
   }
-  if (Number.isFinite(ln) && ln >= 1 && ln <= 5) {
-    const band = BIGKAS_LEVELS[ln - 1];
-    return band ? (Number(band.number) || 1.0) : 1.0;
+
+  for (const candidate of levelCandidates) {
+    const entryScore = levelNumberToEntryScore(candidate);
+    if (entryScore) return entryScore;
   }
+
   return 1.0;
 }
 

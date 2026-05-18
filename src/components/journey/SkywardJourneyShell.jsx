@@ -4,6 +4,7 @@ import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks
 import { fetchActivities } from '../../services/activitiesService';
 import {
   getActivityMetrics,
+  getActivityTaskProgress,
   getBigkasLevelFromUser,
   isActivityTaskCompleted,
   GLOBAL_ACTIVITY_SCOPE,
@@ -78,7 +79,12 @@ function SkywardJourneyShell({
     }, {});
   }, [tasks, activityMetrics]);
 
-
+  const taskProgress = useMemo(() => {
+    return tasks.reduce((state, task) => {
+      state[task.id] = getActivityTaskProgress(task.id, activityMetrics);
+      return state;
+    }, {});
+  }, [tasks, activityMetrics]);
 
   const isLockedLevel = useMemo(() => {
     const curr = Number(selectedLevel);
@@ -196,10 +202,14 @@ function SkywardJourneyShell({
     (step, meta) =>
       renderTaskCard({
         task: step.task,
+        done: taskState[step.task.id] === true,
+        isUnlocked: taskUnlockState[step.task.id] === true,
         isLocked: step.nodeState === 'locked',
+        progress: taskProgress[step.task.id],
+        nodeState: step.nodeState,
         animationClass: `dashboard-anim-bottom dashboard-anim-delay-${Math.min(meta.stepIndex + 2, 9)}`,
       }),
-    [renderTaskCard],
+    [renderTaskCard, taskProgress, taskState, taskUnlockState],
   );
 
   /* ── Loading / error states scoped here — the rest of the page stays visible ── */

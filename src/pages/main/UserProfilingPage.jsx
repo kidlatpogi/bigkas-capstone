@@ -913,7 +913,7 @@ function UserProfilingPage() {
               <div className="profiling-intro-actions profiling-intro-actions--end">
                 <div className="profiling-submit-btn">
                   <button type="button" onClick={continueToPretest} disabled={!isOutroTypingDone || isSubmitting || !isProfileSaved}>
-                    {isSubmitting ? 'Saving...' : 'Continue'}
+                    {isSubmitting ? 'Saving...' : 'Start Pre-test'}
                   </button>
                 </div>
               </div>

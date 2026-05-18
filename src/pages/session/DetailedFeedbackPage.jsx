@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 import Confetti from 'react-confetti';
 import { useSessionContext } from '../../context/useSessionContext';
+import { useAuthContext } from '../../context/useAuthContext';
 import { supabase } from '../../lib/supabase';
 import { ROUTES } from '../../utils/constants';
 import { formatDate, formatDuration } from '../../utils/formatters';
@@ -20,6 +21,8 @@ import { getSessionMode, getSessionSpeechType } from '../../utils/sessionFormatt
 import { sanitizeRecommendationLines, sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import { buildStagePassResultForSession } from '../../utils/passingScore';
+import { recordActivityEvent } from '../../utils/activityProgress';
+import { persistActivityCompletion } from '../../services/journeyProgressService';
 import { useAllActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 
 const heroRobotImage = getSpriteUrl('Robot/0018.webp');
@@ -273,6 +276,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
   const sessionId = sessionIdProp || paramSessionId;
   const { state: locationState } = useLocation();
   const { currentSession, fetchSessionById, isLoading } = useSessionContext();
+  const { user } = useAuthContext();
   const [recordingMedia, setRecordingMedia] = useState({ audioUrl: null, videoUrl: null, transcript: '' });
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [showDetailed, setShowDetailed] = useState(() => {
@@ -490,6 +494,16 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
     };
   }, [locationState?.stagePassResult, session]);
   const showStageGoalMessage = stagePassResult?.isActivityStage;
+
+  useEffect(() => {
+    const activityId = String(stagePassResult?.activityId || session?.activity_id || '').trim();
+    if (!user?.id || !activityId || !stagePassResult?.passed) return;
+
+    recordActivityEvent({ type: 'activity-complete', activityId }, user.id);
+    persistActivityCompletion(user.id, activityId).catch((err) => {
+      console.warn('[DetailedFeedbackPage] Activity completion repair failed:', err);
+    });
+  }, [session?.activity_id, stagePassResult?.activityId, stagePassResult?.passed, user?.id]);
   const replayAction = useMemo(() => buildReplayAction(session, navigate, isFreeSession), [session, navigate, isFreeSession]);
 
   const shouldCelebrateScore = (res) => {

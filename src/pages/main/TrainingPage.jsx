@@ -24,6 +24,7 @@ import {
   appendSpeakerPointsHistory,
   createSpeakerPointsHistoryEntry,
 } from '../../utils/speakerPointsHistory';
+import { persistActivityCompletion } from '../../services/journeyProgressService';
 import { buildStageRetryMessage, evaluatePassingScore, formatPassingScore } from '../../utils/passingScore';
 import { useVisualAnalysis } from '../../hooks/useVisualAnalysis';
 import { getSpriteUrl } from '../../utils/assetUtils';
@@ -98,6 +99,7 @@ const MAX_VIDEO_BLOB_BYTES = 18 * 1024 * 1024;
 
 /** Minimum recording length (seconds) before FastAPI / Supabase analysis runs. */
 const DEFAULT_MIN_RECORDING_SECONDS = 20;
+const PREPARING_AI_TIMEOUT_MS = 12000;
 
 // Cache API configuration for persistent asset storage (Lighthouse: Efficient cache lifetimes)
 // Inlined Logo to eliminate network request and solve TTL issues (Lighthouse: Efficient cache lifetimes)
@@ -325,6 +327,7 @@ function TrainingPage() {
   const visualScoresRef = useRef(null);
   const freeLayoutObserverRef = useRef(null);
   const audioDataBufferRef = useRef(null);
+  const countdownRunIdRef = useRef(0);
 
   /* Hint toast state */
   const [showHint, setShowHint] = useState(false);
@@ -676,6 +679,29 @@ function TrainingPage() {
     osc.stop(now + duration + 0.02);
   }, []);
 
+  const stopCountdownCueAudio = useCallback(() => {
+    if (!countdownAudioCtxRef.current) return;
+    const ctx = countdownAudioCtxRef.current;
+    countdownAudioCtxRef.current = null;
+    ctx.close?.().catch(() => { });
+  }, []);
+
+  const clearCountdownTimer = useCallback(() => {
+    countdownRunIdRef.current += 1;
+    if (countRef.current) {
+      clearInterval(countRef.current);
+      countRef.current = null;
+    }
+    setCountdown(3);
+    setResumeCountdown(0);
+  }, []);
+
+  const clearCountdownState = useCallback(() => {
+    clearCountdownTimer();
+    stopCountdownCueAudio();
+    setIsResumingVisual(false);
+  }, [clearCountdownTimer, stopCountdownCueAudio]);
+
 
 
 
@@ -954,34 +980,43 @@ function TrainingPage() {
 
   /* ── 3..2..1 Countdown timer logic ── */
   const runTimerCountdown = useCallback(() => {
+    clearCountdownTimer();
     setStatus('countdown');
     setCountdown(3);
+    const runId = countdownRunIdRef.current;
     let c = 3;
     playCountdownCue('tick');
     countRef.current = setInterval(() => {
+      if (countdownRunIdRef.current !== runId) {
+        clearInterval(countRef.current);
+        countRef.current = null;
+        return;
+      }
       c -= 1;
       setCountdown(c);
       
       if (c <= 0) {
         clearInterval(countRef.current);
+        countRef.current = null;
         playCountdownCue('start');
+        window.setTimeout(stopCountdownCueAudio, 300);
         startRecording();
       } else {
         playCountdownCue('tick');
       }
     }, 1000);
-  }, [playCountdownCue, startRecording]);
+  }, [clearCountdownTimer, playCountdownCue, startRecording, stopCountdownCueAudio]);
 
   const handleStartClick = useCallback(() => {
     setIsTutorialOverlayOpen(false);
     
-    // If AI is already ready (e.g. from a restart), go straight to countdown
-    if (isVisualReady) {
+    // If visual AI is already ready, or it failed during setup, go straight to countdown.
+    if (isVisualReady || visualError) {
       runTimerCountdown();
     } else {
       setStatus('preparing-ai');
     }
-  }, [isVisualReady, runTimerCountdown]);
+  }, [isVisualReady, runTimerCountdown, visualError]);
 
   // Bridge Effect: Auto-start countdown when AI becomes ready during 'preparing-ai'
   useEffect(() => {
@@ -989,6 +1024,23 @@ function TrainingPage() {
       runTimerCountdown();
     }
   }, [status, isVisualReady, runTimerCountdown]);
+
+  useEffect(() => {
+    if (status !== 'preparing-ai') return undefined;
+
+    if (visualError) {
+      runTimerCountdown();
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      if (!isMountedRef.current) return;
+      console.warn('[TrainingPage] Visual AI did not become ready in time; continuing without live visual scoring.');
+      runTimerCountdown();
+    }, PREPARING_AI_TIMEOUT_MS);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [runTimerCountdown, status, visualError]);
 
 
 
@@ -1140,6 +1192,14 @@ function TrainingPage() {
               activityTitle: state?.step?.title || '',
             }
           : null;
+        if (fromActivity) {
+          result.data.activity_id = fromActivity;
+          result.data.activity_title = state?.step?.title || result.data.activity_title || null;
+          result.data.activity_objective = state?.step?.objective || state?.step?.detail || result.data.activity_objective || null;
+          result.data.activity_target_level = state?.step?.target_level ?? result.data.activity_target_level ?? null;
+          result.data.activity_order = state?.step?.activity_order ?? state?.step?.activityOrder ?? result.data.activity_order ?? null;
+          result.data.passing_score = stagePassingScore ?? result.data.passing_score ?? null;
+        }
 
       try {
         const metadataUpdates = {};
@@ -1162,6 +1222,20 @@ function TrainingPage() {
 
           if (fromActivity && stagePassEvaluation.passed) {
             recordActivityEvent({ type: 'activity-complete', activityId: fromActivity }, activityScopeKey);
+            if (user?.id) {
+              try {
+                await persistActivityCompletion(user.id, fromActivity);
+              } catch (completionErr) {
+                console.warn('[TrainingPage] Remote activity completion sync failed:', completionErr);
+              }
+            }
+            if (typeof window !== 'undefined') {
+              window.sessionStorage.setItem(ACTIVITY_CELEBRATION_STORAGE_KEY, JSON.stringify({
+                activityId: fromActivity,
+                activityTitle: state?.step?.title || '',
+                completedAt: Date.now(),
+              }));
+            }
           }
 
           const earnedByScore = getScoreRewardPoints(normalizedSessionScore, recordingDurationSecRef.current);
@@ -1230,6 +1304,17 @@ function TrainingPage() {
       // 8. Finalize and Navigate
       const finalSessionId = result.data.id || result.data.session_id;
       console.log(`[TrainingPage] Analysis complete. Target Session: ${finalSessionId}. Navigating...`);
+      if (fromActivity && finalSessionId) {
+        supabase
+          .from('sessions')
+          .update({ activity_id: fromActivity })
+          .eq('id', finalSessionId)
+          .then(({ error }) => {
+            if (error) {
+              console.warn('[TrainingPage] Activity session link sync failed:', error.message);
+            }
+          });
+      }
       
       if (isMountedRef.current) {
         if (!finalSessionId) {
@@ -1269,8 +1354,17 @@ function TrainingPage() {
 
   /* ── Pause / Resume ── */
   const handlePause = () => {
-    if (mediaRef.current?.state === 'recording') {
-      mediaRef.current.pause();
+    if (status === 'recording') {
+      try {
+        if (mediaRef.current?.state === 'recording') mediaRef.current.pause();
+      } catch (err) {
+        console.warn('[TrainingPage] Audio recorder pause failed:', err);
+      }
+      try {
+        if (visualMediaRef.current?.state === 'recording') visualMediaRef.current.pause();
+      } catch (err) {
+        console.warn('[TrainingPage] Video recorder pause failed:', err);
+      }
       clearInterval(timerRef.current);
       cancelAnimationFrame(animRef.current);
       micLowStartRef.current = null;
@@ -1278,8 +1372,17 @@ function TrainingPage() {
       setShowMicWarning(false);
       setStatus('paused');
       setShowPausedModal(true);
-    } else if (mediaRef.current?.state === 'paused') {
-      mediaRef.current.resume();
+    } else if (status === 'paused') {
+      try {
+        if (mediaRef.current?.state === 'paused') mediaRef.current.resume();
+      } catch (err) {
+        console.warn('[TrainingPage] Audio recorder resume failed:', err);
+      }
+      try {
+        if (visualMediaRef.current?.state === 'paused') visualMediaRef.current.resume();
+      } catch (err) {
+        console.warn('[TrainingPage] Video recorder resume failed:', err);
+      }
       timerRef.current = setInterval(bumpElapsedSec, 1000);
       startWaveformLoop();
       setStatus('recording');
@@ -1291,22 +1394,28 @@ function TrainingPage() {
     if (status === 'resume-countdown') return;
 
     setShowPausedModal(false);
+    clearCountdownTimer();
     setStatus('resume-countdown');
 
     let count = 3;
     setResumeCountdown(count);
     playCountdownCue('tick');
 
-    // Clear any existing countdown just in case
-    if (countRef.current) clearInterval(countRef.current);
+    const runId = countdownRunIdRef.current;
 
     countRef.current = setInterval(() => {
+      if (countdownRunIdRef.current !== runId) {
+        clearInterval(countRef.current);
+        countRef.current = null;
+        return;
+      }
       count -= 1;
       if (count <= 0) {
         clearInterval(countRef.current);
         countRef.current = null;
         setResumeCountdown(0);
         playCountdownCue('start');
+        window.setTimeout(stopCountdownCueAudio, 300);
 
         // Resume recording if paused
         if (mediaRef.current?.state === 'paused') {
@@ -1314,6 +1423,13 @@ function TrainingPage() {
             mediaRef.current.resume();
           } catch (e) {
             console.error('Failed to resume media recorder:', e);
+          }
+        }
+        if (visualMediaRef.current?.state === 'paused') {
+          try {
+            visualMediaRef.current.resume();
+          } catch (e) {
+            console.error('Failed to resume visual recorder:', e);
           }
         }
 
@@ -1334,7 +1450,7 @@ function TrainingPage() {
         playCountdownCue('tick');
       }
     }, 1000);
-  }, [bumpElapsedSec, focus, status, startWaveformLoop, playCountdownCue]);
+  }, [bumpElapsedSec, clearCountdownTimer, focus, status, startWaveformLoop, playCountdownCue, stopCountdownCueAudio]);
 
   const handleContinueFromShortModal = useCallback(() => {
     setShowMinDurationModal(false);
@@ -1346,8 +1462,8 @@ function TrainingPage() {
 
   /* ── Restart ── */
   const handleRestart = () => {
+    clearCountdownState();
     clearInterval(timerRef.current);
-    clearInterval(countRef.current);
     cancelAnimationFrame(animRef.current);
     if (mediaRef.current && mediaRef.current.state !== 'inactive') mediaRef.current.stop();
     if (visualMediaRef.current && visualMediaRef.current.state !== 'inactive') visualMediaRef.current.stop();
@@ -1360,6 +1476,9 @@ function TrainingPage() {
     silenceStartRef.current = null;
     clearTimeout(hintDismissRef.current);
     setShowHint(false);
+    setShowPausedModal(false);
+    setShowRestartConfirm(false);
+    setShowMinDurationModal(false);
     micLowStartRef.current = null;
     micWarningVisibleRef.current = false;
     setShowMicWarning(false);
@@ -1697,7 +1816,9 @@ function TrainingPage() {
                 : 'Speak'}
             </span>
             {status === 'preparing-ai' && (
-              <div className="tp-countdown-subtext">Initializing speech engine...</div>
+              <div className="tp-countdown-subtext">
+                {visualError ? 'Starting without live visual tracking...' : 'Initializing speech engine...'}
+              </div>
             )}
           </div>
         </div>

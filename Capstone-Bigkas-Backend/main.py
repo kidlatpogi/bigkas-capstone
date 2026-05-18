@@ -18,6 +18,10 @@ B01_WORKER_URL = os.getenv("B01_WORKER_URL", "https://b01-ai-worker.dzeref4000.w
 MAX_AUDIO_SIZE_MB = int(os.getenv("MAX_AUDIO_SIZE_MB", "20"))
 
 DEFAULT_CORS_ORIGINS = [
+    "capacitor://localhost",
+    "ionic://localhost",
+    "http://localhost",
+    "https://localhost",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:5173",
@@ -26,7 +30,7 @@ DEFAULT_CORS_ORIGINS = [
     "https://www.bigkas.site",
 ]
 DEFAULT_CORS_ORIGIN_REGEX = (
-    r"https://([a-z0-9-]+\.)?(bigkas\.site|netlify\.app|vercel\.app|pages\.dev)"
+    r"^(capacitor|ionic)://localhost$|^https://([a-z0-9-]+\.)?(bigkas\.site|netlify\.app|vercel\.app|pages\.dev)$"
 )
 
 

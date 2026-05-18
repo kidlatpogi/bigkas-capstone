@@ -114,6 +114,7 @@ const DAY_MS = 86_400_000;
 const ACTIVITY_CELEBRATION_STORAGE_KEY = 'bigkas_pending_activity_celebration_v1';
 const LAST_SHOWN_COMPLETION_EVENT_KEY = 'bigkas_last_completion_event_v1';
 const FREE_SPEECH_TUTORIAL_SEEN_KEY = 'bigkas_free_speech_tutorial_seen_v1';
+const TRAINING_SESSION_CACHE_KEY = 'bigkas_current_training_session';
 
 
 
@@ -670,17 +671,25 @@ function ActivityPageMobile() {
 
   const handleTaskAction = useCallback((task) => {
     const activityPromptTopic = String(task.detail || task.objective || task.title || '').trim();
+    const trainingState = {
+      freeTopic: activityPromptTopic,
+      objective: task.objective || task.detail,
+      focus: 'free',
+      sessionType: 'training',
+      entryPoint: 'activity',
+      autoStartCountdown: true,
+      fromActivityTaskId: task.id,
+      step: task,
+    };
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem(TRAINING_SESSION_CACHE_KEY, JSON.stringify(trainingState));
+      } catch {
+        /* navigation state below is still enough for normal launches */
+      }
+    }
     navigate(`${ROUTES.TRAINING}?autostart=1`, {
-      state: {
-        freeTopic: activityPromptTopic,
-        objective: task.objective || task.detail,
-        focus: 'free',
-        sessionType: 'training',
-        entryPoint: 'activity',
-        autoStartCountdown: true,
-        fromActivityTaskId: task.id,
-        step: task,
-      },
+      state: trainingState,
     });
   }, [navigate]);
 

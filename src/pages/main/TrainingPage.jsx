@@ -423,6 +423,7 @@ function TrainingPage() {
     user?.onboardingStage !== 'completed';
 
   const isStartBlockedByTutorial = hasActivePretestTutorial && !isActive && status !== 'countdown';
+  const hidePermissionRetry = false;
 
 
   const bumpElapsedSec = useCallback(() => {

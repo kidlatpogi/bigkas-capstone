@@ -1,2 +1,1 @@
 function s(e){return/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)}function a(e){const t=[];return e.length<8&&t.push("Password must be at least 8 characters"),/[A-Z]/.test(e)||t.push("Password must contain at least one uppercase letter"),/[a-z]/.test(e)||t.push("Password must contain at least one lowercase letter"),/[0-9]/.test(e)||t.push("Password must contain at least one number"),{isValid:t.length===0,errors:t}}export{s as i,a as v};
-//# sourceMappingURL=validators-DShFQgMB.js.map

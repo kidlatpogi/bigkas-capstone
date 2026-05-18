@@ -46,6 +46,14 @@ function formatJourneyStage(badge) {
   return `Journey ${badge.journeyNumber} • Stage ${String(badge.stageNumber).padStart(2, '0')}`;
 }
 
+function getTrophyImagePriorityProps(trophy, currentLevelNumber) {
+  const isCurrentTrophy = trophy.id === currentLevelNumber;
+  return {
+    loading: isCurrentTrophy ? 'eager' : 'lazy',
+    fetchPriority: isCurrentTrophy ? 'high' : 'auto',
+  };
+}
+
 export default function AchievementsPage() {
   const { user } = useAuthContext();
   const [filterStatus, setFilterStatus] = useState('all');
@@ -227,7 +235,14 @@ export default function AchievementsPage() {
               <span className="rank-name">LEVEL {trophy.id}</span>
             </div>
             <div className="trophy-wrapper">
-              <img src={trophy.trophyImg} alt="" className="trophy-img" loading="lazy" width="80" height="80" />
+              <img
+                src={trophy.trophyImg}
+                alt=""
+                className="trophy-img"
+                width="80"
+                height="80"
+                {...getTrophyImagePriorityProps(trophy, currentLevelNumber)}
+              />
             </div>
             <div className="trophy-progress-container">
               <div className="trophy-progress-bar" role="progressbar" aria-valuenow={trophy.current} aria-valuemin={0} aria-valuemax={trophy.total || 1}>

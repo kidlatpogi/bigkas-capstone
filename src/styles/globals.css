@@ -151,6 +151,7 @@ a {
   color: var(--color-primary-text);
   text-decoration: none;
   transition: color var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
 }
 
 a:hover {
@@ -166,6 +167,10 @@ button {
   font-size: inherit;
   /* Minimum 44px touch target */
   min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* Inputs reset */
@@ -176,6 +181,26 @@ select {
   font-size: inherit;
   /* Minimum 44px touch target */
   min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+[role="button"],
+summary,
+label {
+  -webkit-tap-highlight-color: transparent;
+}
+
+[role="button"],
+summary {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* Images — max-width set in index.css; only add height: auto here */

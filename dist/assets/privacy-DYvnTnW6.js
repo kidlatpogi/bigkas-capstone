@@ -80,4 +80,3 @@ We may update our Privacy Policy from time to time. We will notify you of any ch
 9. CONTACT US
 If you have questions about this Privacy Policy or wish to exercise your rights, please contact the Bigkas Development Team.
 `;export{t as P,e as T};
-//# sourceMappingURL=privacy-DYvnTnW6.js.map

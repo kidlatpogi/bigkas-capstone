@@ -1,21 +1,6 @@
 import { ensureFreshAccessToken, isJwtExpiredError, supabase } from '../lib/supabase';
 import { DEFAULT_MODULES } from '../data/modulesCatalog';
 
-const MODULE_COLUMNS = [
-  'id',
-  'level_number',
-  'level_name',
-  'lesson_number',
-  'title',
-  'content',
-  'project_focus',
-  'objectives',
-  'theory',
-  'assignment',
-  'date_started',
-  'date_ended',
-].join(', ');
-
 function normalizeModule(module) {
   const theory = module.theory || module.content || '';
 
@@ -39,20 +24,7 @@ export async function fetchModules() {
   try {
     const { data, error } = await supabase
       .from('modules')
-      .select(MODULE_COLUMNS)
-      .order('lesson_number', { ascending: true });
-
-    if (!error && data && data.length > 0) {
-      return data.map(normalizeModule);
-    }
-  } catch {
-    // Fall through to the legacy schema query.
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('modules')
-      .select('id, level_number, level_name, lesson_number, title, content, date_started, date_ended')
+      .select('*')
       .order('lesson_number', { ascending: true });
 
     if (!error && data && data.length > 0) {

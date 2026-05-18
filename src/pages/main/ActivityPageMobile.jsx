@@ -1,15 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import Confetti from 'react-confetti';
-import Lottie from 'lottie-react';
 import { useAuthContext } from '../../context/useAuthContext';
 import { useSessions } from '../../hooks/useSessions';
 import { ROUTES } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import PushButton from '../../components/common/PushButton';
-import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
-import { IoChatbubbleEllipsesOutline, IoSend, IoTrophyOutline } from 'react-icons/io5';
-import TutorialOverlayMobile from '../../components/main/TutorialOverlayMobile';
+import { FaVolumeMute } from '@react-icons/all-files/fa/FaVolumeMute';
+import { FaVolumeUp } from '@react-icons/all-files/fa/FaVolumeUp';
+import { IoChatbubbleEllipsesOutline } from '@react-icons/all-files/io5/IoChatbubbleEllipsesOutline';
+import { IoSend } from '@react-icons/all-files/io5/IoSend';
+import { IoTrophyOutline } from '@react-icons/all-files/io5/IoTrophyOutline';
 import {
   GLOBAL_ACTIVITY_SCOPE,
   getActivityTaskProgress,
@@ -21,19 +21,33 @@ import {
   resolveDashboardTutorialSpeakerLevel,
 } from '../../utils/activityProgress';
 import SkywardJourneyShell from '../../components/journey/SkywardJourneyShell';
-import StreakCalendarModal from '../../components/main/StreakCalendarModal';
-import RankListModal from '../../components/main/RankListModal';
 import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 import { useNativeBottomSheetDrag } from '../../hooks/useNativeBottomSheetDrag';
 import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../services/journeyProgressService';
-import { RANDOM_TOPICS } from '../../utils/practiceData';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import { filterActivitiesForJourney } from '../../utils/journeyFiltering';
 import { generateCoachInsights } from '../../utils/coachInsights';
-import fireAnimationData from '../../assets/Lottie/fire.json';
 import './InnerPages.css';
 import './ActivityPageMobile.css';
 import './ActivityPage.css';
+
+const loadRankListModal = () => import('../../components/main/RankListModal');
+const Confetti = lazy(() => import('react-confetti'));
+const TutorialOverlayMobile = lazy(() => import('../../components/main/TutorialOverlayMobile'));
+const StreakCalendarModal = lazy(() => import('../../components/main/StreakCalendarModal'));
+const RankListModal = lazy(loadRankListModal);
+const LottieFire = lazy(async () => {
+  const [{ default: Lottie }, { default: fireAnimationData }] = await Promise.all([
+    import('lottie-react'),
+    import('../../assets/Lottie/fire.json'),
+  ]);
+
+  return {
+    default: function LottieFireComponent() {
+      return <Lottie animationData={fireAnimationData} loop />;
+    },
+  };
+});
 
 const iconFire = getAssetUrl('icons/Icon-Fire.svg');
 const robotMorningImage = getSpriteUrl('Robot/0018.webp');
@@ -53,6 +67,41 @@ const rankLegendaryImage = getSpriteUrl('Rank/rank-legendary.webp');
 const crystalBallImage = getSpriteUrl('common/crystal-ball.webp');
 const crownImage = getSpriteUrl('common/crown.webp');
 const b01ChatHead = getAssetUrl('Images/Bigkas-Logo.webp');
+
+const RANK_MODAL_IMAGE_URLS = [
+  rankBronze,
+  rankSilverImage,
+  rankGoldImage,
+  rankMythrilImage,
+  rankLegendaryImage,
+];
+
+let rankModalWarmPromise;
+let rankModalImagesWarmed = false;
+
+function warmRankModalAssets() {
+  rankModalWarmPromise ||= loadRankListModal().catch(() => {
+    rankModalWarmPromise = undefined;
+  });
+
+  if (rankModalImagesWarmed || typeof window === 'undefined') return rankModalWarmPromise;
+  rankModalImagesWarmed = true;
+  RANK_MODAL_IMAGE_URLS.forEach((href) => {
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.href = href;
+    document.head.appendChild(link);
+
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = href;
+    img.decode?.().catch(() => {});
+  });
+
+  return rankModalWarmPromise;
+}
+
 const B01_SUGGESTIONS = [
   'Summarize my progress so far',
   'How can I improve my confidence?',
@@ -65,6 +114,7 @@ const DAY_MS = 86_400_000;
 const ACTIVITY_CELEBRATION_STORAGE_KEY = 'bigkas_pending_activity_celebration_v1';
 const LAST_SHOWN_COMPLETION_EVENT_KEY = 'bigkas_last_completion_event_v1';
 const FREE_SPEECH_TUTORIAL_SEEN_KEY = 'bigkas_free_speech_tutorial_seen_v1';
+const TRAINING_SESSION_CACHE_KEY = 'bigkas_current_training_session';
 
 
 
@@ -297,6 +347,20 @@ function ActivityPageMobile() {
     onResize();
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const idleId = window.requestIdleCallback
+      ? window.requestIdleCallback(() => warmRankModalAssets())
+      : window.setTimeout(() => warmRankModalAssets(), 1200);
+    return () => {
+      if (window.cancelIdleCallback && window.requestIdleCallback) {
+        window.cancelIdleCallback(idleId);
+      } else {
+        window.clearTimeout(idleId);
+      }
+    };
   }, []);
 
   const recommendedLevel = useMemo(() => {
@@ -607,17 +671,25 @@ function ActivityPageMobile() {
 
   const handleTaskAction = useCallback((task) => {
     const activityPromptTopic = String(task.detail || task.objective || task.title || '').trim();
+    const trainingState = {
+      freeTopic: activityPromptTopic,
+      objective: task.objective || task.detail,
+      focus: 'free',
+      sessionType: 'training',
+      entryPoint: 'activity',
+      autoStartCountdown: true,
+      fromActivityTaskId: task.id,
+      step: task,
+    };
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem(TRAINING_SESSION_CACHE_KEY, JSON.stringify(trainingState));
+      } catch {
+        /* navigation state below is still enough for normal launches */
+      }
+    }
     navigate(`${ROUTES.TRAINING}?autostart=1`, {
-      state: {
-        freeTopic: activityPromptTopic,
-        objective: task.objective || task.detail,
-        focus: 'free',
-        sessionType: 'training',
-        entryPoint: 'activity',
-        autoStartCountdown: true,
-        fromActivityTaskId: task.id,
-        step: task,
-      },
+      state: trainingState,
     });
   }, [navigate]);
 
@@ -663,7 +735,8 @@ function ActivityPageMobile() {
       setIsRandomizingTopic(false);
     }
 
-    // Fallback to local randomization
+    // Fallback to local randomization only when the worker cannot supply a prompt.
+    const { RANDOM_TOPICS } = await import('../../utils/practiceData');
     if (!RANDOM_TOPICS.length) return;
     setRandomizerTopic((current) => {
       if (RANDOM_TOPICS.length === 1) return RANDOM_TOPICS[0];
@@ -923,7 +996,7 @@ function ActivityPageMobile() {
     const progressPctForTask = Math.max(0, Math.min(100, Math.round((progress.current / progress.target) * 100)));
     const clampedProgressCurrent = Math.min(progress.current, progress.target);
     const ctaLabel = done
-      ? 'Completed'
+      ? 'Retake'
       : isLocked
         ? 'Locked'
         : progress.current > 0
@@ -958,7 +1031,7 @@ function ActivityPageMobile() {
             variant="practice"
             className={`activity-action-btn${isLocked ? ' is-locked' : ''}${canShowProgress ? ' with-progress' : ''}`}
             onClick={() => handleTaskAction(task)}
-            disabled={isLocked || done}
+            disabled={isLocked}
           >
             {canShowProgress ? (
               <span className="activity-action-progress-fill" style={{ width: `${progressPctForTask}%` }} />
@@ -1040,28 +1113,38 @@ function ActivityPageMobile() {
           }
         `}
       </style>
-      <TutorialOverlayMobile
-        isOpen={showFreeSpeechTutorial}
-        steps={freeSpeechTutorialSteps}
-        showAudioToggle
-        onCloseDashboard={closeDashboardForHomeJourneyTutorial}
-        onClose={() => setShowFreeSpeechTutorial(false)}
-        onFinish={handleTutorialFinish}
-      />
-      <TutorialOverlayMobile
-        isOpen={showAssessmentModal}
-        onClose={() => setShowAssessmentModal(false)}
-        onFinish={() => setShowAssessmentModal(false)}
-        steps={assessmentTutorialSteps}
-      />
+      {showFreeSpeechTutorial && (
+        <Suspense fallback={null}>
+          <TutorialOverlayMobile
+            isOpen={showFreeSpeechTutorial}
+            steps={freeSpeechTutorialSteps}
+            showAudioToggle
+            onCloseDashboard={closeDashboardForHomeJourneyTutorial}
+            onClose={() => setShowFreeSpeechTutorial(false)}
+            onFinish={handleTutorialFinish}
+          />
+        </Suspense>
+      )}
+      {showAssessmentModal && (
+        <Suspense fallback={null}>
+          <TutorialOverlayMobile
+            isOpen={showAssessmentModal}
+            onClose={() => setShowAssessmentModal(false)}
+            onFinish={() => setShowAssessmentModal(false)}
+            steps={assessmentTutorialSteps}
+          />
+        </Suspense>
+      )}
       {showCompletionCelebration && (
-        <Confetti
-          width={viewportSize.width}
-          height={viewportSize.height}
-          recycle
-          numberOfPieces={280}
-          gravity={0.24}
-        />
+        <Suspense fallback={null}>
+          <Confetti
+            width={viewportSize.width}
+            height={viewportSize.height}
+            recycle
+            numberOfPieces={280}
+            gravity={0.24}
+          />
+        </Suspense>
       )}
       {showCompletionCelebration && (
         <div className="activity-clear-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="activity-clear-modal-title">
@@ -1334,7 +1417,9 @@ function ActivityPageMobile() {
               >
                 <div className="new-streak-top">
                   <div className="new-streak-fire">
-                    <Lottie animationData={fireAnimationData} loop={true} />
+                    <Suspense fallback={<img src={iconFire} alt="" aria-hidden="true" />}>
+                      <LottieFire />
+                    </Suspense>
                   </div>
                   <div className="new-streak-headline">
                     <div className="new-streak-value">{streakStats.currentStreak}</div>
@@ -1377,6 +1462,8 @@ function ActivityPageMobile() {
                 </div>
                 <div 
                   className="new-widget-rank-card"
+                  onPointerEnter={warmRankModalAssets}
+                  onFocus={warmRankModalAssets}
                   onClick={() => {
                     setShowDashboardOverlay(false);
                     setIsRankModalOpen(true);
@@ -1449,18 +1536,26 @@ function ActivityPageMobile() {
         </section>
       )}
 
-      <StreakCalendarModal
-        isOpen={isStreakModalOpen}
-        onClose={() => setIsStreakModalOpen(false)}
-        sessionCountsByDay={sessionCountsByDay}
-        streakStats={streakStats}
-      />
+      {isStreakModalOpen && (
+        <Suspense fallback={null}>
+          <StreakCalendarModal
+            isOpen={isStreakModalOpen}
+            onClose={() => setIsStreakModalOpen(false)}
+            sessionCountsByDay={sessionCountsByDay}
+            streakStats={streakStats}
+          />
+        </Suspense>
+      )}
 
-      <RankListModal
-        isOpen={isRankModalOpen}
-        onClose={() => setIsRankModalOpen(false)}
-        currentLevelNumber={levelProgress.levelNumber}
-      />
+      {isRankModalOpen && (
+        <Suspense fallback={null}>
+          <RankListModal
+            isOpen={isRankModalOpen}
+            onClose={() => setIsRankModalOpen(false)}
+            currentLevelNumber={levelProgress.levelNumber}
+          />
+        </Suspense>
+      )}
 
       {isAskB01ModalOpen && (
         <section className="randomizer-overlay-wrapper ask-b01-modal-wrapper" aria-label="Ask B-01 modal">

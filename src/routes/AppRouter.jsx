@@ -50,6 +50,10 @@ const BottomNav = lazy(() => import('../components/common/BottomNav'));
 
 const bigkasLogo = '/images/bigkas-logo-72.webp';
 
+function shouldDeferRootLoadingToLanding() {
+  return !Capacitor.isNativePlatform() && window.location.pathname === ROUTES.HOME;
+}
+
 /**
  * ActivityPageWrapper - Conditionally renders desktop or mobile version
  * based on viewport size
@@ -222,7 +226,7 @@ function ProtectedRoute() {
   if (isInitializing) {
     // Only show the app-level loading screen if we're not on the landing page,
     // since the landing page has its own loader.
-    if (window.location.pathname === ROUTES.HOME) {
+    if (shouldDeferRootLoadingToLanding()) {
       return null;
     }
     return (
@@ -287,7 +291,7 @@ function AdminRoute() {
   const { isAuthenticated, isInitializing, isAdminAuthenticated } = useAuthContext();
 
   if (isInitializing) {
-    if (window.location.pathname === ROUTES.HOME) {
+    if (shouldDeferRootLoadingToLanding()) {
       return null;
     }
     return (
@@ -336,7 +340,7 @@ function PublicRoute() {
   const { isAuthenticated, isInitializing, isAdminAuthenticated, user } = useAuthContext();
 
   if (isInitializing) {
-    if (window.location.pathname === ROUTES.HOME) {
+    if (shouldDeferRootLoadingToLanding()) {
       return null;
     }
     return (

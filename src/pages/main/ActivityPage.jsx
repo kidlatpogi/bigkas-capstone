@@ -51,10 +51,11 @@ import { generateCoachInsights } from '../../utils/coachInsights';
 import './InnerPages.css';
 import './ActivityPage.css';
 
+const loadRankListModal = () => import('../../components/main/RankListModal');
 const Confetti = lazy(() => import('react-confetti'));
 const TutorialOverlay = lazy(() => import('../../components/main/TutorialOverlay'));
 const StreakCalendarModal = lazy(() => import('../../components/main/StreakCalendarModal'));
-const RankListModal = lazy(() => import('../../components/main/RankListModal'));
+const RankListModal = lazy(loadRankListModal);
 const LottieFire = lazy(async () => {
   const [{ default: Lottie }, { default: fireAnimationData }] = await Promise.all([
     import('lottie-react'),
@@ -68,10 +69,45 @@ const LottieFire = lazy(async () => {
   };
 });
 
+const RANK_MODAL_IMAGE_URLS = [
+  rankBronzeImage,
+  rankSilverImage,
+  rankGoldImage,
+  rankMythrilImage,
+  rankLegendaryImage,
+];
+
+let rankModalWarmPromise;
+let rankModalImagesWarmed = false;
+
+function warmRankModalAssets() {
+  rankModalWarmPromise ||= loadRankListModal().catch(() => {
+    rankModalWarmPromise = undefined;
+  });
+
+  if (rankModalImagesWarmed || typeof window === 'undefined') return rankModalWarmPromise;
+  rankModalImagesWarmed = true;
+  RANK_MODAL_IMAGE_URLS.forEach((href) => {
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.href = href;
+    document.head.appendChild(link);
+
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = href;
+    img.decode?.().catch(() => {});
+  });
+
+  return rankModalWarmPromise;
+}
+
 const DAY_MS = 86_400_000;
 const ACTIVITY_CELEBRATION_STORAGE_KEY = 'bigkas_pending_activity_celebration_v1';
 const LAST_SHOWN_COMPLETION_EVENT_KEY = 'bigkas_last_completion_event_v1';
 const FREE_SPEECH_TUTORIAL_SEEN_KEY = 'bigkas_free_speech_tutorial_seen_v1';
+const TRAINING_SESSION_CACHE_KEY = 'bigkas_current_training_session';
 const AI_BANNER_CACHE_KEY = 'bigkas_ai_banner_cache_v1';
 const EIGHT_HOURS_MS = 8 * 60 * 60 * 1000;
 
@@ -344,6 +380,20 @@ function ActivityPage() {
     return () => {
       if (document.head.contains(preloadLink)) {
         document.head.removeChild(preloadLink);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const idleId = window.requestIdleCallback
+      ? window.requestIdleCallback(() => warmRankModalAssets())
+      : window.setTimeout(() => warmRankModalAssets(), 1200);
+    return () => {
+      if (window.cancelIdleCallback && window.requestIdleCallback) {
+        window.cancelIdleCallback(idleId);
+      } else {
+        window.clearTimeout(idleId);
       }
     };
   }, []);
@@ -936,17 +986,25 @@ function ActivityPage() {
 
   const handleTaskAction = useCallback((task) => {
     const activityPromptTopic = String(task.detail || task.objective || task.title || '').trim();
+    const trainingState = {
+      freeTopic: activityPromptTopic,
+      objective: task.objective || task.detail,
+      focus: 'free',
+      sessionType: 'training',
+      entryPoint: 'activity',
+      autoStartCountdown: true,
+      fromActivityTaskId: task.id,
+      step: task,
+    };
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem(TRAINING_SESSION_CACHE_KEY, JSON.stringify(trainingState));
+      } catch {
+        /* navigation state below is still enough for normal launches */
+      }
+    }
     navigate(`${ROUTES.TRAINING}?autostart=1`, {
-      state: {
-        freeTopic: activityPromptTopic,
-        objective: task.objective || task.detail,
-        focus: 'free',
-        sessionType: 'training',
-        entryPoint: 'activity',
-        autoStartCountdown: true,
-        fromActivityTaskId: task.id,
-        step: task,
-      },
+      state: trainingState,
     });
   }, [navigate]);
 
@@ -1152,7 +1210,7 @@ function ActivityPage() {
     const progressPctForTask = Math.max(0, Math.min(100, Math.round((progress.current / progress.target) * 100)));
     const clampedProgressCurrent = Math.min(progress.current, progress.target);
     const ctaLabel = done
-      ? 'Completed'
+      ? 'Retake'
       : isLocked
         ? 'Locked'
         : progress.current > 0
@@ -1187,7 +1245,7 @@ function ActivityPage() {
             variant="practice"
             className={`activity-action-btn${isLocked ? ' is-locked' : ''}${canShowProgress ? ' with-progress' : ''}`}
             onClick={() => handleTaskAction(task)}
-            disabled={isLocked || done}
+            disabled={isLocked}
           >
             {canShowProgress ? (
               <span className="activity-action-progress-fill" style={{ width: `${progressPctForTask}%` }} />
@@ -1209,7 +1267,7 @@ function ActivityPage() {
     const progressPctForTask = Math.max(0, Math.min(100, Math.round((progress.current / progress.target) * 100)));
     const clampedProgressCurrent = Math.min(progress.current, progress.target);
     const ctaLabel = done
-      ? 'Completed'
+      ? 'Retake'
       : isLocked
         ? 'Locked'
         : progress.current > 0
@@ -1255,7 +1313,7 @@ function ActivityPage() {
             type="button"
             className={`activity-action-btn${isLocked ? ' is-locked' : ''}${canShowProgress ? ' with-progress' : ''}`}
             onClick={() => handleTaskAction(task)}
-            disabled={isLocked || done}
+            disabled={isLocked}
           >
             {canShowProgress ? (
               <span className="activity-action-progress-fill" style={{ width: `${progressPctForTask}%` }} />
@@ -1600,6 +1658,8 @@ function ActivityPage() {
             </div>
             <div
               className="new-widget-rank-card"
+              onPointerEnter={warmRankModalAssets}
+              onFocus={warmRankModalAssets}
               onClick={() => setIsRankModalOpen(true)}
             >
               <img src={rankSpriteImage} alt="" className="new-widget-rank-sprite" />

@@ -1,2 +1,1 @@
 const s="https://assets.bigkas.site";function r(e){if(!e)return"";if(e.startsWith("http"))return e;const t=e.replace(/^\/+/,"").replace(/^assets\//,"");return`${s}/${t}`}function c(e){const t=e.replace(/^\/+/,"").replace(/^Sprites\//,"");return r(`Sprites/${t}`)}function n(e){const t=e.replace(/^\/+/,"").replace(/^Voices\//,"");return r(`Voices/${t}`)}export{c as a,n as b,r as g};
-//# sourceMappingURL=assetUtils-DiP9gMzg.js.map

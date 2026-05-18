@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bigkas-assets-v2';
+const CACHE_NAME = 'bigkas-assets-v3';
 const CACHE_PREFIX = 'bigkas-assets-';
 const ASSET_DOMAIN = 'assets.bigkas.site';
 
@@ -47,6 +47,12 @@ self.addEventListener('fetch', (event) => {
   // Never cache the SPA shell. It contains hashed JS/CSS filenames that must
   // refresh on deploy so OAuth redirects cannot revive missing old chunks.
   if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+    return;
+  }
+
+  // Do not intercept hashed app chunks. A stale JS chunk can reference a CSS
+  // file that no longer exists after deploy, which causes a blank SPA.
+  if (url.origin === self.location.origin && url.pathname.startsWith('/assets/')) {
     return;
   }
 

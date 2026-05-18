@@ -30,6 +30,11 @@ if (typeof String.prototype.replaceAll !== 'function') {
 
 function clearNativeWebCaches() {
   if (!isNativePlatform || typeof window === 'undefined') return;
+  clearClientCaches();
+}
+
+function clearClientCaches() {
+  if (typeof window === 'undefined') return;
 
   try {
     if ('serviceWorker' in navigator && typeof navigator.serviceWorker.getRegistrations === 'function') {
@@ -56,6 +61,23 @@ function clearNativeWebCaches() {
     }
   } catch {
   }
+}
+
+function recoverFromStaleBuildAsset(errorMessage) {
+  const message = String(errorMessage || '');
+  const isStaleAssetError =
+    message.includes('Unable to preload CSS') ||
+    message.includes('Failed to fetch dynamically imported module');
+
+  if (!isStaleAssetError || typeof window === 'undefined') return;
+
+  const recoveryKey = 'bigkas_stale_asset_recovery';
+  const lastRecovery = Number(window.sessionStorage.getItem(recoveryKey) || 0);
+  if (Date.now() - lastRecovery < 10000) return;
+
+  window.sessionStorage.setItem(recoveryKey, String(Date.now()));
+  clearClientCaches();
+  window.setTimeout(() => window.location.reload(), 300);
 }
 
 class AppErrorBoundary extends Component {
@@ -103,23 +125,13 @@ class AppErrorBoundary extends Component {
   }
 }
 
-if (isNativePlatform && typeof window !== 'undefined') {
+if (typeof window !== 'undefined') {
+  window.addEventListener('error', (event) => {
+    recoverFromStaleBuildAsset(event.message || event.error?.message);
+  });
+
   window.addEventListener('unhandledrejection', (event) => {
-    const message = String(event.reason?.message || event.reason || '');
-    if (!message.includes('Unable to preload CSS') && !message.includes('Failed to fetch dynamically imported module')) {
-      return;
-    }
-
-    try {
-      if ('caches' in window && typeof caches.keys === 'function') {
-        caches.keys().then((keys) => {
-          keys.forEach((key) => caches.delete(key).catch(() => {}));
-        });
-      }
-    } catch {
-    }
-
-    window.setTimeout(() => window.location.reload(), 250);
+    recoverFromStaleBuildAsset(event.reason?.message || event.reason);
   });
 }
 

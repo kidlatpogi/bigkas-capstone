@@ -11,6 +11,7 @@ const LoginPage = lazy(() => import('../pages/auth/LoginPage'));
 const LandingPage = lazy(() => import('../pages/landing/LandingPage'));
 const RegisterPage = lazy(() => import('../pages/auth/RegisterPage'));
 const VerifyEmailPage = lazy(() => import('../pages/auth/VerifyEmailPage'));
+const OAuthCallbackPage = lazy(() => import('../pages/auth/OAuthCallbackPage'));
 const NativeAuthCallbackPage = lazy(() => import('../pages/auth/NativeAuthCallbackPage'));
 const ForgotPasswordPage = lazy(() => import('../pages/auth/ForgotPasswordPage'));
 
@@ -374,6 +375,15 @@ function AppRouter() {
 
   return (
     <Routes>
+      <Route
+        path={ROUTES.AUTH_CALLBACK}
+        element={
+          <Suspense fallback={null}>
+            <OAuthCallbackPage />
+          </Suspense>
+        }
+      />
+
       <Route
         path={ROUTES.NATIVE_AUTH_CALLBACK}
         element={

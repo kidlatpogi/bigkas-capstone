@@ -10,6 +10,7 @@ export const ROUTES = {
   ADMIN_DASHBOARD: '/admin/dashboard',
   REGISTER: '/register',
   VERIFY_EMAIL: '/verify-email',
+  AUTH_CALLBACK: '/auth/callback',
   NATIVE_AUTH_CALLBACK: '/auth/native-callback',
   FORGOT_PASSWORD: '/forgot-password',
   NICKNAME: '/nickname',

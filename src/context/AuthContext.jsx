@@ -380,7 +380,7 @@ function getAuthParamsFromUrl(url) {
 function cleanWebOAuthUrl(defaultPath = ROUTES.ACTIVITY) {
   if (typeof window === 'undefined') return;
   const currentPath = window.location.pathname;
-  const targetPath = currentPath === ROUTES.LOGIN || currentPath === ROUTES.HOME
+  const targetPath = currentPath === ROUTES.LOGIN || currentPath === ROUTES.HOME || currentPath === ROUTES.AUTH_CALLBACK
     ? defaultPath
     : currentPath;
 
@@ -1760,7 +1760,7 @@ export function AuthProvider({ children }) {
     clearAdminSession();
 
     rememberOAuthReturnPath(ROUTES.ACTIVITY);
-    const redirectTo = getOAuthRedirectPath(ROUTES.HOME);
+    const redirectTo = getOAuthRedirectPath(ROUTES.AUTH_CALLBACK);
 
     const { data, error: err } = await supabase.auth.signInWithOAuth({
       provider: 'google',

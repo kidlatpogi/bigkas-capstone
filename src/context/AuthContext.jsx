@@ -24,6 +24,7 @@ const PROFILE_GUARD_TIMEOUT_MS = 2500;
 const PROFILE_CACHE_TTL_MS = 10_000;
 const NATIVE_AUTH_REDIRECT_URL = 'org.nationalu.bigkas://auth/callback';
 const NATIVE_AUTH_BRIDGE_URL = 'https://bigkas.site/auth/native-callback';
+const OAUTH_RETURN_PATH_KEY = 'bigkas_oauth_return_path_v1';
 let loginGuardRpcDisabled = false;
 const profileRequestCache = new Map();
 
@@ -326,6 +327,26 @@ function getOAuthRedirectPath(path = '/') {
   return Capacitor.isNativePlatform() ? NATIVE_AUTH_BRIDGE_URL : getWebRedirectPath(path);
 }
 
+function rememberOAuthReturnPath(path = ROUTES.ACTIVITY) {
+  if (typeof window === 'undefined' || Capacitor.isNativePlatform()) return;
+  try {
+    window.sessionStorage.setItem(OAUTH_RETURN_PATH_KEY, path || ROUTES.ACTIVITY);
+  } catch {
+    // Best-effort only.
+  }
+}
+
+function consumeOAuthReturnPath() {
+  if (typeof window === 'undefined') return ROUTES.ACTIVITY;
+  try {
+    const path = window.sessionStorage.getItem(OAUTH_RETURN_PATH_KEY) || ROUTES.ACTIVITY;
+    window.sessionStorage.removeItem(OAUTH_RETURN_PATH_KEY);
+    return path.startsWith('/') ? path : ROUTES.ACTIVITY;
+  } catch {
+    return ROUTES.ACTIVITY;
+  }
+}
+
 function getAuthParamsFromUrl(url) {
   const parsed = new URL(url);
   const params = new URLSearchParams(parsed.search);
@@ -335,6 +356,59 @@ function getAuthParamsFromUrl(url) {
     if (!params.has(key)) params.set(key, value);
   });
   return params;
+}
+
+function cleanWebOAuthUrl(defaultPath = ROUTES.ACTIVITY) {
+  if (typeof window === 'undefined') return;
+  const currentPath = window.location.pathname;
+  const targetPath = currentPath === ROUTES.LOGIN || currentPath === ROUTES.HOME
+    ? defaultPath
+    : currentPath;
+
+  window.history.replaceState(null, '', targetPath);
+}
+
+async function completeWebOAuthCallback() {
+  if (Capacitor.isNativePlatform() || typeof window === 'undefined') {
+    return { handled: false, session: null };
+  }
+
+  const params = getAuthParamsFromUrl(window.location.href);
+  const hasOAuthPayload =
+    params.has('code') ||
+    (params.has('access_token') && params.has('refresh_token')) ||
+    params.has('error') ||
+    params.has('error_description');
+
+  if (!hasOAuthPayload) return { handled: false, session: null };
+
+  const returnPath = consumeOAuthReturnPath();
+  const errorDescription = params.get('error_description') || params.get('error');
+  if (errorDescription) {
+    cleanWebOAuthUrl(ROUTES.LOGIN);
+    throw new Error(errorDescription);
+  }
+
+  const code = params.get('code');
+  const accessToken = params.get('access_token');
+  const refreshToken = params.get('refresh_token');
+  let session = null;
+
+  if (code) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) throw error;
+    session = data?.session ?? null;
+  } else if (accessToken && refreshToken) {
+    const { data, error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+    if (error) throw error;
+    session = data?.session ?? null;
+  }
+
+  cleanWebOAuthUrl(returnPath);
+  return { handled: true, session };
 }
 
 function getSignupCooldownUntil() {
@@ -978,8 +1052,24 @@ export function AuthProvider({ children }) {
       setIsInitializing(false);
     }, 8000);
 
-    supabase.auth.getSession().then(async ({ data: { session: initialSession }, error }) => {
+    (async () => {
       if (!isMounted || isBootstrapped) return;
+
+      let oauthSession = null;
+      try {
+        const oauthResult = await completeWebOAuthCallback();
+        oauthSession = oauthResult.session;
+      } catch (oauthError) {
+        console.warn('Bigkas Auth: OAuth callback exchange error:', oauthError);
+        const fallbackSession = await supabase.auth.getSession().catch(() => null);
+        oauthSession = fallbackSession?.data?.session ?? null;
+        if (!oauthSession) {
+          setError(oauthError?.message || 'Google sign-in failed. Please try again.');
+        }
+      }
+
+      const { data: { session: restoredSession }, error } = await supabase.auth.getSession();
+      const initialSession = oauthSession || restoredSession;
 
       if (error) {
         console.warn('Bigkas Auth: session restoration error:', error);
@@ -1041,7 +1131,7 @@ export function AuthProvider({ children }) {
       clearTimeout(bootstrapTimeout);
       setIsLoading(false);
       setIsInitializing(false);
-    }).catch((err) => {
+    })().catch((err) => {
       if (!isMounted || isBootstrapped) return;
       console.error('Bigkas Auth: unexpected bootstrap error:', err);
       clearAdminSession();
@@ -1652,6 +1742,7 @@ export function AuthProvider({ children }) {
     setError(null);
     clearAdminSession();
 
+    rememberOAuthReturnPath(ROUTES.ACTIVITY);
     const redirectTo = getOAuthRedirectPath(ROUTES.ACTIVITY);
 
     const { data, error: err } = await supabase.auth.signInWithOAuth({

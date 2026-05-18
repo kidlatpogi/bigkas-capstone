@@ -4,6 +4,7 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { supabase, ensureFreshAccessToken, isJwtExpiredError } from '../lib/supabase';
 import { ENV } from '../config/env';
+import { ROUTES } from '../utils/constants';
 import { normalizeSpeakerPointsHistory } from '../utils/speakerPointsHistory';
 import { BIGKAS_LEVELS, getBigkasLevelFromScore, mapPercentToEntryScore } from '../utils/activityProgress';
 
@@ -23,6 +24,7 @@ const PROFILE_GUARD_TIMEOUT_MS = 2500;
 const PROFILE_CACHE_TTL_MS = 10_000;
 const NATIVE_AUTH_REDIRECT_URL = 'org.nationalu.bigkas://auth/callback';
 const NATIVE_AUTH_BRIDGE_URL = 'https://bigkas.site/auth/native-callback';
+const OAUTH_RETURN_PATH_KEY = 'bigkas_oauth_return_path_v1';
 let loginGuardRpcDisabled = false;
 const profileRequestCache = new Map();
 
@@ -48,6 +50,25 @@ function normalizeLoginLockoutSeconds(value) {
 function buildLockoutMessage(waitSeconds) {
   const seconds = Math.max(1, normalizeLoginLockoutSeconds(waitSeconds) || LOGIN_LOCKOUT_SECONDS);
   return `Temporary cooldown active. Please wait ${seconds}s before trying again.`;
+}
+
+function isOAuthBackedUser(authUser) {
+  const appMetadata = authUser?.app_metadata || {};
+  const primaryProvider = String(appMetadata.provider || '').toLowerCase();
+  const providers = Array.isArray(appMetadata.providers)
+    ? appMetadata.providers.map((provider) => String(provider || '').toLowerCase())
+    : [];
+
+  return (
+    (primaryProvider && primaryProvider !== 'email') ||
+    providers.some((provider) => provider && provider !== 'email')
+  );
+}
+
+function hasVerifiedAuthIdentity(authUser) {
+  if (!authUser) return false;
+  if (authUser.email_confirmed_at || authUser.confirmed_at) return true;
+  return isOAuthBackedUser(authUser);
 }
 
 function isLoginGuardNotConfigured(error) {
@@ -325,6 +346,26 @@ function getOAuthRedirectPath(path = '/') {
   return Capacitor.isNativePlatform() ? NATIVE_AUTH_BRIDGE_URL : getWebRedirectPath(path);
 }
 
+function rememberOAuthReturnPath(path = ROUTES.ACTIVITY) {
+  if (typeof window === 'undefined' || Capacitor.isNativePlatform()) return;
+  try {
+    window.sessionStorage.setItem(OAUTH_RETURN_PATH_KEY, path || ROUTES.ACTIVITY);
+  } catch {
+    // Best-effort only.
+  }
+}
+
+function consumeOAuthReturnPath() {
+  if (typeof window === 'undefined') return ROUTES.ACTIVITY;
+  try {
+    const path = window.sessionStorage.getItem(OAUTH_RETURN_PATH_KEY) || ROUTES.ACTIVITY;
+    window.sessionStorage.removeItem(OAUTH_RETURN_PATH_KEY);
+    return path.startsWith('/') ? path : ROUTES.ACTIVITY;
+  } catch {
+    return ROUTES.ACTIVITY;
+  }
+}
+
 function getAuthParamsFromUrl(url) {
   const parsed = new URL(url);
   const params = new URLSearchParams(parsed.search);
@@ -334,6 +375,63 @@ function getAuthParamsFromUrl(url) {
     if (!params.has(key)) params.set(key, value);
   });
   return params;
+}
+
+function cleanWebOAuthUrl(defaultPath = ROUTES.ACTIVITY) {
+  if (typeof window === 'undefined') return;
+  const currentPath = window.location.pathname;
+  const targetPath = currentPath === ROUTES.LOGIN || currentPath === ROUTES.HOME || currentPath === ROUTES.AUTH_CALLBACK
+    ? defaultPath
+    : currentPath;
+
+  window.history.replaceState(null, '', targetPath);
+  const navigationEvent = typeof PopStateEvent === 'function'
+    ? new PopStateEvent('popstate', { state: null })
+    : new Event('popstate');
+  window.dispatchEvent(navigationEvent);
+}
+
+async function completeWebOAuthCallback() {
+  if (Capacitor.isNativePlatform() || typeof window === 'undefined') {
+    return { handled: false, session: null };
+  }
+
+  const params = getAuthParamsFromUrl(window.location.href);
+  const hasOAuthPayload =
+    params.has('code') ||
+    (params.has('access_token') && params.has('refresh_token')) ||
+    params.has('error') ||
+    params.has('error_description');
+
+  if (!hasOAuthPayload) return { handled: false, session: null };
+
+  const returnPath = consumeOAuthReturnPath();
+  const errorDescription = params.get('error_description') || params.get('error');
+  if (errorDescription) {
+    cleanWebOAuthUrl(ROUTES.LOGIN);
+    throw new Error(errorDescription);
+  }
+
+  const code = params.get('code');
+  const accessToken = params.get('access_token');
+  const refreshToken = params.get('refresh_token');
+  let session = null;
+
+  if (code) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) throw error;
+    session = data?.session ?? null;
+  } else if (accessToken && refreshToken) {
+    const { data, error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+    if (error) throw error;
+    session = data?.session ?? null;
+  }
+
+  cleanWebOAuthUrl(returnPath);
+  return { handled: true, session };
 }
 
 function getSignupCooldownUntil() {
@@ -977,8 +1075,24 @@ export function AuthProvider({ children }) {
       setIsInitializing(false);
     }, 8000);
 
-    supabase.auth.getSession().then(async ({ data: { session: initialSession }, error }) => {
+    (async () => {
       if (!isMounted || isBootstrapped) return;
+
+      let oauthSession = null;
+      try {
+        const oauthResult = await completeWebOAuthCallback();
+        oauthSession = oauthResult.session;
+      } catch (oauthError) {
+        console.warn('Bigkas Auth: OAuth callback exchange error:', oauthError);
+        const fallbackSession = await supabase.auth.getSession().catch(() => null);
+        oauthSession = fallbackSession?.data?.session ?? null;
+        if (!oauthSession) {
+          setError(oauthError?.message || 'Google sign-in failed. Please try again.');
+        }
+      }
+
+      const { data: { session: restoredSession }, error } = await supabase.auth.getSession();
+      const initialSession = oauthSession || restoredSession;
 
       if (error) {
         console.warn('Bigkas Auth: session restoration error:', error);
@@ -1040,7 +1154,7 @@ export function AuthProvider({ children }) {
       clearTimeout(bootstrapTimeout);
       setIsLoading(false);
       setIsInitializing(false);
-    }).catch((err) => {
+    })().catch((err) => {
       if (!isMounted || isBootstrapped) return;
       console.error('Bigkas Auth: unexpected bootstrap error:', err);
       clearAdminSession();
@@ -1061,8 +1175,6 @@ export function AuthProvider({ children }) {
       // credentials. Do not publish the session as a regular user before that
       // check finishes, or public routes can briefly render the user login flow.
       if (adminLoginInProgressRef.current) return;
-
-      if (!isBootstrapped && _event !== 'SIGNED_OUT') return;
 
       if (_event === 'TOKEN_REFRESHED' && session?.user?.id === currentUserIdRef.current) {
         return;
@@ -1091,7 +1203,7 @@ export function AuthProvider({ children }) {
       if (blockedProfile) return;
 
       const nextUser = buildUser(session);
-      const emailConfirmed = !!session?.user?.email_confirmed_at;
+      const emailConfirmed = hasVerifiedAuthIdentity(session?.user);
 
       if (session?.user && !emailConfirmed) {
         setPendingEmailVerification(true);
@@ -1154,7 +1266,7 @@ export function AuthProvider({ children }) {
 
         await Browser.close().catch(() => {});
         if (!isDisposed && typeof window !== 'undefined' && window.location.pathname === '/login') {
-          window.history.replaceState(null, '', '/dashboard');
+          window.history.replaceState(null, '', ROUTES.ACTIVITY);
           window.dispatchEvent(new Event('popstate'));
         }
       } catch (authError) {
@@ -1280,7 +1392,7 @@ export function AuthProvider({ children }) {
         };
       }
 
-      const emailConfirmed = !!data.user?.email_confirmed_at;
+      const emailConfirmed = hasVerifiedAuthIdentity(data.user);
       if (!emailConfirmed) {
         setPendingEmailVerification(true);
         setPendingEmail(email);
@@ -1416,7 +1528,7 @@ export function AuthProvider({ children }) {
         };
       }
 
-      const emailConfirmed = !!data.user?.email_confirmed_at;
+      const emailConfirmed = hasVerifiedAuthIdentity(data.user);
       if (!emailConfirmed) {
         setPendingEmailVerification(true);
         setPendingEmail(email);
@@ -1651,7 +1763,8 @@ export function AuthProvider({ children }) {
     setError(null);
     clearAdminSession();
 
-    const redirectTo = getOAuthRedirectPath('/dashboard');
+    rememberOAuthReturnPath(ROUTES.ACTIVITY);
+    const redirectTo = getOAuthRedirectPath(ROUTES.AUTH_CALLBACK);
 
     const { data, error: err } = await supabase.auth.signInWithOAuth({
       provider: 'google',

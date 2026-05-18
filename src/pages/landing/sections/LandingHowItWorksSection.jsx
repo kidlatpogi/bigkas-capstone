@@ -1,5 +1,6 @@
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import ScrollDownIndicator from '../../../components/common/ScrollDownIndicator';
+import laptopImage from '../../../assets/backgrounds/Login/MacBook.png';
 
 export default function LandingHowItWorksSection({ howSectionRef, showScrollIndicator }) {
   const containerVariants = {
@@ -50,7 +51,7 @@ export default function LandingHowItWorksSection({ howSectionRef, showScrollIndi
     <section id="how-it-works" className="how-it-works-redesign" ref={howSectionRef}>
       <div className="how-bg-overlay" aria-hidden="true" />
       
-      <motion.div 
+      <Motion.div
         className="how-redesign-container"
         variants={containerVariants}
         initial="hidden"
@@ -58,18 +59,18 @@ export default function LandingHowItWorksSection({ howSectionRef, showScrollIndi
         viewport={{ once: true, margin: "-100px" }}
       >
         <div className="how-redesign-content">
-          <motion.div variants={itemVariants} className="how-header">
+          <Motion.div variants={itemVariants} className="how-header">
             <h2 className="how-headline">
               Just You and <span>the Mic</span>
             </h2>
             <p className="how-subheadline">
               No Judgement. Just Data. Master the stage with objective feedback.
             </p>
-          </motion.div>
+          </Motion.div>
 
           <div className="how-visual-center">
             {/* Center Visual - Laptop */}
-            <motion.div 
+            <Motion.div
               className="how-visual-wrap"
               animate={{ 
                 y: [0, -12, 0],
@@ -82,19 +83,18 @@ export default function LandingHowItWorksSection({ howSectionRef, showScrollIndi
             >
               <div className="how-visual-glow" />
               <img 
-                src="https://assets.bigkas.site/Images/Laptop.webp" 
-                srcSet="https://assets.bigkas.site/Images/Laptop.webp 1x"
+                src={laptopImage}
                 alt="Bigkas on Laptop" 
                 className="how-visual-img" 
                 loading="lazy"
                 fetchPriority="high"
               />
-            </motion.div>
+            </Motion.div>
 
             {/* Floating Cards */}
             <div className="how-floating-cards">
               {processSteps.map((step, i) => (
-                <motion.div
+                <Motion.div
                   key={i}
                   className={`how-step-card step-card-${i + 1}`}
                   initial={{ opacity: 0, scale: 0.8, x: step.x * 1.5, y: step.y * 1.5 }}
@@ -115,12 +115,12 @@ export default function LandingHowItWorksSection({ howSectionRef, showScrollIndi
                     <h3>{step.title}</h3>
                     <p>{step.text}</p>
                   </div>
-                </motion.div>
+                </Motion.div>
               ))}
             </div>
           </div>
         </div>
-      </motion.div>
+      </Motion.div>
 
       <ScrollDownIndicator hidden={!showScrollIndicator} white={true} />
     </section>

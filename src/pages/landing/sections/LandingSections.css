@@ -768,7 +768,7 @@
 /* Section 5: Blank */
 .section-five-section {
   position: relative;
-  background-image: url('https://assets.bigkas.site/Images/GraduationSpeech.jpeg');
+  background-image: url('../../../assets/landing/GraduationSpeech.jpeg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

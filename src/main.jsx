@@ -15,6 +15,19 @@ import './styles/bigkas-bottom-sheet-motion.css';
 
 const isNativePlatform = Capacitor.isNativePlatform();
 
+if (typeof String.prototype.replaceAll !== 'function') {
+  String.prototype.replaceAll = function replaceAll(searchValue, replaceValue) {
+    const source = String(this);
+    if (searchValue instanceof RegExp) {
+      if (!searchValue.global) {
+        throw new TypeError('String.prototype.replaceAll called with a non-global RegExp argument');
+      }
+      return source.replace(searchValue, replaceValue);
+    }
+    return source.split(String(searchValue)).join(String(replaceValue));
+  };
+}
+
 function clearNativeWebCaches() {
   if (!isNativePlatform || typeof window === 'undefined') return;
 
@@ -60,7 +73,11 @@ createRoot(document.getElementById('root')).render(
 // Register Service Worker for asset caching
 if (!isNativePlatform && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(registration => {
+    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(registration => {
+      registration.update().catch(() => {});
+      if (registration.waiting) {
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      }
       console.log('SW registered: ', registration);
     }).catch(registrationError => {
       console.log('SW registration failed: ', registrationError);

@@ -1,10 +1,9 @@
-const CACHE_NAME = 'bigkas-assets-v1';
+const CACHE_NAME = 'bigkas-assets-v2';
+const CACHE_PREFIX = 'bigkas-assets-';
 const ASSET_DOMAIN = 'assets.bigkas.site';
 
 // Assets to cache immediately if needed (optional)
 const PRECACHE_ASSETS = [
-  '/',
-  '/index.html',
   '/manifest.json',
 ];
 
@@ -22,9 +21,10 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
+          if (cacheName.startsWith(CACHE_PREFIX) && cacheName !== CACHE_NAME) {
             return caches.delete(cacheName);
           }
+          return undefined;
         })
       );
     })
@@ -32,11 +32,23 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener('fetch', (event) => {
   // Cache API only supports GET requests — skip everything else immediately.
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
+
+  // Never cache the SPA shell. It contains hashed JS/CSS filenames that must
+  // refresh on deploy so OAuth redirects cannot revive missing old chunks.
+  if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+    return;
+  }
 
   // Strategy: Cache First for assets from assets.bigkas.site
   if (url.hostname === ASSET_DOMAIN || url.pathname.match(/\.(webp|mp3|webm|mp4|png|jpg|svg|json)$/)) {
@@ -48,7 +60,8 @@ self.addEventListener('fetch', (event) => {
 
         return fetch(event.request).then((response) => {
           // Only cache valid same-origin or CORS responses.
-          if (!response || response.status !== 200 || (response.type !== 'basic' && response.type !== 'cors')) {
+          const contentType = response?.headers?.get('content-type') || '';
+          if (!response || response.status !== 200 || (response.type !== 'basic' && response.type !== 'cors') || contentType.includes('text/html')) {
             return response;
           }
 

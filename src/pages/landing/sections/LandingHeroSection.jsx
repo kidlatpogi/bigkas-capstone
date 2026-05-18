@@ -1,6 +1,7 @@
 import PushButton from '../../../components/common/PushButton';
 import ScrollDownIndicator from '../../../components/common/ScrollDownIndicator';
 import { ROUTES } from '../../../utils/constants';
+import graduationSpeechImage from '../../../assets/landing/GraduationSpeech.jpeg';
 
 export default function LandingHeroSection({
   heroSectionRef,
@@ -18,8 +19,7 @@ export default function LandingHeroSection({
       <div className="section-shell hero-shell">
         <div className="hero-visual">
           <img 
-            src="https://assets.bigkas.site/Images/GraduationSpeech.jpeg" 
-            srcSet="https://assets.bigkas.site/Images/GraduationSpeech.webp"
+            src={graduationSpeechImage}
             alt="Bigkas coach" 
             className="hero-character" 
             fetchPriority="high" 

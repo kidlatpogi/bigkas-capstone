@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { IoCheckmarkCircle, IoSearch, IoNotificationsOutline, IoLockClosed, IoGift, IoTrophy } from 'react-icons/io5';
 import { getSpriteUrl } from '../../utils/assetUtils';
 import { useAuthContext } from '../../context/useAuthContext';
-import { useActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
+import { useAllActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 import { useJourneyRemoteState } from '../../hooks/useJourneyRemoteState';
 import {
   getActivityMetrics,
@@ -21,7 +21,12 @@ import {
   claimAllAchievements as clearAllNotifs,
 } from '../../utils/achievementClaims';
 import { fetchUserAchievements, claimAchievementInDB } from '../../services/achievementsService';
-import { claimTrophyLevel, getClaimedTrophyLevels, getTrophyImageUrl } from '../../utils/trophyClaims';
+import {
+  claimTrophyInDB,
+  fetchUserTrophyClaims,
+  getClaimedTrophyLevelsFromRows,
+} from '../../services/trophiesService';
+import { getTrophyImageUrl } from '../../utils/trophyClaims';
 import './AchievementsPageMobile.css';
 
 const badgeImg      = getSpriteUrl('Badges/Badge.png');
@@ -64,19 +69,42 @@ export default function AchievementsPageMobile() {
   const [claimingId, setClaimingId] = useState(null);
   const [congratsBadge, setCongratsBadge] = useState(null);
   const [congratsQueue, setCongratsQueue] = useState([]);
-  const [claimedTrophyLevels, setClaimedTrophyLevels] = useState(() => getClaimedTrophyLevels(user?.id));
+  const [trophyRows, setTrophyRows] = useState([]);
+  const [, setTrophyError] = useState('');
 
   const currentLevelNumber = user?.speakerLevelNumber || 1;
-  const { tasks, loading: tasksLoading } = useActivitiesJourneyTasks(currentLevelNumber);
+  const { tasks, loading: tasksLoading } = useAllActivitiesJourneyTasks();
   const { metricsSyncKey } = useJourneyRemoteState(user);
   const scopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
   const activityMetrics = useMemo(() => {
     void metricsSyncKey;
     return getActivityMetrics(scopeKey);
   }, [scopeKey, metricsSyncKey]);
+  const claimedTrophyLevels = useMemo(() => getClaimedTrophyLevelsFromRows(trophyRows), [trophyRows]);
 
   useEffect(() => {
-    setClaimedTrophyLevels(getClaimedTrophyLevels(user?.id));
+    let cancelled = false;
+    if (!user?.id) {
+      setTrophyRows([]);
+      setTrophyError('');
+      return undefined;
+    }
+
+    fetchUserTrophyClaims(user.id)
+      .then(({ trophies, backendUnavailable }) => {
+        if (cancelled) return;
+        setTrophyRows(trophies);
+        setTrophyError(backendUnavailable ? 'Trophy saving needs the latest database migration.' : '');
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setTrophyRows([]);
+        setTrophyError(err?.message || 'Failed to load trophies.');
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   const loadAchievements = useCallback(async () => {
@@ -197,28 +225,34 @@ export default function AchievementsPageMobile() {
   }, [congratsQueue]);
 
   const trophies = useMemo(() => {
+    const completedIds = new Set((activityMetrics.completedActivityIds || []).map(String));
     return [1, 2, 3, 4, 5].map((lvl) => {
-      const isCurrentLevel = lvl === currentLevelNumber;
-      const total = isCurrentLevel ? tasks.length : 0;
-      const current = isCurrentLevel ? tasks.filter((t) => isActivityTaskCompleted(t.id, activityMetrics)).length : 0;
-      const isCompleted = lvl < currentLevelNumber || (isCurrentLevel && total > 0 && current >= total);
-      const isLocked = lvl > currentLevelNumber;
+      const levelTasks = tasks.filter((task) => Number(task.target_level) === lvl);
+      const total = levelTasks.length;
+      const current = levelTasks.filter((task) => completedIds.has(String(task.id)) || isActivityTaskCompleted(task.id, activityMetrics)).length;
+      const isCompleted = total > 0 && current >= total;
+      const isLocked = lvl > currentLevelNumber && !isCompleted;
       const claimed = claimedTrophyLevels.includes(lvl);
       return { id: lvl, name: RANK_NAMES[lvl - 1], rankImg: RANK_IMGS[lvl - 1], trophyImg: getTrophyImageUrl(lvl), total, current, isCompleted, isLocked, claimed, claimable: isCompleted && !claimed };
     });
   }, [currentLevelNumber, tasks, activityMetrics, claimedTrophyLevels]);
 
-  const handleClaimTrophy = useCallback((trophy) => {
+  const handleClaimTrophy = useCallback(async (trophy) => {
     if (!trophy?.claimable) return;
-    const next = claimTrophyLevel(user?.id, trophy.id);
-    setClaimedTrophyLevels(next);
-    setCongratsBadge({
-      id: `trophy-${trophy.id}`,
-      name: `Level ${trophy.id} Trophy`,
-      description: `You claimed your Level ${trophy.id} completion trophy.`,
-      badgeUrl: trophy.trophyImg,
-    });
-  }, [user?.id]);
+    setTrophyError('');
+    try {
+      const next = await claimTrophyInDB(trophy.id);
+      setTrophyRows(next);
+      setCongratsBadge({
+        id: `trophy-${trophy.id}`,
+        name: `Level ${trophy.id} Trophy`,
+        description: `You claimed your Level ${trophy.id} completion trophy.`,
+        badgeUrl: trophy.trophyImg,
+      });
+    } catch (err) {
+      setTrophyError(err?.message || 'Failed to claim trophy.');
+    }
+  }, []);
 
   const filteredBadges = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();

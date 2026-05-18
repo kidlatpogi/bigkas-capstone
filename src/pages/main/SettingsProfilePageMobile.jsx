@@ -22,6 +22,12 @@ import {
   getTrophyTitle,
   setFeaturedTrophyLevel,
 } from '../../utils/trophyClaims';
+import {
+  fetchUserTrophyClaims,
+  getClaimedTrophyLevelsFromRows,
+  getFeaturedTrophyLevelFromRows,
+  setFeaturedTrophyInDB,
+} from '../../services/trophiesService';
 
 const mascotSprite = getSpriteUrl('Robot/0002.webp');
 
@@ -37,7 +43,7 @@ const THEME_CONFIG = [
 
 function SettingsProfilePageMobile() {
   const navigate = useNavigate();
-  const { user, updateProfile, uploadAvatar, logout } = useAuthContext();
+  const { user, updateProfile, uploadAvatar } = useAuthContext();
   const fileRef = useRef(null);
 
   const [firstName, setFirstName] = useState('');
@@ -55,8 +61,8 @@ function SettingsProfilePageMobile() {
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
   const [heroTheme, setHeroTheme] = useState(DEFAULT_PROFILE_THEME);
   const [heroThemeUserId, setHeroThemeUserId] = useState(null);
-  const [claimedTrophyLevels, setClaimedTrophyLevels] = useState(() => getClaimedTrophyLevels(user?.id));
-  const [featuredTrophy, setFeaturedTrophy] = useState(() => getFeaturedTrophy(user?.id));
+  const [claimedTrophyLevels, setClaimedTrophyLevels] = useState([]);
+  const [featuredTrophy, setFeaturedTrophy] = useState(null);
 
   const userLevel = useMemo(() => getBigkasLevelFromUser(user), [user]);
   const currentLevelNumber = userLevel.levelNumber;
@@ -96,8 +102,36 @@ function SettingsProfilePageMobile() {
   }, [activeHeroTheme, heroTheme, heroThemeUserId, user?.id]);
 
   useEffect(() => {
-    setClaimedTrophyLevels(getClaimedTrophyLevels(user?.id));
-    setFeaturedTrophy(getFeaturedTrophy(user?.id));
+    let cancelled = false;
+    if (!user?.id) {
+      setClaimedTrophyLevels([]);
+      setFeaturedTrophy(null);
+      return undefined;
+    }
+
+    fetchUserTrophyClaims(user.id)
+      .then(({ trophies, backendUnavailable }) => {
+        if (cancelled) return;
+        if (backendUnavailable) {
+          setClaimedTrophyLevels(getClaimedTrophyLevels(user.id));
+          setFeaturedTrophy(getFeaturedTrophy(user.id));
+          return;
+        }
+
+        const levels = getClaimedTrophyLevelsFromRows(trophies);
+        const featuredLevel = getFeaturedTrophyLevelFromRows(trophies);
+        setClaimedTrophyLevels(levels);
+        setFeaturedTrophy(featuredLevel ? { level: featuredLevel, label: `Level ${featuredLevel} Trophy`, title: getTrophyTitle(featuredLevel) } : null);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setClaimedTrophyLevels([]);
+        setFeaturedTrophy(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   const hasChanges = useMemo(() => {
@@ -175,22 +209,20 @@ function SettingsProfilePageMobile() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate(ROUTES.LOGIN);
-    } catch (err) {
-      setUpdateMessage({ type: 'error', text: 'Failed to log out.' });
-    }
-  };
-
   const userInitials = useMemo(() => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || '?';
   }, [firstName, lastName]);
 
-  const handleFeatureTrophy = useCallback((level) => {
-    const next = setFeaturedTrophyLevel(user?.id, level);
-    setFeaturedTrophy(getFeaturedTrophy(user?.id) || (next ? { level: next, label: `Level ${next} Trophy`, title: getTrophyTitle(next) } : null));
+  const handleFeatureTrophy = useCallback(async (level) => {
+    try {
+      const trophies = await setFeaturedTrophyInDB(level);
+      const featuredLevel = getFeaturedTrophyLevelFromRows(trophies);
+      setClaimedTrophyLevels(getClaimedTrophyLevelsFromRows(trophies));
+      setFeaturedTrophy(featuredLevel ? { level: featuredLevel, label: `Level ${featuredLevel} Trophy`, title: getTrophyTitle(featuredLevel) } : null);
+    } catch {
+      const next = setFeaturedTrophyLevel(user?.id, level);
+      setFeaturedTrophy(getFeaturedTrophy(user?.id) || (next ? { level: next, label: `Level ${next} Trophy`, title: getTrophyTitle(next) } : null));
+    }
   }, [user?.id]);
 
   return (

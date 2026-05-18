@@ -15,6 +15,34 @@ function htmlPerformanceHintsPlugin() {
       const htmlAsset = bundle['index.html'];
       if (!htmlAsset || htmlAsset.type !== 'asset' || typeof htmlAsset.source !== 'string') return;
 
+      const staleAssetRecoveryScript = [
+        '<script>',
+        '!function(){',
+        'var key="bigkas_stale_asset_recovery";',
+        'function clearCaches(){',
+        'try{if("serviceWorker"in navigator&&navigator.serviceWorker.getRegistrations){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister().catch(function(){});});}).catch(function(){});}}catch(e){}',
+        'try{if("caches"in window&&caches.keys){caches.keys().then(function(keys){keys.forEach(function(k){caches.delete(k).catch(function(){});});}).catch(function(){});}}catch(e){}',
+        '}',
+        'function recover(message){',
+        'message=String(message||"");',
+        'if(message.indexOf("Unable to preload CSS")===-1&&message.indexOf("Failed to fetch dynamically imported module")===-1)return;',
+        'var last=Number(sessionStorage.getItem(key)||0);',
+        'if(Date.now()-last<10000)return;',
+        'sessionStorage.setItem(key,String(Date.now()));',
+        'clearCaches();',
+        'setTimeout(function(){location.reload();},300);',
+        '}',
+        'window.addEventListener("error",function(e){recover(e.message||(e.error&&e.error.message));});',
+        'window.addEventListener("unhandledrejection",function(e){var r=e.reason;recover((r&&r.message)||r);});',
+        '}();',
+        '</script>',
+      ].join('');
+
+      htmlAsset.source = htmlAsset.source.replace(
+        /(\s*<script type="module" crossorigin src="\/assets\/index-[^"]+\.js"><\/script>)/,
+        `\n    ${staleAssetRecoveryScript}$1`,
+      );
+
       htmlAsset.source = htmlAsset.source.replace(
         /<link rel="stylesheet" crossorigin href="\/assets\/(index-[^"]+\.css)">/,
         (match, fileName) => {

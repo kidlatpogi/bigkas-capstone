@@ -1,21 +1,8 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  Cell
-} from 'recharts';
+import { Suspense, lazy, useState, useEffect, useMemo, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useSessionContext } from '../../context/useSessionContext';
 import { useAuthContext } from '../../context/useAuthContext';
 
-import { ROUTES } from '../../utils/constants';
-import { formatDuration } from '../../utils/formatters';
-import { getSessionMode } from '../../utils/sessionFormatting';
 import {
   GLOBAL_ACTIVITY_SCOPE,
   addPointsToSpeakerProgress,
@@ -28,17 +15,17 @@ import {
   createSpeakerPointsHistoryEntry,
 } from '../../utils/speakerPointsHistory';
 import { getSpriteUrl } from '../../utils/assetUtils';
-import { useAllActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 
 const heroRobotImage = getSpriteUrl('Robot/0018.webp');
 const visualSprite = getSpriteUrl('common/Visual.webp');
 const verbalSprite = getSpriteUrl('common/Verbal.webp');
 const vocalSprite = getSpriteUrl('common/Vocal.webp');
-import HistoryPageMobile from './HistoryPageMobile';
 import './ProgressPage.css'; 
 import './ProgressPageMobile.css';
 
 const TIME_RANGES = ['All', 'Daily', 'Weekly', 'Monthly', 'Yearly'];
+const MobileProgressBarChart = lazy(() => import('../../components/progress/MobileProgressBarChart'));
+const ProgressHistoryMobileLazy = lazy(() => import('./ProgressHistoryMobileLazy'));
 
 // --- Helper Functions ---
 function toFivePointScore(rawScore) {
@@ -100,17 +87,17 @@ function resolveTripleVForProgress(session) {
 // --- Component ---
 function ProgressPageMobile() {
   const location = useLocation();
-  const navigate = useNavigate();
   const { sessions, fetchAllSessions, isLoading } = useSessionContext();
   const { user, isInitializing, updateUserMetadata } = useAuthContext();
   const hasRequestedForUserRef = useRef('');
   const hasLoggedActivityTaskRef = useRef(false);
   const activityScopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
+  const chartLoadRef = useRef(null);
 
   const [range, setRange] = useState('All');
   const [pillarRange, setPillarRange] = useState('All');
   const [showMobileHistory, setShowMobileHistory] = useState(false);
-  const { tasks: activityTasks } = useAllActivitiesJourneyTasks();
+  const [shouldLoadChart, setShouldLoadChart] = useState(false);
 
   const userSessions = useMemo(() => {
     const userId = String(user?.id || '').trim();
@@ -158,7 +145,7 @@ function ProgressPageMobile() {
       });
     };
     syncProgressVisitReward();
-  }, [activityScopeKey, location.state, updateUserMetadata, user?.id, user?.speakerPoints, user?.speakerPointsHistory]);
+  }, [activityScopeKey, location.state, updateUserMetadata, user, user?.id, user?.speakerPoints, user?.speakerPointsHistory]);
 
   useEffect(() => {
     if (isInitializing) return;
@@ -168,6 +155,23 @@ function ProgressPageMobile() {
     hasRequestedForUserRef.current = userId;
     fetchAllSessions();
   }, [fetchAllSessions, isInitializing, user]);
+
+  useEffect(() => {
+    const target = chartLoadRef.current;
+    if (!target || typeof window === 'undefined' || typeof IntersectionObserver === 'undefined') {
+      const frameId = window.requestAnimationFrame(() => setShouldLoadChart(true));
+      return () => window.cancelAnimationFrame(frameId);
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      setShouldLoadChart(true);
+      observer.disconnect();
+    }, { rootMargin: '260px 0px' });
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, []);
 
   const chartData = useMemo(() => {
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -395,20 +399,12 @@ function ProgressPageMobile() {
             </div>
             
             {chartData.some(d => d.value !== null) ? (
-              <div className="progress-mobile-chart-container">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} margin={{ top: 0, right: 0, left: -30, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} ticks={[1, 2, 3, 4, 5]} domain={[1, 5]} />
-                    <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                    <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={20}>
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={Number.isFinite(entry.value) ? '#10b981' : '#e2e8f0'} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="progress-mobile-chart-container" ref={chartLoadRef}>
+                {shouldLoadChart ? (
+                  <Suspense fallback={null}>
+                    <MobileProgressBarChart chartData={chartData} />
+                  </Suspense>
+                ) : null}
               </div>
             ) : (
               <div className="progress-mobile-empty-state">
@@ -491,13 +487,16 @@ function ProgressPageMobile() {
         </div>
 
         {/* History Sidebar Overlay */}
-        <HistoryPageMobile
-          isOpen={showMobileHistory}
-          onClose={() => setShowMobileHistory(false)}
-          userSessions={userSessions}
-          isLoading={isLoading}
-          activityTasks={activityTasks}
-        />
+        {showMobileHistory ? (
+          <Suspense fallback={null}>
+            <ProgressHistoryMobileLazy
+              isOpen={showMobileHistory}
+              onClose={() => setShowMobileHistory(false)}
+              userSessions={userSessions}
+              isLoading={isLoading}
+            />
+          </Suspense>
+        ) : null}
       </div>
     </div>
   );

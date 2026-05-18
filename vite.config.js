@@ -6,12 +6,35 @@ import react from '@vitejs/plugin-react'
 
 const appWebRoot = path.dirname(fileURLToPath(import.meta.url))
 
+function inlineEntryCssPlugin() {
+  return {
+    name: 'bigkas-inline-entry-css',
+    apply: 'build',
+    enforce: 'post',
+    generateBundle(_options, bundle) {
+      const htmlAsset = bundle['index.html'];
+      if (!htmlAsset || htmlAsset.type !== 'asset' || typeof htmlAsset.source !== 'string') return;
+
+      htmlAsset.source = htmlAsset.source.replace(
+        /<link rel="stylesheet" crossorigin href="\/assets\/(index-[^"]+\.css)">/,
+        (match, fileName) => {
+          const bundleKey = `assets/${fileName}`;
+          const cssAsset = bundle[bundleKey];
+          if (!cssAsset || cssAsset.type !== 'asset' || typeof cssAsset.source !== 'string') return match;
+          delete bundle[bundleKey];
+          return `<style data-inline-entry-css>${cssAsset.source}</style>`;
+        },
+      );
+    },
+  };
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   // Ensure `.env` is always loaded from this app (avoids empty import.meta.env when cwd differs, e.g. turbo/monorepo).
   root: appWebRoot,
   envDir: appWebRoot,
-  plugins: [react()],
+  plugins: [react(), inlineEntryCssPlugin()],
   resolve: {
     // Single React instance — required when npm workspaces hoist a different copy than a nested dependency (invalid hook call).
     dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],

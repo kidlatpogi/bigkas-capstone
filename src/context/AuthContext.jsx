@@ -5,6 +5,7 @@ import { Browser } from '@capacitor/browser';
 import { supabase, ensureFreshAccessToken, isJwtExpiredError } from '../lib/supabase';
 import { ENV } from '../config/env';
 import { normalizeSpeakerPointsHistory } from '../utils/speakerPointsHistory';
+import { BIGKAS_LEVELS, getBigkasLevelFromScore, mapPercentToEntryScore } from '../utils/activityProgress';
 
 /**
  * Authentication Context — backed by Supabase Auth
@@ -559,6 +560,107 @@ function getOnboardingStageRank(stage) {
   return ranks[stage] || 0;
 }
 
+function normalizeLevelNumber(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return null;
+  const rounded = Math.round(number);
+  if (rounded < 1 || rounded > 5) return null;
+  return rounded;
+}
+
+function normalizeEntryScore(value) {
+  const score = Number(value);
+  if (!Number.isFinite(score) || score < 1 || score > 5) return null;
+  return Math.round(score * 100) / 100;
+}
+
+function getLevelName(levelNumber) {
+  const normalized = normalizeLevelNumber(levelNumber) || 1;
+  return BIGKAS_LEVELS[normalized - 1]?.name || BIGKAS_LEVELS[0].name;
+}
+
+function firstElevatedLevel(values = []) {
+  for (const value of values) {
+    const level = normalizeLevelNumber(value);
+    if (level && level > 1) return level;
+  }
+  return null;
+}
+
+function firstValidLevel(values = []) {
+  for (const value of values) {
+    const level = normalizeLevelNumber(value);
+    if (level) return level;
+  }
+  return null;
+}
+
+function resolveAuthEntryScore(meta = {}, profile = {}) {
+  const direct = normalizeEntryScore(profile.diagnostic_score ?? meta.speaker_entry_score);
+  if (direct) return direct;
+
+  const finalScore = Number(meta.onboarding_level_analysis?.final_score);
+  if (Number.isFinite(finalScore) && finalScore > 0) {
+    return mapPercentToEntryScore(finalScore);
+  }
+
+  return null;
+}
+
+function resolveLevelFromSources(primary = [], fallbacks = [], entryScore = null) {
+  const elevatedPrimary = firstElevatedLevel(primary);
+  if (elevatedPrimary) return elevatedPrimary;
+
+  const derivedFromEntry = entryScore
+    ? normalizeLevelNumber(getBigkasLevelFromScore(entryScore)?.levelNumber)
+    : null;
+  if (derivedFromEntry && derivedFromEntry > 1) return derivedFromEntry;
+
+  const elevatedFallback = firstElevatedLevel(fallbacks);
+  if (elevatedFallback) return elevatedFallback;
+
+  if (derivedFromEntry) return derivedFromEntry;
+
+  return firstValidLevel(primary) || firstValidLevel(fallbacks) || 1;
+}
+
+function resolveAuthLevelFields(meta = {}, profile = {}) {
+  const entryScore = resolveAuthEntryScore(meta, profile);
+  const speakerLevelNumber = resolveLevelFromSources(
+    [
+      profile.speaker_level,
+      meta.speaker_level_number,
+      meta.onboarding_level_analysis?.estimated_level_number,
+    ],
+    [
+      profile.current_level,
+      meta.progress_level_number,
+      meta.current_level,
+    ],
+    entryScore,
+  );
+  const progressLevelNumber = resolveLevelFromSources(
+    [
+      profile.current_level,
+      meta.progress_level_number,
+      meta.current_level,
+    ],
+    [
+      profile.speaker_level,
+      meta.speaker_level_number,
+      meta.onboarding_level_analysis?.estimated_level_number,
+    ],
+    entryScore,
+  );
+
+  return {
+    speakerEntryScore: entryScore || speakerLevelNumber,
+    speakerLevel: getLevelName(speakerLevelNumber),
+    speakerLevelNumber,
+    progressLevelNumber,
+  };
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => getStoredAdminSession());
@@ -611,6 +713,7 @@ export function AuthProvider({ children }) {
     const u = supaSession.user || supaSession;
     const meta = u?.user_metadata || {};
     const onboardingStage = deriveOnboardingStage(meta, profile);
+    const levelFields = resolveAuthLevelFields(meta, profile);
     const fullName = meta.full_name || meta.name || u.email?.split('@')[0] || 'User';
     const fallbackFirst = fullName.split(' ')[0] || '';
     const fallbackLast = fullName.split(' ').slice(1).join(' ');
@@ -635,10 +738,10 @@ export function AuthProvider({ children }) {
       pretestFreeScore: Number(meta.pretest_free_score ?? 0) || 0,
       speakerProfile: meta.speaker_profile || null,
       speakerPoints: Number(meta.speaker_points ?? 0) || 0,
-      speakerEntryScore: Number(meta.speaker_entry_score) || null,
-      speakerLevel: String(meta.speaker_level || 'Novice'),
-      speakerLevelNumber: Number(meta.speaker_level_number ?? 1) || 1,
-      progressLevelNumber: Number(meta.progress_level_number ?? 1) || 1,
+      speakerEntryScore: levelFields.speakerEntryScore,
+      speakerLevel: levelFields.speakerLevel,
+      speakerLevelNumber: levelFields.speakerLevelNumber,
+      progressLevelNumber: levelFields.progressLevelNumber,
       speakerPointsHistory: normalizeSpeakerPointsHistory(meta.speaker_points_history),
       onboardingLevelAnalysis: meta.onboarding_level_analysis || null,
       dashboardTutorialSeen: parseMetadataBoolean(profile.dashboard_tutorial_seen) || parseMetadataBoolean(meta.dashboard_tutorial_seen) || parseMetadataBoolean(meta.is_tutorial_completed),
@@ -765,6 +868,16 @@ export function AuthProvider({ children }) {
              if (nextStage === 'profiling' || !nextStage) nextStage = 'pretest';
           }
 
+          const mergedLevelFields = resolveAuthLevelFields(
+            {
+              speaker_entry_score: prev.speakerEntryScore,
+              speaker_level_number: prev.speakerLevelNumber,
+              progress_level_number: prev.progressLevelNumber,
+              onboarding_level_analysis: prev.onboardingLevelAnalysis,
+            },
+            profile,
+          );
+
           return {
             ...prev,
             isProfilingCompleted: !!profile.is_profiling_completed,
@@ -773,9 +886,10 @@ export function AuthProvider({ children }) {
             profilingCompleted,
             pretestCompleted,
             onboardingStage: nextStage,
-            progressLevelNumber: profile.current_level || prev.progressLevelNumber || 1,
-            speakerLevelNumber: profile.speaker_level || prev.speakerLevelNumber || 1,
-            speakerEntryScore: profile.diagnostic_score || prev.speakerEntryScore,
+            progressLevelNumber: mergedLevelFields.progressLevelNumber,
+            speakerLevel: mergedLevelFields.speakerLevel,
+            speakerLevelNumber: mergedLevelFields.speakerLevelNumber,
+            speakerEntryScore: mergedLevelFields.speakerEntryScore,
             isAudioMuted: typeof window !== 'undefined' && window.localStorage.getItem('bigkas_global_audio_muted_v1') === '1',
           };
         });
@@ -1640,6 +1754,37 @@ export function AuthProvider({ children }) {
     if (updates.onboarding_completed !== undefined) {
       profileUpdates.diagnostic_completed_at = updates.onboarding_completed ? new Date().toISOString() : null;
     }
+    const nextMeta = data.user?.user_metadata || {};
+    const resolvedLevelFields = resolveAuthLevelFields(nextMeta);
+    const requestedProgressLevel = normalizeLevelNumber(
+      updates.progress_level_number ?? updates.current_level,
+    );
+    const requestedSpeakerLevel = normalizeLevelNumber(
+      updates.speaker_level_number ?? (
+        Number.isFinite(Number(updates.speaker_level)) ? updates.speaker_level : null
+      ),
+    );
+    const requestedEntryScore = normalizeEntryScore(updates.speaker_entry_score);
+    const analysisLevel = normalizeLevelNumber(updates.onboarding_level_analysis?.estimated_level_number);
+
+    if (requestedProgressLevel) {
+      profileUpdates.current_level = requestedProgressLevel;
+    } else if (updates.onboarding_completed || analysisLevel) {
+      profileUpdates.current_level = analysisLevel || resolvedLevelFields.progressLevelNumber;
+    }
+
+    if (requestedSpeakerLevel) {
+      profileUpdates.speaker_level = requestedSpeakerLevel;
+    } else if (updates.onboarding_completed || analysisLevel) {
+      profileUpdates.speaker_level = analysisLevel || resolvedLevelFields.speakerLevelNumber;
+    }
+
+    if (requestedEntryScore) {
+      profileUpdates.diagnostic_score = requestedEntryScore;
+    } else if (updates.onboarding_completed && resolvedLevelFields.speakerEntryScore) {
+      profileUpdates.diagnostic_score = resolvedLevelFields.speakerEntryScore;
+    }
+
     if (updates.dashboard_tutorial_seen !== undefined) {
       profileUpdates.dashboard_tutorial_seen = !!updates.dashboard_tutorial_seen;
     }
@@ -1659,8 +1804,9 @@ export function AuthProvider({ children }) {
       await supabase.from('profiles').update(profileUpdates).eq('id', data.user.id);
     }
 
-    setUser(buildUser({ user: data.user }));
-    return { success: true, user: buildUser({ user: data.user }) };
+    const nextUser = buildUser({ user: data.user }, profileUpdates);
+    setUser(nextUser);
+    return { success: true, user: nextUser };
   }, [buildUser]);
 
   /* ── Update profile ── */

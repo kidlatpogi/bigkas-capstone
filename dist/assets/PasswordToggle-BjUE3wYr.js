@@ -1,0 +1,2 @@
+import{j as n}from"./vendor-motion-Dc5yExsh.js";import"./vendor-framework-D3vCv3Kb.js";function s({isVisible:o,onToggle:e,label:t="password",disabled:r=!1}){return n.jsx("button",{type:"button",className:"pw-toggle-btn","aria-label":o?`Hide ${t}`:`Show ${t}`,title:o?`Hide ${t}`:`Show ${t}`,onClick:e,tabIndex:0,disabled:r,children:o?"Hide":"Show"})}export{s as default};
+//# sourceMappingURL=PasswordToggle-BjUE3wYr.js.map

@@ -12,6 +12,7 @@ import {
   Legend 
 } from 'recharts';
 import { useSessionContext } from '../../context/useSessionContext';
+import { useAuthContext } from '../../context/useAuthContext';
 import { supabase } from '../../lib/supabase';
 import { ROUTES } from '../../utils/constants';
 import { formatDate, formatDuration } from '../../utils/formatters';
@@ -19,6 +20,8 @@ import { getSessionMode, getSessionSpeechType } from '../../utils/sessionFormatt
 import { sanitizeRecommendationLines } from '../../utils/analysisTranscript';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import { buildStagePassResultForSession } from '../../utils/passingScore';
+import { recordActivityEvent } from '../../utils/activityProgress';
+import { persistActivityCompletion } from '../../services/journeyProgressService';
 import { useAllActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 
 const BIGKAS_LOGO_URL = 'https://assets.bigkas.site/Images/Bigkas-Logo.webp';
@@ -263,6 +266,7 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
   const sessionId = sessionIdProp || paramSessionId;
   const { state: locationState } = useLocation();
   const { currentSession, fetchSessionById, isLoading } = useSessionContext();
+  const { user } = useAuthContext();
   const [recordingMedia, setRecordingMedia] = useState({ audioUrl: null, videoUrl: null, transcript: '' });
   const [showDetailed, setShowDetailed] = useState(() => {
     if (locationState?.showDetailed !== undefined) return !!locationState.showDetailed;
@@ -397,6 +401,16 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
     };
   }, [locationState?.stagePassResult, session]);
   const showStageGoalMessage = stagePassResult?.isActivityStage;
+
+  useEffect(() => {
+    const activityId = String(stagePassResult?.activityId || session?.activity_id || '').trim();
+    if (!user?.id || !activityId || !stagePassResult?.passed) return;
+
+    recordActivityEvent({ type: 'activity-complete', activityId }, user.id);
+    persistActivityCompletion(user.id, activityId).catch((err) => {
+      console.warn('[DetailedFeedbackPageMobile] Activity completion repair failed:', err);
+    });
+  }, [session?.activity_id, stagePassResult?.activityId, stagePassResult?.passed, user?.id]);
   const replayAction = useMemo(
     () => (session ? buildReplayAction(session, navigate, isFreeSession) : { label: 'Train Again', onClick: () => {} }),
     [session, navigate, isFreeSession],

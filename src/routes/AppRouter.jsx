@@ -55,6 +55,18 @@ function shouldDeferRootLoadingToLanding() {
   return !Capacitor.isNativePlatform() && window.location.pathname === ROUTES.HOME;
 }
 
+function LoadingScreen() {
+  return (
+    <div className="loading-screen">
+      <div className="loading-logo">
+        <img src={bigkasLogo} alt="Bigkas" className="loading-logo-image" />
+        <span>Bigkas</span>
+      </div>
+      <div className="loading-spinner" aria-label="Loading" />
+    </div>
+  );
+}
+
 /**
  * ActivityPageWrapper - Conditionally renders desktop or mobile version
  * based on viewport size
@@ -230,15 +242,7 @@ function ProtectedRoute() {
     if (shouldDeferRootLoadingToLanding()) {
       return null;
     }
-    return (
-      <div className="loading-screen">
-        <div className="loading-logo">
-          <img src={bigkasLogo} alt="Bigkas" className="loading-logo-image" />
-          <span>Bigkas</span>
-        </div>
-        <div className="loading-spinner" aria-label="Loading" />
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!isAuthenticated) {
@@ -295,15 +299,7 @@ function AdminRoute() {
     if (shouldDeferRootLoadingToLanding()) {
       return null;
     }
-    return (
-      <div className="loading-screen">
-        <div className="loading-logo">
-          <img src={bigkasLogo} alt="Bigkas" className="loading-logo-image" />
-          <span>Bigkas</span>
-        </div>
-        <div className="loading-spinner" aria-label="Loading" />
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (isAdminAuthenticated) {
@@ -344,15 +340,7 @@ function PublicRoute() {
     if (shouldDeferRootLoadingToLanding()) {
       return null;
     }
-    return (
-      <div className="loading-screen">
-        <div className="loading-logo">
-          <img src={bigkasLogo} alt="Bigkas" className="loading-logo-image" />
-          <span>Bigkas</span>
-        </div>
-        <div className="loading-spinner" aria-label="Loading" />
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (isAuthenticated) {
@@ -378,7 +366,7 @@ function AppRouter() {
       <Route
         path={ROUTES.AUTH_CALLBACK}
         element={
-          <Suspense fallback={null}>
+          <Suspense fallback={<LoadingScreen />}>
             <OAuthCallbackPage />
           </Suspense>
         }
@@ -387,7 +375,7 @@ function AppRouter() {
       <Route
         path={ROUTES.NATIVE_AUTH_CALLBACK}
         element={
-          <Suspense fallback={null}>
+          <Suspense fallback={<LoadingScreen />}>
             <NativeAuthCallbackPage />
           </Suspense>
         }
@@ -398,7 +386,7 @@ function AppRouter() {
         <Route
           path={ROUTES.HOME}
           element={isNative ? <Navigate to={ROUTES.LOGIN} replace /> : (
-            <Suspense fallback={null}>
+            <Suspense fallback={<LoadingScreen />}>
               <LandingPage />
             </Suspense>
           )}
@@ -406,7 +394,7 @@ function AppRouter() {
         <Route
           path={ROUTES.LOGIN}
           element={
-            <Suspense fallback={null}>
+            <Suspense fallback={<LoadingScreen />}>
               <LoginPage />
             </Suspense>
           }
@@ -414,7 +402,7 @@ function AppRouter() {
         <Route
           path={ROUTES.ADMIN_LOGIN_BASE}
           element={
-            <Suspense fallback={null}>
+            <Suspense fallback={<LoadingScreen />}>
               <AdminLoginPage />
             </Suspense>
           }
@@ -423,7 +411,7 @@ function AppRouter() {
           <Route
             path={ENV.ADMIN_LOGIN_PATH}
             element={
-              <Suspense fallback={null}>
+              <Suspense fallback={<LoadingScreen />}>
                 <AdminLoginPage />
               </Suspense>
             }
@@ -432,7 +420,7 @@ function AppRouter() {
         <Route
           path={ROUTES.REGISTER}
           element={
-            <Suspense fallback={null}>
+            <Suspense fallback={<LoadingScreen />}>
               <RegisterPage />
             </Suspense>
           }
@@ -443,7 +431,7 @@ function AppRouter() {
       <Route
         path={ROUTES.VERIFY_EMAIL}
         element={
-          <Suspense fallback={null}>
+          <Suspense fallback={<LoadingScreen />}>
             <VerifyEmailPage />
           </Suspense>
         }
@@ -453,7 +441,7 @@ function AppRouter() {
       <Route
         path={ROUTES.FORGOT_PASSWORD}
         element={
-          <Suspense fallback={null}>
+          <Suspense fallback={<LoadingScreen />}>
             <ForgotPasswordPage />
           </Suspense>
         }
@@ -462,7 +450,7 @@ function AppRouter() {
       {/* Protected Routes - require authentication */}
       <Route
         element={
-          <Suspense fallback={null}>
+          <Suspense fallback={<LoadingScreen />}>
             <ProtectedRoute />
           </Suspense>
         }
@@ -504,7 +492,7 @@ function AppRouter() {
 
       <Route
         element={
-          <Suspense fallback={null}>
+          <Suspense fallback={<LoadingScreen />}>
             <AdminRoute />
           </Suspense>
         }
@@ -513,7 +501,7 @@ function AppRouter() {
       </Route>
 
       {/* 404 - Redirect to landing */}
-      <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
+      <Route path="*" element={<Navigate to={isNative ? ROUTES.LOGIN : ROUTES.HOME} replace />} />
     </Routes>
   );
 }

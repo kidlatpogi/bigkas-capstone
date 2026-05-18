@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { IoChevronBack } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
@@ -9,10 +9,8 @@ import { AnimatePresence, LazyMotion, domAnimation, motion as Motion } from 'fra
 import PushButton from '../../components/common/PushButton';
 import { getAssetUrl } from '../../utils/assetUtils';
 import googleIcon from '../../assets/logos/google-icon.svg';
+import LoginPageMobile from './LoginPageMobile';
 import './LoginPage.css';
-
-// Lazy load the specialized mobile version
-const LoginPageMobile = lazy(() => import('./LoginPageMobile'));
 
 const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 
@@ -564,9 +562,7 @@ function LoginPage() {
   }, []);
 
   return (
-    <Suspense fallback={null}>
-      {isMobileOrTablet ? <LoginPageMobile /> : <LoginPageDesktop />}
-    </Suspense>
+    isMobileOrTablet ? <LoginPageMobile /> : <LoginPageDesktop />
   );
 }
 

@@ -4,6 +4,7 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { supabase, ensureFreshAccessToken, isJwtExpiredError } from '../lib/supabase';
 import { ENV } from '../config/env';
+import { ROUTES } from '../utils/constants';
 import { normalizeSpeakerPointsHistory } from '../utils/speakerPointsHistory';
 import { BIGKAS_LEVELS, getBigkasLevelFromScore, mapPercentToEntryScore } from '../utils/activityProgress';
 
@@ -1154,7 +1155,7 @@ export function AuthProvider({ children }) {
 
         await Browser.close().catch(() => {});
         if (!isDisposed && typeof window !== 'undefined' && window.location.pathname === '/login') {
-          window.history.replaceState(null, '', '/dashboard');
+          window.history.replaceState(null, '', ROUTES.ACTIVITY);
           window.dispatchEvent(new Event('popstate'));
         }
       } catch (authError) {
@@ -1651,7 +1652,7 @@ export function AuthProvider({ children }) {
     setError(null);
     clearAdminSession();
 
-    const redirectTo = getOAuthRedirectPath('/dashboard');
+    const redirectTo = getOAuthRedirectPath(ROUTES.ACTIVITY);
 
     const { data, error: err } = await supabase.auth.signInWithOAuth({
       provider: 'google',

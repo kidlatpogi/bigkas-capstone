@@ -1,5 +1,11 @@
 /*
-  Cache-Control: public, max-age=3600
+  Cache-Control: no-cache
+
+/index.html
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
 
 # Aggressive caching for static assets
 /assets/*

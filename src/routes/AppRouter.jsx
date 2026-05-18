@@ -472,6 +472,7 @@ function AppRouter() {
         <Route path={ROUTES.FRAMEWORKS} element={<FrameworksPage />} />
 
         {/* Progress / Activity */}
+        <Route path={ROUTES.DASHBOARD} element={<Navigate to={ROUTES.ACTIVITY} replace />} />
         <Route path={ROUTES.PROGRESS} element={<ProgressPageWrapper />} />
         <Route path={ROUTES.ACHIEVEMENTS} element={<AchievementsPageWrapper />} />
         <Route path={ROUTES.ACTIVITY} element={<ActivityPageWrapper />} />

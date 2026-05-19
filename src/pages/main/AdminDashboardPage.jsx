@@ -296,6 +296,67 @@ function getSessionDurationMinutes(session) {
   return seconds / 60;
 }
 
+function getTimestamp(value) {
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function getProfileActivityTimestamp(profile) {
+  if (!profile) return 0;
+  return Math.max(
+    getTimestamp(profile.last_active_at),
+    getTimestamp(profile.last_seen_at),
+    getTimestamp(profile.last_login_at),
+    getTimestamp(profile.last_sign_in_at),
+    getTimestamp(profile.updated_at)
+  );
+}
+
+function getActiveUserIdsForRange(users, sessions, startDate, endDate) {
+  const start = startDate.getTime();
+  const end = endDate.getTime();
+  const userIds = new Set(users.map(user => user.id));
+  const activeIds = new Set();
+
+  sessions.forEach((session) => {
+    if (!userIds.has(session.user_id)) return;
+    const timestamp = getTimestamp(session.created_at);
+    if (timestamp >= start && timestamp < end) activeIds.add(session.user_id);
+  });
+
+  users.forEach((user) => {
+    const timestamp = getProfileActivityTimestamp(user);
+    if (timestamp >= start && timestamp < end) activeIds.add(user.id);
+  });
+
+  return activeIds;
+}
+
+function normalizeDashboardScore(value) {
+  const score = Number(value);
+  if (!Number.isFinite(score) || score <= 0) return null;
+  if (score <= 5) return ((Math.min(Math.max(score, 1), 5) - 1) / 4) * 100;
+  return Math.min(Math.max(score, 0), 100);
+}
+
+function averageDashboardScore(values) {
+  const valid = values.map(normalizeDashboardScore).filter(Number.isFinite);
+  if (!valid.length) return null;
+  return Math.round(valid.reduce((sum, value) => sum + value, 0) / valid.length);
+}
+
+function getDashboardSessionScore(session, metricsRow) {
+  const verbalScore = normalizeDashboardScore(metricsRow?.verbal ?? session?.verbal_score ?? session?.context_score);
+  const vocalScore = normalizeDashboardScore(metricsRow?.vocal ?? session?.vocal_score ?? session?.acoustic_score);
+  const visualScore = normalizeDashboardScore(metricsRow?.visual ?? session?.visual_score);
+
+  if ([verbalScore, vocalScore, visualScore].every(Number.isFinite)) {
+    return (verbalScore * 0.07) + (vocalScore * 0.38) + (visualScore * 0.55);
+  }
+
+  return session?.confidence_score ?? session?.score ?? metricsRow?.confidence ?? metricsRow?.overall;
+}
+
 function modeOf(session) {
   const origin = String(session?.session_origin || '').toLowerCase();
   const mode = String(session?.session_mode || '').toLowerCase();
@@ -859,13 +920,8 @@ function AdminDashboardPage() {
     const twoWeeksAgo = shiftRange(now, 'day', -14);
     const totalUsers = visibleUsers.length;
     const adminAccounts = profiles.filter(p => isAdminProfile(p) && !isDeletedProfile(p));
-    const activeThisWeekSet = new Set();
-    const activeLastWeekSet = new Set();
-    sessions.forEach(s => {
-      const d = new Date(s.created_at);
-      if (d >= oneWeekAgo) activeThisWeekSet.add(s.user_id);
-      else if (d >= twoWeeksAgo && d < oneWeekAgo) activeLastWeekSet.add(s.user_id);
-    });
+    const activeThisWeekSet = getActiveUserIdsForRange(visibleUsers, sessions, oneWeekAgo, now);
+    const activeLastWeekSet = getActiveUserIdsForRange(visibleUsers, sessions, twoWeeksAgo, oneWeekAgo);
     const activeThisWeek = activeThisWeekSet.size;
     const activeLastWeek = activeLastWeekSet.size;
     const activeDelta = activeThisWeek - activeLastWeek;
@@ -880,8 +936,10 @@ function AdminDashboardPage() {
   }, [visibleUsers, profiles, sessions]);
 
   const activeUsersThisWeek = useMemo(() => {
-    const oneWeekAgo = shiftRange(new Date(), 'day', -7);
-    const sessionsThisWeek = sessions.filter(s => new Date(s.created_at) >= oneWeekAgo);
+    const now = new Date();
+    const oneWeekAgo = shiftRange(now, 'day', -7);
+    const activeUserIds = getActiveUserIdsForRange(visibleUsers, sessions, oneWeekAgo, now);
+    const sessionsThisWeek = sessions.filter(s => activeUserIds.has(s.user_id) && new Date(s.created_at) >= oneWeekAgo);
     const sessionsByUser = new Map();
 
     sessionsThisWeek.forEach((session) => {
@@ -890,27 +948,29 @@ function AdminDashboardPage() {
       sessionsByUser.set(session.user_id, userSessions);
     });
 
-    return Array.from(sessionsByUser.entries())
-      .map(([userId, userSessions]) => {
-        const profile = profiles.find(p => p.id === userId);
-        const scoreRows = userSessions
-          .map(session => metricBySession.get(session.id))
-          .filter(Boolean);
+    return visibleUsers
+      .filter(user => activeUserIds.has(user.id))
+      .map((profile) => {
+        const userSessions = sessionsByUser.get(profile.id) || [];
+        const scoreValues = userSessions.map((session) => {
+          const metricsRow = metricBySession.get(session.id);
+          return getDashboardSessionScore(session, metricsRow);
+        });
         const latestActiveMs = userSessions.reduce((latest, session) => (
           Math.max(latest, new Date(session.created_at).getTime())
-        ), 0);
+        ), getProfileActivityTimestamp(profile));
 
         return {
-          id: userId,
-          name: getDisplayName(profile, userId),
+          id: profile.id,
+          name: getDisplayName(profile, profile.id),
           speeches: userSessions.length,
           minutes: Number(userSessions.reduce((sum, session) => sum + getSessionDurationMinutes(session), 0).toFixed(1)),
-          averageScore: average(scoreRows.map(scores => scores.overall)),
+          averageScore: averageDashboardScore(scoreValues),
           lastActive: latestActiveMs ? new Date(latestActiveMs).toLocaleString() : 'N/A',
         };
       })
       .sort((a, b) => b.speeches - a.speeches || b.minutes - a.minutes || a.name.localeCompare(b.name));
-  }, [sessions, profiles, metricBySession]);
+  }, [sessions, visibleUsers, metricBySession]);
 
   const joinTrendData = useMemo(() => {
     const days = 14;
@@ -1769,7 +1829,7 @@ function AdminDashboardPage() {
 
         {activePage === 'overview' && (
           <>
-            <section className="admin-grid admin-grid-3">
+            <section className="admin-grid admin-grid-3" aria-label="Admin overview metrics">
               <article className="admin-card admin-kpi-card">
                 <p className="admin-kpi-label">TOTAL USERS</p>
                 <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : kpis.totalUsers}</p>
@@ -1779,6 +1839,8 @@ function AdminDashboardPage() {
                 className="admin-card admin-kpi-card"
                 role="button"
                 tabIndex={0}
+                style={{ cursor: loading ? 'default' : 'pointer' }}
+                aria-label="View active users this week"
                 onClick={() => !loading && setShowActiveUsersModal(true)}
                 onKeyDown={(event) => {
                   if (!loading && (event.key === 'Enter' || event.key === ' ')) {
@@ -1798,10 +1860,10 @@ function AdminDashboardPage() {
               </article>
             </section>
             <section className="admin-grid admin-grid-2">
-              <article className="admin-card"><h3>User Registration Trend</h3><div className="admin-chart-container">
+              <article className="admin-card"><h3>User Registration</h3><div className="admin-chart-container">
                 {loading ? <Skeleton height={300} /> : <ResponsiveContainer width="100%" height={300}><AreaChart data={joinTrendData}><XAxis dataKey="date" /><YAxis /><Tooltip /><Area type="monotone" dataKey="users" stroke="#33D2A4" fill="#33D2A433" /></AreaChart></ResponsiveContainer>}
               </div></article>
-              <article className="admin-card"><h3>Proficiency Level Distribution</h3><div className="admin-chart-container">
+              <article className="admin-card"><h3>User Level Distribution</h3><div className="admin-chart-container">
                 {loading ? <Skeleton height={300} /> : <ResponsiveContainer width="100%" height={300}><BarChart data={levelBarData}><XAxis dataKey="level" /><YAxis /><Tooltip /><Bar dataKey="users" fill="#33D2A4" radius={[8,8,0,0]} /></BarChart></ResponsiveContainer>}
               </div></article>
             </section>
@@ -2117,7 +2179,7 @@ function AdminDashboardPage() {
       </section>
 
       {showActiveUsersModal && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setShowActiveUsersModal(false)}><div className="admin-modal admin-user-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
-        <div className="admin-card-head"><div><h3>Active Users This Week</h3><p className="admin-modal-subtitle">{activeUsersThisWeek.length} user{activeUsersThisWeek.length === 1 ? '' : 's'} with recent analyzed speeches</p></div><button type="button" onClick={() => setShowActiveUsersModal(false)} className="admin-btn admin-btn--ghost">Close</button></div>
+        <div className="admin-card-head"><div><h3>Active Users This Week</h3><p className="admin-modal-subtitle">{activeUsersThisWeek.length} active user{activeUsersThisWeek.length === 1 ? '' : 's'} this week</p></div><button type="button" onClick={() => setShowActiveUsersModal(false)} className="admin-btn admin-btn--ghost">Close</button></div>
         {activeUsersThisWeek.length ? (
           <div className="admin-table-wrap"><table className="admin-table">
             <thead><tr><th>User</th><th>Speeches Analyzed</th><th>Minutes Practiced</th><th>Average Score</th><th>Last Active</th></tr></thead>
@@ -2126,7 +2188,7 @@ function AdminDashboardPage() {
                 <td><strong>{user.name}</strong></td>
                 <td>{user.speeches}</td>
                 <td>{user.minutes}</td>
-                <td>{user.averageScore || 'N/A'}</td>
+                <td>{user.averageScore == null ? 'N/A' : `${user.averageScore}%`}</td>
                 <td>{user.lastActive}</td>
               </tr>
             ))}</tbody>

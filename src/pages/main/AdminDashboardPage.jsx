@@ -3379,6 +3379,7 @@ function AdminDashboardPage() {
   const canDeleteCurrentContent = canUseAdminPermission(currentContentArea, 'delete');
   const selectedCreateAccessRole = findAccessRole(adminAccessRoles, createAdminForm.access_role_id);
   const selectedBatchAccessRole = findAccessRole(adminAccessRoles, batchAccessRoleId);
+  const selectedAdminAccountAccessRole = findAccessRole(adminAccessRoles, adminAccountForm.access_role_id);
   const selectedManagedAccessRole = findAccessRole(adminAccessRoles, selectedAccessRoleId);
   const batchTemplateColumns = getBatchTemplateColumns(batchAccountType);
   const batchReadyRowCount = batchPreview?.rows?.length || 0;
@@ -3396,6 +3397,24 @@ function AdminDashboardPage() {
   const selectedManagedRolePermissions = ADMIN_PERMISSION_AREAS
     .filter(area => selectedManagedAccessRole?.permissions?.[area.key]?.view)
     .map(area => area.label);
+
+  const handleCreateAdminRoleChange = (event) => {
+    const nextRoleValue = event.target.value;
+    setCreateAdminForm(prev => (
+      nextRoleValue === 'superadmin'
+        ? { ...prev, role: 'superadmin', access_role_id: DEFAULT_ADMIN_ACCESS_ROLE_ID }
+        : { ...prev, role: 'admin', access_role_id: nextRoleValue || DEFAULT_ADMIN_ACCESS_ROLE_ID }
+    ));
+  };
+
+  const handleAdminAccountRoleChange = (event) => {
+    const nextRoleValue = event.target.value;
+    setAdminAccountForm(prev => (
+      nextRoleValue === 'superadmin'
+        ? { ...prev, role: 'superadmin', access_role_id: DEFAULT_ADMIN_ACCESS_ROLE_ID }
+        : { ...prev, role: 'admin', access_role_id: nextRoleValue || DEFAULT_ADMIN_ACCESS_ROLE_ID }
+    ));
+  };
 
   const getReportExportData = () => {
     if (reportType === 'students') {
@@ -4335,8 +4354,8 @@ function AdminDashboardPage() {
       {showCreateAdminModal && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setShowCreateAdminModal(false)}><div className="admin-modal admin-user-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
         <div className="admin-card-head">
           <div>
-            <h3>Create Teacher Account</h3>
-            <p className="admin-modal-subtitle">Create credentials after choosing the teacher access role.</p>
+            <h3>Create Staff Account</h3>
+            <p className="admin-modal-subtitle">Create credentials after choosing the account role.</p>
           </div>
           <button type="button" onClick={() => setShowCreateAdminModal(false)} className="admin-btn admin-btn--ghost">Close</button>
         </div>
@@ -4356,21 +4375,20 @@ function AdminDashboardPage() {
           <AdminUserField label="Confirm Password">
             <AdminPasswordInput placeholder="Confirm password" value={createAdminForm.confirm_password} onChange={e => setCreateAdminForm(p => ({ ...p, confirm_password: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="System Role">
-            <select value={createAdminForm.role} onChange={e => setCreateAdminForm(p => ({ ...p, role: e.target.value }))}>
-              <option value="admin">Teacher</option>
+          <AdminUserField
+            label="Role"
+            help={createAdminForm.role === 'superadmin' ? 'Full Program Chair access.' : selectedCreateAccessRole?.description || 'Controls teacher dashboard permissions.'}
+          >
+            <select
+              value={createAdminForm.role === 'superadmin' ? 'superadmin' : createAdminForm.access_role_id}
+              onChange={handleCreateAdminRoleChange}
+            >
+              {adminAccessRoles.map(roleTemplate => <option key={roleTemplate.id} value={roleTemplate.id}>{roleTemplate.name}</option>)}
               <option value="superadmin">Program Chair</option>
             </select>
           </AdminUserField>
-          {createAdminForm.role !== 'superadmin' && (
-            <AdminUserField label="Access Role" help={selectedCreateAccessRole?.description || 'Controls teacher dashboard permissions.'}>
-              <select value={createAdminForm.access_role_id} onChange={e => setCreateAdminForm(p => ({ ...p, access_role_id: e.target.value }))}>
-                {adminAccessRoles.map(roleTemplate => <option key={roleTemplate.id} value={roleTemplate.id}>{roleTemplate.name}</option>)}
-              </select>
-            </AdminUserField>
-          )}
           <div className="admin-modal-actions admin-modal-actions--end">
-            <button type="submit" className="admin-btn admin-btn--primary" disabled={creatingAdmin}>{creatingAdmin ? 'Creating...' : 'Create Teacher'}</button>
+            <button type="submit" className="admin-btn admin-btn--primary" disabled={creatingAdmin}>{creatingAdmin ? 'Creating...' : 'Create Account'}</button>
           </div>
         </form>
       </div></div>, document.body)}
@@ -4500,18 +4518,18 @@ function AdminDashboardPage() {
           <AdminUserField label="Last Name">
             <input type="text" placeholder="Last name" value={adminAccountForm.last_name} onChange={e => setAdminAccountForm(p => ({ ...p, last_name: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="System Role">
-            <select value={adminAccountForm.role} onChange={e => setAdminAccountForm(p => ({ ...p, role: e.target.value }))}>
-              <option value="admin">Teacher</option><option value="superadmin">Program Chair</option>
+          <AdminUserField
+            label="Role"
+            help={adminAccountForm.role === 'superadmin' ? 'Full Program Chair access.' : selectedAdminAccountAccessRole?.description || 'Controls teacher dashboard permissions.'}
+          >
+            <select
+              value={adminAccountForm.role === 'superadmin' ? 'superadmin' : adminAccountForm.access_role_id}
+              onChange={handleAdminAccountRoleChange}
+            >
+              {adminAccessRoles.map(roleTemplate => <option key={roleTemplate.id} value={roleTemplate.id}>{roleTemplate.name}</option>)}
+              <option value="superadmin">Program Chair</option>
             </select>
           </AdminUserField>
-          {adminAccountForm.role !== 'superadmin' && (
-            <AdminUserField label="Access Role" help="Controls teacher dashboard permissions.">
-              <select value={adminAccountForm.access_role_id} onChange={e => setAdminAccountForm(p => ({ ...p, access_role_id: e.target.value }))}>
-                {adminAccessRoles.map(roleTemplate => <option key={roleTemplate.id} value={roleTemplate.id}>{roleTemplate.name}</option>)}
-              </select>
-            </AdminUserField>
-          )}
           <div className="admin-modal-actions">
             <button
               type="button"

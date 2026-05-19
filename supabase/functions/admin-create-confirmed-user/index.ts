@@ -145,6 +145,7 @@ Deno.serve(async (req) => {
 
   const profilePayload = {
     id: created.user.id,
+    email,
     first_name: firstName,
     last_name: lastName,
     username,

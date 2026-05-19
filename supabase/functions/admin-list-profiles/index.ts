@@ -76,7 +76,25 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: profilesError.message }, 400);
   }
 
+  const { data: sectionStudents, error: sectionStudentsError } = await supabaseAdmin
+    .from('section_students')
+    .select('*');
+
+  if (sectionStudentsError) {
+    return jsonResponse({ error: sectionStudentsError.message }, 400);
+  }
+
+  const { data: sections, error: sectionsError } = await supabaseAdmin
+    .from('sections')
+    .select('id, name');
+
+  if (sectionsError) {
+    return jsonResponse({ error: sectionsError.message }, 400);
+  }
+
   const authUsersById = new Map<string, string>();
+  const sectionsById = new Map((sections || []).map((section) => [section.id, section]));
+  const sectionStudentsByStudentId = new Map((sectionStudents || []).map((row) => [row.student_id, row]));
   const perPage = 1000;
   let page = 1;
 
@@ -96,10 +114,25 @@ Deno.serve(async (req) => {
     page += 1;
   }
 
-  const enrichedProfiles = (profiles || []).map((profile) => ({
-    ...profile,
-    email: authUsersById.get(profile.id) || null,
-  }));
+  const enrichedProfiles = (profiles || []).map((profile) => {
+    const sectionStudent = sectionStudentsByStudentId.get(profile.id);
+    const sectionId = sectionStudent?.section_id || null;
+    const section = sectionId ? sectionsById.get(sectionId) : null;
+    const authEmail = authUsersById.get(profile.id) || null;
+    const profileEmail = typeof profile.email === 'string' && profile.email.trim()
+      ? profile.email.trim()
+      : null;
+    const email = authEmail || profileEmail;
 
-  return jsonResponse({ profiles: enrichedProfiles });
+    return {
+      ...profile,
+      email,
+      auth_email: authEmail,
+      profile_email: profileEmail,
+      section_id: sectionId,
+      section_name: section?.name || null,
+    };
+  });
+
+  return jsonResponse({ profiles: enrichedProfiles, section_students: sectionStudents || [] });
 });

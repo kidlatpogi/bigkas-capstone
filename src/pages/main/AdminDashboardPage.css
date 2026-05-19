@@ -623,6 +623,25 @@ body:has(.admin-dashboard-page) .main-content {
   min-width: 900px;
 }
 
+.admin-stage-pass-table {
+  min-width: 1080px;
+}
+
+.admin-stage-pass-pagination {
+  margin-top: 12px;
+}
+
+.admin-stage-pass-pagination .admin-pagination-controls {
+  align-items: center;
+}
+
+.admin-stage-pass-pagination .admin-pagination-controls span {
+  min-width: 52px;
+  text-align: center;
+  color: var(--text);
+  font-weight: 800;
+}
+
 .admin-empty-inline {
   padding: 10px 12px;
   border: 1px dashed var(--border);
@@ -1295,19 +1314,6 @@ body:has(.admin-dashboard-page) .main-content {
   min-height: 100%;
 }
 
-.admin-user-setup-grid > .admin-batch-card--wide {
-  grid-column: 1 / -1;
-  min-height: auto;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.admin-batch-card--wide .admin-card-head {
-  margin: 0;
-  min-width: 0;
-}
-
 .admin-batch-card-actions {
   display: flex;
   align-items: center;
@@ -1319,6 +1325,29 @@ body:has(.admin-dashboard-page) .main-content {
 
 .admin-batch-card-actions .admin-btn {
   min-width: 220px;
+}
+
+.admin-account-batch-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border: 1px solid #e4edf6;
+  border-radius: 12px;
+  background: #f8fbfd;
+}
+
+.admin-account-batch-panel h4 {
+  margin: 0 0 4px;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.admin-account-batch-panel .admin-note {
+  margin: 0;
 }
 
 .admin-management-card {
@@ -1366,6 +1395,10 @@ body:has(.admin-dashboard-page) .main-content {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 4px 4px 0;
 }
 
 .admin-role-builder-fields {
@@ -1447,6 +1480,29 @@ body:has(.admin-dashboard-page) .main-content {
   accent-color: var(--accent);
 }
 
+.admin-access-role-modal .admin-modal-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  flex: 0 0 auto;
+  margin: 4px -4px 0;
+  min-height: 64px;
+  padding: 14px 0 6px;
+  align-items: center;
+  border-top: 1px solid #dfe7ef;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, #ffffff 32%);
+}
+
+.admin-access-role-modal .admin-modal-actions .admin-btn--primary {
+  min-width: 132px;
+  min-height: 42px;
+  border-radius: 12px;
+  background: #10b981;
+  border-color: #0f9f73;
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(16, 185, 129, 0.28);
+}
+
 .admin-access-role-list {
   display: grid;
   gap: 10px;
@@ -1521,6 +1577,7 @@ body:has(.admin-dashboard-page) .main-content {
 .admin-batch-modal {
   width: min(760px, calc(100% - 32px)) !important;
   gap: 0;
+  overflow: visible;
 }
 
 .admin-batch-modal .admin-modal-subtitle {
@@ -1530,6 +1587,11 @@ body:has(.admin-dashboard-page) .main-content {
 .admin-batch-modal .admin-batch-form {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: calc(100dvh - 190px);
+  overflow-y: auto;
+  padding: 0 4px 4px 0;
 }
 
 .admin-batch-modal .admin-create-field {
@@ -1646,14 +1708,94 @@ body:has(.admin-dashboard-page) .main-content {
   color: #b42318;
 }
 
+.admin-batch-preview-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5ebf2;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.admin-batch-preview-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-batch-preview-pagination-controls button {
+  min-height: 34px;
+  border: 1px solid #d7e0ea;
+  border-radius: 9px;
+  background: #ffffff;
+  color: var(--text);
+  padding: 0 12px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.admin-batch-preview-pagination-controls button:hover:not(:disabled) {
+  border-color: #10b981;
+  color: #047857;
+}
+
+.admin-batch-preview-pagination-controls button:disabled {
+  color: #aeb8c4;
+  cursor: not-allowed;
+}
+
+.admin-batch-preview-pagination-controls strong {
+  min-width: 44px;
+  color: var(--text);
+  text-align: center;
+  font-size: 0.86rem;
+}
+
 .admin-batch-modal .admin-modal-actions {
-  margin-top: 2px;
-  padding-top: 14px;
-  border-top: 1px solid #eef2f6;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 4px -4px 0;
+  min-height: 68px;
+  padding: 14px 0 6px;
+  align-items: center;
+  border-top: 1px solid #dfe7ef;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, #ffffff 32%);
 }
 
 .admin-batch-modal .admin-modal-actions .admin-btn {
-  min-width: 180px;
+  min-width: 230px;
+  min-height: 46px;
+  border-radius: 12px;
+  box-shadow: none;
+  font-size: 0.94rem;
+  font-weight: 900;
+}
+
+.admin-batch-modal .admin-modal-actions .admin-btn--primary:not(:disabled) {
+  background: #10b981;
+  border-color: #0f9f73;
+  color: #ffffff;
+  opacity: 1;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.14);
+}
+
+.admin-batch-modal .admin-modal-actions .admin-btn--primary:hover:not(:disabled) {
+  box-shadow: 0 5px 12px rgba(15, 23, 42, 0.16);
+}
+
+.admin-batch-modal .admin-modal-actions .admin-btn--primary:disabled {
+  background: #64748b;
+  border-color: #64748b;
+  color: #ffffff;
+  cursor: not-allowed;
+  opacity: 1;
+  box-shadow: none;
 }
 
 .admin-section-card {
@@ -1708,6 +1850,13 @@ body:has(.admin-dashboard-page) .main-content {
   color: var(--muted);
   font-size: 0.82rem;
   margin-top: 2px;
+}
+
+.admin-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
 }
 
 .admin-report-card {
@@ -2276,6 +2425,17 @@ body:has(.admin-dashboard-page) .main-content {
 }
 
 .admin-modal-backdrop.admin-main-modal-backdrop {
+  --color-navy: #2c3e50;
+  --color-turquoise: #33d2a4;
+  --color-gray: #bdc3c7;
+  --color-offwhite: #fffefe;
+  --bg: var(--color-offwhite);
+  --accent: var(--color-turquoise);
+  --accent-dark: var(--color-navy);
+  --text: var(--color-navy);
+  --muted: var(--color-gray);
+  --card: #ffffff;
+  --border: var(--color-gray);
   left: 280px !important;
   right: 0 !important;
   width: calc(100vw - 280px);
@@ -2422,14 +2582,14 @@ body:has(.admin-dashboard-page) .main-content {
     width: 100%;
   }
 
-  .admin-user-setup-grid > .admin-batch-card--wide {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
   .admin-batch-card-actions {
     justify-content: flex-start;
     width: 100%;
+  }
+
+  .admin-account-batch-panel {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .admin-batch-card-actions .admin-btn {

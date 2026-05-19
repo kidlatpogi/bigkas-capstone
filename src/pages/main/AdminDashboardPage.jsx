@@ -27,6 +27,8 @@ const DASHBOARD_QUERY_TIMEOUT_MS = 12000;
 const SERVICE_HEALTH_CACHE_KEY = 'bigkas_admin_service_health_v1';
 const SERVICE_HEALTH_CACHE_TTL_MS = 5 * 60 * 1000;
 const ACTIVE_USERS_PER_PAGE = 5;
+const BATCH_PREVIEW_ROWS_PER_PAGE = 5;
+const STAGE_PASS_ROWS_PER_PAGE = 10;
 const DEFAULT_ADMIN_ACCESS_ROLE_ID = '00000000-0000-0000-0000-000000000101';
 const ADMIN_PERMISSION_ACTIONS = [
   { key: 'view', label: 'View' },
@@ -43,8 +45,8 @@ const ADMIN_PERMISSION_AREAS = [
   { key: 'reports', label: 'Reports', description: 'Printable reports', actions: ['view', 'create'] },
   { key: 'audit', label: 'Audit Logs', description: 'System logs', actions: ['view'] },
 ];
-const BATCH_STUDENT_TEMPLATE_COLUMNS = ['Last Name', 'First Name', 'Student Number', 'Email', 'Password'];
-const BATCH_TEACHER_TEMPLATE_COLUMNS = ['Last Name', 'First Name', 'Email', 'Password'];
+const BATCH_STUDENT_TEMPLATE_COLUMNS = ['Last Name', 'First Name', 'Student Number', 'Email'];
+const BATCH_TEACHER_TEMPLATE_COLUMNS = ['Last Name', 'First Name', 'Email'];
 const USER_FORM_INITIAL = {
   email: '',
   password: '',
@@ -197,7 +199,7 @@ function getDisplayName(profile, fallbackId = '') {
 }
 
 function getProfileEmail(profile) {
-  return profile?.email || profile?.auth_email || '-';
+  return profile?.email || profile?.auth_email || profile?.login_email || profile?.profile_email || '-';
 }
 
 function getArchivedAt(profile) {
@@ -571,8 +573,49 @@ function getBatchColumnKey(header) {
   if (normalized === 'firstname' || normalized === 'firsname' || normalized === 'givenname') return 'first_name';
   if (normalized === 'studentnumber' || normalized === 'studentno' || normalized === 'studentid') return 'student_number';
   if (normalized === 'email' || normalized === 'emailaddress') return 'email';
-  if (normalized === 'password' || normalized === 'temporarypassword' || normalized === 'temppassword') return 'password';
   return '';
+}
+
+function getRandomCharacter(characters) {
+  return characters[getRandomIndex(characters.length)];
+}
+
+function getRandomIndex(maxExclusive) {
+  const bytes = new Uint32Array(1);
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(bytes);
+    return bytes[0] % maxExclusive;
+  }
+  return Math.floor(Math.random() * maxExclusive);
+}
+
+function shuffleCharacters(value) {
+  const chars = value.split('');
+  for (let i = chars.length - 1; i > 0; i -= 1) {
+    const swapIndex = getRandomIndex(i + 1);
+    [chars[i], chars[swapIndex]] = [chars[swapIndex], chars[i]];
+  }
+  return chars.join('');
+}
+
+function generateBatchPassword(length = 12) {
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+  const numbers = '123456789';
+  const symbols = '!@#$%^&*?';
+  const all = `${uppercase}${lowercase}${numbers}${symbols}`;
+  let password = [
+    getRandomCharacter(uppercase),
+    getRandomCharacter(lowercase),
+    getRandomCharacter(numbers),
+    getRandomCharacter(symbols),
+  ].join('');
+
+  while (password.length < length) {
+    password += getRandomCharacter(all);
+  }
+
+  return shuffleCharacters(password);
 }
 
 function parseDelimitedText(text) {
@@ -749,14 +792,13 @@ function buildBatchPreview(matrix, accountType) {
     return acc;
   }, {});
   const requiredKeys = accountType === 'admin'
-    ? ['last_name', 'first_name', 'email', 'password']
-    : ['last_name', 'first_name', 'student_number', 'email', 'password'];
+    ? ['last_name', 'first_name', 'email']
+    : ['last_name', 'first_name', 'student_number', 'email'];
   const labelsByKey = {
     last_name: 'Last Name',
     first_name: 'First Name',
     student_number: 'Student Number',
     email: 'Email',
-    password: 'Password',
   };
   const missingColumns = requiredKeys
     .filter(key => columnMap[key] === undefined)
@@ -768,14 +810,12 @@ function buildBatchPreview(matrix, accountType) {
     first_name: row[columnMap.first_name] || '',
     student_number: row[columnMap.student_number] || '',
     email: row[columnMap.email] || '',
-    password: row[columnMap.password] || '',
-  })).filter(row => row.last_name || row.first_name || row.student_number || row.email || row.password);
+  })).filter(row => row.last_name || row.first_name || row.student_number || row.email);
   const invalidRows = parsedRows.filter(row => (
     !row.last_name
     || !row.first_name
     || (accountType !== 'admin' && !row.student_number)
     || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)
-    || !validatePassword(row.password).isValid
   ));
 
   return {
@@ -982,6 +1022,42 @@ function downloadReportWorkbook(filename, title, headers, rows) {
   URL.revokeObjectURL(url);
 }
 
+function downloadGeneratedCredentialsWorkbook(credentials) {
+  if (!credentials?.rows?.length) return;
+  downloadReportWorkbook(
+    `bigkas-generated-credentials-${new Date(credentials.createdAt).toISOString().slice(0, 10)}`,
+    'Generated Account Credentials',
+    ['Account Type', 'Name', 'Email', 'Student No.', 'Section / Role', 'Temporary Password'],
+    credentials.rows.map(row => [
+      row.accountType,
+      row.name,
+      row.email,
+      row.studentNumber || '-',
+      row.groupLabel || '-',
+      row.password,
+    ])
+  );
+}
+
+function getSectionStudentStudentId(row) {
+  return row?.student_id || row?.profile_id || row?.user_id || row?.student?.id || '';
+}
+
+function getSectionStudentSectionId(row) {
+  return row?.section_id || row?.section?.id || '';
+}
+
+function mergeSectionStudentRows(...sources) {
+  const map = new Map();
+  sources.flat().forEach((row) => {
+    const studentId = getSectionStudentStudentId(row);
+    const sectionId = getSectionStudentSectionId(row);
+    if (!studentId || !sectionId) return;
+    map.set(studentId, { ...row, student_id: studentId, section_id: sectionId });
+  });
+  return Array.from(map.values());
+}
+
 function AdminUserField({ label, help, children }) {
   return (
     <label className="admin-user-field">
@@ -1160,7 +1236,7 @@ async function applyStageProgressWithAdminFunction(userId, payload) {
   return data;
 }
 
-async function fetchAdminProfiles() {
+async function fetchAdminDirectory() {
   const { data, error } = await supabase.functions.invoke('admin-list-profiles', {
     body: {},
   });
@@ -1184,7 +1260,23 @@ async function fetchAdminProfiles() {
     throw new Error('Profiles were not loaded.');
   }
 
-  return data.profiles;
+  const sectionStudents = Array.isArray(data?.section_students) ? data.section_students : [];
+  const sectionIdByProfileId = new Map(
+    sectionStudents
+      .map(row => [getSectionStudentStudentId(row), getSectionStudentSectionId(row)])
+      .filter(([studentId, sectionId]) => studentId && sectionId)
+  );
+
+  return {
+    profiles: data.profiles.map(profile => ({
+      ...profile,
+      email: profile.email || profile.auth_email || profile.profile_email || null,
+      auth_email: profile.auth_email || null,
+      profile_email: profile.profile_email || profile.email || null,
+      section_id: profile.section_id || sectionIdByProfileId.get(profile.id) || null,
+    })),
+    sectionStudents,
+  };
 }
 
 function userToForm(user) {
@@ -1230,6 +1322,7 @@ function AdminDashboardPage() {
   const [adminStatusFilter, setAdminStatusFilter] = useState('active');
   const [editingUser, setEditingUser] = useState(null);
   const [pendingArchiveUser, setPendingArchiveUser] = useState(null);
+  const [pendingDeleteConfirmation, setPendingDeleteConfirmation] = useState(null);
   const [stageProgressForm, setStageProgressForm] = useState(STAGE_PROGRESS_INITIAL);
   const [pendingStageProgress, setPendingStageProgress] = useState(null);
   const [applyingStageProgress, setApplyingStageProgress] = useState(false);
@@ -1243,6 +1336,7 @@ function AdminDashboardPage() {
   const [analyticsRange, setAnalyticsRange] = useState('30');
   const [analyticsSectionFilter, setAnalyticsSectionFilter] = useState('all');
   const [analyticsSpeakerLevelFilter, setAnalyticsSpeakerLevelFilter] = useState('all');
+  const [analyticsStagePage, setAnalyticsStagePage] = useState(1);
   const [activities, setActivities] = useState([]);
   const [modules, setModules] = useState([]);
   const [sections, setSections] = useState([]);
@@ -1267,7 +1361,7 @@ function AdminDashboardPage() {
   const [adminAccessAssignments, setAdminAccessAssignments] = useState({});
   const [adminAccessRoleForm, setAdminAccessRoleForm] = useState(ADMIN_ACCESS_ROLE_FORM_INITIAL);
   const [selectedAccessRoleId, setSelectedAccessRoleId] = useState(DEFAULT_ADMIN_ACCESS_ROLE_ID);
-  const [sectionForm, setSectionForm] = useState({ id: '', name: '', code: '', teacher_id: '' });
+  const [sectionForm, setSectionForm] = useState({ id: '', name: '', teacher_id: '' });
   const [batchAccountType, setBatchAccountType] = useState('user');
   const [batchAccessRoleId, setBatchAccessRoleId] = useState(DEFAULT_ADMIN_ACCESS_ROLE_ID);
   const [batchSectionId, setBatchSectionId] = useState('');
@@ -1275,6 +1369,8 @@ function AdminDashboardPage() {
   const [batchImportStatus, setBatchImportStatus] = useState('idle');
   const [batchImportError, setBatchImportError] = useState('');
   const [batchPreview, setBatchPreview] = useState(null);
+  const [batchPreviewPage, setBatchPreviewPage] = useState(1);
+  const [lastGeneratedCredentials, setLastGeneratedCredentials] = useState(null);
   const [reportType, setReportType] = useState('teachers');
   const [toastMessage, setToastMessage] = useState(null);
   const [showActiveUsersModal, setShowActiveUsersModal] = useState(false);
@@ -1358,7 +1454,7 @@ function AdminDashboardPage() {
         setRole(roleProfile.role);
 
         const results = await Promise.allSettled([
-          withTimeout(fetchAdminProfiles(), 'Profiles'),
+          withTimeout(fetchAdminDirectory(), 'Profiles'),
           withTimeout(supabase.from('sessions').select('*').order('created_at', { ascending: true }), 'Sessions'),
           withTimeout(supabase.from('session_metrics').select('session_id, overall_score, visual_score, vocal_score, verbal_score, visual_avg, vocal_avg, verbal_avg, confidence_score, pronunciation_score'), 'Session metrics'),
           withTimeout(supabase.from('activities').select('*').order('target_level', { ascending: true }).order('activity_order', { ascending: true }), 'Activities'),
@@ -1408,7 +1504,10 @@ function AdminDashboardPage() {
           .map(({ label }) => label);
 
         if (!active) return;
-        setProfiles(getResultData(adminProfilesResult, 'Profiles'));
+        const directoryData = adminProfilesResult.status === 'fulfilled' && !adminProfilesResult.value?.error
+          ? adminProfilesResult.value
+          : { profiles: [], sectionStudents: [] };
+        setProfiles(directoryData.profiles || []);
         setSessions(getResultData(sessionsResult, 'Sessions'));
         setMetrics(getResultData(metricsResult, 'Session metrics'));
         setActivities(getResultData(activitiesResult, 'Activities'));
@@ -1419,7 +1518,7 @@ function AdminDashboardPage() {
         setAdminAccessRoles(buildAccessRoles(loadedAccessRoles, loadedRolePermissions));
         setAdminAccessAssignments(buildAccessAssignments(getResultData(roleAssignmentsResult, 'Role assignments')));
         setSections(getResultData(sectionsResult, 'Sections'));
-        setSectionStudents(getResultData(sectionStudentsResult, 'Section students'));
+        setSectionStudents(mergeSectionStudentRows(directoryData.sectionStudents || [], getResultData(sectionStudentsResult, 'Section students')));
         if (failedLabels.length) {
           setError(`Some dashboard data did not load: ${failedLabels.join(', ')}.`);
         }
@@ -1521,15 +1620,6 @@ function AdminDashboardPage() {
     if (isSuperadmin) return activeSections;
     return activeSections.filter(section => section.teacher_id === currentAdminId);
   }, [sections, isSuperadmin, currentAdminId]);
-  const visibleSectionStudentIds = useMemo(() => {
-    if (isSuperadmin) return null;
-    const visibleSectionIds = new Set(visibleSections.map(section => section.id));
-    return new Set(
-      sectionStudents
-        .filter(row => visibleSectionIds.has(row.section_id))
-        .map(row => row.student_id)
-    );
-  }, [sectionStudents, visibleSections, isSuperadmin]);
 
   const sectionById = useMemo(() => {
     const map = new Map();
@@ -1540,10 +1630,38 @@ function AdminDashboardPage() {
   const sectionIdByStudentId = useMemo(() => {
     const map = new Map();
     sectionStudents.forEach(row => {
-      if (row.student_id) map.set(row.student_id, row.section_id || '');
+      const studentId = getSectionStudentStudentId(row);
+      const sectionId = getSectionStudentSectionId(row);
+      if (studentId && sectionId) map.set(studentId, sectionId);
+    });
+    profiles.forEach(profile => {
+      if (profile.role === 'user' && profile.section_id && !map.has(profile.id)) {
+        map.set(profile.id, profile.section_id);
+      }
     });
     return map;
-  }, [sectionStudents]);
+  }, [profiles, sectionStudents]);
+
+  const sectionStudentIdsBySectionId = useMemo(() => {
+    const map = new Map();
+    profiles.forEach((profile) => {
+      if (profile.role !== 'user' || isDeletedProfile(profile)) return;
+      const sectionId = sectionIdByStudentId.get(profile.id);
+      if (!sectionId) return;
+      if (!map.has(sectionId)) map.set(sectionId, new Set());
+      map.get(sectionId).add(profile.id);
+    });
+    return map;
+  }, [profiles, sectionIdByStudentId]);
+
+  const visibleSectionStudentIds = useMemo(() => {
+    if (isSuperadmin) return null;
+    const ids = new Set();
+    visibleSections.forEach((section) => {
+      (sectionStudentIdsBySectionId.get(section.id) || new Set()).forEach(studentId => ids.add(studentId));
+    });
+    return ids;
+  }, [sectionStudentIdsBySectionId, visibleSections, isSuperadmin]);
 
   useEffect(() => {
     if (analyticsSectionFilter === 'all') return;
@@ -1762,13 +1880,6 @@ function AdminDashboardPage() {
     })
   ), [analyticsRangeStart, analyticsUserIds, sessions]);
 
-  const analyticsCompletions = useMemo(() => (
-    activityCompletions.filter((completion) => (
-      analyticsUserIds.has(completion.user_id)
-      && getTimestamp(completion.completed_at) >= analyticsRangeStart.getTime()
-    ))
-  ), [activityCompletions, analyticsRangeStart, analyticsUserIds]);
-
   const analyticsCompletionCountByUser = useMemo(() => {
     const map = new Map();
     activityCompletions.forEach((completion) => {
@@ -1779,21 +1890,45 @@ function AdminDashboardPage() {
     return map;
   }, [activityCompletions, analyticsUserIds]);
 
+  const analyticsCompletionIdsByUser = useMemo(() => {
+    const map = new Map();
+    activityCompletions.forEach((completion) => {
+      if (!completion.user_id || !completion.activity_id) return;
+      if (!analyticsUserIds.has(completion.user_id)) return;
+      if (!map.has(completion.user_id)) map.set(completion.user_id, new Set());
+      map.get(completion.user_id).add(String(completion.activity_id));
+    });
+    return map;
+  }, [activityCompletions, analyticsUserIds]);
+
   const analyticsKpis = useMemo(() => {
-    const activeStudentIds = new Set(analyticsSessions.map(session => session.user_id));
-    const completedCounts = analyticsScopedUsers.map(user => analyticsCompletionCountByUser.get(user.id) || 0);
-    const studentsWithProgress = completedCounts.filter(count => count > 0).length;
-    const averageCompleted = completedCounts.length
-      ? Math.round(completedCounts.reduce((sum, count) => sum + count, 0) / completedCounts.length)
+    const selectedLevel = analyticsSpeakerLevelFilter === 'all' ? null : Number(analyticsSpeakerLevelFilter);
+    const stageActivities = activities.filter((activity) => {
+      const level = Number(activity.target_level) || 1;
+      return selectedLevel == null || level === selectedLevel;
+    });
+    const stageActivityIds = stageActivities.map(activity => String(activity.id));
+    const totalStageRequirements = stageActivityIds.length * analyticsScopedUsers.length;
+    const stagesPassed = analyticsScopedUsers.reduce((total, user) => {
+      const userCompletions = analyticsCompletionIdsByUser.get(user.id) || new Set();
+      return total + stageActivityIds.filter(activityId => userCompletions.has(activityId)).length;
+    }, 0);
+    const averageStagesPassed = analyticsScopedUsers.length
+      ? Math.round(stagesPassed / analyticsScopedUsers.length)
       : 0;
+    const stagePassRate = totalStageRequirements
+      ? Math.round((stagesPassed / totalStageRequirements) * 100)
+      : 0;
+
     return {
       students: analyticsScopedUsers.length,
-      activeStudents: activeStudentIds.size,
-      studentsWithProgress,
-      averageCompleted,
-      completions: analyticsCompletions.length,
+      stageCount: stageActivityIds.length,
+      stagesPassed,
+      totalStageRequirements,
+      averageStagesPassed,
+      stagePassRate,
     };
-  }, [analyticsCompletionCountByUser, analyticsCompletions, analyticsScopedUsers, analyticsSessions]);
+  }, [activities, analyticsCompletionIdsByUser, analyticsScopedUsers, analyticsSpeakerLevelFilter]);
 
   const analyticsConfidenceRows = useMemo(() => {
     const rowsByLevel = new Map(CONFIDENCE_LEVELS.map(level => [
@@ -1873,6 +2008,66 @@ function AdminDashboardPage() {
         };
       });
   }, [activities, analyticsCompletionCountByUser, analyticsScopedUsers, analyticsSpeakerLevelFilter]);
+
+  const analyticsStagePassRows = useMemo(() => {
+    const selectedLevel = analyticsSpeakerLevelFilter === 'all' ? null : Number(analyticsSpeakerLevelFilter);
+    const totalStudents = analyticsScopedUsers.length;
+    const scopedActivities = activities
+      .filter((activity) => {
+        const level = Number(activity.target_level) || 1;
+        return selectedLevel == null || level === selectedLevel;
+      })
+      .slice()
+      .sort((a, b) => (
+        (Number(a.target_level) || 1) - (Number(b.target_level) || 1)
+        || (Number(a.activity_order) || 0) - (Number(b.activity_order) || 0)
+        || String(a.title || '').localeCompare(String(b.title || ''))
+      ));
+
+    return scopedActivities.map((activity) => {
+      const activityId = String(activity.id);
+      const level = Number(activity.target_level) || 1;
+      const stage = Number(activity.activity_order) || 0;
+      const passedStudents = [];
+      const notPassedStudents = [];
+
+      analyticsScopedUsers.forEach((user) => {
+        const userCompletions = analyticsCompletionIdsByUser.get(user.id) || new Set();
+        const target = userCompletions.has(activityId) ? passedStudents : notPassedStudents;
+        target.push(getDisplayName(user, user.id));
+      });
+
+      passedStudents.sort((a, b) => a.localeCompare(b));
+      notPassedStudents.sort((a, b) => a.localeCompare(b));
+
+      return {
+        id: activity.id,
+        level: `Level ${level}`,
+        stage,
+        stageLabel: `Stage ${stage}`,
+        chartLabel: `L${level}-S${stage}`,
+        title: activity.title || `Stage ${stage}`,
+        focus: formatActivityFocus([activity]),
+        passed: passedStudents.length,
+        notPassed: notPassedStudents.length,
+        passRate: totalStudents ? Math.round((passedStudents.length / totalStudents) * 100) : 0,
+        passedStudents,
+        notPassedStudents,
+      };
+    });
+  }, [activities, analyticsCompletionIdsByUser, analyticsScopedUsers, analyticsSpeakerLevelFilter]);
+
+  useEffect(() => {
+    setAnalyticsStagePage(1);
+  }, [analyticsSectionFilter, analyticsSpeakerLevelFilter]);
+
+  const analyticsStageTotalPages = Math.max(1, Math.ceil(analyticsStagePassRows.length / STAGE_PASS_ROWS_PER_PAGE));
+  const safeAnalyticsStagePage = Math.min(analyticsStagePage, analyticsStageTotalPages);
+  const analyticsStageStartIndex = (safeAnalyticsStagePage - 1) * STAGE_PASS_ROWS_PER_PAGE;
+  const paginatedAnalyticsStagePassRows = analyticsStagePassRows.slice(
+    analyticsStageStartIndex,
+    analyticsStageStartIndex + STAGE_PASS_ROWS_PER_PAGE
+  );
 
   const analyticsStudentRows = useMemo(() => (
     analyticsScopedUsers.map((user) => {
@@ -2009,12 +2204,12 @@ function AdminDashboardPage() {
       })
       .map((profile) => {
         const isAdminAccount = isAdminProfile(profile);
-        const assignedSection = !isAdminAccount ? sectionById.get(sectionIdByStudentId.get(profile.id)) : null;
+        const assignedSection = !isAdminAccount ? sectionById.get(sectionIdByStudentId.get(profile.id) || profile.section_id) : null;
         const accessRole = isAdminAccount ? findAccessRole(adminAccessRoles, adminAccessAssignments[profile.id]) : null;
         const typeLabel = profile.role === 'superadmin' ? 'Program Chair' : isAdminAccount ? 'Teacher' : 'Student';
         const roleOrSection = isAdminAccount
           ? (profile.role === 'superadmin' ? 'Program Chair' : accessRole?.name || 'Teacher')
-          : assignedSection?.name || '-';
+          : assignedSection?.name || profile.section_name || '-';
 
         return {
           profile,
@@ -2235,8 +2430,19 @@ function AdminDashboardPage() {
     showToast(`Level ${pendingLevelAdd} added to the dropdown`);
   };
 
-  const handleDeleteContent = async (id, type) => {
-    if (!window.confirm('Delete this item?')) return;
+  const requestDeleteContent = (item, type) => {
+    const label = type === 'activities' ? 'activity' : 'module';
+    setPendingDeleteConfirmation({
+      kind: 'content',
+      id: item.id,
+      type,
+      title: `Delete ${label}?`,
+      message: `This will permanently delete "${item.title || 'Untitled'}" from ${type === 'activities' ? 'Activities' : 'Modules'}. This action cannot be undone.`,
+      confirmLabel: `Delete ${label}`,
+    });
+  };
+
+  const deleteContent = async (id, type) => {
     const oldContent = type === 'activities'
       ? activities.find(a => a.id === id)
       : modules.find(m => m.id === id);
@@ -2258,8 +2464,9 @@ function AdminDashboardPage() {
 
   const refreshProfiles = async () => {
     try {
-      const nextProfiles = await fetchAdminProfiles();
-      setProfiles(nextProfiles);
+      const directory = await fetchAdminDirectory();
+      setProfiles(directory.profiles);
+      setSectionStudents(prev => mergeSectionStudentRows(prev, directory.sectionStudents));
     } catch (refreshError) {
       showToast(refreshError.message || 'Failed to refresh students', 'error');
       return;
@@ -2273,12 +2480,14 @@ function AdminDashboardPage() {
       roleAssignmentsResult,
       sectionsResult,
       sectionStudentsResult,
+      directoryResult,
     ] = await Promise.all([
       supabase.from('admin_access_roles').select('*').order('created_at', { ascending: true }),
       supabase.from('admin_role_permissions').select('*'),
       supabase.from('admin_role_assignments').select('*'),
       supabase.from('sections').select('*').order('created_at', { ascending: false }),
       supabase.from('section_students').select('*'),
+      fetchAdminDirectory(),
     ]);
 
     if (accessRolesResult.error) throw accessRolesResult.error;
@@ -2289,8 +2498,9 @@ function AdminDashboardPage() {
 
     setAdminAccessRoles(buildAccessRoles(accessRolesResult.data || [], rolePermissionsResult.data || []));
     setAdminAccessAssignments(buildAccessAssignments(roleAssignmentsResult.data || []));
+    setProfiles(directoryResult.profiles || []);
     setSections(sectionsResult.data || []);
-    setSectionStudents(sectionStudentsResult.data || []);
+    setSectionStudents(mergeSectionStudentRows(directoryResult.sectionStudents || [], sectionStudentsResult.data || []));
   };
 
   const assignUserToSection = async (studentId, sectionId) => {
@@ -2323,10 +2533,10 @@ function AdminDashboardPage() {
   };
 
   const openEditUser = (user) => {
-    const assignedSection = sectionStudents.find(row => row.student_id === user?.id);
+    const assignedSection = sectionStudents.find(row => getSectionStudentStudentId(row) === user?.id);
     setUserForm({
       ...userToForm(user),
-      section_id: assignedSection?.section_id || visibleSections[0]?.id || '',
+      section_id: getSectionStudentSectionId(assignedSection) || user?.section_id || visibleSections[0]?.id || '',
     });
     setStageProgressForm({
       ...STAGE_PROGRESS_INITIAL,
@@ -2447,6 +2657,21 @@ function AdminDashboardPage() {
     }
   };
 
+  const requestDeleteAccessRole = (roleId) => {
+    if (roleId === DEFAULT_ADMIN_ACCESS_ROLE_ID) {
+      showToast('Default Teacher role cannot be deleted', 'error');
+      return;
+    }
+    const existingRole = adminAccessRoles.find(roleTemplate => roleTemplate.id === roleId);
+    setPendingDeleteConfirmation({
+      kind: 'accessRole',
+      id: roleId,
+      title: 'Delete access role?',
+      message: `This will delete the "${existingRole?.name || 'selected'}" role. Teachers assigned to it will be moved back to the default Teacher role.`,
+      confirmLabel: 'Delete Role',
+    });
+  };
+
   const deleteAccessRole = async (roleId) => {
     if (roleId === DEFAULT_ADMIN_ACCESS_ROLE_ID) {
       showToast('Default Teacher role cannot be deleted', 'error');
@@ -2485,6 +2710,7 @@ function AdminDashboardPage() {
     setBatchImportStatus('idle');
     setBatchImportError('');
     setBatchPreview(null);
+    setBatchPreviewPage(1);
   };
 
   const readBatchImportFile = async (file, accountType = batchAccountType) => {
@@ -2492,6 +2718,7 @@ function AdminDashboardPage() {
     setBatchImportStatus('reading');
     setBatchImportError('');
     setBatchPreview(null);
+    setBatchPreviewPage(1);
 
     try {
       const matrix = await parseBatchSpreadsheetFile(file);
@@ -2509,7 +2736,7 @@ function AdminDashboardPage() {
       }
       if (preview.invalidRows.length) {
         setBatchImportStatus('error');
-        setBatchImportError(`${preview.invalidRows.length} row${preview.invalidRows.length === 1 ? '' : 's'} need complete names, ${accountType === 'admin' ? '' : 'student numbers, '}valid email addresses, and valid passwords.`);
+        setBatchImportError(`${preview.invalidRows.length} row${preview.invalidRows.length === 1 ? '' : 's'} need complete names, ${accountType === 'admin' ? '' : 'student numbers, '}and valid email addresses.`);
         return;
       }
       setBatchImportStatus('ready');
@@ -2532,7 +2759,19 @@ function AdminDashboardPage() {
   const handleBatchAccountTypeChange = async (e) => {
     const nextType = e.target.value;
     setBatchAccountType(nextType);
+    if (nextType === 'user' && !batchSectionId && visibleSections[0]?.id) {
+      setBatchSectionId(visibleSections[0].id);
+    }
     if (batchImportFile) await readBatchImportFile(batchImportFile, nextType);
+  };
+
+  const openBatchAccountSetup = () => {
+    const nextType = isSuperadmin && userAccountTypeFilter === 'admins' ? 'admin' : 'user';
+    setBatchAccountType(nextType);
+    if (nextType === 'user' && !batchSectionId && visibleSections[0]?.id) {
+      setBatchSectionId(visibleSections[0].id);
+    }
+    setShowBatchAccountModal(true);
   };
 
   const submitBatchAccountImport = async (e) => {
@@ -2548,13 +2787,15 @@ function AdminDashboardPage() {
 
     setBatchImportStatus('saving');
     let createdCount = 0;
+    const generatedCredentials = [];
 
     try {
       for (const row of batchPreview.rows) {
+        const generatedPassword = generateBatchPassword();
         if (batchAccountType === 'admin') {
           const { user, profile } = await createConfirmedAdminUser({
             email: row.email.trim(),
-            password: row.password,
+            password: generatedPassword,
             first_name: row.first_name.trim(),
             last_name: row.last_name.trim(),
             username: null,
@@ -2562,6 +2803,15 @@ function AdminDashboardPage() {
             current_level: 1,
             speaker_level: 1,
             speaker_points: 0,
+          });
+
+          generatedCredentials.push({
+            accountType: 'Teacher',
+            name: `${row.first_name.trim()} ${row.last_name.trim()}`.trim(),
+            email: row.email.trim(),
+            studentNumber: '',
+            groupLabel: selectedBatchAccessRole?.name || 'Teacher',
+            password: generatedPassword,
           });
 
           await recordAuditLog({
@@ -2580,6 +2830,7 @@ function AdminDashboardPage() {
               }),
               access_role_id: batchAccessRoleId || DEFAULT_ADMIN_ACCESS_ROLE_ID,
               batch_upload: true,
+              password_generated: true,
             },
           });
 
@@ -2595,7 +2846,7 @@ function AdminDashboardPage() {
         } else {
           const { user, profile } = await createConfirmedAdminUser({
             email: row.email.trim(),
-            password: row.password,
+            password: generatedPassword,
             first_name: row.first_name.trim(),
             last_name: row.last_name.trim(),
             username: null,
@@ -2604,6 +2855,15 @@ function AdminDashboardPage() {
             current_level: 1,
             speaker_level: 1,
             speaker_points: 0,
+          });
+
+          generatedCredentials.push({
+            accountType: 'Student',
+            name: `${row.first_name.trim()} ${row.last_name.trim()}`.trim(),
+            email: row.email.trim(),
+            studentNumber: row.student_number.trim(),
+            groupLabel: sectionById.get(batchSectionId)?.name || 'No section',
+            password: generatedPassword,
           });
 
           await recordAuditLog({
@@ -2623,6 +2883,7 @@ function AdminDashboardPage() {
               }),
               section_id: batchSectionId || null,
               batch_upload: true,
+              password_generated: true,
             },
           });
           await assignUserToSection(user.id, batchSectionId);
@@ -2633,10 +2894,18 @@ function AdminDashboardPage() {
 
       await refreshProfiles();
       if (batchAccountType === 'admin') await refreshRbacData();
-      showToast(`${createdCount} ${batchAccountType === 'admin' ? 'teacher' : 'student'} account${createdCount === 1 ? '' : 's'} created`);
+      const credentials = { createdAt: new Date().toISOString(), rows: generatedCredentials };
+      setLastGeneratedCredentials(credentials);
+      downloadGeneratedCredentialsWorkbook(credentials);
+      showToast(`${createdCount} ${batchAccountType === 'admin' ? 'teacher' : 'student'} account${createdCount === 1 ? '' : 's'} created. Password file downloaded.`);
       setShowBatchAccountModal(false);
       resetBatchImportState();
     } catch (batchError) {
+      if (generatedCredentials.length) {
+        const credentials = { createdAt: new Date().toISOString(), rows: generatedCredentials };
+        setLastGeneratedCredentials(credentials);
+        downloadGeneratedCredentialsWorkbook(credentials);
+      }
       setBatchImportStatus('ready');
       showToast(`${createdCount} created before the batch stopped. ${batchError.message || 'Please check the file and try again.'}`, 'error');
       await refreshProfiles();
@@ -2659,7 +2928,6 @@ function AdminDashboardPage() {
     }
     const payload = {
       name,
-      code: sectionForm.code.trim() || null,
       teacher_id: isSuperadmin ? (sectionForm.teacher_id || null) : currentAdminId,
       created_by: currentAdminId || null,
       updated_at: new Date().toISOString(),
@@ -2681,7 +2949,7 @@ function AdminDashboardPage() {
         oldValues: sectionForm.id ? sections.find(section => section.id === sectionForm.id) : null,
         newValues: data || payload,
       });
-      setSectionForm({ id: '', name: '', code: '', teacher_id: '' });
+      setSectionForm({ id: '', name: '', teacher_id: '' });
       setShowSectionModal(false);
       await refreshRbacData();
       showToast('Section saved');
@@ -2694,15 +2962,90 @@ function AdminDashboardPage() {
     setSectionForm({
       id: section.id,
       name: section.name || '',
-      code: section.code || '',
       teacher_id: section.teacher_id || '',
     });
     setShowSectionModal(true);
   };
 
   const openNewSection = () => {
-    setSectionForm({ id: '', name: '', code: '', teacher_id: '' });
+    setSectionForm({ id: '', name: '', teacher_id: '' });
     setShowSectionModal(true);
+  };
+
+  const requestDeleteSection = (section) => {
+    const assignedStudents = sectionStudents.filter(row => row.section_id === section.id);
+    const assignedCount = sectionStudentIdsBySectionId.get(section.id)?.size || assignedStudents.length;
+    setPendingDeleteConfirmation({
+      kind: 'section',
+      id: section.id,
+      title: 'Delete section?',
+      message: assignedCount
+        ? `This will delete "${section.name}" and unassign ${assignedCount} student${assignedCount === 1 ? '' : 's'} from it.`
+        : `This will delete "${section.name}".`,
+      confirmLabel: 'Delete Section',
+    });
+  };
+
+  const deleteSection = async (sectionId) => {
+    const section = sections.find(item => item.id === sectionId);
+    if (!section) {
+      showToast('Section was not found', 'error');
+      return;
+    }
+    const assignedStudents = sectionStudents.filter(row => row.section_id === section.id);
+    try {
+      const { error: assignmentDeleteError } = await supabase
+        .from('section_students')
+        .delete()
+        .eq('section_id', section.id);
+      if (assignmentDeleteError) throw assignmentDeleteError;
+
+      const { error: sectionDeleteError } = await supabase
+        .from('sections')
+        .delete()
+        .eq('id', section.id);
+      if (sectionDeleteError) throw sectionDeleteError;
+
+      await recordAuditLog({
+        action: 'delete',
+        entityType: 'sections',
+        entityId: section.id,
+        oldValues: { ...section, assigned_students: assignedStudents },
+        newValues: null,
+      });
+
+      if (sectionForm.id === section.id) {
+        setSectionForm({ id: '', name: '', teacher_id: '' });
+        setShowSectionModal(false);
+      }
+      if (batchSectionId === section.id) setBatchSectionId('');
+      if (analyticsSectionFilter === section.id) setAnalyticsSectionFilter('all');
+
+      await refreshRbacData();
+      showToast('Section deleted');
+    } catch (sectionError) {
+      showToast(sectionError.message || 'Failed to delete section', 'error');
+    }
+  };
+
+  const confirmPendingDelete = async () => {
+    if (!pendingDeleteConfirmation) return;
+    const pendingDelete = pendingDeleteConfirmation;
+    setPendingDeleteConfirmation(null);
+
+    if (pendingDelete.kind === 'content') {
+      await deleteContent(pendingDelete.id, pendingDelete.type);
+      return;
+    }
+
+    if (pendingDelete.kind === 'accessRole') {
+      await deleteAccessRole(pendingDelete.id);
+      return;
+    }
+
+    if (pendingDelete.kind === 'section') {
+      await deleteSection(pendingDelete.id);
+    }
   };
 
   const profilePayloadFromUserForm = () => ({
@@ -3039,6 +3382,17 @@ function AdminDashboardPage() {
   const selectedManagedAccessRole = findAccessRole(adminAccessRoles, selectedAccessRoleId);
   const batchTemplateColumns = getBatchTemplateColumns(batchAccountType);
   const batchReadyRowCount = batchPreview?.rows?.length || 0;
+  const batchPreviewTotalPages = Math.max(1, Math.ceil(batchReadyRowCount / BATCH_PREVIEW_ROWS_PER_PAGE));
+  const safeBatchPreviewPage = Math.min(batchPreviewPage, batchPreviewTotalPages);
+  const batchPreviewStartIndex = (safeBatchPreviewPage - 1) * BATCH_PREVIEW_ROWS_PER_PAGE;
+  const batchPreviewRows = batchPreview?.rows?.slice(
+    batchPreviewStartIndex,
+    batchPreviewStartIndex + BATCH_PREVIEW_ROWS_PER_PAGE
+  ) || [];
+  const batchPreviewInvalidRowNumbers = useMemo(
+    () => new Set((batchPreview?.invalidRows || []).map(row => row.rowNumber)),
+    [batchPreview]
+  );
   const selectedManagedRolePermissions = ADMIN_PERMISSION_AREAS
     .filter(area => selectedManagedAccessRole?.permissions?.[area.key]?.view)
     .map(area => area.label);
@@ -3112,6 +3466,7 @@ function AdminDashboardPage() {
 
   const adminRosterTitle = `${adminAccounts.length} teacher${adminAccounts.length === 1 ? '' : 's'}`;
   const canCreateUsers = canUseAdminPermission('users', 'create');
+  const canDeleteUsers = canUseAdminPermission('users', 'delete');
 
   const navItems = [
     { key: 'overview', label: 'Overview', icon: HiOutlineHomeModern, show: canUseAdminPermission('overview', 'view') },
@@ -3232,21 +3587,11 @@ function AdminDashboardPage() {
               </div>
             </section>
 
-            <section className="admin-grid admin-grid-3" aria-label="Analytics summary">
+            <section className="admin-grid admin-grid-1" aria-label="Analytics summary">
               <article className="admin-card admin-kpi-card">
-                <p className="admin-kpi-label">STUDENTS IN SCOPE</p>
+                <p className="admin-kpi-label">STUDENTS ANALYZED</p>
                 <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : analyticsKpis.students}</p>
-                <p className="admin-kpi-footer">{analyticsKpis.activeStudents} active in range</p>
-              </article>
-              <article className="admin-card admin-kpi-card">
-                <p className="admin-kpi-label">WITH CONFIDENCE PROGRESS</p>
-                <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : analyticsKpis.studentsWithProgress}</p>
-                <p className="admin-kpi-footer">Students with completed activities</p>
-              </article>
-              <article className="admin-card admin-kpi-card">
-                <p className="admin-kpi-label">AVG ACTIVITIES COMPLETED</p>
-                <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : `${analyticsKpis.averageCompleted}/30`}</p>
-                <p className="admin-kpi-footer">{analyticsKpis.completions} new completions in range</p>
+                <p className="admin-kpi-footer">{analyticsSpeakerLevelFilter === 'all' ? 'All speaker levels' : `Speaker Level ${analyticsSpeakerLevelFilter}`}</p>
               </article>
             </section>
 
@@ -3316,12 +3661,48 @@ function AdminDashboardPage() {
                     </ResponsiveContainer>
                   ) : <div className="admin-empty-chart">No students found for this filter</div>}
                 </div>
-                <div className="admin-table-wrap admin-confidence-table-wrap admin-level-pass-table-wrap"><table className="admin-table admin-confidence-table admin-level-pass-table">
-                  <thead><tr><th>Level</th><th>Requirement</th><th>Target Focus</th><th>Passed</th><th>Not Passed</th><th>Pass Rate</th></tr></thead>
-                  <tbody>{analyticsLevelPassRows.map(row => (
-                    <tr key={row.level}>
+              </article>
+            </section>
+
+            <section className="admin-grid admin-grid-1">
+              <article className="admin-card">
+                <div className="admin-card-head">
+                  <div>
+                    <h3>Stage Pass Rate</h3>
+                    <p className="admin-chart-note">Shows how many students passed or have not passed each individual stage requirement.</p>
+                  </div>
+                  <label className="admin-inline-filter">
+                    <span>Speaker Level</span>
+                    <select className="admin-filter-select" value={analyticsSpeakerLevelFilter} onChange={e => setAnalyticsSpeakerLevelFilter(e.target.value)}>
+                      <option value="all">All Levels</option>
+                      <option value="1">Level 1</option>
+                      <option value="2">Level 2</option>
+                      <option value="3">Level 3</option>
+                      <option value="4">Level 4</option>
+                      <option value="5">Level 5</option>
+                    </select>
+                  </label>
+                </div>
+                <div className="admin-chart-container admin-level-pass-chart">
+                  {loading ? <Skeleton height={300} /> : analyticsStagePassRows.length ? (
+                    <ResponsiveContainer width="100%" height={320}>
+                      <BarChart data={paginatedAnalyticsStagePassRows}>
+                        <XAxis dataKey="chartLabel" />
+                        <YAxis allowDecimals={false} />
+                        <Tooltip />
+                        <Bar dataKey="passed" stackId="stage-pass" fill="#33D2A4" radius={[0, 0, 8, 8]} name="Passed" />
+                        <Bar dataKey="notPassed" stackId="stage-pass" fill="#F87171" radius={[8, 8, 0, 0]} name="Not Passed" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : <div className="admin-empty-chart">No stages found for this filter</div>}
+                </div>
+                <div className="admin-table-wrap admin-confidence-table-wrap admin-level-pass-table-wrap"><table className="admin-table admin-confidence-table admin-stage-pass-table">
+                  <thead><tr><th>Level</th><th>Stage</th><th>Stage Title</th><th>Target Focus</th><th>Passed</th><th>Not Passed</th><th>Pass Rate</th></tr></thead>
+                  <tbody>{paginatedAnalyticsStagePassRows.map(row => (
+                    <tr key={row.id}>
                       <td>{row.level}</td>
-                      <td>{row.range}</td>
+                      <td>{row.stageLabel}</td>
+                      <td>{row.title}</td>
                       <td>{row.focus}</td>
                       <td>{row.passed}</td>
                       <td>{row.notPassed}</td>
@@ -3329,6 +3710,18 @@ function AdminDashboardPage() {
                     </tr>
                   ))}</tbody>
                 </table></div>
+                {analyticsStagePassRows.length > 0 && (
+                  <div className="admin-pagination admin-stage-pass-pagination">
+                    <span className="admin-pagination-info">
+                      Showing {analyticsStageStartIndex + 1}-{Math.min(analyticsStageStartIndex + paginatedAnalyticsStagePassRows.length, analyticsStagePassRows.length)} of {analyticsStagePassRows.length} stages
+                    </span>
+                    <div className="admin-pagination-controls">
+                      <button type="button" onClick={() => setAnalyticsStagePage(page => Math.max(1, page - 1))} disabled={safeAnalyticsStagePage === 1}>Prev</button>
+                      <span>{safeAnalyticsStagePage} / {analyticsStageTotalPages}</span>
+                      <button type="button" onClick={() => setAnalyticsStagePage(page => Math.min(analyticsStageTotalPages, page + 1))} disabled={safeAnalyticsStagePage === analyticsStageTotalPages}>Next</button>
+                    </div>
+                  </div>
+                )}
               </article>
             </section>
 
@@ -3437,43 +3830,10 @@ function AdminDashboardPage() {
                 <div className="admin-card-actions">
                   <button type="button" className="admin-btn admin-btn--primary" onClick={openSelectedAccessRole}>Edit Permissions</button>
                   {selectedManagedAccessRole && !selectedManagedAccessRole.system && (
-                    <button type="button" className="admin-btn admin-btn--danger" onClick={() => deleteAccessRole(selectedManagedAccessRole.id)}>Delete Role</button>
+                    <button type="button" className="admin-btn admin-btn--danger" onClick={() => requestDeleteAccessRole(selectedManagedAccessRole.id)}>Delete Role</button>
                   )}
                 </div>
               </article>
-              <article className="admin-card admin-management-card admin-batch-card admin-batch-card--wide">
-                <div className="admin-card-head">
-                  <div>
-                    <h3>Batch Creation</h3>
-                    <p className="admin-note">Use the temporary student template: Last Name, First Name, Student Number, Email, Password.</p>
-                  </div>
-                </div>
-                <div className="admin-batch-card-actions">
-                  <button type="button" className="admin-btn admin-btn--primary" onClick={() => setShowBatchAccountModal(true)}>Open Batch Setup</button>
-                  {batchImportFile && <p className="admin-note">Selected file: {batchImportFile.name}</p>}
-                </div>
-              </article>
-            </section>
-          )}
-          {!isSuperadmin && canCreateUsers && (
-            <section className="admin-card admin-management-card admin-teacher-batch-card">
-              <div className="admin-card-head">
-                <div>
-                  <h3>Batch Creation</h3>
-                  <p className="admin-note">Upload students using: Last Name, First Name, Student Number, Email, Password.</p>
-                </div>
-                <button
-                  type="button"
-                  className="admin-btn admin-btn--primary"
-                  onClick={() => {
-                    setBatchAccountType('user');
-                    setShowBatchAccountModal(true);
-                  }}
-                >
-                  Open Batch Setup
-                </button>
-              </div>
-              {batchImportFile && <p className="admin-note">Selected file: {batchImportFile.name}</p>}
             </section>
           )}
           <section className="admin-card admin-section-card">
@@ -3486,15 +3846,18 @@ function AdminDashboardPage() {
             </div>
             <div className="admin-section-list">
               {visibleSections.length ? visibleSections.map(section => {
-                const count = sectionStudents.filter(row => row.section_id === section.id).length;
+                const count = sectionStudentIdsBySectionId.get(section.id)?.size || 0;
                 const teacher = profiles.find(profile => profile.id === section.teacher_id);
                 return (
                   <div key={section.id} className="admin-section-item">
                     <div>
                       <strong>{section.name}</strong>
-                      <span>{section.code || 'No code'} - {count} student{count === 1 ? '' : 's'} - {getDisplayName(teacher, 'Unassigned teacher')}</span>
+                      <span>{count} student{count === 1 ? '' : 's'} - {getDisplayName(teacher, 'Unassigned teacher')}</span>
                     </div>
-                    <button type="button" className="admin-action-btn" onClick={() => editSection(section)} title="Edit section"><HiOutlinePencilSquare /></button>
+                    <div className="admin-section-actions">
+                      <button type="button" className="admin-action-btn" onClick={() => editSection(section)} title="Edit section"><HiOutlinePencilSquare /></button>
+                      {canDeleteUsers && <button type="button" className="admin-action-btn is-delete" onClick={() => requestDeleteSection(section)} title="Delete section"><HiOutlineTrash /></button>}
+                    </div>
                   </div>
                 );
               }) : <div className="admin-empty-chart">No sections yet</div>}
@@ -3546,6 +3909,37 @@ function AdminDashboardPage() {
                 )}
               </div>
             </div>
+            {canCreateUsers && (
+              <div className="admin-account-batch-panel">
+                <div>
+                  <h4>Batch Creation</h4>
+                  <p className="admin-note">
+                    {isSuperadmin
+                      ? 'Create student or teacher accounts using the Excel/CSV template. Passwords are generated automatically and downloaded once after saving.'
+                      : 'Upload students using: Last Name, First Name, Student Number, Email. Passwords are generated automatically and downloaded once after saving.'}
+                  </p>
+                </div>
+                <div className="admin-batch-card-actions">
+                  {lastGeneratedCredentials?.rows?.length > 0 && (
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn--ghost"
+                      onClick={() => downloadGeneratedCredentialsWorkbook(lastGeneratedCredentials)}
+                    >
+                      Download Last Passwords
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn--primary"
+                    onClick={openBatchAccountSetup}
+                  >
+                    Open Batch Setup
+                  </button>
+                  {batchImportFile && <p className="admin-note">Selected file: {batchImportFile.name}</p>}
+                </div>
+              </div>
+            )}
             <div className="admin-table-wrap"><table className="admin-table admin-account-table">
               <thead><tr><th>Name</th>{showUserManagementTypeColumn && <th>Account Type</th>}<th>Role / Section</th>{showUserManagementStudentColumns && <th>Student No.</th>}<th>Email</th>{showUserManagementStudentColumns && <th>Journey</th>}{showUserManagementStudentColumns && <th>Speaking</th>}<th>Status</th><th>Actions</th></tr></thead>
               <tbody>
@@ -3616,7 +4010,7 @@ function AdminDashboardPage() {
               </div>
               <div className="admin-table-wrap"><table className="admin-table">
                 <thead><tr><th>Order/Lvl</th><th>Title</th><th>Created</th><th>Actions</th></tr></thead>
-                <tbody>{paginatedContentItems.map(item => <tr key={item.id}><td>{contentTab === 'activities' ? item.activity_order : item.level_number}</td><td><strong>{item.title}</strong></td><td>{new Date(item.created_at).toLocaleDateString()}</td><td className="admin-actions-cell">{canUpdateCurrentContent && <button onClick={() => setEditingContent(item)} className="admin-action-btn"><HiOutlinePencilSquare /></button>}{canDeleteCurrentContent && <button onClick={() => handleDeleteContent(item.id, contentTab)} className="admin-action-btn is-delete"><HiOutlineTrash /></button>}</td></tr>)}</tbody>
+                <tbody>{paginatedContentItems.map(item => <tr key={item.id}><td>{contentTab === 'activities' ? item.activity_order : item.level_number}</td><td><strong>{item.title}</strong></td><td>{new Date(item.created_at).toLocaleDateString()}</td><td className="admin-actions-cell">{canUpdateCurrentContent && <button onClick={() => setEditingContent(item)} className="admin-action-btn"><HiOutlinePencilSquare /></button>}{canDeleteCurrentContent && <button onClick={() => requestDeleteContent(item, contentTab)} className="admin-action-btn is-delete"><HiOutlineTrash /></button>}</td></tr>)}</tbody>
               </table></div>
               <div className="admin-pagination">
                 <span className="admin-pagination-info">Showing {filteredContentItems.length ? ((contentPage - 1) * CONTENT_PER_PAGE) + 1 : 0}-{Math.min(contentPage * CONTENT_PER_PAGE, filteredContentItems.length)} of {filteredContentItems.length}</span>
@@ -3866,22 +4260,31 @@ function AdminDashboardPage() {
                       <th>First Name</th>
                       {batchAccountType !== 'admin' && <th>Student No.</th>}
                       <th>Email</th>
-                      <th>Password</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {batchPreview.rows.slice(0, 3).map(row => (
-                      <tr key={row.rowNumber} className={batchPreview.invalidRows.some(invalidRow => invalidRow.rowNumber === row.rowNumber) ? 'is-invalid' : ''}>
+                    {batchPreviewRows.map(row => (
+                      <tr key={row.rowNumber} className={batchPreviewInvalidRowNumbers.has(row.rowNumber) ? 'is-invalid' : ''}>
                         <td>{row.last_name || '-'}</td>
                         <td>{row.first_name || '-'}</td>
                         {batchAccountType !== 'admin' && <td>{row.student_number || '-'}</td>}
                         <td>{row.email || '-'}</td>
-                        <td>{row.password ? 'Provided' : '-'}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                {batchPreview.rows.length > 3 && <p className="admin-note">Showing first 3 of {batchPreview.rows.length} rows.</p>}
+                <div className="admin-batch-preview-pagination">
+                  <span>
+                    Showing {batchPreviewStartIndex + 1}-{Math.min(batchPreviewStartIndex + batchPreviewRows.length, batchReadyRowCount)} of {batchReadyRowCount}
+                  </span>
+                  {batchPreviewTotalPages > 1 && (
+                    <div className="admin-batch-preview-pagination-controls">
+                      <button type="button" onClick={() => setBatchPreviewPage(page => Math.max(1, page - 1))} disabled={safeBatchPreviewPage === 1}>Prev</button>
+                      <strong>{safeBatchPreviewPage} / {batchPreviewTotalPages}</strong>
+                      <button type="button" onClick={() => setBatchPreviewPage(page => Math.min(batchPreviewTotalPages, page + 1))} disabled={safeBatchPreviewPage === batchPreviewTotalPages}>Next</button>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -3903,10 +4306,7 @@ function AdminDashboardPage() {
         </div>
         <form className="admin-user-form" onSubmit={submitSection}>
           <AdminUserField label="Section Name">
-            <input type="text" placeholder="BSIT 4A" value={sectionForm.name} onChange={e => setSectionForm(p => ({ ...p, name: e.target.value }))} />
-          </AdminUserField>
-          <AdminUserField label="Code">
-            <input type="text" placeholder="BSIT-4A" value={sectionForm.code} onChange={e => setSectionForm(p => ({ ...p, code: e.target.value }))} />
+            <input type="text" placeholder="INF235" value={sectionForm.name} onChange={e => setSectionForm(p => ({ ...p, name: e.target.value }))} />
           </AdminUserField>
           {isSuperadmin && (
             <AdminUserField label="Teacher">
@@ -4013,9 +4413,6 @@ function AdminDashboardPage() {
           <AdminUserField label="Last Name">
             <input type="text" placeholder="Last name" value={userForm.last_name} onChange={e => setUserForm(p => ({ ...p, last_name: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Username" help="Unique public handle stored in profiles.username.">
-            <input type="text" placeholder="username" value={userForm.username} onChange={e => setUserForm(p => ({ ...p, username: e.target.value }))} />
-          </AdminUserField>
           <AdminUserField label="Student Number">
             <input type="text" placeholder="Student number" value={userForm.student_number} onChange={e => setUserForm(p => ({ ...p, student_number: e.target.value }))} />
           </AdminUserField>
@@ -4093,9 +4490,6 @@ function AdminDashboardPage() {
           <AdminUserField label="Last Name">
             <input type="text" placeholder="Last name" value={adminAccountForm.last_name} onChange={e => setAdminAccountForm(p => ({ ...p, last_name: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Username" help="Unique public handle stored in profiles.username.">
-            <input type="text" placeholder="teacher_username" value={adminAccountForm.username} onChange={e => setAdminAccountForm(p => ({ ...p, username: e.target.value }))} />
-          </AdminUserField>
           <AdminUserField label="System Role">
             <select value={adminAccountForm.role} onChange={e => setAdminAccountForm(p => ({ ...p, role: e.target.value }))}>
               <option value="admin">Teacher</option><option value="superadmin">Program Chair</option>
@@ -4120,6 +4514,15 @@ function AdminDashboardPage() {
             <button type="submit" className="admin-btn admin-btn--primary" disabled={creatingAdmin}>{creatingAdmin ? 'Saving...' : 'Save Changes'}</button>
           </div>
         </form>
+      </div></div>, document.body)}
+
+      {pendingDeleteConfirmation && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setPendingDeleteConfirmation(null)}><div className="admin-modal admin-confirm-modal admin-warning-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+        <h3>{pendingDeleteConfirmation.title}</h3>
+        <p>{pendingDeleteConfirmation.message}</p>
+        <div className="admin-modal-actions">
+          <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setPendingDeleteConfirmation(null)}>Cancel</button>
+          <button type="button" className="admin-btn admin-btn--danger" onClick={confirmPendingDelete}>{pendingDeleteConfirmation.confirmLabel || 'Delete'}</button>
+        </div>
       </div></div>, document.body)}
 
       {pendingArchiveUser && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setPendingArchiveUser(null)}><div className="admin-modal admin-confirm-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>

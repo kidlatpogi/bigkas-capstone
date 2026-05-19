@@ -29,6 +29,21 @@ function normalizeLevel(value: unknown) {
   return Math.min(5, Math.max(1, Number(value || 1) || 1));
 }
 
+async function hasAdminPermission(supabaseAdmin: ReturnType<typeof createClient>, adminId: string, area: string, action: string) {
+  const column = `can_${action}`;
+  const { data, error } = await supabaseAdmin
+    .from('admin_role_assignments')
+    .select(`admin_access_roles!inner(admin_role_permissions!inner(area, ${column}))`)
+    .eq('admin_id', adminId)
+    .eq('admin_access_roles.admin_role_permissions.area', area)
+    .single();
+
+  if (error || !data) return false;
+  const permissions = data.admin_access_roles?.admin_role_permissions;
+  const row = Array.isArray(permissions) ? permissions[0] : permissions;
+  return Boolean(row?.[column]);
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders });
@@ -102,9 +117,17 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'Only superadmins can manage admin accounts.' }, 403);
   }
 
+  if (!isAdminRole(targetProfile.role) && callerProfile.role !== 'superadmin') {
+    const allowed = await hasAdminPermission(supabaseAdmin, caller.id, 'users', 'update');
+    if (!allowed) {
+      return jsonResponse({ error: 'You do not have permission to update student accounts.' }, 403);
+    }
+  }
+
   const firstName = normalizeText(body.first_name);
   const lastName = normalizeText(body.last_name);
   const username = normalizeText(body.username);
+  const studentNumber = normalizeText(body.student_number);
   const currentLevel = normalizeLevel(body.current_level);
   const speakerLevel = normalizeLevel(body.speaker_level);
   const speakerPoints = Math.max(0, Number(body.speaker_points || 0) || 0);
@@ -114,6 +137,7 @@ Deno.serve(async (req) => {
     first_name: firstName,
     last_name: lastName,
     username,
+    student_number: studentNumber,
     role,
     current_level: currentLevel,
     speaker_level: speakerLevel,

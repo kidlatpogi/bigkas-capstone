@@ -290,6 +290,12 @@ function average(values) {
   return Number((valid.reduce((sum, value) => sum + value, 0) / valid.length).toFixed(1));
 }
 
+function getSessionDurationMinutes(session) {
+  const seconds = Number(session?.duration_sec ?? session?.duration ?? 0);
+  if (!Number.isFinite(seconds) || seconds <= 0) return 0;
+  return seconds / 60;
+}
+
 function modeOf(session) {
   const origin = String(session?.session_origin || '').toLowerCase();
   const mode = String(session?.session_mode || '').toLowerCase();
@@ -558,7 +564,7 @@ function AdminDashboardPage() {
   const [metrics, setMetrics] = useState([]);
   const [moduleViews, setModuleViews] = useState([]);
   const [activityCompletions, setActivityCompletions] = useState([]);
-  const [serviceHealth, setServiceHealth] = useState(() => readCachedServiceHealth() || getDefaultServiceHealth());
+  const [, setServiceHealth] = useState(() => readCachedServiceHealth() || getDefaultServiceHealth());
   const [auditLogs, setAuditLogs] = useState([]);
   const [authSecurityEvents, setAuthSecurityEvents] = useState([]);
   const [auditSearchQuery, setAuditSearchQuery] = useState('');
@@ -597,6 +603,7 @@ function AdminDashboardPage() {
   const [editingAdmin, setEditingAdmin] = useState(null);
   const [adminAccountForm, setAdminAccountForm] = useState(ADMIN_FORM_INITIAL);
   const [toastMessage, setToastMessage] = useState(null);
+  const [showActiveUsersModal, setShowActiveUsersModal] = useState(false);
 
   const showToast = (msg, type = 'success') => {
     setToastMessage({ text: msg, type });
@@ -851,6 +858,7 @@ function AdminDashboardPage() {
     const oneWeekAgo = shiftRange(now, 'day', -7);
     const twoWeeksAgo = shiftRange(now, 'day', -14);
     const totalUsers = visibleUsers.length;
+    const adminAccounts = profiles.filter(p => isAdminProfile(p) && !isDeletedProfile(p));
     const activeThisWeekSet = new Set();
     const activeLastWeekSet = new Set();
     sessions.forEach(s => {
@@ -866,10 +874,43 @@ function AdminDashboardPage() {
       usersDeltaText: `+${visibleUsers.filter(p => new Date(p.created_at) >= oneWeekAgo).length} new this week`,
       activeThisWeek,
       activeDeltaText: activeDelta >= 0 ? `+${activeDelta} vs last week` : `${activeDelta} vs last week`,
-      totalSpeeches: sessions.length,
-      speechDeltaText: `+${sessions.filter(s => new Date(s.created_at) >= oneWeekAgo).length} this week`
+      totalAdmins: adminAccounts.length,
+      adminsDeltaText: `+${adminAccounts.filter(p => new Date(p.created_at) >= oneWeekAgo).length} new this week`
     };
-  }, [visibleUsers, sessions]);
+  }, [visibleUsers, profiles, sessions]);
+
+  const activeUsersThisWeek = useMemo(() => {
+    const oneWeekAgo = shiftRange(new Date(), 'day', -7);
+    const sessionsThisWeek = sessions.filter(s => new Date(s.created_at) >= oneWeekAgo);
+    const sessionsByUser = new Map();
+
+    sessionsThisWeek.forEach((session) => {
+      const userSessions = sessionsByUser.get(session.user_id) || [];
+      userSessions.push(session);
+      sessionsByUser.set(session.user_id, userSessions);
+    });
+
+    return Array.from(sessionsByUser.entries())
+      .map(([userId, userSessions]) => {
+        const profile = profiles.find(p => p.id === userId);
+        const scoreRows = userSessions
+          .map(session => metricBySession.get(session.id))
+          .filter(Boolean);
+        const latestActiveMs = userSessions.reduce((latest, session) => (
+          Math.max(latest, new Date(session.created_at).getTime())
+        ), 0);
+
+        return {
+          id: userId,
+          name: getDisplayName(profile, userId),
+          speeches: userSessions.length,
+          minutes: Number(userSessions.reduce((sum, session) => sum + getSessionDurationMinutes(session), 0).toFixed(1)),
+          averageScore: average(scoreRows.map(scores => scores.overall)),
+          lastActive: latestActiveMs ? new Date(latestActiveMs).toLocaleString() : 'N/A',
+        };
+      })
+      .sort((a, b) => b.speeches - a.speeches || b.minutes - a.minutes || a.name.localeCompare(b.name));
+  }, [sessions, profiles, metricBySession]);
 
   const joinTrendData = useMemo(() => {
     const days = 14;
@@ -1734,44 +1775,33 @@ function AdminDashboardPage() {
                 <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : kpis.totalUsers}</p>
                 <p className="admin-kpi-footer">{kpis.usersDeltaText}</p>
               </article>
-              <article className="admin-card admin-kpi-card">
+              <article
+                className="admin-card admin-kpi-card"
+                role="button"
+                tabIndex={0}
+                onClick={() => !loading && setShowActiveUsersModal(true)}
+                onKeyDown={(event) => {
+                  if (!loading && (event.key === 'Enter' || event.key === ' ')) {
+                    event.preventDefault();
+                    setShowActiveUsersModal(true);
+                  }
+                }}
+              >
                 <p className="admin-kpi-label">ACTIVE THIS WEEK</p>
                 <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : kpis.activeThisWeek}</p>
                 <p className="admin-kpi-footer">{kpis.activeDeltaText}</p>
               </article>
               <article className="admin-card admin-kpi-card">
-                <p className="admin-kpi-label">SPEECHES ANALYZED</p>
-                <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : kpis.totalSpeeches}</p>
-                <p className="admin-kpi-footer">{kpis.speechDeltaText}</p>
+                <p className="admin-kpi-label">ADMIN COUNT</p>
+                <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : kpis.totalAdmins}</p>
+                <p className="admin-kpi-footer">{kpis.adminsDeltaText}</p>
               </article>
             </section>
             <section className="admin-grid admin-grid-2">
-              <article className={`admin-card admin-health-card admin-health-card--${serviceHealth.huggingFace.status}`}>
-                <div>
-                  <p className="admin-kpi-label">HUGGING FACE BACKEND</p>
-                  <h3>{serviceHealth.huggingFace.status === 'checking' ? <Skeleton width={110} /> : serviceHealth.huggingFace.label}</h3>
-                  <p>{serviceHealth.huggingFace.status === 'checking' ? <Skeleton width={210} /> : serviceHealth.huggingFace.detail}</p>
-                </div>
-                <span className="admin-health-latency">
-                  {serviceHealth.huggingFace.latencyMs == null ? <Skeleton width={72} /> : `${serviceHealth.huggingFace.latencyMs} ms`}
-                </span>
-              </article>
-              <article className={`admin-card admin-health-card admin-health-card--${serviceHealth.cloudflare.status}`}>
-                <div>
-                  <p className="admin-kpi-label">CLOUDFLARE AI WORKER</p>
-                  <h3>{serviceHealth.cloudflare.status === 'checking' ? <Skeleton width={110} /> : serviceHealth.cloudflare.label}</h3>
-                  <p>{serviceHealth.cloudflare.status === 'checking' ? <Skeleton width={210} /> : serviceHealth.cloudflare.detail}</p>
-                </div>
-                <span className="admin-health-latency">
-                  {serviceHealth.cloudflare.latencyMs == null ? <Skeleton width={72} /> : `${serviceHealth.cloudflare.latencyMs} ms`}
-                </span>
-              </article>
-            </section>
-            <section className="admin-grid admin-grid-2">
-              <article className="admin-card"><h3>User Join Trend</h3><div className="admin-chart-container">
+              <article className="admin-card"><h3>User Registration Trend</h3><div className="admin-chart-container">
                 {loading ? <Skeleton height={300} /> : <ResponsiveContainer width="100%" height={300}><AreaChart data={joinTrendData}><XAxis dataKey="date" /><YAxis /><Tooltip /><Area type="monotone" dataKey="users" stroke="#33D2A4" fill="#33D2A433" /></AreaChart></ResponsiveContainer>}
               </div></article>
-              <article className="admin-card"><h3>User Level Distribution</h3><div className="admin-chart-container">
+              <article className="admin-card"><h3>Proficiency Level Distribution</h3><div className="admin-chart-container">
                 {loading ? <Skeleton height={300} /> : <ResponsiveContainer width="100%" height={300}><BarChart data={levelBarData}><XAxis dataKey="level" /><YAxis /><Tooltip /><Bar dataKey="users" fill="#33D2A4" radius={[8,8,0,0]} /></BarChart></ResponsiveContainer>}
               </div></article>
             </section>
@@ -2085,6 +2115,26 @@ function AdminDashboardPage() {
           </section>
         )}
       </section>
+
+      {showActiveUsersModal && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setShowActiveUsersModal(false)}><div className="admin-modal admin-user-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+        <div className="admin-card-head"><div><h3>Active Users This Week</h3><p className="admin-modal-subtitle">{activeUsersThisWeek.length} user{activeUsersThisWeek.length === 1 ? '' : 's'} with recent analyzed speeches</p></div><button type="button" onClick={() => setShowActiveUsersModal(false)} className="admin-btn admin-btn--ghost">Close</button></div>
+        {activeUsersThisWeek.length ? (
+          <div className="admin-table-wrap"><table className="admin-table">
+            <thead><tr><th>User</th><th>Speeches Analyzed</th><th>Minutes Practiced</th><th>Average Score</th><th>Last Active</th></tr></thead>
+            <tbody>{activeUsersThisWeek.map(user => (
+              <tr key={user.id}>
+                <td><strong>{user.name}</strong></td>
+                <td>{user.speeches}</td>
+                <td>{user.minutes}</td>
+                <td>{user.averageScore || 'N/A'}</td>
+                <td>{user.lastActive}</td>
+              </tr>
+            ))}</tbody>
+          </table></div>
+        ) : (
+          <div className="admin-empty-chart">No active users this week</div>
+        )}
+      </div></div>, document.body)}
 
       {creatingUser && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setCreatingUser(false)}><div className="admin-modal admin-user-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
         <div className="admin-card-head"><h3>Create User</h3><button type="button" onClick={() => setCreatingUser(false)} className="admin-btn admin-btn--ghost">Close</button></div>

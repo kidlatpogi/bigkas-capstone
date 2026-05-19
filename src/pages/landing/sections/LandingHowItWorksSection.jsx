@@ -1,7 +1,8 @@
 import { motion as Motion } from 'framer-motion';
 import { IoChatbubbleEllipses, IoMic, IoRefresh, IoSparkles } from 'react-icons/io5';
 import ScrollDownIndicator from '../../../components/common/ScrollDownIndicator';
-import b01Mascot from '../../../assets/Sprites/Robot/0001.webp';
+
+const b01Mascot = 'https://assets.bigkas.site/Sprites/Robot/0001.webp';
 
 const processSteps = [
   {

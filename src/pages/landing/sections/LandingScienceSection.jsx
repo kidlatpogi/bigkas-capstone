@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { IoAnalytics, IoCheckmarkCircle, IoEye, IoMic, IoPulse } from 'react-icons/io5';
-import b01Mascot from '../../../assets/Sprites/Robot/0001.webp';
+
+const b01Mascot = 'https://assets.bigkas.site/Sprites/Robot/0001.webp';
 
 const sciencePoints = [
   {

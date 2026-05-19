@@ -1,6 +1,7 @@
 import PushButton from '../../../components/common/PushButton';
 import { ROUTES } from '../../../utils/constants';
-import b01Mascot from '../../../assets/Sprites/Robot/0001.webp';
+
+const b01Mascot = 'https://assets.bigkas.site/Sprites/Robot/0001.webp';
 
 const practiceSteps = [
   'Start a tiny practice streak',

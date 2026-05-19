@@ -1058,11 +1058,13 @@ function mergeSectionStudentRows(...sources) {
   return Array.from(map.values());
 }
 
-function AdminUserField({ label, help, children }) {
+function AdminUserField({ label, help, reserveHelp = false, children }) {
+  const shouldReserveHelp = help || reserveHelp;
+
   return (
     <label className="admin-user-field">
       <span>{label}</span>
-      {help && <small>{help}</small>}
+      {shouldReserveHelp && <small className={help ? undefined : 'is-placeholder'} aria-hidden={!help}>{help || ' '}</small>}
       {children}
     </label>
   );
@@ -3377,9 +3379,7 @@ function AdminDashboardPage() {
   const canCreateCurrentContent = canUseAdminPermission(currentContentArea, 'create');
   const canUpdateCurrentContent = canUseAdminPermission(currentContentArea, 'update');
   const canDeleteCurrentContent = canUseAdminPermission(currentContentArea, 'delete');
-  const selectedCreateAccessRole = findAccessRole(adminAccessRoles, createAdminForm.access_role_id);
   const selectedBatchAccessRole = findAccessRole(adminAccessRoles, batchAccessRoleId);
-  const selectedAdminAccountAccessRole = findAccessRole(adminAccessRoles, adminAccountForm.access_role_id);
   const selectedManagedAccessRole = findAccessRole(adminAccessRoles, selectedAccessRoleId);
   const batchTemplateColumns = getBatchTemplateColumns(batchAccountType);
   const batchReadyRowCount = batchPreview?.rows?.length || 0;
@@ -4375,10 +4375,7 @@ function AdminDashboardPage() {
           <AdminUserField label="Confirm Password">
             <AdminPasswordInput placeholder="Confirm password" value={createAdminForm.confirm_password} onChange={e => setCreateAdminForm(p => ({ ...p, confirm_password: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField
-            label="Role"
-            help={createAdminForm.role === 'superadmin' ? 'Full Program Chair access.' : selectedCreateAccessRole?.description || 'Controls teacher dashboard permissions.'}
-          >
+          <AdminUserField label="Role">
             <select
               value={createAdminForm.role === 'superadmin' ? 'superadmin' : createAdminForm.access_role_id}
               onChange={handleCreateAdminRoleChange}
@@ -4395,35 +4392,35 @@ function AdminDashboardPage() {
 
       {creatingUser && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setCreatingUser(false)}><div className="admin-modal admin-user-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
         <div className="admin-card-head"><h3>Create Student</h3><button type="button" onClick={() => setCreatingUser(false)} className="admin-btn admin-btn--ghost">Close</button></div>
-        <form className="admin-user-form" onSubmit={submitCreateUser}>
-          <AdminUserField label="Email" help="Login email used for the Supabase auth account.">
+        <form className="admin-user-form admin-user-form--student-create" onSubmit={submitCreateUser}>
+          <AdminUserField label="Email" help="Login email used for the Supabase auth account." reserveHelp>
             <input type="email" required placeholder="student@email.com" value={userForm.email} onChange={e => setUserForm(p => ({ ...p, email: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Student Number">
+          <AdminUserField label="Student Number" reserveHelp>
             <input type="text" placeholder="Student number" value={userForm.student_number} onChange={e => setUserForm(p => ({ ...p, student_number: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Section" help="Assigns this student to a teacher-handled section.">
+          <AdminUserField label="Section" help="Assigns this student to a teacher-handled section." reserveHelp>
             <select value={userForm.section_id} onChange={e => setUserForm(p => ({ ...p, section_id: e.target.value }))}>
               <option value="">No section</option>
               {visibleSections.map(section => <option key={section.id} value={section.id}>{section.name}</option>)}
             </select>
           </AdminUserField>
-          <AdminUserField label="First Name">
+          <AdminUserField label="First Name" reserveHelp>
             <input type="text" placeholder="First name" value={userForm.first_name} onChange={e => setUserForm(p => ({ ...p, first_name: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Last Name">
+          <AdminUserField label="Last Name" reserveHelp>
             <input type="text" placeholder="Last name" value={userForm.last_name} onChange={e => setUserForm(p => ({ ...p, last_name: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Password" help="At least 8 characters with uppercase, lowercase, and a number.">
+          <AdminUserField label="Password" help="At least 8 characters with uppercase, lowercase, and a number." reserveHelp>
             <AdminPasswordInput placeholder="Password" value={userForm.password} onChange={e => setUserForm(p => ({ ...p, password: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Confirm Password" help="Must match the password above.">
+          <AdminUserField label="Confirm Password" help="Must match the password above." reserveHelp>
             <AdminPasswordInput placeholder="Confirm password" value={userForm.confirm_password} onChange={e => setUserForm(p => ({ ...p, confirm_password: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Journey Level" help="Current learning journey from 1 to 5.">
+          <AdminUserField label="Journey Level" help="Current learning journey from 1 to 5." reserveHelp>
             <AdminLevelSelect label="Journey level" value={userForm.current_level} onChange={e => setUserForm(p => ({ ...p, current_level: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Speaker Level" help="Speaking proficiency level from 1 to 5.">
+          <AdminUserField label="Speaker Level" help="Speaking proficiency level from 1 to 5." reserveHelp>
             <AdminLevelSelect label="Speaker level" value={userForm.speaker_level} onChange={e => setUserForm(p => ({ ...p, speaker_level: e.target.value }))} />
           </AdminUserField>
           <div className="admin-modal-actions admin-modal-actions--end">
@@ -4518,10 +4515,7 @@ function AdminDashboardPage() {
           <AdminUserField label="Last Name">
             <input type="text" placeholder="Last name" value={adminAccountForm.last_name} onChange={e => setAdminAccountForm(p => ({ ...p, last_name: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField
-            label="Role"
-            help={adminAccountForm.role === 'superadmin' ? 'Full Program Chair access.' : selectedAdminAccountAccessRole?.description || 'Controls teacher dashboard permissions.'}
-          >
+          <AdminUserField label="Role">
             <select
               value={adminAccountForm.role === 'superadmin' ? 'superadmin' : adminAccountForm.access_role_id}
               onChange={handleAdminAccountRoleChange}

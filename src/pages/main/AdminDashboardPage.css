@@ -2328,6 +2328,14 @@ body:has(.admin-dashboard-page) .main-content {
   line-height: 1.2;
 }
 
+.admin-user-form--student-create .admin-user-field small {
+  min-height: 30px;
+}
+
+.admin-user-field small.is-placeholder {
+  visibility: hidden;
+}
+
 .admin-user-form input,
 .admin-user-form select {
   width: 100%;

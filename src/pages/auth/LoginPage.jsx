@@ -14,14 +14,13 @@ import './LoginPage.css';
 
 const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 
-const LOGIN_LOCKOUT_UNTIL_KEY = 'bigkas_login_lockout_until';
-const LOGIN_LOCKOUT_SECONDS = 30;
-
-function normalizeLockoutSeconds(value) {
-  const seconds = Math.ceil(Number(value) || 0);
-  if (!Number.isFinite(seconds) || seconds <= 0) return 0;
-  return Math.min(LOGIN_LOCKOUT_SECONDS, seconds);
-}
+const LEGACY_LOGIN_LOCKOUT_UNTIL_KEY = 'bigkas_login_lockout_until';
+const LOGIN_LOCKED_ACCOUNTS_KEY = 'bigkas_login_locked_accounts';
+const LOGIN_FAILED_ATTEMPTS_KEY = 'bigkas_login_failed_attempts';
+const LOGIN_LOCK_MIGRATION_KEY = 'bigkas_login_lock_schema_v2_applied';
+const LOGIN_GUARD_PREFIX = 'bigkas_login_guard_v1';
+const MAX_LOGIN_ATTEMPTS = 3;
+const ACCOUNT_LOCKED_MESSAGE = 'Account locked after 3 failed login attempts. Please reset your password or contact support.';
 
 const INSIGHT_WORDS = [
   { text: 'Visual', size: '1rem', opacity: 0.8, top: '15%', left: '12%', delay: 0 },
@@ -41,38 +40,63 @@ const INSIGHT_WORDS = [
   { text: 'Authentic', size: '0.95rem', opacity: 0.75, top: '62%', left: '60%', delay: 5 },
 ];
 
-function getStoredLockoutSeconds() {
-  const storedUnlockTime = window.localStorage.getItem(LOGIN_LOCKOUT_UNTIL_KEY);
-  if (!storedUnlockTime) return 0;
-
-  const unlockTimeMs = Date.parse(storedUnlockTime);
-  if (!Number.isFinite(unlockTimeMs)) {
-    window.localStorage.removeItem(LOGIN_LOCKOUT_UNTIL_KEY);
-    return 0;
-  }
-
-  const remaining = Math.ceil((unlockTimeMs - Date.now()) / 1000);
-  if (remaining <= 0) {
-    window.localStorage.removeItem(LOGIN_LOCKOUT_UNTIL_KEY);
-    return 0;
-  }
-
-  const clampedRemaining = normalizeLockoutSeconds(remaining);
-  if (clampedRemaining !== remaining) {
-    window.localStorage.setItem(
-      LOGIN_LOCKOUT_UNTIL_KEY,
-      new Date(Date.now() + clampedRemaining * 1000).toISOString()
-    );
-  }
-
-  return clampedRemaining;
+function normalizeLoginEmail(value) {
+  return String(value || '').trim().toLowerCase();
 }
 
-function formatCountdown(seconds) {
-  const safeSeconds = Math.max(0, Math.floor(Number(seconds) || 0));
-  const minutes = Math.floor(safeSeconds / 60);
-  const remaining = safeSeconds % 60;
-  return `${String(minutes).padStart(2, '0')}:${String(remaining).padStart(2, '0')}`;
+function readLoginStorageMap(key) {
+  try {
+    const rawValue = window.localStorage.getItem(key);
+    if (!rawValue) return {};
+    const parsedValue = JSON.parse(rawValue);
+    return parsedValue && typeof parsedValue === 'object' ? parsedValue : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeLoginStorageMap(key, value) {
+  window.localStorage.setItem(key, JSON.stringify(value));
+}
+
+function getLoginGuardKey(email) {
+  return `${LOGIN_GUARD_PREFIX}:user:${email}`;
+}
+
+function clearStoredLoginLock(email) {
+  const normalizedEmail = normalizeLoginEmail(email);
+  if (!normalizedEmail) return;
+
+  const lockedAccounts = readLoginStorageMap(LOGIN_LOCKED_ACCOUNTS_KEY);
+  const failedAttempts = readLoginStorageMap(LOGIN_FAILED_ATTEMPTS_KEY);
+  delete lockedAccounts[normalizedEmail];
+  delete failedAttempts[normalizedEmail];
+  writeLoginStorageMap(LOGIN_LOCKED_ACCOUNTS_KEY, lockedAccounts);
+  writeLoginStorageMap(LOGIN_FAILED_ATTEMPTS_KEY, failedAttempts);
+  window.localStorage.removeItem(getLoginGuardKey(normalizedEmail));
+  window.localStorage.removeItem(LEGACY_LOGIN_LOCKOUT_UNTIL_KEY);
+}
+
+function migrateLegacyLoginLocks() {
+  if (window.localStorage.getItem(LOGIN_LOCK_MIGRATION_KEY)) return;
+  window.localStorage.removeItem(LOGIN_LOCKED_ACCOUNTS_KEY);
+  window.localStorage.removeItem(LOGIN_FAILED_ATTEMPTS_KEY);
+  window.localStorage.removeItem(LEGACY_LOGIN_LOCKOUT_UNTIL_KEY);
+  for (let index = window.localStorage.length - 1; index >= 0; index -= 1) {
+    const key = window.localStorage.key(index);
+    if (key?.startsWith(`${LOGIN_GUARD_PREFIX}:user:`)) {
+      window.localStorage.removeItem(key);
+    }
+  }
+  window.localStorage.setItem(LOGIN_LOCK_MIGRATION_KEY, 'true');
+}
+
+function isCredentialFailure(code) {
+  return [
+    'invalid_credentials',
+    'account_not_found',
+    'unknown_auth_error',
+  ].includes(String(code || '').toLowerCase());
 }
 
 function resolvePostLoginRoute(user) {
@@ -99,6 +123,7 @@ function LoginPageDesktop({ managePageClass = true }) {
     resendVerificationEmail,
     isLoading,
   } = useAuthContext();
+  const passwordResetEmail = normalizeLoginEmail(location.state?.passwordResetEmail);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -111,9 +136,16 @@ function LoginPageDesktop({ managePageClass = true }) {
   const [showAccountVerified, setShowAccountVerified] = useState(() => Boolean(location.state?.accountVerified));
   const [resendSuccess, setResendSuccess] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
-  const [lockoutSeconds, setLockoutSeconds] = useState(() => getStoredLockoutSeconds());
+  const [lockedAccounts, setLockedAccounts] = useState(() => {
+    migrateLegacyLoginLocks();
+    clearStoredLoginLock(passwordResetEmail);
+    return readLoginStorageMap(LOGIN_LOCKED_ACCOUNTS_KEY);
+  });
+  const [failedAttempts, setFailedAttempts] = useState(() => readLoginStorageMap(LOGIN_FAILED_ATTEMPTS_KEY));
   const [showPassword, setShowPassword] = useState(false);
   const [layoutMode, setLayoutMode] = useState('split');
+  const normalizedEmail = normalizeLoginEmail(formData.email);
+  const isAccountLocked = Boolean(normalizedEmail && lockedAccounts[normalizedEmail]);
 
   // Show the "Account created" banner from navigation state, auto-clear after 3s
   useEffect(() => {
@@ -147,19 +179,13 @@ function LoginPageDesktop({ managePageClass = true }) {
   }, [resendCooldown]);
 
   useEffect(() => {
-    if (lockoutSeconds <= 0) return;
-    const interval = setInterval(() => {
-      setLockoutSeconds((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          window.localStorage.removeItem(LOGIN_LOCKOUT_UNTIL_KEY);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [lockoutSeconds]);
+    window.localStorage.removeItem(LEGACY_LOGIN_LOCKOUT_UNTIL_KEY);
+  }, []);
+
+  useEffect(() => {
+    if (!passwordResetEmail) return;
+    window.history.replaceState({}, '');
+  }, [passwordResetEmail]);
 
   useEffect(() => {
     if (managePageClass) {
@@ -257,6 +283,13 @@ function LoginPageDesktop({ managePageClass = true }) {
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: null }));
     }
+    if (name === 'email') {
+      const nextEmail = normalizeLoginEmail(value);
+      setErrors((prev) => ({
+        ...prev,
+        submit: nextEmail && lockedAccounts[nextEmail] ? ACCOUNT_LOCKED_MESSAGE : null,
+      }));
+    }
   };
 
   const validateForm = () => {
@@ -275,8 +308,8 @@ function LoginPageDesktop({ managePageClass = true }) {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (lockoutSeconds > 0) {
-      setErrors({ submit: `Too many attempts. Try again in ${formatCountdown(lockoutSeconds)}` });
+    if (isAccountLocked) {
+      setErrors({ submit: ACCOUNT_LOCKED_MESSAGE });
       return;
     }
     if (isLoading) return;
@@ -290,21 +323,53 @@ function LoginPageDesktop({ managePageClass = true }) {
 
     const result = await login(formData.email, formData.password);
     if (result.success) {
+      if (normalizedEmail) {
+        clearStoredLoginLock(normalizedEmail);
+      }
       navigate(resolvePostLoginRoute(result.user), { replace: true });
     } else if (result.requiresEmailConfirmation) {
+      if (normalizedEmail) {
+        clearStoredLoginLock(normalizedEmail);
+        setFailedAttempts(readLoginStorageMap(LOGIN_FAILED_ATTEMPTS_KEY));
+      }
       // User account exists but email is not verified
       setShowUnverified(true);
       setFormData({ email: '', password: '' });
     } else if (result.code === 'account_locked') {
-      const lockSeconds = normalizeLockoutSeconds(result.lockoutSeconds) || LOGIN_LOCKOUT_SECONDS;
-      const unlockTime = new Date(Date.now() + lockSeconds * 1000).toISOString();
-      window.localStorage.setItem(LOGIN_LOCKOUT_UNTIL_KEY, unlockTime);
-      setLockoutSeconds(lockSeconds);
-      setFormData({ email: '', password: '' });
+      const nextLockedAccounts = {
+        ...lockedAccounts,
+        [normalizedEmail]: { lockedAt: new Date().toISOString() },
+      };
+      setLockedAccounts(nextLockedAccounts);
+      writeLoginStorageMap(LOGIN_LOCKED_ACCOUNTS_KEY, nextLockedAccounts);
+      setErrors({ submit: ACCOUNT_LOCKED_MESSAGE });
+      setFormData((prev) => ({ ...prev, password: '' }));
     } else {
       // Clear fields for invalid credentials or account not found
-      setErrors({ submit: result.error });
-      setFormData({ email: '', password: '' });
+      const nextFailedCount = normalizedEmail ? Number(failedAttempts[normalizedEmail] || 0) + 1 : 0;
+      if (!isCredentialFailure(result.code)) {
+        setErrors({ submit: result.error });
+      } else if (normalizedEmail && nextFailedCount >= MAX_LOGIN_ATTEMPTS) {
+        const nextLockedAccounts = {
+          ...lockedAccounts,
+          [normalizedEmail]: { lockedAt: new Date().toISOString() },
+        };
+        const nextAttempts = { ...failedAttempts };
+        delete nextAttempts[normalizedEmail];
+        setLockedAccounts(nextLockedAccounts);
+        setFailedAttempts(nextAttempts);
+        writeLoginStorageMap(LOGIN_LOCKED_ACCOUNTS_KEY, nextLockedAccounts);
+        writeLoginStorageMap(LOGIN_FAILED_ATTEMPTS_KEY, nextAttempts);
+        setErrors({ submit: ACCOUNT_LOCKED_MESSAGE });
+      } else {
+        const nextAttempts = normalizedEmail
+          ? { ...failedAttempts, [normalizedEmail]: nextFailedCount }
+          : failedAttempts;
+        setFailedAttempts(nextAttempts);
+        writeLoginStorageMap(LOGIN_FAILED_ATTEMPTS_KEY, nextAttempts);
+        setErrors({ submit: result.error });
+      }
+      setFormData((prev) => ({ ...prev, password: '' }));
     }
   };
 
@@ -474,7 +539,7 @@ function LoginPageDesktop({ managePageClass = true }) {
                       value={formData.email}
                       onChange={handleChange}
                       placeholder="name@gmail.com"
-                      disabled={isLoading || lockoutSeconds > 0}
+                      disabled={isLoading}
                       autoComplete="username"
                     />
                   </div>
@@ -492,13 +557,19 @@ function LoginPageDesktop({ managePageClass = true }) {
                         value={formData.password}
                         onChange={handleChange}
                         placeholder="••••••••"
-                        disabled={isLoading || lockoutSeconds > 0}
+                        disabled={isLoading || isAccountLocked}
                         autoComplete="current-password"
                       />
                       <PasswordToggle isVisible={showPassword} onToggle={() => setShowPassword(!showPassword)} label="password" />
                     </div>
                     <div className="form-footer-row">
-                      <Link to={ROUTES.FORGOT_PASSWORD} className="forgot-pw-link">Forgot Password?</Link>
+                      <Link
+                        to={ROUTES.FORGOT_PASSWORD}
+                        state={{ email: formData.email }}
+                        className="forgot-pw-link"
+                      >
+                        Forgot Password?
+                      </Link>
                     </div>
                     {errors.password && <span className="field-error">{errors.password}</span>}
                 </Motion.div>
@@ -507,11 +578,11 @@ function LoginPageDesktop({ managePageClass = true }) {
                   <PushButton
                     type="button"
                     onClick={handleLogin}
-                    disabled={isLoading || lockoutSeconds > 0}
+                    disabled={isLoading || isAccountLocked}
                     bgColor="#047857"
                     shadowColor="#065f46"
                   >
-                    {isLoading ? <span className="loading-spinner" /> : lockoutSeconds > 0 ? `Locked (${lockoutSeconds}s)` : 'LOGIN'}
+                    {isLoading ? <span className="loading-spinner" /> : isAccountLocked ? 'ACCOUNT LOCKED' : 'LOGIN'}
                   </PushButton>
                 </Motion.div>
 

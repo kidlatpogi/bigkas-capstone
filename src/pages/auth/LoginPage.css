@@ -247,8 +247,7 @@ body.login-page-active {
   align-items: center;
   gap: 16px;
   width: 100%;
-  margin-top: 20px;
-  margin-bottom: auto;
+  margin: auto 0;
 }
 
 .auth-hero-tagline {
@@ -624,6 +623,117 @@ body.login-page-active {
 
   .auth-form-side {
     padding: 40px;
+  }
+}
+
+@media (max-height: 760px) and (min-width: 961px) {
+  .auth-page-v2 {
+    padding-top: calc(16px + env(safe-area-inset-top));
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+
+  .auth-card {
+    height: min(680px, 94dvh);
+    max-height: 94dvh;
+  }
+
+  .auth-visual-side {
+    padding: clamp(24px, 4.5vw, 44px);
+    gap: 12px;
+  }
+
+  .auth-brand-logo {
+    top: 24px;
+    left: 28px;
+    font-size: 1.7rem;
+  }
+
+  .auth-logo-img {
+    height: 38px;
+  }
+
+  .auth-visual-content {
+    gap: 10px;
+  }
+
+  .auth-robot-img-wrap {
+    max-height: 34vh;
+    width: min(78%, 360px);
+  }
+
+  .insight-chip {
+    padding: 5px 12px;
+    font-size: clamp(0.72rem, 1.9vh, 0.9rem) !important;
+  }
+
+  .auth-hero-tagline {
+    font-size: clamp(1.45rem, 4.2vh, 2rem);
+  }
+
+  .auth-hero-desc {
+    font-size: 0.86rem;
+    line-height: 1.35;
+    max-width: 290px;
+  }
+
+  .auth-form-side {
+    padding: 24px 40px;
+  }
+
+  .auth-form-inner {
+    padding: 0;
+  }
+
+  .auth-form-headline {
+    font-size: 1.55rem;
+    margin-bottom: 6px;
+  }
+
+  .auth-form-subline {
+    font-size: 0.86rem;
+    margin-bottom: 20px;
+  }
+
+  .auth-form {
+    gap: 14px;
+  }
+
+  .form-group-v2 {
+    gap: 6px;
+  }
+
+  .form-group-v2 label {
+    font-size: 0.86rem;
+  }
+
+  .input-field-wrap input,
+  .google-signin-btn-v2 {
+    height: 46px;
+    font-size: 0.92rem;
+  }
+
+  .input-field-wrap input {
+    border-radius: 14px;
+    padding: 0 16px;
+  }
+
+  .pw-toggle-btn,
+  .forgot-pw-link {
+    font-size: 0.8rem;
+  }
+
+  .form-actions-v2 button {
+    height: 48px !important;
+    font-size: 0.95rem !important;
+  }
+
+  .divider-v2 {
+    margin: 4px 0;
+  }
+
+  .signup-prompt-v2 {
+    font-size: 0.82rem;
+    margin-top: 2px;
   }
 }
 

@@ -11,13 +11,6 @@ import {
   ResponsiveContainer,
   AreaChart,
   Area,
-  LineChart,
-  Line,
-  CartesianGrid,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
 } from 'recharts';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
@@ -33,7 +26,27 @@ const SERVICE_HEALTH_TIMEOUT_MS = 8000;
 const DASHBOARD_QUERY_TIMEOUT_MS = 12000;
 const SERVICE_HEALTH_CACHE_KEY = 'bigkas_admin_service_health_v1';
 const SERVICE_HEALTH_CACHE_TTL_MS = 5 * 60 * 1000;
-const PIE_COLORS = ['#33d2a4', '#51dfb5', '#7bedcc', '#a8f5e1'];
+const ACTIVE_USERS_PER_PAGE = 5;
+const BATCH_PREVIEW_ROWS_PER_PAGE = 5;
+const STAGE_PASS_ROWS_PER_PAGE = 10;
+const DEFAULT_ADMIN_ACCESS_ROLE_ID = '00000000-0000-0000-0000-000000000101';
+const ADMIN_PERMISSION_ACTIONS = [
+  { key: 'view', label: 'View' },
+  { key: 'create', label: 'Create' },
+  { key: 'update', label: 'Update' },
+  { key: 'delete', label: 'Delete' },
+];
+const ADMIN_PERMISSION_AREAS = [
+  { key: 'overview', label: 'Overview', description: 'Dashboard summary', actions: ['view'] },
+  { key: 'analytics', label: 'Analytics', description: 'Analytics workspace', actions: ['view'] },
+  { key: 'users', label: 'Account Management', description: 'Student and teacher accounts', actions: ['view', 'create', 'update', 'delete'] },
+  { key: 'activities', label: 'Activities', description: 'Activity content', actions: ['view', 'create', 'update', 'delete'] },
+  { key: 'modules', label: 'Modules', description: 'Learning modules', actions: ['view', 'create', 'update', 'delete'] },
+  { key: 'reports', label: 'Reports', description: 'Printable reports', actions: ['view', 'create'] },
+  { key: 'audit', label: 'Audit Logs', description: 'System logs', actions: ['view'] },
+];
+const BATCH_STUDENT_TEMPLATE_COLUMNS = ['Last Name', 'First Name', 'Student Number', 'Email'];
+const BATCH_TEACHER_TEMPLATE_COLUMNS = ['Last Name', 'First Name', 'Email'];
 const USER_FORM_INITIAL = {
   email: '',
   password: '',
@@ -41,6 +54,8 @@ const USER_FORM_INITIAL = {
   first_name: '',
   last_name: '',
   username: '',
+  student_number: '',
+  section_id: '',
   role: 'user',
   current_level: 1,
   speaker_level: 1,
@@ -59,7 +74,113 @@ const ADMIN_FORM_INITIAL = {
   last_name: '',
   username: '',
   role: 'admin',
+  access_role_id: DEFAULT_ADMIN_ACCESS_ROLE_ID,
 };
+const ADMIN_ACCESS_ROLE_FORM_INITIAL = {
+  id: '',
+  name: '',
+  description: '',
+  permissions: createPermissionState(false),
+};
+
+function createPermissionState(enabled = false) {
+  return ADMIN_PERMISSION_AREAS.reduce((acc, area) => {
+    acc[area.key] = area.actions.reduce((actions, action) => {
+      actions[action] = enabled;
+      return actions;
+    }, {});
+    return acc;
+  }, {});
+}
+
+function createDefaultAccessRoles() {
+  const adminPermissions = createPermissionState(true);
+  adminPermissions.audit = { view: false };
+
+  return [
+    {
+      id: DEFAULT_ADMIN_ACCESS_ROLE_ID,
+      name: 'Teacher',
+      description: 'Default teacher role for managing assigned sections, students, activities, and modules.',
+      system: true,
+      permissions: adminPermissions,
+    },
+  ];
+}
+
+function normalizeAccessRole(role) {
+  const normalizedPermissions = createPermissionState(false);
+  ADMIN_PERMISSION_AREAS.forEach((area) => {
+    area.actions.forEach((action) => {
+      normalizedPermissions[area.key][action] = Boolean(role?.permissions?.[area.key]?.[action]);
+    });
+  });
+  return {
+    id: role?.id || createAccessRoleId(role?.name || 'role'),
+    name: String(role?.name || 'Untitled Role').trim() || 'Untitled Role',
+    description: String(role?.description || '').trim(),
+    system: Boolean(role?.system || role?.system_role),
+    permissions: normalizedPermissions,
+  };
+}
+
+function createAccessRoleId(name) {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  const slug = String(name || 'role').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'role';
+  return `${slug}-${Date.now()}-0000-4000-8000-000000000000`;
+}
+
+function findAccessRole(roles, roleId) {
+  return roles.find(role => role.id === roleId) || roles.find(role => role.id === DEFAULT_ADMIN_ACCESS_ROLE_ID) || roles[0] || null;
+}
+
+function buildAccessRoles(roleRows = [], permissionRows = []) {
+  const roleMap = new Map(createDefaultAccessRoles().map(role => [role.id, role]));
+
+  roleRows.forEach((row) => {
+    roleMap.set(row.id, normalizeAccessRole({
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      system_role: row.system_role,
+      permissions: {},
+    }));
+  });
+
+  permissionRows.forEach((row) => {
+    const roleTemplate = roleMap.get(row.role_id);
+    if (!roleTemplate || !roleTemplate.permissions?.[row.area]) return;
+    roleTemplate.permissions[row.area] = {
+      view: Boolean(row.can_view),
+      create: Boolean(row.can_create),
+      update: Boolean(row.can_update),
+      delete: Boolean(row.can_delete),
+    };
+  });
+
+  return Array.from(roleMap.values());
+}
+
+function buildAccessAssignments(rows = []) {
+  return rows.reduce((acc, row) => {
+    if (row.admin_id && row.role_id) acc[row.admin_id] = row.role_id;
+    return acc;
+  }, {});
+}
+
+function permissionRowsFromRole(roleTemplate) {
+  return ADMIN_PERMISSION_AREAS.map((area) => {
+    const areaPermissions = roleTemplate.permissions?.[area.key] || {};
+    return {
+      role_id: roleTemplate.id,
+      area: area.key,
+      can_view: Boolean(areaPermissions.view),
+      can_create: Boolean(areaPermissions.create),
+      can_update: Boolean(areaPermissions.update),
+      can_delete: Boolean(areaPermissions.delete),
+    };
+  });
+}
 
 function shiftRange(start, unit, amount) {
   const d = new Date(start);
@@ -74,7 +195,11 @@ function getDisplayName(profile, fallbackId = '') {
   const full = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim();
   if (full) return full;
   if (profile?.username) return profile.username;
-  return `User ${String(fallbackId).slice(0, 8)}`;
+  return `Student ${String(fallbackId).slice(0, 8)}`;
+}
+
+function getProfileEmail(profile) {
+  return profile?.email || profile?.auth_email || profile?.login_email || profile?.profile_email || '-';
 }
 
 function getArchivedAt(profile) {
@@ -221,28 +346,10 @@ function isAdminProfile(profile) {
   return profile?.role === 'admin' || profile?.role === 'superadmin';
 }
 
-function getDemographicValue(profile, key) {
-  const directValue = profile?.demographic_profile?.[key];
-  if (directValue) return String(directValue);
-  const responseValue = profile?.speaker_profile?.responses?.[key];
-  if (responseValue) return String(responseValue);
-  return 'Not provided';
-}
-
-function buildDistribution(items, getValue, sortMode = 'count_desc') {
-  const counts = new Map();
-  items.forEach((item) => {
-    const value = getValue(item) || 'Not provided';
-    counts.set(value, (counts.get(value) || 0) + 1);
-  });
-  return Array.from(counts.entries())
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => {
-      if (sortMode === 'count_asc') return a.value - b.value || a.name.localeCompare(b.name);
-      if (sortMode === 'label_asc') return a.name.localeCompare(b.name);
-      if (sortMode === 'label_desc') return b.name.localeCompare(a.name);
-      return b.value - a.value || a.name.localeCompare(b.name);
-    });
+function getSpeakerLevelValue(profile) {
+  const level = Number(profile?.speaker_level || profile?.current_level || 1);
+  if (!Number.isFinite(level)) return 1;
+  return Math.min(5, Math.max(1, Math.round(level)));
 }
 
 function getAuditActionClass(action) {
@@ -255,6 +362,7 @@ function getAuditActionClass(action) {
 function formatAuditAction(action) {
   const normalized = String(action || '').trim();
   if (!normalized) return 'Unknown';
+  if (normalized === 'login_locked') return 'Account Locked';
   return normalized
     .split('_')
     .filter(Boolean)
@@ -262,11 +370,27 @@ function formatAuditAction(action) {
     .join(' ');
 }
 
+function getAuthSecurityAuditAction(event) {
+  const metadata = event?.metadata || {};
+  const reasonCode = String(event?.reason_code || '').toLowerCase();
+  const eventType = String(event?.event_type || '').toLowerCase();
+
+  if (
+    eventType === 'login_blocked' ||
+    reasonCode === 'account_locked' ||
+    metadata.locked === true
+  ) {
+    return 'login_locked';
+  }
+
+  return eventType || 'login_failed';
+}
+
 function normalizeAuthSecurityEvent(event) {
   return {
     id: `auth-security-${event.id}`,
     actor_id: event.user_id || null,
-    action: event.event_type,
+    action: getAuthSecurityAuditAction(event),
     entity_type: 'auth_security',
     entity_id: event.user_id || null,
     old_values: null,
@@ -284,37 +408,654 @@ function normalizeAuthSecurityEvent(event) {
   };
 }
 
-function average(values) {
-  const valid = values.map(Number).filter(Number.isFinite);
-  if (!valid.length) return 0;
-  return Number((valid.reduce((sum, value) => sum + value, 0) / valid.length).toFixed(1));
+function getSessionDurationMinutes(session) {
+  const seconds = Number(session?.duration_sec ?? session?.duration ?? 0);
+  if (!Number.isFinite(seconds) || seconds <= 0) return 0;
+  return seconds / 60;
 }
 
-function modeOf(session) {
-  const origin = String(session?.session_origin || '').toLowerCase();
-  const mode = String(session?.session_mode || '').toLowerCase();
-  const speaking = String(session?.speaking_mode || '').toLowerCase();
-  if (mode.includes('free') || speaking.includes('free') || origin === 'pre-test') return 'Free Speech';
-  if (mode.includes('random') || origin === 'practice') return 'Randomizer';
-  return 'Activities';
+function getTimestamp(value) {
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
-function LeaderboardList({ items, suffix = '', emptyMsg = 'No data available' }) {
-  if (!items.length) return <div className="admin-empty-chart">{emptyMsg}</div>;
-  return (
-    <div className="admin-leaderboard">
-      {items.map((item, i) => (
-        <div key={item.id} className="admin-lb-row">
-          <div className="admin-lb-rank">{i + 1}</div>
-          <div className="admin-lb-avatar">{item.initial}</div>
-          <div className="admin-lb-name">{item.username}</div>
-          <div className="admin-lb-value">
-            {item.value} {suffix}
-          </div>
-        </div>
-      ))}
-    </div>
+function getProfileActivityTimestamp(profile) {
+  if (!profile) return 0;
+  return Math.max(
+    getTimestamp(profile.last_active_at),
+    getTimestamp(profile.last_seen_at),
+    getTimestamp(profile.last_login_at),
+    getTimestamp(profile.last_sign_in_at),
+    getTimestamp(profile.updated_at)
   );
+}
+
+function getActiveUserIdsForRange(users, sessions, startDate, endDate) {
+  const start = startDate.getTime();
+  const end = endDate.getTime();
+  const userIds = new Set(users.map(user => user.id));
+  const activeIds = new Set();
+
+  sessions.forEach((session) => {
+    if (!userIds.has(session.user_id)) return;
+    const timestamp = getTimestamp(session.created_at);
+    if (timestamp >= start && timestamp < end) activeIds.add(session.user_id);
+  });
+
+  users.forEach((user) => {
+    const timestamp = getProfileActivityTimestamp(user);
+    if (timestamp >= start && timestamp < end) activeIds.add(user.id);
+  });
+
+  return activeIds;
+}
+
+function normalizeDashboardScore(value) {
+  const score = Number(value);
+  if (!Number.isFinite(score) || score <= 0) return null;
+  if (score <= 5) return ((Math.min(Math.max(score, 1), 5) - 1) / 4) * 100;
+  return Math.min(Math.max(score, 0), 100);
+}
+
+function averageDashboardScore(values) {
+  const valid = values.map(normalizeDashboardScore).filter(Number.isFinite);
+  if (!valid.length) return null;
+  return Math.round(valid.reduce((sum, value) => sum + value, 0) / valid.length);
+}
+
+function getDashboardSessionScore(session, metricsRow) {
+  const verbalScore = normalizeDashboardScore(metricsRow?.verbal ?? session?.verbal_score ?? session?.context_score);
+  const vocalScore = normalizeDashboardScore(metricsRow?.vocal ?? session?.vocal_score ?? session?.acoustic_score);
+  const visualScore = normalizeDashboardScore(metricsRow?.visual ?? session?.visual_score);
+
+  if ([verbalScore, vocalScore, visualScore].every(Number.isFinite)) {
+    return (verbalScore * 0.07) + (vocalScore * 0.38) + (visualScore * 0.55);
+  }
+
+  return session?.confidence_score ?? session?.score ?? metricsRow?.confidence ?? metricsRow?.overall;
+}
+
+function getAnalyticsMetricScore(session, metricsRow, metric) {
+  if (metric === 'visual') return metricsRow?.visual ?? session?.visual_score;
+  if (metric === 'vocal') return metricsRow?.vocal ?? session?.vocal_score ?? session?.acoustic_score;
+  if (metric === 'verbal') return metricsRow?.verbal ?? session?.verbal_score ?? session?.context_score;
+  return getDashboardSessionScore(session, metricsRow);
+}
+
+const CONFIDENCE_LEVELS = [
+  { level: 1, range: '1-5 activities', label: 'New Speaker', min: 1, max: 5 },
+  { level: 2, range: '6-10 activities', label: 'Developing Speaker', min: 6, max: 10 },
+  { level: 3, range: '11-15 activities', label: 'Emerging Confidence', min: 11, max: 15 },
+  { level: 4, range: '16-20 activities', label: 'Confident Speaker', min: 16, max: 20 },
+  { level: 5, range: '21-30 activities', label: 'Advanced Speaker', min: 21, max: 30 },
+];
+
+function getConfidenceLevel(completedActivities) {
+  const count = Math.max(0, Number(completedActivities) || 0);
+  if (count <= 0) return { level: 0, range: '0 activities', label: 'No activity yet', min: 0, max: 0 };
+  return CONFIDENCE_LEVELS.find(level => count >= level.min && count <= level.max) || CONFIDENCE_LEVELS[CONFIDENCE_LEVELS.length - 1];
+}
+
+function inferActivityFocus(activity) {
+  const haystack = [
+    activity?.skill_focus,
+    activity?.target_skill,
+    activity?.focus,
+    activity?.analysis_type,
+    activity?.category,
+    activity?.phase_name,
+    activity?.title,
+    activity?.objective,
+    activity?.description,
+    activity?.instructions,
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  const focus = [];
+  if (haystack.includes('visual') || haystack.includes('gesture') || haystack.includes('eye contact') || haystack.includes('posture')) focus.push('Visual');
+  if (haystack.includes('vocal') || haystack.includes('voice') || haystack.includes('pronunciation') || haystack.includes('pace') || haystack.includes('volume')) focus.push('Vocal');
+  if (haystack.includes('verbal') || haystack.includes('clarity') || haystack.includes('word') || haystack.includes('structure') || haystack.includes('message')) focus.push('Verbal');
+
+  return focus;
+}
+
+function formatActivityFocus(activitiesInRange) {
+  const focusCounts = new Map();
+  activitiesInRange.forEach((activity) => {
+    inferActivityFocus(activity).forEach((focus) => {
+      focusCounts.set(focus, (focusCounts.get(focus) || 0) + 1);
+    });
+  });
+
+  const focus = ['Visual', 'Vocal', 'Verbal'].filter(label => focusCounts.has(label));
+  if (focus.length) return focus.join(', ');
+  return activitiesInRange.length ? 'Mixed skills' : '-';
+}
+
+function clampActivityProgress(count) {
+  return Math.min(Math.max(0, Number(count) || 0), 30);
+}
+
+function escapeXmlCell(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function getExcelColumnName(index) {
+  let value = index;
+  let name = '';
+  while (value > 0) {
+    const remainder = (value - 1) % 26;
+    name = String.fromCharCode(65 + remainder) + name;
+    value = Math.floor((value - 1) / 26);
+  }
+  return name;
+}
+
+function getExcelCellRef(rowIndex, columnIndex) {
+  return `${getExcelColumnName(columnIndex)}${rowIndex}`;
+}
+
+function normalizeBatchHeader(value) {
+  return String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function getBatchTemplateColumns(accountType) {
+  return accountType === 'admin' ? BATCH_TEACHER_TEMPLATE_COLUMNS : BATCH_STUDENT_TEMPLATE_COLUMNS;
+}
+
+function getBatchColumnKey(header) {
+  const normalized = normalizeBatchHeader(header);
+  if (normalized === 'lastname' || normalized === 'surname') return 'last_name';
+  if (normalized === 'firstname' || normalized === 'firsname' || normalized === 'givenname') return 'first_name';
+  if (normalized === 'studentnumber' || normalized === 'studentno' || normalized === 'studentid') return 'student_number';
+  if (normalized === 'email' || normalized === 'emailaddress') return 'email';
+  return '';
+}
+
+function getRandomCharacter(characters) {
+  return characters[getRandomIndex(characters.length)];
+}
+
+function getRandomIndex(maxExclusive) {
+  const bytes = new Uint32Array(1);
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(bytes);
+    return bytes[0] % maxExclusive;
+  }
+  return Math.floor(Math.random() * maxExclusive);
+}
+
+function shuffleCharacters(value) {
+  const chars = value.split('');
+  for (let i = chars.length - 1; i > 0; i -= 1) {
+    const swapIndex = getRandomIndex(i + 1);
+    [chars[i], chars[swapIndex]] = [chars[swapIndex], chars[i]];
+  }
+  return chars.join('');
+}
+
+function generateBatchPassword(length = 12) {
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+  const numbers = '123456789';
+  const symbols = '!@#$%^&*?';
+  const all = `${uppercase}${lowercase}${numbers}${symbols}`;
+  let password = [
+    getRandomCharacter(uppercase),
+    getRandomCharacter(lowercase),
+    getRandomCharacter(numbers),
+    getRandomCharacter(symbols),
+  ].join('');
+
+  while (password.length < length) {
+    password += getRandomCharacter(all);
+  }
+
+  return shuffleCharacters(password);
+}
+
+function parseDelimitedText(text) {
+  const rows = [];
+  let row = [];
+  let cell = '';
+  let quoted = false;
+
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+    const next = text[i + 1];
+
+    if (char === '"') {
+      if (quoted && next === '"') {
+        cell += '"';
+        i += 1;
+      } else {
+        quoted = !quoted;
+      }
+      continue;
+    }
+
+    if (!quoted && char === ',') {
+      row.push(cell.trim());
+      cell = '';
+      continue;
+    }
+
+    if (!quoted && (char === '\n' || char === '\r')) {
+      if (char === '\r' && next === '\n') i += 1;
+      row.push(cell.trim());
+      if (row.some(value => value !== '')) rows.push(row);
+      row = [];
+      cell = '';
+      continue;
+    }
+
+    cell += char;
+  }
+
+  row.push(cell.trim());
+  if (row.some(value => value !== '')) rows.push(row);
+  return rows;
+}
+
+function findZipEndOfCentralDirectory(view) {
+  for (let i = view.byteLength - 22; i >= 0; i -= 1) {
+    if (view.getUint32(i, true) === 0x06054b50) return i;
+  }
+  return -1;
+}
+
+async function inflateZipBytes(bytes) {
+  if (typeof DecompressionStream === 'undefined') {
+    throw new Error('This browser cannot read Excel files yet. Save the sheet as CSV and upload it again.');
+  }
+
+  try {
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  } catch {
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate'));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  }
+}
+
+async function readZipEntries(buffer) {
+  const bytes = new Uint8Array(buffer);
+  const view = new DataView(buffer);
+  const decoder = new TextDecoder();
+  const endOffset = findZipEndOfCentralDirectory(view);
+
+  if (endOffset < 0) {
+    throw new Error('This Excel file could not be read. Please upload a valid .xlsx or .csv file.');
+  }
+
+  const entryCount = view.getUint16(endOffset + 10, true);
+  let centralOffset = view.getUint32(endOffset + 16, true);
+  const entries = new Map();
+
+  for (let i = 0; i < entryCount; i += 1) {
+    if (view.getUint32(centralOffset, true) !== 0x02014b50) break;
+    const method = view.getUint16(centralOffset + 10, true);
+    const compressedSize = view.getUint32(centralOffset + 20, true);
+    const nameLength = view.getUint16(centralOffset + 28, true);
+    const extraLength = view.getUint16(centralOffset + 30, true);
+    const commentLength = view.getUint16(centralOffset + 32, true);
+    const localOffset = view.getUint32(centralOffset + 42, true);
+    const name = decoder.decode(bytes.slice(centralOffset + 46, centralOffset + 46 + nameLength));
+
+    const localNameLength = view.getUint16(localOffset + 26, true);
+    const localExtraLength = view.getUint16(localOffset + 28, true);
+    const dataOffset = localOffset + 30 + localNameLength + localExtraLength;
+    const compressed = bytes.slice(dataOffset, dataOffset + compressedSize);
+    const content = method === 0 ? compressed : await inflateZipBytes(compressed);
+    entries.set(name, content);
+
+    centralOffset += 46 + nameLength + extraLength + commentLength;
+  }
+
+  return entries;
+}
+
+function getXmlTextContent(node, tagName) {
+  return Array.from(node.getElementsByTagName(tagName)).map(child => child.textContent || '').join('');
+}
+
+function getXlsxSharedStrings(xml) {
+  if (!xml) return [];
+  const doc = new DOMParser().parseFromString(xml, 'application/xml');
+  return Array.from(doc.getElementsByTagName('si')).map(si => getXmlTextContent(si, 't'));
+}
+
+function getColumnIndexFromCellRef(ref) {
+  const letters = String(ref || '').match(/[A-Z]+/i)?.[0] || 'A';
+  return letters.toUpperCase().split('').reduce((sum, char) => (sum * 26) + char.charCodeAt(0) - 64, 0) - 1;
+}
+
+function parseXlsxWorksheet(xml, sharedStrings) {
+  const doc = new DOMParser().parseFromString(xml, 'application/xml');
+  return Array.from(doc.getElementsByTagName('row')).map((row) => {
+    const values = [];
+    Array.from(row.getElementsByTagName('c')).forEach((cell, fallbackIndex) => {
+      const index = cell.getAttribute('r') ? getColumnIndexFromCellRef(cell.getAttribute('r')) : fallbackIndex;
+      const type = cell.getAttribute('t');
+      const rawValue = type === 'inlineStr' ? getXmlTextContent(cell, 't') : cell.getElementsByTagName('v')[0]?.textContent || '';
+      values[index] = type === 's' ? sharedStrings[Number(rawValue)] || '' : rawValue;
+    });
+    return values.map(value => String(value || '').trim());
+  }).filter(row => row.some(value => value !== ''));
+}
+
+async function parseBatchSpreadsheetFile(file) {
+  const extension = file.name.split('.').pop()?.toLowerCase();
+  if (extension === 'csv') {
+    return parseDelimitedText(await file.text());
+  }
+  if (extension === 'xls') {
+    throw new Error('Old .xls files are not supported yet. Please save the template as .xlsx or .csv.');
+  }
+  if (extension !== 'xlsx') {
+    throw new Error('Upload a .xlsx or .csv file.');
+  }
+
+  const entries = await readZipEntries(await file.arrayBuffer());
+  const decoder = new TextDecoder();
+  const readText = name => (entries.has(name) ? decoder.decode(entries.get(name)) : '');
+  const sharedStrings = getXlsxSharedStrings(readText('xl/sharedStrings.xml'));
+  const worksheetName = Array.from(entries.keys()).find(name => /^xl\/worksheets\/sheet\d+\.xml$/i.test(name)) || 'xl/worksheets/sheet1.xml';
+  const worksheetXml = readText(worksheetName);
+
+  if (!worksheetXml) {
+    throw new Error('No worksheet was found in the Excel file.');
+  }
+
+  return parseXlsxWorksheet(worksheetXml, sharedStrings);
+}
+
+function buildBatchPreview(matrix, accountType) {
+  const rows = matrix.filter(row => row.some(value => String(value || '').trim()));
+  if (!rows.length) {
+    return {
+      columns: [],
+      rows: [],
+      invalidRows: [],
+      missingColumns: getBatchTemplateColumns(accountType),
+    };
+  }
+
+  const headerRow = rows[0];
+  const columnMap = headerRow.reduce((acc, header, index) => {
+    const key = getBatchColumnKey(header);
+    if (key) acc[key] = index;
+    return acc;
+  }, {});
+  const requiredKeys = accountType === 'admin'
+    ? ['last_name', 'first_name', 'email']
+    : ['last_name', 'first_name', 'student_number', 'email'];
+  const labelsByKey = {
+    last_name: 'Last Name',
+    first_name: 'First Name',
+    student_number: 'Student Number',
+    email: 'Email',
+  };
+  const missingColumns = requiredKeys
+    .filter(key => columnMap[key] === undefined)
+    .map(key => labelsByKey[key]);
+
+  const parsedRows = rows.slice(1).map((row, index) => ({
+    rowNumber: index + 2,
+    last_name: row[columnMap.last_name] || '',
+    first_name: row[columnMap.first_name] || '',
+    student_number: row[columnMap.student_number] || '',
+    email: row[columnMap.email] || '',
+  })).filter(row => row.last_name || row.first_name || row.student_number || row.email);
+  const invalidRows = parsedRows.filter(row => (
+    !row.last_name
+    || !row.first_name
+    || (accountType !== 'admin' && !row.student_number)
+    || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)
+  ));
+
+  return {
+    columns: headerRow,
+    rows: parsedRows,
+    invalidRows,
+    missingColumns,
+  };
+}
+
+function isExcelNumber(value) {
+  if (typeof value === 'number') return Number.isFinite(value);
+  if (typeof value !== 'string') return false;
+  const trimmed = value.trim();
+  return trimmed !== '' && /^-?\d+(\.\d+)?$/.test(trimmed);
+}
+
+function createExcelCell(value, rowIndex, columnIndex, styleIndex = 0) {
+  const ref = getExcelCellRef(rowIndex, columnIndex);
+  const styleAttr = styleIndex ? ` s="${styleIndex}"` : '';
+  if (isExcelNumber(value)) {
+    return `<c r="${ref}"${styleAttr}><v>${Number(value)}</v></c>`;
+  }
+  return `<c r="${ref}" t="inlineStr"${styleAttr}><is><t>${escapeXmlCell(value)}</t></is></c>`;
+}
+
+function buildReportWorksheetXml(title, headers, rows) {
+  const allRows = [
+    [title],
+    headers,
+    ...rows,
+  ];
+  const columnCount = Math.max(headers.length, 1);
+  const rowXml = allRows.map((row, rowIndex) => {
+    const excelRow = rowIndex + 1;
+    const styleIndex = rowIndex === 0 ? 1 : rowIndex === 1 ? 2 : 0;
+    const cells = Array.from({ length: columnCount }).map((_, columnIndex) => (
+      createExcelCell(row[columnIndex] ?? '', excelRow, columnIndex + 1, styleIndex)
+    )).join('');
+    return `<row r="${excelRow}">${cells}</row>`;
+  }).join('');
+  const lastCell = getExcelCellRef(allRows.length, columnCount);
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <dimension ref="A1:${lastCell}"/>
+  <sheetViews><sheetView workbookViewId="0"/></sheetViews>
+  <sheetFormatPr defaultRowHeight="18"/>
+  <cols>${Array.from({ length: columnCount }).map((_, index) => `<col min="${index + 1}" max="${index + 1}" width="${index === 0 ? 28 : 18}" customWidth="1"/>`).join('')}</cols>
+  <sheetData>${rowXml}</sheetData>
+  <mergeCells count="1"><mergeCell ref="A1:${getExcelCellRef(1, columnCount)}"/></mergeCells>
+</worksheet>`;
+}
+
+let zipCrcTable = null;
+
+function getZipCrcTable() {
+  if (zipCrcTable) return zipCrcTable;
+  zipCrcTable = new Uint32Array(256);
+  for (let i = 0; i < 256; i += 1) {
+    let value = i;
+    for (let bit = 0; bit < 8; bit += 1) {
+      value = value & 1 ? (0xedb88320 ^ (value >>> 1)) : (value >>> 1);
+    }
+    zipCrcTable[i] = value >>> 0;
+  }
+  return zipCrcTable;
+}
+
+function getZipCrc32(bytes) {
+  const table = getZipCrcTable();
+  let crc = 0xffffffff;
+  bytes.forEach((byte) => {
+    crc = table[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+  });
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function getZipDosDateTime(date = new Date()) {
+  const year = Math.max(date.getFullYear(), 1980);
+  const dosTime = (date.getHours() << 11) | (date.getMinutes() << 5) | Math.floor(date.getSeconds() / 2);
+  const dosDate = ((year - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate();
+  return { dosDate, dosTime };
+}
+
+function createZipPart(size, writer) {
+  const bytes = new Uint8Array(size);
+  const view = new DataView(bytes.buffer);
+  writer(bytes, view);
+  return bytes;
+}
+
+function concatZipParts(parts) {
+  const totalSize = parts.reduce((sum, part) => sum + part.length, 0);
+  const output = new Uint8Array(totalSize);
+  let offset = 0;
+  parts.forEach((part) => {
+    output.set(part, offset);
+    offset += part.length;
+  });
+  return output;
+}
+
+function createZipArchive(files) {
+  const encoder = new TextEncoder();
+  const { dosDate, dosTime } = getZipDosDateTime();
+  const localParts = [];
+  const centralParts = [];
+  let offset = 0;
+
+  files.forEach((file) => {
+    const nameBytes = encoder.encode(file.name);
+    const contentBytes = encoder.encode(file.content);
+    const crc = getZipCrc32(contentBytes);
+    const localOffset = offset;
+    const localHeader = createZipPart(30 + nameBytes.length, (bytes, view) => {
+      view.setUint32(0, 0x04034b50, true);
+      view.setUint16(4, 20, true);
+      view.setUint16(6, 0, true);
+      view.setUint16(8, 0, true);
+      view.setUint16(10, dosTime, true);
+      view.setUint16(12, dosDate, true);
+      view.setUint32(14, crc, true);
+      view.setUint32(18, contentBytes.length, true);
+      view.setUint32(22, contentBytes.length, true);
+      view.setUint16(26, nameBytes.length, true);
+      view.setUint16(28, 0, true);
+      bytes.set(nameBytes, 30);
+    });
+    localParts.push(localHeader, contentBytes);
+    offset += localHeader.length + contentBytes.length;
+
+    centralParts.push(createZipPart(46 + nameBytes.length, (bytes, view) => {
+      view.setUint32(0, 0x02014b50, true);
+      view.setUint16(4, 20, true);
+      view.setUint16(6, 20, true);
+      view.setUint16(8, 0, true);
+      view.setUint16(10, 0, true);
+      view.setUint16(12, dosTime, true);
+      view.setUint16(14, dosDate, true);
+      view.setUint32(16, crc, true);
+      view.setUint32(20, contentBytes.length, true);
+      view.setUint32(24, contentBytes.length, true);
+      view.setUint16(28, nameBytes.length, true);
+      view.setUint16(30, 0, true);
+      view.setUint16(32, 0, true);
+      view.setUint16(34, 0, true);
+      view.setUint16(36, 0, true);
+      view.setUint32(38, 0, true);
+      view.setUint32(42, localOffset, true);
+      bytes.set(nameBytes, 46);
+    }));
+  });
+
+  const centralDirectory = concatZipParts(centralParts);
+  const endRecord = createZipPart(22, (bytes, view) => {
+    view.setUint32(0, 0x06054b50, true);
+    view.setUint16(4, 0, true);
+    view.setUint16(6, 0, true);
+    view.setUint16(8, files.length, true);
+    view.setUint16(10, files.length, true);
+    view.setUint32(12, centralDirectory.length, true);
+    view.setUint32(16, offset, true);
+    view.setUint16(20, 0, true);
+  });
+
+  return concatZipParts([...localParts, centralDirectory, endRecord]);
+}
+
+function downloadReportWorkbook(filename, title, headers, rows) {
+  const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets><sheet name="Report" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`;
+  const worksheetXml = buildReportWorksheetXml(title, headers, rows);
+  const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <fonts count="3"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="14"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>
+  <fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEFFAF6"/><bgColor indexed="64"/></patternFill></fill></fills>
+  <borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
+  <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+  <cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs>
+  <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>`;
+  const files = [
+    { name: '[Content_Types].xml', content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>` },
+    { name: '_rels/.rels', content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>` },
+    { name: 'xl/workbook.xml', content: workbookXml },
+    { name: 'xl/_rels/workbook.xml.rels', content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
+    { name: 'xl/worksheets/sheet1.xml', content: worksheetXml },
+    { name: 'xl/styles.xml', content: stylesXml },
+    { name: 'docProps/core.xml', content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>${escapeXmlCell(title)}</dc:title><dc:creator>Bigkas</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">${new Date().toISOString()}</dcterms:created></cp:coreProperties>` },
+    { name: 'docProps/app.xml', content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><Application>Bigkas</Application></Properties>` },
+  ];
+  const archive = createZipArchive(files);
+  const blob = new Blob([archive], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${filename}.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function downloadGeneratedCredentialsWorkbook(credentials) {
+  if (!credentials?.rows?.length) return;
+  downloadReportWorkbook(
+    `bigkas-generated-credentials-${new Date(credentials.createdAt).toISOString().slice(0, 10)}`,
+    'Generated Account Credentials',
+    ['Account Type', 'Name', 'Email', 'Student No.', 'Section / Role', 'Temporary Password'],
+    credentials.rows.map(row => [
+      row.accountType,
+      row.name,
+      row.email,
+      row.studentNumber || '-',
+      row.groupLabel || '-',
+      row.password,
+    ])
+  );
+}
+
+function getSectionStudentStudentId(row) {
+  return row?.student_id || row?.profile_id || row?.user_id || row?.student?.id || '';
+}
+
+function getSectionStudentSectionId(row) {
+  return row?.section_id || row?.section?.id || '';
+}
+
+function mergeSectionStudentRows(...sources) {
+  const map = new Map();
+  sources.flat().forEach((row) => {
+    const studentId = getSectionStudentStudentId(row);
+    const sectionId = getSectionStudentSectionId(row);
+    if (!studentId || !sectionId) return;
+    map.set(studentId, { ...row, student_id: studentId, section_id: sectionId });
+  });
+  return Array.from(map.values());
 }
 
 function AdminUserField({ label, help, children }) {
@@ -391,7 +1132,7 @@ async function createConfirmedAdminUser(payload) {
     } catch {
       functionMessage = '';
     }
-    throw new Error(functionMessage || error.message || 'Failed to create user account.');
+    throw new Error(functionMessage || error.message || 'Failed to create account.');
   }
 
   if (data?.error) {
@@ -399,7 +1140,7 @@ async function createConfirmedAdminUser(payload) {
   }
 
   if (!data?.user?.id) {
-    throw new Error('User account was not created.');
+    throw new Error('Account was not created.');
   }
 
   return data;
@@ -459,7 +1200,7 @@ async function updateProfileWithAdminFunction(userId, payload) {
   }
 
   if (!data?.profile?.id) {
-    throw new Error('User profile was not updated.');
+    throw new Error('Profile was not updated.');
   }
 
   return data.profile;
@@ -495,7 +1236,7 @@ async function applyStageProgressWithAdminFunction(userId, payload) {
   return data;
 }
 
-async function fetchAdminProfiles() {
+async function fetchAdminDirectory() {
   const { data, error } = await supabase.functions.invoke('admin-list-profiles', {
     body: {},
   });
@@ -519,7 +1260,23 @@ async function fetchAdminProfiles() {
     throw new Error('Profiles were not loaded.');
   }
 
-  return data.profiles;
+  const sectionStudents = Array.isArray(data?.section_students) ? data.section_students : [];
+  const sectionIdByProfileId = new Map(
+    sectionStudents
+      .map(row => [getSectionStudentStudentId(row), getSectionStudentSectionId(row)])
+      .filter(([studentId, sectionId]) => studentId && sectionId)
+  );
+
+  return {
+    profiles: data.profiles.map(profile => ({
+      ...profile,
+      email: profile.email || profile.auth_email || profile.profile_email || null,
+      auth_email: profile.auth_email || null,
+      profile_email: profile.profile_email || profile.email || null,
+      section_id: profile.section_id || sectionIdByProfileId.get(profile.id) || null,
+    })),
+    sectionStudents,
+  };
 }
 
 function userToForm(user) {
@@ -530,9 +1287,11 @@ function userToForm(user) {
     first_name: user?.first_name || '',
     last_name: user?.last_name || '',
     username: user?.username || '',
+    student_number: user?.student_number || '',
+    section_id: '',
     role: user?.role || 'user',
     current_level: user?.current_level || 1,
-    speaker_level: user?.speaker_level || 1,
+    speaker_level: getSpeakerLevelValue(user),
     speaker_points: user?.speaker_points || 0,
   };
 }
@@ -546,19 +1305,12 @@ function AdminDashboardPage() {
   const [role, setRole] = useState('');
   const [currentAdminId, setCurrentAdminId] = useState('');
   const [activePage, setActivePage] = useState('overview');
-  const [globalFilter, setGlobalFilter] = useState('30d');
-  const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
-  const [analyticsJourneyFilter, setAnalyticsJourneyFilter] = useState('all');
-  const [analyticsStatusFilter, setAnalyticsStatusFilter] = useState('active');
-  const [analyticsModeFilter, setAnalyticsModeFilter] = useState('all');
-  const [demographicSort, setDemographicSort] = useState('count_desc');
 
   const [profiles, setProfiles] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [metrics, setMetrics] = useState([]);
-  const [moduleViews, setModuleViews] = useState([]);
   const [activityCompletions, setActivityCompletions] = useState([]);
-  const [serviceHealth, setServiceHealth] = useState(() => readCachedServiceHealth() || getDefaultServiceHealth());
+  const [, setServiceHealth] = useState(() => readCachedServiceHealth() || getDefaultServiceHealth());
   const [auditLogs, setAuditLogs] = useState([]);
   const [authSecurityEvents, setAuthSecurityEvents] = useState([]);
   const [auditSearchQuery, setAuditSearchQuery] = useState('');
@@ -567,19 +1319,28 @@ function AdminDashboardPage() {
   const [auditPage, setAuditPage] = useState(1);
   const AUDIT_PER_PAGE = 15;
   const [inspectingLog, setInspectingLog] = useState(null);
-  const [adminStatusFilter, setAdminStatusFilter] = useState('all');
+  const [adminStatusFilter, setAdminStatusFilter] = useState('active');
   const [editingUser, setEditingUser] = useState(null);
   const [pendingArchiveUser, setPendingArchiveUser] = useState(null);
+  const [pendingDeleteConfirmation, setPendingDeleteConfirmation] = useState(null);
   const [stageProgressForm, setStageProgressForm] = useState(STAGE_PROGRESS_INITIAL);
   const [pendingStageProgress, setPendingStageProgress] = useState(null);
   const [applyingStageProgress, setApplyingStageProgress] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userAccountTypeFilter, setUserAccountTypeFilter] = useState('users');
   const [userLevelFilter, setUserLevelFilter] = useState('all');
   const [userStatusFilter, setUserStatusFilter] = useState('all');
+  const [userSortKey, setUserSortKey] = useState('name_asc');
   const [userPage, setUserPage] = useState(1);
   const USERS_PER_PAGE = 10;
+  const [analyticsRange, setAnalyticsRange] = useState('30');
+  const [analyticsSectionFilter, setAnalyticsSectionFilter] = useState('all');
+  const [analyticsSpeakerLevelFilter, setAnalyticsSpeakerLevelFilter] = useState('all');
+  const [analyticsStagePage, setAnalyticsStagePage] = useState(1);
   const [activities, setActivities] = useState([]);
   const [modules, setModules] = useState([]);
+  const [sections, setSections] = useState([]);
+  const [sectionStudents, setSectionStudents] = useState([]);
   const [isContentLoading, setIsContentLoading] = useState(false);
   const [contentTab, setContentTab] = useState('activities');
   const [creatingContent, setCreatingContent] = useState(false);
@@ -596,7 +1357,29 @@ function AdminDashboardPage() {
   const [createAdminForm, setCreateAdminForm] = useState(ADMIN_FORM_INITIAL);
   const [editingAdmin, setEditingAdmin] = useState(null);
   const [adminAccountForm, setAdminAccountForm] = useState(ADMIN_FORM_INITIAL);
+  const [adminAccessRoles, setAdminAccessRoles] = useState(createDefaultAccessRoles);
+  const [adminAccessAssignments, setAdminAccessAssignments] = useState({});
+  const [adminAccessRoleForm, setAdminAccessRoleForm] = useState(ADMIN_ACCESS_ROLE_FORM_INITIAL);
+  const [selectedAccessRoleId, setSelectedAccessRoleId] = useState(DEFAULT_ADMIN_ACCESS_ROLE_ID);
+  const [sectionForm, setSectionForm] = useState({ id: '', name: '', teacher_id: '' });
+  const [batchAccountType, setBatchAccountType] = useState('user');
+  const [batchAccessRoleId, setBatchAccessRoleId] = useState(DEFAULT_ADMIN_ACCESS_ROLE_ID);
+  const [batchSectionId, setBatchSectionId] = useState('');
+  const [batchImportFile, setBatchImportFile] = useState(null);
+  const [batchImportStatus, setBatchImportStatus] = useState('idle');
+  const [batchImportError, setBatchImportError] = useState('');
+  const [batchPreview, setBatchPreview] = useState(null);
+  const [batchPreviewPage, setBatchPreviewPage] = useState(1);
+  const [lastGeneratedCredentials, setLastGeneratedCredentials] = useState(null);
+  const [reportType, setReportType] = useState('teachers');
   const [toastMessage, setToastMessage] = useState(null);
+  const [showActiveUsersModal, setShowActiveUsersModal] = useState(false);
+  const [showAccessRoleModal, setShowAccessRoleModal] = useState(false);
+  const [showBatchAccountModal, setShowBatchAccountModal] = useState(false);
+  const [showSectionModal, setShowSectionModal] = useState(false);
+  const [showCreateAdminModal, setShowCreateAdminModal] = useState(false);
+  const [activeUsersPage, setActiveUsersPage] = useState(1);
+  const [activityStatusFilter, setActivityStatusFilter] = useState('all');
 
   const showToast = (msg, type = 'success') => {
     setToastMessage({ text: msg, type });
@@ -604,6 +1387,45 @@ function AdminDashboardPage() {
   };
 
   const isSuperadmin = role === 'superadmin';
+  const currentAdminAccessRole = useMemo(
+    () => findAccessRole(adminAccessRoles, adminAccessAssignments[currentAdminId]),
+    [adminAccessRoles, adminAccessAssignments, currentAdminId]
+  );
+  const currentAdminPermissions = useMemo(
+    () => currentAdminAccessRole?.permissions || createPermissionState(false),
+    [currentAdminAccessRole]
+  );
+  const canUseAdminPermission = (area, action = 'view') => (
+    isSuperadmin || Boolean(currentAdminPermissions?.[area]?.[action])
+  );
+
+  useEffect(() => {
+    if (isSuperadmin) return;
+    const pagePermissionMap = {
+      overview: ['overview'],
+      analytics: ['analytics'],
+      users: ['users'],
+      content: ['activities', 'modules'],
+      reports: ['reports'],
+    };
+    const requiredAreas = pagePermissionMap[activePage] || ['overview'];
+    if (!requiredAreas.some(area => Boolean(currentAdminPermissions?.[area]?.view))) {
+      setActivePage('overview');
+    }
+  }, [activePage, currentAdminPermissions, isSuperadmin]);
+
+  useEffect(() => {
+    if (activePage !== 'content' || isSuperadmin) return;
+    const canViewActivities = Boolean(currentAdminPermissions?.activities?.view);
+    const canViewModules = Boolean(currentAdminPermissions?.modules?.view);
+    if (contentTab === 'activities' && !canViewActivities && canViewModules) setContentTab('modules');
+    if (contentTab === 'modules' && !canViewModules && canViewActivities) setContentTab('activities');
+  }, [activePage, contentTab, currentAdminPermissions, isSuperadmin]);
+
+  useEffect(() => {
+    if (adminAccessRoles.some(roleTemplate => roleTemplate.id === selectedAccessRoleId)) return;
+    setSelectedAccessRoleId(adminAccessRoles[0]?.id || DEFAULT_ADMIN_ACCESS_ROLE_ID);
+  }, [adminAccessRoles, selectedAccessRoleId]);
 
   useEffect(() => {
     let active = true;
@@ -612,7 +1434,7 @@ function AdminDashboardPage() {
       setError('');
       try {
         const { data: authData, error: authError } = await supabase.auth.getUser();
-        if (authError || !authData?.user?.id) throw new Error('Unable to verify admin session.');
+        if (authError || !authData?.user?.id) throw new Error('Unable to verify management session.');
 
         const { data: roleProfile, error: roleError } = await supabase
           .from('profiles')
@@ -620,11 +1442,11 @@ function AdminDashboardPage() {
           .eq('id', authData.user.id)
           .single();
 
-        if (roleError || !roleProfile) throw new Error('Admin profile not found.');
+        if (roleError || !roleProfile) throw new Error('Teacher or Program Chair profile not found.');
         if (roleProfile.role !== 'admin' && roleProfile.role !== 'superadmin') {
           await supabase.auth.signOut();
           navigate(ROUTES.ADMIN_LOGIN_BASE, { replace: true });
-          throw new Error('Access denied: admin privileges required.');
+          throw new Error('Access denied: teacher or Program Chair privileges required.');
         }
 
         if (!active) return;
@@ -632,13 +1454,17 @@ function AdminDashboardPage() {
         setRole(roleProfile.role);
 
         const results = await Promise.allSettled([
-          withTimeout(fetchAdminProfiles(), 'Profiles'),
+          withTimeout(fetchAdminDirectory(), 'Profiles'),
           withTimeout(supabase.from('sessions').select('*').order('created_at', { ascending: true }), 'Sessions'),
           withTimeout(supabase.from('session_metrics').select('session_id, overall_score, visual_score, vocal_score, verbal_score, visual_avg, vocal_avg, verbal_avg, confidence_score, pronunciation_score'), 'Session metrics'),
           withTimeout(supabase.from('activities').select('*').order('target_level', { ascending: true }).order('activity_order', { ascending: true }), 'Activities'),
           withTimeout(supabase.from('modules').select('*').order('level_number', { ascending: true }).order('lesson_number', { ascending: true }), 'Modules'),
-          withTimeout(supabase.from('module_views').select('*').order('viewed_at', { ascending: false }), 'Module views'),
           withTimeout(supabase.from('user_activity_completions').select('*').order('completed_at', { ascending: false }), 'Activity completions'),
+          withTimeout(supabase.from('admin_access_roles').select('*').order('created_at', { ascending: true }), 'Access roles'),
+          withTimeout(supabase.from('admin_role_permissions').select('*'), 'Role permissions'),
+          withTimeout(supabase.from('admin_role_assignments').select('*'), 'Role assignments'),
+          withTimeout(supabase.from('sections').select('*').order('created_at', { ascending: false }), 'Sections'),
+          withTimeout(supabase.from('section_students').select('*'), 'Section students'),
         ]);
 
         const [
@@ -647,8 +1473,12 @@ function AdminDashboardPage() {
           metricsResult,
           activitiesResult,
           modulesResult,
-          moduleViewsResult,
           completionsResult,
+          accessRolesResult,
+          rolePermissionsResult,
+          roleAssignmentsResult,
+          sectionsResult,
+          sectionStudentsResult,
         ] = results;
 
         const getResultData = (result, label) => {
@@ -666,23 +1496,34 @@ function AdminDashboardPage() {
         };
 
         const failedLabels = results
-          .map((result, index) => ({ result, label: ['profiles', 'sessions', 'metrics', 'activities', 'modules', 'module views', 'activity completions'][index] }))
+          .map((result, index) => ({
+            result,
+            label: ['profiles', 'sessions', 'metrics', 'activities', 'modules', 'activity completions', 'access roles', 'role permissions', 'role assignments', 'sections', 'section students'][index],
+          }))
           .filter(({ result }) => result.status === 'rejected' || result.value?.error)
           .map(({ label }) => label);
 
         if (!active) return;
-        setProfiles(getResultData(adminProfilesResult, 'Profiles'));
+        const directoryData = adminProfilesResult.status === 'fulfilled' && !adminProfilesResult.value?.error
+          ? adminProfilesResult.value
+          : { profiles: [], sectionStudents: [] };
+        setProfiles(directoryData.profiles || []);
         setSessions(getResultData(sessionsResult, 'Sessions'));
         setMetrics(getResultData(metricsResult, 'Session metrics'));
         setActivities(getResultData(activitiesResult, 'Activities'));
         setModules(getResultData(modulesResult, 'Modules'));
-        setModuleViews(getResultData(moduleViewsResult, 'Module views'));
         setActivityCompletions(getResultData(completionsResult, 'Activity completions'));
+        const loadedAccessRoles = getResultData(accessRolesResult, 'Access roles');
+        const loadedRolePermissions = getResultData(rolePermissionsResult, 'Role permissions');
+        setAdminAccessRoles(buildAccessRoles(loadedAccessRoles, loadedRolePermissions));
+        setAdminAccessAssignments(buildAccessAssignments(getResultData(roleAssignmentsResult, 'Role assignments')));
+        setSections(getResultData(sectionsResult, 'Sections'));
+        setSectionStudents(mergeSectionStudentRows(directoryData.sectionStudents || [], getResultData(sectionStudentsResult, 'Section students')));
         if (failedLabels.length) {
           setError(`Some dashboard data did not load: ${failedLabels.join(', ')}.`);
         }
       } catch (e) {
-        if (active) setError(e.message || 'Failed to load admin dashboard.');
+        if (active) setError(e.message || 'Failed to load management dashboard.');
       } finally {
         if (active) {
           setLoading(false);
@@ -728,7 +1569,7 @@ function AdminDashboardPage() {
   }, [activePage]);
 
   useEffect(() => {
-    if (!isSuperadmin || (activePage !== 'settings' && activePage !== 'audit')) return;
+    if (!isSuperadmin || (activePage !== 'audit' && activePage !== 'reports' && activePage !== 'analytics')) return;
     let active = true;
     async function loadSettingsData() {
       try {
@@ -752,7 +1593,7 @@ function AdminDashboardPage() {
         setAuditLogs(data || []);
         setAuthSecurityEvents(securityEvents || []);
       } catch (e) {
-        if (active) setError(e.message || 'Failed to load admin settings data.');
+        if (active) setError(e.message || 'Failed to load audit data.');
       }
     }
     loadSettingsData();
@@ -774,9 +1615,71 @@ function AdminDashboardPage() {
       }),
     [profiles, adminStatusFilter]
   );
-  const visibleUsers = useMemo(
-    () => profiles.filter((p) => p.role === 'user' && !isDeletedProfile(p)),
+  const visibleSections = useMemo(() => {
+    const activeSections = sections.filter(section => !section.archived_at);
+    if (isSuperadmin) return activeSections;
+    return activeSections.filter(section => section.teacher_id === currentAdminId);
+  }, [sections, isSuperadmin, currentAdminId]);
+
+  const sectionById = useMemo(() => {
+    const map = new Map();
+    sections.forEach(section => map.set(section.id, section));
+    return map;
+  }, [sections]);
+
+  const sectionIdByStudentId = useMemo(() => {
+    const map = new Map();
+    sectionStudents.forEach(row => {
+      const studentId = getSectionStudentStudentId(row);
+      const sectionId = getSectionStudentSectionId(row);
+      if (studentId && sectionId) map.set(studentId, sectionId);
+    });
+    profiles.forEach(profile => {
+      if (profile.role === 'user' && profile.section_id && !map.has(profile.id)) {
+        map.set(profile.id, profile.section_id);
+      }
+    });
+    return map;
+  }, [profiles, sectionStudents]);
+
+  const sectionStudentIdsBySectionId = useMemo(() => {
+    const map = new Map();
+    profiles.forEach((profile) => {
+      if (profile.role !== 'user' || isDeletedProfile(profile)) return;
+      const sectionId = sectionIdByStudentId.get(profile.id);
+      if (!sectionId) return;
+      if (!map.has(sectionId)) map.set(sectionId, new Set());
+      map.get(sectionId).add(profile.id);
+    });
+    return map;
+  }, [profiles, sectionIdByStudentId]);
+
+  const visibleSectionStudentIds = useMemo(() => {
+    if (isSuperadmin) return null;
+    const ids = new Set();
+    visibleSections.forEach((section) => {
+      (sectionStudentIdsBySectionId.get(section.id) || new Set()).forEach(studentId => ids.add(studentId));
+    });
+    return ids;
+  }, [sectionStudentIdsBySectionId, visibleSections, isSuperadmin]);
+
+  useEffect(() => {
+    if (analyticsSectionFilter === 'all') return;
+    if (!visibleSections.some(section => section.id === analyticsSectionFilter)) {
+      setAnalyticsSectionFilter('all');
+    }
+  }, [analyticsSectionFilter, visibleSections]);
+  const adminTeacherOptions = useMemo(
+    () => profiles.filter(profile => profile.role === 'admin' && !isDeletedProfile(profile)),
     [profiles]
+  );
+  const visibleUsers = useMemo(
+    () => profiles.filter((p) => (
+      p.role === 'user'
+      && !isDeletedProfile(p)
+      && (!visibleSectionStudentIds || visibleSectionStudentIds.has(p.id))
+    )),
+    [profiles, visibleSectionStudentIds]
   );
 
   const recordAuditLog = async ({ action, entityType, entityId = null, oldValues = null, newValues = null }) => {
@@ -801,29 +1704,6 @@ function AdminDashboardPage() {
     if (data) setAuditLogs(prev => [data, ...prev]);
   };
 
-  const filteredSessions = useMemo(() => {
-    if (globalFilter === 'all') return sessions;
-    if (globalFilter === 'custom') {
-      const start = customDateRange.start ? new Date(`${customDateRange.start}T00:00:00`).getTime() : null;
-      const end = customDateRange.end ? new Date(`${customDateRange.end}T23:59:59.999`).getTime() : null;
-      return sessions.filter(s => {
-        const sessionTime = new Date(s.created_at).getTime();
-        if (start && sessionTime < start) return false;
-        if (end && sessionTime > end) return false;
-        return true;
-      });
-    }
-    const now = new Date();
-    let days = 30;
-    if (globalFilter === '7d') days = 7;
-    if (globalFilter === 'ytd') {
-      const startOfYear = new Date(now.getFullYear(), 0, 1).getTime();
-      return sessions.filter(s => new Date(s.created_at).getTime() >= startOfYear);
-    }
-    const cutoff = shiftRange(now, 'day', -days).getTime();
-    return sessions.filter(s => new Date(s.created_at).getTime() >= cutoff);
-  }, [sessions, globalFilter, customDateRange]);
-
   const metricBySession = useMemo(() => {
     const map = new Map();
     metrics.forEach((m) => map.set(m.session_id, {
@@ -840,10 +1720,10 @@ function AdminDashboardPage() {
   const levelDistribution = useMemo(() => {
     const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     visibleUsers.forEach((p) => {
-      const lv = Number(p.speaker_level || p.current_level || 1);
+      const lv = getSpeakerLevelValue(p);
       if (counts[lv] != null) counts[lv] += 1;
     });
-    return Object.entries(counts).map(([lv, value]) => ({ label: `Proficiency Lvl ${lv}`, value }));
+    return Object.entries(counts).map(([lv, value]) => ({ label: `Level ${lv}`, value }));
   }, [visibleUsers]);
 
   const kpis = useMemo(() => {
@@ -851,25 +1731,100 @@ function AdminDashboardPage() {
     const oneWeekAgo = shiftRange(now, 'day', -7);
     const twoWeeksAgo = shiftRange(now, 'day', -14);
     const totalUsers = visibleUsers.length;
-    const activeThisWeekSet = new Set();
-    const activeLastWeekSet = new Set();
-    sessions.forEach(s => {
-      const d = new Date(s.created_at);
-      if (d >= oneWeekAgo) activeThisWeekSet.add(s.user_id);
-      else if (d >= twoWeeksAgo && d < oneWeekAgo) activeLastWeekSet.add(s.user_id);
-    });
+    const adminAccounts = profiles.filter(p => isAdminProfile(p) && !isDeletedProfile(p));
+    const activeThisWeekSet = getActiveUserIdsForRange(visibleUsers, sessions, oneWeekAgo, now);
+    const activeLastWeekSet = getActiveUserIdsForRange(visibleUsers, sessions, twoWeeksAgo, oneWeekAgo);
     const activeThisWeek = activeThisWeekSet.size;
     const activeLastWeek = activeLastWeekSet.size;
     const activeDelta = activeThisWeek - activeLastWeek;
+    const inactiveThisWeek = Math.max(totalUsers - activeThisWeek, 0);
     return {
       totalUsers,
       usersDeltaText: `+${visibleUsers.filter(p => new Date(p.created_at) >= oneWeekAgo).length} new this week`,
       activeThisWeek,
+      inactiveThisWeek,
       activeDeltaText: activeDelta >= 0 ? `+${activeDelta} vs last week` : `${activeDelta} vs last week`,
-      totalSpeeches: sessions.length,
-      speechDeltaText: `+${sessions.filter(s => new Date(s.created_at) >= oneWeekAgo).length} this week`
+      totalAdmins: adminAccounts.length,
+      adminsDeltaText: `+${adminAccounts.filter(p => new Date(p.created_at) >= oneWeekAgo).length} new this week`
     };
-  }, [visibleUsers, sessions]);
+  }, [visibleUsers, profiles, sessions]);
+
+  const weeklyStudentActivityRows = useMemo(() => {
+    const now = new Date();
+    const oneWeekAgo = shiftRange(now, 'day', -7);
+    const activeUserIds = getActiveUserIdsForRange(visibleUsers, sessions, oneWeekAgo, now);
+    const visibleUserIds = new Set(visibleUsers.map(user => user.id));
+    const sessionsThisWeek = sessions.filter(s => visibleUserIds.has(s.user_id) && new Date(s.created_at) >= oneWeekAgo);
+    const sessionsByUser = new Map();
+
+    sessionsThisWeek.forEach((session) => {
+      const userSessions = sessionsByUser.get(session.user_id) || [];
+      userSessions.push(session);
+      sessionsByUser.set(session.user_id, userSessions);
+    });
+
+    return visibleUsers
+      .map((profile) => {
+        const userSessions = sessionsByUser.get(profile.id) || [];
+        const scoreValues = userSessions.map((session) => {
+          const metricsRow = metricBySession.get(session.id);
+          return getDashboardSessionScore(session, metricsRow);
+        });
+        const latestActiveMs = userSessions.reduce((latest, session) => (
+          Math.max(latest, new Date(session.created_at).getTime())
+        ), getProfileActivityTimestamp(profile));
+        const isActive = activeUserIds.has(profile.id);
+
+        return {
+          id: profile.id,
+          isActive,
+          name: getDisplayName(profile, profile.id),
+          speeches: userSessions.length,
+          minutes: Number(userSessions.reduce((sum, session) => sum + getSessionDurationMinutes(session), 0).toFixed(1)),
+          averageScore: averageDashboardScore(scoreValues),
+          lastActive: latestActiveMs ? new Date(latestActiveMs).toLocaleString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+          }) : 'N/A',
+        };
+      })
+      .sort((a, b) => Number(b.isActive) - Number(a.isActive) || b.speeches - a.speeches || b.minutes - a.minutes || a.name.localeCompare(b.name));
+  }, [sessions, visibleUsers, metricBySession]);
+
+  const activeUsersThisWeek = useMemo(
+    () => weeklyStudentActivityRows.filter(user => user.isActive),
+    [weeklyStudentActivityRows]
+  );
+  const inactiveUsersThisWeek = useMemo(
+    () => weeklyStudentActivityRows.filter(user => !user.isActive),
+    [weeklyStudentActivityRows]
+  );
+  const filteredWeeklyStudentActivityRows = useMemo(() => {
+    if (activityStatusFilter === 'active') return activeUsersThisWeek;
+    if (activityStatusFilter === 'inactive') return inactiveUsersThisWeek;
+    return weeklyStudentActivityRows;
+  }, [activeUsersThisWeek, activityStatusFilter, inactiveUsersThisWeek, weeklyStudentActivityRows]);
+  const totalActiveUserPages = Math.max(1, Math.ceil(filteredWeeklyStudentActivityRows.length / ACTIVE_USERS_PER_PAGE));
+  const paginatedWeeklyStudentActivityRows = useMemo(() => {
+    const start = (activeUsersPage - 1) * ACTIVE_USERS_PER_PAGE;
+    return filteredWeeklyStudentActivityRows.slice(start, start + ACTIVE_USERS_PER_PAGE);
+  }, [filteredWeeklyStudentActivityRows, activeUsersPage]);
+
+  useEffect(() => {
+    if (!showActiveUsersModal) return;
+    setActiveUsersPage(1);
+  }, [showActiveUsersModal]);
+
+  useEffect(() => {
+    setActiveUsersPage(1);
+  }, [activityStatusFilter]);
+
+  useEffect(() => {
+    setActiveUsersPage(page => Math.min(page, totalActiveUserPages));
+  }, [totalActiveUserPages]);
 
   const joinTrendData = useMemo(() => {
     const days = 14;
@@ -891,310 +1846,439 @@ function AdminDashboardPage() {
 
   const levelBarData = useMemo(() => levelDistribution.map(i => ({ level: i.label, users: i.value })), [levelDistribution]);
 
-  const analyticsUsers = useMemo(() => {
-    return profiles.filter((p) => {
-      if (p.role !== 'user') return false;
-      if (analyticsStatusFilter === 'active' && isDeletedProfile(p)) return false;
-      if (analyticsStatusFilter === 'deleted' && !isDeletedProfile(p)) return false;
-      if (analyticsJourneyFilter !== 'all' && Number(p.current_level) !== Number(analyticsJourneyFilter)) return false;
-      return true;
-    });
-  }, [profiles, analyticsStatusFilter, analyticsJourneyFilter]);
+  const analyticsScopedUsers = useMemo(() => {
+    let scopedUsers = analyticsSectionFilter === 'all'
+      ? visibleUsers
+      : visibleUsers.filter(user => sectionIdByStudentId.get(user.id) === analyticsSectionFilter);
 
-  const analyticsUserIds = useMemo(() => new Set(analyticsUsers.map(u => u.id)), [analyticsUsers]);
+    if (analyticsSpeakerLevelFilter !== 'all') {
+      const selectedLevel = Number(analyticsSpeakerLevelFilter);
+      scopedUsers = scopedUsers.filter(user => getSpeakerLevelValue(user) === selectedLevel);
+    }
 
-  const analyticsSessions = useMemo(() => {
-    return filteredSessions.filter((s) => {
-      if (!analyticsUserIds.has(s.user_id)) return false;
-      if (analyticsModeFilter !== 'all' && modeOf(s) !== analyticsModeFilter) return false;
-      return true;
-    });
-  }, [filteredSessions, analyticsUserIds, analyticsModeFilter]);
+    return scopedUsers;
+  }, [analyticsSectionFilter, analyticsSpeakerLevelFilter, sectionIdByStudentId, visibleUsers]);
 
-  const analyticsModuleViews = useMemo(() => {
-    const isInRange = (value) => {
-      if (globalFilter === 'all') return true;
-      const viewedTime = new Date(value).getTime();
-      if (globalFilter === 'custom') {
-        const start = customDateRange.start ? new Date(`${customDateRange.start}T00:00:00`).getTime() : null;
-        const end = customDateRange.end ? new Date(`${customDateRange.end}T23:59:59.999`).getTime() : null;
-        if (start && viewedTime < start) return false;
-        if (end && viewedTime > end) return false;
-        return true;
-      }
-      const now = new Date();
-      if (globalFilter === 'ytd') return viewedTime >= new Date(now.getFullYear(), 0, 1).getTime();
-      const days = globalFilter === '7d' ? 7 : 30;
-      return viewedTime >= shiftRange(now, 'day', -days).getTime();
-    };
-
-    return moduleViews.filter((view) => (
-      analyticsUserIds.has(view.user_id) && isInRange(view.viewed_at)
-    ));
-  }, [moduleViews, analyticsUserIds, globalFilter, customDateRange]);
-
-  const analyticsActivityCompletions = useMemo(() => {
-    return activityCompletions.filter((completion) => analyticsUserIds.has(completion.user_id));
-  }, [activityCompletions, analyticsUserIds]);
-
-  const analyticsCompletedSessions = useMemo(
-    () => analyticsSessions.filter(s => s.status === 'completed'),
-    [analyticsSessions]
+  const analyticsUserIds = useMemo(
+    () => new Set(analyticsScopedUsers.map(user => user.id)),
+    [analyticsScopedUsers]
   );
 
-  const analyticsMetricRows = useMemo(() => {
-    return analyticsSessions.map((session) => ({
-      session,
-      scores: metricBySession.get(session.id)
-    })).filter(row => row.scores);
-  }, [analyticsSessions, metricBySession]);
+  const analyticsRangeDays = Number(analyticsRange) || 30;
+  const analyticsRangeStart = useMemo(() => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - (analyticsRangeDays - 1));
+    return start;
+  }, [analyticsRangeDays]);
+
+  const analyticsSessions = useMemo(() => (
+    sessions.filter((session) => {
+      if (!analyticsUserIds.has(session.user_id)) return false;
+      if (session.status === 'error' || session.is_error === true) return false;
+      return getTimestamp(session.created_at) >= analyticsRangeStart.getTime();
+    })
+  ), [analyticsRangeStart, analyticsUserIds, sessions]);
+
+  const analyticsCompletionCountByUser = useMemo(() => {
+    const map = new Map();
+    activityCompletions.forEach((completion) => {
+      if (!completion.user_id) return;
+      if (!analyticsUserIds.has(completion.user_id)) return;
+      map.set(completion.user_id, clampActivityProgress((map.get(completion.user_id) || 0) + 1));
+    });
+    return map;
+  }, [activityCompletions, analyticsUserIds]);
+
+  const analyticsCompletionIdsByUser = useMemo(() => {
+    const map = new Map();
+    activityCompletions.forEach((completion) => {
+      if (!completion.user_id || !completion.activity_id) return;
+      if (!analyticsUserIds.has(completion.user_id)) return;
+      if (!map.has(completion.user_id)) map.set(completion.user_id, new Set());
+      map.get(completion.user_id).add(String(completion.activity_id));
+    });
+    return map;
+  }, [activityCompletions, analyticsUserIds]);
 
   const analyticsKpis = useMemo(() => {
-    const now = new Date();
-    const weekAgo = shiftRange(now, 'day', -7);
-    const activeUserCount = new Set(analyticsSessions.filter(s => new Date(s.created_at) >= weekAgo).map(s => s.user_id)).size;
-    const scoreRows = analyticsMetricRows.map(row => row.scores);
-    const eligibleActivities = activities.filter(activity => (
-      analyticsJourneyFilter === 'all' || Number(activity.target_level) === Number(analyticsJourneyFilter)
-    ));
-    const eligibleActivityIds = new Set(eligibleActivities.map(activity => activity.id));
-    const completedKeys = new Set(
-      analyticsActivityCompletions
-        .filter(completion => eligibleActivityIds.has(completion.activity_id))
-        .map(completion => `${completion.user_id}:${completion.activity_id}`)
-    );
-    const completionPossible = analyticsUsers.length * eligibleActivities.length;
+    const selectedLevel = analyticsSpeakerLevelFilter === 'all' ? null : Number(analyticsSpeakerLevelFilter);
+    const stageActivities = activities.filter((activity) => {
+      const level = Number(activity.target_level) || 1;
+      return selectedLevel == null || level === selectedLevel;
+    });
+    const stageActivityIds = stageActivities.map(activity => String(activity.id));
+    const totalStageRequirements = stageActivityIds.length * analyticsScopedUsers.length;
+    const stagesPassed = analyticsScopedUsers.reduce((total, user) => {
+      const userCompletions = analyticsCompletionIdsByUser.get(user.id) || new Set();
+      return total + stageActivityIds.filter(activityId => userCompletions.has(activityId)).length;
+    }, 0);
+    const averageStagesPassed = analyticsScopedUsers.length
+      ? Math.round(stagesPassed / analyticsScopedUsers.length)
+      : 0;
+    const stagePassRate = totalStageRequirements
+      ? Math.round((stagesPassed / totalStageRequirements) * 100)
+      : 0;
+
     return {
-      totalUsers: analyticsUsers.length,
-      activeUsers: activeUserCount,
-      completedSessions: analyticsCompletedSessions.length,
-      avgOverall: average(scoreRows.map(s => s.overall)),
-      avgVisual: average(scoreRows.map(s => s.visual)),
-      avgVocal: average(scoreRows.map(s => s.vocal)),
-      avgVerbal: average(scoreRows.map(s => s.verbal)),
-      deletedUsers: analyticsUsers.filter(isDeletedProfile).length,
-      completionRate: completionPossible ? Math.round((completedKeys.size / completionPossible) * 100) : 0,
+      students: analyticsScopedUsers.length,
+      stageCount: stageActivityIds.length,
+      stagesPassed,
+      totalStageRequirements,
+      averageStagesPassed,
+      stagePassRate,
     };
-  }, [analyticsUsers, analyticsSessions, analyticsCompletedSessions, analyticsMetricRows, activities, analyticsJourneyFilter, analyticsActivityCompletions]);
+  }, [activities, analyticsCompletionIdsByUser, analyticsScopedUsers, analyticsSpeakerLevelFilter]);
 
-  const mehrabianTrendData = useMemo(() => {
-    const buckets = new Map();
-    analyticsMetricRows.forEach(({ session, scores }) => {
-      const d = new Date(session.created_at);
-      const key = `${d.getMonth() + 1}/${d.getDate()}`;
-      const bucket = buckets.get(key) || { visual: [], vocal: [], verbal: [], overall: [] };
-      bucket.visual.push(scores.visual);
-      bucket.vocal.push(scores.vocal);
-      bucket.verbal.push(scores.verbal);
-      bucket.overall.push(scores.overall);
-      buckets.set(key, bucket);
-    });
-    return Array.from(buckets.entries()).map(([label, bucket]) => ({
-      label,
-      Visual: average(bucket.visual),
-      Vocal: average(bucket.vocal),
-      Verbal: average(bucket.verbal),
-      Overall: average(bucket.overall),
-    })).sort((a, b) => {
-      const [am, ad] = a.label.split('/').map(Number);
-      const [bm, bd] = b.label.split('/').map(Number);
-      return am !== bm ? am - bm : ad - bd;
-    });
-  }, [analyticsMetricRows]);
+  const analyticsConfidenceRows = useMemo(() => {
+    const rowsByLevel = new Map(CONFIDENCE_LEVELS.map(level => [
+      level.level,
+      { ...level, students: 0, studentNames: [] },
+    ]));
+    const selectedActivityLevel = analyticsSpeakerLevelFilter === 'all' ? null : Number(analyticsSpeakerLevelFilter);
+    const focusActivities = activities.filter((activity) => (
+      selectedActivityLevel == null || Number(activity.target_level) === selectedActivityLevel
+    ));
+    const noActivityRow = {
+      level: 0,
+      range: '0 activities',
+      label: 'No activity yet',
+      focus: '-',
+      students: 0,
+      studentNames: [],
+    };
 
-  const journeyAnalyticsData = useMemo(() => {
-    return [1, 2, 3, 4, 5].map((level) => {
-      const usersInLevel = analyticsUsers.filter(u => Number(u.current_level) === level);
-      const userIds = new Set(usersInLevel.map(u => u.id));
-      const sessionsInLevel = analyticsMetricRows.filter(({ session }) => userIds.has(session.user_id));
-      return {
-        journey: `Journey ${level}`,
-        users: usersInLevel.length,
-        sessions: sessionsInLevel.length,
-        avgScore: average(sessionsInLevel.map(row => row.scores.overall)),
-      };
+    analyticsScopedUsers.forEach((user) => {
+      const level = getConfidenceLevel(analyticsCompletionCountByUser.get(user.id) || 0);
+      const targetRow = level.level === 0 ? noActivityRow : rowsByLevel.get(level.level);
+      if (!targetRow) return;
+      targetRow.students += 1;
+      targetRow.studentNames.push(getDisplayName(user, user.id));
     });
-  }, [analyticsUsers, analyticsMetricRows]);
 
-  const activityAnalytics = useMemo(() => {
-    return activities.filter(activity => (
-      analyticsJourneyFilter === 'all' || Number(activity.target_level) === Number(analyticsJourneyFilter)
-    )).map((activity) => {
-      const rows = analyticsMetricRows.filter(({ session }) => session.activity_id === activity.id);
-      const attempts = rows.length;
-      const uniqueAttemptUsers = new Set(rows.map(({ session }) => session.user_id));
-      const completedUsers = new Set(
-        analyticsActivityCompletions
-          .filter(completion => completion.activity_id === activity.id)
-          .map(completion => completion.user_id)
-      );
+    rowsByLevel.forEach((row) => {
+      const activitiesInRange = focusActivities.filter((activity) => {
+        const order = Number(activity.activity_order);
+        return Number.isFinite(order) && order >= row.min && order <= row.max;
+      });
+      row.focus = formatActivityFocus(activitiesInRange);
+      row.studentNames.sort((a, b) => a.localeCompare(b));
+    });
+    noActivityRow.studentNames.sort((a, b) => a.localeCompare(b));
+
+    return [
+      noActivityRow,
+      ...CONFIDENCE_LEVELS.map(level => rowsByLevel.get(level.level)),
+    ];
+  }, [activities, analyticsCompletionCountByUser, analyticsScopedUsers, analyticsSpeakerLevelFilter]);
+
+  const analyticsLevelPassRows = useMemo(() => {
+    const selectedLevel = analyticsSpeakerLevelFilter === 'all' ? null : Number(analyticsSpeakerLevelFilter);
+    const totalStudents = analyticsScopedUsers.length;
+
+    return CONFIDENCE_LEVELS
+      .filter(level => selectedLevel == null || level.level === selectedLevel)
+      .map((level) => {
+        const activitiesInRange = activities.filter((activity) => {
+          const order = Number(activity.activity_order);
+          return Number.isFinite(order) && order >= level.min && order <= level.max;
+        });
+        const passedStudents = [];
+        const notPassedStudents = [];
+
+        analyticsScopedUsers.forEach((user) => {
+          const completed = analyticsCompletionCountByUser.get(user.id) || 0;
+          const target = completed >= level.max ? passedStudents : notPassedStudents;
+          target.push(getDisplayName(user, user.id));
+        });
+
+        passedStudents.sort((a, b) => a.localeCompare(b));
+        notPassedStudents.sort((a, b) => a.localeCompare(b));
+
+        return {
+          level: `Level ${level.level}`,
+          range: level.range,
+          focus: formatActivityFocus(activitiesInRange),
+          category: level.label,
+          passed: passedStudents.length,
+          notPassed: notPassedStudents.length,
+          passRate: totalStudents ? Math.round((passedStudents.length / totalStudents) * 100) : 0,
+          passedStudents,
+          notPassedStudents,
+        };
+      });
+  }, [activities, analyticsCompletionCountByUser, analyticsScopedUsers, analyticsSpeakerLevelFilter]);
+
+  const analyticsStagePassRows = useMemo(() => {
+    const selectedLevel = analyticsSpeakerLevelFilter === 'all' ? null : Number(analyticsSpeakerLevelFilter);
+    const totalStudents = analyticsScopedUsers.length;
+    const scopedActivities = activities
+      .filter((activity) => {
+        const level = Number(activity.target_level) || 1;
+        return selectedLevel == null || level === selectedLevel;
+      })
+      .slice()
+      .sort((a, b) => (
+        (Number(a.target_level) || 1) - (Number(b.target_level) || 1)
+        || (Number(a.activity_order) || 0) - (Number(b.activity_order) || 0)
+        || String(a.title || '').localeCompare(String(b.title || ''))
+      ));
+
+    return scopedActivities.map((activity) => {
+      const activityId = String(activity.id);
+      const level = Number(activity.target_level) || 1;
+      const stage = Number(activity.activity_order) || 0;
+      const passedStudents = [];
+      const notPassedStudents = [];
+
+      analyticsScopedUsers.forEach((user) => {
+        const userCompletions = analyticsCompletionIdsByUser.get(user.id) || new Set();
+        const target = userCompletions.has(activityId) ? passedStudents : notPassedStudents;
+        target.push(getDisplayName(user, user.id));
+      });
+
+      passedStudents.sort((a, b) => a.localeCompare(b));
+      notPassedStudents.sort((a, b) => a.localeCompare(b));
+
       return {
         id: activity.id,
-        title: activity.title || `Activity ${activity.activity_order}`,
-        journey: activity.target_level,
-        attempts,
-        replays: Math.max(0, attempts - uniqueAttemptUsers.size),
-        completionRate: analyticsUsers.length ? Math.round((completedUsers.size / analyticsUsers.length) * 100) : 0,
-        avgScore: average(rows.map(row => row.scores.overall)),
+        level: `Level ${level}`,
+        stage,
+        stageLabel: `Stage ${stage}`,
+        chartLabel: `L${level}-S${stage}`,
+        title: activity.title || `Stage ${stage}`,
+        focus: formatActivityFocus([activity]),
+        passed: passedStudents.length,
+        notPassed: notPassedStudents.length,
+        passRate: totalStudents ? Math.round((passedStudents.length / totalStudents) * 100) : 0,
+        passedStudents,
+        notPassedStudents,
       };
     });
-  }, [activities, analyticsMetricRows, analyticsJourneyFilter, analyticsActivityCompletions, analyticsUsers]);
+  }, [activities, analyticsCompletionIdsByUser, analyticsScopedUsers, analyticsSpeakerLevelFilter]);
 
-  const activityHighlights = useMemo(() => ({
-    mostAttempted: [...activityAnalytics].filter(a => a.attempts > 0).sort((a, b) => b.attempts - a.attempts).slice(0, 5),
-    mostReplayed: [...activityAnalytics].filter(a => a.replays > 0).sort((a, b) => b.replays - a.replays).slice(0, 5),
-    leastAttempted: [...activityAnalytics].sort((a, b) => a.attempts - b.attempts).slice(0, 5),
-    lowestScores: [...activityAnalytics].filter(a => a.attempts > 0).sort((a, b) => a.avgScore - b.avgScore).slice(0, 5),
-    bestCompletion: [...activityAnalytics].filter(a => a.attempts > 0).sort((a, b) => b.completionRate - a.completionRate).slice(0, 5),
-  }), [activityAnalytics]);
+  useEffect(() => {
+    setAnalyticsStagePage(1);
+  }, [analyticsSectionFilter, analyticsSpeakerLevelFilter]);
 
-  const moduleHighlights = useMemo(() => {
-    return modules.filter(module => (
-      analyticsJourneyFilter === 'all' || Number(module.level_number) === Number(analyticsJourneyFilter)
-    )).map((module) => {
-      const views = analyticsModuleViews.filter(view => view.module_id === module.id);
-      return {
-        id: module.id || `${module.level_number}-${module.lesson_number}`,
-        title: module.title || `Module ${module.lesson_number}`,
-        views: views.length,
-        uniqueViewers: new Set(views.map(view => view.user_id)).size,
-      };
-    }).filter(module => module.views > 0)
-      .sort((a, b) => b.views - a.views || b.uniqueViewers - a.uniqueViewers)
-      .slice(0, 5);
-  }, [modules, analyticsJourneyFilter, analyticsModuleViews]);
+  const analyticsStageTotalPages = Math.max(1, Math.ceil(analyticsStagePassRows.length / STAGE_PASS_ROWS_PER_PAGE));
+  const safeAnalyticsStagePage = Math.min(analyticsStagePage, analyticsStageTotalPages);
+  const analyticsStageStartIndex = (safeAnalyticsStagePage - 1) * STAGE_PASS_ROWS_PER_PAGE;
+  const paginatedAnalyticsStagePassRows = analyticsStagePassRows.slice(
+    analyticsStageStartIndex,
+    analyticsStageStartIndex + STAGE_PASS_ROWS_PER_PAGE
+  );
 
-  const demographicAnalytics = useMemo(() => ({
-    gender: buildDistribution(analyticsUsers, profile => getDemographicValue(profile, 'gender'), demographicSort),
-    ageRange: buildDistribution(analyticsUsers, profile => getDemographicValue(profile, 'age_range'), demographicSort),
-  }), [analyticsUsers, demographicSort]);
-
-  const engagementTrendData = useMemo(() => {
-    const days = globalFilter === '7d' ? 7 : 14;
-    const now = new Date();
-    return Array.from({ length: days }).map((_, i) => {
-      const d = new Date(now);
-      d.setDate(now.getDate() - (days - 1) + i);
-      const dayStart = new Date(d.setHours(0, 0, 0, 0)).getTime();
-      const dayEnd = dayStart + 86400000;
-      const daySessions = analyticsSessions.filter(s => {
-        const ms = new Date(s.created_at).getTime();
-        return ms >= dayStart && ms < dayEnd;
+  const analyticsStudentRows = useMemo(() => (
+    analyticsScopedUsers.map((user) => {
+      const userSessions = analyticsSessions.filter(session => session.user_id === user.id);
+      const scores = userSessions.map(session => getDashboardSessionScore(session, metricBySession.get(session.id)));
+      const visualScores = [];
+      const vocalScores = [];
+      const verbalScores = [];
+      userSessions.forEach((session) => {
+        const metrics = metricBySession.get(session.id);
+        const visualScore = normalizeDashboardScore(getAnalyticsMetricScore(session, metrics, 'visual'));
+        const vocalScore = normalizeDashboardScore(getAnalyticsMetricScore(session, metrics, 'vocal'));
+        const verbalScore = normalizeDashboardScore(getAnalyticsMetricScore(session, metrics, 'verbal'));
+        if (Number.isFinite(visualScore)) visualScores.push(visualScore);
+        if (Number.isFinite(vocalScore)) vocalScores.push(vocalScore);
+        if (Number.isFinite(verbalScore)) verbalScores.push(verbalScore);
       });
-      return {
-        date: `${d.getMonth() + 1}/${d.getDate()}`,
-        sessions: daySessions.length,
-        activeUsers: new Set(daySessions.map(s => s.user_id)).size,
-      };
-    });
-  }, [analyticsSessions, globalFilter]);
-
-  const sessionModeData = useMemo(() => {
-    const totals = { Activities: 0, Randomizer: 0, 'Free Speech': 0 };
-    analyticsSessions.forEach(s => { totals[modeOf(s)] += 1; });
-    return Object.entries(totals).map(([name, value]) => ({ name, value })).filter(item => item.value > 0);
-  }, [analyticsSessions]);
-
-  const topScoreUsers = useMemo(() => {
-    const byUser = new Map();
-    analyticsMetricRows.forEach(({ session, scores }) => {
-      const row = byUser.get(session.user_id) || [];
-      row.push(scores.overall);
-      byUser.set(session.user_id, row);
-    });
-    return Array.from(byUser.entries()).map(([id, values]) => {
-      const p = profiles.find(profile => profile.id === id);
-      return { id, username: getDisplayName(p, id), initial: (p?.username || 'U')[0].toUpperCase(), value: average(values) };
-    }).sort((a, b) => b.value - a.value).slice(0, 5);
-  }, [analyticsMetricRows, profiles]);
-
-  const analyticsMostConsistent = useMemo(() => {
-    const activityMap = new Map();
-    analyticsSessions.forEach(s => {
-      const day = new Date(s.created_at).toDateString();
-      const set = activityMap.get(s.user_id) || new Set();
-      set.add(day);
-      activityMap.set(s.user_id, set);
-    });
-    return Array.from(activityMap.entries()).map(([id, set]) => {
-      const p = profiles.find(profile => profile.id === id);
-      return { id, username: getDisplayName(p, id), initial: (p?.username || 'U')[0].toUpperCase(), value: set.size };
-    }).sort((a, b) => b.value - a.value).slice(0, 5);
-  }, [analyticsSessions, profiles]);
-
-  const analyticsRisers = useMemo(() => {
-    const byUser = new Map();
-    analyticsMetricRows.forEach(({ session, scores }) => {
-      const list = byUser.get(session.user_id) || [];
-      list.push({ d: new Date(session.created_at).getTime(), s: scores.overall });
-      byUser.set(session.user_id, list);
-    });
-    return Array.from(byUser.entries()).map(([id, list]) => {
-      if (list.length < 2) return null;
-      const sorted = list.sort((a, b) => a.d - b.d);
-      const diff = Number((sorted[sorted.length - 1].s - sorted[0].s).toFixed(1));
-      const p = profiles.find(profile => profile.id === id);
-      return { id, username: getDisplayName(p, id), initial: (p?.username || 'U')[0].toUpperCase(), value: diff };
-    }).filter(u => u && u.value > 0).sort((a, b) => b.value - a.value).slice(0, 5);
-  }, [analyticsMetricRows, profiles]);
-
-  const atRiskUsers = useMemo(() => {
-    const now = Date.now();
-    const weekMs = 7 * 86400000;
-    return analyticsUsers.map((user) => {
-      const userSessions = analyticsSessions.filter(s => s.user_id === user.id);
-      const scoredRows = analyticsMetricRows.filter(({ session }) => session.user_id === user.id);
-      const latest = userSessions.reduce((max, s) => Math.max(max, new Date(s.created_at).getTime()), 0);
-      const avgScore = average(scoredRows.map(row => row.scores.overall));
-      const reasons = [];
-      if (!latest || now - latest > weekMs) reasons.push('Inactive 7+ days');
-      if (scoredRows.length >= 2 && avgScore > 0 && avgScore < 60) reasons.push('Low average score');
-      if (userSessions.length >= 3 && Number(user.current_level || 1) <= 1) reasons.push('Still in Journey 1');
-      if (userSessions.some(s => s.status === 'failed' || s.status === 'processing')) reasons.push('Session needs review');
-      return { id: user.id, name: getDisplayName(user, user.id), journey: user.current_level || 1, avgScore, reasons };
-    }).filter(user => user.reasons.length).slice(0, 8);
-  }, [analyticsUsers, analyticsSessions, analyticsMetricRows]);
-
-  const analyticsDetailRows = useMemo(() => {
-    return analyticsUsers.map((user) => {
-      const userSessions = analyticsSessions.filter(s => s.user_id === user.id);
-      const rows = analyticsMetricRows.filter(({ session }) => session.user_id === user.id);
+      const section = sectionById.get(sectionIdByStudentId.get(user.id));
+      const latestMs = userSessions.reduce((latest, session) => Math.max(latest, getTimestamp(session.created_at)), 0);
+      const completedActivities = analyticsCompletionCountByUser.get(user.id) || 0;
       return {
         id: user.id,
         name: getDisplayName(user, user.id),
-        journey: user.current_level || 1,
-        sessions: userSessions.length,
-        avgOverall: average(rows.map(row => row.scores.overall)),
-        avgVisual: average(rows.map(row => row.scores.visual)),
-        avgVocal: average(rows.map(row => row.scores.vocal)),
-        avgVerbal: average(rows.map(row => row.scores.verbal)),
-        status: isDeletedProfile(user) ? 'Deleted' : 'Active',
+        section: section?.name || 'No section',
+        speeches: userSessions.length,
+        minutes: Number(userSessions.reduce((sum, session) => sum + getSessionDurationMinutes(session), 0).toFixed(1)),
+        averageScore: averageDashboardScore(scores),
+        completedActivities,
+        confidenceLevel: getConfidenceLevel(completedActivities),
+        visualScore: averageDashboardScore(visualScores),
+        vocalScore: averageDashboardScore(vocalScores),
+        verbalScore: averageDashboardScore(verbalScores),
+        lastActiveMs: latestMs || getProfileActivityTimestamp(user),
       };
-    }).sort((a, b) => b.sessions - a.sessions || b.avgOverall - a.avgOverall).slice(0, 12);
-  }, [analyticsUsers, analyticsSessions, analyticsMetricRows]);
+    })
+  ), [analyticsCompletionCountByUser, analyticsScopedUsers, analyticsSessions, metricBySession, sectionById, sectionIdByStudentId]);
 
-  const filteredUsers = useMemo(() => {
-    let res = profiles.filter(p => p.role === 'user');
-    if (userStatusFilter === 'active') res = res.filter(p => !isDeletedProfile(p));
-    if (userStatusFilter === 'deleted') res = res.filter(p => isDeletedProfile(p));
+  const analyticsRankedStudentRows = useMemo(() => (
+    analyticsStudentRows
+      .slice()
+      .sort((a, b) => (
+        b.completedActivities - a.completedActivities
+        || (b.averageScore ?? -1) - (a.averageScore ?? -1)
+        || a.name.localeCompare(b.name)
+      ))
+  ), [analyticsStudentRows]);
+
+  const analyticsSkillBreakdown = useMemo(() => {
+    const metricRows = [
+      {
+        key: 'visual',
+        skill: 'Visual',
+        description: 'Gesture, posture, eye contact, and visible delivery confidence.',
+        scores: [],
+        students: new Set(),
+      },
+      {
+        key: 'vocal',
+        skill: 'Vocal',
+        description: 'Voice delivery, pace, volume, pronunciation, and vocal confidence.',
+        scores: [],
+        students: new Set(),
+      },
+      {
+        key: 'verbal',
+        skill: 'Verbal',
+        description: 'Word choice, clarity, structure, and spoken message confidence.',
+        scores: [],
+        students: new Set(),
+      },
+    ];
+
+    analyticsSessions.forEach((session) => {
+      const metrics = metricBySession.get(session.id);
+      metricRows.forEach((row) => {
+        const score = normalizeDashboardScore(getAnalyticsMetricScore(session, metrics, row.key));
+        if (!Number.isFinite(score)) return;
+        row.scores.push(score);
+        row.students.add(session.user_id);
+      });
+    });
+
+    return metricRows.map(row => ({
+      skill: row.skill,
+      description: row.description,
+      average: averageDashboardScore(row.scores),
+      measuredStudents: row.students.size,
+    }));
+  }, [analyticsSessions, metricBySession]);
+
+  const reportTeacherRows = useMemo(() => (
+    profiles
+      .filter(profile => profile.role === 'admin')
+      .sort((a, b) => getDisplayName(a, a.id).localeCompare(getDisplayName(b, b.id)))
+  ), [profiles]);
+
+  const reportStudentRows = useMemo(() => (
+    profiles
+      .filter(profile => (
+        profile.role === 'user'
+        && (!visibleSectionStudentIds || visibleSectionStudentIds.has(profile.id))
+      ))
+      .sort((a, b) => getDisplayName(a, a.id).localeCompare(getDisplayName(b, b.id)))
+  ), [profiles, visibleSectionStudentIds]);
+
+  const reportStudentPerformanceRows = useMemo(() => (
+    reportStudentRows.map((student) => {
+      const studentSessions = sessions.filter(session => session.user_id === student.id && session.status !== 'error' && session.is_error !== true);
+      const scores = studentSessions.map(session => getDashboardSessionScore(session, metricBySession.get(session.id)));
+      const completedCount = clampActivityProgress(activityCompletions.filter(completion => completion.user_id === student.id).length);
+      const section = sectionById.get(sectionIdByStudentId.get(student.id));
+      return {
+        id: student.id,
+        name: getDisplayName(student, student.id),
+        section: section?.name || '-',
+        speeches: studentSessions.length,
+        minutes: Number(studentSessions.reduce((sum, session) => sum + getSessionDurationMinutes(session), 0).toFixed(1)),
+        averageScore: averageDashboardScore(scores),
+        completedActivities: completedCount,
+        confidenceLevel: getConfidenceLevel(completedCount),
+      };
+    })
+  ), [activityCompletions, metricBySession, reportStudentRows, sectionById, sectionIdByStudentId, sessions]);
+
+  const userManagementRows = useMemo(() => {
+    const includeUsers = userAccountTypeFilter === 'users' || userAccountTypeFilter === 'all';
+    const includeAdmins = isSuperadmin && (userAccountTypeFilter === 'admins' || userAccountTypeFilter === 'all');
+    let rows = profiles
+      .filter((profile) => {
+        if (profile.role === 'user') {
+          return includeUsers && (!visibleSectionStudentIds || visibleSectionStudentIds.has(profile.id));
+        }
+        return includeAdmins && isAdminProfile(profile);
+      })
+      .map((profile) => {
+        const isAdminAccount = isAdminProfile(profile);
+        const assignedSection = !isAdminAccount ? sectionById.get(sectionIdByStudentId.get(profile.id) || profile.section_id) : null;
+        const accessRole = isAdminAccount ? findAccessRole(adminAccessRoles, adminAccessAssignments[profile.id]) : null;
+        const typeLabel = profile.role === 'superadmin' ? 'Program Chair' : isAdminAccount ? 'Teacher' : 'Student';
+        const roleOrSection = isAdminAccount
+          ? (profile.role === 'superadmin' ? 'Program Chair' : accessRole?.name || 'Teacher')
+          : assignedSection?.name || profile.section_name || '-';
+
+        return {
+          profile,
+          isAdminAccount,
+          typeLabel,
+          roleOrSection,
+          name: getDisplayName(profile, profile.id),
+          email: getProfileEmail(profile),
+          status: isDeletedProfile(profile) ? 'Archived' : 'Active',
+          createdAt: getTimestamp(profile.created_at),
+          journey: Number(profile.current_level) || 1,
+          speaking: getSpeakerLevelValue(profile),
+        };
+      });
+
+    if (userStatusFilter === 'active') rows = rows.filter(row => !isDeletedProfile(row.profile));
+    if (userStatusFilter === 'deleted') rows = rows.filter(row => isDeletedProfile(row.profile));
+    if (userLevelFilter !== 'all' && userAccountTypeFilter === 'users') {
+      rows = rows.filter(row => !row.isAdminAccount && row.journey === Number(userLevelFilter));
+    }
     if (userSearchQuery.trim()) {
       const q = userSearchQuery.toLowerCase();
-      res = res.filter(p => (p.first_name || '').toLowerCase().includes(q) || (p.username || '').toLowerCase().includes(q));
+      rows = rows.filter(row => (
+        row.name.toLowerCase().includes(q)
+        || row.email.toLowerCase().includes(q)
+        || row.typeLabel.toLowerCase().includes(q)
+        || row.roleOrSection.toLowerCase().includes(q)
+        || (row.profile.student_number || '').toLowerCase().includes(q)
+      ));
     }
-    if (userLevelFilter !== 'all') res = res.filter(p => Number(p.current_level) === Number(userLevelFilter));
-    return [...res].sort((a, b) => {
-      const statusDelta = Number(isDeletedProfile(a)) - Number(isDeletedProfile(b));
-      if (statusDelta !== 0) return statusDelta;
-      return getDisplayName(a, a.id).localeCompare(getDisplayName(b, b.id));
+
+    const statusCompare = (a, b) => Number(isDeletedProfile(a.profile)) - Number(isDeletedProfile(b.profile));
+    return [...rows].sort((a, b) => {
+      if (userSortKey === 'name_desc') return b.name.localeCompare(a.name);
+      if (userSortKey === 'newest') return b.createdAt - a.createdAt || a.name.localeCompare(b.name);
+      if (userSortKey === 'oldest') return a.createdAt - b.createdAt || a.name.localeCompare(b.name);
+      if (userSortKey === 'status') return statusCompare(a, b) || a.name.localeCompare(b.name);
+      if (userSortKey === 'type') return a.typeLabel.localeCompare(b.typeLabel) || a.name.localeCompare(b.name);
+      if (userSortKey === 'role_section') return a.roleOrSection.localeCompare(b.roleOrSection) || a.name.localeCompare(b.name);
+      if (userSortKey === 'journey_desc') return b.journey - a.journey || a.name.localeCompare(b.name);
+      if (userSortKey === 'journey_asc') return a.journey - b.journey || a.name.localeCompare(b.name);
+      return statusCompare(a, b) || a.name.localeCompare(b.name);
     });
-  }, [profiles, userSearchQuery, userLevelFilter, userStatusFilter]);
+  }, [
+    adminAccessAssignments,
+    adminAccessRoles,
+    isSuperadmin,
+    profiles,
+    sectionById,
+    sectionIdByStudentId,
+    userAccountTypeFilter,
+    userLevelFilter,
+    userSearchQuery,
+    userSortKey,
+    userStatusFilter,
+    visibleSectionStudentIds,
+  ]);
 
-  const paginatedUsers = useMemo(() => {
+  const paginatedUserManagementRows = useMemo(() => {
     const start = (userPage - 1) * USERS_PER_PAGE;
-    return filteredUsers.slice(start, start + USERS_PER_PAGE);
-  }, [filteredUsers, userPage]);
+    return userManagementRows.slice(start, start + USERS_PER_PAGE);
+  }, [userManagementRows, userPage]);
 
-  const totalUserPages = Math.max(1, Math.ceil(filteredUsers.length / USERS_PER_PAGE));
+  const totalUserPages = Math.max(1, Math.ceil(userManagementRows.length / USERS_PER_PAGE));
+  const showUserManagementTypeColumn = userAccountTypeFilter !== 'users';
+  const showUserManagementStudentColumns = userAccountTypeFilter !== 'admins';
+  const userManagementColumnCount = 5
+    + (showUserManagementTypeColumn ? 1 : 0)
+    + (showUserManagementStudentColumns ? 3 : 0);
 
   useEffect(() => {
     setUserPage(page => Math.min(page, totalUserPages));
@@ -1295,7 +2379,7 @@ function AdminDashboardPage() {
       const query = supabase.from(contentTab).select('*');
       const { data: ref } = contentTab === 'activities'
         ? await query.order('target_level', { ascending: true }).order('activity_order', { ascending: true })
-        : await query.order('created_at', { ascending: false });
+        : await query.order('level_number', { ascending: true }).order('lesson_number', { ascending: true });
       if (contentTab === 'activities') setActivities(ref || []); else setModules(ref || []);
     }
   };
@@ -1346,8 +2430,19 @@ function AdminDashboardPage() {
     showToast(`Level ${pendingLevelAdd} added to the dropdown`);
   };
 
-  const handleDeleteContent = async (id, type) => {
-    if (!window.confirm('Delete this item?')) return;
+  const requestDeleteContent = (item, type) => {
+    const label = type === 'activities' ? 'activity' : 'module';
+    setPendingDeleteConfirmation({
+      kind: 'content',
+      id: item.id,
+      type,
+      title: `Delete ${label}?`,
+      message: `This will permanently delete "${item.title || 'Untitled'}" from ${type === 'activities' ? 'Activities' : 'Modules'}. This action cannot be undone.`,
+      confirmLabel: `Delete ${label}`,
+    });
+  };
+
+  const deleteContent = async (id, type) => {
     const oldContent = type === 'activities'
       ? activities.find(a => a.id === id)
       : modules.find(m => m.id === id);
@@ -1369,21 +2464,80 @@ function AdminDashboardPage() {
 
   const refreshProfiles = async () => {
     try {
-      const nextProfiles = await fetchAdminProfiles();
-      setProfiles(nextProfiles);
+      const directory = await fetchAdminDirectory();
+      setProfiles(directory.profiles);
+      setSectionStudents(prev => mergeSectionStudentRows(prev, directory.sectionStudents));
     } catch (refreshError) {
-      showToast(refreshError.message || 'Failed to refresh users', 'error');
+      showToast(refreshError.message || 'Failed to refresh students', 'error');
       return;
     }
   };
 
+  const refreshRbacData = async () => {
+    const [
+      accessRolesResult,
+      rolePermissionsResult,
+      roleAssignmentsResult,
+      sectionsResult,
+      sectionStudentsResult,
+      directoryResult,
+    ] = await Promise.all([
+      supabase.from('admin_access_roles').select('*').order('created_at', { ascending: true }),
+      supabase.from('admin_role_permissions').select('*'),
+      supabase.from('admin_role_assignments').select('*'),
+      supabase.from('sections').select('*').order('created_at', { ascending: false }),
+      supabase.from('section_students').select('*'),
+      fetchAdminDirectory(),
+    ]);
+
+    if (accessRolesResult.error) throw accessRolesResult.error;
+    if (rolePermissionsResult.error) throw rolePermissionsResult.error;
+    if (roleAssignmentsResult.error) throw roleAssignmentsResult.error;
+    if (sectionsResult.error) throw sectionsResult.error;
+    if (sectionStudentsResult.error) throw sectionStudentsResult.error;
+
+    setAdminAccessRoles(buildAccessRoles(accessRolesResult.data || [], rolePermissionsResult.data || []));
+    setAdminAccessAssignments(buildAccessAssignments(roleAssignmentsResult.data || []));
+    setProfiles(directoryResult.profiles || []);
+    setSections(sectionsResult.data || []);
+    setSectionStudents(mergeSectionStudentRows(directoryResult.sectionStudents || [], sectionStudentsResult.data || []));
+  };
+
+  const assignUserToSection = async (studentId, sectionId) => {
+    if (!studentId) return;
+    await supabase.from('section_students').delete().eq('student_id', studentId);
+    if (!sectionId) {
+      setSectionStudents(prev => prev.filter(row => row.student_id !== studentId));
+      return;
+    }
+    const payload = {
+      section_id: sectionId,
+      student_id: studentId,
+      assigned_by: currentAdminId,
+    };
+    const { data, error } = await supabase
+      .from('section_students')
+      .insert(payload)
+      .select('*')
+      .single();
+    if (error) throw error;
+    setSectionStudents(prev => [...prev.filter(row => row.student_id !== studentId), data || payload]);
+  };
+
   const openCreateUser = () => {
-    setUserForm(USER_FORM_INITIAL);
+    setUserForm({
+      ...USER_FORM_INITIAL,
+      section_id: visibleSections[0]?.id || '',
+    });
     setCreatingUser(true);
   };
 
   const openEditUser = (user) => {
-    setUserForm(userToForm(user));
+    const assignedSection = sectionStudents.find(row => getSectionStudentStudentId(row) === user?.id);
+    setUserForm({
+      ...userToForm(user),
+      section_id: getSectionStudentSectionId(assignedSection) || user?.section_id || visibleSections[0]?.id || '',
+    });
     setStageProgressForm({
       ...STAGE_PROGRESS_INITIAL,
       journey: clampJourneyLevel(user?.current_level || 1),
@@ -1399,14 +2553,506 @@ function AdminDashboardPage() {
       last_name: admin?.last_name || '',
       username: admin?.username || '',
       role: isAdminProfile(admin) ? admin.role : 'admin',
+      access_role_id: adminAccessAssignments[admin?.id] || DEFAULT_ADMIN_ACCESS_ROLE_ID,
     });
     setEditingAdmin(admin);
+  };
+
+  const updateAccessRolePermission = (areaKey, actionKey) => {
+    setAdminAccessRoleForm(prev => {
+      const nextPermissions = {
+        ...prev.permissions,
+        [areaKey]: {
+          ...(prev.permissions?.[areaKey] || {}),
+        },
+      };
+      const nextValue = !nextPermissions[areaKey][actionKey];
+      nextPermissions[areaKey][actionKey] = nextValue;
+      if (actionKey === 'view' && !nextValue) {
+        ADMIN_PERMISSION_AREAS.find(area => area.key === areaKey)?.actions.forEach((action) => {
+          nextPermissions[areaKey][action] = false;
+        });
+      }
+      if (actionKey !== 'view' && nextValue) nextPermissions[areaKey].view = true;
+      return { ...prev, permissions: nextPermissions };
+    });
+  };
+
+  const loadAccessRoleForEdit = (roleTemplate) => {
+    setAdminAccessRoleForm({
+      id: roleTemplate.id,
+      name: roleTemplate.name,
+      description: roleTemplate.description || '',
+      permissions: normalizeAccessRole(roleTemplate).permissions,
+    });
+    setSelectedAccessRoleId(roleTemplate.id);
+    setShowAccessRoleModal(true);
+  };
+
+  const resetAccessRoleForm = () => {
+    setAdminAccessRoleForm(ADMIN_ACCESS_ROLE_FORM_INITIAL);
+  };
+
+  const openNewAccessRole = () => {
+    resetAccessRoleForm();
+    setShowAccessRoleModal(true);
+  };
+
+  const openSelectedAccessRole = () => {
+    const selectedRole = findAccessRole(adminAccessRoles, selectedAccessRoleId);
+    if (selectedRole) loadAccessRoleForEdit(selectedRole);
+  };
+
+  const submitAccessRole = async (e) => {
+    e.preventDefault();
+    const name = adminAccessRoleForm.name.trim();
+    if (!name) {
+      showToast('Role name is required', 'error');
+      return;
+    }
+    const nextRole = normalizeAccessRole({
+      ...adminAccessRoleForm,
+      id: adminAccessRoleForm.id || createAccessRoleId(name),
+      name,
+    });
+    try {
+      const existingRole = adminAccessRoles.find(roleTemplate => roleTemplate.id === nextRole.id);
+      const { error: roleError } = await supabase
+        .from('admin_access_roles')
+        .upsert({
+          id: nextRole.id,
+          name: nextRole.name,
+          description: nextRole.description || null,
+          system_role: Boolean(existingRole?.system),
+          created_by: currentAdminId || null,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'id' });
+      if (roleError) throw roleError;
+
+      const { error: deleteError } = await supabase
+        .from('admin_role_permissions')
+        .delete()
+        .eq('role_id', nextRole.id);
+      if (deleteError) throw deleteError;
+
+      const { error: permissionError } = await supabase
+        .from('admin_role_permissions')
+        .insert(permissionRowsFromRole(nextRole));
+      if (permissionError) throw permissionError;
+
+      await recordAuditLog({
+        action: existingRole ? 'update' : 'create',
+        entityType: 'admin_access_roles',
+        entityId: nextRole.id,
+        oldValues: existingRole || null,
+        newValues: nextRole,
+      });
+      await refreshRbacData();
+      setAdminAccessRoleForm(ADMIN_ACCESS_ROLE_FORM_INITIAL);
+      setSelectedAccessRoleId(nextRole.id);
+      setShowAccessRoleModal(false);
+      showToast('Access role saved');
+    } catch (roleError) {
+      showToast(roleError.message || 'Failed to save access role', 'error');
+    }
+  };
+
+  const requestDeleteAccessRole = (roleId) => {
+    if (roleId === DEFAULT_ADMIN_ACCESS_ROLE_ID) {
+      showToast('Default Teacher role cannot be deleted', 'error');
+      return;
+    }
+    const existingRole = adminAccessRoles.find(roleTemplate => roleTemplate.id === roleId);
+    setPendingDeleteConfirmation({
+      kind: 'accessRole',
+      id: roleId,
+      title: 'Delete access role?',
+      message: `This will delete the "${existingRole?.name || 'selected'}" role. Teachers assigned to it will be moved back to the default Teacher role.`,
+      confirmLabel: 'Delete Role',
+    });
+  };
+
+  const deleteAccessRole = async (roleId) => {
+    if (roleId === DEFAULT_ADMIN_ACCESS_ROLE_ID) {
+      showToast('Default Teacher role cannot be deleted', 'error');
+      return;
+    }
+    const existingRole = adminAccessRoles.find(roleTemplate => roleTemplate.id === roleId);
+    try {
+      const { error: assignmentError } = await supabase
+        .from('admin_role_assignments')
+        .update({ role_id: DEFAULT_ADMIN_ACCESS_ROLE_ID, assigned_by: currentAdminId || null, assigned_at: new Date().toISOString() })
+        .eq('role_id', roleId);
+      if (assignmentError) throw assignmentError;
+
+      const { error } = await supabase
+        .from('admin_access_roles')
+        .delete()
+        .eq('id', roleId);
+      if (error) throw error;
+      await recordAuditLog({
+        action: 'delete',
+        entityType: 'admin_access_roles',
+        entityId: roleId,
+        oldValues: existingRole || { id: roleId },
+        newValues: null,
+      });
+      await refreshRbacData();
+      setSelectedAccessRoleId(DEFAULT_ADMIN_ACCESS_ROLE_ID);
+      showToast('Access role deleted');
+    } catch (deleteError) {
+      showToast(deleteError.message || 'Failed to delete access role', 'error');
+    }
+  };
+
+  const resetBatchImportState = () => {
+    setBatchImportFile(null);
+    setBatchImportStatus('idle');
+    setBatchImportError('');
+    setBatchPreview(null);
+    setBatchPreviewPage(1);
+  };
+
+  const readBatchImportFile = async (file, accountType = batchAccountType) => {
+    setBatchImportFile(file);
+    setBatchImportStatus('reading');
+    setBatchImportError('');
+    setBatchPreview(null);
+    setBatchPreviewPage(1);
+
+    try {
+      const matrix = await parseBatchSpreadsheetFile(file);
+      const preview = buildBatchPreview(matrix, accountType);
+      setBatchPreview(preview);
+      if (preview.missingColumns.length) {
+        setBatchImportStatus('error');
+        setBatchImportError(`Missing required columns: ${preview.missingColumns.join(', ')}`);
+        return;
+      }
+      if (!preview.rows.length) {
+        setBatchImportStatus('error');
+        setBatchImportError('No account rows were found below the header row.');
+        return;
+      }
+      if (preview.invalidRows.length) {
+        setBatchImportStatus('error');
+        setBatchImportError(`${preview.invalidRows.length} row${preview.invalidRows.length === 1 ? '' : 's'} need complete names, ${accountType === 'admin' ? '' : 'student numbers, '}and valid email addresses.`);
+        return;
+      }
+      setBatchImportStatus('ready');
+      showToast(`${preview.rows.length} ${accountType === 'admin' ? 'teacher' : 'student'} row${preview.rows.length === 1 ? '' : 's'} detected`);
+    } catch (fileError) {
+      setBatchImportStatus('error');
+      setBatchImportError(fileError.message || 'Failed to read the selected file.');
+    }
+  };
+
+  const handleBatchFileChange = async (e) => {
+    const file = e.target.files?.[0] || null;
+    if (!file) {
+      resetBatchImportState();
+      return;
+    }
+    await readBatchImportFile(file);
+  };
+
+  const handleBatchAccountTypeChange = async (e) => {
+    const nextType = e.target.value;
+    setBatchAccountType(nextType);
+    if (nextType === 'user' && !batchSectionId && visibleSections[0]?.id) {
+      setBatchSectionId(visibleSections[0].id);
+    }
+    if (batchImportFile) await readBatchImportFile(batchImportFile, nextType);
+  };
+
+  const openBatchAccountSetup = () => {
+    const nextType = isSuperadmin && userAccountTypeFilter === 'admins' ? 'admin' : 'user';
+    setBatchAccountType(nextType);
+    if (nextType === 'user' && !batchSectionId && visibleSections[0]?.id) {
+      setBatchSectionId(visibleSections[0].id);
+    }
+    setShowBatchAccountModal(true);
+  };
+
+  const submitBatchAccountImport = async (e) => {
+    e.preventDefault();
+    if (!batchImportFile) {
+      showToast('Choose an Excel file first', 'error');
+      return;
+    }
+    if (batchImportStatus !== 'ready' || !batchPreview?.rows?.length) {
+      showToast(batchImportError || 'Fix the Excel file before preparing the batch', 'error');
+      return;
+    }
+
+    setBatchImportStatus('saving');
+    let createdCount = 0;
+    const generatedCredentials = [];
+
+    try {
+      for (const row of batchPreview.rows) {
+        const generatedPassword = generateBatchPassword();
+        if (batchAccountType === 'admin') {
+          const { user, profile } = await createConfirmedAdminUser({
+            email: row.email.trim(),
+            password: generatedPassword,
+            first_name: row.first_name.trim(),
+            last_name: row.last_name.trim(),
+            username: null,
+            role: 'admin',
+            current_level: 1,
+            speaker_level: 1,
+            speaker_points: 0,
+          });
+
+          generatedCredentials.push({
+            accountType: 'Teacher',
+            name: `${row.first_name.trim()} ${row.last_name.trim()}`.trim(),
+            email: row.email.trim(),
+            studentNumber: '',
+            groupLabel: selectedBatchAccessRole?.name || 'Teacher',
+            password: generatedPassword,
+          });
+
+          await recordAuditLog({
+            action: 'create',
+            entityType: 'profiles',
+            entityId: user.id,
+            oldValues: null,
+            newValues: {
+              ...(profile || {
+                id: user.id,
+                email: row.email.trim(),
+                role: 'admin',
+                first_name: row.first_name.trim(),
+                last_name: row.last_name.trim(),
+                username: null,
+              }),
+              access_role_id: batchAccessRoleId || DEFAULT_ADMIN_ACCESS_ROLE_ID,
+              batch_upload: true,
+              password_generated: true,
+            },
+          });
+
+          const { error: assignmentError } = await supabase
+            .from('admin_role_assignments')
+            .upsert({
+              admin_id: user.id,
+              role_id: batchAccessRoleId || DEFAULT_ADMIN_ACCESS_ROLE_ID,
+              assigned_by: currentAdminId || null,
+              assigned_at: new Date().toISOString(),
+            }, { onConflict: 'admin_id' });
+          if (assignmentError) throw assignmentError;
+        } else {
+          const { user, profile } = await createConfirmedAdminUser({
+            email: row.email.trim(),
+            password: generatedPassword,
+            first_name: row.first_name.trim(),
+            last_name: row.last_name.trim(),
+            username: null,
+            student_number: row.student_number.trim(),
+            role: 'user',
+            current_level: 1,
+            speaker_level: 1,
+            speaker_points: 0,
+          });
+
+          generatedCredentials.push({
+            accountType: 'Student',
+            name: `${row.first_name.trim()} ${row.last_name.trim()}`.trim(),
+            email: row.email.trim(),
+            studentNumber: row.student_number.trim(),
+            groupLabel: sectionById.get(batchSectionId)?.name || 'No section',
+            password: generatedPassword,
+          });
+
+          await recordAuditLog({
+            action: 'create',
+            entityType: 'profiles',
+            entityId: user.id,
+            oldValues: null,
+            newValues: {
+              ...(profile || {
+                id: user.id,
+                email: row.email.trim(),
+                role: 'user',
+                first_name: row.first_name.trim(),
+                last_name: row.last_name.trim(),
+                username: null,
+                student_number: row.student_number.trim(),
+              }),
+              section_id: batchSectionId || null,
+              batch_upload: true,
+              password_generated: true,
+            },
+          });
+          await assignUserToSection(user.id, batchSectionId);
+        }
+
+        createdCount += 1;
+      }
+
+      await refreshProfiles();
+      if (batchAccountType === 'admin') await refreshRbacData();
+      const credentials = { createdAt: new Date().toISOString(), rows: generatedCredentials };
+      setLastGeneratedCredentials(credentials);
+      downloadGeneratedCredentialsWorkbook(credentials);
+      showToast(`${createdCount} ${batchAccountType === 'admin' ? 'teacher' : 'student'} account${createdCount === 1 ? '' : 's'} created. Password file downloaded.`);
+      setShowBatchAccountModal(false);
+      resetBatchImportState();
+    } catch (batchError) {
+      if (generatedCredentials.length) {
+        const credentials = { createdAt: new Date().toISOString(), rows: generatedCredentials };
+        setLastGeneratedCredentials(credentials);
+        downloadGeneratedCredentialsWorkbook(credentials);
+      }
+      setBatchImportStatus('ready');
+      showToast(`${createdCount} created before the batch stopped. ${batchError.message || 'Please check the file and try again.'}`, 'error');
+      await refreshProfiles();
+      if (batchAccountType === 'admin') {
+        try {
+          await refreshRbacData();
+        } catch {
+          // The original account creation error is more useful to show.
+        }
+      }
+    }
+  };
+
+  const submitSection = async (e) => {
+    e.preventDefault();
+    const name = sectionForm.name.trim();
+    if (!name) {
+      showToast('Section name is required', 'error');
+      return;
+    }
+    const payload = {
+      name,
+      teacher_id: isSuperadmin ? (sectionForm.teacher_id || null) : currentAdminId,
+      created_by: currentAdminId || null,
+      updated_at: new Date().toISOString(),
+    };
+    if (!payload.teacher_id) {
+      showToast('Choose a teacher for this section', 'error');
+      return;
+    }
+    try {
+      const query = sectionForm.id
+        ? supabase.from('sections').update(payload).eq('id', sectionForm.id).select('*').single()
+        : supabase.from('sections').insert(payload).select('*').single();
+      const { data, error } = await query;
+      if (error) throw error;
+      await recordAuditLog({
+        action: sectionForm.id ? 'update' : 'create',
+        entityType: 'sections',
+        entityId: data?.id || sectionForm.id,
+        oldValues: sectionForm.id ? sections.find(section => section.id === sectionForm.id) : null,
+        newValues: data || payload,
+      });
+      setSectionForm({ id: '', name: '', teacher_id: '' });
+      setShowSectionModal(false);
+      await refreshRbacData();
+      showToast('Section saved');
+    } catch (sectionError) {
+      showToast(sectionError.message || 'Failed to save section', 'error');
+    }
+  };
+
+  const editSection = (section) => {
+    setSectionForm({
+      id: section.id,
+      name: section.name || '',
+      teacher_id: section.teacher_id || '',
+    });
+    setShowSectionModal(true);
+  };
+
+  const openNewSection = () => {
+    setSectionForm({ id: '', name: '', teacher_id: '' });
+    setShowSectionModal(true);
+  };
+
+  const requestDeleteSection = (section) => {
+    const assignedStudents = sectionStudents.filter(row => row.section_id === section.id);
+    const assignedCount = sectionStudentIdsBySectionId.get(section.id)?.size || assignedStudents.length;
+    setPendingDeleteConfirmation({
+      kind: 'section',
+      id: section.id,
+      title: 'Delete section?',
+      message: assignedCount
+        ? `This will delete "${section.name}" and unassign ${assignedCount} student${assignedCount === 1 ? '' : 's'} from it.`
+        : `This will delete "${section.name}".`,
+      confirmLabel: 'Delete Section',
+    });
+  };
+
+  const deleteSection = async (sectionId) => {
+    const section = sections.find(item => item.id === sectionId);
+    if (!section) {
+      showToast('Section was not found', 'error');
+      return;
+    }
+    const assignedStudents = sectionStudents.filter(row => row.section_id === section.id);
+    try {
+      const { error: assignmentDeleteError } = await supabase
+        .from('section_students')
+        .delete()
+        .eq('section_id', section.id);
+      if (assignmentDeleteError) throw assignmentDeleteError;
+
+      const { error: sectionDeleteError } = await supabase
+        .from('sections')
+        .delete()
+        .eq('id', section.id);
+      if (sectionDeleteError) throw sectionDeleteError;
+
+      await recordAuditLog({
+        action: 'delete',
+        entityType: 'sections',
+        entityId: section.id,
+        oldValues: { ...section, assigned_students: assignedStudents },
+        newValues: null,
+      });
+
+      if (sectionForm.id === section.id) {
+        setSectionForm({ id: '', name: '', teacher_id: '' });
+        setShowSectionModal(false);
+      }
+      if (batchSectionId === section.id) setBatchSectionId('');
+      if (analyticsSectionFilter === section.id) setAnalyticsSectionFilter('all');
+
+      await refreshRbacData();
+      showToast('Section deleted');
+    } catch (sectionError) {
+      showToast(sectionError.message || 'Failed to delete section', 'error');
+    }
+  };
+
+  const confirmPendingDelete = async () => {
+    if (!pendingDeleteConfirmation) return;
+    const pendingDelete = pendingDeleteConfirmation;
+    setPendingDeleteConfirmation(null);
+
+    if (pendingDelete.kind === 'content') {
+      await deleteContent(pendingDelete.id, pendingDelete.type);
+      return;
+    }
+
+    if (pendingDelete.kind === 'accessRole') {
+      await deleteAccessRole(pendingDelete.id);
+      return;
+    }
+
+    if (pendingDelete.kind === 'section') {
+      await deleteSection(pendingDelete.id);
+    }
   };
 
   const profilePayloadFromUserForm = () => ({
     first_name: userForm.first_name.trim() || null,
     last_name: userForm.last_name.trim() || null,
     username: userForm.username.trim() || null,
+    student_number: userForm.student_number.trim() || null,
     role: 'user',
     current_level: Math.min(5, Math.max(1, Number(userForm.current_level) || 1)),
     speaker_level: Math.min(5, Math.max(1, Number(userForm.speaker_level) || 1)),
@@ -1552,14 +3198,15 @@ function AdminDashboardPage() {
         entityType: 'profiles',
         entityId: user.id,
         oldValues: null,
-        newValues: profile || { id: user.id, ...profilePayloadFromUserForm(), archived_at: null },
+        newValues: { ...(profile || { id: user.id, ...profilePayloadFromUserForm(), archived_at: null }), section_id: userForm.section_id || null },
       });
-      showToast('User created');
+      await assignUserToSection(user.id, userForm.section_id);
+      showToast('Student created');
       setCreatingUser(false);
       setUserForm(USER_FORM_INITIAL);
       await refreshProfiles();
     } catch (e) {
-      showToast(e.message || 'Failed to create user', 'error');
+      showToast(e.message || 'Failed to create student', 'error');
     } finally {
       setSavingUser(false);
     }
@@ -1572,19 +3219,20 @@ function AdminDashboardPage() {
     const payload = profilePayloadFromUserForm();
     try {
       const updatedProfile = await updateProfileWithAdminFunction(editingUser.id, payload);
+      await assignUserToSection(editingUser.id, userForm.section_id);
       await recordAuditLog({
         action: 'update',
         entityType: 'profiles',
         entityId: editingUser.id,
         oldValues: editingUser,
-        newValues: updatedProfile,
+        newValues: { ...updatedProfile, section_id: userForm.section_id || null },
       });
-      showToast('User updated');
+      showToast('Student updated');
       setEditingUser(null);
       setProfiles(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...updatedProfile } : u));
       await refreshProfiles();
     } catch (updateError) {
-      showToast(updateError.message || 'Failed to update user', 'error');
+      showToast(updateError.message || 'Failed to update student', 'error');
     } finally {
       setSavingUser(false);
     }
@@ -1596,7 +3244,7 @@ function AdminDashboardPage() {
     try {
       newValues = await setProfileArchiveStateWithAdminFunction(user.id, shouldArchive);
     } catch (error) {
-      showToast(error.message || `Failed to ${label} user`, 'error');
+      showToast(error.message || `Failed to ${label} account`, 'error');
       return;
     }
     await recordAuditLog({
@@ -1609,33 +3257,53 @@ function AdminDashboardPage() {
     setProfiles(prev => prev.map(u => u.id === user.id ? { ...u, ...newValues } : u));
     setEditingUser(prev => prev?.id === user.id ? { ...prev, ...newValues } : prev);
     setEditingAdmin(prev => prev?.id === user.id ? { ...prev, ...newValues } : prev);
-    showToast(`${isAdminProfile(user) ? 'Admin' : 'User'} ${shouldArchive ? 'deleted' : 'restored'}`);
+    showToast(`${isAdminProfile(user) ? 'Teacher' : 'Student'} ${shouldArchive ? 'archived' : 'restored'}`);
   };
 
   const submitUpdateAdmin = async (e) => {
     e.preventDefault();
     if (!editingAdmin) return;
     setCreatingAdmin(true);
-    const payload = profilePayloadFromAdminForm();
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update(payload)
-      .eq('id', editingAdmin.id);
-    if (updateError) {
-      showToast(updateError.message || 'Failed to update admin', 'error');
-    } else {
+    try {
+      const payload = profilePayloadFromAdminForm();
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update(payload)
+        .eq('id', editingAdmin.id);
+      if (updateError) throw updateError;
       await recordAuditLog({
         action: 'update',
         entityType: 'profiles',
         entityId: editingAdmin.id,
         oldValues: editingAdmin,
-        newValues: { ...editingAdmin, ...payload },
+        newValues: { ...editingAdmin, ...payload, access_role_id: adminAccountForm.access_role_id },
       });
-      showToast('Admin updated');
+      if (payload.role === 'superadmin') {
+        const { error: assignmentDeleteError } = await supabase
+          .from('admin_role_assignments')
+          .delete()
+          .eq('admin_id', editingAdmin.id);
+        if (assignmentDeleteError) throw assignmentDeleteError;
+      } else {
+        const { error: assignmentError } = await supabase
+          .from('admin_role_assignments')
+          .upsert({
+            admin_id: editingAdmin.id,
+            role_id: adminAccountForm.access_role_id || DEFAULT_ADMIN_ACCESS_ROLE_ID,
+            assigned_by: currentAdminId || null,
+            assigned_at: new Date().toISOString(),
+          }, { onConflict: 'admin_id' });
+        if (assignmentError) throw assignmentError;
+      }
+      await refreshRbacData();
+      showToast('Teacher updated');
       setEditingAdmin(null);
       setProfiles(prev => prev.map(u => u.id === editingAdmin.id ? { ...u, ...payload } : u));
+    } catch (adminUpdateError) {
+      showToast(adminUpdateError.message || 'Failed to update teacher', 'error');
+    } finally {
+      setCreatingAdmin(false);
     }
-    setCreatingAdmin(false);
   };
 
   const requestUserArchiveState = (user, shouldArchive) => {
@@ -1662,13 +3330,13 @@ function AdminDashboardPage() {
     }
     setCreatingAdmin(true);
     try {
-      const { email, password, first_name, last_name, username, role: newRole } = createAdminForm;
+      const { email, password, first_name, last_name, role: newRole, access_role_id } = createAdminForm;
       const { user, profile } = await createConfirmedAdminUser({
         email,
         password,
         first_name,
         last_name,
-        username,
+        username: null,
         role: newRole,
         current_level: 1,
         speaker_level: 1,
@@ -1679,23 +3347,150 @@ function AdminDashboardPage() {
         entityType: 'profiles',
         entityId: user.id,
         oldValues: null,
-        newValues: profile || { id: user.id, role: newRole, first_name, last_name, username },
+        newValues: { ...(profile || { id: user.id, role: newRole, first_name, last_name, username: null }), access_role_id },
       });
-      showToast('Admin created'); setCreateAdminForm(ADMIN_FORM_INITIAL);
+      if (newRole !== 'superadmin') {
+        const { error: assignmentError } = await supabase
+          .from('admin_role_assignments')
+          .upsert({
+            admin_id: user.id,
+            role_id: access_role_id || DEFAULT_ADMIN_ACCESS_ROLE_ID,
+            assigned_by: currentAdminId || null,
+            assigned_at: new Date().toISOString(),
+          }, { onConflict: 'admin_id' });
+        if (assignmentError) throw assignmentError;
+      }
+      await refreshRbacData();
+      showToast('Teacher created'); setCreateAdminForm(ADMIN_FORM_INITIAL);
+      setShowCreateAdminModal(false);
       const { data: ps } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
       if (ps) setProfiles(ps);
     } catch (error) {
-      showToast(error.message || 'Failed to create admin', 'error');
+      showToast(error.message || 'Failed to create teacher', 'error');
     }
     setCreatingAdmin(false);
   };
 
+  const canViewActivities = canUseAdminPermission('activities', 'view');
+  const canViewModules = canUseAdminPermission('modules', 'view');
+  const currentContentArea = contentTab === 'activities' ? 'activities' : 'modules';
+  const canCreateCurrentContent = canUseAdminPermission(currentContentArea, 'create');
+  const canUpdateCurrentContent = canUseAdminPermission(currentContentArea, 'update');
+  const canDeleteCurrentContent = canUseAdminPermission(currentContentArea, 'delete');
+  const selectedBatchAccessRole = findAccessRole(adminAccessRoles, batchAccessRoleId);
+  const selectedManagedAccessRole = findAccessRole(adminAccessRoles, selectedAccessRoleId);
+  const batchTemplateColumns = getBatchTemplateColumns(batchAccountType);
+  const batchReadyRowCount = batchPreview?.rows?.length || 0;
+  const batchPreviewTotalPages = Math.max(1, Math.ceil(batchReadyRowCount / BATCH_PREVIEW_ROWS_PER_PAGE));
+  const safeBatchPreviewPage = Math.min(batchPreviewPage, batchPreviewTotalPages);
+  const batchPreviewStartIndex = (safeBatchPreviewPage - 1) * BATCH_PREVIEW_ROWS_PER_PAGE;
+  const batchPreviewRows = batchPreview?.rows?.slice(
+    batchPreviewStartIndex,
+    batchPreviewStartIndex + BATCH_PREVIEW_ROWS_PER_PAGE
+  ) || [];
+  const batchPreviewInvalidRowNumbers = useMemo(
+    () => new Set((batchPreview?.invalidRows || []).map(row => row.rowNumber)),
+    [batchPreview]
+  );
+  const selectedManagedRolePermissions = ADMIN_PERMISSION_AREAS
+    .filter(area => selectedManagedAccessRole?.permissions?.[area.key]?.view)
+    .map(area => area.label);
+
+  const handleCreateAdminRoleChange = (event) => {
+    const nextRoleValue = event.target.value;
+    setCreateAdminForm(prev => (
+      nextRoleValue === 'superadmin'
+        ? { ...prev, role: 'superadmin', access_role_id: DEFAULT_ADMIN_ACCESS_ROLE_ID }
+        : { ...prev, role: 'admin', access_role_id: nextRoleValue || DEFAULT_ADMIN_ACCESS_ROLE_ID }
+    ));
+  };
+
+  const handleAdminAccountRoleChange = (event) => {
+    const nextRoleValue = event.target.value;
+    setAdminAccountForm(prev => (
+      nextRoleValue === 'superadmin'
+        ? { ...prev, role: 'superadmin', access_role_id: DEFAULT_ADMIN_ACCESS_ROLE_ID }
+        : { ...prev, role: 'admin', access_role_id: nextRoleValue || DEFAULT_ADMIN_ACCESS_ROLE_ID }
+    ));
+  };
+
+  const getReportExportData = () => {
+    if (reportType === 'students') {
+      return {
+        title: 'Students Report',
+        filename: 'bigkas-students-report',
+        headers: ['Student', 'Student No.', 'Section', 'Journey', 'Status'],
+        rows: reportStudentRows.map(student => [
+          getDisplayName(student, student.id),
+          student.student_number || '-',
+          sectionById.get(sectionIdByStudentId.get(student.id))?.name || '-',
+          `Journey ${student.current_level || 1}`,
+          isDeletedProfile(student) ? 'Archived' : 'Active',
+        ]),
+      };
+    }
+
+    if (reportType === 'performance') {
+      return {
+        title: 'Student Performance Report',
+        filename: 'bigkas-student-performance-report',
+        headers: ['Student', 'Section', 'Speeches', 'Minutes', 'Average Score', 'Activities', 'Confidence Level'],
+        rows: reportStudentPerformanceRows.map(row => [
+          row.name,
+          row.section,
+          row.speeches,
+          row.minutes,
+          row.averageScore ?? 'N/A',
+          `${row.completedActivities}/30`,
+          row.confidenceLevel.level ? `Level ${row.confidenceLevel.level} - ${row.confidenceLevel.label}` : row.confidenceLevel.label,
+        ]),
+      };
+    }
+
+    if (reportType === 'audit' && isSuperadmin) {
+      return {
+        title: 'Audit Logs Report',
+        filename: 'bigkas-audit-logs-report',
+        headers: ['Time', 'Actor', 'Action', 'Entity', 'Summary'],
+        rows: combinedAuditLogs.slice(0, 200).map(log => [
+          new Date(log.created_at).toLocaleString(),
+          getDisplayName(profiles.find(p => p.id === log.actor_id), log.actor_id || 'Unknown login'),
+          formatAuditAction(log.action),
+          log.entity_type,
+          JSON.stringify(log.new_values || log.old_values || {}).slice(0, 120) || '-',
+        ]),
+      };
+    }
+
+    return {
+      title: 'Teachers Report',
+      filename: 'bigkas-teachers-report',
+      headers: ['Teacher', 'Email', 'Access Role', 'Sections', 'Status'],
+      rows: reportTeacherRows.map(admin => [
+        getDisplayName(admin, admin.id),
+        getProfileEmail(admin),
+        findAccessRole(adminAccessRoles, adminAccessAssignments[admin.id])?.name || 'Teacher',
+        sections.filter(section => section.teacher_id === admin.id).length,
+        isDeletedProfile(admin) ? 'Archived' : 'Active',
+      ]),
+    };
+  };
+
+  const saveReportExcel = () => {
+    const report = getReportExportData();
+    downloadReportWorkbook(report.filename, report.title, report.headers, report.rows);
+  };
+
+  const adminRosterTitle = `${adminAccounts.length} teacher${adminAccounts.length === 1 ? '' : 's'}`;
+  const canCreateUsers = canUseAdminPermission('users', 'create');
+  const canDeleteUsers = canUseAdminPermission('users', 'delete');
+
   const navItems = [
-    { key: 'overview', label: 'Overview', icon: HiOutlineHomeModern, show: true },
-    { key: 'analytics', label: 'Analytics', icon: HiOutlineChartBarSquare, show: true },
-    { key: 'users', label: 'User Management', icon: HiOutlineUsers, show: true },
-    { key: 'content', label: 'Content Hub', icon: HiOutlineChartBarSquare, show: true },
-    { key: 'settings', label: 'Admin Settings', icon: HiOutlineCog6Tooth, show: isSuperadmin },
+    { key: 'overview', label: 'Overview', icon: HiOutlineHomeModern, show: canUseAdminPermission('overview', 'view') },
+    { key: 'analytics', label: 'Analytics', icon: HiOutlineChartBarSquare, show: canUseAdminPermission('analytics', 'view') },
+    { key: 'users', label: 'Account Management', icon: HiOutlineUsers, show: canUseAdminPermission('users', 'view') },
+    { key: 'content', label: 'Content Hub', icon: HiOutlineChartBarSquare, show: canViewActivities || canViewModules },
+    { key: 'reports', label: 'Reports', icon: HiOutlineChartBarSquare, show: canUseAdminPermission('reports', 'view') },
     { key: 'audit', label: 'Audit Logs', icon: HiOutlineCog6Tooth, show: isSuperadmin },
   ].filter(i => i.show);
 
@@ -1703,7 +3498,7 @@ function AdminDashboardPage() {
     <div className="admin-dashboard-page admin-layout" style={{ '--admin-sidebar-width': `${SIDEBAR_WIDTH}px` }}>
       <aside className="admin-rail">
         <div className="admin-rail-inner">
-          <div className="admin-rail-brand"><p>BIGKAS</p><small>Admin Center</small></div>
+          <div className="admin-rail-brand"><p>BIGKAS</p><small>Management Center</small></div>
           <nav className="admin-rail-nav">
             {navItems.map(item => (
               <button key={item.key} type="button" className={`admin-rail-btn ${activePage === item.key ? 'is-active' : ''}`} onClick={() => setActivePage(item.key)}>
@@ -1719,8 +3514,8 @@ function AdminDashboardPage() {
         <header className="admin-header">
           <div>
             <p className="admin-kicker">Bigkas Analytics Engine</p>
-            <h1>Admin Command Center</h1>
-            <p className="admin-subtitle">Role: <strong>{role || 'unknown'}</strong></p>
+            <h1>Bigkas Command Center</h1>
+            <p className="admin-subtitle">Role: <strong>{role === 'superadmin' ? 'Program Chair' : role === 'admin' ? 'Teacher' : 'unknown'}</strong></p>
           </div>
         </header>
 
@@ -1728,51 +3523,44 @@ function AdminDashboardPage() {
 
         {activePage === 'overview' && (
           <>
-            <section className="admin-grid admin-grid-3">
+            <section className={`admin-grid ${isSuperadmin ? 'admin-grid-3' : 'admin-grid-2'}`} aria-label="Management overview metrics">
               <article className="admin-card admin-kpi-card">
-                <p className="admin-kpi-label">TOTAL USERS</p>
+                <p className="admin-kpi-label">TOTAL STUDENTS</p>
                 <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : kpis.totalUsers}</p>
                 <p className="admin-kpi-footer">{kpis.usersDeltaText}</p>
               </article>
-              <article className="admin-card admin-kpi-card">
-                <p className="admin-kpi-label">ACTIVE THIS WEEK</p>
-                <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : kpis.activeThisWeek}</p>
+              <article
+                className="admin-card admin-kpi-card"
+                role="button"
+                tabIndex={0}
+                style={{ cursor: loading ? 'default' : 'pointer' }}
+                aria-label="View active and inactive students this week"
+                onClick={() => !loading && setShowActiveUsersModal(true)}
+                onKeyDown={(event) => {
+                  if (!loading && (event.key === 'Enter' || event.key === ' ')) {
+                    event.preventDefault();
+                    setShowActiveUsersModal(true);
+                  }
+                }}
+              >
+                <p className="admin-kpi-label">ACTIVE / INACTIVE</p>
+                <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : `${kpis.activeThisWeek} / ${kpis.inactiveThisWeek}`}</p>
                 <p className="admin-kpi-footer">{kpis.activeDeltaText}</p>
               </article>
-              <article className="admin-card admin-kpi-card">
-                <p className="admin-kpi-label">SPEECHES ANALYZED</p>
-                <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : kpis.totalSpeeches}</p>
-                <p className="admin-kpi-footer">{kpis.speechDeltaText}</p>
-              </article>
+              {isSuperadmin && (
+                <article className="admin-card admin-kpi-card">
+                  <p className="admin-kpi-label">TEACHER COUNT</p>
+                  <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : kpis.totalAdmins}</p>
+                  <p className="admin-kpi-footer">{kpis.adminsDeltaText}</p>
+                </article>
+              )}
             </section>
             <section className="admin-grid admin-grid-2">
-              <article className={`admin-card admin-health-card admin-health-card--${serviceHealth.huggingFace.status}`}>
-                <div>
-                  <p className="admin-kpi-label">HUGGING FACE BACKEND</p>
-                  <h3>{serviceHealth.huggingFace.status === 'checking' ? <Skeleton width={110} /> : serviceHealth.huggingFace.label}</h3>
-                  <p>{serviceHealth.huggingFace.status === 'checking' ? <Skeleton width={210} /> : serviceHealth.huggingFace.detail}</p>
-                </div>
-                <span className="admin-health-latency">
-                  {serviceHealth.huggingFace.latencyMs == null ? <Skeleton width={72} /> : `${serviceHealth.huggingFace.latencyMs} ms`}
-                </span>
-              </article>
-              <article className={`admin-card admin-health-card admin-health-card--${serviceHealth.cloudflare.status}`}>
-                <div>
-                  <p className="admin-kpi-label">CLOUDFLARE AI WORKER</p>
-                  <h3>{serviceHealth.cloudflare.status === 'checking' ? <Skeleton width={110} /> : serviceHealth.cloudflare.label}</h3>
-                  <p>{serviceHealth.cloudflare.status === 'checking' ? <Skeleton width={210} /> : serviceHealth.cloudflare.detail}</p>
-                </div>
-                <span className="admin-health-latency">
-                  {serviceHealth.cloudflare.latencyMs == null ? <Skeleton width={72} /> : `${serviceHealth.cloudflare.latencyMs} ms`}
-                </span>
-              </article>
-            </section>
-            <section className="admin-grid admin-grid-2">
-              <article className="admin-card"><h3>User Join Trend</h3><div className="admin-chart-container">
-                {loading ? <Skeleton height={300} /> : <ResponsiveContainer width="100%" height={300}><AreaChart data={joinTrendData}><XAxis dataKey="date" /><YAxis /><Tooltip /><Area type="monotone" dataKey="users" stroke="#33D2A4" fill="#33D2A433" /></AreaChart></ResponsiveContainer>}
+              <article className="admin-card"><h3>Student Registration</h3><div className="admin-chart-container">
+                {loading ? <Skeleton height={300} /> : <ResponsiveContainer width="100%" height={300}><AreaChart data={joinTrendData}><XAxis dataKey="date" /><YAxis /><Tooltip /><Area type="monotone" dataKey="users" name="Students" stroke="#33D2A4" fill="#33D2A433" /></AreaChart></ResponsiveContainer>}
               </div></article>
-              <article className="admin-card"><h3>User Level Distribution</h3><div className="admin-chart-container">
-                {loading ? <Skeleton height={300} /> : <ResponsiveContainer width="100%" height={300}><BarChart data={levelBarData}><XAxis dataKey="level" /><YAxis /><Tooltip /><Bar dataKey="users" fill="#33D2A4" radius={[8,8,0,0]} /></BarChart></ResponsiveContainer>}
+              <article className="admin-card"><h3>Student Level Distribution</h3><div className="admin-chart-container">
+                {loading ? <Skeleton height={300} /> : <ResponsiveContainer width="100%" height={300}><BarChart data={levelBarData}><XAxis dataKey="level" /><YAxis /><Tooltip /><Bar dataKey="users" name="Students" fill="#33D2A4" radius={[8,8,0,0]} /></BarChart></ResponsiveContainer>}
               </div></article>
             </section>
           </>
@@ -1780,114 +3568,328 @@ function AdminDashboardPage() {
 
         {activePage === 'analytics' && (
           <>
-            <div className="admin-analytics-filter-card">
+            <section className="admin-analytics-filter-card">
               <div className="admin-analytics-filter-copy">
-                <h3>Analytics Filters</h3>
-                <p>Analytics tracks learner accounts only. Admin and superadmin accounts are excluded from these charts and tables.</p>
+                <h3>{isSuperadmin ? 'System Analytics' : 'Section Analytics'}</h3>
+                <p>
+                  {isSuperadmin
+                    ? 'Program Chair view: all students, sections, confidence levels, and system monitoring.'
+                    : 'Teacher view: only students and performance data from your assigned sections.'}
+                </p>
               </div>
               <div className="admin-analytics-filters">
-                <label><span>Date Range</span><select value={globalFilter} onChange={e => setGlobalFilter(e.target.value)} className="admin-filter-select">
-                  <option value="7d">Last 7 Days</option><option value="30d">Last 30 Days</option><option value="ytd">Year to Date</option><option value="all">All Time</option><option value="custom">Custom Range</option>
-                </select>{globalFilter === 'custom' && <div className="admin-custom-date-range admin-custom-date-range--analytics">
-                  <input type="date" value={customDateRange.start} onChange={e => setCustomDateRange(prev => ({ ...prev, start: e.target.value }))} aria-label="Analytics start date" />
-                  <span>to</span>
-                  <input type="date" value={customDateRange.end} onChange={e => setCustomDateRange(prev => ({ ...prev, end: e.target.value }))} aria-label="Analytics end date" />
-                </div>}<small>{globalFilter === 'custom' ? 'Select an exact session date window.' : 'Controls the sessions included below.'}</small></label>
-                <label><span>Journey</span><select value={analyticsJourneyFilter} onChange={e => setAnalyticsJourneyFilter(e.target.value)} className="admin-filter-select">
-                  <option value="all">All Journeys</option><option value="1">Journey 1</option><option value="2">Journey 2</option><option value="3">Journey 3</option><option value="4">Journey 4</option><option value="5">Journey 5</option>
-                </select><small>Filters learners by current journey.</small></label>
-                <label><span>User Status</span><select value={analyticsStatusFilter} onChange={e => setAnalyticsStatusFilter(e.target.value)} className="admin-filter-select">
-                  <option value="active">Active Learners</option><option value="deleted">Deleted Learners</option><option value="all">All Learners</option>
-                </select><small>Switches active or soft-deleted learners.</small></label>
-                <label><span>Session Type</span><select value={analyticsModeFilter} onChange={e => setAnalyticsModeFilter(e.target.value)} className="admin-filter-select">
-                  <option value="all">All Session Types</option><option value="Activities">Activities</option><option value="Randomizer">Randomizer</option><option value="Free Speech">Free Speech</option>
-                </select><small>Filters sessions by practice mode.</small></label>
+                <label>
+                  <span>Date Range</span>
+                  <select className="admin-filter-select" value={analyticsRange} onChange={e => setAnalyticsRange(e.target.value)}>
+                    <option value="7">Last 7 days</option>
+                    <option value="30">Last 30 days</option>
+                    <option value="90">Last 90 days</option>
+                  </select>
+                  <small>Controls recent activity, skill scores, and audit previews.</small>
+                </label>
+                <label>
+                  <span>Section</span>
+                  <select className="admin-filter-select" value={analyticsSectionFilter} onChange={e => setAnalyticsSectionFilter(e.target.value)}>
+                    <option value="all">{isSuperadmin ? 'All sections' : 'My sections'}</option>
+                    {visibleSections.map(section => <option key={section.id} value={section.id}>{section.name}</option>)}
+                  </select>
+                  <small>{isSuperadmin ? 'Filter to one class section.' : 'Only assigned sections are available.'}</small>
+                </label>
               </div>
-            </div>
-            <section className="admin-grid admin-grid-4">
-              <article className="admin-card admin-kpi-card"><p className="admin-kpi-label">Total Users</p><p className="admin-kpi-value">{analyticsKpis.totalUsers}</p><p className="admin-kpi-footer">Matching current filters</p></article>
-              <article className="admin-card admin-kpi-card"><p className="admin-kpi-label">Active This Week</p><p className="admin-kpi-value">{analyticsKpis.activeUsers}</p><p className="admin-kpi-footer">Users with recent sessions</p></article>
-              <article className="admin-card admin-kpi-card"><p className="admin-kpi-label">Completed Sessions</p><p className="admin-kpi-value">{analyticsKpis.completedSessions}</p><p className="admin-kpi-footer">Completed speech attempts</p></article>
-              <article className="admin-card admin-kpi-card"><p className="admin-kpi-label">Average Overall</p><p className="admin-kpi-value">{analyticsKpis.avgOverall}</p><p className="admin-kpi-footer">Mean session score</p></article>
             </section>
-            <section className="admin-grid admin-grid-4">
-              <article className="admin-card admin-kpi-card"><p className="admin-kpi-label">Visual</p><p className="admin-kpi-value">{analyticsKpis.avgVisual}</p><p className="admin-kpi-footer">Body language and presence</p></article>
-              <article className="admin-card admin-kpi-card"><p className="admin-kpi-label">Vocal</p><p className="admin-kpi-value">{analyticsKpis.avgVocal}</p><p className="admin-kpi-footer">Voice quality and delivery</p></article>
-              <article className="admin-card admin-kpi-card"><p className="admin-kpi-label">Verbal</p><p className="admin-kpi-value">{analyticsKpis.avgVerbal}</p><p className="admin-kpi-footer">Message structure and wording</p></article>
-              <article className="admin-card admin-kpi-card"><p className="admin-kpi-label">Completion Rate</p><p className="admin-kpi-value">{analyticsKpis.completionRate}%</p><p className="admin-kpi-footer">Completed stages across selected learners</p></article>
+
+            <section className="admin-grid admin-grid-1" aria-label="Analytics summary">
+              <article className="admin-card admin-kpi-card">
+                <p className="admin-kpi-label">STUDENTS IN VIEW</p>
+                <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : analyticsKpis.students}</p>
+                <p className="admin-kpi-footer">{analyticsSpeakerLevelFilter === 'all' ? 'All speaker levels' : `Speaker Level ${analyticsSpeakerLevelFilter}`}</p>
+              </article>
             </section>
-            <section className="admin-grid admin-grid-2">
-              <article className="admin-card"><h3>Mehrabian Performance Over Time</h3><div className="admin-chart-container">
-                {mehrabianTrendData.length ? <ResponsiveContainer width="100%" height={300}><LineChart data={mehrabianTrendData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="label" /><YAxis domain={[0, 100]} /><Tooltip /><Legend /><Line type="monotone" dataKey="Visual" stroke="#2C3E50" strokeWidth={3} /><Line type="monotone" dataKey="Vocal" stroke="#64748B" strokeWidth={3} /><Line type="monotone" dataKey="Verbal" stroke="#33D2A4" strokeWidth={3} /><Line type="monotone" dataKey="Overall" stroke="#F59E0B" strokeWidth={2} /></LineChart></ResponsiveContainer> : <div className="admin-empty-chart">No score data available yet</div>}
-              </div></article>
-              <article className="admin-card"><h3>Journey Progress</h3><div className="admin-chart-container">
-                <ResponsiveContainer width="100%" height={300}><BarChart data={journeyAnalyticsData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="journey" /><YAxis /><Tooltip /><Legend /><Bar dataKey="users" name="Users" fill="#33D2A4" radius={[8,8,0,0]} /><Bar dataKey="avgScore" name="Avg Score" fill="#2C3E50" radius={[8,8,0,0]} /></BarChart></ResponsiveContainer>
-              </div></article>
+
+            <section className="admin-grid admin-grid-1">
+              <article className="admin-card admin-tiered-scoring-card">
+                <div className="admin-card-head">
+                  <div>
+                    <h3>Tiered Scoring</h3>
+                    <p className="admin-chart-note">Students are grouped by completed activities in the 30-activity confidence progression.</p>
+                  </div>
+                  <label className="admin-inline-filter">
+                    <span>Speaker Level</span>
+                    <select className="admin-filter-select" value={analyticsSpeakerLevelFilter} onChange={e => setAnalyticsSpeakerLevelFilter(e.target.value)}>
+                      <option value="all">All Levels</option>
+                      <option value="1">Level 1</option>
+                      <option value="2">Level 2</option>
+                      <option value="3">Level 3</option>
+                      <option value="4">Level 4</option>
+                      <option value="5">Level 5</option>
+                    </select>
+                  </label>
+                </div>
+                <div className="admin-chart-container">
+                  {loading ? <Skeleton height={300} /> : analyticsConfidenceRows.some(row => row.students) ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={analyticsConfidenceRows}>
+                        <XAxis dataKey="range" />
+                        <YAxis allowDecimals={false} />
+                        <Tooltip />
+                        <Bar dataKey="students" fill="#33D2A4" radius={[8, 8, 0, 0]} name="Students" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : <div className="admin-empty-chart">No confidence progress yet</div>}
+                </div>
+              </article>
             </section>
-            <section className="admin-grid admin-grid-2">
-              <article className="admin-card"><h3>Activity Analytics</h3><div className="admin-analytics-lists">
-                <div><h4>Most Attempted</h4>{activityHighlights.mostAttempted.length ? activityHighlights.mostAttempted.map(a => <p key={a.id}><strong>{a.title}</strong><span>{a.attempts} attempts</span></p>) : <div className="admin-empty-inline">No attempts yet</div>}</div>
-                <div><h4>Most Replayed Stages</h4>{activityHighlights.mostReplayed.length ? activityHighlights.mostReplayed.map(a => <p key={a.id}><strong>{a.title}</strong><span>{a.replays} replays</span></p>) : <div className="admin-empty-inline">No replay data yet</div>}</div>
-                <div><h4>Lowest Average Score</h4>{activityHighlights.lowestScores.length ? activityHighlights.lowestScores.map(a => <p key={a.id}><strong>{a.title}</strong><span>{a.avgScore} avg</span></p>) : <div className="admin-empty-inline">No score data yet</div>}</div>
-                <div><h4>Best Completion</h4>{activityHighlights.bestCompletion.length ? activityHighlights.bestCompletion.map(a => <p key={a.id}><strong>{a.title}</strong><span>{a.completionRate}%</span></p>) : <div className="admin-empty-inline">No completion data yet</div>}</div>
-              </div></article>
-              <article className="admin-card"><h3>User Engagement</h3><div className="admin-chart-container">
-                <ResponsiveContainer width="100%" height={300}><AreaChart data={engagementTrendData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="date" /><YAxis /><Tooltip /><Legend /><Area type="monotone" dataKey="sessions" name="Sessions" stroke="#33D2A4" fill="#33D2A433" /><Area type="monotone" dataKey="activeUsers" name="Active Users" stroke="#2C3E50" fill="#2C3E5033" /></AreaChart></ResponsiveContainer>
-              </div></article>
-            </section>
-            <section className="admin-grid admin-grid-2">
-              <article className="admin-card"><h3>Most Viewed Learning Modules</h3><div className="admin-analytics-lists admin-analytics-lists--single">
-                <div>{moduleHighlights.length ? moduleHighlights.map(module => <p key={module.id}><strong>{module.title}</strong><span>{module.views} views</span></p>) : <div className="admin-empty-inline">No module views yet</div>}</div>
-              </div></article>
+
+            <section className="admin-grid admin-grid-1">
               <article className="admin-card">
                 <div className="admin-card-head">
-                  <h3>Learner Demographics</h3>
-                  <select
-                    className="admin-filter-select admin-demographic-sort"
-                    value={demographicSort}
-                    onChange={e => setDemographicSort(e.target.value)}
-                    aria-label="Sort learner demographics"
-                  >
-                    <option value="count_desc">Highest Count</option>
-                    <option value="count_asc">Lowest Count</option>
-                    <option value="label_asc">A to Z</option>
-                    <option value="label_desc">Z to A</option>
-                  </select>
+                  <div>
+                    <h3>Level Pass Rate</h3>
+                    <p className="admin-chart-note">Shows how many students passed or have not passed each speaker level requirement.</p>
+                  </div>
+                  <label className="admin-inline-filter">
+                    <span>Speaker Level</span>
+                    <select className="admin-filter-select" value={analyticsSpeakerLevelFilter} onChange={e => setAnalyticsSpeakerLevelFilter(e.target.value)}>
+                      <option value="all">All Levels</option>
+                      <option value="1">Level 1</option>
+                      <option value="2">Level 2</option>
+                      <option value="3">Level 3</option>
+                      <option value="4">Level 4</option>
+                      <option value="5">Level 5</option>
+                    </select>
+                  </label>
                 </div>
-                <div className="admin-analytics-lists">
-                <div><h4>Gender</h4>{demographicAnalytics.gender.length ? demographicAnalytics.gender.map(item => <p key={item.name}><strong>{item.name}</strong><span>{item.value}</span></p>) : <div className="admin-empty-inline">No gender data yet</div>}</div>
-                <div><h4>Age Group</h4>{demographicAnalytics.ageRange.length ? demographicAnalytics.ageRange.map(item => <p key={item.name}><strong>{item.name}</strong><span>{item.value}</span></p>) : <div className="admin-empty-inline">No age data yet</div>}</div>
-              </div></article>
+                <div className="admin-chart-container admin-level-pass-chart">
+                  {loading ? <Skeleton height={300} /> : analyticsLevelPassRows.length ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={analyticsLevelPassRows}>
+                        <XAxis dataKey="level" />
+                        <YAxis allowDecimals={false} />
+                        <Tooltip />
+                        <Bar dataKey="passed" stackId="level-pass" fill="#33D2A4" radius={[0, 0, 8, 8]} name="Passed" />
+                        <Bar dataKey="notPassed" stackId="level-pass" fill="#F87171" radius={[8, 8, 0, 0]} name="Not Passed" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : <div className="admin-empty-chart">No students found for this filter</div>}
+                </div>
+              </article>
             </section>
-            <section className="admin-grid admin-grid-2">
-              <article className="admin-card"><h3>Session Modes</h3><div className="admin-chart-container">
-                {sessionModeData.length ? <ResponsiveContainer width="100%" height={300}><PieChart><Pie data={sessionModeData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} innerRadius={56}>{sessionModeData.map((entry, index) => <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}</Pie><Tooltip /><Legend /></PieChart></ResponsiveContainer> : <div className="admin-empty-chart">No sessions available yet</div>}
-              </div></article>
-              <article className="admin-card admin-leaderboard-card"><h3>Performance Leaderboards</h3><LeaderboardList items={topScoreUsers} suffix="avg" emptyMsg="No score data available" /><h3 className="admin-subsection-title">Top Improving Users</h3><LeaderboardList items={analyticsRisers} suffix="pts" emptyMsg="No improvement data available" /></article>
+
+            <section className="admin-grid admin-grid-1">
+              <article className="admin-card">
+                <div className="admin-card-head">
+                  <div>
+                    <h3>Stage Pass Rate</h3>
+                    <p className="admin-chart-note">Shows how many students passed or have not passed each individual stage requirement.</p>
+                  </div>
+                  <label className="admin-inline-filter">
+                    <span>Speaker Level</span>
+                    <select className="admin-filter-select" value={analyticsSpeakerLevelFilter} onChange={e => setAnalyticsSpeakerLevelFilter(e.target.value)}>
+                      <option value="all">All Levels</option>
+                      <option value="1">Level 1</option>
+                      <option value="2">Level 2</option>
+                      <option value="3">Level 3</option>
+                      <option value="4">Level 4</option>
+                      <option value="5">Level 5</option>
+                    </select>
+                  </label>
+                </div>
+                <div className="admin-chart-container admin-level-pass-chart">
+                  {loading ? <Skeleton height={300} /> : analyticsStagePassRows.length ? (
+                    <ResponsiveContainer width="100%" height={320}>
+                      <BarChart data={paginatedAnalyticsStagePassRows}>
+                        <XAxis dataKey="chartLabel" />
+                        <YAxis allowDecimals={false} />
+                        <Tooltip />
+                        <Bar dataKey="passed" stackId="stage-pass" fill="#33D2A4" radius={[0, 0, 8, 8]} name="Passed" />
+                        <Bar dataKey="notPassed" stackId="stage-pass" fill="#F87171" radius={[8, 8, 0, 0]} name="Not Passed" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : <div className="admin-empty-chart">No stages found for this filter</div>}
+                </div>
+                <div className="admin-table-wrap admin-confidence-table-wrap admin-level-pass-table-wrap"><table className="admin-table admin-confidence-table admin-stage-pass-table">
+                  <thead><tr><th>Level</th><th>Stage</th><th>Stage Title</th><th>Target Focus</th><th>Passed</th><th>Not Passed</th><th>Pass Rate</th></tr></thead>
+                  <tbody>{paginatedAnalyticsStagePassRows.map(row => (
+                    <tr key={row.id}>
+                      <td>{row.level}</td>
+                      <td>{row.stageLabel}</td>
+                      <td>{row.title}</td>
+                      <td>{row.focus}</td>
+                      <td>{row.passed}</td>
+                      <td>{row.notPassed}</td>
+                      <td>{row.passRate}%</td>
+                    </tr>
+                  ))}</tbody>
+                </table></div>
+                {analyticsStagePassRows.length > 0 && (
+                  <div className="admin-pagination admin-stage-pass-pagination">
+                    <span className="admin-pagination-info">
+                      Showing {analyticsStageStartIndex + 1}-{Math.min(analyticsStageStartIndex + paginatedAnalyticsStagePassRows.length, analyticsStagePassRows.length)} of {analyticsStagePassRows.length} stages
+                    </span>
+                    <div className="admin-pagination-controls">
+                      <button type="button" onClick={() => setAnalyticsStagePage(page => Math.max(1, page - 1))} disabled={safeAnalyticsStagePage === 1}>Prev</button>
+                      <span>{safeAnalyticsStagePage} / {analyticsStageTotalPages}</span>
+                      <button type="button" onClick={() => setAnalyticsStagePage(page => Math.min(analyticsStageTotalPages, page + 1))} disabled={safeAnalyticsStagePage === analyticsStageTotalPages}>Next</button>
+                    </div>
+                  </div>
+                )}
+              </article>
             </section>
-            <section className="admin-grid admin-grid-2">
-              <article className="admin-card"><h3>Risk / Intervention Panel</h3><div className="admin-risk-list">
-                {atRiskUsers.length ? atRiskUsers.map(user => <div key={user.id} className="admin-risk-row"><div><strong>{user.name}</strong><span>Journey {user.journey} · Avg {user.avgScore}</span></div><p>{user.reasons.join(', ')}</p></div>) : <div className="admin-empty-chart">No at-risk users in the current filters</div>}
-              </div></article>
-              <article className="admin-card admin-leaderboard-card"><h3>Most Consistent Users</h3><LeaderboardList items={analyticsMostConsistent} suffix="days" /></article>
+
+            <section className="admin-grid admin-grid-1">
+              <article className="admin-card">
+                <h3>Skill Breakdown</h3>
+                <p className="admin-chart-note">Separate confidence measurements for Visual, Vocal, and Verbal scoring.</p>
+                <div className="admin-table-wrap admin-confidence-table-wrap"><table className="admin-table admin-confidence-table">
+                  <thead><tr><th>Skill</th><th>Average</th><th>Measured Students</th><th>Source</th></tr></thead>
+                  <tbody>{analyticsSkillBreakdown.map(row => (
+                    <tr key={row.skill}>
+                      <td><strong>{row.skill}</strong></td>
+                      <td>{row.average == null ? 'N/A' : `${row.average}%`}</td>
+                      <td>{row.measuredStudents}</td>
+                      <td>{row.description}</td>
+                    </tr>
+                  ))}</tbody>
+                </table></div>
+              </article>
             </section>
+
             <section className="admin-card">
-              <div className="admin-card-head"><h3>Detailed Analytics</h3><p className="admin-note">{analyticsDetailRows.length} users shown</p></div>
-              <div className="admin-table-wrap"><table className="admin-table">
-                <thead><tr><th>User</th><th>Journey</th><th>Sessions</th><th>Overall</th><th>Visual</th><th>Vocal</th><th>Verbal</th><th>Status</th></tr></thead>
-                <tbody>{analyticsDetailRows.map(row => <tr key={row.id}><td><strong>{row.name}</strong></td><td>J-{row.journey}</td><td>{row.sessions}</td><td>{row.avgOverall}</td><td>{row.avgVisual}</td><td>{row.avgVocal}</td><td>{row.avgVerbal}</td><td><span className={`admin-status-badge ${row.status === 'Deleted' ? 'is-archived' : 'is-active'}`}>{row.status}</span></td></tr>)}</tbody>
+              <div className="admin-card-head">
+                <div>
+                  <h3>Student Confidence Rankings</h3>
+                  <p className="admin-note">Ranked student progress across activities and Visual, Vocal, and Verbal scores.</p>
+                </div>
+              </div>
+              <div className="admin-table-wrap"><table className="admin-table admin-confidence-rank-table">
+                <thead><tr><th>Rank</th><th>Student</th><th>Section</th><th>Activities</th><th>Level</th><th>Visual</th><th>Vocal</th><th>Verbal</th><th>Last Active</th></tr></thead>
+                <tbody>{analyticsRankedStudentRows.length ? analyticsRankedStudentRows.map((student, index) => (
+                  <tr key={student.id}>
+                    <td>{index + 1}</td>
+                    <td><strong>{student.name}</strong></td>
+                    <td>{student.section}</td>
+                    <td>{student.completedActivities}/30</td>
+                    <td>{student.confidenceLevel.level ? `Level ${student.confidenceLevel.level} - ${student.confidenceLevel.label}` : student.confidenceLevel.label}</td>
+                    <td>{student.visualScore == null ? 'N/A' : `${student.visualScore}%`}</td>
+                    <td>{student.vocalScore == null ? 'N/A' : `${student.vocalScore}%`}</td>
+                    <td>{student.verbalScore == null ? 'N/A' : `${student.verbalScore}%`}</td>
+                    <td>{student.lastActiveMs ? new Date(student.lastActiveMs).toLocaleString() : '-'}</td>
+                  </tr>
+                )) : <tr><td colSpan={9}>No students available for this scope.</td></tr>}</tbody>
               </table></div>
             </section>
           </>
         )}
 
         {activePage === 'users' && (
+          <>
+          {isSuperadmin && (
+            <section className="admin-grid admin-grid-2 admin-user-setup-grid">
+              <article className="admin-card admin-management-card">
+                <div className="admin-card-head">
+                  <div>
+                    <h3>Teacher Accounts</h3>
+                    <p className="admin-note">{adminRosterTitle}</p>
+                  </div>
+                  <button type="button" className="admin-btn admin-btn--primary" onClick={() => setShowCreateAdminModal(true)}>Create Teacher</button>
+                </div>
+                <select
+                  className="admin-filter-select admin-roster-filter"
+                  value={adminStatusFilter}
+                  onChange={e => setAdminStatusFilter(e.target.value)}
+                  aria-label="Filter teacher accounts by status"
+                >
+                  <option value="active">Active Teachers</option>
+                  <option value="deleted">Archived Teachers</option>
+                </select>
+                <div className="admin-roster-list admin-roster-list--compact">
+                  {adminAccounts.length ? (
+                    adminAccounts.slice(0, 4).map(a => (
+                      <div key={a.id} className={`admin-roster-item ${isDeletedProfile(a) ? 'is-deleted' : 'is-active'}`}>
+                        <div className="admin-roster-info">
+                          <strong>{getDisplayName(a, a.id)}</strong>
+                          <span>{a.role === 'superadmin' ? 'Program Chair' : findAccessRole(adminAccessRoles, adminAccessAssignments[a.id])?.name || 'Teacher'} - {isDeletedProfile(a) ? 'Archived' : 'Active'}</span>
+                        </div>
+                        <button type="button" className="admin-action-btn" onClick={() => openEditAdmin(a)} title="Edit teacher"><HiOutlinePencilSquare /></button>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="admin-empty-inline">No {adminStatusFilter === 'deleted' ? 'archived' : 'active'} teacher accounts</div>
+                  )}
+                  {adminAccounts.length > 4 && <p className="admin-note">Showing 4 of {adminAccounts.length}. Use search/filter later for a full roster view.</p>}
+                </div>
+              </article>
+              <article className="admin-card admin-access-role-card admin-management-card">
+                <div className="admin-card-head">
+                  <div>
+                    <h3>Access Roles</h3>
+                    <p className="admin-note">Choose a role to review or edit permissions.</p>
+                  </div>
+                  <button type="button" className="admin-btn admin-btn--ghost" onClick={openNewAccessRole}>New Role</button>
+                </div>
+                <label className="admin-create-field">
+                  <span>Role</span>
+                  <select className="admin-filter-select" value={selectedAccessRoleId} onChange={e => setSelectedAccessRoleId(e.target.value)}>
+                    {adminAccessRoles.map(roleTemplate => <option key={roleTemplate.id} value={roleTemplate.id}>{roleTemplate.name}</option>)}
+                  </select>
+                </label>
+                <div className="admin-role-summary">
+                  <strong>{selectedManagedAccessRole?.name || 'Role'}</strong>
+                  <span>{selectedManagedAccessRole?.description || 'No description'}</span>
+                  <p>{selectedManagedRolePermissions.length ? selectedManagedRolePermissions.join(', ') : 'No visible areas yet'}</p>
+                </div>
+                <div className="admin-card-actions">
+                  <button type="button" className="admin-btn admin-btn--primary" onClick={openSelectedAccessRole}>Edit Permissions</button>
+                  {selectedManagedAccessRole && !selectedManagedAccessRole.system && (
+                    <button type="button" className="admin-btn admin-btn--danger" onClick={() => requestDeleteAccessRole(selectedManagedAccessRole.id)}>Delete Role</button>
+                  )}
+                </div>
+              </article>
+            </section>
+          )}
+          <section className="admin-card admin-section-card">
+            <div className="admin-card-head">
+              <div>
+                <h3>Sections</h3>
+                <p className="admin-note">Teachers manage students through assigned sections.</p>
+              </div>
+              <button type="button" className="admin-btn admin-btn--ghost" onClick={openNewSection}>New Section</button>
+            </div>
+            <div className="admin-section-list">
+              {visibleSections.length ? visibleSections.map(section => {
+                const count = sectionStudentIdsBySectionId.get(section.id)?.size || 0;
+                const teacher = profiles.find(profile => profile.id === section.teacher_id);
+                return (
+                  <div key={section.id} className="admin-section-item">
+                    <div>
+                      <strong>{section.name}</strong>
+                      <span>{count} student{count === 1 ? '' : 's'} - {getDisplayName(teacher, 'Unassigned teacher')}</span>
+                    </div>
+                    <div className="admin-section-actions">
+                      <button type="button" className="admin-action-btn" onClick={() => editSection(section)} title="Edit section"><HiOutlinePencilSquare /></button>
+                      {canDeleteUsers && <button type="button" className="admin-action-btn is-delete" onClick={() => requestDeleteSection(section)} title="Delete section"><HiOutlineTrash /></button>}
+                    </div>
+                  </div>
+                );
+              }) : <div className="admin-empty-chart">No sections yet</div>}
+            </div>
+          </section>
           <section className="admin-card">
             <div className="admin-table-controls">
-              <h3>User Management</h3>
+              <h3>Account Management</h3>
               <div className="admin-table-actions">
-                <div className="admin-search-box"><HiMagnifyingGlass /><input type="text" placeholder="Search..." value={userSearchQuery} onChange={e => setUserSearchQuery(e.target.value)} /></div>
-                <select className="admin-filter-select" value={userLevelFilter} onChange={e => setUserLevelFilter(e.target.value)}>
+                <div className="admin-search-box"><HiMagnifyingGlass /><input type="text" placeholder="Search..." value={userSearchQuery} onChange={e => { setUserSearchQuery(e.target.value); setUserPage(1); }} /></div>
+                {isSuperadmin && (
+                  <select className="admin-filter-select" value={userAccountTypeFilter} onChange={e => {
+                    setUserAccountTypeFilter(e.target.value);
+                    setUserPage(1);
+                    if (e.target.value !== 'users') setUserLevelFilter('all');
+                  }}>
+                    <option value="users">Students</option>
+                    <option value="admins">Teachers</option>
+                  </select>
+                )}
+                <select className="admin-filter-select" value={userLevelFilter} disabled={userAccountTypeFilter !== 'users'} onChange={e => { setUserLevelFilter(e.target.value); setUserPage(1); }}>
                   <option value="all">All Journeys</option>
                   <option value="1">Journey 1</option>
                   <option value="2">Journey 2</option>
@@ -1897,36 +3899,99 @@ function AdminDashboardPage() {
                 </select>
                 <select className="admin-filter-select" value={userStatusFilter} onChange={e => { setUserStatusFilter(e.target.value); setUserPage(1); }}>
                   <option value="all">All Statuses</option>
-                  <option value="active">Active Users</option>
-                  <option value="deleted">Deleted Users</option>
+                  <option value="active">Active Accounts</option>
+                  <option value="deleted">Archived Accounts</option>
                 </select>
-                <button type="button" className="admin-btn admin-btn--primary" onClick={openCreateUser}>Create User</button>
+                <select className="admin-filter-select" value={userSortKey} onChange={e => { setUserSortKey(e.target.value); setUserPage(1); }}>
+                  <option value="name_asc">Sort: Name A-Z</option>
+                  <option value="name_desc">Sort: Name Z-A</option>
+                  <option value="newest">Sort: Newest</option>
+                  <option value="oldest">Sort: Oldest</option>
+                  <option value="status">Sort: Status</option>
+                  <option value="type">Sort: Account Type</option>
+                  <option value="role_section">Sort: Role / Section</option>
+                  <option value="journey_asc">Sort: Journey Low-High</option>
+                  <option value="journey_desc">Sort: Journey High-Low</option>
+                </select>
+                {canUseAdminPermission('users', 'create') && (
+                  <button type="button" className="admin-btn admin-btn--primary" onClick={userAccountTypeFilter === 'admins' && isSuperadmin ? () => setShowCreateAdminModal(true) : openCreateUser}>
+                    {userAccountTypeFilter === 'admins' && isSuperadmin ? 'Create Teacher' : 'Create Student'}
+                  </button>
+                )}
               </div>
             </div>
-            <div className="admin-table-wrap"><table className="admin-table">
-              <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Journey</th><th>Speaking</th><th>Points</th><th>Status</th><th>Actions</th></tr></thead>
+            {canCreateUsers && (
+              <div className="admin-account-batch-panel">
+                <div>
+                  <h4>Batch Creation</h4>
+                  <p className="admin-note">
+                    {isSuperadmin
+                      ? 'Create student or teacher accounts using the Excel/CSV template. Passwords are generated automatically and downloaded once after saving.'
+                      : 'Upload students using: Last Name, First Name, Student Number, Email. Passwords are generated automatically and downloaded once after saving.'}
+                  </p>
+                </div>
+                <div className="admin-batch-card-actions">
+                  {lastGeneratedCredentials?.rows?.length > 0 && (
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn--ghost"
+                      onClick={() => downloadGeneratedCredentialsWorkbook(lastGeneratedCredentials)}
+                    >
+                      Download Last Passwords
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn--primary"
+                    onClick={openBatchAccountSetup}
+                  >
+                    Open Batch Setup
+                  </button>
+                  {batchImportFile && <p className="admin-note">Selected file: {batchImportFile.name}</p>}
+                </div>
+              </div>
+            )}
+            <div className="admin-table-wrap"><table className="admin-table admin-account-table">
+              <thead><tr><th>Name</th>{showUserManagementTypeColumn && <th>Account Type</th>}<th>Role / Section</th>{showUserManagementStudentColumns && <th>Student No.</th>}<th>Email</th>{showUserManagementStudentColumns && <th>Journey</th>}{showUserManagementStudentColumns && <th>Speaking</th>}<th>Status</th><th>Actions</th></tr></thead>
               <tbody>
-                {paginatedUsers.map(u => (
+                {paginatedUserManagementRows.map(({ profile: u, isAdminAccount, typeLabel, roleOrSection, name, email, speaking }) => (
                   <tr key={u.id}>
-                    <td>{getDisplayName(u,u.id)}</td>
-                    <td>{u.username || '-'}</td>
-                    <td><span className={`admin-role-badge ${u.role === 'admin' || u.role === 'superadmin' ? 'is-admin' : ''}`}>{u.role || 'user'}</span></td>
-                    <td>J-{u.current_level || 1}</td>
-                    <td>L-{u.speaker_level || 1}</td>
-                    <td>{u.speaker_points || 0}</td>
-                    <td><span className={`admin-status-badge ${isDeletedProfile(u) ? 'is-archived' : 'is-active'}`}>{isDeletedProfile(u) ? 'Deleted' : 'Active'}</span></td>
+                    <td>{name}</td>
+                    {showUserManagementTypeColumn && <td>{typeLabel}</td>}
+                    <td>{roleOrSection}</td>
+                    {showUserManagementStudentColumns && <td>{isAdminAccount ? '-' : u.student_number || '-'}</td>}
+                    <td>{email}</td>
+                    {showUserManagementStudentColumns && <td>{isAdminAccount ? '-' : `J-${u.current_level || 1}`}</td>}
+                    {showUserManagementStudentColumns && <td>{isAdminAccount ? '-' : `L-${speaking}`}</td>}
+                    <td><span className={`admin-status-badge ${isDeletedProfile(u) ? 'is-archived' : 'is-active'}`}>{isDeletedProfile(u) ? 'Archived' : 'Active'}</span></td>
                     <td className="admin-actions-cell">
-                      <button type="button" onClick={() => openEditUser(u)} className="admin-action-btn" title="Edit user"><HiOutlinePencilSquare /></button>
-                      <button type="button" onClick={() => requestUserArchiveState(u, !isDeletedProfile(u))} className={`admin-action-btn ${isDeletedProfile(u) ? '' : 'is-delete'}`} title={isDeletedProfile(u) ? 'Restore user' : 'Delete user'}>
-                        {isDeletedProfile(u) ? <HiCheckCircle /> : <HiOutlineTrash />}
-                      </button>
+                      {isAdminAccount ? (
+                        <>
+                          {isSuperadmin && <button type="button" onClick={() => openEditAdmin(u)} className="admin-action-btn" title="Edit teacher"><HiOutlinePencilSquare /></button>}
+                          {isSuperadmin && (
+                            <button type="button" onClick={() => requestUserArchiveState(u, !isDeletedProfile(u))} className={`admin-action-btn ${isDeletedProfile(u) ? '' : 'is-delete'}`} title={isDeletedProfile(u) ? 'Restore teacher' : 'Archive teacher'} disabled={u.id === currentAdminId}>
+                              {isDeletedProfile(u) ? <HiCheckCircle /> : <HiOutlineTrash />}
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {canUseAdminPermission('users', 'update') && <button type="button" onClick={() => openEditUser(u)} className="admin-action-btn" title="Edit student"><HiOutlinePencilSquare /></button>}
+                          {canUseAdminPermission('users', 'delete') && <button type="button" onClick={() => requestUserArchiveState(u, !isDeletedProfile(u))} className={`admin-action-btn ${isDeletedProfile(u) ? '' : 'is-delete'}`} title={isDeletedProfile(u) ? 'Restore student' : 'Archive student'}>
+                            {isDeletedProfile(u) ? <HiCheckCircle /> : <HiOutlineTrash />}
+                          </button>}
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}
+                {!paginatedUserManagementRows.length && (
+                  <tr><td colSpan={userManagementColumnCount} className="admin-empty-table">No accounts match the selected filters</td></tr>
+                )}
               </tbody>
             </table></div>
             <div className="admin-pagination">
-              <span className="admin-pagination-info">Showing {filteredUsers.length ? ((userPage - 1) * USERS_PER_PAGE) + 1 : 0}-{Math.min(userPage * USERS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length}</span>
+              <span className="admin-pagination-info">Showing {userManagementRows.length ? ((userPage - 1) * USERS_PER_PAGE) + 1 : 0}-{Math.min(userPage * USERS_PER_PAGE, userManagementRows.length)} of {userManagementRows.length}</span>
               <div className="admin-pagination-controls">
                 <button type="button" disabled={userPage === 1} onClick={() => setUserPage(p => Math.max(1, p - 1))}>Prev</button>
                 <button type="button" disabled>{userPage} / {totalUserPages}</button>
@@ -1934,13 +3999,14 @@ function AdminDashboardPage() {
               </div>
             </div>
           </section>
+          </>
         )}
 
         {activePage === 'content' && (
           <section className="admin-content-hub">
             <div className="admin-tabs">
-              <button className={`admin-tab-btn ${contentTab === 'activities' ? 'is-active' : ''}`} onClick={() => setContentTab('activities')}>Activities</button>
-              <button className={`admin-tab-btn ${contentTab === 'modules' ? 'is-active' : ''}`} onClick={() => setContentTab('modules')}>Modules</button>
+              {canViewActivities && <button className={`admin-tab-btn ${contentTab === 'activities' ? 'is-active' : ''}`} onClick={() => setContentTab('activities')}>Activities</button>}
+              {canViewModules && <button className={`admin-tab-btn ${contentTab === 'modules' ? 'is-active' : ''}`} onClick={() => setContentTab('modules')}>Modules</button>}
             </div>
             <div className="admin-card">
               <div className="admin-card-head">
@@ -1950,12 +4016,28 @@ function AdminDashboardPage() {
                     <option value="all">All Journeys</option>
                     {contentLevelOptions.map(level => <option key={level} value={level}>Journey {level}</option>)}
                   </select>
-                  <button onClick={() => setCreatingContent(true)} className="admin-btn admin-btn--primary">Add New</button>
+                  {canCreateCurrentContent && <button onClick={() => setCreatingContent(true)} className="admin-btn admin-btn--primary">Add New</button>}
                 </div>
               </div>
+              {canCreateCurrentContent && (
+                <div className="admin-content-bulk-panel" aria-label={`${contentTab === 'activities' ? 'Activity' : 'Module'} bulk upload setup`}>
+                  <div>
+                    <h4>{contentTab === 'activities' ? 'Bulk Activity Upload' : 'Bulk Module Upload'}</h4>
+                    <p className="admin-note">
+                      {contentTab === 'activities'
+                        ? 'Prepare an Excel/CSV upload for activity rows across journeys, stages, titles, objectives, skill focus, and passing scores.'
+                        : 'Prepare an Excel/CSV upload for module rows across journeys, lesson order, titles, and lesson content.'}
+                    </p>
+                  </div>
+                  <div className="admin-content-bulk-actions">
+                    <button type="button" className="admin-btn admin-btn--ghost" disabled>Choose File</button>
+                    <button type="button" className="admin-btn admin-btn--primary" disabled>Preview Upload</button>
+                  </div>
+                </div>
+              )}
               <div className="admin-table-wrap"><table className="admin-table">
                 <thead><tr><th>Order/Lvl</th><th>Title</th><th>Created</th><th>Actions</th></tr></thead>
-                <tbody>{paginatedContentItems.map(item => <tr key={item.id}><td>{contentTab === 'activities' ? item.activity_order : item.level_number}</td><td><strong>{item.title}</strong></td><td>{new Date(item.created_at).toLocaleDateString()}</td><td className="admin-actions-cell"><button onClick={() => setEditingContent(item)} className="admin-action-btn"><HiOutlinePencilSquare /></button><button onClick={() => handleDeleteContent(item.id, contentTab)} className="admin-action-btn is-delete"><HiOutlineTrash /></button></td></tr>)}</tbody>
+                <tbody>{paginatedContentItems.map(item => <tr key={item.id}><td>{contentTab === 'activities' ? item.activity_order : item.level_number}</td><td><strong>{item.title}</strong></td><td>{new Date(item.created_at).toLocaleDateString()}</td><td className="admin-actions-cell">{canUpdateCurrentContent && <button onClick={() => setEditingContent(item)} className="admin-action-btn"><HiOutlinePencilSquare /></button>}{canDeleteCurrentContent && <button onClick={() => requestDeleteContent(item, contentTab)} className="admin-action-btn is-delete"><HiOutlineTrash /></button>}</td></tr>)}</tbody>
               </table></div>
               <div className="admin-pagination">
                 <span className="admin-pagination-info">Showing {filteredContentItems.length ? ((contentPage - 1) * CONTENT_PER_PAGE) + 1 : 0}-{Math.min(contentPage * CONTENT_PER_PAGE, filteredContentItems.length)} of {filteredContentItems.length}</span>
@@ -1969,85 +4051,50 @@ function AdminDashboardPage() {
           </section>
         )}
 
-        {activePage === 'settings' && isSuperadmin && (
-          <section className="admin-grid admin-grid-2">
-            <div className="admin-settings-col admin-settings-col--wide">
-              <article className="admin-card">
-                <h3>Create Administrator</h3>
-                <form className="admin-create-form" onSubmit={submitCreateAdmin}>
-                  <label className="admin-create-field">
-                    <span>Email</span>
-                    <input type="email" required placeholder="admin@email.com" value={createAdminForm.email} onChange={e => setCreateAdminForm(p => ({ ...p, email: e.target.value }))} />
-                  </label>
-                  <label className="admin-create-field">
-                    <span>Username</span>
-                    <input type="text" placeholder="admin_username" value={createAdminForm.username} onChange={e => setCreateAdminForm(p => ({ ...p, username: e.target.value }))} />
-                  </label>
-                  <label className="admin-create-field">
-                    <span>First Name</span>
-                    <input type="text" placeholder="First name" value={createAdminForm.first_name} onChange={e => setCreateAdminForm(p => ({ ...p, first_name: e.target.value }))} />
-                  </label>
-                  <label className="admin-create-field">
-                    <span>Last Name</span>
-                    <input type="text" placeholder="Last name" value={createAdminForm.last_name} onChange={e => setCreateAdminForm(p => ({ ...p, last_name: e.target.value }))} />
-                  </label>
-                  <label className="admin-create-field">
-                    <span>Password</span>
-                    <AdminPasswordInput placeholder="Password" value={createAdminForm.password} onChange={e => setCreateAdminForm(p => ({ ...p, password: e.target.value }))} />
-                  </label>
-                  <label className="admin-create-field">
-                    <span>Confirm Password</span>
-                    <AdminPasswordInput placeholder="Confirm password" value={createAdminForm.confirm_password} onChange={e => setCreateAdminForm(p => ({ ...p, confirm_password: e.target.value }))} />
-                  </label>
-                  <label className="admin-create-field admin-create-field--full">
-                    <span>Administrator Role</span>
-                    <select value={createAdminForm.role} onChange={e => setCreateAdminForm(p => ({ ...p, role: e.target.value }))} className="admin-filter-select"><option value="admin">Admin</option><option value="superadmin">Superadmin</option></select>
-                  </label>
-                  <button type="submit" className="admin-btn admin-btn--primary" disabled={creatingAdmin}>{creatingAdmin ? 'Creating...' : 'Create Admin'}</button>
-                </form>
-              </article>
+        {activePage === 'reports' && (
+          <section className="admin-card admin-report-card">
+            <div className="admin-card-head">
+              <div>
+                <h3>Reports Generation</h3>
+                <p className="admin-note">Printable reports for teachers, students, and student performance.</p>
+              </div>
+              <div className="admin-report-actions">
+                <button type="button" className="admin-btn admin-btn--ghost" onClick={() => window.print()}>Print Report</button>
+                <button type="button" className="admin-btn admin-btn--primary" onClick={saveReportExcel}>Save Excel</button>
+              </div>
             </div>
-            <article className="admin-card admin-accounts-card">
-              <div className="admin-card-head">
-                <h3>Administrator Accounts</h3>
-                <select
-                  className="admin-filter-select admin-roster-filter"
-                  value={adminStatusFilter}
-                  onChange={e => setAdminStatusFilter(e.target.value)}
-                  aria-label="Filter administrator accounts by status"
-                >
-                  <option value="all">All Admins</option>
-                  <option value="active">Active Admins</option>
-                  <option value="deleted">Deleted Admins</option>
-                </select>
-              </div>
-              <div className="admin-roster-list">
-                {adminAccounts.length ? (
-                  adminAccounts.map(a => (
-                    <div key={a.id} className={`admin-roster-item ${isDeletedProfile(a) ? 'is-deleted' : 'is-active'}`}>
-                      <div className="admin-roster-info">
-                        <strong>{getDisplayName(a, a.id)}</strong>
-                        <span>{a.role} - {isDeletedProfile(a) ? 'Deleted' : 'Active'}</span>
-                      </div>
-                      <div className="admin-roster-actions">
-                        <button type="button" className="admin-action-btn" onClick={() => openEditAdmin(a)} title="Edit admin"><HiOutlinePencilSquare /></button>
-                        <button
-                          type="button"
-                          className={`admin-action-btn ${isDeletedProfile(a) ? '' : 'is-delete'}`}
-                          onClick={() => requestUserArchiveState(a, !isDeletedProfile(a))}
-                          disabled={a.id === currentAdminId}
-                          title={a.id === currentAdminId ? 'You cannot delete your own admin account' : isDeletedProfile(a) ? 'Restore admin' : 'Delete admin'}
-                        >
-                          {isDeletedProfile(a) ? <HiCheckCircle /> : <HiOutlineTrash />}
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="admin-empty-chart">No {adminStatusFilter === 'all' ? '' : `${adminStatusFilter} `}administrator accounts</div>
-                )}
-              </div>
-            </article>
+            <div className="admin-report-tabs">
+              <button type="button" className={`admin-tab-btn ${reportType === 'teachers' ? 'is-active' : ''}`} onClick={() => setReportType('teachers')}>Teachers</button>
+              <button type="button" className={`admin-tab-btn ${reportType === 'students' ? 'is-active' : ''}`} onClick={() => setReportType('students')}>Students</button>
+              <button type="button" className={`admin-tab-btn ${reportType === 'performance' ? 'is-active' : ''}`} onClick={() => setReportType('performance')}>Performance</button>
+              {isSuperadmin && <button type="button" className={`admin-tab-btn ${reportType === 'audit' ? 'is-active' : ''}`} onClick={() => setReportType('audit')}>Audit Logs</button>}
+            </div>
+            <div className="admin-table-wrap"><table className="admin-table">
+              {reportType === 'teachers' && (
+                <>
+                  <thead><tr><th>Teacher</th><th>Email</th><th>Access Role</th><th>Sections</th><th>Status</th></tr></thead>
+                  <tbody>{reportTeacherRows.map(admin => <tr key={admin.id}><td>{getDisplayName(admin, admin.id)}</td><td>{getProfileEmail(admin)}</td><td>{findAccessRole(adminAccessRoles, adminAccessAssignments[admin.id])?.name || 'Teacher'}</td><td>{sections.filter(section => section.teacher_id === admin.id).length}</td><td>{isDeletedProfile(admin) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
+                </>
+              )}
+              {reportType === 'students' && (
+                <>
+                  <thead><tr><th>Student</th><th>Student No.</th><th>Section</th><th>Journey</th><th>Status</th></tr></thead>
+                  <tbody>{reportStudentRows.map(student => <tr key={student.id}><td>{getDisplayName(student, student.id)}</td><td>{student.student_number || '-'}</td><td>{sectionById.get(sectionIdByStudentId.get(student.id))?.name || '-'}</td><td>Journey {student.current_level || 1}</td><td>{isDeletedProfile(student) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
+                </>
+              )}
+              {reportType === 'performance' && (
+                <>
+                  <thead><tr><th>Student</th><th>Section</th><th>Speeches</th><th>Minutes</th><th>Avg Score</th><th>Activities</th><th>Confidence Level</th></tr></thead>
+                  <tbody>{reportStudentPerformanceRows.map(row => <tr key={row.id}><td>{row.name}</td><td>{row.section}</td><td>{row.speeches}</td><td>{row.minutes}</td><td>{row.averageScore ?? 'N/A'}</td><td>{row.completedActivities}/30</td><td>{row.confidenceLevel.level ? `Level ${row.confidenceLevel.level} - ${row.confidenceLevel.label}` : row.confidenceLevel.label}</td></tr>)}</tbody>
+                </>
+              )}
+              {reportType === 'audit' && isSuperadmin && (
+                <>
+                  <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Entity</th><th>Summary</th></tr></thead>
+                  <tbody>{combinedAuditLogs.slice(0, 200).map(log => <tr key={log.id}><td>{new Date(log.created_at).toLocaleString()}</td><td>{getDisplayName(profiles.find(p => p.id === log.actor_id), log.actor_id || 'Unknown login')}</td><td>{formatAuditAction(log.action)}</td><td>{log.entity_type}</td><td>{JSON.stringify(log.new_values || log.old_values || {}).slice(0, 120) || '-'}</td></tr>)}</tbody>
+                </>
+              )}
+            </table></div>
           </section>
         )}
 
@@ -2061,10 +4108,10 @@ function AdminDashboardPage() {
                   <option value="all">All Actions</option>
                   <option value="create">Create</option>
                   <option value="update">Update</option>
-                  <option value="delete">Delete</option>
+                  <option value="delete">Delete / Archive</option>
                   <option value="restore">Restore</option>
                   <option value="login_failed">Login Failed</option>
-                  <option value="login_blocked">Login Blocked</option>
+                  <option value="login_locked">Account Locked</option>
                   <option value="login_success">Login Success</option>
                 </select>
                 <select className="admin-filter-select" value={auditEntityFilter} onChange={e => { setAuditEntityFilter(e.target.value); setAuditPage(1); }}>
@@ -2086,14 +4133,281 @@ function AdminDashboardPage() {
         )}
       </section>
 
-      {creatingUser && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setCreatingUser(false)}><div className="admin-modal admin-user-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
-        <div className="admin-card-head"><h3>Create User</h3><button type="button" onClick={() => setCreatingUser(false)} className="admin-btn admin-btn--ghost">Close</button></div>
-        <form className="admin-user-form" onSubmit={submitCreateUser}>
-          <AdminUserField label="Email" help="Login email used for the Supabase auth account.">
-            <input type="email" required placeholder="user@email.com" value={userForm.email} onChange={e => setUserForm(p => ({ ...p, email: e.target.value }))} />
+      {showActiveUsersModal && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setShowActiveUsersModal(false)}><div className="admin-modal admin-user-modal admin-active-users-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+        <div className="admin-card-head"><div><h3>Student Activity This Week</h3><p className="admin-modal-subtitle">{activeUsersThisWeek.length} active, {inactiveUsersThisWeek.length} inactive in the last 7 days</p></div><button type="button" onClick={() => setShowActiveUsersModal(false)} className="admin-btn admin-btn--ghost">Close</button></div>
+        <div className="admin-active-users-toolbar">
+          <label className="admin-inline-filter">
+            <span>Status</span>
+            <select className="admin-filter-select" value={activityStatusFilter} onChange={e => setActivityStatusFilter(e.target.value)}>
+              <option value="all">All Students</option>
+              <option value="active">Active Only</option>
+              <option value="inactive">Inactive Only</option>
+            </select>
+          </label>
+        </div>
+        {filteredWeeklyStudentActivityRows.length ? (
+          <>
+            <div className="admin-table-wrap admin-active-users-table-wrap"><table className="admin-table admin-active-users-table">
+              <thead><tr><th>Student</th><th>Status</th><th>Speeches Analyzed</th><th>Minutes Practiced</th><th>Average Score</th><th>Last Active</th></tr></thead>
+              <tbody>{paginatedWeeklyStudentActivityRows.map(user => (
+                <tr key={user.id}>
+                  <td><strong>{user.name}</strong></td>
+                  <td><span className={`admin-status-badge ${user.isActive ? 'is-active' : 'is-archived'}`}>{user.isActive ? 'Active' : 'Inactive'}</span></td>
+                  <td>{user.speeches}</td>
+                  <td>{user.minutes}</td>
+                  <td>{user.averageScore == null ? 'N/A' : `${user.averageScore}%`}</td>
+                  <td>{user.lastActive}</td>
+                </tr>
+              ))}</tbody>
+            </table></div>
+            {totalActiveUserPages > 1 && (
+              <div className="admin-pagination">
+                <span className="admin-pagination-info">
+                  Showing {((activeUsersPage - 1) * ACTIVE_USERS_PER_PAGE) + 1}-{Math.min(activeUsersPage * ACTIVE_USERS_PER_PAGE, filteredWeeklyStudentActivityRows.length)} of {filteredWeeklyStudentActivityRows.length}
+                </span>
+                <div className="admin-pagination-controls">
+                  <button type="button" disabled={activeUsersPage === 1} onClick={() => setActiveUsersPage(page => Math.max(1, page - 1))}>Prev</button>
+                  <span>{activeUsersPage} / {totalActiveUserPages}</span>
+                  <button type="button" disabled={activeUsersPage === totalActiveUserPages} onClick={() => setActiveUsersPage(page => Math.min(totalActiveUserPages, page + 1))}>Next</button>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="admin-empty-chart">No students match this status.</div>
+        )}
+      </div></div>, document.body)}
+
+      {showAccessRoleModal && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setShowAccessRoleModal(false)}><div className="admin-modal admin-user-modal admin-access-role-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+        <div className="admin-card-head">
+          <div>
+            <h3>{adminAccessRoleForm.id ? 'Edit Access Role' : 'Create Access Role'}</h3>
+            <p className="admin-modal-subtitle">Choose what teachers can view or manage.</p>
+          </div>
+          <button type="button" onClick={() => setShowAccessRoleModal(false)} className="admin-btn admin-btn--ghost">Close</button>
+        </div>
+        <form className="admin-role-builder" onSubmit={submitAccessRole}>
+          <div className="admin-role-builder-fields">
+            <label className="admin-create-field">
+              <span>Role Name</span>
+              <input type="text" placeholder="Content Teacher" value={adminAccessRoleForm.name} onChange={e => setAdminAccessRoleForm(p => ({ ...p, name: e.target.value }))} />
+            </label>
+            <label className="admin-create-field">
+              <span>Description</span>
+              <input type="text" placeholder="Controls content permissions" value={adminAccessRoleForm.description} onChange={e => setAdminAccessRoleForm(p => ({ ...p, description: e.target.value }))} />
+            </label>
+          </div>
+          <div className="admin-permission-matrix">
+            <div className="admin-permission-row admin-permission-row--head">
+              <span>Area</span>
+              {ADMIN_PERMISSION_ACTIONS.map(action => <span key={action.key}>{action.label}</span>)}
+            </div>
+            {ADMIN_PERMISSION_AREAS.map(area => (
+              <div className="admin-permission-row" key={area.key}>
+                <div><strong>{area.label}</strong><small>{area.description}</small></div>
+                {ADMIN_PERMISSION_ACTIONS.map(action => (
+                  area.actions.includes(action.key) ? (
+                    <label key={action.key} className="admin-permission-check" aria-label={`${area.label} ${action.label}`}>
+                      <input type="checkbox" checked={Boolean(adminAccessRoleForm.permissions?.[area.key]?.[action.key])} onChange={() => updateAccessRolePermission(area.key, action.key)} />
+                    </label>
+                  ) : <span key={action.key} className="admin-permission-na">-</span>
+                ))}
+              </div>
+            ))}
+          </div>
+          <div className="admin-modal-actions admin-modal-actions--end">
+            <button type="submit" className="admin-btn admin-btn--primary">{adminAccessRoleForm.id ? 'Save Role' : 'Create Role'}</button>
+          </div>
+        </form>
+      </div></div>, document.body)}
+
+      {showBatchAccountModal && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setShowBatchAccountModal(false)}><div className="admin-modal admin-user-modal admin-batch-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+        <div className="admin-card-head">
+          <div>
+            <h3>Batch Account Creation</h3>
+            <p className="admin-modal-subtitle">Excel/CSV setup using the current sample template.</p>
+          </div>
+          <button type="button" onClick={() => setShowBatchAccountModal(false)} className="admin-btn admin-btn--ghost">Close</button>
+        </div>
+        <form className="admin-batch-form" onSubmit={submitBatchAccountImport}>
+          {isSuperadmin ? (
+            <label className="admin-create-field">
+              <span>Account Type</span>
+              <select className="admin-filter-select" value={batchAccountType} onChange={handleBatchAccountTypeChange}>
+                <option value="user">Students</option>
+                <option value="admin">Teachers</option>
+              </select>
+            </label>
+          ) : (
+            <div className="admin-role-summary">
+              <strong>Student Accounts</strong>
+              <span>Teachers can batch upload students for their assigned sections.</span>
+            </div>
+          )}
+          {batchAccountType === 'admin' && (
+            <label className="admin-create-field">
+              <span>Access Role</span>
+              <select className="admin-filter-select" value={batchAccessRoleId} onChange={e => setBatchAccessRoleId(e.target.value)}>
+                {adminAccessRoles.map(roleTemplate => <option key={roleTemplate.id} value={roleTemplate.id}>{roleTemplate.name}</option>)}
+              </select>
+              <small>{selectedBatchAccessRole?.description || 'No description'}</small>
+            </label>
+          )}
+          {batchAccountType === 'user' && (
+            <label className="admin-create-field">
+              <span>Section</span>
+              <select className="admin-filter-select" value={batchSectionId} onChange={e => setBatchSectionId(e.target.value)}>
+                <option value="">No section selected</option>
+                {visibleSections.map(section => <option key={section.id} value={section.id}>{section.name}</option>)}
+              </select>
+            </label>
+          )}
+          <label className="admin-batch-dropzone">
+            <input type="file" accept=".xlsx,.csv" onChange={handleBatchFileChange} />
+            <strong>{batchImportFile ? batchImportFile.name : 'Choose Excel File'}</strong>
+            <span>Required columns: {batchTemplateColumns.join(', ')}</span>
+          </label>
+          <div className={`admin-batch-preview ${batchImportStatus === 'error' ? 'is-error' : ''}`}>
+            {batchImportStatus === 'idle' && <p>Select an Excel or CSV file to preview the batch rows.</p>}
+            {batchImportStatus === 'reading' && <p>Reading spreadsheet...</p>}
+            {batchImportStatus === 'error' && <p>{batchImportError}</p>}
+            {batchImportStatus === 'ready' && <p>{batchReadyRowCount} {batchAccountType === 'admin' ? 'teacher' : 'student'} account{batchReadyRowCount === 1 ? '' : 's'} ready for review.</p>}
+            {batchPreview?.columns?.length > 0 && (
+              <div className="admin-batch-columns">
+                <span>Detected:</span>
+                {batchPreview.columns.map((column, index) => <strong key={`${column}-${index}`}>{column || `Column ${index + 1}`}</strong>)}
+              </div>
+            )}
+            {batchPreview?.rows?.length > 0 && (
+              <div className="admin-batch-preview-table-wrap">
+                <table className="admin-table admin-batch-preview-table">
+                  <thead>
+                    <tr>
+                      <th>Last Name</th>
+                      <th>First Name</th>
+                      {batchAccountType !== 'admin' && <th>Student No.</th>}
+                      <th>Email</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {batchPreviewRows.map(row => (
+                      <tr key={row.rowNumber} className={batchPreviewInvalidRowNumbers.has(row.rowNumber) ? 'is-invalid' : ''}>
+                        <td>{row.last_name || '-'}</td>
+                        <td>{row.first_name || '-'}</td>
+                        {batchAccountType !== 'admin' && <td>{row.student_number || '-'}</td>}
+                        <td>{row.email || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="admin-batch-preview-pagination">
+                  <span>
+                    Showing {batchPreviewStartIndex + 1}-{Math.min(batchPreviewStartIndex + batchPreviewRows.length, batchReadyRowCount)} of {batchReadyRowCount}
+                  </span>
+                  {batchPreviewTotalPages > 1 && (
+                    <div className="admin-batch-preview-pagination-controls">
+                      <button type="button" onClick={() => setBatchPreviewPage(page => Math.max(1, page - 1))} disabled={safeBatchPreviewPage === 1}>Prev</button>
+                      <strong>{safeBatchPreviewPage} / {batchPreviewTotalPages}</strong>
+                      <button type="button" onClick={() => setBatchPreviewPage(page => Math.min(batchPreviewTotalPages, page + 1))} disabled={safeBatchPreviewPage === batchPreviewTotalPages}>Next</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="admin-modal-actions admin-modal-actions--end">
+            <button type="submit" className="admin-btn admin-btn--primary" disabled={batchImportStatus !== 'ready'}>
+              {batchImportStatus === 'saving' ? 'Creating...' : 'Create Accounts'}
+            </button>
+          </div>
+        </form>
+      </div></div>, document.body)}
+
+      {showSectionModal && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setShowSectionModal(false)}><div className="admin-modal admin-user-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+        <div className="admin-card-head">
+          <div>
+            <h3>{sectionForm.id ? 'Edit Section' : 'Create Section'}</h3>
+            <p className="admin-modal-subtitle">Assign a teacher to the section they manage.</p>
+          </div>
+          <button type="button" onClick={() => setShowSectionModal(false)} className="admin-btn admin-btn--ghost">Close</button>
+        </div>
+        <form className="admin-user-form" onSubmit={submitSection}>
+          <AdminUserField label="Section Name">
+            <input type="text" placeholder="INF235" value={sectionForm.name} onChange={e => setSectionForm(p => ({ ...p, name: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Username" help="Unique public handle stored in profiles.username.">
-            <input type="text" placeholder="username" value={userForm.username} onChange={e => setUserForm(p => ({ ...p, username: e.target.value }))} />
+          {isSuperadmin && (
+            <AdminUserField label="Teacher">
+              <select value={sectionForm.teacher_id} onChange={e => setSectionForm(p => ({ ...p, teacher_id: e.target.value }))}>
+                <option value="">Choose teacher</option>
+                {adminTeacherOptions.map(admin => <option key={admin.id} value={admin.id}>{getDisplayName(admin, admin.id)}</option>)}
+              </select>
+            </AdminUserField>
+          )}
+          <div className="admin-modal-actions admin-modal-actions--end">
+            <button type="submit" className="admin-btn admin-btn--primary">{sectionForm.id ? 'Save Section' : 'Create Section'}</button>
+          </div>
+        </form>
+      </div></div>, document.body)}
+
+      {showCreateAdminModal && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setShowCreateAdminModal(false)}><div className="admin-modal admin-user-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+        <div className="admin-card-head">
+          <div>
+            <h3>Create Staff Account</h3>
+            <p className="admin-modal-subtitle">Create credentials after choosing the account role.</p>
+          </div>
+          <button type="button" onClick={() => setShowCreateAdminModal(false)} className="admin-btn admin-btn--ghost">Close</button>
+        </div>
+        <form className="admin-user-form" onSubmit={submitCreateAdmin}>
+          <AdminUserField label="Email">
+            <input type="email" required placeholder="teacher@email.com" value={createAdminForm.email} onChange={e => setCreateAdminForm(p => ({ ...p, email: e.target.value }))} />
+          </AdminUserField>
+          <AdminUserField label="First Name">
+            <input type="text" placeholder="First name" value={createAdminForm.first_name} onChange={e => setCreateAdminForm(p => ({ ...p, first_name: e.target.value }))} />
+          </AdminUserField>
+          <AdminUserField label="Last Name">
+            <input type="text" placeholder="Last name" value={createAdminForm.last_name} onChange={e => setCreateAdminForm(p => ({ ...p, last_name: e.target.value }))} />
+          </AdminUserField>
+          <AdminUserField label="Password">
+            <AdminPasswordInput placeholder="Password" value={createAdminForm.password} onChange={e => setCreateAdminForm(p => ({ ...p, password: e.target.value }))} />
+          </AdminUserField>
+          <AdminUserField label="Confirm Password">
+            <AdminPasswordInput placeholder="Confirm password" value={createAdminForm.confirm_password} onChange={e => setCreateAdminForm(p => ({ ...p, confirm_password: e.target.value }))} />
+          </AdminUserField>
+          <AdminUserField label="Role">
+            <select
+              value={createAdminForm.role === 'superadmin' ? 'superadmin' : createAdminForm.access_role_id}
+              onChange={handleCreateAdminRoleChange}
+            >
+              {adminAccessRoles.map(roleTemplate => <option key={roleTemplate.id} value={roleTemplate.id}>{roleTemplate.name}</option>)}
+              <option value="superadmin">Program Chair</option>
+            </select>
+          </AdminUserField>
+          <div className="admin-modal-actions admin-modal-actions--end">
+            <button type="submit" className="admin-btn admin-btn--primary" disabled={creatingAdmin}>{creatingAdmin ? 'Creating...' : 'Create Account'}</button>
+          </div>
+        </form>
+      </div></div>, document.body)}
+
+      {creatingUser && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setCreatingUser(false)}><div className="admin-modal admin-user-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+        <div className="admin-card-head">
+          <div>
+            <h3>Create Student</h3>
+            <p className="admin-modal-subtitle admin-student-create-note">Email is used for login. Password must be at least 8 characters with uppercase, lowercase, and a number.</p>
+          </div>
+          <button type="button" onClick={() => setCreatingUser(false)} className="admin-btn admin-btn--ghost">Close</button>
+        </div>
+        <form className="admin-user-form" onSubmit={submitCreateUser}>
+          <AdminUserField label="Email">
+            <input type="email" required placeholder="student@email.com" value={userForm.email} onChange={e => setUserForm(p => ({ ...p, email: e.target.value }))} />
+          </AdminUserField>
+          <AdminUserField label="Student Number">
+            <input type="text" placeholder="Student number" value={userForm.student_number} onChange={e => setUserForm(p => ({ ...p, student_number: e.target.value }))} />
+          </AdminUserField>
+          <AdminUserField label="Section">
+            <select value={userForm.section_id} onChange={e => setUserForm(p => ({ ...p, section_id: e.target.value }))}>
+              <option value="">No section</option>
+              {visibleSections.map(section => <option key={section.id} value={section.id}>{section.name}</option>)}
+            </select>
           </AdminUserField>
           <AdminUserField label="First Name">
             <input type="text" placeholder="First name" value={userForm.first_name} onChange={e => setUserForm(p => ({ ...p, first_name: e.target.value }))} />
@@ -2101,26 +4415,26 @@ function AdminDashboardPage() {
           <AdminUserField label="Last Name">
             <input type="text" placeholder="Last name" value={userForm.last_name} onChange={e => setUserForm(p => ({ ...p, last_name: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Password" help="At least 8 characters with uppercase, lowercase, and a number.">
+          <AdminUserField label="Password">
             <AdminPasswordInput placeholder="Password" value={userForm.password} onChange={e => setUserForm(p => ({ ...p, password: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Confirm Password" help="Must match the password above.">
+          <AdminUserField label="Confirm Password">
             <AdminPasswordInput placeholder="Confirm password" value={userForm.confirm_password} onChange={e => setUserForm(p => ({ ...p, confirm_password: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Journey Level" help="Current learning journey from 1 to 5.">
+          <AdminUserField label="Journey Level">
             <AdminLevelSelect label="Journey level" value={userForm.current_level} onChange={e => setUserForm(p => ({ ...p, current_level: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Speaker Level" help="Speaking proficiency level from 1 to 5.">
+          <AdminUserField label="Speaker Level">
             <AdminLevelSelect label="Speaker level" value={userForm.speaker_level} onChange={e => setUserForm(p => ({ ...p, speaker_level: e.target.value }))} />
           </AdminUserField>
           <div className="admin-modal-actions admin-modal-actions--end">
-            <button type="submit" className="admin-btn admin-btn--primary" disabled={savingUser}>{savingUser ? 'Creating...' : 'Create User'}</button>
+            <button type="submit" className="admin-btn admin-btn--primary" disabled={savingUser}>{savingUser ? 'Creating...' : 'Create Student'}</button>
           </div>
         </form>
       </div></div>, document.body)}
 
       {editingUser && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setEditingUser(null)}><div className="admin-modal admin-user-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
-        <div className="admin-card-head"><h3>Edit User</h3><button type="button" onClick={() => setEditingUser(null)} className="admin-btn admin-btn--ghost">Close</button></div>
+        <div className="admin-card-head"><h3>Edit Student</h3><button type="button" onClick={() => setEditingUser(null)} className="admin-btn admin-btn--ghost">Close</button></div>
         <form className="admin-user-form" onSubmit={submitUpdateUser}>
           <AdminUserField label="First Name">
             <input type="text" placeholder="First name" value={userForm.first_name} onChange={e => setUserForm(p => ({ ...p, first_name: e.target.value }))} />
@@ -2128,8 +4442,14 @@ function AdminDashboardPage() {
           <AdminUserField label="Last Name">
             <input type="text" placeholder="Last name" value={userForm.last_name} onChange={e => setUserForm(p => ({ ...p, last_name: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Username" help="Unique public handle stored in profiles.username.">
-            <input type="text" placeholder="username" value={userForm.username} onChange={e => setUserForm(p => ({ ...p, username: e.target.value }))} />
+          <AdminUserField label="Student Number">
+            <input type="text" placeholder="Student number" value={userForm.student_number} onChange={e => setUserForm(p => ({ ...p, student_number: e.target.value }))} />
+          </AdminUserField>
+          <AdminUserField label="Section" help="Assigns this student to a teacher-handled section.">
+            <select value={userForm.section_id} onChange={e => setUserForm(p => ({ ...p, section_id: e.target.value }))}>
+              <option value="">No section</option>
+              {visibleSections.map(section => <option key={section.id} value={section.id}>{section.name}</option>)}
+            </select>
           </AdminUserField>
           <AdminUserField label="Journey Level" help="Current learning journey from 1 to 5.">
             <AdminLevelSelect label="Journey level" value={userForm.current_level} onChange={e => setUserForm(p => ({ ...p, current_level: e.target.value }))} />
@@ -2139,7 +4459,7 @@ function AdminDashboardPage() {
           </AdminUserField>
           <div className="admin-user-field admin-stage-progress-field">
             <span>Stage Progress</span>
-            <small>Admin tool for demos, sync recovery, and support. It marks stages complete using the same journey progress table learners use.</small>
+            <small>Teacher tool for demos, sync recovery, and support. It marks stages complete using the same journey progress table students use.</small>
             <div className="admin-stage-progress-panel">
               <label className="admin-stage-progress-control">
                 <span>Journey</span>
@@ -2184,14 +4504,14 @@ function AdminDashboardPage() {
             </div>
           </div>
           <div className="admin-modal-actions">
-            <button type="button" onClick={() => requestUserArchiveState(editingUser, !isDeletedProfile(editingUser))} className={`admin-btn ${isDeletedProfile(editingUser) ? 'admin-btn--ghost' : 'admin-btn--danger'}`}>{isDeletedProfile(editingUser) ? 'Restore User' : 'Delete User'}</button>
+            <button type="button" onClick={() => requestUserArchiveState(editingUser, !isDeletedProfile(editingUser))} className={`admin-btn ${isDeletedProfile(editingUser) ? 'admin-btn--ghost' : 'admin-btn--danger'}`}>{isDeletedProfile(editingUser) ? 'Restore Student' : 'Archive Student'}</button>
             <button type="submit" className="admin-btn admin-btn--primary" disabled={savingUser}>{savingUser ? 'Saving...' : 'Save Changes'}</button>
           </div>
         </form>
       </div></div>, document.body)}
 
       {editingAdmin && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setEditingAdmin(null)}><div className="admin-modal admin-user-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
-        <div className="admin-card-head"><h3>Edit Administrator</h3><button type="button" onClick={() => setEditingAdmin(null)} className="admin-btn admin-btn--ghost">Close</button></div>
+        <div className="admin-card-head"><h3>Edit Teacher</h3><button type="button" onClick={() => setEditingAdmin(null)} className="admin-btn admin-btn--ghost">Close</button></div>
         <form className="admin-user-form" onSubmit={submitUpdateAdmin}>
           <AdminUserField label="First Name">
             <input type="text" placeholder="First name" value={adminAccountForm.first_name} onChange={e => setAdminAccountForm(p => ({ ...p, first_name: e.target.value }))} />
@@ -2199,12 +4519,13 @@ function AdminDashboardPage() {
           <AdminUserField label="Last Name">
             <input type="text" placeholder="Last name" value={adminAccountForm.last_name} onChange={e => setAdminAccountForm(p => ({ ...p, last_name: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Username" help="Unique public handle stored in profiles.username.">
-            <input type="text" placeholder="admin_username" value={adminAccountForm.username} onChange={e => setAdminAccountForm(p => ({ ...p, username: e.target.value }))} />
-          </AdminUserField>
-          <AdminUserField label="Administrator Role" help="Controls admin dashboard permissions.">
-            <select value={adminAccountForm.role} onChange={e => setAdminAccountForm(p => ({ ...p, role: e.target.value }))}>
-              <option value="admin">Admin</option><option value="superadmin">Superadmin</option>
+          <AdminUserField label="Role">
+            <select
+              value={adminAccountForm.role === 'superadmin' ? 'superadmin' : adminAccountForm.access_role_id}
+              onChange={handleAdminAccountRoleChange}
+            >
+              {adminAccessRoles.map(roleTemplate => <option key={roleTemplate.id} value={roleTemplate.id}>{roleTemplate.name}</option>)}
+              <option value="superadmin">Program Chair</option>
             </select>
           </AdminUserField>
           <div className="admin-modal-actions">
@@ -2214,19 +4535,28 @@ function AdminDashboardPage() {
               className={`admin-btn ${isDeletedProfile(editingAdmin) ? 'admin-btn--ghost' : 'admin-btn--danger'}`}
               disabled={editingAdmin.id === currentAdminId}
             >
-              {isDeletedProfile(editingAdmin) ? 'Restore Admin' : 'Delete Admin'}
+              {isDeletedProfile(editingAdmin) ? 'Restore Teacher' : 'Archive Teacher'}
             </button>
             <button type="submit" className="admin-btn admin-btn--primary" disabled={creatingAdmin}>{creatingAdmin ? 'Saving...' : 'Save Changes'}</button>
           </div>
         </form>
       </div></div>, document.body)}
 
+      {pendingDeleteConfirmation && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setPendingDeleteConfirmation(null)}><div className="admin-modal admin-confirm-modal admin-warning-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+        <h3>{pendingDeleteConfirmation.title}</h3>
+        <p>{pendingDeleteConfirmation.message}</p>
+        <div className="admin-modal-actions">
+          <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setPendingDeleteConfirmation(null)}>Cancel</button>
+          <button type="button" className="admin-btn admin-btn--danger" onClick={confirmPendingDelete}>{pendingDeleteConfirmation.confirmLabel || 'Delete'}</button>
+        </div>
+      </div></div>, document.body)}
+
       {pendingArchiveUser && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setPendingArchiveUser(null)}><div className="admin-modal admin-confirm-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
-        <h3>Delete {isAdminProfile(pendingArchiveUser) ? 'Admin' : 'User'}?</h3>
-        <p>This will mark <strong>{getDisplayName(pendingArchiveUser, pendingArchiveUser.id)}</strong> as deleted. The profile row stays in the database and can be restored later.</p>
+        <h3>Archive {isAdminProfile(pendingArchiveUser) ? 'Teacher' : 'Student'}?</h3>
+        <p>This will mark <strong>{getDisplayName(pendingArchiveUser, pendingArchiveUser.id)}</strong> as archived. The profile row stays in the database and can be restored later.</p>
         <div className="admin-modal-actions">
           <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setPendingArchiveUser(null)}>Cancel</button>
-          <button type="button" className="admin-btn admin-btn--danger" onClick={confirmArchiveUser}>Delete {isAdminProfile(pendingArchiveUser) ? 'Admin' : 'User'}</button>
+          <button type="button" className="admin-btn admin-btn--danger" onClick={confirmArchiveUser}>Archive {isAdminProfile(pendingArchiveUser) ? 'Teacher' : 'Student'}</button>
         </div>
       </div></div>, document.body)}
 
@@ -2237,7 +4567,7 @@ function AdminDashboardPage() {
           <strong> {getDisplayName(pendingStageProgress.user, pendingStageProgress.user.id)}</strong> in Journey {pendingStageProgress.journey}, through Stage {pendingStageProgress.completeThroughStage}.
         </p>
         {pendingStageProgress.shouldAdvance && (
-          <p>This will also move the learner to Journey {pendingStageProgress.nextJourneyLevel}, making the completed journey trophy ready to claim.</p>
+          <p>This will also move the student to Journey {pendingStageProgress.nextJourneyLevel}, making the completed journey trophy ready to claim.</p>
         )}
         <div className="admin-modal-actions">
           <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setPendingStageProgress(null)} disabled={applyingStageProgress}>Cancel</button>
@@ -2310,7 +4640,7 @@ function AdminDashboardPage() {
       {pendingLevelAdd && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setPendingLevelAdd(null)}><div className="admin-modal admin-confirm-modal admin-warning-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
         <h3>Add Level {pendingLevelAdd}?</h3>
         <p>
-          This only adds Level {pendingLevelAdd} to the admin dropdown. Confirm that the database rules and learner content already support this level before saving activities to it.
+          This only adds Level {pendingLevelAdd} to the teacher dropdown. Confirm that the database rules and student content already support this level before saving activities to it.
         </p>
         <div className="admin-modal-actions">
           <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setPendingLevelAdd(null)}>Cancel</button>

@@ -2,7 +2,7 @@ import { createContext, useState, useEffect, useCallback, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
-import { supabase, ensureFreshAccessToken, isJwtExpiredError } from '../lib/supabase';
+import { supabase, ensureFreshAccessToken, isAuthSessionError, isJwtExpiredError } from '../lib/supabase';
 import { ENV } from '../config/env';
 import { ROUTES } from '../utils/constants';
 import { normalizeSpeakerPointsHistory } from '../utils/speakerPointsHistory';
@@ -22,6 +22,7 @@ const LOGIN_GUARD_RESET_WINDOW_MS = 24 * 60 * 60 * 1000;
 const GENERIC_LOGIN_FAILURE_MESSAGE = 'Wrong email or password.';
 const PROFILE_GUARD_TIMEOUT_MS = 2500;
 const PROFILE_CACHE_TTL_MS = 10_000;
+const SESSION_EXPIRED_MESSAGE = 'Your session expired. Please sign in again.';
 const NATIVE_AUTH_REDIRECT_URL = 'org.nationalu.bigkas://auth/callback';
 const NATIVE_AUTH_BRIDGE_URL = 'https://bigkas.site/auth/native-callback';
 const OAUTH_RETURN_PATH_KEY = 'bigkas_oauth_return_path_v1';
@@ -869,10 +870,12 @@ export function AuthProvider({ children }) {
     const request = (async () => {
       let { data: profile, error } = await selectProfile();
 
-      if (error && isJwtExpiredError(error)) {
-        const { session: fresh, error: refErr } = await ensureFreshAccessToken();
+      if (error && (isJwtExpiredError(error) || isAuthSessionError(error))) {
+        const { session: fresh, error: refErr } = await ensureFreshAccessToken(undefined, { force: true });
         if (!refErr && fresh) {
           ({ data: profile, error } = await selectProfile());
+        } else if (refErr) {
+          error = refErr;
         }
       }
 
@@ -910,6 +913,14 @@ export function AuthProvider({ children }) {
     }
 
     if (error) {
+      if (isAuthSessionError(error)) {
+        setError(SESSION_EXPIRED_MESSAGE);
+        setUser(null);
+        clearAdminSession();
+        profileRequestCache.delete(userId);
+        await supabase.auth.signOut({ scope: 'local' });
+        return { code: 'session_expired', message: SESSION_EXPIRED_MESSAGE };
+      }
       console.warn('Bigkas Auth: archived-profile check skipped:', error);
       return null;
     }
@@ -932,6 +943,15 @@ export function AuthProvider({ children }) {
       const { profile, error } = await loadSessionProfile(userId);
 
       if (error) {
+        if (isAuthSessionError(error)) {
+          console.warn('Bigkas Auth: stale session cleared after profile fetch failed:', error);
+          setError(SESSION_EXPIRED_MESSAGE);
+          setUser(null);
+          clearAdminSession();
+          profileRequestCache.delete(userId);
+          await supabase.auth.signOut({ scope: 'local' });
+          return;
+        }
         if (error.code !== 'PGRST116') { // PGRST116 is 'no rows found'
           console.error('Bigkas Auth: failed to fetch profile:', error);
           return;
@@ -1008,7 +1028,7 @@ export function AuthProvider({ children }) {
         getUserError
         && (getUserError.status === 401 || getUserError.status === 403)
       ) {
-        const { session: fresh, error: refErr } = await ensureFreshAccessToken();
+        const { session: fresh, error: refErr } = await ensureFreshAccessToken(undefined, { force: true });
         if (!refErr && fresh) {
           ({ data, error: getUserError } = await supabase.auth.getUser());
         }
@@ -1110,7 +1130,9 @@ export function AuthProvider({ children }) {
           const fatalRefresh =
             msg.includes('refresh token')
             || msg.includes('invalid')
-            || refreshErr.status === 400;
+            || refreshErr.status === 400
+            || refreshErr.status === 401
+            || refreshErr.status === 403;
           if (fatalRefresh) {
             await supabase.auth.signOut({ scope: 'local' });
             session = null;

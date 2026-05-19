@@ -1,26 +1,23 @@
-import Feature3DCard from '../../../components/common/Feature3DCard';
+import { IoChatbubbleEllipses, IoEye, IoMic } from 'react-icons/io5';
 
 const FEATURE_CARDS = [
   {
     tone: 'visual',
-    title: 'Visual',
-    imageUrl: 'https://assets.bigkas.site/Sprites/common/Visual.webp',
-    srcSet: 'https://assets.bigkas.site/Sprites/common/Visual.webp',
-    text: 'Uses computer vision to read your expressions, posture, and gestures. Bigkas helps your nonverbal signals match what you say so you look steady and intentional—not stiff or closed off.',
+    icon: IoEye,
+    title: 'Look steady',
+    text: 'Read posture, eye contact, and facial tension so your delivery feels intentional instead of frozen.',
   },
   {
     tone: 'vocal',
-    title: 'Vocal',
-    imageUrl: 'https://assets.bigkas.site/Sprites/common/Vocal.webp',
-    srcSet: 'https://assets.bigkas.site/Sprites/common/Vocal.webp',
-    text: 'Detects shakiness and uneven volume tied to anxiety. By tracking these acoustic cues, Bigkas steadies your pitch and loudness for a clearer, more grounded delivery.',
+    icon: IoMic,
+    title: 'Sound clear',
+    text: 'Track volume, pitch, and shakiness so your voice becomes easier to control with every run-through.',
   },
   {
     tone: 'verbal',
-    title: 'Verbal',
-    imageUrl: 'https://assets.bigkas.site/Sprites/common/Verbal.webp',
-    srcSet: 'https://assets.bigkas.site/Sprites/common/Verbal.webp',
-    text: 'Scores how clearly you pronounce words and phrases. You get specific feedback on sounds to tighten so listeners can follow you without strain.',
+    icon: IoChatbubbleEllipses,
+    title: 'Speak naturally',
+    text: 'Review pronunciation and pacing cues that help listeners follow your message without extra effort.',
   },
 ];
 
@@ -32,28 +29,33 @@ export default function LandingFeaturesSection({
   goToFeatureCard,
 }) {
   return (
-    <section id="features" className="features-section">
-      <div className="section-shell features-shell">
+    <section id="features" className="features-section lesson-features-section">
+      <div className="section-shell lesson-features-shell">
         <div className="features-heading">
-          <h2>The Anatomy of Confidence</h2>
-          <p className="features-subtitle">Three layers of feedback on how you look, sound, and speak.</p>
+          <h2>Three feedback lanes, one speaking goal.</h2>
+          <p className="features-subtitle">
+            Bigkas keeps the feedback focused, readable, and easy to act on after each short practice session.
+          </p>
         </div>
 
-        <div ref={featuresGridRef} className="confidence-grid features-reveal">
-          {FEATURE_CARDS.map((card, index) => (
-            <div
-              key={card.title}
-              className={`feature-card-item ${featureCardIndex === index ? 'is-mobile-active' : ''}`}
-            >
-              <Feature3DCard
-                tone={card.tone}
-                title={card.title}
-                text={card.text}
-                imageUrl={card.imageUrl}
-                srcSet={card.srcSet}
-              />
-            </div>
-          ))}
+        <div ref={featuresGridRef} className="confidence-grid features-reveal lesson-feature-grid">
+          {FEATURE_CARDS.map((card, index) => {
+            const Icon = card.icon;
+            return (
+              <article
+                key={card.title}
+                className={`lesson-feature-card lesson-feature-card--${card.tone} ${
+                  featureCardIndex === index ? 'is-mobile-active' : ''
+                }`}
+              >
+                <div className="lesson-feature-icon" aria-hidden="true">
+                  <Icon />
+                </div>
+                <h3>{card.title}</h3>
+                <p>{card.text}</p>
+              </article>
+            );
+          })}
         </div>
 
         <div className="features-mobile-controls" aria-label="Feature cards controls">

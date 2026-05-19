@@ -270,26 +270,35 @@ body.landing-page-active .figma-nav.nav-visible {
 }
 
 body.landing-page-active .figma-nav.nav-on-green-sections {
-  color: #ffffff;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  color: #111111;
 }
 
 body.landing-page-active .figma-nav.nav-on-green-sections .logo-text {
-  color: #ffffff;
+  color: #111111;
 }
 
 body.landing-page-active .figma-nav.nav-on-last-section {
-  color: #ffffff;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  color: var(--nav-navy);
 }
 
 body.landing-page-active .figma-nav.nav-on-last-section .logo-text {
-  color: #ffffff;
+  color: var(--nav-navy);
 }
 
 body.landing-page-active .figma-nav.nav-on-last-section .nav-link-btn {
-  color: #ffffff;
+  color: var(--nav-navy);
 }
 
-.figma-nav.nav-menu-black {
+body.landing-page-active .figma-nav.nav-menu-black {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
   color: #111111;
 }
 
@@ -386,7 +395,7 @@ body.landing-page-active .figma-nav.nav-on-green-sections.menu-open .nav-link-bt
 
 body.landing-page-active .figma-nav.nav-on-last-section.nav-theme-dark .nav-link-btn,
 body.landing-page-active .figma-nav.nav-on-last-section.menu-open .nav-link-btn {
-  color: #ffffff;
+  color: var(--nav-navy);
 }
 
 body.landing-page-active .figma-nav.nav-menu-black .sm-toggle {
@@ -534,16 +543,16 @@ body.landing-page-active .figma-nav.nav-on-green-sections .figma-nav-actions .na
   color: #ffffff !important;
 }
 
-/* Last section (e.g. CTA band): match section-2 nav CTAs — white primary label on white fill + forest; white outline Login */
+/* Last section: white CTA band uses dark nav text and the standard green action. */
 body.landing-page-active .figma-nav.nav-on-last-section .figma-nav-actions .nav-cta--primary.bigkas-btn.landing-btn--pill {
-  --btn-bg: #ffffff;
-  --btn-hover-bg: #f4f7f5;
-  --btn-text: #059669;
-  --btn-border: #ffffff;
-  --btn-glow: rgba(255, 255, 255, 0.35);
-  background: #ffffff !important;
+  --btn-bg: var(--brand-forest);
+  --btn-hover-bg: var(--brand-forest-hover);
+  --btn-text: #ffffff;
+  --btn-border: var(--brand-forest);
+  --btn-glow: rgba(5, 150, 105, 0.26);
+  background: var(--brand-forest) !important;
   border-width: 2px;
-  border-color: #ffffff;
+  border-color: var(--brand-forest);
   letter-spacing: -0.02em;
   text-transform: none;
   font-size: 15px;
@@ -551,25 +560,25 @@ body.landing-page-active .figma-nav.nav-on-last-section .figma-nav-actions .nav-
 
 body.landing-page-active .figma-nav.nav-on-last-section .figma-nav-actions .nav-cta--primary.bigkas-btn.landing-btn--pill:hover:not(:disabled) {
   background: var(--btn-hover-bg) !important;
-  border-color: #ffffff;
+  border-color: var(--brand-forest-hover);
 }
 
 body.landing-page-active .figma-nav.nav-on-last-section .figma-nav-actions .nav-cta--primary.bigkas-btn.landing-btn--pill .btn-content {
-  color: #059669 !important;
+  color: #ffffff !important;
 }
 
 body.landing-page-active .figma-nav.nav-on-last-section .figma-nav-actions .nav-cta--secondary.bigkas-btn.landing-btn--pill {
   --btn-bg: transparent;
-  --btn-hover-bg: rgba(255, 255, 255, 0.14);
-  --btn-text: #ffffff;
-  --btn-border: #ffffff;
-  --btn-glow: rgba(255, 255, 255, 0.22);
+  --btn-hover-bg: rgba(5, 150, 105, 0.06);
+  --btn-text: var(--nav-navy);
+  --btn-border: var(--brand-forest);
+  --btn-glow: rgba(5, 150, 105, 0.12);
   background: transparent !important;
   border-width: 2px;
 }
 
 body.landing-page-active .figma-nav.nav-on-last-section .figma-nav-actions .nav-cta--secondary.bigkas-btn.landing-btn--pill .btn-content {
-  color: #ffffff !important;
+  color: var(--nav-navy) !important;
 }
 
 .figma-burger {
@@ -1279,13 +1288,10 @@ body.landing-page-active .hero-actions .hero-cta--forest-outline.bigkas-btn.land
   display: none;
 }
 
-/* Section 5: Blank */
+/* Section 5: CTA */
 .section-five-section {
   position: relative;
-  background-image: url('../../assets/landing/GraduationSpeech.jpeg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  background: #ffffff;
   isolation: isolate;
   scroll-snap-align: start;
   height: 100dvh;
@@ -1295,49 +1301,119 @@ body.landing-page-active .hero-actions .hero-cta--forest-outline.bigkas-btn.land
 .section-five-section::before {
   content: '';
   position: absolute;
-  inset: 0;
-  background: #059669;
-  opacity: 0.64;
+  left: clamp(24px, 7vw, 120px);
+  right: clamp(24px, 7vw, 120px);
+  top: calc(var(--header-height) + 24px);
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(15, 48, 72, 0.18) 16%, rgba(15, 48, 72, 0.18) 84%, transparent 100%);
   z-index: 0;
 }
 
 .section-five-shell {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
   position: relative;
   z-index: 1;
+  padding: var(--header-height) 0 clamp(28px, 5vh, 56px);
 }
 
 .section-five-content {
-  width: min(92%, 760px);
-  text-align: center;
-  color: #ffffff;
+  width: min(100%, 1180px);
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(280px, 0.72fr);
+  align-items: center;
+  gap: clamp(36px, 7vw, 96px);
+  color: #0f3048;
+}
+
+.section-five-copy {
+  max-width: 740px;
 }
 
 .section-five-title {
   margin: 0;
-  color: #f18f01;
+  color: #0f3048;
   font-family: var(--font-display);
-  font-size: clamp(2rem, 3.2vw, 3.3rem);
+  font-size: clamp(2.55rem, 5vw, 5.45rem);
   font-weight: 900;
-  line-height: 1.1;
+  line-height: 0.98;
+  letter-spacing: 0;
+  text-wrap: balance;
 }
 
 .section-five-body {
-  margin: 18px auto 0;
-  width: min(100%, 690px);
-  color: rgba(255, 255, 255, 0.96);
+  margin: 22px 0 0;
+  width: min(100%, 620px);
+  color: #3c4952;
   font-family: var(--font-body);
-  font-size: clamp(0.95rem, 1.15vw, 1.28rem);
-  font-weight: 600;
-  line-height: 1.45;
+  font-size: clamp(1rem, 1.3vw, 1.28rem);
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: -0.2px;
 }
 
-.section-five-cta.bigkas-btn {
-  margin-top: 28px;
-  min-width: 126px;
-  max-width: 100%;
+.section-five-actions {
+  margin-top: 32px;
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 2vw, 16px);
+  flex-wrap: wrap;
+}
+
+.section-five-actions .section-five-cta {
+  width: auto;
+  flex: 0 1 auto;
+}
+
+.section-five-actions .section-five-cta button {
+  font-family: 'Fredoka', sans-serif !important;
+  font-size: clamp(0.85rem, 1.2vw, 1rem) !important;
+  font-weight: 500 !important;
+  height: clamp(48px, 5vh, 52px) !important;
+  border-radius: 999px !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  padding: 0 clamp(20px, 2.5vw, 32px) !important;
+  white-space: nowrap;
+}
+
+.section-five-practice-loop {
+  justify-self: end;
+  width: min(100%, 420px);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-top: 1px solid rgba(15, 48, 72, 0.16);
+  border-bottom: 1px solid rgba(15, 48, 72, 0.16);
+}
+
+.section-five-step {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  align-items: center;
+  min-height: 92px;
+  border-bottom: 1px solid rgba(15, 48, 72, 0.12);
+}
+
+.section-five-step:last-child {
+  border-bottom: 0;
+}
+
+.section-five-step-number {
+  color: #059669;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.section-five-step-text {
+  color: #0f3048;
+  font-family: var(--font-body);
+  font-size: clamp(1.1rem, 1.5vw, 1.45rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.24px;
 }
 
 .landing-footer {
@@ -1982,24 +2058,51 @@ body.landing-page-active .landing-btn--nav.landing-btn--pill.bigkas-btn {
 
   .section-five-shell {
     min-height: calc(100vh - 2.4rem);
-    padding: 1.2rem 0;
+    padding: calc(var(--header-height) + 1rem) 0 1.6rem;
     box-sizing: border-box;
   }
 
   .section-five-content {
     width: min(100%, 540px);
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    text-align: center;
   }
 
   .section-five-title {
-    font-size: 2rem;
+    font-size: clamp(2.45rem, 11vw, 3.55rem);
+    line-height: 0.98;
   }
 
   .section-five-body {
-    font-size: 0.75rem;
+    margin: 1rem auto 0;
+    font-size: 0.95rem;
   }
 
-  .section-five-cta {
-    min-width: min(100%, 320px);
+  .section-five-actions {
+    margin-top: 1.35rem;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .section-five-actions .section-five-cta,
+  .section-five-actions .section-five-cta button {
+    width: 100% !important;
+  }
+
+  .section-five-practice-loop {
+    justify-self: center;
+    width: min(100%, 360px);
+  }
+
+  .section-five-step {
+    grid-template-columns: 56px 1fr;
+    min-height: 72px;
+    text-align: left;
+  }
+
+  .section-five-step-text {
+    font-size: 1rem;
   }
 
   .landing-footer {

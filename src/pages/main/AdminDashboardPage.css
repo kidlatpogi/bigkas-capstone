@@ -426,6 +426,42 @@ body:has(.admin-dashboard-page) .main-content {
   min-width: 150px;
 }
 
+.admin-content-bulk-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border: 1px solid #e4edf6;
+  border-radius: 12px;
+  background: #f8fbfd;
+}
+
+.admin-content-bulk-panel h4 {
+  margin: 0 0 4px;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.admin-content-bulk-panel .admin-note {
+  margin: 0;
+}
+
+.admin-content-bulk-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+}
+
+.admin-content-bulk-actions .admin-btn {
+  min-width: 150px;
+}
+
 .admin-filters {
   display: flex;
   gap: 8px;

@@ -46,13 +46,35 @@ export function isJwtExpiredError(error) {
   return code === 'PGRST303' || msg.includes('jwt expired');
 }
 
+export function isAuthSessionError(error) {
+  if (!error) return false;
+  const status = Number(error.status || error.statusCode || 0);
+  const code = String(error.code || '');
+  const message = String(error.message || '').toLowerCase();
+  const details = String(error.details || '').toLowerCase();
+  const hint = String(error.hint || '').toLowerCase();
+  const text = `${message} ${details} ${hint}`;
+
+  return (
+    status === 401 ||
+    status === 403 ||
+    code === 'PGRST301' ||
+    code === 'PGRST302' ||
+    isJwtExpiredError(error) ||
+    text.includes('jwt') ||
+    text.includes('invalid token') ||
+    text.includes('invalid session') ||
+    text.includes('refresh token')
+  );
+}
+
 /**
  * Refresh the access token when it is missing, expired, or near expiry.
  * Use after idle periods or before REST calls that fail with JWT errors.
  *
  * @param {import('@supabase/supabase-js').Session | null | undefined} existingSession — optional session from getSession() to avoid an extra read
  */
-export async function ensureFreshAccessToken(existingSession) {
+export async function ensureFreshAccessToken(existingSession, options = {}) {
   let session = existingSession ?? null;
   if (!session) {
     const { data: { session: s }, error } = await supabase.auth.getSession();
@@ -63,7 +85,7 @@ export async function ensureFreshAccessToken(existingSession) {
 
   const exp = session.expires_at;
   const now = Math.floor(Date.now() / 1000);
-  const needsRefresh = !exp || exp <= now + SESSION_REFRESH_BUFFER_SEC;
+  const needsRefresh = Boolean(options.force) || !exp || exp <= now + SESSION_REFRESH_BUFFER_SEC;
 
   if (!needsRefresh) {
     return { session, refreshed: false };

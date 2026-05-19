@@ -3506,7 +3506,7 @@ function AdminDashboardPage() {
 
         {activePage === 'overview' && (
           <>
-            <section className="admin-grid admin-grid-3" aria-label="Management overview metrics">
+            <section className={`admin-grid ${isSuperadmin ? 'admin-grid-3' : 'admin-grid-2'}`} aria-label="Management overview metrics">
               <article className="admin-card admin-kpi-card">
                 <p className="admin-kpi-label">TOTAL STUDENTS</p>
                 <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : kpis.totalUsers}</p>
@@ -3530,11 +3530,13 @@ function AdminDashboardPage() {
                 <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : `${kpis.activeThisWeek} / ${kpis.inactiveThisWeek}`}</p>
                 <p className="admin-kpi-footer">{kpis.activeDeltaText}</p>
               </article>
-              <article className="admin-card admin-kpi-card">
-                <p className="admin-kpi-label">TEACHER COUNT</p>
-                <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : kpis.totalAdmins}</p>
-                <p className="admin-kpi-footer">{kpis.adminsDeltaText}</p>
-              </article>
+              {isSuperadmin && (
+                <article className="admin-card admin-kpi-card">
+                  <p className="admin-kpi-label">TEACHER COUNT</p>
+                  <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : kpis.totalAdmins}</p>
+                  <p className="admin-kpi-footer">{kpis.adminsDeltaText}</p>
+                </article>
+              )}
             </section>
             <section className="admin-grid admin-grid-2">
               <article className="admin-card"><h3>Student Registration</h3><div className="admin-chart-container">
@@ -3576,20 +3578,12 @@ function AdminDashboardPage() {
                   </select>
                   <small>{isSuperadmin ? 'Filter to one class section.' : 'Only assigned sections are available.'}</small>
                 </label>
-                <label>
-                  <span>Scope</span>
-                  <select className="admin-filter-select" value={isSuperadmin ? 'global' : 'assigned'} disabled>
-                    <option value="global">Global system</option>
-                    <option value="assigned">Assigned sections</option>
-                  </select>
-                  <small>Based on your current teacher role.</small>
-                </label>
               </div>
             </section>
 
             <section className="admin-grid admin-grid-1" aria-label="Analytics summary">
               <article className="admin-card admin-kpi-card">
-                <p className="admin-kpi-label">STUDENTS ANALYZED</p>
+                <p className="admin-kpi-label">STUDENTS IN VIEW</p>
                 <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : analyticsKpis.students}</p>
                 <p className="admin-kpi-footer">{analyticsSpeakerLevelFilter === 'all' ? 'All speaker levels' : `Speaker Level ${analyticsSpeakerLevelFilter}`}</p>
               </article>
@@ -4008,6 +4002,22 @@ function AdminDashboardPage() {
                   {canCreateCurrentContent && <button onClick={() => setCreatingContent(true)} className="admin-btn admin-btn--primary">Add New</button>}
                 </div>
               </div>
+              {canCreateCurrentContent && (
+                <div className="admin-content-bulk-panel" aria-label={`${contentTab === 'activities' ? 'Activity' : 'Module'} bulk upload setup`}>
+                  <div>
+                    <h4>{contentTab === 'activities' ? 'Bulk Activity Upload' : 'Bulk Module Upload'}</h4>
+                    <p className="admin-note">
+                      {contentTab === 'activities'
+                        ? 'Prepare an Excel/CSV upload for activity rows across journeys, stages, titles, objectives, skill focus, and passing scores.'
+                        : 'Prepare an Excel/CSV upload for module rows across journeys, lesson order, titles, and lesson content.'}
+                    </p>
+                  </div>
+                  <div className="admin-content-bulk-actions">
+                    <button type="button" className="admin-btn admin-btn--ghost" disabled>Choose File</button>
+                    <button type="button" className="admin-btn admin-btn--primary" disabled>Preview Upload</button>
+                  </div>
+                </div>
+              )}
               <div className="admin-table-wrap"><table className="admin-table">
                 <thead><tr><th>Order/Lvl</th><th>Title</th><th>Created</th><th>Actions</th></tr></thead>
                 <tbody>{paginatedContentItems.map(item => <tr key={item.id}><td>{contentTab === 'activities' ? item.activity_order : item.level_number}</td><td><strong>{item.title}</strong></td><td>{new Date(item.created_at).toLocaleDateString()}</td><td className="admin-actions-cell">{canUpdateCurrentContent && <button onClick={() => setEditingContent(item)} className="admin-action-btn"><HiOutlinePencilSquare /></button>}{canDeleteCurrentContent && <button onClick={() => requestDeleteContent(item, contentTab)} className="admin-action-btn is-delete"><HiOutlineTrash /></button>}</td></tr>)}</tbody>

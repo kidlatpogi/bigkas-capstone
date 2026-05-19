@@ -45,8 +45,7 @@ export default function LandingFooterSection({ navigateTo, onScrollToSection }) 
               <h4 className="footer-logo-text">Bigkas</h4>
             </div>
             <p>
-              Build your speaking skills in a safe space that
-              gives instant feedback on how you perform.
+              A private speaking practice path with clear feedback, friendly guidance, and room to try again.
             </p>
             <Button
               variant="ink"
@@ -60,9 +59,8 @@ export default function LandingFooterSection({ navigateTo, onScrollToSection }) 
           <div className="landing-footer-links">
             <div className="landing-footer-col">
               <h5>Site Map</h5>
-              <button type="button" onClick={() => onScrollToSection('how-it-works')}>How It Works</button>
               <button type="button" onClick={() => onScrollToSection('features')}>Features</button>
-              <button type="button" onClick={() => onScrollToSection('science')}>The Science</button>
+              <button type="button" onClick={() => onScrollToSection('section-5')}>Get Started</button>
             </div>
 
             <div className="landing-footer-col">
@@ -80,7 +78,7 @@ export default function LandingFooterSection({ navigateTo, onScrollToSection }) 
         </div>
 
         <div className="landing-footer-bottom">
-          <p>©2026 Bigkas. Built for better speaking</p>
+          <p>(c) 2026 Bigkas. Built for better speaking.</p>
         </div>
       </footer>
       <LegalModal

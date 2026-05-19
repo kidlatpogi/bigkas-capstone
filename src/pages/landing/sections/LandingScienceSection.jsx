@@ -1,104 +1,110 @@
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { IoAnalytics, IoBarChart, IoFlask, IoPulse, IoShieldCheckmark, IoInfinite } from 'react-icons/io5';
-import ShapeGrid from '../../../components/common/ShapeGrid';
-import { getSpriteUrl } from '../../../utils/assetUtils';
+import { motion } from 'framer-motion';
+import { IoAnalytics, IoCheckmarkCircle, IoEye, IoMic, IoPulse } from 'react-icons/io5';
+import b01Mascot from '../../../assets/Sprites/Robot/0001.webp';
+
+const sciencePoints = [
+  {
+    icon: IoPulse,
+    label: 'Voice',
+    title: 'Steadier sound',
+    text: 'Pitch, loudness, and pauses become easy-to-read signals.',
+  },
+  {
+    icon: IoEye,
+    label: 'Presence',
+    title: 'Cleaner delivery',
+    text: 'Posture and eye contact cues connect to how confident you appear.',
+  },
+  {
+    icon: IoMic,
+    label: 'Pacing',
+    title: 'Less rushing',
+    text: 'You see where the run needs more breath, clarity, or control.',
+  },
+];
 
 export default function LandingScienceSection() {
-  const robotAnalyst = getSpriteUrl('Robot/0002.webp');
-
   return (
-    <section id="science" className="science-section-premium">
-      <div className="science-aurora"></div>
-      
-      <ShapeGrid
-        direction="diagonal"
-        speed={0.2}
-        borderColor="rgba(5, 150, 105, 0.1)"
-        squareSize={100}
-        hoverFillColor="rgba(5, 150, 105, 0.05)"
-        shape="square"
-        className="science-grid-bg"
-      />
-      
-      <div className="section-shell science-shell-premium">
+    <section id="science" className="science-section-premium b01-science-section">
+      <div className="section-shell b01-science-shell">
         <div className="science-copy-center">
-          <motion.div 
-            className="premium-tag"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <IoFlask /> <span>Precision Methodology</span>
-          </motion.div>
-
-          <motion.h2 
+          <motion.h2
             className="premium-title"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
           >
-            The Science of <span>Self-Assurance</span>
+            Real signals, friendly nudges.
           </motion.h2>
 
-          <motion.p 
+          <motion.p
             className="premium-subtitle"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.08 }}
           >
-            Bigkas isn't just a tool; it's a diagnostic instrument. We bridge the gap between social anxiety and articulate communication through validated biometric analysis.
+            Bigkas reads the messy parts of practice, then turns them into clear next moves. B-01 keeps the science from
+            feeling like a report card.
           </motion.p>
+
+          <motion.div
+            className="science-wave-card"
+            initial={{ opacity: 0, y: 18 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.16 }}
+            aria-label="Example practice signal"
+          >
+            <div className="science-wave-bars" aria-hidden="true">
+              {[42, 70, 34, 88, 54, 76, 40, 64, 50, 82, 38, 58].map((height, index) => (
+                <span key={index} style={{ '--bar-height': `${height}%` }} />
+              ))}
+            </div>
+            <div>
+              <strong>One run becomes a clearer next round.</strong>
+              <p>Volume, pauses, face cues, and pacing are translated into plain-language feedback.</p>
+            </div>
+          </motion.div>
         </div>
 
-        <div className="holographic-display">
-          {/* Central Character */}
-          <motion.div 
-            className="robot-hero-wrap"
-            initial={{ opacity: 0, scale: 0.8 }}
+        <div className="science-lab-board science-signal-board">
+          <motion.div
+            className="science-mascot-card science-mascot-card--signal"
+            initial={{ opacity: 0, scale: 0.94 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            transition={{ duration: 1, ease: "easeOut" }}
           >
-            <div className="robot-aura"></div>
-            <img 
-              src={robotAnalyst} 
-              srcSet={robotAnalyst.replace('.webp', '.png')}
-              alt="B-01 Analyst" 
-              className="robot-hero-img" 
-              loading="lazy"
-            />
-            
-            {/* Pulsing Data Waves */}
-            <div className="data-wave wave-1"></div>
-            <div className="data-wave wave-2"></div>
+            <img src={b01Mascot} alt="B-01 reviewing feedback" className="science-b01-img" loading="lazy" />
+            <div className="science-check-pill">
+              <IoCheckmarkCircle />
+              Try this line slower
+            </div>
           </motion.div>
 
-          {/* Floating Glass Cards */}
-          <div className="floating-cards-container">
-            {[
-              { icon: <IoPulse />, title: "Biometric Scans", desc: "Analyzing vocal micro-fluctuations.", pos: "top-left" },
-              { icon: <IoAnalytics />, title: "Linguistic Depth", desc: "Measuring syntax and fluency.", pos: "top-right" },
-              { icon: <IoShieldCheckmark />, title: "Validated Data", desc: "Based on speech research.", pos: "bottom-left" },
-              { icon: <IoInfinite />, title: "Adaptive Path", desc: "Journey shifts with your growth.", pos: "bottom-right" }
-            ].map((card, i) => (
-              <motion.div 
-                key={i}
-                className={`glass-feature-card ${card.pos}`}
-                initial={{ opacity: 0, x: card.pos.includes('left') ? -30 : 30, y: card.pos.includes('top') ? -30 : 30 }}
-                whileInView={{ opacity: 1, x: 0, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.4 + (i * 0.15), duration: 0.6 }}
-                whileHover={{ y: -10, scale: 1.02 }}
-              >
-                <div className="glass-card-icon">{card.icon}</div>
-                <div className="glass-card-content">
-                  <h4>{card.title}</h4>
-                  <p>{card.desc}</p>
-                </div>
-              </motion.div>
-            ))}
+          <div className="science-point-list science-signal-list">
+            {sciencePoints.map((point, index) => {
+              const Icon = point.icon;
+              return (
+                <motion.article
+                  key={point.title}
+                  className="science-point-card"
+                  initial={{ opacity: 0, x: 24 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.08 }}
+                >
+                  <span className="science-point-label">{point.label}</span>
+                  <div className="science-point-icon" aria-hidden="true">
+                    <Icon />
+                  </div>
+                  <div>
+                    <h3>{point.title}</h3>
+                    <p>{point.text}</p>
+                  </div>
+                </motion.article>
+              );
+            })}
           </div>
         </div>
       </div>

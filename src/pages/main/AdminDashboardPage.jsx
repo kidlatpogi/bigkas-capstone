@@ -1058,13 +1058,11 @@ function mergeSectionStudentRows(...sources) {
   return Array.from(map.values());
 }
 
-function AdminUserField({ label, help, reserveHelp = false, children }) {
-  const shouldReserveHelp = help || reserveHelp;
-
+function AdminUserField({ label, help, children }) {
   return (
     <label className="admin-user-field">
       <span>{label}</span>
-      {shouldReserveHelp && <small className={help ? undefined : 'is-placeholder'} aria-hidden={!help}>{help || ' '}</small>}
+      {help && <small>{help}</small>}
       {children}
     </label>
   );
@@ -4391,36 +4389,42 @@ function AdminDashboardPage() {
       </div></div>, document.body)}
 
       {creatingUser && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setCreatingUser(false)}><div className="admin-modal admin-user-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
-        <div className="admin-card-head"><h3>Create Student</h3><button type="button" onClick={() => setCreatingUser(false)} className="admin-btn admin-btn--ghost">Close</button></div>
-        <form className="admin-user-form admin-user-form--student-create" onSubmit={submitCreateUser}>
-          <AdminUserField label="Email" help="Login email used for the Supabase auth account." reserveHelp>
+        <div className="admin-card-head">
+          <div>
+            <h3>Create Student</h3>
+            <p className="admin-modal-subtitle admin-student-create-note">Email is used for login. Password must be at least 8 characters with uppercase, lowercase, and a number.</p>
+          </div>
+          <button type="button" onClick={() => setCreatingUser(false)} className="admin-btn admin-btn--ghost">Close</button>
+        </div>
+        <form className="admin-user-form" onSubmit={submitCreateUser}>
+          <AdminUserField label="Email">
             <input type="email" required placeholder="student@email.com" value={userForm.email} onChange={e => setUserForm(p => ({ ...p, email: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Student Number" reserveHelp>
+          <AdminUserField label="Student Number">
             <input type="text" placeholder="Student number" value={userForm.student_number} onChange={e => setUserForm(p => ({ ...p, student_number: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Section" help="Assigns this student to a teacher-handled section." reserveHelp>
+          <AdminUserField label="Section">
             <select value={userForm.section_id} onChange={e => setUserForm(p => ({ ...p, section_id: e.target.value }))}>
               <option value="">No section</option>
               {visibleSections.map(section => <option key={section.id} value={section.id}>{section.name}</option>)}
             </select>
           </AdminUserField>
-          <AdminUserField label="First Name" reserveHelp>
+          <AdminUserField label="First Name">
             <input type="text" placeholder="First name" value={userForm.first_name} onChange={e => setUserForm(p => ({ ...p, first_name: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Last Name" reserveHelp>
+          <AdminUserField label="Last Name">
             <input type="text" placeholder="Last name" value={userForm.last_name} onChange={e => setUserForm(p => ({ ...p, last_name: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Password" help="At least 8 characters with uppercase, lowercase, and a number." reserveHelp>
+          <AdminUserField label="Password">
             <AdminPasswordInput placeholder="Password" value={userForm.password} onChange={e => setUserForm(p => ({ ...p, password: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Confirm Password" help="Must match the password above." reserveHelp>
+          <AdminUserField label="Confirm Password">
             <AdminPasswordInput placeholder="Confirm password" value={userForm.confirm_password} onChange={e => setUserForm(p => ({ ...p, confirm_password: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Journey Level" help="Current learning journey from 1 to 5." reserveHelp>
+          <AdminUserField label="Journey Level">
             <AdminLevelSelect label="Journey level" value={userForm.current_level} onChange={e => setUserForm(p => ({ ...p, current_level: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Speaker Level" help="Speaking proficiency level from 1 to 5." reserveHelp>
+          <AdminUserField label="Speaker Level">
             <AdminLevelSelect label="Speaker level" value={userForm.speaker_level} onChange={e => setUserForm(p => ({ ...p, speaker_level: e.target.value }))} />
           </AdminUserField>
           <div className="admin-modal-actions admin-modal-actions--end">

@@ -2357,6 +2357,42 @@ body:has(.admin-dashboard-page) .main-content {
   outline: none;
 }
 
+.admin-user-form .admin-password-control {
+  border: 1px solid #d7e0e8;
+  border-radius: 12px;
+  background: #f8fafc;
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.admin-user-form .admin-password-control input {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.admin-user-form .admin-password-control input:focus {
+  box-shadow: none;
+  background: transparent;
+}
+
+.admin-user-form .admin-password-control button {
+  border: 0;
+  border-left: 1px solid #d7e0e8;
+  border-radius: 0;
+}
+
+.admin-user-form .admin-password-control:focus-within {
+  border-color: #10B981;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+  background: #ffffff;
+}
+
+.admin-user-form .admin-password-control:focus-within button {
+  border-color: #10B981;
+  box-shadow: none;
+}
+
 .admin-stage-progress-field {
   grid-column: 1 / -1;
 }

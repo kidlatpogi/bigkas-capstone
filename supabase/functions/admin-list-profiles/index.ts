@@ -76,5 +76,30 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: profilesError.message }, 400);
   }
 
-  return jsonResponse({ profiles: profiles || [] });
+  const authUsersById = new Map<string, string>();
+  const perPage = 1000;
+  let page = 1;
+
+  for (;;) {
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
+
+    if (authError) {
+      return jsonResponse({ error: authError.message }, 400);
+    }
+
+    const authUsers = authData?.users || [];
+    authUsers.forEach((authUser) => {
+      authUsersById.set(authUser.id, authUser.email || '');
+    });
+
+    if (authUsers.length < perPage) break;
+    page += 1;
+  }
+
+  const enrichedProfiles = (profiles || []).map((profile) => ({
+    ...profile,
+    email: authUsersById.get(profile.id) || null,
+  }));
+
+  return jsonResponse({ profiles: enrichedProfiles });
 });

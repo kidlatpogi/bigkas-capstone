@@ -1,18 +1,54 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { isValidEmail, validatePassword } from '../../utils/validators';
 import { ROUTES } from '../../utils/constants';
 import PasswordToggle from '../../components/common/PasswordToggle';
 import PushButton from '../../components/common/PushButton';
-import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
-import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
+import { LazyMotion, domAnimation, motion as Motion, AnimatePresence } from 'framer-motion';
 import './ForgotPasswordPage.css';
 
 import ForgotPasswordPageMobile from './ForgotPasswordPageMobile';
 
 const robotImgUrl = "https://assets.bigkas.site/Sprites/Robot/0001.webp";
 const bigkasLogoUrl = "https://assets.bigkas.site/Images/Bigkas-Logo.webp";
+const LEGACY_LOGIN_LOCKOUT_UNTIL_KEY = 'bigkas_login_lockout_until';
+const LOGIN_LOCKED_ACCOUNTS_KEY = 'bigkas_login_locked_accounts';
+const LOGIN_FAILED_ATTEMPTS_KEY = 'bigkas_login_failed_attempts';
+const LOGIN_GUARD_PREFIX = 'bigkas_login_guard_v1';
+
+function normalizeLoginEmail(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function readLoginStorageMap(key) {
+  try {
+    const rawValue = window.localStorage.getItem(key);
+    if (!rawValue) return {};
+    const parsedValue = JSON.parse(rawValue);
+    return parsedValue && typeof parsedValue === 'object' ? parsedValue : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeLoginStorageMap(key, value) {
+  window.localStorage.setItem(key, JSON.stringify(value));
+}
+
+function clearStoredLoginLock(email) {
+  const normalizedEmail = normalizeLoginEmail(email);
+  if (!normalizedEmail) return;
+
+  const lockedAccounts = readLoginStorageMap(LOGIN_LOCKED_ACCOUNTS_KEY);
+  const failedAttempts = readLoginStorageMap(LOGIN_FAILED_ATTEMPTS_KEY);
+  delete lockedAccounts[normalizedEmail];
+  delete failedAttempts[normalizedEmail];
+  writeLoginStorageMap(LOGIN_LOCKED_ACCOUNTS_KEY, lockedAccounts);
+  writeLoginStorageMap(LOGIN_FAILED_ATTEMPTS_KEY, failedAttempts);
+  window.localStorage.removeItem(`${LOGIN_GUARD_PREFIX}:user:${normalizedEmail}`);
+  window.localStorage.removeItem(LEGACY_LOGIN_LOCKOUT_UNTIL_KEY);
+}
 
 // Module-level preloading for LCP optimization
 if (typeof window !== 'undefined') {
@@ -78,7 +114,7 @@ function ForgotPasswordPageDesktop({
     <LazyMotion features={domAnimation}>
       <div ref={layoutRef} className="auth-page-v2" data-layout={layoutMode}>
         <div className="auth-container">
-          <m.div
+          <Motion.div
             className="auth-card"
             variants={containerVariants}
             initial="hidden"
@@ -86,13 +122,13 @@ function ForgotPasswordPageDesktop({
           >
             <div className="auth-visual-side">
               <div className="auth-brand-logo">
-                <img 
-                  src={bigkasLogoUrl} 
-                  alt="Bigkas" 
-                  className="auth-logo-img" 
-                  width="48" 
-                  height="48" 
-                  loading="eager" 
+                <img
+                  src={bigkasLogoUrl}
+                  alt="Bigkas"
+                  className="auth-logo-img"
+                  width="48"
+                  height="48"
+                  loading="eager"
                   fetchpriority="high"
                 />
                 <span>Bigkas</span>
@@ -100,10 +136,10 @@ function ForgotPasswordPageDesktop({
               <div className="auth-visual-content">
                 <div className="auth-robot-img-wrap">
                   <div className="auth-robot-glow" />
-                  <img 
-                    src={robotImgUrl} 
-                    alt="AI Companion" 
-                    className="auth-robot-img" 
+                  <img
+                    src={robotImgUrl}
+                    alt="AI Companion"
+                    className="auth-robot-img"
                     fetchpriority="high"
                     loading="eager"
                     width="460"
@@ -112,7 +148,7 @@ function ForgotPasswordPageDesktop({
                 </div>
 
                 {insightWords.map((word, i) => (
-                  <m.div 
+                  <Motion.div
                     key={i}
                     className="insight-chip"
                     style={{ top: word.top, left: word.left, fontSize: word.size, opacity: word.opacity }}
@@ -120,34 +156,34 @@ function ForgotPasswordPageDesktop({
                     transition={{ duration: 6 + (i % 4), repeat: Infinity, delay: word.delay, ease: "easeInOut" }}
                   >
                     {word.text}
-                  </m.div>
+                  </Motion.div>
                 ))}
 
-                <m.h2 variants={itemVariants} className="auth-hero-tagline">
+                <Motion.h2 variants={itemVariants} className="auth-hero-tagline">
                   Master <span>Public Speaking</span>
-                </m.h2>
-                <m.p variants={itemVariants} className="auth-hero-desc">
+                </Motion.h2>
+                <Motion.p variants={itemVariants} className="auth-hero-desc">
                   Recovery journey starts here. Let's get you back in.
-                </m.p>
+                </Motion.p>
               </div>
             </div>
 
             <div className="auth-form-side">
               <div className="auth-form-inner">
-                <m.h1 variants={itemVariants} className="auth-form-headline">
+                <Motion.h1 variants={itemVariants} className="auth-form-headline">
                   {isDoneStep ? 'Success!' : 'Forgot Password'}
-                </m.h1>
-                <m.p variants={itemVariants} className="auth-form-subline">
+                </Motion.h1>
+                <Motion.p variants={itemVariants} className="auth-form-subline">
                   {isRequestStep && 'Enter your email to receive a reset code.'}
                   {isVerifyStep && 'We sent a 6-digit code to your email.'}
                   {isResetStep && 'Create a strong new password.'}
                   {isDoneStep && 'Your password has been updated.'}
-                </m.p>
+                </Motion.p>
 
                 <form className="auth-form" onSubmit={handleSubmit}>
                   <AnimatePresence mode="wait">
                     {(error || infoMessage) && !isDoneStep && (
-                      <m.div 
+                      <Motion.div
                         key={error ? 'err' : 'info'}
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
@@ -155,12 +191,12 @@ function ForgotPasswordPageDesktop({
                         className={`auth-status-banner ${error ? 'is-error' : 'is-success'}`}
                       >
                         {error || infoMessage}
-                      </m.div>
+                      </Motion.div>
                     )}
                   </AnimatePresence>
 
                   {isRequestStep && (
-                    <m.div variants={itemVariants} className="form-group-v2">
+                    <Motion.div variants={itemVariants} className="form-group-v2">
                       <label>Email Address</label>
                       <div className="input-field-wrap">
                         <input
@@ -172,11 +208,11 @@ function ForgotPasswordPageDesktop({
                           autoFocus
                         />
                       </div>
-                    </m.div>
+                    </Motion.div>
                   )}
 
                   {isVerifyStep && (
-                    <m.div variants={itemVariants} className="form-group-v2">
+                    <Motion.div variants={itemVariants} className="form-group-v2">
                       <label>6-Digit Code</label>
                       <div className="otp-container-v2">
                         {digits.map((digit, i) => (
@@ -200,12 +236,12 @@ function ForgotPasswordPageDesktop({
                           <button type="button" className="resend-link-v2" onClick={handleRequestCode}>Resend Code</button>
                         )}
                       </div>
-                    </m.div>
+                    </Motion.div>
                   )}
 
                   {isResetStep && (
                     <>
-                      <m.div variants={itemVariants} className="form-group-v2">
+                      <Motion.div variants={itemVariants} className="form-group-v2">
                         <label>New Password</label>
                         <div className="input-field-wrap">
                           <input
@@ -224,8 +260,8 @@ function ForgotPasswordPageDesktop({
                             <span style={{ color: strengthColor }}>{strengthLabel}</span>
                           </div>
                         )}
-                      </m.div>
-                      <m.div variants={itemVariants} className="form-group-v2">
+                      </Motion.div>
+                      <Motion.div variants={itemVariants} className="form-group-v2">
                         <label>Confirm Password</label>
                         <div className="input-field-wrap">
                           <input
@@ -236,35 +272,40 @@ function ForgotPasswordPageDesktop({
                           />
                           <PasswordToggle isVisible={showConfirm} onToggle={() => setShowConfirm(!showConfirm)} />
                         </div>
-                      </m.div>
+                      </Motion.div>
                     </>
                   )}
 
                   {!isDoneStep && (
-                    <m.div variants={itemVariants} className="form-actions-v2">
+                    <Motion.div variants={itemVariants} className="form-actions-v2">
                       <PushButton type="submit" disabled={isLoading} bgColor="#059669" shadowColor="#047857">
                         {isLoading ? <span className="loading-spinner" /> : (
                           isRequestStep ? 'Send Code' : isVerifyStep ? 'Verify Code' : 'Reset Password'
                         )}
                       </PushButton>
-                    </m.div>
+                    </Motion.div>
                   )}
 
                   {isDoneStep && (
-                    <m.div variants={itemVariants} className="form-actions-v2">
-                      <PushButton type="button" onClick={() => navigate(ROUTES.LOGIN)} bgColor="#059669" shadowColor="#047857">
+                    <Motion.div variants={itemVariants} className="form-actions-v2">
+                      <PushButton
+                        type="button"
+                        onClick={() => navigate(ROUTES.LOGIN, { state: { passwordResetEmail: email } })}
+                        bgColor="#059669"
+                        shadowColor="#047857"
+                      >
                         Back to Login
                       </PushButton>
-                    </m.div>
+                    </Motion.div>
                   )}
 
-                  <m.div variants={itemVariants} className="signup-prompt-v2">
+                  <Motion.div variants={itemVariants} className="signup-prompt-v2">
                     <Link to={ROUTES.LOGIN}>Return to Login</Link>
-                  </m.div>
+                  </Motion.div>
                 </form>
               </div>
             </div>
-          </m.div>
+          </Motion.div>
         </div>
       </div>
     </LazyMotion>
@@ -274,15 +315,16 @@ function ForgotPasswordPageDesktop({
 function ForgotPasswordPage({ managePageClass = true }) {
   const layoutRef = useRef(null);
   const navigate = useNavigate();
-  
-  const [email, setEmail] = useState('');
+  const location = useLocation();
+
+  const [email, setEmail] = useState(() => String(location.state?.email || ''));
   const [digits, setDigits] = useState(Array(OTP_LENGTH).fill(''));
   const inputRefs = useRef([]);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  
+
   const [error, setError] = useState(null);
   const [infoMessage, setInfoMessage] = useState('');
   const [step, setStep] = useState('request'); // request | verify | reset | done
@@ -293,7 +335,6 @@ function ForgotPasswordPage({ managePageClass = true }) {
   const isRequestStep = step === 'request';
   const isVerifyStep = step === 'verify';
   const isResetStep = step === 'reset';
-  const isDoneStep = step === 'done';
 
   useEffect(() => {
     if (managePageClass) {
@@ -440,6 +481,7 @@ function ForgotPasswordPage({ managePageClass = true }) {
       return;
     }
     await supabase.auth.signOut();
+    clearStoredLoginLock(email);
     setIsLoading(false);
     setStep('done');
   };
@@ -485,5 +527,4 @@ function mapOtpError(error) {
   if (msg.includes('invalid') || msg.includes('incorrect')) return 'Incorrect code. Please check again.';
   return error.message || 'Verification failed.';
 }
-
 export default ForgotPasswordPage;

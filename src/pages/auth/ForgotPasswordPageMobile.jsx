@@ -1,6 +1,5 @@
-import { useRef, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
-import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
+import { LazyMotion, domAnimation, motion as Motion, AnimatePresence } from 'framer-motion';
 import { ROUTES } from '../../utils/constants';
 import './ForgotPasswordPageMobile.css';
 
@@ -48,11 +47,6 @@ function ForgotPasswordPageMobile({
   const isResetStep = step === 'reset';
   const isDoneStep = step === 'done';
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 15 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
-  };
-
   return (
     <LazyMotion features={domAnimation}>
       <div className="auth-mobile-page">
@@ -63,7 +57,7 @@ function ForgotPasswordPageMobile({
         {/* 1. Background Visuals Layer */}
         <div className="auth-mobile-visual-bg">
           <div className="auth-mobile-header-accent" />
-          
+
           <div className="auth-mobile-visual-content">
             <div className="auth-mobile-hero-text">
               <h2>Account <span>Recovery</span></h2>
@@ -73,12 +67,12 @@ function ForgotPasswordPageMobile({
 
           {/* Floating Insight Words in BG */}
           {INSIGHT_WORDS.map((word, i) => (
-            <div 
+            <div
               key={i}
               className="insight-chip-bg"
-              style={{ 
-                top: word.top, 
-                left: word.left, 
+              style={{
+                top: word.top,
+                left: word.left,
                 fontSize: word.size,
                 opacity: word.opacity,
                 animationDelay: `${word.delay}s`
@@ -91,12 +85,12 @@ function ForgotPasswordPageMobile({
 
         {/* 2. Upper Left Brand Logo */}
         <div className="auth-brand-logo-mobile">
-          <img 
-            src={bigkasLogo} 
-            alt="Bigkas Logo" 
-            width="32" 
-            height="32" 
-            fetchPriority="high" 
+          <img
+            src={bigkasLogo}
+            alt="Bigkas Logo"
+            width="32"
+            height="32"
+            fetchPriority="high"
             loading="eager"
           />
           <span>Bigkas</span>
@@ -118,7 +112,7 @@ function ForgotPasswordPageMobile({
             <form className="auth-form" onSubmit={handleSubmit}>
               <AnimatePresence mode="wait">
                 {(error || infoMessage) && !isDoneStep && (
-                  <m.div 
+                  <Motion.div
                     key={error ? 'err' : 'info'}
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
@@ -126,7 +120,7 @@ function ForgotPasswordPageMobile({
                     className={`auth-status-banner-mobile ${error ? 'is-error' : 'is-success'}`}
                   >
                     {error || infoMessage}
-                  </m.div>
+                  </Motion.div>
                 )}
               </AnimatePresence>
 
@@ -169,9 +163,9 @@ function ForgotPasswordPageMobile({
                     {resendCooldown > 0 ? (
                       <span className="resend-timer-mobile">Resend in {resendCooldown}s</span>
                     ) : (
-                      <button 
-                        type="button" 
-                        className="resend-link-mobile" 
+                      <button
+                        type="button"
+                        className="resend-link-mobile"
                         onClick={handleRequestCode}
                         aria-label="Resend verification code"
                       >
@@ -235,7 +229,12 @@ function ForgotPasswordPageMobile({
 
               {isDoneStep && (
                 <div className="mobile-action-btn">
-                  <PushButton type="button" onClick={() => navigate(ROUTES.LOGIN)} bgColor="#047857" shadowColor="#065f46">
+                  <PushButton
+                    type="button"
+                    onClick={() => navigate(ROUTES.LOGIN, { state: { passwordResetEmail: email } })}
+                    bgColor="#047857"
+                    shadowColor="#065f46"
+                  >
                     BACK TO LOGIN
                   </PushButton>
                 </div>

@@ -14,14 +14,13 @@ const PasswordToggle = lazy(() => import('../../components/common/PasswordToggle
 
 const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 
-const LOGIN_LOCKOUT_UNTIL_KEY = 'bigkas_login_lockout_until';
-const LOGIN_LOCKOUT_SECONDS = 30;
-
-function normalizeLockoutSeconds(value) {
-  const seconds = Math.ceil(Number(value) || 0);
-  if (!Number.isFinite(seconds) || seconds <= 0) return 0;
-  return Math.min(LOGIN_LOCKOUT_SECONDS, seconds);
-}
+const LEGACY_LOGIN_LOCKOUT_UNTIL_KEY = 'bigkas_login_lockout_until';
+const LOGIN_LOCKED_ACCOUNTS_KEY = 'bigkas_login_locked_accounts';
+const LOGIN_FAILED_ATTEMPTS_KEY = 'bigkas_login_failed_attempts';
+const LOGIN_LOCK_MIGRATION_KEY = 'bigkas_login_lock_schema_v2_applied';
+const LOGIN_GUARD_PREFIX = 'bigkas_login_guard_v1';
+const MAX_LOGIN_ATTEMPTS = 3;
+const ACCOUNT_LOCKED_MESSAGE = 'Account locked after 3 failed login attempts. Please reset your password or contact support.';
 
 const INSIGHT_WORDS = [
   { text: 'Visual', size: '0.85rem', opacity: 0.6, top: '15%', left: '12%', delay: 0 },
@@ -30,29 +29,63 @@ const INSIGHT_WORDS = [
   { text: 'Presence', size: '0.9rem', opacity: 0.7, top: '18%', left: '42%', delay: 1.2 },
 ];
 
-function getStoredLockoutSeconds() {
-  const storedUnlockTime = window.localStorage.getItem(LOGIN_LOCKOUT_UNTIL_KEY);
-  if (!storedUnlockTime) return 0;
-  const unlockTimeMs = Date.parse(storedUnlockTime);
-  if (!Number.isFinite(unlockTimeMs)) {
-    window.localStorage.removeItem(LOGIN_LOCKOUT_UNTIL_KEY);
-    return 0;
-  }
-  const remaining = Math.ceil((unlockTimeMs - Date.now()) / 1000);
-  if (remaining <= 0) {
-    window.localStorage.removeItem(LOGIN_LOCKOUT_UNTIL_KEY);
-    return 0;
-  }
+function normalizeLoginEmail(value) {
+  return String(value || '').trim().toLowerCase();
+}
 
-  const clampedRemaining = normalizeLockoutSeconds(remaining);
-  if (clampedRemaining !== remaining) {
-    window.localStorage.setItem(
-      LOGIN_LOCKOUT_UNTIL_KEY,
-      new Date(Date.now() + clampedRemaining * 1000).toISOString()
-    );
+function readLoginStorageMap(key) {
+  try {
+    const rawValue = window.localStorage.getItem(key);
+    if (!rawValue) return {};
+    const parsedValue = JSON.parse(rawValue);
+    return parsedValue && typeof parsedValue === 'object' ? parsedValue : {};
+  } catch {
+    return {};
   }
+}
 
-  return clampedRemaining;
+function writeLoginStorageMap(key, value) {
+  window.localStorage.setItem(key, JSON.stringify(value));
+}
+
+function getLoginGuardKey(email) {
+  return `${LOGIN_GUARD_PREFIX}:user:${email}`;
+}
+
+function clearStoredLoginLock(email) {
+  const normalizedEmail = normalizeLoginEmail(email);
+  if (!normalizedEmail) return;
+
+  const lockedAccounts = readLoginStorageMap(LOGIN_LOCKED_ACCOUNTS_KEY);
+  const failedAttempts = readLoginStorageMap(LOGIN_FAILED_ATTEMPTS_KEY);
+  delete lockedAccounts[normalizedEmail];
+  delete failedAttempts[normalizedEmail];
+  writeLoginStorageMap(LOGIN_LOCKED_ACCOUNTS_KEY, lockedAccounts);
+  writeLoginStorageMap(LOGIN_FAILED_ATTEMPTS_KEY, failedAttempts);
+  window.localStorage.removeItem(getLoginGuardKey(normalizedEmail));
+  window.localStorage.removeItem(LEGACY_LOGIN_LOCKOUT_UNTIL_KEY);
+}
+
+function migrateLegacyLoginLocks() {
+  if (window.localStorage.getItem(LOGIN_LOCK_MIGRATION_KEY)) return;
+  window.localStorage.removeItem(LOGIN_LOCKED_ACCOUNTS_KEY);
+  window.localStorage.removeItem(LOGIN_FAILED_ATTEMPTS_KEY);
+  window.localStorage.removeItem(LEGACY_LOGIN_LOCKOUT_UNTIL_KEY);
+  for (let index = window.localStorage.length - 1; index >= 0; index -= 1) {
+    const key = window.localStorage.key(index);
+    if (key?.startsWith(`${LOGIN_GUARD_PREFIX}:user:`)) {
+      window.localStorage.removeItem(key);
+    }
+  }
+  window.localStorage.setItem(LOGIN_LOCK_MIGRATION_KEY, 'true');
+}
+
+function isCredentialFailure(code) {
+  return [
+    'invalid_credentials',
+    'account_not_found',
+    'unknown_auth_error',
+  ].includes(String(code || '').toLowerCase());
 }
 
 function resolvePostLoginRoute(user) {
@@ -72,6 +105,7 @@ function LoginPageMobile({ managePageClass = true }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, loginWithGoogle, resendVerificationEmail, isLoading } = useAuthContext();
+  const passwordResetEmail = normalizeLoginEmail(location.state?.passwordResetEmail);
 
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({});
@@ -81,8 +115,15 @@ function LoginPageMobile({ managePageClass = true }) {
   const [showAccountVerified, setShowAccountVerified] = useState(() => Boolean(location.state?.accountVerified));
   const [resendSuccess, setResendSuccess] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
-  const [lockoutSeconds, setLockoutSeconds] = useState(() => getStoredLockoutSeconds());
+  const [lockedAccounts, setLockedAccounts] = useState(() => {
+    migrateLegacyLoginLocks();
+    clearStoredLoginLock(passwordResetEmail);
+    return readLoginStorageMap(LOGIN_LOCKED_ACCOUNTS_KEY);
+  });
+  const [failedAttempts, setFailedAttempts] = useState(() => readLoginStorageMap(LOGIN_FAILED_ATTEMPTS_KEY));
   const [showPassword, setShowPassword] = useState(false);
+  const normalizedEmail = normalizeLoginEmail(formData.email);
+  const isAccountLocked = Boolean(normalizedEmail && lockedAccounts[normalizedEmail]);
 
   useEffect(() => {
     if (!showAccountCreated) return;
@@ -105,18 +146,13 @@ function LoginPageMobile({ managePageClass = true }) {
   }, [resendCooldown]);
 
   useEffect(() => {
-    if (lockoutSeconds <= 0) return;
-    const interval = setInterval(() => {
-      setLockoutSeconds((prev) => {
-        if (prev <= 1) {
-          window.localStorage.removeItem(LOGIN_LOCKOUT_UNTIL_KEY);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [lockoutSeconds]);
+    window.localStorage.removeItem(LEGACY_LOGIN_LOCKOUT_UNTIL_KEY);
+  }, []);
+
+  useEffect(() => {
+    if (!passwordResetEmail) return;
+    window.history.replaceState({}, '');
+  }, [passwordResetEmail]);
 
   useEffect(() => {
     if (managePageClass) {
@@ -144,6 +180,13 @@ function LoginPageMobile({ managePageClass = true }) {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: null }));
+    if (name === 'email') {
+      const nextEmail = normalizeLoginEmail(value);
+      setErrors((prev) => ({
+        ...prev,
+        submit: nextEmail && lockedAccounts[nextEmail] ? ACCOUNT_LOCKED_MESSAGE : null,
+      }));
+    }
   };
 
   const validateForm = () => {
@@ -157,24 +200,59 @@ function LoginPageMobile({ managePageClass = true }) {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (lockoutSeconds > 0 || isLoading) return;
+    if (isAccountLocked) {
+      setErrors({ submit: ACCOUNT_LOCKED_MESSAGE });
+      return;
+    }
+    if (isLoading) return;
     if (!validateForm()) return;
     
     const result = await login(formData.email, formData.password);
     if (result.success) {
+      if (normalizedEmail) {
+        clearStoredLoginLock(normalizedEmail);
+      }
       navigate(resolvePostLoginRoute(result.user), { replace: true });
     } else if (result.requiresEmailConfirmation) {
+      if (normalizedEmail) {
+        clearStoredLoginLock(normalizedEmail);
+        setFailedAttempts(readLoginStorageMap(LOGIN_FAILED_ATTEMPTS_KEY));
+      }
       setShowUnverified(true);
     } else if (result.code === 'account_locked') {
-      const lockSeconds = normalizeLockoutSeconds(result.lockoutSeconds) || LOGIN_LOCKOUT_SECONDS;
-      window.localStorage.setItem(
-        LOGIN_LOCKOUT_UNTIL_KEY,
-        new Date(Date.now() + lockSeconds * 1000).toISOString()
-      );
-      setLockoutSeconds(lockSeconds);
+      const nextLockedAccounts = {
+        ...lockedAccounts,
+        [normalizedEmail]: { lockedAt: new Date().toISOString() },
+      };
+      setLockedAccounts(nextLockedAccounts);
+      writeLoginStorageMap(LOGIN_LOCKED_ACCOUNTS_KEY, nextLockedAccounts);
+      setErrors({ submit: ACCOUNT_LOCKED_MESSAGE });
+      setFormData((prev) => ({ ...prev, password: '' }));
     } else {
-      setErrors({ submit: result.error });
-      setFormData({ email: '', password: '' });
+      const nextFailedCount = normalizedEmail ? Number(failedAttempts[normalizedEmail] || 0) + 1 : 0;
+      if (!isCredentialFailure(result.code)) {
+        setErrors({ submit: result.error });
+      } else if (normalizedEmail && nextFailedCount >= MAX_LOGIN_ATTEMPTS) {
+        const nextLockedAccounts = {
+          ...lockedAccounts,
+          [normalizedEmail]: { lockedAt: new Date().toISOString() },
+        };
+        const nextAttempts = { ...failedAttempts };
+        delete nextAttempts[normalizedEmail];
+        setLockedAccounts(nextLockedAccounts);
+        setFailedAttempts(nextAttempts);
+        writeLoginStorageMap(LOGIN_LOCKED_ACCOUNTS_KEY, nextLockedAccounts);
+        writeLoginStorageMap(LOGIN_FAILED_ATTEMPTS_KEY, nextAttempts);
+        setErrors({ submit: ACCOUNT_LOCKED_MESSAGE });
+      } else {
+        const nextAttempts = normalizedEmail
+          ? { ...failedAttempts, [normalizedEmail]: nextFailedCount }
+          : failedAttempts;
+        setFailedAttempts(nextAttempts);
+        writeLoginStorageMap(LOGIN_FAILED_ATTEMPTS_KEY, nextAttempts);
+        setErrors({ submit: result.error });
+      }
+      setFormData((prev) => ({ ...prev, password: '' }));
     }
   };
 
@@ -280,7 +358,7 @@ function LoginPageMobile({ managePageClass = true }) {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="your@email.com"
-                disabled={isLoading || lockoutSeconds > 0}
+                disabled={isLoading}
               />
               {errors.email && <span className="error-text-mobile">{errors.email}</span>}
             </div>
@@ -295,7 +373,7 @@ function LoginPageMobile({ managePageClass = true }) {
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="••••••••"
-                  disabled={isLoading || lockoutSeconds > 0}
+                  disabled={isLoading || isAccountLocked}
                 />
                 <Suspense fallback={null}>
                   <PasswordToggle
@@ -305,7 +383,7 @@ function LoginPageMobile({ managePageClass = true }) {
                 </Suspense>
               </div>
               <div className="forgot-password-wrap-mobile">
-                <Link to={ROUTES.FORGOT_PASSWORD}>Forgot Password?</Link>
+                <Link to={ROUTES.FORGOT_PASSWORD} state={{ email: formData.email }}>Forgot Password?</Link>
               </div>
               {errors.password && <span className="error-text-mobile">{errors.password}</span>}
             </div>
@@ -314,12 +392,12 @@ function LoginPageMobile({ managePageClass = true }) {
               <PushButton
                 type="button"
                 onClick={handleLogin}
-                disabled={isLoading || lockoutSeconds > 0}
+                disabled={isLoading || isAccountLocked}
                 bgColor="#047857" /* High contrast emerald-700 */
                 shadowColor="#065f46"
                 className="mobile-login-btn"
               >
-                {isLoading ? '...' : lockoutSeconds > 0 ? `Locked (${lockoutSeconds}s)` : 'LOGIN'}
+                {isLoading ? '...' : isAccountLocked ? 'ACCOUNT LOCKED' : 'LOGIN'}
               </PushButton>
             </Suspense>
 

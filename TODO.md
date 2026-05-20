@@ -8,12 +8,13 @@
   - Teacher / Admin
   - Student / User
 - [x] Replace downloaded password lists with a safer onboarding flow.
-- [x] Prefer sending password setup links only, so students create their own passwords and admins never see them.
-- [x] Keep generated temporary passwords internal only for account creation, then immediately send a setup link.
-- [ ] Confirm Supabase redirect URL settings for production password setup links.
+- [x] Prefer sending account invite / create-password links only, so students create their own passwords and admins never see them.
+- [x] Use Supabase invite links for account creation instead of generated temporary passwords.
+- [ ] Confirm Supabase redirect URL settings for production account invite links.
 
 ## Supabase Email Experience
 
-- Redesign the emails sent from Supabase so they match Bigkas branding and are easier for students to understand.
-- Include templates for account invite / password setup, password reset, and email confirmation.
-- Make sure account setup emails clearly explain the login email, setup link, and what the student should do next.
+- [x] Redesign the emails sent from Supabase so they match Bigkas branding and are easier for students to understand.
+- [x] Include templates for account invite / create password, password reset, email confirmation, and OTP verification.
+- [x] Make sure account invite emails clearly explain the login email, create-password link, and what the student should do next.
+- [ ] Paste the templates from `supabase/email-templates` into the Supabase Dashboard.

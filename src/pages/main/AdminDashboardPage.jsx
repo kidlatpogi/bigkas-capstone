@@ -585,48 +585,6 @@ function getBatchColumnKey(header) {
   return '';
 }
 
-function getRandomCharacter(characters) {
-  return characters[getRandomIndex(characters.length)];
-}
-
-function getRandomIndex(maxExclusive) {
-  const bytes = new Uint32Array(1);
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-    crypto.getRandomValues(bytes);
-    return bytes[0] % maxExclusive;
-  }
-  return Math.floor(Math.random() * maxExclusive);
-}
-
-function shuffleCharacters(value) {
-  const chars = value.split('');
-  for (let i = chars.length - 1; i > 0; i -= 1) {
-    const swapIndex = getRandomIndex(i + 1);
-    [chars[i], chars[swapIndex]] = [chars[swapIndex], chars[i]];
-  }
-  return chars.join('');
-}
-
-function generateBatchPassword(length = 12) {
-  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const lowercase = 'abcdefghijklmnopqrstuvwxyz';
-  const numbers = '123456789';
-  const symbols = '!@#$%^&*?';
-  const all = `${uppercase}${lowercase}${numbers}${symbols}`;
-  let password = [
-    getRandomCharacter(uppercase),
-    getRandomCharacter(lowercase),
-    getRandomCharacter(numbers),
-    getRandomCharacter(symbols),
-  ].join('');
-
-  while (password.length < length) {
-    password += getRandomCharacter(all);
-  }
-
-  return shuffleCharacters(password);
-}
-
 function parseDelimitedText(text) {
   const rows = [];
   let row = [];
@@ -1081,27 +1039,9 @@ function clampStageNumber(value, maxStage = 30) {
   return Math.min(max, Math.max(1, Number(value) || 1));
 }
 
-function getPasswordSetupRedirectUrl() {
+function getAccountInviteRedirectUrl() {
   if (typeof window === 'undefined') return undefined;
-  return `${window.location.origin}${ROUTES.FORGOT_PASSWORD}`;
-}
-
-async function sendPasswordSetupLink(email) {
-  const redirectTo = getPasswordSetupRedirectUrl();
-  const { error } = await supabase.auth.resetPasswordForEmail(
-    String(email || '').trim().toLowerCase(),
-    redirectTo ? { redirectTo } : undefined
-  );
-  if (error) throw error;
-}
-
-async function sendPasswordSetupLinkSafely(email) {
-  try {
-    await sendPasswordSetupLink(email);
-    return { sent: true, error: null };
-  } catch (error) {
-    return { sent: false, error };
-  }
+  return `${window.location.origin}${ROUTES.CREATE_PASSWORD}`;
 }
 
 async function createConfirmedAdminUser(payload) {
@@ -2770,19 +2710,16 @@ function AdminDashboardPage() {
 
     setBatchImportStatus('saving');
     let createdCount = 0;
-    let setupLinkSentCount = 0;
-    const setupLinkFailures = [];
 
     try {
       for (const row of batchPreview.rows) {
-        const generatedPassword = generateBatchPassword();
         const email = row.email.trim();
         const firstName = row.first_name.trim();
         const lastName = row.last_name.trim();
         if (batchAccountType === 'admin') {
-          const { user, profile } = await createConfirmedAdminUser({
+          const { user, profile, invitation_sent } = await createConfirmedAdminUser({
             email,
-            password: generatedPassword,
+            redirect_to: getAccountInviteRedirectUrl(),
             first_name: firstName,
             last_name: lastName,
             username: null,
@@ -2791,9 +2728,6 @@ function AdminDashboardPage() {
             speaker_level: 1,
             speaker_points: 0,
           });
-          const setupResult = await sendPasswordSetupLinkSafely(email);
-          if (setupResult.sent) setupLinkSentCount += 1;
-          else setupLinkFailures.push({ email, error: setupResult.error });
 
           await recordAuditLog({
             action: 'create',
@@ -2811,7 +2745,7 @@ function AdminDashboardPage() {
               }),
               access_role_id: batchAccessRoleId || DEFAULT_ADMIN_ACCESS_ROLE_ID,
               batch_upload: true,
-              password_setup_link_sent: setupResult.sent,
+              account_invite_sent: Boolean(invitation_sent),
             },
           });
 
@@ -2826,9 +2760,9 @@ function AdminDashboardPage() {
           if (assignmentError) throw assignmentError;
         } else {
           const studentNumber = row.student_number.trim();
-          const { user, profile } = await createConfirmedAdminUser({
+          const { user, profile, invitation_sent } = await createConfirmedAdminUser({
             email,
-            password: generatedPassword,
+            redirect_to: getAccountInviteRedirectUrl(),
             first_name: firstName,
             last_name: lastName,
             username: null,
@@ -2838,9 +2772,6 @@ function AdminDashboardPage() {
             speaker_level: 1,
             speaker_points: 0,
           });
-          const setupResult = await sendPasswordSetupLinkSafely(email);
-          if (setupResult.sent) setupLinkSentCount += 1;
-          else setupLinkFailures.push({ email, error: setupResult.error });
 
           await recordAuditLog({
             action: 'create',
@@ -2859,7 +2790,7 @@ function AdminDashboardPage() {
               }),
               section_id: batchSectionId || null,
               batch_upload: true,
-              password_setup_link_sent: setupResult.sent,
+              account_invite_sent: Boolean(invitation_sent),
             },
           });
           await assignUserToSection(user.id, batchSectionId);
@@ -2870,8 +2801,7 @@ function AdminDashboardPage() {
 
       await refreshProfiles();
       if (batchAccountType === 'admin') await refreshRbacData();
-      const failureCopy = setupLinkFailures.length ? ` ${setupLinkFailures.length} setup email${setupLinkFailures.length === 1 ? '' : 's'} failed.` : '';
-      showToast(`${createdCount} ${batchAccountType === 'admin' ? 'teacher' : 'student'} account${createdCount === 1 ? '' : 's'} created. ${setupLinkSentCount} setup link${setupLinkSentCount === 1 ? '' : 's'} sent.${failureCopy}`, setupLinkFailures.length ? 'error' : 'success');
+      showToast(`${createdCount} ${batchAccountType === 'admin' ? 'teacher' : 'student'} account${createdCount === 1 ? '' : 's'} created. Welcome invite${createdCount === 1 ? '' : 's'} sent.`);
       setShowBatchAccountModal(false);
       resetBatchImportState();
     } catch (batchError) {
@@ -3152,13 +3082,11 @@ function AdminDashboardPage() {
     setSavingUser(true);
     try {
       const email = userForm.email.trim();
-      const generatedPassword = generateBatchPassword();
-      const { user, profile } = await createConfirmedAdminUser({
+      const { user, profile, invitation_sent } = await createConfirmedAdminUser({
         email,
-        password: generatedPassword,
+        redirect_to: getAccountInviteRedirectUrl(),
         ...profilePayloadFromUserForm(),
       });
-      const setupResult = await sendPasswordSetupLinkSafely(email);
 
       await recordAuditLog({
         action: 'create',
@@ -3168,11 +3096,11 @@ function AdminDashboardPage() {
         newValues: {
           ...(profile || { id: user.id, ...profilePayloadFromUserForm(), archived_at: null }),
           section_id: userForm.section_id || null,
-          password_setup_link_sent: setupResult.sent,
+          account_invite_sent: Boolean(invitation_sent),
         },
       });
       await assignUserToSection(user.id, userForm.section_id);
-      showToast(setupResult.sent ? 'Student created. Password setup link sent.' : 'Student created, but setup email failed. Ask the student to use Forgot Password.', setupResult.sent ? 'success' : 'error');
+      showToast('Student created. Welcome invite sent.');
       setCreatingUser(false);
       setUserForm(USER_FORM_INITIAL);
       await refreshProfiles();
@@ -3298,10 +3226,9 @@ function AdminDashboardPage() {
     try {
       const { email, first_name, last_name, role: newRole, access_role_id } = createAdminForm;
       const normalizedEmail = email.trim();
-      const generatedPassword = generateBatchPassword();
-      const { user, profile } = await createConfirmedAdminUser({
+      const { user, profile, invitation_sent } = await createConfirmedAdminUser({
         email: normalizedEmail,
-        password: generatedPassword,
+        redirect_to: getAccountInviteRedirectUrl(),
         first_name,
         last_name,
         username: null,
@@ -3310,7 +3237,6 @@ function AdminDashboardPage() {
         speaker_level: 1,
         speaker_points: 0,
       });
-      const setupResult = await sendPasswordSetupLinkSafely(normalizedEmail);
       await recordAuditLog({
         action: 'create',
         entityType: 'profiles',
@@ -3319,7 +3245,7 @@ function AdminDashboardPage() {
         newValues: {
           ...(profile || { id: user.id, role: newRole, first_name, last_name, username: null }),
           access_role_id,
-          password_setup_link_sent: setupResult.sent,
+          account_invite_sent: Boolean(invitation_sent),
         },
       });
       if (newRole !== 'superadmin') {
@@ -3334,7 +3260,8 @@ function AdminDashboardPage() {
         if (assignmentError) throw assignmentError;
       }
       await refreshRbacData();
-      showToast(setupResult.sent ? 'Teacher created. Password setup link sent.' : 'Teacher created, but setup email failed. Ask them to use Forgot Password.', setupResult.sent ? 'success' : 'error'); setCreateAdminForm(ADMIN_FORM_INITIAL);
+      showToast('Teacher created. Welcome invite sent.');
+      setCreateAdminForm(ADMIN_FORM_INITIAL);
       setShowCreateAdminModal(false);
       const { data: ps } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
       if (ps) setProfiles(ps);
@@ -3903,8 +3830,8 @@ function AdminDashboardPage() {
                   <h4>Batch Creation</h4>
                   <p className="admin-note">
                     {isSuperadmin
-                      ? 'Create student or teacher accounts using the Excel/CSV template. Password setup links are sent by email after saving.'
-                      : 'Upload students using: Last Name, First Name, Student Number, Email. Students receive password setup links after saving.'}
+                      ? 'Create student or teacher accounts using the Excel/CSV template. Welcome invites are sent by email after saving.'
+                      : 'Upload students using: Last Name, First Name, Student Number, Email. Students receive welcome invites after saving.'}
                   </p>
                 </div>
                 <div className="admin-batch-card-actions">
@@ -4193,7 +4120,7 @@ function AdminDashboardPage() {
         <div className="admin-card-head">
           <div>
             <h3>Batch Account Creation</h3>
-            <p className="admin-modal-subtitle">Excel/CSV setup with password setup links sent by email.</p>
+            <p className="admin-modal-subtitle">Excel/CSV setup with welcome invites sent by email.</p>
           </div>
           <button type="button" onClick={() => setShowBatchAccountModal(false)} className="admin-btn admin-btn--ghost">Close</button>
         </div>
@@ -4209,7 +4136,7 @@ function AdminDashboardPage() {
           ) : (
             <div className="admin-role-summary">
               <strong>Student Accounts</strong>
-              <span>Students receive setup links and create their own passwords.</span>
+              <span>Students receive welcome invites and create their own passwords.</span>
             </div>
           )}
           {batchAccountType === 'admin' && (
@@ -4285,7 +4212,7 @@ function AdminDashboardPage() {
           </div>
           <div className="admin-modal-actions admin-modal-actions--end">
             <button type="submit" className="admin-btn admin-btn--primary" disabled={batchImportStatus !== 'ready'}>
-              {batchImportStatus === 'saving' ? 'Creating...' : 'Create Accounts & Send Setup Links'}
+              {batchImportStatus === 'saving' ? 'Creating...' : 'Create Accounts & Send Invites'}
             </button>
           </div>
         </form>
@@ -4321,7 +4248,7 @@ function AdminDashboardPage() {
         <div className="admin-card-head">
           <div>
             <h3>Create Staff Account</h3>
-            <p className="admin-modal-subtitle">Create the account and send a password setup link.</p>
+            <p className="admin-modal-subtitle">Create the account and send a welcome invite.</p>
           </div>
           <button type="button" onClick={() => setShowCreateAdminModal(false)} className="admin-btn admin-btn--ghost">Close</button>
         </div>
@@ -4345,7 +4272,7 @@ function AdminDashboardPage() {
             </select>
           </AdminUserField>
           <div className="admin-modal-actions admin-modal-actions--end">
-            <button type="submit" className="admin-btn admin-btn--primary" disabled={creatingAdmin}>{creatingAdmin ? 'Creating...' : 'Create & Send Setup Link'}</button>
+            <button type="submit" className="admin-btn admin-btn--primary" disabled={creatingAdmin}>{creatingAdmin ? 'Creating...' : 'Create & Send Invite'}</button>
           </div>
         </form>
       </div></div>, document.body)}
@@ -4354,7 +4281,7 @@ function AdminDashboardPage() {
         <div className="admin-card-head">
           <div>
             <h3>Create Student</h3>
-            <p className="admin-modal-subtitle admin-student-create-note">Email is used for login. Bigkas sends a setup link so the student creates their own password.</p>
+            <p className="admin-modal-subtitle admin-student-create-note">Email is used for login. Bigkas sends a welcome invite so the student creates their own password.</p>
           </div>
           <button type="button" onClick={() => setCreatingUser(false)} className="admin-btn admin-btn--ghost">Close</button>
         </div>
@@ -4384,7 +4311,7 @@ function AdminDashboardPage() {
             <AdminLevelSelect label="Speaker level" value={userForm.speaker_level} onChange={e => setUserForm(p => ({ ...p, speaker_level: e.target.value }))} />
           </AdminUserField>
           <div className="admin-modal-actions admin-modal-actions--end">
-            <button type="submit" className="admin-btn admin-btn--primary" disabled={savingUser}>{savingUser ? 'Creating...' : 'Create & Send Setup Link'}</button>
+            <button type="submit" className="admin-btn admin-btn--primary" disabled={savingUser}>{savingUser ? 'Creating...' : 'Create & Send Invite'}</button>
           </div>
         </form>
       </div></div>, document.body)}

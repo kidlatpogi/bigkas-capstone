@@ -13,6 +13,7 @@ export const ROUTES = {
   AUTH_CALLBACK: '/auth/callback',
   NATIVE_AUTH_CALLBACK: '/auth/native-callback',
   FORGOT_PASSWORD: '/forgot-password',
+  CREATE_PASSWORD: '/auth/create-password',
   NICKNAME: '/nickname',
   USER_PROFILING: '/onboarding/profiling',
   USER_PRETEST: '/onboarding/pretest',

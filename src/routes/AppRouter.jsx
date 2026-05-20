@@ -14,6 +14,7 @@ const VerifyEmailPage = lazy(() => import('../pages/auth/VerifyEmailPage'));
 const OAuthCallbackPage = lazy(() => import('../pages/auth/OAuthCallbackPage'));
 const NativeAuthCallbackPage = lazy(() => import('../pages/auth/NativeAuthCallbackPage'));
 const ForgotPasswordPage = lazy(() => import('../pages/auth/ForgotPasswordPage'));
+const CreatePasswordPage = lazy(() => import('../pages/auth/CreatePasswordPage'));
 
 // Main Pages
 const AdminDashboardPage = lazy(() => import('../pages/main/AdminDashboardPage'));
@@ -78,8 +79,6 @@ function ActivityPageWrapper() {
     const mediaQuery = window.matchMedia('(max-width: 1023px)');
     const handleViewportChange = (event) => setIsMobileViewport(event.matches);
 
-    setIsMobileViewport(mediaQuery.matches);
-
     if (typeof mediaQuery.addEventListener === 'function') {
       mediaQuery.addEventListener('change', handleViewportChange);
       return () => mediaQuery.removeEventListener('change', handleViewportChange);
@@ -98,8 +97,6 @@ function ProgressPageWrapper() {
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 1023px)');
     const handleViewportChange = (event) => setIsMobileViewport(event.matches);
-
-    setIsMobileViewport(mediaQuery.matches);
 
     if (typeof mediaQuery.addEventListener === 'function') {
       mediaQuery.addEventListener('change', handleViewportChange);
@@ -120,8 +117,6 @@ function AchievementsPageWrapper() {
     const mediaQuery = window.matchMedia('(max-width: 1023px)');
     const handleViewportChange = (event) => setIsMobileViewport(event.matches);
 
-    setIsMobileViewport(mediaQuery.matches);
-
     if (typeof mediaQuery.addEventListener === 'function') {
       mediaQuery.addEventListener('change', handleViewportChange);
       return () => mediaQuery.removeEventListener('change', handleViewportChange);
@@ -140,8 +135,6 @@ function SettingsProfilePageWrapper() {
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 1023px)');
     const handleViewportChange = (event) => setIsMobileViewport(event.matches);
-
-    setIsMobileViewport(mediaQuery.matches);
 
     if (typeof mediaQuery.addEventListener === 'function') {
       mediaQuery.addEventListener('change', handleViewportChange);
@@ -162,8 +155,6 @@ function SettingsPageWrapper() {
     const mediaQuery = window.matchMedia('(max-width: 1023px)');
     const handleViewportChange = (event) => setIsMobileViewport(event.matches);
 
-    setIsMobileViewport(mediaQuery.matches);
-
     if (typeof mediaQuery.addEventListener === 'function') {
       mediaQuery.addEventListener('change', handleViewportChange);
       return () => mediaQuery.removeEventListener('change', handleViewportChange);
@@ -182,8 +173,6 @@ function TestAudioVideoPageWrapper() {
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 1023px)');
     const handleViewportChange = (event) => setIsMobileViewport(event.matches);
-
-    setIsMobileViewport(mediaQuery.matches);
 
     if (typeof mediaQuery.addEventListener === 'function') {
       mediaQuery.addEventListener('change', handleViewportChange);
@@ -218,8 +207,6 @@ function ProtectedRoute() {
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 1023px)');
     const handleViewportChange = (event) => setIsMobileViewport(event.matches);
-
-    setIsMobileViewport(mediaQuery.matches);
 
     if (typeof mediaQuery.addEventListener === 'function') {
       mediaQuery.addEventListener('change', handleViewportChange);
@@ -443,6 +430,16 @@ function AppRouter() {
         element={
           <Suspense fallback={<LoadingScreen />}>
             <ForgotPasswordPage />
+          </Suspense>
+        }
+      />
+
+      {/* Account Invite - accessible anytime while Supabase restores the invite session */}
+      <Route
+        path={ROUTES.CREATE_PASSWORD}
+        element={
+          <Suspense fallback={<LoadingScreen />}>
+            <CreatePasswordPage />
           </Suspense>
         }
       />

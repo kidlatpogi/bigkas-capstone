@@ -17,7 +17,6 @@ import 'react-loading-skeleton/dist/skeleton.css';
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
-import { validatePassword } from '../../utils/validators';
 import { ENV } from '../../config/env';
 import './AdminDashboardPage.css';
 
@@ -30,6 +29,7 @@ const ACTIVE_USERS_PER_PAGE = 5;
 const BATCH_PREVIEW_ROWS_PER_PAGE = 5;
 const STAGE_PASS_ROWS_PER_PAGE = 10;
 const DEFAULT_ADMIN_ACCESS_ROLE_ID = '00000000-0000-0000-0000-000000000101';
+const STUDENT_ACCESS_ROLE_REVIEW_ID = 'bigkas-system-student-role';
 const ADMIN_PERMISSION_ACTIONS = [
   { key: 'view', label: 'View' },
   { key: 'create', label: 'Create' },
@@ -47,10 +47,16 @@ const ADMIN_PERMISSION_AREAS = [
 ];
 const BATCH_STUDENT_TEMPLATE_COLUMNS = ['Last Name', 'First Name', 'Student Number', 'Email'];
 const BATCH_TEACHER_TEMPLATE_COLUMNS = ['Last Name', 'First Name', 'Email'];
+const STUDENT_ACCESS_ROLE_REVIEW = {
+  id: STUDENT_ACCESS_ROLE_REVIEW_ID,
+  name: 'Student',
+  description: 'Default student role for app access, practice activities, modules, progress, and profile settings.',
+  system: true,
+  scope: 'student',
+  visibleAreas: ['Activities', 'Modules', 'Practice', 'Progress', 'Profile Settings'],
+};
 const USER_FORM_INITIAL = {
   email: '',
-  password: '',
-  confirm_password: '',
   first_name: '',
   last_name: '',
   username: '',
@@ -68,8 +74,6 @@ const STAGE_PROGRESS_INITIAL = {
 };
 const ADMIN_FORM_INITIAL = {
   email: '',
-  password: '',
-  confirm_password: '',
   first_name: '',
   last_name: '',
   username: '',
@@ -132,6 +136,11 @@ function createAccessRoleId(name) {
 
 function findAccessRole(roles, roleId) {
   return roles.find(role => role.id === roleId) || roles.find(role => role.id === DEFAULT_ADMIN_ACCESS_ROLE_ID) || roles[0] || null;
+}
+
+function findManagedAccessRole(roles, roleId) {
+  if (roleId === STUDENT_ACCESS_ROLE_REVIEW_ID) return STUDENT_ACCESS_ROLE_REVIEW;
+  return findAccessRole(roles, roleId);
 }
 
 function buildAccessRoles(roleRows = [], permissionRows = []) {
@@ -1022,23 +1031,6 @@ function downloadReportWorkbook(filename, title, headers, rows) {
   URL.revokeObjectURL(url);
 }
 
-function downloadGeneratedCredentialsWorkbook(credentials) {
-  if (!credentials?.rows?.length) return;
-  downloadReportWorkbook(
-    `bigkas-generated-credentials-${new Date(credentials.createdAt).toISOString().slice(0, 10)}`,
-    'Generated Account Credentials',
-    ['Account Type', 'Name', 'Email', 'Student No.', 'Section / Role', 'Temporary Password'],
-    credentials.rows.map(row => [
-      row.accountType,
-      row.name,
-      row.email,
-      row.studentNumber || '-',
-      row.groupLabel || '-',
-      row.password,
-    ])
-  );
-}
-
 function getSectionStudentStudentId(row) {
   return row?.student_id || row?.profile_id || row?.user_id || row?.student?.id || '';
 }
@@ -1068,25 +1060,6 @@ function AdminUserField({ label, help, children }) {
   );
 }
 
-function AdminPasswordInput({ value, onChange, placeholder, required = true }) {
-  const [isVisible, setIsVisible] = useState(false);
-  return (
-    <div className="admin-password-control">
-      <input
-        type={isVisible ? 'text' : 'password'}
-        required={required}
-        minLength={8}
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-      />
-      <button type="button" onClick={() => setIsVisible(prev => !prev)} aria-label={isVisible ? 'Hide password' : 'Show password'}>
-        {isVisible ? 'Hide' : 'Show'}
-      </button>
-    </div>
-  );
-}
-
 function AdminLevelSelect({ value, onChange, label }) {
   return (
     <select value={String(value || 1)} onChange={onChange} aria-label={label}>
@@ -1108,15 +1081,27 @@ function clampStageNumber(value, maxStage = 30) {
   return Math.min(max, Math.max(1, Number(value) || 1));
 }
 
-function getAdminPasswordValidationMessage(password, confirmPassword) {
-  const passwordValidation = validatePassword(password);
-  if (!passwordValidation.isValid) {
-    return passwordValidation.errors[0];
+function getPasswordSetupRedirectUrl() {
+  if (typeof window === 'undefined') return undefined;
+  return `${window.location.origin}${ROUTES.FORGOT_PASSWORD}`;
+}
+
+async function sendPasswordSetupLink(email) {
+  const redirectTo = getPasswordSetupRedirectUrl();
+  const { error } = await supabase.auth.resetPasswordForEmail(
+    String(email || '').trim().toLowerCase(),
+    redirectTo ? { redirectTo } : undefined
+  );
+  if (error) throw error;
+}
+
+async function sendPasswordSetupLinkSafely(email) {
+  try {
+    await sendPasswordSetupLink(email);
+    return { sent: true, error: null };
+  } catch (error) {
+    return { sent: false, error };
   }
-  if (password !== confirmPassword) {
-    return 'Passwords do not match';
-  }
-  return '';
 }
 
 async function createConfirmedAdminUser(payload) {
@@ -1282,8 +1267,6 @@ async function fetchAdminDirectory() {
 function userToForm(user) {
   return {
     email: '',
-    password: '',
-    confirm_password: '',
     first_name: user?.first_name || '',
     last_name: user?.last_name || '',
     username: user?.username || '',
@@ -1370,7 +1353,6 @@ function AdminDashboardPage() {
   const [batchImportError, setBatchImportError] = useState('');
   const [batchPreview, setBatchPreview] = useState(null);
   const [batchPreviewPage, setBatchPreviewPage] = useState(1);
-  const [lastGeneratedCredentials, setLastGeneratedCredentials] = useState(null);
   const [reportType, setReportType] = useState('teachers');
   const [toastMessage, setToastMessage] = useState(null);
   const [showActiveUsersModal, setShowActiveUsersModal] = useState(false);
@@ -1423,6 +1405,7 @@ function AdminDashboardPage() {
   }, [activePage, contentTab, currentAdminPermissions, isSuperadmin]);
 
   useEffect(() => {
+    if (selectedAccessRoleId === STUDENT_ACCESS_ROLE_REVIEW_ID) return;
     if (adminAccessRoles.some(roleTemplate => roleTemplate.id === selectedAccessRoleId)) return;
     setSelectedAccessRoleId(adminAccessRoles[0]?.id || DEFAULT_ADMIN_ACCESS_ROLE_ID);
   }, [adminAccessRoles, selectedAccessRoleId]);
@@ -2787,32 +2770,30 @@ function AdminDashboardPage() {
 
     setBatchImportStatus('saving');
     let createdCount = 0;
-    const generatedCredentials = [];
+    let setupLinkSentCount = 0;
+    const setupLinkFailures = [];
 
     try {
       for (const row of batchPreview.rows) {
         const generatedPassword = generateBatchPassword();
+        const email = row.email.trim();
+        const firstName = row.first_name.trim();
+        const lastName = row.last_name.trim();
         if (batchAccountType === 'admin') {
           const { user, profile } = await createConfirmedAdminUser({
-            email: row.email.trim(),
+            email,
             password: generatedPassword,
-            first_name: row.first_name.trim(),
-            last_name: row.last_name.trim(),
+            first_name: firstName,
+            last_name: lastName,
             username: null,
             role: 'admin',
             current_level: 1,
             speaker_level: 1,
             speaker_points: 0,
           });
-
-          generatedCredentials.push({
-            accountType: 'Teacher',
-            name: `${row.first_name.trim()} ${row.last_name.trim()}`.trim(),
-            email: row.email.trim(),
-            studentNumber: '',
-            groupLabel: selectedBatchAccessRole?.name || 'Teacher',
-            password: generatedPassword,
-          });
+          const setupResult = await sendPasswordSetupLinkSafely(email);
+          if (setupResult.sent) setupLinkSentCount += 1;
+          else setupLinkFailures.push({ email, error: setupResult.error });
 
           await recordAuditLog({
             action: 'create',
@@ -2822,15 +2803,15 @@ function AdminDashboardPage() {
             newValues: {
               ...(profile || {
                 id: user.id,
-                email: row.email.trim(),
+                email,
                 role: 'admin',
-                first_name: row.first_name.trim(),
-                last_name: row.last_name.trim(),
+                first_name: firstName,
+                last_name: lastName,
                 username: null,
               }),
               access_role_id: batchAccessRoleId || DEFAULT_ADMIN_ACCESS_ROLE_ID,
               batch_upload: true,
-              password_generated: true,
+              password_setup_link_sent: setupResult.sent,
             },
           });
 
@@ -2844,27 +2825,22 @@ function AdminDashboardPage() {
             }, { onConflict: 'admin_id' });
           if (assignmentError) throw assignmentError;
         } else {
+          const studentNumber = row.student_number.trim();
           const { user, profile } = await createConfirmedAdminUser({
-            email: row.email.trim(),
+            email,
             password: generatedPassword,
-            first_name: row.first_name.trim(),
-            last_name: row.last_name.trim(),
+            first_name: firstName,
+            last_name: lastName,
             username: null,
-            student_number: row.student_number.trim(),
+            student_number: studentNumber,
             role: 'user',
             current_level: 1,
             speaker_level: 1,
             speaker_points: 0,
           });
-
-          generatedCredentials.push({
-            accountType: 'Student',
-            name: `${row.first_name.trim()} ${row.last_name.trim()}`.trim(),
-            email: row.email.trim(),
-            studentNumber: row.student_number.trim(),
-            groupLabel: sectionById.get(batchSectionId)?.name || 'No section',
-            password: generatedPassword,
-          });
+          const setupResult = await sendPasswordSetupLinkSafely(email);
+          if (setupResult.sent) setupLinkSentCount += 1;
+          else setupLinkFailures.push({ email, error: setupResult.error });
 
           await recordAuditLog({
             action: 'create',
@@ -2874,16 +2850,16 @@ function AdminDashboardPage() {
             newValues: {
               ...(profile || {
                 id: user.id,
-                email: row.email.trim(),
+                email,
                 role: 'user',
-                first_name: row.first_name.trim(),
-                last_name: row.last_name.trim(),
+                first_name: firstName,
+                last_name: lastName,
                 username: null,
-                student_number: row.student_number.trim(),
+                student_number: studentNumber,
               }),
               section_id: batchSectionId || null,
               batch_upload: true,
-              password_generated: true,
+              password_setup_link_sent: setupResult.sent,
             },
           });
           await assignUserToSection(user.id, batchSectionId);
@@ -2894,18 +2870,11 @@ function AdminDashboardPage() {
 
       await refreshProfiles();
       if (batchAccountType === 'admin') await refreshRbacData();
-      const credentials = { createdAt: new Date().toISOString(), rows: generatedCredentials };
-      setLastGeneratedCredentials(credentials);
-      downloadGeneratedCredentialsWorkbook(credentials);
-      showToast(`${createdCount} ${batchAccountType === 'admin' ? 'teacher' : 'student'} account${createdCount === 1 ? '' : 's'} created. Password file downloaded.`);
+      const failureCopy = setupLinkFailures.length ? ` ${setupLinkFailures.length} setup email${setupLinkFailures.length === 1 ? '' : 's'} failed.` : '';
+      showToast(`${createdCount} ${batchAccountType === 'admin' ? 'teacher' : 'student'} account${createdCount === 1 ? '' : 's'} created. ${setupLinkSentCount} setup link${setupLinkSentCount === 1 ? '' : 's'} sent.${failureCopy}`, setupLinkFailures.length ? 'error' : 'success');
       setShowBatchAccountModal(false);
       resetBatchImportState();
     } catch (batchError) {
-      if (generatedCredentials.length) {
-        const credentials = { createdAt: new Date().toISOString(), rows: generatedCredentials };
-        setLastGeneratedCredentials(credentials);
-        downloadGeneratedCredentialsWorkbook(credentials);
-      }
       setBatchImportStatus('ready');
       showToast(`${createdCount} created before the batch stopped. ${batchError.message || 'Please check the file and try again.'}`, 'error');
       await refreshProfiles();
@@ -3180,28 +3149,30 @@ function AdminDashboardPage() {
 
   const submitCreateUser = async (e) => {
     e.preventDefault();
-    const passwordError = getAdminPasswordValidationMessage(userForm.password, userForm.confirm_password);
-    if (passwordError) {
-      showToast(passwordError, 'error');
-      return;
-    }
     setSavingUser(true);
     try {
+      const email = userForm.email.trim();
+      const generatedPassword = generateBatchPassword();
       const { user, profile } = await createConfirmedAdminUser({
-        email: userForm.email.trim(),
-        password: userForm.password,
+        email,
+        password: generatedPassword,
         ...profilePayloadFromUserForm(),
       });
+      const setupResult = await sendPasswordSetupLinkSafely(email);
 
       await recordAuditLog({
         action: 'create',
         entityType: 'profiles',
         entityId: user.id,
         oldValues: null,
-        newValues: { ...(profile || { id: user.id, ...profilePayloadFromUserForm(), archived_at: null }), section_id: userForm.section_id || null },
+        newValues: {
+          ...(profile || { id: user.id, ...profilePayloadFromUserForm(), archived_at: null }),
+          section_id: userForm.section_id || null,
+          password_setup_link_sent: setupResult.sent,
+        },
       });
       await assignUserToSection(user.id, userForm.section_id);
-      showToast('Student created');
+      showToast(setupResult.sent ? 'Student created. Password setup link sent.' : 'Student created, but setup email failed. Ask the student to use Forgot Password.', setupResult.sent ? 'success' : 'error');
       setCreatingUser(false);
       setUserForm(USER_FORM_INITIAL);
       await refreshProfiles();
@@ -3323,17 +3294,14 @@ function AdminDashboardPage() {
 
   const submitCreateAdmin = async (e) => {
     e.preventDefault();
-    const passwordError = getAdminPasswordValidationMessage(createAdminForm.password, createAdminForm.confirm_password);
-    if (passwordError) {
-      showToast(passwordError, 'error');
-      return;
-    }
     setCreatingAdmin(true);
     try {
-      const { email, password, first_name, last_name, role: newRole, access_role_id } = createAdminForm;
+      const { email, first_name, last_name, role: newRole, access_role_id } = createAdminForm;
+      const normalizedEmail = email.trim();
+      const generatedPassword = generateBatchPassword();
       const { user, profile } = await createConfirmedAdminUser({
-        email,
-        password,
+        email: normalizedEmail,
+        password: generatedPassword,
         first_name,
         last_name,
         username: null,
@@ -3342,12 +3310,17 @@ function AdminDashboardPage() {
         speaker_level: 1,
         speaker_points: 0,
       });
+      const setupResult = await sendPasswordSetupLinkSafely(normalizedEmail);
       await recordAuditLog({
         action: 'create',
         entityType: 'profiles',
         entityId: user.id,
         oldValues: null,
-        newValues: { ...(profile || { id: user.id, role: newRole, first_name, last_name, username: null }), access_role_id },
+        newValues: {
+          ...(profile || { id: user.id, role: newRole, first_name, last_name, username: null }),
+          access_role_id,
+          password_setup_link_sent: setupResult.sent,
+        },
       });
       if (newRole !== 'superadmin') {
         const { error: assignmentError } = await supabase
@@ -3361,7 +3334,7 @@ function AdminDashboardPage() {
         if (assignmentError) throw assignmentError;
       }
       await refreshRbacData();
-      showToast('Teacher created'); setCreateAdminForm(ADMIN_FORM_INITIAL);
+      showToast(setupResult.sent ? 'Teacher created. Password setup link sent.' : 'Teacher created, but setup email failed. Ask them to use Forgot Password.', setupResult.sent ? 'success' : 'error'); setCreateAdminForm(ADMIN_FORM_INITIAL);
       setShowCreateAdminModal(false);
       const { data: ps } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
       if (ps) setProfiles(ps);
@@ -3378,7 +3351,9 @@ function AdminDashboardPage() {
   const canUpdateCurrentContent = canUseAdminPermission(currentContentArea, 'update');
   const canDeleteCurrentContent = canUseAdminPermission(currentContentArea, 'delete');
   const selectedBatchAccessRole = findAccessRole(adminAccessRoles, batchAccessRoleId);
-  const selectedManagedAccessRole = findAccessRole(adminAccessRoles, selectedAccessRoleId);
+  const accessRoleReviewOptions = [...adminAccessRoles, STUDENT_ACCESS_ROLE_REVIEW];
+  const selectedManagedAccessRole = findManagedAccessRole(adminAccessRoles, selectedAccessRoleId);
+  const selectedManagedRoleIsStudent = selectedManagedAccessRole?.scope === 'student';
   const batchTemplateColumns = getBatchTemplateColumns(batchAccountType);
   const batchReadyRowCount = batchPreview?.rows?.length || 0;
   const batchPreviewTotalPages = Math.max(1, Math.ceil(batchReadyRowCount / BATCH_PREVIEW_ROWS_PER_PAGE));
@@ -3392,9 +3367,11 @@ function AdminDashboardPage() {
     () => new Set((batchPreview?.invalidRows || []).map(row => row.rowNumber)),
     [batchPreview]
   );
-  const selectedManagedRolePermissions = ADMIN_PERMISSION_AREAS
-    .filter(area => selectedManagedAccessRole?.permissions?.[area.key]?.view)
-    .map(area => area.label);
+  const selectedManagedRolePermissions = selectedManagedRoleIsStudent
+    ? selectedManagedAccessRole.visibleAreas
+    : ADMIN_PERMISSION_AREAS
+      .filter(area => selectedManagedAccessRole?.permissions?.[area.key]?.view)
+      .map(area => area.label);
 
   const handleCreateAdminRoleChange = (event) => {
     const nextRoleValue = event.target.value;
@@ -3830,7 +3807,7 @@ function AdminDashboardPage() {
                 <label className="admin-create-field">
                   <span>Role</span>
                   <select className="admin-filter-select" value={selectedAccessRoleId} onChange={e => setSelectedAccessRoleId(e.target.value)}>
-                    {adminAccessRoles.map(roleTemplate => <option key={roleTemplate.id} value={roleTemplate.id}>{roleTemplate.name}</option>)}
+                    {accessRoleReviewOptions.map(roleTemplate => <option key={roleTemplate.id} value={roleTemplate.id}>{roleTemplate.name}</option>)}
                   </select>
                 </label>
                 <div className="admin-role-summary">
@@ -3839,7 +3816,7 @@ function AdminDashboardPage() {
                   <p>{selectedManagedRolePermissions.length ? selectedManagedRolePermissions.join(', ') : 'No visible areas yet'}</p>
                 </div>
                 <div className="admin-card-actions">
-                  <button type="button" className="admin-btn admin-btn--primary" onClick={openSelectedAccessRole}>Edit Permissions</button>
+                  {!selectedManagedRoleIsStudent && <button type="button" className="admin-btn admin-btn--primary" onClick={openSelectedAccessRole}>Edit Permissions</button>}
                   {selectedManagedAccessRole && !selectedManagedAccessRole.system && (
                     <button type="button" className="admin-btn admin-btn--danger" onClick={() => requestDeleteAccessRole(selectedManagedAccessRole.id)}>Delete Role</button>
                   )}
@@ -3926,20 +3903,11 @@ function AdminDashboardPage() {
                   <h4>Batch Creation</h4>
                   <p className="admin-note">
                     {isSuperadmin
-                      ? 'Create student or teacher accounts using the Excel/CSV template. Passwords are generated automatically and downloaded once after saving.'
-                      : 'Upload students using: Last Name, First Name, Student Number, Email. Passwords are generated automatically and downloaded once after saving.'}
+                      ? 'Create student or teacher accounts using the Excel/CSV template. Password setup links are sent by email after saving.'
+                      : 'Upload students using: Last Name, First Name, Student Number, Email. Students receive password setup links after saving.'}
                   </p>
                 </div>
                 <div className="admin-batch-card-actions">
-                  {lastGeneratedCredentials?.rows?.length > 0 && (
-                    <button
-                      type="button"
-                      className="admin-btn admin-btn--ghost"
-                      onClick={() => downloadGeneratedCredentialsWorkbook(lastGeneratedCredentials)}
-                    >
-                      Download Last Passwords
-                    </button>
-                  )}
                   <button
                     type="button"
                     className="admin-btn admin-btn--primary"
@@ -4225,7 +4193,7 @@ function AdminDashboardPage() {
         <div className="admin-card-head">
           <div>
             <h3>Batch Account Creation</h3>
-            <p className="admin-modal-subtitle">Excel/CSV setup using the current sample template.</p>
+            <p className="admin-modal-subtitle">Excel/CSV setup with password setup links sent by email.</p>
           </div>
           <button type="button" onClick={() => setShowBatchAccountModal(false)} className="admin-btn admin-btn--ghost">Close</button>
         </div>
@@ -4241,7 +4209,7 @@ function AdminDashboardPage() {
           ) : (
             <div className="admin-role-summary">
               <strong>Student Accounts</strong>
-              <span>Teachers can batch upload students for their assigned sections.</span>
+              <span>Students receive setup links and create their own passwords.</span>
             </div>
           )}
           {batchAccountType === 'admin' && (
@@ -4317,7 +4285,7 @@ function AdminDashboardPage() {
           </div>
           <div className="admin-modal-actions admin-modal-actions--end">
             <button type="submit" className="admin-btn admin-btn--primary" disabled={batchImportStatus !== 'ready'}>
-              {batchImportStatus === 'saving' ? 'Creating...' : 'Create Accounts'}
+              {batchImportStatus === 'saving' ? 'Creating...' : 'Create Accounts & Send Setup Links'}
             </button>
           </div>
         </form>
@@ -4353,7 +4321,7 @@ function AdminDashboardPage() {
         <div className="admin-card-head">
           <div>
             <h3>Create Staff Account</h3>
-            <p className="admin-modal-subtitle">Create credentials after choosing the account role.</p>
+            <p className="admin-modal-subtitle">Create the account and send a password setup link.</p>
           </div>
           <button type="button" onClick={() => setShowCreateAdminModal(false)} className="admin-btn admin-btn--ghost">Close</button>
         </div>
@@ -4367,12 +4335,6 @@ function AdminDashboardPage() {
           <AdminUserField label="Last Name">
             <input type="text" placeholder="Last name" value={createAdminForm.last_name} onChange={e => setCreateAdminForm(p => ({ ...p, last_name: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Password">
-            <AdminPasswordInput placeholder="Password" value={createAdminForm.password} onChange={e => setCreateAdminForm(p => ({ ...p, password: e.target.value }))} />
-          </AdminUserField>
-          <AdminUserField label="Confirm Password">
-            <AdminPasswordInput placeholder="Confirm password" value={createAdminForm.confirm_password} onChange={e => setCreateAdminForm(p => ({ ...p, confirm_password: e.target.value }))} />
-          </AdminUserField>
           <AdminUserField label="Role">
             <select
               value={createAdminForm.role === 'superadmin' ? 'superadmin' : createAdminForm.access_role_id}
@@ -4383,7 +4345,7 @@ function AdminDashboardPage() {
             </select>
           </AdminUserField>
           <div className="admin-modal-actions admin-modal-actions--end">
-            <button type="submit" className="admin-btn admin-btn--primary" disabled={creatingAdmin}>{creatingAdmin ? 'Creating...' : 'Create Account'}</button>
+            <button type="submit" className="admin-btn admin-btn--primary" disabled={creatingAdmin}>{creatingAdmin ? 'Creating...' : 'Create & Send Setup Link'}</button>
           </div>
         </form>
       </div></div>, document.body)}
@@ -4392,7 +4354,7 @@ function AdminDashboardPage() {
         <div className="admin-card-head">
           <div>
             <h3>Create Student</h3>
-            <p className="admin-modal-subtitle admin-student-create-note">Email is used for login. Password must be at least 8 characters with uppercase, lowercase, and a number.</p>
+            <p className="admin-modal-subtitle admin-student-create-note">Email is used for login. Bigkas sends a setup link so the student creates their own password.</p>
           </div>
           <button type="button" onClick={() => setCreatingUser(false)} className="admin-btn admin-btn--ghost">Close</button>
         </div>
@@ -4415,12 +4377,6 @@ function AdminDashboardPage() {
           <AdminUserField label="Last Name">
             <input type="text" placeholder="Last name" value={userForm.last_name} onChange={e => setUserForm(p => ({ ...p, last_name: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Password">
-            <AdminPasswordInput placeholder="Password" value={userForm.password} onChange={e => setUserForm(p => ({ ...p, password: e.target.value }))} />
-          </AdminUserField>
-          <AdminUserField label="Confirm Password">
-            <AdminPasswordInput placeholder="Confirm password" value={userForm.confirm_password} onChange={e => setUserForm(p => ({ ...p, confirm_password: e.target.value }))} />
-          </AdminUserField>
           <AdminUserField label="Journey Level">
             <AdminLevelSelect label="Journey level" value={userForm.current_level} onChange={e => setUserForm(p => ({ ...p, current_level: e.target.value }))} />
           </AdminUserField>
@@ -4428,7 +4384,7 @@ function AdminDashboardPage() {
             <AdminLevelSelect label="Speaker level" value={userForm.speaker_level} onChange={e => setUserForm(p => ({ ...p, speaker_level: e.target.value }))} />
           </AdminUserField>
           <div className="admin-modal-actions admin-modal-actions--end">
-            <button type="submit" className="admin-btn admin-btn--primary" disabled={savingUser}>{savingUser ? 'Creating...' : 'Create Student'}</button>
+            <button type="submit" className="admin-btn admin-btn--primary" disabled={savingUser}>{savingUser ? 'Creating...' : 'Create & Send Setup Link'}</button>
           </div>
         </form>
       </div></div>, document.body)}

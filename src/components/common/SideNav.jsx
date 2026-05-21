@@ -9,7 +9,6 @@ import { IoLogOutOutline } from '@react-icons/all-files/io5/IoLogOutOutline';
 import { IoSettingsOutline } from '@react-icons/all-files/io5/IoSettingsOutline';
 import { IoStatsChartOutline } from '@react-icons/all-files/io5/IoStatsChartOutline';
 import { IoNotificationsOutline } from '@react-icons/all-files/io5/IoNotificationsOutline';
-import { IoTrophy } from '@react-icons/all-files/io5/IoTrophy';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import {
@@ -401,7 +400,6 @@ export default function SideNav() {
               <div className="badge-congrats-icon-wrap">
                 <img src={congratsBadge.badgeUrl ?? badgeImg} alt={congratsBadge.title || congratsBadge.name} className="badge-congrats-img" width="120" height="120" />
               </div>
-              <IoTrophy className="badge-congrats-trophy" aria-hidden="true" />
               <h2 id="side-congrats-title" className="badge-congrats-title">Congratulations!</h2>
               <p className="badge-congrats-name">{congratsBadge.title || congratsBadge.name}</p>
               <p className="badge-congrats-desc">{congratsBadge.description}</p>

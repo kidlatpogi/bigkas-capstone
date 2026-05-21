@@ -1383,17 +1383,6 @@ function ActivityPageMobile() {
             <div className="dashboard-overlay-scroll-content">
               <Button
                 variant="practice"
-                className="activity-mobile-dashboard-btn"
-                style={{ width: '100%', marginBottom: '1rem', height: '44px' }}
-                onClick={() => {
-                  setShowDashboardOverlay(false);
-                  setShowFreeSpeechTutorial(true);
-                }}
-              >
-                Launch Tutorial (Temp)
-              </Button>
-              <Button
-                variant="practice"
                 className="ask-b01-trigger activity-mobile-dashboard-btn"
                 style={{ width: '100%', marginBottom: '1rem', height: '44px' }}
                 onClick={() => {

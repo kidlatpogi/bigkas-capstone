@@ -23,7 +23,7 @@ import {
   syncUnlockedBadgeIds,
 } from '../../utils/achievementNavBadge';
 import { getSpriteUrl } from '../../utils/assetUtils';
-import { claimAchievementInDB, unclaimAllAchievementsInDB } from '../../services/achievementsService';
+import { claimAchievementInDB } from '../../services/achievementsService';
 import './SideNav.css';
 
 const bigkasLogo = '/images/bigkas-logo-72.webp';
@@ -47,7 +47,6 @@ export default function SideNav() {
   const [notifTrayOpen, setNotifTrayOpen] = useState(false);
   const [claimables, setClaimables] = useState(() => getClaimableAchievements(user?.id));
   const [notifTab, setNotifTab] = useState('all');
-  const [unclaiming, setUnclaiming] = useState(false);
   const [claimingId, setClaimingId] = useState(null);
   const [congratsBadge, setCongratsBadge] = useState(null);
 
@@ -101,16 +100,6 @@ export default function SideNav() {
     logout();
   };
 
-  const handleLaunchTutorial = () => {
-    navigate(ROUTES.ACTIVITY, {
-      state: {
-        skywardEntrance: true,
-        launchFreeSpeechTutorial: true,
-        t: Date.now(),
-      },
-    });
-  };
-
   const handleClaimNavigate = () => {
     setNotifTrayOpen(false);
     navigate(ROUTES.ACHIEVEMENTS);
@@ -120,18 +109,6 @@ export default function SideNav() {
     claimAllAchievements(user?.id);
     setClaimables([]);
     setClaimableCount(0);
-  };
-
-  const handleUnclaimAllTemp = async () => {
-    if (!user?.id || unclaiming) return;
-    setUnclaiming(true);
-    try {
-      await unclaimAllAchievementsInDB(user.id);
-      window.location.reload();
-    } catch (err) {
-      console.error('Failed to unclaim achievements:', err);
-      setUnclaiming(false);
-    }
   };
 
   const handleClaimDirect = async (item) => {
@@ -372,20 +349,6 @@ export default function SideNav() {
         ) : null}
       </nav>
 
-      <button type="button" className="side-nav-link side-nav-link--tutorial-launch" onClick={handleLaunchTutorial}>
-        <span className="side-nav-link-label">Launch Tutorial (Temp)</span>
-      </button>
-
-      <button
-        type="button"
-        className="side-nav-link side-nav-link--tutorial-launch"
-        disabled={unclaiming}
-        onClick={handleUnclaimAllTemp}
-        style={{ marginTop: '-4px' }}
-      >
-        <span className="side-nav-link-label">{unclaiming ? 'Resetting…' : 'Unclaim All (Temp)'}</span>
-      </button>
-      
       <button type="button" className="side-nav-logout" onClick={handleLogoutClick}>
         <IoLogOutOutline aria-hidden="true" />
         <span>Log Out</span>

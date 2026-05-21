@@ -1127,8 +1127,6 @@ export function SessionProvider({ children }) {
     clearCurrentSession,
     clearError,
     reset,
-    // legacy alias (some older pages use fetchSession)
-    fetchSession: fetchSessionById,
   };
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

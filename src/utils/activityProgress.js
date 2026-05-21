@@ -6,7 +6,7 @@ const COMPLETED_HISTORY_KEY_PREFIX = 'bigkas_activity_completed_history_';
 export const GLOBAL_ACTIVITY_SCOPE = 'global';
 
 /**
- * Bigkas speaker levels (1.0–5.0 entry-point scale). Replaces the old XP ladder.
+ * Bigkas speaker levels (1.0–5.0 entry-point scale).
  */
 export const BIGKAS_LEVELS = [
   { number: 1, name: 'Knowing Fundamentals', threshold: 2.0 },
@@ -15,12 +15,6 @@ export const BIGKAS_LEVELS = [
   { number: 4, name: 'Building Skills', threshold: 5.0 },
   { number: 5, name: 'Demonstrating Expertise', threshold: Infinity },
 ];
-
-/** @deprecated Use BIGKAS_LEVELS — kept for a few imports that expect an array */
-export const LEVEL_CONFIG = BIGKAS_LEVELS.map((L) => ({
-  name: L.name,
-  requiredToNext: null,
-}));
 
 const TASK_XP_MAP = {
   'three-minute-scripted': 1,
@@ -208,14 +202,6 @@ export function resolveDashboardTutorialSpeakerLevel(user) {
 
   const derived = getBigkasLevelFromUser(user)?.levelNumber;
   return Number.isFinite(derived) && derived >= 1 && derived <= 5 ? derived : 1;
-}
-
-/**
- * @deprecated Use getBigkasLevelFromUser — levels are score-based, not XP-based.
- */
-export function deriveLevelProgress(totalPointsIgnored) {
-  void totalPointsIgnored;
-  return getBigkasLevelFromScore(1.0);
 }
 
 export function getLocalDateKey(date = new Date()) {

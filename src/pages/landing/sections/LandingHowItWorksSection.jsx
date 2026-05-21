@@ -1,24 +1,25 @@
 import { motion as Motion } from 'framer-motion';
-import { IoChatbubbleEllipses, IoMic, IoRefresh, IoSparkles } from 'react-icons/io5';
+import { IoChatbubbleEllipses, IoDownloadOutline, IoMic, IoRefresh } from 'react-icons/io5';
 import ScrollDownIndicator from '../../../components/common/ScrollDownIndicator';
 
-const b01Mascot = 'https://assets.bigkas.site/Sprites/Robot/0001.webp';
+const apkDownloadPath = '/downloads/Bigkas.apk';
+const apkIconPath = '/images/bigkas-apk-icon.png';
 
 const processSteps = [
   {
     icon: IoChatbubbleEllipses,
-    title: 'Choose a prompt',
-    text: 'Start with a tiny speaking quest that matches your real goal.',
+    title: 'Pick a stage',
+    text: 'Open your Journey path, choose an unlocked activity, or jump into Randomizer or Free Speech practice.',
   },
   {
     icon: IoMic,
-    title: 'Do one run',
-    text: 'Record a short private attempt while B-01 keeps the next move clear.',
+    title: 'Start one run',
+    text: 'B-01 sets the prompt, then you record a short attempt with the speaking task front and center.',
   },
   {
     icon: IoRefresh,
-    title: 'Try it sharper',
-    text: 'Use the feedback, repeat the round, and feel the delivery settle.',
+    title: 'Use the feedback',
+    text: 'Your score, EXP, streak, and DONE stamp update so the next activity or retake is obvious.',
   },
 ];
 
@@ -53,22 +54,21 @@ export default function LandingHowItWorksSection({ howSectionRef, showScrollIndi
           <Motion.div variants={itemVariants}>
             <h2 className="how-headline">A practice loop that actually moves.</h2>
             <p className="how-subheadline">
-              No giant lesson wall. Pick one speaking quest, run it once, get a useful nudge, then come back better.
+              The Activity page is built around one clear loop: pick a stage, speak once, get feedback, and keep the journey moving.
             </p>
           </Motion.div>
 
-          <Motion.div variants={itemVariants} className="practice-loop-card" aria-label="Bigkas practice loop">
-            <div className="practice-loop-orbit" aria-hidden="true">
-              <span>1</span>
-              <span>2</span>
-              <span>3</span>
+          <Motion.div variants={itemVariants} className="apk-download-panel" aria-label="Download the Bigkas Android APK">
+            <img src={apkIconPath} alt="" className="apk-download-b01" loading="lazy" aria-hidden="true" />
+            <div className="apk-download-copy">
+              <span className="apk-download-kicker">Android APK</span>
+              <h3>Take B-01 with you.</h3>
+              <p>Install Bigkas on Android and continue the same speaking loop from your phone.</p>
             </div>
-            <img src={b01Mascot} alt="B-01 practice guide" className="practice-loop-b01" loading="lazy" />
-            <div className="practice-loop-copy">
-              <IoSparkles aria-hidden="true" />
-              <h3>B-01 keeps it light</h3>
-              <p>Short prompts, quick restarts, and feedback that sounds like a next step.</p>
-            </div>
+            <a className="apk-download-button" href={apkDownloadPath} download="Bigkas.apk">
+              <IoDownloadOutline aria-hidden="true" />
+              <span>Download APK</span>
+            </a>
           </Motion.div>
         </div>
 
@@ -90,9 +90,6 @@ export default function LandingHowItWorksSection({ howSectionRef, showScrollIndi
               </div>
             </Motion.article>
           ))}
-          <Motion.div className="quest-finish-banner" variants={itemVariants}>
-            <span>Repeatable, private, low-pressure.</span>
-          </Motion.div>
         </div>
       </Motion.div>
 

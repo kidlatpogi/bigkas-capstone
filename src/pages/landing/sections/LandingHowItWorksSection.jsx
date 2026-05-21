@@ -5,6 +5,16 @@ import ScrollDownIndicator from '../../../components/common/ScrollDownIndicator'
 const apkDownloadPath = '/downloads/Bigkas.apk';
 const apkIconPath = '/images/bigkas-apk-icon.png';
 
+const insightBubbles = [
+  { text: 'Presence', className: 'how-bubble--presence' },
+  { text: 'Visual', className: 'how-bubble--visual' },
+  { text: 'Vocal', className: 'how-bubble--vocal' },
+  { text: 'Flow', className: 'how-bubble--flow' },
+  { text: 'Confidence', className: 'how-bubble--confidence' },
+  { text: 'Growth', className: 'how-bubble--growth' },
+  { text: 'Eye Contact', className: 'how-bubble--eye-contact' },
+];
+
 const processSteps = [
   {
     icon: IoChatbubbleEllipses,
@@ -43,6 +53,14 @@ export default function LandingHowItWorksSection({ howSectionRef, showScrollIndi
 
   return (
     <section id="how-it-works" className="how-it-works-redesign landing-path-section" ref={howSectionRef}>
+      <div className="how-bubble-field" aria-hidden="true">
+        {insightBubbles.map((bubble) => (
+          <span key={bubble.text} className={`how-insight-bubble ${bubble.className}`}>
+            {bubble.text}
+          </span>
+        ))}
+      </div>
+
       <Motion.div
         className="section-shell path-shell path-shell--quest"
         variants={containerVariants}
@@ -52,7 +70,7 @@ export default function LandingHowItWorksSection({ howSectionRef, showScrollIndi
       >
         <div className="path-copy">
           <Motion.div variants={itemVariants}>
-            <h2 className="how-headline">A practice loop that actually moves.</h2>
+            <h2 className="how-headline">Practice that moves.</h2>
             <p className="how-subheadline">
               The Activity page is built around one clear loop: pick a stage, speak once, get feedback, and keep the journey moving.
             </p>

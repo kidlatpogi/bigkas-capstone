@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { IoCheckmarkCircle, IoLockClosed, IoGift, IoTrophy } from 'react-icons/io5';
+import { IoCheckmarkCircle, IoLockClosed, IoGift } from 'react-icons/io5';
 import { getSpriteUrl } from '../../utils/assetUtils';
 import { useAuthContext } from '../../context/useAuthContext';
 import { useAllActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
@@ -401,7 +401,6 @@ export default function AchievementsPage() {
             <div className="badge-congrats-icon-wrap">
               <img src={congratsBadge.badgeUrl ?? badgeImg} alt={congratsBadge.name} className="badge-congrats-img" width="120" height="120" />
             </div>
-            <IoTrophy className="badge-congrats-trophy" aria-hidden="true" />
             <h2 id="badge-congrats-title" className="badge-congrats-title">Congratulations!</h2>
             <p className="badge-congrats-name">{congratsBadge.name}</p>
             <p className="badge-congrats-desc">{congratsBadge.description}</p>

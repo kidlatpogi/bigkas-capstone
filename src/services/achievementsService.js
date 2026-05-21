@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { getAchievementBadgeUrl } from '../utils/achievementBadgeAssets';
 import { evaluatePassingScore, getDefaultPassingScoreForActivity } from '../utils/passingScore';
 
 /**
@@ -212,7 +213,7 @@ export async function fetchUserAchievements(userId, userProfile) {
       achievementKey: a.achievement_key ?? null,
       name: a.name,
       description: a.description,
-      badgeUrl: a.badge_url ?? null,
+      badgeUrl: getAchievementBadgeUrl(a) ?? a.badge_url ?? null,
       unlockDescription: a.unlock_description ?? null,
       unlockRequirements: a.unlock_requirements ?? null,
       journeyNumber,

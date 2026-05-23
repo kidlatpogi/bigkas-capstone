@@ -15,6 +15,7 @@ import Confetti from 'react-confetti';
 import { useSessionContext } from '../../context/useSessionContext';
 import { useAuthContext } from '../../context/useAuthContext';
 import { supabase } from '../../lib/supabase';
+import { ENV } from '../../config/env';
 import { ROUTES } from '../../utils/constants';
 import { formatDate, formatDuration } from '../../utils/formatters';
 import { getSessionMode, getSessionSpeechType } from '../../utils/sessionFormatting';
@@ -24,6 +25,12 @@ import { buildStagePassResultForSession } from '../../utils/passingScore';
 import { recordActivityEvent } from '../../utils/activityProgress';
 import { persistActivityCompletion } from '../../services/journeyProgressService';
 import { useAllActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
+import {
+  cleanTranscriptWord,
+  countTranscriptFillers,
+  getAnalysisFillerCount,
+  getFillerTokenIndexes,
+} from '../../utils/transcriptHighlighting';
 
 const heroRobotImage = getSpriteUrl('Robot/0018.webp');
 const verbalSprite = getSpriteUrl('common/Verbal.webp');
@@ -33,12 +40,12 @@ import DetailedFeedbackPageMobile from './DetailedFeedbackPageMobile';
 import '../main/InnerPages.css';
 import './DetailedFeedbackPage.css';
 
-const FILLER_WORDS = ['um', 'uh', 'ah', 'like', 'err', 'uhm', 'well', 'basically', 'actually', 'literally'];
-
 const FOREST_GREEN = '#059669';
 const SOFT_SAGE = '#059669';
 const VIBRANT_ORANGE = '#F97316';
 const SESSION_MEDIA_BUCKET = 'session-recordings';
+const MEDIA_LOOKUP_ATTEMPTS = 30;
+const MEDIA_LOOKUP_DELAY_MS = 2000;
 
 function buildActivityLookup(activityTasks) {
   const lookup = new Map();
@@ -278,6 +285,8 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
   const { currentSession, fetchSessionById, isLoading } = useSessionContext();
   const { user } = useAuthContext();
   const [recordingMedia, setRecordingMedia] = useState({ audioUrl: null, videoUrl: null, transcript: '' });
+  const [recoveredFillerAnalysis, setRecoveredFillerAnalysis] = useState(null);
+  const fillerRecoveryKeyRef = useRef('');
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [showDetailed, setShowDetailed] = useState(() => {
     if (locationState?.showDetailed !== undefined) return !!locationState.showDetailed;
@@ -401,78 +410,84 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
       if (!sessionId) return;
       let audioUrl = null;
       let videoUrl = null;
-      const { data: richMedia, error: richMediaErr } = await supabase
-        .from('session_media')
-        .select('audio_url, video_storage_url, transcript')
-        .eq('session_id', sessionId)
-        .maybeSingle();
-
       let mediaTranscript = '';
-      if (!richMediaErr && richMedia) {
-        audioUrl = richMedia.audio_url ?? null;
-        videoUrl = richMedia.video_storage_url ?? null;
-        mediaTranscript = String(richMedia.transcript || '').trim();
-      } else if (isMissingVideoStorageColumn(richMediaErr)) {
-        const { data: basicMedia } = await supabase
+
+      const publishMedia = async () => {
+        const [resolvedAudioUrl, resolvedVideoUrl] = await Promise.all([
+          resolvePlayableStorageUrl(audioUrl),
+          resolvePlayableStorageUrl(videoUrl),
+        ]);
+        if (!isMounted) return;
+        setRecordingMedia((current) => ({
+          audioUrl: resolvedAudioUrl || current.audioUrl,
+          videoUrl: resolvedVideoUrl || current.videoUrl,
+          transcript: mediaTranscript || current.transcript,
+        }));
+      };
+
+      for (let attempt = 0; attempt < MEDIA_LOOKUP_ATTEMPTS; attempt += 1) {
+        const { data: richMedia, error: richMediaErr } = await supabase
           .from('session_media')
-          .select('audio_url, transcript')
+          .select('audio_url, video_storage_url, transcript')
           .eq('session_id', sessionId)
           .maybeSingle();
-        audioUrl = basicMedia?.audio_url ?? null;
-        mediaTranscript = String(basicMedia?.transcript || '').trim();
-      }
 
-      if (!mediaTranscript) {
-        const { data: transcriptOnlyMedia } = await supabase
-          .from('session_media')
-          .select('transcript')
-          .eq('session_id', sessionId)
-          .maybeSingle();
-        mediaTranscript = String(transcriptOnlyMedia?.transcript || '').trim();
-      }
+        if (!richMediaErr && richMedia) {
+          audioUrl = richMedia.audio_url ?? null;
+          videoUrl = richMedia.video_storage_url ?? null;
+          mediaTranscript = String(richMedia.transcript || '').trim();
+        } else if (isMissingVideoStorageColumn(richMediaErr)) {
+          const { data: basicMedia } = await supabase
+            .from('session_media')
+            .select('audio_url, transcript')
+            .eq('session_id', sessionId)
+            .maybeSingle();
+          audioUrl = basicMedia?.audio_url ?? null;
+          mediaTranscript = String(basicMedia?.transcript || '').trim();
+        }
 
-      if (!mediaTranscript) {
-        const { data: sessionMediaFromJoin } = await supabase
-          .from('sessions')
-          .select('session_media(transcript)')
-          .eq('id', sessionId)
-          .maybeSingle();
-        const mediaFromJoin = Array.isArray(sessionMediaFromJoin?.session_media)
-          ? sessionMediaFromJoin.session_media[0]
-          : sessionMediaFromJoin?.session_media;
-        mediaTranscript = String(mediaFromJoin?.transcript || '').trim();
-      }
+        if (!mediaTranscript) {
+          const { data: sessionMediaFromJoin } = await supabase
+            .from('sessions')
+            .select('session_media(transcript)')
+            .eq('id', sessionId)
+            .maybeSingle();
+          const mediaFromJoin = Array.isArray(sessionMediaFromJoin?.session_media)
+            ? sessionMediaFromJoin.session_media[0]
+            : sessionMediaFromJoin?.session_media;
+          mediaTranscript = String(mediaFromJoin?.transcript || '').trim();
+        }
 
-      if (!videoUrl) {
-        videoUrl = await findLikelyVideoUrl({
-          userId: session?.user_id,
-          createdAt: session?.created_at,
-        });
-      }
+        const mediaUserId = session?.user_id || user?.id;
+        if (!videoUrl) {
+          videoUrl = await findLikelyVideoUrl({
+            userId: mediaUserId,
+            createdAt: session?.created_at,
+          });
+        }
 
-      if (!audioUrl) {
-        audioUrl = await findLikelyAudioUrl({
-          userId: session?.user_id,
-          createdAt: session?.created_at,
-        });
+        if (!audioUrl) {
+          audioUrl = await findLikelyAudioUrl({
+            userId: mediaUserId,
+            createdAt: session?.created_at,
+          });
+        }
+
+        if (audioUrl || videoUrl || mediaTranscript) {
+          await publishMedia();
+        }
+
+        if ((audioUrl && videoUrl) || attempt === MEDIA_LOOKUP_ATTEMPTS - 1) break;
+        await new Promise((resolve) => setTimeout(resolve, MEDIA_LOOKUP_DELAY_MS));
       }
 
       if (!isMounted) return;
-      const [resolvedAudioUrl, resolvedVideoUrl] = await Promise.all([
-        resolvePlayableStorageUrl(audioUrl),
-        resolvePlayableStorageUrl(videoUrl),
-      ]);
-      if (!isMounted) return;
-      setRecordingMedia({
-        audioUrl: resolvedAudioUrl,
-        videoUrl: resolvedVideoUrl,
-        transcript: mediaTranscript,
-      });
+      await publishMedia();
     };
 
     loadSessionMedia();
     return () => { isMounted = false; };
-  }, [session?.created_at, session?.user_id, sessionId]);
+  }, [session?.created_at, session?.user_id, sessionId, user?.id]);
 
   const mode = getSessionMode(session);
   const isPreTest = mode === 'Pre-Test';
@@ -511,9 +526,14 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
     return Number.isFinite(score) && score >= 80;
   };
 
+  const recoveredTranscript = Number(recoveredFillerAnalysis?.filler_count || 0) > 0
+    ? String(recoveredFillerAnalysis?.transcript || '').trim()
+    : '';
   const overallTier = getScoreTier15(tripleV.entryPoint);
-  const rawTranscript = recordingMedia.transcript
+  const rawTranscript = recoveredTranscript
+    || recordingMedia.transcript
     || session?.transcript
+    || session?.transcript_exact
     || session?.target_text
     || session?.analysis?.transcript_exact
     || session?.analysis?.transcript
@@ -523,23 +543,85 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
 
   // Extraction of mispronunciations and filler data
   const analysisData = useMemo(() => {
+    let parsedAnalysis = {};
     try {
-      if (typeof session?.analysis === 'object' && session.analysis !== null) return session.analysis;
-      if (typeof session?.analysis === 'string') return JSON.parse(session.analysis);
+      if (typeof session?.analysis === 'object' && session.analysis !== null) parsedAnalysis = session.analysis;
+      if (typeof session?.analysis === 'string') parsedAnalysis = JSON.parse(session.analysis);
     } catch (e) {
       console.warn('Failed to parse session analysis for highlighting:', e);
     }
-    return {};
-  }, [session?.analysis]);
+    if (!recoveredFillerAnalysis) return parsedAnalysis;
+    return {
+      ...parsedAnalysis,
+      ...recoveredFillerAnalysis,
+      filler_count: Math.max(
+        Number(parsedAnalysis?.filler_count) || 0,
+        Number(recoveredFillerAnalysis?.filler_count) || 0,
+      ),
+    };
+  }, [recoveredFillerAnalysis, session?.analysis]);
 
   const mispronunciations = analysisData?.mispronunciations || [];
   
   const fillerCount = useMemo(() => {
-    if (analysisData?.filler_count !== undefined) return analysisData.filler_count;
-    // Fallback: count manually from transcript
-    const words = rawTranscript.toLowerCase().split(/\s+/);
-    return words.filter(w => FILLER_WORDS.includes(w.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ""))).length;
-  }, [rawTranscript, analysisData?.filler_count]);
+    const analysisCount = getAnalysisFillerCount(analysisData);
+    const transcriptCount = countTranscriptFillers(rawTranscript, analysisData);
+    if (analysisCount !== null) return Math.max(analysisCount, transcriptCount);
+    return transcriptCount;
+  }, [rawTranscript, analysisData]);
+
+  useEffect(() => {
+    const workerBaseUrl = String(ENV.CLOUDFLARE_AI_WORKER_URL || '').replace(/\/+$/, '');
+    if (isPreTest || fillerCount > 0 || !workerBaseUrl || !recordingMedia.audioUrl) return undefined;
+
+    const recoveryKey = `${sessionId}:${recordingMedia.audioUrl}`;
+    if (fillerRecoveryKeyRef.current === recoveryKey) return undefined;
+    fillerRecoveryKeyRef.current = recoveryKey;
+
+    let cancelled = false;
+
+    const recoverFillersFromAudio = async () => {
+      try {
+        const audioResponse = await fetch(recordingMedia.audioUrl);
+        if (!audioResponse.ok) throw new Error(`Audio fetch failed with ${audioResponse.status}`);
+        const audioBlob = await audioResponse.blob();
+        const transcribeUrl = `${workerBaseUrl}/transcribe?topic=${encodeURIComponent(session?.topic || session?.objective_name || 'General Speaking')}`;
+        const transcribeResponse = await fetch(transcribeUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': audioBlob.type || 'audio/webm',
+          },
+          body: audioBlob,
+        });
+        if (!transcribeResponse.ok) throw new Error(`Filler recovery failed with ${transcribeResponse.status}`);
+        const recoveryData = await transcribeResponse.json();
+        if (cancelled) return;
+        const recoveredCount = Number(recoveryData?.filler_count);
+        if (Number.isFinite(recoveredCount) && recoveredCount > 0) {
+          setRecoveredFillerAnalysis({
+            transcript: String(recoveryData?.transcript || '').trim(),
+            filler_count: recoveredCount,
+            filler_words: Array.isArray(recoveryData?.filler_words) ? recoveryData.filler_words : [],
+            filler_occurrences: Array.isArray(recoveryData?.filler_occurrences) ? recoveryData.filler_occurrences : [],
+          });
+        }
+      } catch (error) {
+        console.warn('[DetailedFeedbackPage] Filler recovery skipped:', error?.message || error);
+      }
+    };
+
+    recoverFillersFromAudio();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    fillerCount,
+    isPreTest,
+    recordingMedia.audioUrl,
+    session?.objective_name,
+    session?.topic,
+    sessionId,
+  ]);
 
   if (windowWidth < 768) {
     return (
@@ -578,19 +660,14 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
     if (!rawTranscript) return <p className="df-practiced-text">No recorded text available.</p>;
 
     const words = rawTranscript.split(/\s+/);
-    const fillerWordsFromAnalysis = Array.isArray(analysisData?.filler_words) 
-      ? analysisData.filler_words.map(w => w.toLowerCase()) 
-      : [];
+    const fillerTokenIndexes = getFillerTokenIndexes(words, analysisData);
 
     return (
       <div className="df-practiced-text">
         {words.map((word, idx) => {
-          const cleanWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").toLowerCase();
-          
-          // Check if it's a filler: either in our global list OR specifically identified by analysis
-          const isFiller = FILLER_WORDS.includes(cleanWord) || fillerWordsFromAnalysis.includes(cleanWord);
-          
-          const mis = mispronunciations.find(m => m.word.toLowerCase() === cleanWord || m.heard?.toLowerCase() === cleanWord);
+          const cleanWord = cleanTranscriptWord(word);
+          const isFiller = fillerTokenIndexes.has(idx);
+          const mis = mispronunciations.find(m => cleanTranscriptWord(m.word) === cleanWord || cleanTranscriptWord(m.heard) === cleanWord);
 
           if (isFiller) {
             return (

@@ -243,6 +243,51 @@
   padding-inline: 1rem !important;
 }
 
+.tutorial-soundbar-spotlight-clone {
+  position: fixed;
+  z-index: 4700;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: clamp(0.75rem, 2vw, 1rem);
+  border-radius: 12px;
+  border: 1px solid rgba(52, 211, 153, 0.55);
+  background: #ffffff;
+  box-shadow: 0 0 0 5px #34D399, 0 0 42px rgba(52, 211, 153, 0.9);
+}
+
+.tutorial-soundbar-preview-bars {
+  width: 100%;
+  height: min(68%, 52px);
+  display: grid;
+  grid-template-columns: repeat(32, minmax(3px, 1fr));
+  align-items: center;
+  gap: clamp(3px, 0.45vw, 5px);
+}
+
+.tutorial-soundbar-preview-bars span {
+  height: var(--bar-height, 42%);
+  min-height: 8px;
+  border-radius: 999px;
+  background: #0d9a72;
+  opacity: 0.92;
+  transform-origin: center;
+  animation: tutorial-soundbar-preview 950ms ease-in-out infinite alternate;
+  animation-delay: calc(var(--bar-index) * -65ms);
+}
+
+@keyframes tutorial-soundbar-preview {
+  from {
+    transform: scaleY(0.62);
+    opacity: 0.7;
+  }
+  to {
+    transform: scaleY(1.08);
+    opacity: 1;
+  }
+}
+
 .tutorial-overlay-wrapper.is-controls-step .tutorial-companion-container,
 .tutorial-overlay-wrapper.is-roadmap-step .tutorial-companion-container,
 .tutorial-overlay-wrapper.is-practice-step .tutorial-companion-container {

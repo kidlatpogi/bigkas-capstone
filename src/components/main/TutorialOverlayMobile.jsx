@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import { getSpriteUrl, getVoiceUrl } from '../../utils/assetUtils';
 import { useAuthContext } from '../../context/useAuthContext';
+import './TutorialOverlay.css';
 
 const defaultRobotImage = getSpriteUrl('Robot/0008-noBulb-inverted.png');
 const tutorialVoice1 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 1.mp3');
@@ -18,7 +19,7 @@ const HOME_STREAK_STEP_TEXT_MOBILE =
   "Your Streak counter tracks how many consecutive days you've practiced. Consistency is the true secret to mastering public speaking! Log in and complete a daily activity to keep the fire burning and watch that number grow.";
 const HOME_STREAK_STEP_VOICE_MOBILE =
   'https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Streak-Counter.mp3';
-import './TutorialOverlay.css';
+const soundbarPreviewBars = Array.from({ length: 32 }, (_, index) => index);
 
 /**
  * Isolated typing component to prevent parent re-renders on every character
@@ -134,6 +135,7 @@ function TutorialOverlayMobile({
     if (user && typeof user.isAudioMuted === 'boolean') return user.isAudioMuted;
     return window.localStorage.getItem(GLOBAL_MUTE_KEY) === '1';
   });
+  const [soundbarSpotlightRect, setSoundbarSpotlightRect] = useState(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -447,6 +449,46 @@ function TutorialOverlayMobile({
     };
   }, [isOpen, activeStep?.targetElementId, isCustomTutorial]);
 
+  useEffect(() => {
+    if (!isOpen || activeStep?.targetElementId !== 'tutorial-target-soundbar') {
+      setSoundbarSpotlightRect(null);
+      return undefined;
+    }
+
+    let frameId = 0;
+
+    const updateSoundbarRect = () => {
+      frameId = window.requestAnimationFrame(() => {
+        const targetEl = document.getElementById('tutorial-target-soundbar');
+        if (!targetEl) {
+          setSoundbarSpotlightRect(null);
+          return;
+        }
+
+        const rect = targetEl.getBoundingClientRect();
+        setSoundbarSpotlightRect({
+          top: rect.top,
+          left: rect.left,
+          width: rect.width,
+          height: rect.height,
+        });
+      });
+    };
+
+    updateSoundbarRect();
+    window.addEventListener('resize', updateSoundbarRect);
+    window.addEventListener('scroll', updateSoundbarRect, true);
+
+    return () => {
+      if (frameId) {
+        window.cancelAnimationFrame(frameId);
+      }
+      window.removeEventListener('resize', updateSoundbarRect);
+      window.removeEventListener('scroll', updateSoundbarRect, true);
+      setSoundbarSpotlightRect(null);
+    };
+  }, [isOpen, activeStep?.targetElementId]);
+
   /* Home journey step: dashboard sheet covers the map — close it on narrow viewports only. */
   useEffect(() => {
     if (!isOpen || !isNarrowViewport || !isCustomTutorial || !onCloseDashboard) return undefined;
@@ -733,6 +775,30 @@ function TutorialOverlayMobile({
         `}</style>
       ) : null}
       {!needsDashboardForSpotlight ? <div className="tutorial-dark-bg" aria-hidden="true" /> : null}
+      {soundbarSpotlightRect && (
+        <div
+          className="tutorial-soundbar-spotlight-clone"
+          aria-hidden="true"
+          style={{
+            top: `${soundbarSpotlightRect.top}px`,
+            left: `${soundbarSpotlightRect.left}px`,
+            width: `${soundbarSpotlightRect.width}px`,
+            height: `${soundbarSpotlightRect.height}px`,
+          }}
+        >
+          <div className="tutorial-soundbar-preview-bars">
+            {soundbarPreviewBars.map((barIndex) => (
+              <span
+                key={barIndex}
+                style={{
+                  '--bar-index': barIndex,
+                  '--bar-height': `${18 + (barIndex % 8) * 9}%`,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
       <style>{`
         #tutorial-target-home-journey.tutorial-spotlight-active button {
           pointer-events: none !important;

@@ -18,6 +18,7 @@ const waveWebm = getAssetUrl('Sprites/Robot Animated/Wave-webm.webm');
 const waveMp4 = getAssetUrl('Sprites/Robot Animated/Wave-mp4.mp4');
 const beforePretestingVoice = getVoiceUrl('Profiling and Pre-Testing/Before pre-testing.mp3');
 const PRETEST_MUTE_KEY = 'bigkas_profiling_intro_muted';
+const PRETEST_AUDIO_WINDOW_KEY = '__bigkasBeforePretestAudio';
 
 const introMessage = "You've made it to the final step! To wrap things up, let\u2019s try a quick Free Speech Pre-test.";
 const missionMessage =
@@ -68,12 +69,17 @@ function UserPretestPage() {
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
 
-    const audio = new Audio(beforePretestingVoice);
-    audio.preload = 'auto';
+    const primedAudio = window[PRETEST_AUDIO_WINDOW_KEY];
+    const expectedAudioSrc = new URL(beforePretestingVoice, window.location.href).href;
+    const audio = primedAudio?.src === expectedAudioSrc
+      ? primedAudio
+      : new Audio(beforePretestingVoice);
     audio.muted = isMuted;
+    audio.preload = 'auto';
     audioRef.current = audio;
+    window[PRETEST_AUDIO_WINDOW_KEY] = audio;
 
-    if (!isMuted) {
+    if (!isMuted && audio.paused) {
       audio.currentTime = 0;
       audio.play().catch(() => {});
     }
@@ -82,6 +88,9 @@ function UserPretestPage() {
       audio.pause();
       audio.currentTime = 0;
       audioRef.current = null;
+      if (window[PRETEST_AUDIO_WINDOW_KEY] === audio) {
+        delete window[PRETEST_AUDIO_WINDOW_KEY];
+      }
     };
   }, [isMuted]);
 

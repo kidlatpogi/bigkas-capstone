@@ -13,6 +13,7 @@ const robotQuestionImage = getSpriteUrl('Robot/0012.webp');
 const introVoice1 = getVoiceUrl('Introductions/Intro 1.mp3');
 const introVoice2 = getVoiceUrl('Introductions/Intro 2.mp3');
 const introVoice3 = getVoiceUrl('Introductions/Intro 3.mp3');
+const beforePretestingVoice = getVoiceUrl('Profiling and Pre-Testing/Before pre-testing.mp3');
 const profilingQuestion1Voice = getVoiceUrl('Profiling and Pre-Testing/Profiling Questions/Profiling Question 1.mp3');
 const profilingQuestion2Voice = getVoiceUrl('Profiling and Pre-Testing/Profiling Questions/Profiling Question 2.mp3');
 const profilingQuestion3Voice = getVoiceUrl('Profiling and Pre-Testing/Profiling Questions/Profiling Question 3.mp3');
@@ -54,6 +55,7 @@ const INITIAL_FORM = {
 };
 
 const INTRO_MUTE_KEY = 'bigkas_profiling_intro_muted';
+const PRETEST_AUDIO_WINDOW_KEY = '__bigkasBeforePretestAudio';
 const QUESTION_VOICE_SOURCES = [
   profilingQuestion1Voice,
   profilingQuestion2Voice,
@@ -497,6 +499,16 @@ function UserProfilingPage() {
   const continueToPretest = async () => {
     if (isSubmitting) return;
     stopAllIntroAudios();
+    if (typeof window !== 'undefined') {
+      const pretestAudio = new Audio(beforePretestingVoice);
+      pretestAudio.preload = 'auto';
+      pretestAudio.muted = isMuted;
+      window[PRETEST_AUDIO_WINDOW_KEY] = pretestAudio;
+      if (!isMuted) {
+        pretestAudio.currentTime = 0;
+        pretestAudio.play().catch(() => {});
+      }
+    }
     setIsSubmitting(true);
     const result = await updateUserMetadata({
       onboarding_stage: 'pretest',
@@ -507,6 +519,11 @@ function UserProfilingPage() {
     });
     setIsSubmitting(false);
     if (!result?.success) {
+      if (typeof window !== 'undefined') {
+        const pretestAudio = window[PRETEST_AUDIO_WINDOW_KEY];
+        pretestAudio?.pause?.();
+        delete window[PRETEST_AUDIO_WINDOW_KEY];
+      }
       setError(result?.error || 'Failed to continue to pre-test. Please try again.');
       return;
     }

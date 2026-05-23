@@ -104,8 +104,19 @@ type FillerOccurrence = TranscriptWord & {
 
 const punctuationPattern = /[.,/#!$%^&*;:{}=\-_`~()"[\]?]/g;
 
+function normalizeVocalizedFiller(word: string) {
+  if (/^u+h+$/.test(word)) return "uh";
+  if (/^u+m+$/.test(word)) return "um";
+  if (/^u+h*m+$/.test(word)) return "uhm";
+  if (/^a+h+$/.test(word)) return "ah";
+  if (/^e+r+$/.test(word)) return "er";
+  if (/^h+m+$/.test(word)) return "hmm";
+  if (/^m+$/.test(word) && word.length > 1) return "mmm";
+  return word;
+}
+
 function cleanTranscriptWord(word: unknown) {
-  return String(word || "").replace(punctuationPattern, "").toLowerCase();
+  return normalizeVocalizedFiller(String(word || "").replace(punctuationPattern, "").toLowerCase());
 }
 
 function getErrorMessage(error: unknown) {

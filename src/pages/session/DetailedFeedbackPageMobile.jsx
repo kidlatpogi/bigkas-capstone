@@ -138,6 +138,20 @@ async function resolvePlayableStorageUrl(pathOrUrl) {
   return buildBucketPublicUrl(storagePath);
 }
 
+async function loadAudioBlobForFillerRecovery({ playbackUrl, storageUrl }) {
+  const storagePath = extractBucketStoragePath(storageUrl) || extractBucketStoragePath(playbackUrl);
+  if (storagePath) {
+    const { data, error } = await supabase.storage
+      .from(SESSION_MEDIA_BUCKET)
+      .download(storagePath);
+    if (!error && data) return data;
+  }
+
+  const audioResponse = await fetch(playbackUrl);
+  if (!audioResponse.ok) throw new Error(`Audio fetch failed with ${audioResponse.status}`);
+  return audioResponse.blob();
+}
+
 function isMissingVideoStorageColumn(error) {
   const msg = String(error?.message || '').toLowerCase();
   return msg.includes('video_storage_url') && msg.includes('does not exist');
@@ -431,7 +445,7 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
 
   useEffect(() => {
     const workerBaseUrl = String(ENV.CLOUDFLARE_AI_WORKER_URL || '').replace(/\/+$/, '');
-    if (isPreTest || fillerCount > 0 || !workerBaseUrl || !recordingMedia.audioUrl) return undefined;
+    if (fillerCount > 0 || !workerBaseUrl || !recordingMedia.audioUrl) return undefined;
 
     const recoveryKey = `${sessionId}:${recordingMedia.audioUrl}`;
     if (fillerRecoveryKeyRef.current === recoveryKey) return undefined;
@@ -441,9 +455,10 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
 
     const recoverFillersFromAudio = async () => {
       try {
-        const audioResponse = await fetch(recordingMedia.audioUrl);
-        if (!audioResponse.ok) throw new Error(`Audio fetch failed with ${audioResponse.status}`);
-        const audioBlob = await audioResponse.blob();
+        const audioBlob = await loadAudioBlobForFillerRecovery({
+          playbackUrl: recordingMedia.audioUrl,
+          storageUrl: session?.audio_url,
+        });
         const transcribeUrl = `${workerBaseUrl}/transcribe?topic=${encodeURIComponent(session?.topic || session?.objective_name || 'General Speaking')}`;
         const transcribeResponse = await fetch(transcribeUrl, {
           method: 'POST',
@@ -475,7 +490,6 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
     };
   }, [
     fillerCount,
-    isPreTest,
     recordingMedia.audioUrl,
     session?.objective_name,
     session?.topic,

@@ -33,8 +33,19 @@ const FILLER_PHRASES = [
 
 const PUNCTUATION_RE = /[.,/#!$%^&*;:{}=\-_`~()"[\]?]/g;
 
+function normalizeVocalizedFiller(word) {
+  if (/^u+h+$/.test(word)) return 'uh';
+  if (/^u+m+$/.test(word)) return 'um';
+  if (/^u+h*m+$/.test(word)) return 'uhm';
+  if (/^a+h+$/.test(word)) return 'ah';
+  if (/^e+r+$/.test(word)) return 'er';
+  if (/^h+m+$/.test(word)) return 'hmm';
+  if (/^m+$/.test(word) && word.length > 1) return 'mmm';
+  return word;
+}
+
 export function cleanTranscriptWord(word) {
-  return String(word || '').replace(PUNCTUATION_RE, '').toLowerCase();
+  return normalizeVocalizedFiller(String(word || '').replace(PUNCTUATION_RE, '').toLowerCase());
 }
 
 function extractAnalysisFillerValues(analysisData) {

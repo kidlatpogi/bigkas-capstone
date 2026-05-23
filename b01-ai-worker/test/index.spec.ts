@@ -14,17 +14,19 @@ const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
 describe("B-01 AI worker", () => {
 	it("counts hard, contextual, and phrase fillers deterministically", () => {
 		const fillers = detectFillerOccurrences(
-			"Um I think, you know, this is like basically ready.",
+			"Uhhh ummm uhmmm I think, you know, this is like basically ready.",
 		);
 
 		expect(fillers.map((item) => item.normalized)).toEqual([
+			"uh",
 			"um",
+			"uhm",
 			"you",
 			"know",
 			"like",
 			"basically",
 		]);
-		expect(fillers).toHaveLength(5);
+		expect(fillers).toHaveLength(7);
 	});
 
 	it("responds to health checks with CORS headers (unit style)", async () => {

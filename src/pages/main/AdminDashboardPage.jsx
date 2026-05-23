@@ -28,6 +28,8 @@ const SERVICE_HEALTH_CACHE_TTL_MS = 5 * 60 * 1000;
 const ACTIVE_USERS_PER_PAGE = 5;
 const BATCH_PREVIEW_ROWS_PER_PAGE = 5;
 const STAGE_PASS_ROWS_PER_PAGE = 10;
+const INDEPENDENT_LEARNERS_FILTER = 'independent-learners';
+const INDEPENDENT_LEARNERS_LABEL = 'Independent Learners';
 const DEFAULT_ADMIN_ACCESS_ROLE_ID = '00000000-0000-0000-0000-000000000101';
 const STUDENT_ACCESS_ROLE_REVIEW_ID = 'bigkas-system-student-role';
 const ADMIN_PERMISSION_ACTIONS = [
@@ -205,6 +207,12 @@ function getDisplayName(profile, fallbackId = '') {
   if (full) return full;
   if (profile?.username) return profile.username;
   return `Student ${String(fallbackId).slice(0, 8)}`;
+}
+
+function getLearnerGroupLabel(profile, sectionById, sectionIdByStudentId, fallbackLabel = INDEPENDENT_LEARNERS_LABEL) {
+  const sectionId = sectionIdByStudentId.get(profile?.id) || profile?.section_id || '';
+  const section = sectionId ? sectionById.get(sectionId) : null;
+  return section?.name || fallbackLabel;
 }
 
 function getProfileEmail(profile) {
@@ -1588,10 +1596,11 @@ function AdminDashboardPage() {
 
   useEffect(() => {
     if (analyticsSectionFilter === 'all') return;
+    if (isSuperadmin && analyticsSectionFilter === INDEPENDENT_LEARNERS_FILTER) return;
     if (!visibleSections.some(section => section.id === analyticsSectionFilter)) {
       setAnalyticsSectionFilter('all');
     }
-  }, [analyticsSectionFilter, visibleSections]);
+  }, [analyticsSectionFilter, isSuperadmin, visibleSections]);
   const adminTeacherOptions = useMemo(
     () => profiles.filter(profile => profile.role === 'admin' && !isDeletedProfile(profile)),
     [profiles]
@@ -1770,9 +1779,13 @@ function AdminDashboardPage() {
   const levelBarData = useMemo(() => levelDistribution.map(i => ({ level: i.label, users: i.value })), [levelDistribution]);
 
   const analyticsScopedUsers = useMemo(() => {
-    let scopedUsers = analyticsSectionFilter === 'all'
-      ? visibleUsers
-      : visibleUsers.filter(user => sectionIdByStudentId.get(user.id) === analyticsSectionFilter);
+    let scopedUsers = visibleUsers;
+
+    if (analyticsSectionFilter === INDEPENDENT_LEARNERS_FILTER) {
+      scopedUsers = visibleUsers.filter(user => !sectionIdByStudentId.get(user.id));
+    } else if (analyticsSectionFilter !== 'all') {
+      scopedUsers = visibleUsers.filter(user => sectionIdByStudentId.get(user.id) === analyticsSectionFilter);
+    }
 
     if (analyticsSpeakerLevelFilter !== 'all') {
       const selectedLevel = Number(analyticsSpeakerLevelFilter);
@@ -2008,13 +2021,12 @@ function AdminDashboardPage() {
         if (Number.isFinite(vocalScore)) vocalScores.push(vocalScore);
         if (Number.isFinite(verbalScore)) verbalScores.push(verbalScore);
       });
-      const section = sectionById.get(sectionIdByStudentId.get(user.id));
       const latestMs = userSessions.reduce((latest, session) => Math.max(latest, getTimestamp(session.created_at)), 0);
       const completedActivities = analyticsCompletionCountByUser.get(user.id) || 0;
       return {
         id: user.id,
         name: getDisplayName(user, user.id),
-        section: section?.name || 'No section',
+        section: getLearnerGroupLabel(user, sectionById, sectionIdByStudentId),
         speeches: userSessions.length,
         minutes: Number(userSessions.reduce((sum, session) => sum + getSessionDurationMinutes(session), 0).toFixed(1)),
         averageScore: averageDashboardScore(scores),
@@ -2101,11 +2113,10 @@ function AdminDashboardPage() {
       const studentSessions = sessions.filter(session => session.user_id === student.id && session.status !== 'error' && session.is_error !== true);
       const scores = studentSessions.map(session => getDashboardSessionScore(session, metricBySession.get(session.id)));
       const completedCount = clampActivityProgress(activityCompletions.filter(completion => completion.user_id === student.id).length);
-      const section = sectionById.get(sectionIdByStudentId.get(student.id));
       return {
         id: student.id,
         name: getDisplayName(student, student.id),
-        section: section?.name || '-',
+        section: getLearnerGroupLabel(student, sectionById, sectionIdByStudentId),
         speeches: studentSessions.length,
         minutes: Number(studentSessions.reduce((sum, session) => sum + getSessionDurationMinutes(session), 0).toFixed(1)),
         averageScore: averageDashboardScore(scores),
@@ -2132,7 +2143,7 @@ function AdminDashboardPage() {
         const typeLabel = profile.role === 'superadmin' ? 'Program Chair' : isAdminAccount ? 'Teacher' : 'Student';
         const roleOrSection = isAdminAccount
           ? (profile.role === 'superadmin' ? 'Program Chair' : accessRole?.name || 'Teacher')
-          : assignedSection?.name || profile.section_name || '-';
+          : assignedSection?.name || profile.section_name || INDEPENDENT_LEARNERS_LABEL;
 
         return {
           profile,
@@ -3327,7 +3338,7 @@ function AdminDashboardPage() {
         rows: reportStudentRows.map(student => [
           getDisplayName(student, student.id),
           student.student_number || '-',
-          sectionById.get(sectionIdByStudentId.get(student.id))?.name || '-',
+          getLearnerGroupLabel(student, sectionById, sectionIdByStudentId),
           `Journey ${student.current_level || 1}`,
           isDeletedProfile(student) ? 'Archived' : 'Active',
         ]),
@@ -3494,17 +3505,18 @@ function AdminDashboardPage() {
                 <label>
                   <span>Section</span>
                   <select className="admin-filter-select" value={analyticsSectionFilter} onChange={e => setAnalyticsSectionFilter(e.target.value)}>
-                    <option value="all">{isSuperadmin ? 'All sections' : 'My sections'}</option>
+                    <option value="all">{isSuperadmin ? 'All learners' : 'My sections'}</option>
+                    {isSuperadmin && <option value={INDEPENDENT_LEARNERS_FILTER}>{INDEPENDENT_LEARNERS_LABEL}</option>}
                     {visibleSections.map(section => <option key={section.id} value={section.id}>{section.name}</option>)}
                   </select>
-                  <small>{isSuperadmin ? 'Filter to one class section.' : 'Only assigned sections are available.'}</small>
+                  <small>{isSuperadmin ? 'Filter to one class section or independent learners.' : 'Only assigned sections are available.'}</small>
                 </label>
               </div>
             </section>
 
             <section className="admin-grid admin-grid-1" aria-label="Analytics summary">
               <article className="admin-card admin-kpi-card">
-                <p className="admin-kpi-label">STUDENTS IN VIEW</p>
+                <p className="admin-kpi-label">LEARNERS IN VIEW</p>
                 <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : analyticsKpis.students}</p>
                 <p className="admin-kpi-footer">{analyticsSpeakerLevelFilter === 'all' ? 'All speaker levels' : `Speaker Level ${analyticsSpeakerLevelFilter}`}</p>
               </article>
@@ -3661,12 +3673,12 @@ function AdminDashboardPage() {
             <section className="admin-card">
               <div className="admin-card-head">
                 <div>
-                  <h3>Student Confidence Rankings</h3>
-                  <p className="admin-note">Ranked student progress across activities and Visual, Vocal, and Verbal scores.</p>
+                  <h3>Learner Confidence Rankings</h3>
+                  <p className="admin-note">Ranked learner progress across activities and Visual, Vocal, and Verbal scores.</p>
                 </div>
               </div>
               <div className="admin-table-wrap"><table className="admin-table admin-confidence-rank-table">
-                <thead><tr><th>Rank</th><th>Student</th><th>Section</th><th>Activities</th><th>Level</th><th>Visual</th><th>Vocal</th><th>Verbal</th><th>Last Active</th></tr></thead>
+                <thead><tr><th>Rank</th><th>Learner</th><th>Section</th><th>Activities</th><th>Level</th><th>Visual</th><th>Vocal</th><th>Verbal</th><th>Last Active</th></tr></thead>
                 <tbody>{analyticsRankedStudentRows.length ? analyticsRankedStudentRows.map((student, index) => (
                   <tr key={student.id}>
                     <td>{index + 1}</td>
@@ -3974,7 +3986,7 @@ function AdminDashboardPage() {
               {reportType === 'students' && (
                 <>
                   <thead><tr><th>Student</th><th>Student No.</th><th>Section</th><th>Journey</th><th>Status</th></tr></thead>
-                  <tbody>{reportStudentRows.map(student => <tr key={student.id}><td>{getDisplayName(student, student.id)}</td><td>{student.student_number || '-'}</td><td>{sectionById.get(sectionIdByStudentId.get(student.id))?.name || '-'}</td><td>Journey {student.current_level || 1}</td><td>{isDeletedProfile(student) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
+                  <tbody>{reportStudentRows.map(student => <tr key={student.id}><td>{getDisplayName(student, student.id)}</td><td>{student.student_number || '-'}</td><td>{getLearnerGroupLabel(student, sectionById, sectionIdByStudentId)}</td><td>Journey {student.current_level || 1}</td><td>{isDeletedProfile(student) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
                 </>
               )}
               {reportType === 'performance' && (
@@ -4152,7 +4164,7 @@ function AdminDashboardPage() {
             <label className="admin-create-field">
               <span>Section</span>
               <select className="admin-filter-select" value={batchSectionId} onChange={e => setBatchSectionId(e.target.value)}>
-                <option value="">No section selected</option>
+                <option value="">{INDEPENDENT_LEARNERS_LABEL}</option>
                 {visibleSections.map(section => <option key={section.id} value={section.id}>{section.name}</option>)}
               </select>
             </label>
@@ -4294,7 +4306,7 @@ function AdminDashboardPage() {
           </AdminUserField>
           <AdminUserField label="Section">
             <select value={userForm.section_id} onChange={e => setUserForm(p => ({ ...p, section_id: e.target.value }))}>
-              <option value="">No section</option>
+              <option value="">{INDEPENDENT_LEARNERS_LABEL}</option>
               {visibleSections.map(section => <option key={section.id} value={section.id}>{section.name}</option>)}
             </select>
           </AdminUserField>
@@ -4330,7 +4342,7 @@ function AdminDashboardPage() {
           </AdminUserField>
           <AdminUserField label="Section" help="Assigns this student to a teacher-handled section.">
             <select value={userForm.section_id} onChange={e => setUserForm(p => ({ ...p, section_id: e.target.value }))}>
-              <option value="">No section</option>
+              <option value="">{INDEPENDENT_LEARNERS_LABEL}</option>
               {visibleSections.map(section => <option key={section.id} value={section.id}>{section.name}</option>)}
             </select>
           </AdminUserField>

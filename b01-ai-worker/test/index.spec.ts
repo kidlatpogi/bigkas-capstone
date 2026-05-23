@@ -14,19 +14,29 @@ const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
 describe("B-01 AI worker", () => {
 	it("counts hard, contextual, and phrase fillers deterministically", () => {
 		const fillers = detectFillerOccurrences(
-			"Uhhh ummm uhmmm I think, you know, this is like basically ready.",
+			"Uhhh ummm uhmmm oh mm erm er ah uhu e huh eh mhm I think, you know, this is like basically ready.",
 		);
 
 		expect(fillers.map((item) => item.normalized)).toEqual([
 			"uh",
 			"um",
 			"uhm",
+			"oh",
+			"mm",
+			"erm",
+			"er",
+			"ah",
+			"uhu",
+			"e",
+			"huh",
+			"eh",
+			"mhm",
 			"you",
 			"know",
 			"like",
 			"basically",
 		]);
-		expect(fillers).toHaveLength(7);
+		expect(fillers).toHaveLength(17);
 	});
 
 	it("responds to health checks with CORS headers (unit style)", async () => {

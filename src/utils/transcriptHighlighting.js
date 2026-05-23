@@ -2,12 +2,24 @@ export const FILLER_WORDS = [
   'um',
   'uh',
   'ah',
+  'eh',
+  'oh',
+  'e',
   'er',
   'err',
   'erm',
+  'em',
   'uhm',
+  'uhu',
+  'uhuh',
+  'huh',
+  'hm',
   'hmm',
+  'mm',
   'mmm',
+  'mhm',
+  'mmhm',
+  'mmhmm',
   'like',
   'well',
   'so',
@@ -37,10 +49,15 @@ function normalizeVocalizedFiller(word) {
   if (/^u+h+$/.test(word)) return 'uh';
   if (/^u+m+$/.test(word)) return 'um';
   if (/^u+h*m+$/.test(word)) return 'uhm';
+  if (/^u+h+u+h+$/.test(word)) return 'uhuh';
+  if (/^u+h+u+$/.test(word)) return 'uhu';
   if (/^a+h+$/.test(word)) return 'ah';
+  if (/^e+h+$/.test(word)) return 'eh';
   if (/^e+r+$/.test(word)) return 'er';
   if (/^h+m+$/.test(word)) return 'hmm';
-  if (/^m+$/.test(word) && word.length > 1) return 'mmm';
+  if (/^m+$/.test(word) && word.length > 1) return 'mm';
+  if (/^m+m+h+m+$/.test(word)) return 'mmhm';
+  if (/^m+h+m+$/.test(word)) return 'mhm';
   return word;
 }
 

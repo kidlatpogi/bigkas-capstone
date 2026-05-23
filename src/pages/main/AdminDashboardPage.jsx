@@ -3767,7 +3767,7 @@ function AdminDashboardPage() {
                   <p className="admin-note">Ranked user progress across activities and Visual, Vocal, and Verbal scores.</p>
                 </div>
               </div>
-              <div className="admin-table-wrap"><table className="admin-table admin-confidence-rank-table">
+              <div className="admin-table-wrap admin-confidence-rank-table-wrap"><table className="admin-table admin-confidence-rank-table">
                 <thead><tr><th>Rank</th><th>User</th><th>Section</th><th>Activities</th><th>Level</th><th>Visual</th><th>Vocal</th><th>Verbal</th><th>Last Active</th></tr></thead>
                 <tbody>{analyticsRankedStudentRows.length ? analyticsRankedStudentRows.map((student, index) => (
                   <tr key={student.id}>

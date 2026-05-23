@@ -643,10 +643,6 @@ body:has(.admin-dashboard-page) .main-content {
   min-width: 980px;
 }
 
-.admin-confidence-rank-table {
-  min-width: 1080px;
-}
-
 .admin-level-pass-chart {
   margin-bottom: 14px;
 }
@@ -982,6 +978,82 @@ body:has(.admin-dashboard-page) .main-content {
 
 .admin-account-table tbody tr:hover td:last-child {
   background: #f9fafb;
+}
+
+.admin-confidence-rank-table-wrap {
+  display: block;
+  max-width: 100%;
+  overflow-x: scroll;
+  overflow-y: hidden;
+  padding-bottom: 12px;
+  scrollbar-gutter: stable;
+  scrollbar-color: var(--accent-dark) #e7edf3;
+  scrollbar-width: thin;
+}
+
+.admin-confidence-rank-table {
+  width: 1420px;
+  min-width: 1420px;
+  table-layout: fixed;
+}
+
+.admin-confidence-rank-table-wrap::-webkit-scrollbar {
+  height: 14px;
+}
+
+.admin-confidence-rank-table-wrap::-webkit-scrollbar-track {
+  background: #e7edf3;
+  border-radius: 999px;
+}
+
+.admin-confidence-rank-table-wrap::-webkit-scrollbar-thumb {
+  background: var(--accent-dark);
+  border: 3px solid #e7edf3;
+  border-radius: 999px;
+}
+
+.admin-confidence-rank-table-wrap::-webkit-scrollbar-thumb:hover {
+  background: #1f2f3f;
+}
+
+.admin-confidence-rank-table th:nth-child(1),
+.admin-confidence-rank-table td:nth-child(1) {
+  width: 70px;
+}
+
+.admin-confidence-rank-table th:nth-child(2),
+.admin-confidence-rank-table td:nth-child(2) {
+  width: 190px;
+}
+
+.admin-confidence-rank-table th:nth-child(3),
+.admin-confidence-rank-table td:nth-child(3) {
+  width: 190px;
+}
+
+.admin-confidence-rank-table th:nth-child(4),
+.admin-confidence-rank-table td:nth-child(4) {
+  width: 110px;
+}
+
+.admin-confidence-rank-table th:nth-child(5),
+.admin-confidence-rank-table td:nth-child(5) {
+  width: 250px;
+}
+
+.admin-confidence-rank-table th:nth-child(6),
+.admin-confidence-rank-table td:nth-child(6),
+.admin-confidence-rank-table th:nth-child(7),
+.admin-confidence-rank-table td:nth-child(7),
+.admin-confidence-rank-table th:nth-child(8),
+.admin-confidence-rank-table td:nth-child(8) {
+  width: 90px;
+}
+
+.admin-confidence-rank-table th:last-child,
+.admin-confidence-rank-table td:last-child {
+  width: 340px;
+  min-width: 340px;
 }
 
 .admin-table td.admin-empty-table {

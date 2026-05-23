@@ -80,22 +80,12 @@ const FILLER_PHRASES = [
   ["sort", "of"],
 ];
 
-const FILLER_KEYTERMS = [
-  "uh",
-  "um",
-  "uhm",
-  "erm",
-  "er",
-  "ah",
-  "eh",
-  "oh",
-  "mm",
-  "mhm",
-  "mhmm",
-  "uh-huh",
-  "uh-uh",
-  "mm-mm",
-].join(",");
+const VERBATIM_FILLER_PROMPT = [
+  "Transcribe the speech verbatim.",
+  "Do not clean up disfluencies.",
+  "Include filler words such as uh, um, uhm, erm, er, ah, eh, oh, mm, mhm, uh-huh, and uh-uh when they are spoken.",
+  "Keep the speaker's exact filler words in the transcript.",
+].join(" ");
 
 type TranscriptWord = {
   word: string;
@@ -202,11 +192,46 @@ function countHardFillers(occurrences: FillerOccurrence[]) {
   return occurrences.filter((occurrence) => occurrence.kind === "hard").length;
 }
 
+function arrayBufferToBase64(buffer: ArrayBuffer) {
+  let binary = "";
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    const chunk = bytes.subarray(index, index + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
+}
+
 async function transcribeWithWhisper(env: Env, audioBuffer: ArrayBuffer) {
   const whisperResponse = await env.AI.run("@cf/openai/whisper", {
     audio: [...new Uint8Array(audioBuffer)],
   });
   return String(whisperResponse?.text || "").trim();
+}
+
+function resolveWhisperLargeTranscript(response: unknown) {
+  const result = response as {
+    text?: unknown;
+    transcription_info?: {
+      text?: unknown;
+    };
+  };
+  return String(result?.text || result?.transcription_info?.text || "").trim();
+}
+
+async function transcribeVerbatimWithWhisperLarge(env: Env, audioBuffer: ArrayBuffer) {
+  const response = await env.AI.run("@cf/openai/whisper-large-v3-turbo", {
+    audio: arrayBufferToBase64(audioBuffer),
+    task: "transcribe",
+    language: "en",
+    initial_prompt: VERBATIM_FILLER_PROMPT,
+    condition_on_previous_text: false,
+    vad_filter: false,
+    no_speech_threshold: 0.9,
+    log_prob_threshold: -2,
+  });
+  return resolveWhisperLargeTranscript(response);
 }
 
 export function detectFillerOccurrences(transcript: string, words: TranscriptWord[] = []) {
@@ -364,8 +389,6 @@ export default {
               contentType,
             },
             filler_words: true,
-            keyterm: FILLER_KEYTERMS,
-            keywords: FILLER_KEYTERMS,
             language: "en-US",
             punctuate: true,
             smart_format: false,
@@ -390,11 +413,11 @@ export default {
 
         if (shouldAuditFillers && transcriptionModel !== "@cf/openai/whisper" && countHardFillers(fillerOccurrences) === 0) {
           try {
-            fillerAuditTranscript = await transcribeWithWhisper(env, audioBuffer);
+            fillerAuditTranscript = await transcribeVerbatimWithWhisperLarge(env, audioBuffer);
             const auditOccurrences = detectFillerOccurrences(fillerAuditTranscript);
             const auditHardCount = countHardFillers(auditOccurrences);
             fillerAuditCount = auditOccurrences.length;
-            fillerAuditModel = "@cf/openai/whisper";
+            fillerAuditModel = "@cf/openai/whisper-large-v3-turbo";
 
             if (auditHardCount > 0 && auditOccurrences.length >= fillerOccurrences.length) {
               transcript = fillerAuditTranscript;

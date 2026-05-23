@@ -8,7 +8,7 @@ const defaultRobotImage = getSpriteUrl('Robot/0008-noBulb-inverted.png');
 const tutorialVoice1 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 1.mp3');
 const tutorialVoice2 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 2.mp3');
 const tutorialVoice3 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 3.mp3');
-const tutorialVoice4 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 4.mp3');
+const tutorialVoice4 = 'https://assets.bigkas.site/Voices/Profiling%20and%20Pre-Testing/Pre-Testing%20Tutorial/pre-testing%20tutorial%204_new.mp3';
 const tutorialVoice5 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 5.mp3');
 const tutorialVoiceFinal = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial FINAL.mp3');
 const defaultFinalRobotImage = getSpriteUrl('Robot/0002.webp');
@@ -244,6 +244,18 @@ function TutorialOverlayMobile({
     }
   };
 
+  const playAudio = (audio, label = 'B-01 voice') => {
+    if (!audio) return;
+    audio.muted = false;
+    audio.currentTime = 0;
+    audio.onerror = () => {
+      console.warn(`[TutorialOverlayMobile] ${label} unavailable.`);
+    };
+    audio.play().catch((err) => {
+      console.warn(`[TutorialOverlayMobile] ${label} play failed:`, err);
+    });
+  };
+
   const handleToggleMute = () => {
     setIsMuted((prev) => {
       const next = !prev;
@@ -301,23 +313,7 @@ function TutorialOverlayMobile({
       }
     }
 
-    if (!isMuted && isOpen && activeStep) {
-      stopAllAudios();
-      if (bubbleVoiceUrl) {
-        const audio = new Audio(bubbleVoiceUrl);
-        audio.muted = false;
-        customVoiceRef.current = audio;
-        audio.play().catch(() => {});
-      } else if (shouldUseAudio) {
-        const stepAudio = stepAudioRefs.current[currentStep];
-        if (stepAudio) {
-          stepAudio.muted = false;
-          stepAudio.currentTime = 0;
-          stepAudio.play().catch(() => {});
-        }
-      }
-    }
-  }, [isMuted, isOpen, activeStep, bubbleVoiceUrl, shouldUseAudio, currentStep]);
+  }, [isMuted]);
 
   useEffect(() => {
     if (isOpen) {
@@ -565,14 +561,12 @@ function TutorialOverlayMobile({
 
       if (bubbleVoiceUrl) {
         const audio = new Audio(bubbleVoiceUrl);
-        audio.muted = false;
         customVoiceRef.current = audio;
-        audio.play().catch((err) => console.warn('[TutorialOverlayMobile] Custom voice play failed:', err));
+        playAudio(audio, 'Custom voice');
       } else if (shouldUseAudio) {
         const stepAudio = stepAudioRefs.current[currentStep];
         if (stepAudio) {
-          stepAudio.currentTime = 0;
-          stepAudio.play().catch(() => {});
+          playAudio(stepAudio, `Tutorial voice ${currentStep + 1}`);
         }
       }
     }

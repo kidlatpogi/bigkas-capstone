@@ -13,7 +13,6 @@ const robotQuestionImage = getSpriteUrl('Robot/0012.webp');
 const introVoice1 = getVoiceUrl('Introductions/Intro 1.mp3');
 const introVoice2 = getVoiceUrl('Introductions/Intro 2.mp3');
 const introVoice3 = getVoiceUrl('Introductions/Intro 3.mp3');
-const beforePretestingVoice = getVoiceUrl('Profiling and Pre-Testing/Before pre-testing.mp3');
 const profilingQuestion1Voice = getVoiceUrl('Profiling and Pre-Testing/Profiling Questions/Profiling Question 1.mp3');
 const profilingQuestion2Voice = getVoiceUrl('Profiling and Pre-Testing/Profiling Questions/Profiling Question 2.mp3');
 const profilingQuestion3Voice = getVoiceUrl('Profiling and Pre-Testing/Profiling Questions/Profiling Question 3.mp3');
@@ -152,9 +151,8 @@ function UserProfilingPage() {
     'Before we begin, we need to assess your current Public Speaking Level. This includes 2 demographic questions, 10 short profiling questions and one small speaking pre-test. These tests ensure I can customize your experience and guide you smoothly throughout your entire journey!';
   const readyMessage =
     "Awesome! Since you're ready, let's jump right into your 10 profiling questions! And don't worry, you can answer every single one with a simple Yes, Sometimes, or No.";
-  const outroFirstMessage = "You've made it to the final step! To wrap things up, let\u2019s try a quick Free Speech Pre-test.";
-  const outroMissionMessage =
-    "speak for at least 30 seconds on the topic, 'Tell me about yourself.' Don't overthink it\u2014just be you and let your voice lead the way!";
+  const outroFirstMessage = 'Nice work, your profiling questions are complete.';
+  const outroMissionMessage = "Your Free Speech Pre-test is ready. Continue when you're ready for B-01's final instructions.";
 
   const [screen, setScreen] = useState(() => (user?.profilingCompleted ? 'outro' : 'intro'));
   const [introStep, setIntroStep] = useState(() => (user?.profilingCompleted ? 2 : 0));
@@ -231,13 +229,6 @@ function UserProfilingPage() {
       if (currentIndex + 1 < QUESTION_VOICE_SOURCES.length) {
         toPreload.push(QUESTION_VOICE_SOURCES[currentIndex + 1]);
       }
-      // Preload outro when nearing the end
-      if (currentIndex >= QUESTION_VOICE_SOURCES.length - 2) {
-        toPreload.push(beforePretestingVoice);
-      }
-    }
-    else if (screen === 'outro') {
-      toPreload.push(beforePretestingVoice);
     }
 
     toPreload.forEach(src => getAudio(src));
@@ -313,8 +304,6 @@ function UserProfilingPage() {
       playClip(demographicIndex === 0 ? demographicGenderVoice : demographicAgeVoice);
     } else if (screen === 'ready') {
       playClip(introVoice3);
-    } else if (screen === 'outro') {
-      playClip(beforePretestingVoice);
     }
   }, [introStep, isMuted, screen, demographicIndex]);
 
@@ -901,11 +890,7 @@ function UserProfilingPage() {
                 <strong>Your mission:</strong>
                 <br />
                 {isOutroTypingDone ? (
-                  <>
-                    speak for at least <strong>30 seconds</strong> on the topic,{' '}
-                    <strong>&apos;Tell me about yourself.&apos;</strong> Don&apos;t overthink it&mdash;just
-                    be you and let your voice lead the way!
-                  </>
+                  outroMissionMessage
                 ) : (
                   <Typewriter text={outroMissionMessage} onComplete={() => setIsOutroTypingDone(true)} />
                 )}

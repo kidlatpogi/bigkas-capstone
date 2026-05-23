@@ -200,6 +200,12 @@ function isMissingVideoStorageColumn(error) {
   return msg.includes('video_storage_url') && msg.includes('does not exist');
 }
 
+function isUnauthorizedMediaLookup(error) {
+  const status = Number(error?.status || error?.code);
+  const msg = String(error?.message || '').toLowerCase();
+  return status === 401 || status === 403 || msg.includes('jwt') || msg.includes('unauthorized');
+}
+
 function parseRecordingTimestamp(path) {
   const value = String(path || '').trim();
   if (!value) return null;
@@ -302,7 +308,8 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
   const { user } = useAuthContext();
   const [recordingMedia, setRecordingMedia] = useState({ audioUrl: null, videoUrl: null, transcript: '' });
   const [isReloadingMedia, setIsReloadingMedia] = useState(false);
-  const [mediaReloadToken, setMediaReloadToken] = useState(0);
+  const [mediaLookupToken, setMediaLookupToken] = useState(0);
+  const [mediaElementReloadToken, setMediaElementReloadToken] = useState(0);
   const [recoveredFillerAnalysis, setRecoveredFillerAnalysis] = useState(null);
   const fillerRecoveryKeyRef = useRef('');
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -427,8 +434,8 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
     const loadSessionMedia = async () => {
       if (!sessionId) return;
       setIsReloadingMedia(true);
-      let audioUrl = null;
-      let videoUrl = null;
+      let audioUrl = session?.audio_url || null;
+      let videoUrl = session?.video_storage_url || session?.video_url || null;
       let mediaTranscript = '';
 
       const publishMedia = async () => {
@@ -456,22 +463,26 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
             audioUrl = richMedia.audio_url ?? null;
             videoUrl = richMedia.video_storage_url ?? null;
             mediaTranscript = String(richMedia.transcript || '').trim();
+          } else if (isUnauthorizedMediaLookup(richMediaErr)) {
+            break;
           } else if (isMissingVideoStorageColumn(richMediaErr)) {
-            const { data: basicMedia } = await supabase
+            const { data: basicMedia, error: basicMediaErr } = await supabase
               .from('session_media')
               .select('audio_url, transcript')
               .eq('session_id', sessionId)
               .maybeSingle();
-            audioUrl = basicMedia?.audio_url ?? null;
-            mediaTranscript = String(basicMedia?.transcript || '').trim();
+            if (isUnauthorizedMediaLookup(basicMediaErr)) break;
+            audioUrl = basicMedia?.audio_url ?? audioUrl;
+            mediaTranscript = String(basicMedia?.transcript || mediaTranscript || '').trim();
           }
 
           if (!mediaTranscript) {
-            const { data: sessionMediaFromJoin } = await supabase
+            const { data: sessionMediaFromJoin, error: sessionJoinErr } = await supabase
               .from('sessions')
               .select('session_media(transcript)')
               .eq('id', sessionId)
               .maybeSingle();
+            if (isUnauthorizedMediaLookup(sessionJoinErr)) break;
             const mediaFromJoin = Array.isArray(sessionMediaFromJoin?.session_media)
               ? sessionMediaFromJoin.session_media[0]
               : sessionMediaFromJoin?.session_media;
@@ -510,7 +521,16 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
 
     loadSessionMedia();
     return () => { isMounted = false; };
-  }, [mediaReloadToken, session?.created_at, session?.user_id, sessionId, user?.id]);
+  }, [
+    mediaLookupToken,
+    session?.audio_url,
+    session?.created_at,
+    session?.user_id,
+    session?.video_storage_url,
+    session?.video_url,
+    sessionId,
+    user?.id,
+  ]);
 
   const mode = getSessionMode(session);
   const isPreTest = mode === 'Pre-Test';
@@ -725,7 +745,14 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
   
   const audioUrl = recordingMedia.audioUrl || buildBucketPublicUrl(session?.audio_url) || null;
   const videoUrl = recordingMedia.videoUrl || buildBucketPublicUrl(session?.video_storage_url) || buildBucketPublicUrl(session?.video_url) || null;
-  const mediaElementKey = `${mediaReloadToken}:${videoUrl || ''}:${audioUrl || ''}`;
+  const mediaElementKey = `${mediaElementReloadToken}:${videoUrl || ''}:${audioUrl || ''}`;
+  const handleReloadRecording = () => {
+    if (audioUrl || videoUrl) {
+      setMediaElementReloadToken((value) => value + 1);
+      return;
+    }
+    setMediaLookupToken((value) => value + 1);
+  };
 
   const sourceNav = locationState?.source;
   let breadcrumbParent = mode;
@@ -989,7 +1016,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
                   <button
                     type="button"
                     className="df-media-reload-btn"
-                    onClick={() => setMediaReloadToken((value) => value + 1)}
+                    onClick={handleReloadRecording}
                     disabled={isReloadingMedia}
                     aria-label="Reload session recording"
                     title="Reload recording"

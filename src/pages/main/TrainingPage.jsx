@@ -99,7 +99,7 @@ const MAX_VIDEO_BLOB_BYTES = 18 * 1024 * 1024;
 
 /** Minimum recording length (seconds) before FastAPI / Supabase analysis runs. */
 const DEFAULT_MIN_RECORDING_SECONDS = 20;
-const FREE_PRETEST_MIN_RECORDING_SECONDS = 30;
+const FREE_PRETEST_MIN_RECORDING_SECONDS = 20;
 const PREPARING_AI_TIMEOUT_MS = 12000;
 
 // Cache API configuration for persistent asset storage (Lighthouse: Efficient cache lifetimes)

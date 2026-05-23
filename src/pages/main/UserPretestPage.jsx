@@ -5,10 +5,12 @@ import { ROUTES } from '../../utils/constants';
 import { getAssetUrl, getVoiceUrl } from '../../utils/assetUtils';
 import './UserPretestPage.css';
 
+const PRETEST_MIN_RECORDING_SECONDS = 20;
+
 const PRETEST_TRAINING_STATE = {
   freeTopic: 'Tell me about yourself',
   focus: 'free',
-  objective: 'Speak for 30 Seconds about yourself.',
+  objective: `Speak for ${PRETEST_MIN_RECORDING_SECONDS} Seconds about yourself.`,
   sessionType: 'pre-test',
 };
 
@@ -19,7 +21,7 @@ const PRETEST_MUTE_KEY = 'bigkas_profiling_intro_muted';
 
 const introMessage = "You've made it to the final step! To wrap things up, let\u2019s try a quick Free Speech Pre-test.";
 const missionMessage =
-  "speak for at least 30 seconds on the topic, 'Tell me about yourself.' Don't overthink it\u2014just be you and let your voice lead the way!";
+  `speak for at least ${PRETEST_MIN_RECORDING_SECONDS} seconds on the topic, 'Tell me about yourself.' Don't overthink it\u2014just be you and let your voice lead the way!`;
 
 function Typewriter({ text, onComplete, delay = 18, charsPerTick = 2 }) {
   const [displayed, setDisplayed] = useState('');
@@ -142,7 +144,7 @@ function UserPretestPage() {
               <br />
               {isTypingDone ? (
                 <>
-                  speak for at least <strong>30 seconds</strong> on the topic,{' '}
+                  speak for at least <strong>{PRETEST_MIN_RECORDING_SECONDS} seconds</strong> on the topic,{' '}
                   <strong>&apos;Tell me about yourself.&apos;</strong> Don&apos;t overthink it&mdash;just
                   be you and let your voice lead the way!
                 </>

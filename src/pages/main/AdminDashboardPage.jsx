@@ -1169,9 +1169,11 @@ async function applyStageProgressWithAdminFunction(userId, payload) {
   return data;
 }
 
-async function fetchAdminDirectory() {
+async function fetchAdminDirectory(options = {}) {
   const { data, error } = await supabase.functions.invoke('admin-list-profiles', {
-    body: {},
+    body: {
+      include_analytics: Boolean(options.includeAnalytics),
+    },
   });
 
   if (error) {
@@ -1209,6 +1211,8 @@ async function fetchAdminDirectory() {
       section_id: profile.section_id || sectionIdByProfileId.get(profile.id) || null,
     })),
     sectionStudents,
+    sessions: Array.isArray(data?.sessions) ? data.sessions : null,
+    metrics: Array.isArray(data?.session_metrics) ? data.session_metrics : null,
   };
 }
 
@@ -1385,7 +1389,7 @@ function AdminDashboardPage() {
         setRole(roleProfile.role);
 
         const results = await Promise.allSettled([
-          withTimeout(fetchAdminDirectory(), 'Profiles'),
+          withTimeout(fetchAdminDirectory({ includeAnalytics: true }), 'Profiles'),
           withTimeout(supabase.from('sessions').select('*').order('created_at', { ascending: true }), 'Sessions'),
           withTimeout(supabase.from('session_metrics').select('session_id, overall_score, visual_score, vocal_score, verbal_score, visual_avg, vocal_avg, verbal_avg, confidence_score, pronunciation_score'), 'Session metrics'),
           withTimeout(supabase.from('activities').select('*').order('target_level', { ascending: true }).order('activity_order', { ascending: true }), 'Activities'),
@@ -1426,21 +1430,24 @@ function AdminDashboardPage() {
           return Array.isArray(result.value) ? result.value : (result.value?.data || []);
         };
 
+        const directoryData = adminProfilesResult.status === 'fulfilled' && !adminProfilesResult.value?.error
+          ? adminProfilesResult.value
+          : { profiles: [], sectionStudents: [] };
+        const hasFunctionSessions = Array.isArray(directoryData.sessions);
+        const hasFunctionMetrics = Array.isArray(directoryData.metrics);
         const failedLabels = results
           .map((result, index) => ({
             result,
             label: ['profiles', 'sessions', 'metrics', 'activities', 'modules', 'activity completions', 'access roles', 'role permissions', 'role assignments', 'sections', 'section students'][index],
           }))
+          .filter(({ label }) => !((label === 'sessions' && hasFunctionSessions) || (label === 'metrics' && hasFunctionMetrics)))
           .filter(({ result }) => result.status === 'rejected' || result.value?.error)
           .map(({ label }) => label);
 
         if (!active) return;
-        const directoryData = adminProfilesResult.status === 'fulfilled' && !adminProfilesResult.value?.error
-          ? adminProfilesResult.value
-          : { profiles: [], sectionStudents: [] };
         setProfiles(directoryData.profiles || []);
-        setSessions(getResultData(sessionsResult, 'Sessions'));
-        setMetrics(getResultData(metricsResult, 'Session metrics'));
+        setSessions(hasFunctionSessions ? directoryData.sessions : getResultData(sessionsResult, 'Sessions'));
+        setMetrics(hasFunctionMetrics ? directoryData.metrics : getResultData(metricsResult, 'Session metrics'));
         setActivities(getResultData(activitiesResult, 'Activities'));
         setModules(getResultData(modulesResult, 'Modules'));
         setActivityCompletions(getResultData(completionsResult, 'Activity completions'));
@@ -1826,6 +1833,19 @@ function AdminDashboardPage() {
     return map;
   }, [activityCompletions, analyticsUserIds]);
 
+  const analyticsAttemptedActivityIdsByUser = useMemo(() => {
+    const map = new Map();
+    sessions.forEach((session) => {
+      if (!session.user_id || !analyticsUserIds.has(session.user_id)) return;
+      if (session.status === 'error' || session.is_error === true) return;
+      const activityId = String(session.activity_id || '').trim();
+      if (!activityId) return;
+      if (!map.has(session.user_id)) map.set(session.user_id, new Set());
+      map.get(session.user_id).add(activityId);
+    });
+    return map;
+  }, [analyticsUserIds, sessions]);
+
   const analyticsCompletionIdsByUser = useMemo(() => {
     const map = new Map();
     activityCompletions.forEach((completion) => {
@@ -1836,6 +1856,18 @@ function AdminDashboardPage() {
     });
     return map;
   }, [activityCompletions, analyticsUserIds]);
+
+  const analyticsActivityProgressCountByUser = useMemo(() => {
+    const map = new Map();
+    analyticsUserIds.forEach((userId) => {
+      const activityIds = new Set([
+        ...(analyticsAttemptedActivityIdsByUser.get(userId) || []),
+        ...(analyticsCompletionIdsByUser.get(userId) || []),
+      ]);
+      map.set(userId, clampActivityProgress(activityIds.size));
+    });
+    return map;
+  }, [analyticsAttemptedActivityIdsByUser, analyticsCompletionIdsByUser, analyticsUserIds]);
 
   const analyticsKpis = useMemo(() => {
     const selectedLevel = analyticsSpeakerLevelFilter === 'all' ? null : Number(analyticsSpeakerLevelFilter);
@@ -1885,7 +1917,7 @@ function AdminDashboardPage() {
     };
 
     analyticsScopedUsers.forEach((user) => {
-      const level = getConfidenceLevel(analyticsCompletionCountByUser.get(user.id) || 0);
+      const level = getConfidenceLevel(analyticsActivityProgressCountByUser.get(user.id) || 0);
       const targetRow = level.level === 0 ? noActivityRow : rowsByLevel.get(level.level);
       if (!targetRow) return;
       targetRow.students += 1;
@@ -1906,7 +1938,7 @@ function AdminDashboardPage() {
       noActivityRow,
       ...CONFIDENCE_LEVELS.map(level => rowsByLevel.get(level.level)),
     ];
-  }, [activities, analyticsCompletionCountByUser, analyticsScopedUsers, analyticsSpeakerLevelFilter]);
+  }, [activities, analyticsActivityProgressCountByUser, analyticsScopedUsers, analyticsSpeakerLevelFilter]);
 
   const analyticsLevelPassRows = useMemo(() => {
     const selectedLevel = analyticsSpeakerLevelFilter === 'all' ? null : Number(analyticsSpeakerLevelFilter);
@@ -1947,7 +1979,6 @@ function AdminDashboardPage() {
 
   const analyticsStagePassRows = useMemo(() => {
     const selectedLevel = analyticsSpeakerLevelFilter === 'all' ? null : Number(analyticsSpeakerLevelFilter);
-    const totalStudents = analyticsScopedUsers.length;
     const scopedActivities = activities
       .filter((activity) => {
         const level = Number(activity.target_level) || 1;
@@ -1969,8 +2000,12 @@ function AdminDashboardPage() {
 
       analyticsScopedUsers.forEach((user) => {
         const userCompletions = analyticsCompletionIdsByUser.get(user.id) || new Set();
-        const target = userCompletions.has(activityId) ? passedStudents : notPassedStudents;
-        target.push(getDisplayName(user, user.id));
+        const userAttempts = analyticsAttemptedActivityIdsByUser.get(user.id) || new Set();
+        if (userCompletions.has(activityId)) {
+          passedStudents.push(getDisplayName(user, user.id));
+        } else if (userAttempts.has(activityId)) {
+          notPassedStudents.push(getDisplayName(user, user.id));
+        }
       });
 
       passedStudents.sort((a, b) => a.localeCompare(b));
@@ -1986,12 +2021,14 @@ function AdminDashboardPage() {
         focus: formatActivityFocus([activity]),
         passed: passedStudents.length,
         notPassed: notPassedStudents.length,
-        passRate: totalStudents ? Math.round((passedStudents.length / totalStudents) * 100) : 0,
+        passRate: passedStudents.length + notPassedStudents.length
+          ? Math.round((passedStudents.length / (passedStudents.length + notPassedStudents.length)) * 100)
+          : 0,
         passedStudents,
         notPassedStudents,
       };
     });
-  }, [activities, analyticsCompletionIdsByUser, analyticsScopedUsers, analyticsSpeakerLevelFilter]);
+  }, [activities, analyticsAttemptedActivityIdsByUser, analyticsCompletionIdsByUser, analyticsScopedUsers, analyticsSpeakerLevelFilter]);
 
   useEffect(() => {
     setAnalyticsStagePage(1);
@@ -2022,7 +2059,7 @@ function AdminDashboardPage() {
         if (Number.isFinite(verbalScore)) verbalScores.push(verbalScore);
       });
       const latestMs = userSessions.reduce((latest, session) => Math.max(latest, getTimestamp(session.created_at)), 0);
-      const completedActivities = analyticsCompletionCountByUser.get(user.id) || 0;
+      const completedActivities = analyticsActivityProgressCountByUser.get(user.id) || 0;
       return {
         id: user.id,
         name: getDisplayName(user, user.id),
@@ -2038,7 +2075,7 @@ function AdminDashboardPage() {
         lastActiveMs: latestMs || getProfileActivityTimestamp(user),
       };
     })
-  ), [analyticsCompletionCountByUser, analyticsScopedUsers, analyticsSessions, metricBySession, sectionById, sectionIdByStudentId]);
+  ), [analyticsActivityProgressCountByUser, analyticsScopedUsers, analyticsSessions, metricBySession, sectionById, sectionIdByStudentId]);
 
   const analyticsRankedStudentRows = useMemo(() => (
     analyticsStudentRows
@@ -2112,7 +2149,14 @@ function AdminDashboardPage() {
     reportStudentRows.map((student) => {
       const studentSessions = sessions.filter(session => session.user_id === student.id && session.status !== 'error' && session.is_error !== true);
       const scores = studentSessions.map(session => getDashboardSessionScore(session, metricBySession.get(session.id)));
-      const completedCount = clampActivityProgress(activityCompletions.filter(completion => completion.user_id === student.id).length);
+      const activityIds = new Set([
+        ...studentSessions.map(session => String(session.activity_id || '').trim()).filter(Boolean),
+        ...activityCompletions
+          .filter(completion => completion.user_id === student.id)
+          .map(completion => String(completion.activity_id || '').trim())
+          .filter(Boolean),
+      ]);
+      const completedCount = clampActivityProgress(activityIds.size);
       return {
         id: student.id,
         name: getDisplayName(student, student.id),

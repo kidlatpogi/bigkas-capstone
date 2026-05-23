@@ -188,8 +188,19 @@ function resolveDeepgramWords(response: unknown): TranscriptWord[] {
     .filter((entry: TranscriptWord) => entry.word);
 }
 
-function countHardFillers(occurrences: FillerOccurrence[]) {
+function countHardFillers(occurrences: Pick<FillerOccurrence, "kind">[]) {
   return occurrences.filter((occurrence) => occurrence.kind === "hard").length;
+}
+
+export function shouldUseFillerAudit(
+  currentOccurrences: Pick<FillerOccurrence, "kind">[],
+  auditOccurrences: Pick<FillerOccurrence, "kind">[],
+) {
+  const currentHardCount = countHardFillers(currentOccurrences);
+  const auditHardCount = countHardFillers(auditOccurrences);
+  return auditHardCount > currentHardCount || (
+    auditHardCount === currentHardCount && auditOccurrences.length > currentOccurrences.length
+  );
 }
 
 function arrayBufferToBase64(buffer: ArrayBuffer) {
@@ -411,15 +422,14 @@ export default {
         let fillerAuditCount = 0;
         let fillerAuditModel = "";
 
-        if (shouldAuditFillers && transcriptionModel !== "@cf/openai/whisper" && countHardFillers(fillerOccurrences) === 0) {
+        if (shouldAuditFillers && transcriptionModel !== "@cf/openai/whisper") {
           try {
             fillerAuditTranscript = await transcribeVerbatimWithWhisperLarge(env, audioBuffer);
             const auditOccurrences = detectFillerOccurrences(fillerAuditTranscript);
-            const auditHardCount = countHardFillers(auditOccurrences);
             fillerAuditCount = auditOccurrences.length;
             fillerAuditModel = "@cf/openai/whisper-large-v3-turbo";
 
-            if (auditHardCount > 0 && auditOccurrences.length >= fillerOccurrences.length) {
+            if (shouldUseFillerAudit(fillerOccurrences, auditOccurrences)) {
               transcript = fillerAuditTranscript;
               transcriptWords = [];
               fillerOccurrences = auditOccurrences;

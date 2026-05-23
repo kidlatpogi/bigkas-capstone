@@ -5,7 +5,7 @@ import {
 	SELF,
 } from "cloudflare:test";
 import { describe, it, expect } from "vitest";
-import worker, { detectFillerOccurrences } from "../src/index";
+import worker, { detectFillerOccurrences, shouldUseFillerAudit } from "../src/index";
 
 // For now, you'll need to do something like this to get a correctly-typed
 // `Request` to pass to `worker.fetch()`.
@@ -37,6 +37,18 @@ describe("B-01 AI worker", () => {
 			"basically",
 		]);
 		expect(fillers).toHaveLength(17);
+	});
+
+	it("prefers filler audit results when they recover more hard fillers", () => {
+		expect(shouldUseFillerAudit(
+			[{ kind: "contextual" }, { kind: "hard" }],
+			[{ kind: "contextual" }, { kind: "hard" }, { kind: "hard" }],
+		)).toBe(true);
+
+		expect(shouldUseFillerAudit(
+			[{ kind: "contextual" }, { kind: "hard" }],
+			[{ kind: "contextual" }, { kind: "hard" }],
+		)).toBe(false);
 	});
 
 	it("responds to health checks with CORS headers (unit style)", async () => {

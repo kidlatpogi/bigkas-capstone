@@ -27,7 +27,9 @@ import { useAllActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTa
 import {
   cleanTranscriptWord,
   countTranscriptFillers,
+  countTranscriptHardFillers,
   getAnalysisFillerCount,
+  getAnalysisHardFillerCount,
   getFillerTokenIndexes,
 } from '../../utils/transcriptHighlighting';
 
@@ -443,9 +445,16 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
     return transcriptCount;
   }, [rawTranscript, analysisData]);
 
+  const hardFillerCount = useMemo(() => {
+    const analysisCount = getAnalysisHardFillerCount(analysisData);
+    const transcriptCount = countTranscriptHardFillers(rawTranscript, analysisData);
+    if (analysisCount !== null) return Math.max(analysisCount, transcriptCount);
+    return transcriptCount;
+  }, [rawTranscript, analysisData]);
+
   useEffect(() => {
     const workerBaseUrl = String(ENV.CLOUDFLARE_AI_WORKER_URL || '').replace(/\/+$/, '');
-    if (fillerCount > 0 || !workerBaseUrl || !recordingMedia.audioUrl) return undefined;
+    if (hardFillerCount > 0 || !workerBaseUrl || !recordingMedia.audioUrl) return undefined;
 
     const recoveryKey = `${sessionId}:${recordingMedia.audioUrl}`;
     if (fillerRecoveryKeyRef.current === recoveryKey) return undefined;
@@ -459,7 +468,7 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
           playbackUrl: recordingMedia.audioUrl,
           storageUrl: session?.audio_url,
         });
-        const transcribeUrl = `${workerBaseUrl}/transcribe?topic=${encodeURIComponent(session?.topic || session?.objective_name || 'General Speaking')}`;
+        const transcribeUrl = `${workerBaseUrl}/transcribe?audit_fillers=true&topic=${encodeURIComponent(session?.topic || session?.objective_name || 'General Speaking')}`;
         const transcribeResponse = await fetch(transcribeUrl, {
           method: 'POST',
           headers: {
@@ -475,6 +484,7 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
           setRecoveredFillerAnalysis({
             transcript: String(recoveryData?.transcript || '').trim(),
             filler_count: recoveredCount,
+            hard_filler_count: Number(recoveryData?.hard_filler_count) || 0,
             filler_words: Array.isArray(recoveryData?.filler_words) ? recoveryData.filler_words : [],
             filler_occurrences: Array.isArray(recoveryData?.filler_occurrences) ? recoveryData.filler_occurrences : [],
           });
@@ -489,7 +499,7 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
       cancelled = true;
     };
   }, [
-    fillerCount,
+    hardFillerCount,
     recordingMedia.audioUrl,
     session?.objective_name,
     session?.topic,

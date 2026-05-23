@@ -1,4 +1,4 @@
-export const FILLER_WORDS = [
+export const HARD_FILLER_WORDS = [
   'um',
   'uh',
   'ah',
@@ -20,6 +20,9 @@ export const FILLER_WORDS = [
   'mhm',
   'mmhm',
   'mmhmm',
+];
+
+const CONTEXTUAL_FILLER_WORDS = [
   'like',
   'well',
   'so',
@@ -36,6 +39,11 @@ export const FILLER_WORDS = [
   'kinda',
 ];
 
+export const FILLER_WORDS = [
+  ...HARD_FILLER_WORDS,
+  ...CONTEXTUAL_FILLER_WORDS,
+];
+
 const FILLER_PHRASES = [
   ['you', 'know'],
   ['i', 'mean'],
@@ -44,6 +52,7 @@ const FILLER_PHRASES = [
 ];
 
 const PUNCTUATION_RE = /[.,/#!$%^&*;:{}=\-_`~()"[\]?]/g;
+const HARD_FILLER_SET = new Set(HARD_FILLER_WORDS);
 
 function normalizeVocalizedFiller(word) {
   if (/^u+h+$/.test(word)) return 'uh';
@@ -88,6 +97,15 @@ function extractAnalysisFillerValues(analysisData) {
   });
 }
 
+function extractAnalysisFillerOccurrences(analysisData) {
+  const candidates = [
+    analysisData?.filler_occurrences,
+    analysisData?.analysis?.filler_occurrences,
+    analysisData?.verbal?.filler_occurrences,
+  ];
+  return candidates.filter(Array.isArray).flat();
+}
+
 export function getAnalysisFillerWordSet(analysisData) {
   return new Set(
     extractAnalysisFillerValues(analysisData)
@@ -124,6 +142,23 @@ export function countTranscriptFillers(transcript, analysisData = {}) {
   return getFillerTokenIndexes(words, analysisData).size;
 }
 
+export function countTranscriptHardFillers(transcript, analysisData = {}) {
+  const words = String(transcript || '').split(/\s+/).filter(Boolean);
+  const analysisHardFillers = new Set(
+    extractAnalysisFillerOccurrences(analysisData)
+      .filter((item) => item?.kind === 'hard')
+      .map((item) => cleanTranscriptWord(item?.normalized || item?.word || ''))
+      .filter(Boolean),
+  );
+
+  return words.reduce((count, word) => {
+    const normalized = cleanTranscriptWord(word);
+    return HARD_FILLER_SET.has(normalized) || analysisHardFillers.has(normalized)
+      ? count + 1
+      : count;
+  }, 0);
+}
+
 export function getAnalysisFillerCount(analysisData) {
   const numericCandidates = [
     analysisData?.filler_count,
@@ -144,4 +179,19 @@ export function getAnalysisFillerCount(analysisData) {
   if (numericValue === null) return occurrenceValue;
   if (occurrenceValue === null) return numericValue;
   return Math.max(numericValue, occurrenceValue);
+}
+
+export function getAnalysisHardFillerCount(analysisData) {
+  const numericCandidates = [
+    analysisData?.hard_filler_count,
+    analysisData?.analysis?.hard_filler_count,
+    analysisData?.verbal?.hard_filler_count,
+  ];
+  const occurrenceHardCount = extractAnalysisFillerOccurrences(analysisData)
+    .filter((item) => item?.kind === 'hard' || HARD_FILLER_SET.has(cleanTranscriptWord(item?.normalized || item?.word || item)))
+    .length;
+  const value = numericCandidates.find((candidate) => Number.isFinite(Number(candidate)));
+  const numericValue = value == null ? null : Number(value);
+  if (numericValue === null) return occurrenceHardCount || null;
+  return Math.max(numericValue, occurrenceHardCount);
 }

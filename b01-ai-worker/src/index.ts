@@ -80,6 +80,23 @@ const FILLER_PHRASES = [
   ["sort", "of"],
 ];
 
+const FILLER_KEYTERMS = [
+  "uh",
+  "um",
+  "uhm",
+  "erm",
+  "er",
+  "ah",
+  "eh",
+  "oh",
+  "mm",
+  "mhm",
+  "mhmm",
+  "uh-huh",
+  "uh-uh",
+  "mm-mm",
+].join(",");
+
 type TranscriptWord = {
   word: string;
   start?: number;
@@ -179,6 +196,17 @@ function resolveDeepgramWords(response: unknown): TranscriptWord[] {
       confidence: Number.isFinite(Number(entry?.confidence)) ? Number(entry.confidence) : undefined,
     }))
     .filter((entry: TranscriptWord) => entry.word);
+}
+
+function countHardFillers(occurrences: FillerOccurrence[]) {
+  return occurrences.filter((occurrence) => occurrence.kind === "hard").length;
+}
+
+async function transcribeWithWhisper(env: Env, audioBuffer: ArrayBuffer) {
+  const whisperResponse = await env.AI.run("@cf/openai/whisper", {
+    audio: [...new Uint8Array(audioBuffer)],
+  });
+  return String(whisperResponse?.text || "").trim();
 }
 
 export function detectFillerOccurrences(transcript: string, words: TranscriptWord[] = []) {
@@ -327,6 +355,7 @@ export default {
         let transcript = "";
         let transcriptWords: TranscriptWord[] = [];
         let transcriptionModel = "@cf/deepgram/nova-3";
+        const shouldAuditFillers = url.searchParams.get("audit_fillers") === "true";
 
         try {
           const deepgramResponse = await env.AI.run("@cf/deepgram/nova-3", {
@@ -335,6 +364,8 @@ export default {
               contentType,
             },
             filler_words: true,
+            keyterm: FILLER_KEYTERMS,
+            keywords: FILLER_KEYTERMS,
             language: "en-US",
             punctuate: true,
             smart_format: false,
@@ -349,15 +380,35 @@ export default {
           console.warn("[transcribe] Nova-3 transcription failed, falling back to Whisper:", getErrorMessage(deepgramError));
           transcriptionModel = "@cf/openai/whisper";
 
-          const whisperResponse = await env.AI.run("@cf/openai/whisper", {
-            audio: [...new Uint8Array(audioBuffer)],
-          });
-
-          transcript = String(whisperResponse?.text || "").trim();
+          transcript = await transcribeWithWhisper(env, audioBuffer);
         }
 
-        const fillerOccurrences = detectFillerOccurrences(transcript, transcriptWords);
+        let fillerOccurrences = detectFillerOccurrences(transcript, transcriptWords);
+        let fillerAuditTranscript = "";
+        let fillerAuditCount = 0;
+        let fillerAuditModel = "";
+
+        if (shouldAuditFillers && transcriptionModel !== "@cf/openai/whisper" && countHardFillers(fillerOccurrences) === 0) {
+          try {
+            fillerAuditTranscript = await transcribeWithWhisper(env, audioBuffer);
+            const auditOccurrences = detectFillerOccurrences(fillerAuditTranscript);
+            const auditHardCount = countHardFillers(auditOccurrences);
+            fillerAuditCount = auditOccurrences.length;
+            fillerAuditModel = "@cf/openai/whisper";
+
+            if (auditHardCount > 0 && auditOccurrences.length >= fillerOccurrences.length) {
+              transcript = fillerAuditTranscript;
+              transcriptWords = [];
+              fillerOccurrences = auditOccurrences;
+              transcriptionModel = `${transcriptionModel}+filler-audit`;
+            }
+          } catch (auditError: unknown) {
+            console.warn("[transcribe] Whisper filler audit skipped:", getErrorMessage(auditError));
+          }
+        }
+
         const fillerWords = fillerOccurrences.map((occurrence) => occurrence.word);
+        const hardFillerCount = countHardFillers(fillerOccurrences);
 
         // 2. Fast Verbal Analysis using Llama-3
         // Filler counting is deterministic above, so the LLM only handles semantic judgment.
@@ -401,8 +452,12 @@ export default {
           transcript,
           transcription_model: transcriptionModel,
           filler_count: fillerOccurrences.length,
+          hard_filler_count: hardFillerCount,
           filler_words: fillerWords,
           filler_occurrences: fillerOccurrences,
+          filler_audit_model: fillerAuditModel,
+          filler_audit_count: fillerAuditCount,
+          filler_audit_transcript: fillerAuditTranscript,
         });
 
       } catch (e: any) {

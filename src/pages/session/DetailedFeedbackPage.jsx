@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { IoChevronForward, IoChevronBack } from 'react-icons/io5';
+import { IoChevronForward, IoChevronBack, IoReload } from 'react-icons/io5';
 import { 
   ResponsiveContainer, 
   LineChart, 
@@ -301,6 +301,8 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
   const { currentSession, fetchSessionById, isLoading } = useSessionContext();
   const { user } = useAuthContext();
   const [recordingMedia, setRecordingMedia] = useState({ audioUrl: null, videoUrl: null, transcript: '' });
+  const [isReloadingMedia, setIsReloadingMedia] = useState(false);
+  const [mediaReloadToken, setMediaReloadToken] = useState(0);
   const [recoveredFillerAnalysis, setRecoveredFillerAnalysis] = useState(null);
   const fillerRecoveryKeyRef = useRef('');
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -424,6 +426,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
     let isMounted = true;
     const loadSessionMedia = async () => {
       if (!sessionId) return;
+      setIsReloadingMedia(true);
       let audioUrl = null;
       let videoUrl = null;
       let mediaTranscript = '';
@@ -441,69 +444,73 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
         }));
       };
 
-      for (let attempt = 0; attempt < MEDIA_LOOKUP_ATTEMPTS; attempt += 1) {
-        const { data: richMedia, error: richMediaErr } = await supabase
-          .from('session_media')
-          .select('audio_url, video_storage_url, transcript')
-          .eq('session_id', sessionId)
-          .maybeSingle();
-
-        if (!richMediaErr && richMedia) {
-          audioUrl = richMedia.audio_url ?? null;
-          videoUrl = richMedia.video_storage_url ?? null;
-          mediaTranscript = String(richMedia.transcript || '').trim();
-        } else if (isMissingVideoStorageColumn(richMediaErr)) {
-          const { data: basicMedia } = await supabase
+      try {
+        for (let attempt = 0; attempt < MEDIA_LOOKUP_ATTEMPTS; attempt += 1) {
+          const { data: richMedia, error: richMediaErr } = await supabase
             .from('session_media')
-            .select('audio_url, transcript')
+            .select('audio_url, video_storage_url, transcript')
             .eq('session_id', sessionId)
             .maybeSingle();
-          audioUrl = basicMedia?.audio_url ?? null;
-          mediaTranscript = String(basicMedia?.transcript || '').trim();
+
+          if (!richMediaErr && richMedia) {
+            audioUrl = richMedia.audio_url ?? null;
+            videoUrl = richMedia.video_storage_url ?? null;
+            mediaTranscript = String(richMedia.transcript || '').trim();
+          } else if (isMissingVideoStorageColumn(richMediaErr)) {
+            const { data: basicMedia } = await supabase
+              .from('session_media')
+              .select('audio_url, transcript')
+              .eq('session_id', sessionId)
+              .maybeSingle();
+            audioUrl = basicMedia?.audio_url ?? null;
+            mediaTranscript = String(basicMedia?.transcript || '').trim();
+          }
+
+          if (!mediaTranscript) {
+            const { data: sessionMediaFromJoin } = await supabase
+              .from('sessions')
+              .select('session_media(transcript)')
+              .eq('id', sessionId)
+              .maybeSingle();
+            const mediaFromJoin = Array.isArray(sessionMediaFromJoin?.session_media)
+              ? sessionMediaFromJoin.session_media[0]
+              : sessionMediaFromJoin?.session_media;
+            mediaTranscript = String(mediaFromJoin?.transcript || '').trim();
+          }
+
+          const mediaUserId = session?.user_id || user?.id;
+          if (!videoUrl) {
+            videoUrl = await findLikelyVideoUrl({
+              userId: mediaUserId,
+              createdAt: session?.created_at,
+            });
+          }
+
+          if (!audioUrl) {
+            audioUrl = await findLikelyAudioUrl({
+              userId: mediaUserId,
+              createdAt: session?.created_at,
+            });
+          }
+
+          if (audioUrl || videoUrl || mediaTranscript) {
+            await publishMedia();
+          }
+
+          if ((audioUrl && videoUrl) || attempt === MEDIA_LOOKUP_ATTEMPTS - 1) break;
+          await new Promise((resolve) => setTimeout(resolve, MEDIA_LOOKUP_DELAY_MS));
         }
 
-        if (!mediaTranscript) {
-          const { data: sessionMediaFromJoin } = await supabase
-            .from('sessions')
-            .select('session_media(transcript)')
-            .eq('id', sessionId)
-            .maybeSingle();
-          const mediaFromJoin = Array.isArray(sessionMediaFromJoin?.session_media)
-            ? sessionMediaFromJoin.session_media[0]
-            : sessionMediaFromJoin?.session_media;
-          mediaTranscript = String(mediaFromJoin?.transcript || '').trim();
-        }
-
-        const mediaUserId = session?.user_id || user?.id;
-        if (!videoUrl) {
-          videoUrl = await findLikelyVideoUrl({
-            userId: mediaUserId,
-            createdAt: session?.created_at,
-          });
-        }
-
-        if (!audioUrl) {
-          audioUrl = await findLikelyAudioUrl({
-            userId: mediaUserId,
-            createdAt: session?.created_at,
-          });
-        }
-
-        if (audioUrl || videoUrl || mediaTranscript) {
-          await publishMedia();
-        }
-
-        if ((audioUrl && videoUrl) || attempt === MEDIA_LOOKUP_ATTEMPTS - 1) break;
-        await new Promise((resolve) => setTimeout(resolve, MEDIA_LOOKUP_DELAY_MS));
+        if (!isMounted) return;
+        await publishMedia();
+      } finally {
+        if (isMounted) setIsReloadingMedia(false);
       }
-
-      if (!isMounted) return;
-      await publishMedia();
     };
 
     loadSessionMedia();
     return () => { isMounted = false; };
-  }, [session?.created_at, session?.user_id, sessionId, user?.id]);
+  }, [mediaReloadToken, session?.created_at, session?.user_id, sessionId, user?.id]);
 
   const mode = getSessionMode(session);
   const isPreTest = mode === 'Pre-Test';
@@ -718,6 +725,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
   
   const audioUrl = recordingMedia.audioUrl || buildBucketPublicUrl(session?.audio_url) || null;
   const videoUrl = recordingMedia.videoUrl || buildBucketPublicUrl(session?.video_storage_url) || buildBucketPublicUrl(session?.video_url) || null;
+  const mediaElementKey = `${mediaReloadToken}:${videoUrl || ''}:${audioUrl || ''}`;
 
   const sourceNav = locationState?.source;
   let breadcrumbParent = mode;
@@ -977,16 +985,27 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
                     </div>
                   </div>
                 </div>
-                <div style={{ padding: '24px', background: '#fff' }}>
+                <div className="df-recording-panel">
+                  <button
+                    type="button"
+                    className="df-media-reload-btn"
+                    onClick={() => setMediaReloadToken((value) => value + 1)}
+                    disabled={isReloadingMedia}
+                    aria-label="Reload session recording"
+                    title="Reload recording"
+                  >
+                    <IoReload aria-hidden="true" />
+                    <span>{isReloadingMedia ? 'Reloading' : 'Reload'}</span>
+                  </button>
                   <div className="df-recording-content">
                     {videoUrl && (
                       <div className="df-video-wrap" style={{ borderRadius: '16px', overflow: 'hidden', background: '#000', maxWidth: '800px', margin: '0 auto' }}>
-                        <video className="df-video" controls preload="metadata" src={videoUrl} style={{ width: '100%', display: 'block' }}>Your browser does not support video playback.</video>
+                        <video key={`video-${mediaElementKey}`} className="df-video" controls preload="metadata" src={videoUrl} style={{ width: '100%', display: 'block' }}>Your browser does not support video playback.</video>
                       </div>
                     )}
                     {audioUrl && (
                       <div className="df-audio-wrap" style={{ marginTop: videoUrl ? '24px' : '0', maxWidth: '800px', margin: videoUrl ? '24px auto 0' : '0 auto' }}>
-                        <audio className="df-audio" controls preload="metadata" src={audioUrl} style={{ width: '100%' }}>Your browser does not support audio playback.</audio>
+                        <audio key={`audio-${mediaElementKey}`} className="df-audio" controls preload="metadata" src={audioUrl} style={{ width: '100%' }}>Your browser does not support audio playback.</audio>
                       </div>
                     )}
                     {!videoUrl && !audioUrl && <p className="df-recordings-empty">No recording available for this session.</p>}

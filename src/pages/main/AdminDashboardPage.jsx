@@ -14,7 +14,7 @@ import {
 } from 'recharts';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
-import { supabase } from '../../lib/supabase';
+import { ensureFreshAccessToken, supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import { ENV } from '../../config/env';
@@ -28,6 +28,8 @@ const SERVICE_HEALTH_CACHE_TTL_MS = 5 * 60 * 1000;
 const ACTIVE_USERS_PER_PAGE = 5;
 const BATCH_PREVIEW_ROWS_PER_PAGE = 5;
 const STAGE_PASS_ROWS_PER_PAGE = 10;
+const INDEPENDENT_LEARNERS_FILTER = 'independent-users';
+const INDEPENDENT_LEARNERS_LABEL = 'Independent Users';
 const DEFAULT_ADMIN_ACCESS_ROLE_ID = '00000000-0000-0000-0000-000000000101';
 const STUDENT_ACCESS_ROLE_REVIEW_ID = 'bigkas-system-student-role';
 const ADMIN_PERMISSION_ACTIONS = [
@@ -39,7 +41,7 @@ const ADMIN_PERMISSION_ACTIONS = [
 const ADMIN_PERMISSION_AREAS = [
   { key: 'overview', label: 'Overview', description: 'Dashboard summary', actions: ['view'] },
   { key: 'analytics', label: 'Analytics', description: 'Analytics workspace', actions: ['view'] },
-  { key: 'users', label: 'Account Management', description: 'Student and teacher accounts', actions: ['view', 'create', 'update', 'delete'] },
+  { key: 'users', label: 'Account Management', description: 'User and admin accounts', actions: ['view', 'create', 'update', 'delete'] },
   { key: 'activities', label: 'Activities', description: 'Activity content', actions: ['view', 'create', 'update', 'delete'] },
   { key: 'modules', label: 'Modules', description: 'Learning modules', actions: ['view', 'create', 'update', 'delete'] },
   { key: 'reports', label: 'Reports', description: 'Printable reports', actions: ['view', 'create'] },
@@ -49,8 +51,8 @@ const BATCH_STUDENT_TEMPLATE_COLUMNS = ['Last Name', 'First Name', 'Student Numb
 const BATCH_TEACHER_TEMPLATE_COLUMNS = ['Last Name', 'First Name', 'Email'];
 const STUDENT_ACCESS_ROLE_REVIEW = {
   id: STUDENT_ACCESS_ROLE_REVIEW_ID,
-  name: 'Student',
-  description: 'Default student role for app access, practice activities, modules, progress, and profile settings.',
+  name: 'User',
+  description: 'Default user role for app access, practice activities, modules, progress, and profile settings.',
   system: true,
   scope: 'student',
   visibleAreas: ['Activities', 'Modules', 'Practice', 'Progress', 'Profile Settings'],
@@ -104,8 +106,8 @@ function createDefaultAccessRoles() {
   return [
     {
       id: DEFAULT_ADMIN_ACCESS_ROLE_ID,
-      name: 'Teacher',
-      description: 'Default teacher role for managing assigned sections, students, activities, and modules.',
+      name: 'Admin',
+      description: 'Default admin role for managing assigned sections, users, activities, and modules.',
       system: true,
       permissions: adminPermissions,
     },
@@ -204,7 +206,20 @@ function getDisplayName(profile, fallbackId = '') {
   const full = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim();
   if (full) return full;
   if (profile?.username) return profile.username;
-  return `Student ${String(fallbackId).slice(0, 8)}`;
+  return `User ${String(fallbackId).slice(0, 8)}`;
+}
+
+function getLearnerGroupLabel(profile, sectionById, sectionIdByStudentId, fallbackLabel = INDEPENDENT_LEARNERS_LABEL) {
+  const sectionId = sectionIdByStudentId.get(profile?.id) || profile?.section_id || '';
+  const section = sectionId ? sectionById.get(sectionId) : null;
+  return section?.name || fallbackLabel;
+}
+
+function getAdminRoleLabel(profile, fallback = 'Admin') {
+  if (profile?.role === 'superadmin') return 'Super Admin';
+  if (profile?.role === 'admin') return 'Admin';
+  if (profile?.role === 'user') return 'User';
+  return fallback;
 }
 
 function getProfileEmail(profile) {
@@ -418,7 +433,7 @@ function normalizeAuthSecurityEvent(event) {
 }
 
 function getSessionDurationMinutes(session) {
-  const seconds = Number(session?.duration_sec ?? session?.duration ?? 0);
+  const seconds = Number(session?.duration_sec ?? session?.duration ?? session?.duration_seconds ?? 0);
   if (!Number.isFinite(seconds) || seconds <= 0) return 0;
   return seconds / 60;
 }
@@ -426,6 +441,20 @@ function getSessionDurationMinutes(session) {
 function getTimestamp(value) {
   const timestamp = new Date(value).getTime();
   return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function getSessionUserId(session) {
+  return session?.user_id || session?.profile_id || session?.student_id || session?.userId || '';
+}
+
+function getSessionActivityTimestamp(session) {
+  return Math.max(
+    getTimestamp(session?.created_at),
+    getTimestamp(session?.updated_at),
+    getTimestamp(session?.completed_at),
+    getTimestamp(session?.timestamp),
+    getTimestamp(session?.date)
+  );
 }
 
 function getProfileActivityTimestamp(profile) {
@@ -446,9 +475,10 @@ function getActiveUserIdsForRange(users, sessions, startDate, endDate) {
   const activeIds = new Set();
 
   sessions.forEach((session) => {
-    if (!userIds.has(session.user_id)) return;
-    const timestamp = getTimestamp(session.created_at);
-    if (timestamp >= start && timestamp < end) activeIds.add(session.user_id);
+    const sessionUserId = getSessionUserId(session);
+    if (!userIds.has(sessionUserId)) return;
+    const timestamp = getSessionActivityTimestamp(session);
+    if (timestamp >= start && timestamp < end) activeIds.add(sessionUserId);
   });
 
   users.forEach((user) => {
@@ -472,22 +502,31 @@ function averageDashboardScore(values) {
   return Math.round(valid.reduce((sum, value) => sum + value, 0) / valid.length);
 }
 
+function firstFiniteNumber(...values) {
+  for (const value of values) {
+    if (value === null || value === undefined || value === '') continue;
+    const number = Number(value);
+    if (Number.isFinite(number)) return number;
+  }
+  return null;
+}
+
 function getDashboardSessionScore(session, metricsRow) {
-  const verbalScore = normalizeDashboardScore(metricsRow?.verbal ?? session?.verbal_score ?? session?.context_score);
-  const vocalScore = normalizeDashboardScore(metricsRow?.vocal ?? session?.vocal_score ?? session?.acoustic_score);
-  const visualScore = normalizeDashboardScore(metricsRow?.visual ?? session?.visual_score);
+  const verbalScore = normalizeDashboardScore(firstFiniteNumber(metricsRow?.verbal, session?.verbal_score, session?.context_score));
+  const vocalScore = normalizeDashboardScore(firstFiniteNumber(metricsRow?.vocal, session?.vocal_score, session?.acoustic_score));
+  const visualScore = normalizeDashboardScore(firstFiniteNumber(metricsRow?.visual, session?.visual_score));
 
   if ([verbalScore, vocalScore, visualScore].every(Number.isFinite)) {
     return (verbalScore * 0.07) + (vocalScore * 0.38) + (visualScore * 0.55);
   }
 
-  return session?.confidence_score ?? session?.score ?? metricsRow?.confidence ?? metricsRow?.overall;
+  return firstFiniteNumber(session?.confidence_score, session?.score, metricsRow?.confidence, metricsRow?.overall);
 }
 
 function getAnalyticsMetricScore(session, metricsRow, metric) {
-  if (metric === 'visual') return metricsRow?.visual ?? session?.visual_score;
-  if (metric === 'vocal') return metricsRow?.vocal ?? session?.vocal_score ?? session?.acoustic_score;
-  if (metric === 'verbal') return metricsRow?.verbal ?? session?.verbal_score ?? session?.context_score;
+  if (metric === 'visual') return firstFiniteNumber(metricsRow?.visual, session?.visual_score);
+  if (metric === 'vocal') return firstFiniteNumber(metricsRow?.vocal, session?.vocal_score, session?.acoustic_score);
+  if (metric === 'verbal') return firstFiniteNumber(metricsRow?.verbal, session?.verbal_score, session?.context_score);
   return getDashboardSessionScore(session, metricsRow);
 }
 
@@ -758,9 +797,7 @@ function buildBatchPreview(matrix, accountType) {
     if (key) acc[key] = index;
     return acc;
   }, {});
-  const requiredKeys = accountType === 'admin'
-    ? ['last_name', 'first_name', 'email']
-    : ['last_name', 'first_name', 'student_number', 'email'];
+  const requiredKeys = ['last_name', 'first_name', 'email'];
   const labelsByKey = {
     last_name: 'Last Name',
     first_name: 'First Name',
@@ -781,7 +818,6 @@ function buildBatchPreview(matrix, accountType) {
   const invalidRows = parsedRows.filter(row => (
     !row.last_name
     || !row.first_name
-    || (accountType !== 'admin' && !row.student_number)
     || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)
   ));
 
@@ -1161,9 +1197,19 @@ async function applyStageProgressWithAdminFunction(userId, payload) {
   return data;
 }
 
-async function fetchAdminDirectory() {
+async function fetchAdminDirectory(options = {}) {
+  const { session, error: refreshError } = await ensureFreshAccessToken(null, { force: Boolean(options.forceRefreshToken) });
+  if (refreshError) {
+    throw new Error(refreshError.message || 'Unable to refresh management session.');
+  }
+
   const { data, error } = await supabase.functions.invoke('admin-list-profiles', {
-    body: {},
+    body: {
+      include_analytics: Boolean(options.includeAnalytics),
+    },
+    headers: session?.access_token
+      ? { Authorization: `Bearer ${session.access_token}` }
+      : undefined,
   });
 
   if (error) {
@@ -1201,6 +1247,8 @@ async function fetchAdminDirectory() {
       section_id: profile.section_id || sectionIdByProfileId.get(profile.id) || null,
     })),
     sectionStudents,
+    sessions: Array.isArray(data?.sessions) ? data.sessions : null,
+    metrics: Array.isArray(data?.session_metrics) ? data.session_metrics : null,
   };
 }
 
@@ -1365,11 +1413,11 @@ function AdminDashboardPage() {
           .eq('id', authData.user.id)
           .single();
 
-        if (roleError || !roleProfile) throw new Error('Teacher or Program Chair profile not found.');
+        if (roleError || !roleProfile) throw new Error('Admin or Super Admin profile not found.');
         if (roleProfile.role !== 'admin' && roleProfile.role !== 'superadmin') {
           await supabase.auth.signOut();
           navigate(ROUTES.ADMIN_LOGIN_BASE, { replace: true });
-          throw new Error('Access denied: teacher or Program Chair privileges required.');
+          throw new Error('Access denied: Admin or Super Admin privileges required.');
         }
 
         if (!active) return;
@@ -1377,7 +1425,7 @@ function AdminDashboardPage() {
         setRole(roleProfile.role);
 
         const results = await Promise.allSettled([
-          withTimeout(fetchAdminDirectory(), 'Profiles'),
+          withTimeout(fetchAdminDirectory({ includeAnalytics: true }), 'Profiles'),
           withTimeout(supabase.from('sessions').select('*').order('created_at', { ascending: true }), 'Sessions'),
           withTimeout(supabase.from('session_metrics').select('session_id, overall_score, visual_score, vocal_score, verbal_score, visual_avg, vocal_avg, verbal_avg, confidence_score, pronunciation_score'), 'Session metrics'),
           withTimeout(supabase.from('activities').select('*').order('target_level', { ascending: true }).order('activity_order', { ascending: true }), 'Activities'),
@@ -1418,21 +1466,24 @@ function AdminDashboardPage() {
           return Array.isArray(result.value) ? result.value : (result.value?.data || []);
         };
 
+        const directoryData = adminProfilesResult.status === 'fulfilled' && !adminProfilesResult.value?.error
+          ? adminProfilesResult.value
+          : { profiles: [], sectionStudents: [] };
+        const hasFunctionSessions = Array.isArray(directoryData.sessions);
+        const hasFunctionMetrics = Array.isArray(directoryData.metrics);
         const failedLabels = results
           .map((result, index) => ({
             result,
             label: ['profiles', 'sessions', 'metrics', 'activities', 'modules', 'activity completions', 'access roles', 'role permissions', 'role assignments', 'sections', 'section students'][index],
           }))
+          .filter(({ label }) => !((label === 'sessions' && hasFunctionSessions) || (label === 'metrics' && hasFunctionMetrics)))
           .filter(({ result }) => result.status === 'rejected' || result.value?.error)
           .map(({ label }) => label);
 
         if (!active) return;
-        const directoryData = adminProfilesResult.status === 'fulfilled' && !adminProfilesResult.value?.error
-          ? adminProfilesResult.value
-          : { profiles: [], sectionStudents: [] };
         setProfiles(directoryData.profiles || []);
-        setSessions(getResultData(sessionsResult, 'Sessions'));
-        setMetrics(getResultData(metricsResult, 'Session metrics'));
+        setSessions(hasFunctionSessions ? directoryData.sessions : getResultData(sessionsResult, 'Sessions'));
+        setMetrics(hasFunctionMetrics ? directoryData.metrics : getResultData(metricsResult, 'Session metrics'));
         setActivities(getResultData(activitiesResult, 'Activities'));
         setModules(getResultData(modulesResult, 'Modules'));
         setActivityCompletions(getResultData(completionsResult, 'Activity completions'));
@@ -1588,10 +1639,11 @@ function AdminDashboardPage() {
 
   useEffect(() => {
     if (analyticsSectionFilter === 'all') return;
+    if (isSuperadmin && analyticsSectionFilter === INDEPENDENT_LEARNERS_FILTER) return;
     if (!visibleSections.some(section => section.id === analyticsSectionFilter)) {
       setAnalyticsSectionFilter('all');
     }
-  }, [analyticsSectionFilter, visibleSections]);
+  }, [analyticsSectionFilter, isSuperadmin, visibleSections]);
   const adminTeacherOptions = useMemo(
     () => profiles.filter(profile => profile.role === 'admin' && !isDeletedProfile(profile)),
     [profiles]
@@ -1630,12 +1682,12 @@ function AdminDashboardPage() {
   const metricBySession = useMemo(() => {
     const map = new Map();
     metrics.forEach((m) => map.set(m.session_id, {
-      overall: Number(m.overall_score),
-      visual: Number(m.visual_score ?? m.visual_avg ?? m.confidence_score),
-      vocal: Number(m.vocal_score ?? m.vocal_avg ?? m.pronunciation_score),
-      verbal: Number(m.verbal_score ?? m.verbal_avg),
-      confidence: Number(m.confidence_score),
-      pronunciation: Number(m.pronunciation_score)
+      overall: firstFiniteNumber(m.overall_score, m.confidence_score),
+      visual: firstFiniteNumber(m.visual_score, m.visual_avg, m.confidence_score),
+      vocal: firstFiniteNumber(m.vocal_score, m.vocal_avg, m.pronunciation_score),
+      verbal: firstFiniteNumber(m.verbal_score, m.verbal_avg),
+      confidence: firstFiniteNumber(m.confidence_score),
+      pronunciation: firstFiniteNumber(m.pronunciation_score)
     }));
     return map;
   }, [metrics]);
@@ -1677,13 +1729,22 @@ function AdminDashboardPage() {
     const oneWeekAgo = shiftRange(now, 'day', -7);
     const activeUserIds = getActiveUserIdsForRange(visibleUsers, sessions, oneWeekAgo, now);
     const visibleUserIds = new Set(visibleUsers.map(user => user.id));
-    const sessionsThisWeek = sessions.filter(s => visibleUserIds.has(s.user_id) && new Date(s.created_at) >= oneWeekAgo);
+    const sessionsThisWeek = sessions.filter((session) => {
+      const sessionUserId = getSessionUserId(session);
+      const timestamp = getSessionActivityTimestamp(session);
+      return visibleUserIds.has(sessionUserId)
+        && session.status !== 'error'
+        && session.is_error !== true
+        && timestamp >= oneWeekAgo.getTime()
+        && timestamp < now.getTime();
+    });
     const sessionsByUser = new Map();
 
     sessionsThisWeek.forEach((session) => {
-      const userSessions = sessionsByUser.get(session.user_id) || [];
+      const sessionUserId = getSessionUserId(session);
+      const userSessions = sessionsByUser.get(sessionUserId) || [];
       userSessions.push(session);
-      sessionsByUser.set(session.user_id, userSessions);
+      sessionsByUser.set(sessionUserId, userSessions);
     });
 
     return visibleUsers
@@ -1694,7 +1755,7 @@ function AdminDashboardPage() {
           return getDashboardSessionScore(session, metricsRow);
         });
         const latestActiveMs = userSessions.reduce((latest, session) => (
-          Math.max(latest, new Date(session.created_at).getTime())
+          Math.max(latest, getSessionActivityTimestamp(session))
         ), getProfileActivityTimestamp(profile));
         const isActive = activeUserIds.has(profile.id);
 
@@ -1770,9 +1831,13 @@ function AdminDashboardPage() {
   const levelBarData = useMemo(() => levelDistribution.map(i => ({ level: i.label, users: i.value })), [levelDistribution]);
 
   const analyticsScopedUsers = useMemo(() => {
-    let scopedUsers = analyticsSectionFilter === 'all'
-      ? visibleUsers
-      : visibleUsers.filter(user => sectionIdByStudentId.get(user.id) === analyticsSectionFilter);
+    let scopedUsers = visibleUsers;
+
+    if (analyticsSectionFilter === INDEPENDENT_LEARNERS_FILTER) {
+      scopedUsers = visibleUsers.filter(user => !sectionIdByStudentId.get(user.id));
+    } else if (analyticsSectionFilter !== 'all') {
+      scopedUsers = visibleUsers.filter(user => sectionIdByStudentId.get(user.id) === analyticsSectionFilter);
+    }
 
     if (analyticsSpeakerLevelFilter !== 'all') {
       const selectedLevel = Number(analyticsSpeakerLevelFilter);
@@ -1797,9 +1862,9 @@ function AdminDashboardPage() {
 
   const analyticsSessions = useMemo(() => (
     sessions.filter((session) => {
-      if (!analyticsUserIds.has(session.user_id)) return false;
+      if (!analyticsUserIds.has(getSessionUserId(session))) return false;
       if (session.status === 'error' || session.is_error === true) return false;
-      return getTimestamp(session.created_at) >= analyticsRangeStart.getTime();
+      return getSessionActivityTimestamp(session) >= analyticsRangeStart.getTime();
     })
   ), [analyticsRangeStart, analyticsUserIds, sessions]);
 
@@ -1813,6 +1878,20 @@ function AdminDashboardPage() {
     return map;
   }, [activityCompletions, analyticsUserIds]);
 
+  const analyticsAttemptedActivityIdsByUser = useMemo(() => {
+    const map = new Map();
+    sessions.forEach((session) => {
+      const sessionUserId = getSessionUserId(session);
+      if (!sessionUserId || !analyticsUserIds.has(sessionUserId)) return;
+      if (session.status === 'error' || session.is_error === true) return;
+      const activityId = String(session.activity_id || '').trim();
+      if (!activityId) return;
+      if (!map.has(sessionUserId)) map.set(sessionUserId, new Set());
+      map.get(sessionUserId).add(activityId);
+    });
+    return map;
+  }, [analyticsUserIds, sessions]);
+
   const analyticsCompletionIdsByUser = useMemo(() => {
     const map = new Map();
     activityCompletions.forEach((completion) => {
@@ -1823,6 +1902,18 @@ function AdminDashboardPage() {
     });
     return map;
   }, [activityCompletions, analyticsUserIds]);
+
+  const analyticsActivityProgressCountByUser = useMemo(() => {
+    const map = new Map();
+    analyticsUserIds.forEach((userId) => {
+      const activityIds = new Set([
+        ...(analyticsAttemptedActivityIdsByUser.get(userId) || []),
+        ...(analyticsCompletionIdsByUser.get(userId) || []),
+      ]);
+      map.set(userId, clampActivityProgress(activityIds.size));
+    });
+    return map;
+  }, [analyticsAttemptedActivityIdsByUser, analyticsCompletionIdsByUser, analyticsUserIds]);
 
   const analyticsKpis = useMemo(() => {
     const selectedLevel = analyticsSpeakerLevelFilter === 'all' ? null : Number(analyticsSpeakerLevelFilter);
@@ -1872,7 +1963,7 @@ function AdminDashboardPage() {
     };
 
     analyticsScopedUsers.forEach((user) => {
-      const level = getConfidenceLevel(analyticsCompletionCountByUser.get(user.id) || 0);
+      const level = getConfidenceLevel(analyticsActivityProgressCountByUser.get(user.id) || 0);
       const targetRow = level.level === 0 ? noActivityRow : rowsByLevel.get(level.level);
       if (!targetRow) return;
       targetRow.students += 1;
@@ -1893,7 +1984,7 @@ function AdminDashboardPage() {
       noActivityRow,
       ...CONFIDENCE_LEVELS.map(level => rowsByLevel.get(level.level)),
     ];
-  }, [activities, analyticsCompletionCountByUser, analyticsScopedUsers, analyticsSpeakerLevelFilter]);
+  }, [activities, analyticsActivityProgressCountByUser, analyticsScopedUsers, analyticsSpeakerLevelFilter]);
 
   const analyticsLevelPassRows = useMemo(() => {
     const selectedLevel = analyticsSpeakerLevelFilter === 'all' ? null : Number(analyticsSpeakerLevelFilter);
@@ -1934,7 +2025,6 @@ function AdminDashboardPage() {
 
   const analyticsStagePassRows = useMemo(() => {
     const selectedLevel = analyticsSpeakerLevelFilter === 'all' ? null : Number(analyticsSpeakerLevelFilter);
-    const totalStudents = analyticsScopedUsers.length;
     const scopedActivities = activities
       .filter((activity) => {
         const level = Number(activity.target_level) || 1;
@@ -1956,8 +2046,12 @@ function AdminDashboardPage() {
 
       analyticsScopedUsers.forEach((user) => {
         const userCompletions = analyticsCompletionIdsByUser.get(user.id) || new Set();
-        const target = userCompletions.has(activityId) ? passedStudents : notPassedStudents;
-        target.push(getDisplayName(user, user.id));
+        const userAttempts = analyticsAttemptedActivityIdsByUser.get(user.id) || new Set();
+        if (userCompletions.has(activityId)) {
+          passedStudents.push(getDisplayName(user, user.id));
+        } else if (userAttempts.has(activityId)) {
+          notPassedStudents.push(getDisplayName(user, user.id));
+        }
       });
 
       passedStudents.sort((a, b) => a.localeCompare(b));
@@ -1973,12 +2067,14 @@ function AdminDashboardPage() {
         focus: formatActivityFocus([activity]),
         passed: passedStudents.length,
         notPassed: notPassedStudents.length,
-        passRate: totalStudents ? Math.round((passedStudents.length / totalStudents) * 100) : 0,
+        passRate: passedStudents.length + notPassedStudents.length
+          ? Math.round((passedStudents.length / (passedStudents.length + notPassedStudents.length)) * 100)
+          : 0,
         passedStudents,
         notPassedStudents,
       };
     });
-  }, [activities, analyticsCompletionIdsByUser, analyticsScopedUsers, analyticsSpeakerLevelFilter]);
+  }, [activities, analyticsAttemptedActivityIdsByUser, analyticsCompletionIdsByUser, analyticsScopedUsers, analyticsSpeakerLevelFilter]);
 
   useEffect(() => {
     setAnalyticsStagePage(1);
@@ -1994,7 +2090,7 @@ function AdminDashboardPage() {
 
   const analyticsStudentRows = useMemo(() => (
     analyticsScopedUsers.map((user) => {
-      const userSessions = analyticsSessions.filter(session => session.user_id === user.id);
+      const userSessions = analyticsSessions.filter(session => getSessionUserId(session) === user.id);
       const scores = userSessions.map(session => getDashboardSessionScore(session, metricBySession.get(session.id)));
       const visualScores = [];
       const vocalScores = [];
@@ -2008,13 +2104,12 @@ function AdminDashboardPage() {
         if (Number.isFinite(vocalScore)) vocalScores.push(vocalScore);
         if (Number.isFinite(verbalScore)) verbalScores.push(verbalScore);
       });
-      const section = sectionById.get(sectionIdByStudentId.get(user.id));
-      const latestMs = userSessions.reduce((latest, session) => Math.max(latest, getTimestamp(session.created_at)), 0);
-      const completedActivities = analyticsCompletionCountByUser.get(user.id) || 0;
+      const latestMs = userSessions.reduce((latest, session) => Math.max(latest, getSessionActivityTimestamp(session)), 0);
+      const completedActivities = analyticsActivityProgressCountByUser.get(user.id) || 0;
       return {
         id: user.id,
         name: getDisplayName(user, user.id),
-        section: section?.name || 'No section',
+        section: getLearnerGroupLabel(user, sectionById, sectionIdByStudentId),
         speeches: userSessions.length,
         minutes: Number(userSessions.reduce((sum, session) => sum + getSessionDurationMinutes(session), 0).toFixed(1)),
         averageScore: averageDashboardScore(scores),
@@ -2026,7 +2121,7 @@ function AdminDashboardPage() {
         lastActiveMs: latestMs || getProfileActivityTimestamp(user),
       };
     })
-  ), [analyticsCompletionCountByUser, analyticsScopedUsers, analyticsSessions, metricBySession, sectionById, sectionIdByStudentId]);
+  ), [analyticsActivityProgressCountByUser, analyticsScopedUsers, analyticsSessions, metricBySession, sectionById, sectionIdByStudentId]);
 
   const analyticsRankedStudentRows = useMemo(() => (
     analyticsStudentRows
@@ -2069,7 +2164,7 @@ function AdminDashboardPage() {
         const score = normalizeDashboardScore(getAnalyticsMetricScore(session, metrics, row.key));
         if (!Number.isFinite(score)) return;
         row.scores.push(score);
-        row.students.add(session.user_id);
+        row.students.add(getSessionUserId(session));
       });
     });
 
@@ -2098,14 +2193,20 @@ function AdminDashboardPage() {
 
   const reportStudentPerformanceRows = useMemo(() => (
     reportStudentRows.map((student) => {
-      const studentSessions = sessions.filter(session => session.user_id === student.id && session.status !== 'error' && session.is_error !== true);
+      const studentSessions = sessions.filter(session => getSessionUserId(session) === student.id && session.status !== 'error' && session.is_error !== true);
       const scores = studentSessions.map(session => getDashboardSessionScore(session, metricBySession.get(session.id)));
-      const completedCount = clampActivityProgress(activityCompletions.filter(completion => completion.user_id === student.id).length);
-      const section = sectionById.get(sectionIdByStudentId.get(student.id));
+      const activityIds = new Set([
+        ...studentSessions.map(session => String(session.activity_id || '').trim()).filter(Boolean),
+        ...activityCompletions
+          .filter(completion => completion.user_id === student.id)
+          .map(completion => String(completion.activity_id || '').trim())
+          .filter(Boolean),
+      ]);
+      const completedCount = clampActivityProgress(activityIds.size);
       return {
         id: student.id,
         name: getDisplayName(student, student.id),
-        section: section?.name || '-',
+        section: getLearnerGroupLabel(student, sectionById, sectionIdByStudentId),
         speeches: studentSessions.length,
         minutes: Number(studentSessions.reduce((sum, session) => sum + getSessionDurationMinutes(session), 0).toFixed(1)),
         averageScore: averageDashboardScore(scores),
@@ -2129,10 +2230,10 @@ function AdminDashboardPage() {
         const isAdminAccount = isAdminProfile(profile);
         const assignedSection = !isAdminAccount ? sectionById.get(sectionIdByStudentId.get(profile.id) || profile.section_id) : null;
         const accessRole = isAdminAccount ? findAccessRole(adminAccessRoles, adminAccessAssignments[profile.id]) : null;
-        const typeLabel = profile.role === 'superadmin' ? 'Program Chair' : isAdminAccount ? 'Teacher' : 'Student';
+        const typeLabel = getAdminRoleLabel(profile);
         const roleOrSection = isAdminAccount
-          ? (profile.role === 'superadmin' ? 'Program Chair' : accessRole?.name || 'Teacher')
-          : assignedSection?.name || profile.section_name || '-';
+          ? (profile.role === 'superadmin' ? 'Super Admin' : accessRole?.name || 'Admin')
+          : assignedSection?.name || profile.section_name || INDEPENDENT_LEARNERS_LABEL;
 
         return {
           profile,
@@ -2391,7 +2492,7 @@ function AdminDashboardPage() {
       setProfiles(directory.profiles);
       setSectionStudents(prev => mergeSectionStudentRows(prev, directory.sectionStudents));
     } catch (refreshError) {
-      showToast(refreshError.message || 'Failed to refresh students', 'error');
+      showToast(refreshError.message || 'Failed to refresh users', 'error');
       return;
     }
   };
@@ -2582,7 +2683,7 @@ function AdminDashboardPage() {
 
   const requestDeleteAccessRole = (roleId) => {
     if (roleId === DEFAULT_ADMIN_ACCESS_ROLE_ID) {
-      showToast('Default Teacher role cannot be deleted', 'error');
+      showToast('Default Admin role cannot be deleted', 'error');
       return;
     }
     const existingRole = adminAccessRoles.find(roleTemplate => roleTemplate.id === roleId);
@@ -2590,14 +2691,14 @@ function AdminDashboardPage() {
       kind: 'accessRole',
       id: roleId,
       title: 'Delete access role?',
-      message: `This will delete the "${existingRole?.name || 'selected'}" role. Teachers assigned to it will be moved back to the default Teacher role.`,
+      message: `This will delete the "${existingRole?.name || 'selected'}" role. Admins assigned to it will be moved back to the default Admin role.`,
       confirmLabel: 'Delete Role',
     });
   };
 
   const deleteAccessRole = async (roleId) => {
     if (roleId === DEFAULT_ADMIN_ACCESS_ROLE_ID) {
-      showToast('Default Teacher role cannot be deleted', 'error');
+      showToast('Default Admin role cannot be deleted', 'error');
       return;
     }
     const existingRole = adminAccessRoles.find(roleTemplate => roleTemplate.id === roleId);
@@ -2659,11 +2760,11 @@ function AdminDashboardPage() {
       }
       if (preview.invalidRows.length) {
         setBatchImportStatus('error');
-        setBatchImportError(`${preview.invalidRows.length} row${preview.invalidRows.length === 1 ? '' : 's'} need complete names, ${accountType === 'admin' ? '' : 'student numbers, '}and valid email addresses.`);
+        setBatchImportError(`${preview.invalidRows.length} row${preview.invalidRows.length === 1 ? '' : 's'} need complete names and valid email addresses.`);
         return;
       }
       setBatchImportStatus('ready');
-      showToast(`${preview.rows.length} ${accountType === 'admin' ? 'teacher' : 'student'} row${preview.rows.length === 1 ? '' : 's'} detected`);
+      showToast(`${preview.rows.length} ${accountType === 'admin' ? 'admin' : 'user'} row${preview.rows.length === 1 ? '' : 's'} detected`);
     } catch (fileError) {
       setBatchImportStatus('error');
       setBatchImportError(fileError.message || 'Failed to read the selected file.');
@@ -2801,7 +2902,7 @@ function AdminDashboardPage() {
 
       await refreshProfiles();
       if (batchAccountType === 'admin') await refreshRbacData();
-      showToast(`${createdCount} ${batchAccountType === 'admin' ? 'teacher' : 'student'} account${createdCount === 1 ? '' : 's'} created. Welcome invite${createdCount === 1 ? '' : 's'} sent.`);
+      showToast(`${createdCount} ${batchAccountType === 'admin' ? 'admin' : 'user'} account${createdCount === 1 ? '' : 's'} created. Welcome invite${createdCount === 1 ? '' : 's'} sent.`);
       setShowBatchAccountModal(false);
       resetBatchImportState();
     } catch (batchError) {
@@ -2832,7 +2933,7 @@ function AdminDashboardPage() {
       updated_at: new Date().toISOString(),
     };
     if (!payload.teacher_id) {
-      showToast('Choose a teacher for this section', 'error');
+      showToast('Choose an admin for this section', 'error');
       return;
     }
     try {
@@ -2879,7 +2980,7 @@ function AdminDashboardPage() {
       id: section.id,
       title: 'Delete section?',
       message: assignedCount
-        ? `This will delete "${section.name}" and unassign ${assignedCount} student${assignedCount === 1 ? '' : 's'} from it.`
+        ? `This will delete "${section.name}" and unassign ${assignedCount} user${assignedCount === 1 ? '' : 's'} from it.`
         : `This will delete "${section.name}".`,
       confirmLabel: 'Delete Section',
     });
@@ -3100,12 +3201,12 @@ function AdminDashboardPage() {
         },
       });
       await assignUserToSection(user.id, userForm.section_id);
-      showToast('Student created. Welcome invite sent.');
+      showToast('User created. Welcome invite sent.');
       setCreatingUser(false);
       setUserForm(USER_FORM_INITIAL);
       await refreshProfiles();
     } catch (e) {
-      showToast(e.message || 'Failed to create student', 'error');
+      showToast(e.message || 'Failed to create user', 'error');
     } finally {
       setSavingUser(false);
     }
@@ -3126,12 +3227,12 @@ function AdminDashboardPage() {
         oldValues: editingUser,
         newValues: { ...updatedProfile, section_id: userForm.section_id || null },
       });
-      showToast('Student updated');
+      showToast('User updated');
       setEditingUser(null);
       setProfiles(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...updatedProfile } : u));
       await refreshProfiles();
     } catch (updateError) {
-      showToast(updateError.message || 'Failed to update student', 'error');
+      showToast(updateError.message || 'Failed to update user', 'error');
     } finally {
       setSavingUser(false);
     }
@@ -3156,7 +3257,7 @@ function AdminDashboardPage() {
     setProfiles(prev => prev.map(u => u.id === user.id ? { ...u, ...newValues } : u));
     setEditingUser(prev => prev?.id === user.id ? { ...prev, ...newValues } : prev);
     setEditingAdmin(prev => prev?.id === user.id ? { ...prev, ...newValues } : prev);
-    showToast(`${isAdminProfile(user) ? 'Teacher' : 'Student'} ${shouldArchive ? 'archived' : 'restored'}`);
+    showToast(`${isAdminProfile(user) ? 'Admin' : 'User'} ${shouldArchive ? 'archived' : 'restored'}`);
   };
 
   const submitUpdateAdmin = async (e) => {
@@ -3195,11 +3296,11 @@ function AdminDashboardPage() {
         if (assignmentError) throw assignmentError;
       }
       await refreshRbacData();
-      showToast('Teacher updated');
+      showToast('Admin updated');
       setEditingAdmin(null);
       setProfiles(prev => prev.map(u => u.id === editingAdmin.id ? { ...u, ...payload } : u));
     } catch (adminUpdateError) {
-      showToast(adminUpdateError.message || 'Failed to update teacher', 'error');
+      showToast(adminUpdateError.message || 'Failed to update admin', 'error');
     } finally {
       setCreatingAdmin(false);
     }
@@ -3260,13 +3361,13 @@ function AdminDashboardPage() {
         if (assignmentError) throw assignmentError;
       }
       await refreshRbacData();
-      showToast('Teacher created. Welcome invite sent.');
+      showToast('Admin created. Welcome invite sent.');
       setCreateAdminForm(ADMIN_FORM_INITIAL);
       setShowCreateAdminModal(false);
       const { data: ps } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
       if (ps) setProfiles(ps);
     } catch (error) {
-      showToast(error.message || 'Failed to create teacher', 'error');
+      showToast(error.message || 'Failed to create admin', 'error');
     }
     setCreatingAdmin(false);
   };
@@ -3321,13 +3422,13 @@ function AdminDashboardPage() {
   const getReportExportData = () => {
     if (reportType === 'students') {
       return {
-        title: 'Students Report',
-        filename: 'bigkas-students-report',
-        headers: ['Student', 'Student No.', 'Section', 'Journey', 'Status'],
+        title: 'Users Report',
+        filename: 'bigkas-users-report',
+        headers: ['User', 'ID / Student No.', 'Section', 'Journey', 'Status'],
         rows: reportStudentRows.map(student => [
           getDisplayName(student, student.id),
           student.student_number || '-',
-          sectionById.get(sectionIdByStudentId.get(student.id))?.name || '-',
+          getLearnerGroupLabel(student, sectionById, sectionIdByStudentId),
           `Journey ${student.current_level || 1}`,
           isDeletedProfile(student) ? 'Archived' : 'Active',
         ]),
@@ -3336,9 +3437,9 @@ function AdminDashboardPage() {
 
     if (reportType === 'performance') {
       return {
-        title: 'Student Performance Report',
-        filename: 'bigkas-student-performance-report',
-        headers: ['Student', 'Section', 'Speeches', 'Minutes', 'Average Score', 'Activities', 'Confidence Level'],
+        title: 'User Performance Report',
+        filename: 'bigkas-user-performance-report',
+        headers: ['User', 'Section', 'Speeches', 'Minutes', 'Average Score', 'Activities', 'Confidence Level'],
         rows: reportStudentPerformanceRows.map(row => [
           row.name,
           row.section,
@@ -3367,13 +3468,13 @@ function AdminDashboardPage() {
     }
 
     return {
-      title: 'Teachers Report',
-      filename: 'bigkas-teachers-report',
-      headers: ['Teacher', 'Email', 'Access Role', 'Sections', 'Status'],
+      title: 'Admins Report',
+      filename: 'bigkas-admins-report',
+      headers: ['Admin', 'Email', 'Access Role', 'Sections', 'Status'],
       rows: reportTeacherRows.map(admin => [
         getDisplayName(admin, admin.id),
         getProfileEmail(admin),
-        findAccessRole(adminAccessRoles, adminAccessAssignments[admin.id])?.name || 'Teacher',
+        admin.role === 'superadmin' ? 'Super Admin' : findAccessRole(adminAccessRoles, adminAccessAssignments[admin.id])?.name || 'Admin',
         sections.filter(section => section.teacher_id === admin.id).length,
         isDeletedProfile(admin) ? 'Archived' : 'Active',
       ]),
@@ -3385,7 +3486,7 @@ function AdminDashboardPage() {
     downloadReportWorkbook(report.filename, report.title, report.headers, report.rows);
   };
 
-  const adminRosterTitle = `${adminAccounts.length} teacher${adminAccounts.length === 1 ? '' : 's'}`;
+  const adminRosterTitle = `${adminAccounts.length} admin${adminAccounts.length === 1 ? '' : 's'}`;
   const canCreateUsers = canUseAdminPermission('users', 'create');
   const canDeleteUsers = canUseAdminPermission('users', 'delete');
 
@@ -3419,7 +3520,7 @@ function AdminDashboardPage() {
           <div>
             <p className="admin-kicker">Bigkas Analytics Engine</p>
             <h1>Bigkas Command Center</h1>
-            <p className="admin-subtitle">Role: <strong>{role === 'superadmin' ? 'Program Chair' : role === 'admin' ? 'Teacher' : 'unknown'}</strong></p>
+            <p className="admin-subtitle">Role: <strong>{role === 'superadmin' ? 'Super Admin' : role === 'admin' ? 'Admin' : 'unknown'}</strong></p>
           </div>
         </header>
 
@@ -3429,7 +3530,7 @@ function AdminDashboardPage() {
           <>
             <section className={`admin-grid ${isSuperadmin ? 'admin-grid-3' : 'admin-grid-2'}`} aria-label="Management overview metrics">
               <article className="admin-card admin-kpi-card">
-                <p className="admin-kpi-label">TOTAL STUDENTS</p>
+                <p className="admin-kpi-label">TOTAL USERS</p>
                 <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : kpis.totalUsers}</p>
                 <p className="admin-kpi-footer">{kpis.usersDeltaText}</p>
               </article>
@@ -3438,7 +3539,7 @@ function AdminDashboardPage() {
                 role="button"
                 tabIndex={0}
                 style={{ cursor: loading ? 'default' : 'pointer' }}
-                aria-label="View active and inactive students this week"
+                aria-label="View active and inactive users this week"
                 onClick={() => !loading && setShowActiveUsersModal(true)}
                 onKeyDown={(event) => {
                   if (!loading && (event.key === 'Enter' || event.key === ' ')) {
@@ -3460,11 +3561,11 @@ function AdminDashboardPage() {
               )}
             </section>
             <section className="admin-grid admin-grid-2">
-              <article className="admin-card"><h3>Student Registration</h3><div className="admin-chart-container">
-                {loading ? <Skeleton height={300} /> : <ResponsiveContainer width="100%" height={300}><AreaChart data={joinTrendData}><XAxis dataKey="date" /><YAxis /><Tooltip /><Area type="monotone" dataKey="users" name="Students" stroke="#33D2A4" fill="#33D2A433" /></AreaChart></ResponsiveContainer>}
+              <article className="admin-card"><h3>User Registration</h3><div className="admin-chart-container">
+                {loading ? <Skeleton height={300} /> : <ResponsiveContainer width="100%" height={300}><AreaChart data={joinTrendData}><XAxis dataKey="date" /><YAxis /><Tooltip /><Area type="monotone" dataKey="users" name="Users" stroke="#33D2A4" fill="#33D2A433" /></AreaChart></ResponsiveContainer>}
               </div></article>
-              <article className="admin-card"><h3>Student Level Distribution</h3><div className="admin-chart-container">
-                {loading ? <Skeleton height={300} /> : <ResponsiveContainer width="100%" height={300}><BarChart data={levelBarData}><XAxis dataKey="level" /><YAxis /><Tooltip /><Bar dataKey="users" name="Students" fill="#33D2A4" radius={[8,8,0,0]} /></BarChart></ResponsiveContainer>}
+              <article className="admin-card"><h3>User Level Distribution</h3><div className="admin-chart-container">
+                {loading ? <Skeleton height={300} /> : <ResponsiveContainer width="100%" height={300}><BarChart data={levelBarData}><XAxis dataKey="level" /><YAxis /><Tooltip /><Bar dataKey="users" name="Users" fill="#33D2A4" radius={[8,8,0,0]} /></BarChart></ResponsiveContainer>}
               </div></article>
             </section>
           </>
@@ -3477,8 +3578,8 @@ function AdminDashboardPage() {
                 <h3>{isSuperadmin ? 'System Analytics' : 'Section Analytics'}</h3>
                 <p>
                   {isSuperadmin
-                    ? 'Program Chair view: all students, sections, confidence levels, and system monitoring.'
-                    : 'Teacher view: only students and performance data from your assigned sections.'}
+                    ? 'Super Admin view: all users, sections, confidence levels, and system monitoring.'
+                    : 'Admin view: only users and performance data from your assigned sections.'}
                 </p>
               </div>
               <div className="admin-analytics-filters">
@@ -3494,17 +3595,18 @@ function AdminDashboardPage() {
                 <label>
                   <span>Section</span>
                   <select className="admin-filter-select" value={analyticsSectionFilter} onChange={e => setAnalyticsSectionFilter(e.target.value)}>
-                    <option value="all">{isSuperadmin ? 'All sections' : 'My sections'}</option>
+                    <option value="all">{isSuperadmin ? 'All users' : 'My sections'}</option>
+                    {isSuperadmin && <option value={INDEPENDENT_LEARNERS_FILTER}>{INDEPENDENT_LEARNERS_LABEL}</option>}
                     {visibleSections.map(section => <option key={section.id} value={section.id}>{section.name}</option>)}
                   </select>
-                  <small>{isSuperadmin ? 'Filter to one class section.' : 'Only assigned sections are available.'}</small>
+                  <small>{isSuperadmin ? 'Filter to one class section or independent users.' : 'Only assigned sections are available.'}</small>
                 </label>
               </div>
             </section>
 
             <section className="admin-grid admin-grid-1" aria-label="Analytics summary">
               <article className="admin-card admin-kpi-card">
-                <p className="admin-kpi-label">STUDENTS IN VIEW</p>
+                <p className="admin-kpi-label">USERS IN VIEW</p>
                 <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : analyticsKpis.students}</p>
                 <p className="admin-kpi-footer">{analyticsSpeakerLevelFilter === 'all' ? 'All speaker levels' : `Speaker Level ${analyticsSpeakerLevelFilter}`}</p>
               </article>
@@ -3515,7 +3617,7 @@ function AdminDashboardPage() {
                 <div className="admin-card-head">
                   <div>
                     <h3>Tiered Scoring</h3>
-                    <p className="admin-chart-note">Students are grouped by completed activities in the 30-activity confidence progression.</p>
+                    <p className="admin-chart-note">Users are grouped by attempted activities in the 30-activity confidence progression.</p>
                   </div>
                   <label className="admin-inline-filter">
                     <span>Speaker Level</span>
@@ -3536,7 +3638,7 @@ function AdminDashboardPage() {
                         <XAxis dataKey="range" />
                         <YAxis allowDecimals={false} />
                         <Tooltip />
-                        <Bar dataKey="students" fill="#33D2A4" radius={[8, 8, 0, 0]} name="Students" />
+                        <Bar dataKey="students" fill="#33D2A4" radius={[8, 8, 0, 0]} name="Users" />
                       </BarChart>
                     </ResponsiveContainer>
                   ) : <div className="admin-empty-chart">No confidence progress yet</div>}
@@ -3549,7 +3651,7 @@ function AdminDashboardPage() {
                 <div className="admin-card-head">
                   <div>
                     <h3>Level Pass Rate</h3>
-                    <p className="admin-chart-note">Shows how many students passed or have not passed each speaker level requirement.</p>
+                    <p className="admin-chart-note">Shows how many users passed or have not passed each speaker level requirement.</p>
                   </div>
                   <label className="admin-inline-filter">
                     <span>Speaker Level</span>
@@ -3574,7 +3676,7 @@ function AdminDashboardPage() {
                         <Bar dataKey="notPassed" stackId="level-pass" fill="#F87171" radius={[8, 8, 0, 0]} name="Not Passed" />
                       </BarChart>
                     </ResponsiveContainer>
-                  ) : <div className="admin-empty-chart">No students found for this filter</div>}
+                  ) : <div className="admin-empty-chart">No users found for this filter</div>}
                 </div>
               </article>
             </section>
@@ -3584,7 +3686,7 @@ function AdminDashboardPage() {
                 <div className="admin-card-head">
                   <div>
                     <h3>Stage Pass Rate</h3>
-                    <p className="admin-chart-note">Shows how many students passed or have not passed each individual stage requirement.</p>
+                    <p className="admin-chart-note">Shows how many users passed or have not passed each individual stage requirement.</p>
                   </div>
                   <label className="admin-inline-filter">
                     <span>Speaker Level</span>
@@ -3645,7 +3747,7 @@ function AdminDashboardPage() {
                 <h3>Skill Breakdown</h3>
                 <p className="admin-chart-note">Separate confidence measurements for Visual, Vocal, and Verbal scoring.</p>
                 <div className="admin-table-wrap admin-confidence-table-wrap"><table className="admin-table admin-confidence-table">
-                  <thead><tr><th>Skill</th><th>Average</th><th>Measured Students</th><th>Source</th></tr></thead>
+                  <thead><tr><th>Skill</th><th>Average</th><th>Measured Users</th><th>Source</th></tr></thead>
                   <tbody>{analyticsSkillBreakdown.map(row => (
                     <tr key={row.skill}>
                       <td><strong>{row.skill}</strong></td>
@@ -3661,12 +3763,12 @@ function AdminDashboardPage() {
             <section className="admin-card">
               <div className="admin-card-head">
                 <div>
-                  <h3>Student Confidence Rankings</h3>
-                  <p className="admin-note">Ranked student progress across activities and Visual, Vocal, and Verbal scores.</p>
+                  <h3>User Confidence Rankings</h3>
+                  <p className="admin-note">Ranked user progress across activities and Visual, Vocal, and Verbal scores.</p>
                 </div>
               </div>
-              <div className="admin-table-wrap"><table className="admin-table admin-confidence-rank-table">
-                <thead><tr><th>Rank</th><th>Student</th><th>Section</th><th>Activities</th><th>Level</th><th>Visual</th><th>Vocal</th><th>Verbal</th><th>Last Active</th></tr></thead>
+              <div className="admin-table-wrap admin-confidence-rank-table-wrap"><table className="admin-table admin-confidence-rank-table">
+                <thead><tr><th>Rank</th><th>User</th><th>Section</th><th>Activities</th><th>Level</th><th>Visual</th><th>Vocal</th><th>Verbal</th><th>Last Active</th></tr></thead>
                 <tbody>{analyticsRankedStudentRows.length ? analyticsRankedStudentRows.map((student, index) => (
                   <tr key={student.id}>
                     <td>{index + 1}</td>
@@ -3679,7 +3781,7 @@ function AdminDashboardPage() {
                     <td>{student.verbalScore == null ? 'N/A' : `${student.verbalScore}%`}</td>
                     <td>{student.lastActiveMs ? new Date(student.lastActiveMs).toLocaleString() : '-'}</td>
                   </tr>
-                )) : <tr><td colSpan={9}>No students available for this scope.</td></tr>}</tbody>
+                )) : <tr><td colSpan={9}>No users available for this scope.</td></tr>}</tbody>
               </table></div>
             </section>
           </>
@@ -3692,19 +3794,19 @@ function AdminDashboardPage() {
               <article className="admin-card admin-management-card">
                 <div className="admin-card-head">
                   <div>
-                    <h3>Teacher Accounts</h3>
+                    <h3>Admin Accounts</h3>
                     <p className="admin-note">{adminRosterTitle}</p>
                   </div>
-                  <button type="button" className="admin-btn admin-btn--primary" onClick={() => setShowCreateAdminModal(true)}>Create Teacher</button>
+                  <button type="button" className="admin-btn admin-btn--primary" onClick={() => setShowCreateAdminModal(true)}>Create Admin</button>
                 </div>
                 <select
                   className="admin-filter-select admin-roster-filter"
                   value={adminStatusFilter}
                   onChange={e => setAdminStatusFilter(e.target.value)}
-                  aria-label="Filter teacher accounts by status"
+                  aria-label="Filter admin accounts by status"
                 >
-                  <option value="active">Active Teachers</option>
-                  <option value="deleted">Archived Teachers</option>
+                  <option value="active">Active Admins</option>
+                  <option value="deleted">Archived Admins</option>
                 </select>
                 <div className="admin-roster-list admin-roster-list--compact">
                   {adminAccounts.length ? (
@@ -3712,13 +3814,13 @@ function AdminDashboardPage() {
                       <div key={a.id} className={`admin-roster-item ${isDeletedProfile(a) ? 'is-deleted' : 'is-active'}`}>
                         <div className="admin-roster-info">
                           <strong>{getDisplayName(a, a.id)}</strong>
-                          <span>{a.role === 'superadmin' ? 'Program Chair' : findAccessRole(adminAccessRoles, adminAccessAssignments[a.id])?.name || 'Teacher'} - {isDeletedProfile(a) ? 'Archived' : 'Active'}</span>
+                          <span>{a.role === 'superadmin' ? 'Super Admin' : findAccessRole(adminAccessRoles, adminAccessAssignments[a.id])?.name || 'Admin'} - {isDeletedProfile(a) ? 'Archived' : 'Active'}</span>
                         </div>
-                        <button type="button" className="admin-action-btn" onClick={() => openEditAdmin(a)} title="Edit teacher"><HiOutlinePencilSquare /></button>
+                        <button type="button" className="admin-action-btn" onClick={() => openEditAdmin(a)} title="Edit admin"><HiOutlinePencilSquare /></button>
                       </div>
                     ))
                   ) : (
-                    <div className="admin-empty-inline">No {adminStatusFilter === 'deleted' ? 'archived' : 'active'} teacher accounts</div>
+                    <div className="admin-empty-inline">No {adminStatusFilter === 'deleted' ? 'archived' : 'active'} admin accounts</div>
                   )}
                   {adminAccounts.length > 4 && <p className="admin-note">Showing 4 of {adminAccounts.length}. Use search/filter later for a full roster view.</p>}
                 </div>
@@ -3755,7 +3857,7 @@ function AdminDashboardPage() {
             <div className="admin-card-head">
               <div>
                 <h3>Sections</h3>
-                <p className="admin-note">Teachers manage students through assigned sections.</p>
+                <p className="admin-note">Admins manage users through assigned sections.</p>
               </div>
               <button type="button" className="admin-btn admin-btn--ghost" onClick={openNewSection}>New Section</button>
             </div>
@@ -3767,7 +3869,7 @@ function AdminDashboardPage() {
                   <div key={section.id} className="admin-section-item">
                     <div>
                       <strong>{section.name}</strong>
-                      <span>{count} student{count === 1 ? '' : 's'} - {getDisplayName(teacher, 'Unassigned teacher')}</span>
+                      <span>{count} user{count === 1 ? '' : 's'} - {getDisplayName(teacher, 'Unassigned admin')}</span>
                     </div>
                     <div className="admin-section-actions">
                       <button type="button" className="admin-action-btn" onClick={() => editSection(section)} title="Edit section"><HiOutlinePencilSquare /></button>
@@ -3789,8 +3891,8 @@ function AdminDashboardPage() {
                     setUserPage(1);
                     if (e.target.value !== 'users') setUserLevelFilter('all');
                   }}>
-                    <option value="users">Students</option>
-                    <option value="admins">Teachers</option>
+                    <option value="users">Users</option>
+                    <option value="admins">Admins</option>
                   </select>
                 )}
                 <select className="admin-filter-select" value={userLevelFilter} disabled={userAccountTypeFilter !== 'users'} onChange={e => { setUserLevelFilter(e.target.value); setUserPage(1); }}>
@@ -3819,7 +3921,7 @@ function AdminDashboardPage() {
                 </select>
                 {canUseAdminPermission('users', 'create') && (
                   <button type="button" className="admin-btn admin-btn--primary" onClick={userAccountTypeFilter === 'admins' && isSuperadmin ? () => setShowCreateAdminModal(true) : openCreateUser}>
-                    {userAccountTypeFilter === 'admins' && isSuperadmin ? 'Create Teacher' : 'Create Student'}
+                    {userAccountTypeFilter === 'admins' && isSuperadmin ? 'Create Admin' : 'Create User'}
                   </button>
                 )}
               </div>
@@ -3830,8 +3932,8 @@ function AdminDashboardPage() {
                   <h4>Batch Creation</h4>
                   <p className="admin-note">
                     {isSuperadmin
-                      ? 'Create student or teacher accounts using the Excel/CSV template. Welcome invites are sent by email after saving.'
-                      : 'Upload students using: Last Name, First Name, Student Number, Email. Students receive welcome invites after saving.'}
+                      ? 'Create user or admin accounts using the Excel/CSV template. Welcome invites are sent by email after saving.'
+                      : 'Upload users using: Last Name, First Name, optional ID / Student No., and Email. Users receive welcome invites after saving.'}
                   </p>
                 </div>
                 <div className="admin-batch-card-actions">
@@ -3847,7 +3949,7 @@ function AdminDashboardPage() {
               </div>
             )}
             <div className="admin-table-wrap"><table className="admin-table admin-account-table">
-              <thead><tr><th>Name</th>{showUserManagementTypeColumn && <th>Account Type</th>}<th>Role / Section</th>{showUserManagementStudentColumns && <th>Student No.</th>}<th>Email</th>{showUserManagementStudentColumns && <th>Journey</th>}{showUserManagementStudentColumns && <th>Speaking</th>}<th>Status</th><th>Actions</th></tr></thead>
+              <thead><tr><th>Name</th>{showUserManagementTypeColumn && <th>Account Type</th>}<th>Role / Section</th>{showUserManagementStudentColumns && <th>ID / Student No.</th>}<th>Email</th>{showUserManagementStudentColumns && <th>Journey</th>}{showUserManagementStudentColumns && <th>Speaking</th>}<th>Status</th><th>Actions</th></tr></thead>
               <tbody>
                 {paginatedUserManagementRows.map(({ profile: u, isAdminAccount, typeLabel, roleOrSection, name, email, speaking }) => (
                   <tr key={u.id}>
@@ -3862,17 +3964,17 @@ function AdminDashboardPage() {
                     <td className="admin-actions-cell">
                       {isAdminAccount ? (
                         <>
-                          {isSuperadmin && <button type="button" onClick={() => openEditAdmin(u)} className="admin-action-btn" title="Edit teacher"><HiOutlinePencilSquare /></button>}
+                          {isSuperadmin && <button type="button" onClick={() => openEditAdmin(u)} className="admin-action-btn" title="Edit admin"><HiOutlinePencilSquare /></button>}
                           {isSuperadmin && (
-                            <button type="button" onClick={() => requestUserArchiveState(u, !isDeletedProfile(u))} className={`admin-action-btn ${isDeletedProfile(u) ? '' : 'is-delete'}`} title={isDeletedProfile(u) ? 'Restore teacher' : 'Archive teacher'} disabled={u.id === currentAdminId}>
+                            <button type="button" onClick={() => requestUserArchiveState(u, !isDeletedProfile(u))} className={`admin-action-btn ${isDeletedProfile(u) ? '' : 'is-delete'}`} title={isDeletedProfile(u) ? 'Restore admin' : 'Archive admin'} disabled={u.id === currentAdminId}>
                               {isDeletedProfile(u) ? <HiCheckCircle /> : <HiOutlineTrash />}
                             </button>
                           )}
                         </>
                       ) : (
                         <>
-                          {canUseAdminPermission('users', 'update') && <button type="button" onClick={() => openEditUser(u)} className="admin-action-btn" title="Edit student"><HiOutlinePencilSquare /></button>}
-                          {canUseAdminPermission('users', 'delete') && <button type="button" onClick={() => requestUserArchiveState(u, !isDeletedProfile(u))} className={`admin-action-btn ${isDeletedProfile(u) ? '' : 'is-delete'}`} title={isDeletedProfile(u) ? 'Restore student' : 'Archive student'}>
+                          {canUseAdminPermission('users', 'update') && <button type="button" onClick={() => openEditUser(u)} className="admin-action-btn" title="Edit user"><HiOutlinePencilSquare /></button>}
+                          {canUseAdminPermission('users', 'delete') && <button type="button" onClick={() => requestUserArchiveState(u, !isDeletedProfile(u))} className={`admin-action-btn ${isDeletedProfile(u) ? '' : 'is-delete'}`} title={isDeletedProfile(u) ? 'Restore user' : 'Archive user'}>
                             {isDeletedProfile(u) ? <HiCheckCircle /> : <HiOutlineTrash />}
                           </button>}
                         </>
@@ -3951,7 +4053,7 @@ function AdminDashboardPage() {
             <div className="admin-card-head">
               <div>
                 <h3>Reports Generation</h3>
-                <p className="admin-note">Printable reports for teachers, students, and student performance.</p>
+                <p className="admin-note">Printable reports for admins, users, and user performance.</p>
               </div>
               <div className="admin-report-actions">
                 <button type="button" className="admin-btn admin-btn--ghost" onClick={() => window.print()}>Print Report</button>
@@ -3959,27 +4061,27 @@ function AdminDashboardPage() {
               </div>
             </div>
             <div className="admin-report-tabs">
-              <button type="button" className={`admin-tab-btn ${reportType === 'teachers' ? 'is-active' : ''}`} onClick={() => setReportType('teachers')}>Teachers</button>
-              <button type="button" className={`admin-tab-btn ${reportType === 'students' ? 'is-active' : ''}`} onClick={() => setReportType('students')}>Students</button>
+              <button type="button" className={`admin-tab-btn ${reportType === 'teachers' ? 'is-active' : ''}`} onClick={() => setReportType('teachers')}>Admins</button>
+              <button type="button" className={`admin-tab-btn ${reportType === 'students' ? 'is-active' : ''}`} onClick={() => setReportType('students')}>Users</button>
               <button type="button" className={`admin-tab-btn ${reportType === 'performance' ? 'is-active' : ''}`} onClick={() => setReportType('performance')}>Performance</button>
               {isSuperadmin && <button type="button" className={`admin-tab-btn ${reportType === 'audit' ? 'is-active' : ''}`} onClick={() => setReportType('audit')}>Audit Logs</button>}
             </div>
             <div className="admin-table-wrap"><table className="admin-table">
               {reportType === 'teachers' && (
                 <>
-                  <thead><tr><th>Teacher</th><th>Email</th><th>Access Role</th><th>Sections</th><th>Status</th></tr></thead>
-                  <tbody>{reportTeacherRows.map(admin => <tr key={admin.id}><td>{getDisplayName(admin, admin.id)}</td><td>{getProfileEmail(admin)}</td><td>{findAccessRole(adminAccessRoles, adminAccessAssignments[admin.id])?.name || 'Teacher'}</td><td>{sections.filter(section => section.teacher_id === admin.id).length}</td><td>{isDeletedProfile(admin) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
+                  <thead><tr><th>Admin</th><th>Email</th><th>Access Role</th><th>Sections</th><th>Status</th></tr></thead>
+                  <tbody>{reportTeacherRows.map(admin => <tr key={admin.id}><td>{getDisplayName(admin, admin.id)}</td><td>{getProfileEmail(admin)}</td><td>{admin.role === 'superadmin' ? 'Super Admin' : findAccessRole(adminAccessRoles, adminAccessAssignments[admin.id])?.name || 'Admin'}</td><td>{sections.filter(section => section.teacher_id === admin.id).length}</td><td>{isDeletedProfile(admin) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
                 </>
               )}
               {reportType === 'students' && (
                 <>
-                  <thead><tr><th>Student</th><th>Student No.</th><th>Section</th><th>Journey</th><th>Status</th></tr></thead>
-                  <tbody>{reportStudentRows.map(student => <tr key={student.id}><td>{getDisplayName(student, student.id)}</td><td>{student.student_number || '-'}</td><td>{sectionById.get(sectionIdByStudentId.get(student.id))?.name || '-'}</td><td>Journey {student.current_level || 1}</td><td>{isDeletedProfile(student) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
+                  <thead><tr><th>User</th><th>ID / Student No.</th><th>Section</th><th>Journey</th><th>Status</th></tr></thead>
+                  <tbody>{reportStudentRows.map(student => <tr key={student.id}><td>{getDisplayName(student, student.id)}</td><td>{student.student_number || '-'}</td><td>{getLearnerGroupLabel(student, sectionById, sectionIdByStudentId)}</td><td>Journey {student.current_level || 1}</td><td>{isDeletedProfile(student) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
                 </>
               )}
               {reportType === 'performance' && (
                 <>
-                  <thead><tr><th>Student</th><th>Section</th><th>Speeches</th><th>Minutes</th><th>Avg Score</th><th>Activities</th><th>Confidence Level</th></tr></thead>
+                  <thead><tr><th>User</th><th>Section</th><th>Speeches</th><th>Minutes</th><th>Avg Score</th><th>Activities</th><th>Confidence Level</th></tr></thead>
                   <tbody>{reportStudentPerformanceRows.map(row => <tr key={row.id}><td>{row.name}</td><td>{row.section}</td><td>{row.speeches}</td><td>{row.minutes}</td><td>{row.averageScore ?? 'N/A'}</td><td>{row.completedActivities}/30</td><td>{row.confidenceLevel.level ? `Level ${row.confidenceLevel.level} - ${row.confidenceLevel.label}` : row.confidenceLevel.label}</td></tr>)}</tbody>
                 </>
               )}
@@ -4029,12 +4131,12 @@ function AdminDashboardPage() {
       </section>
 
       {showActiveUsersModal && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setShowActiveUsersModal(false)}><div className="admin-modal admin-user-modal admin-active-users-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
-        <div className="admin-card-head"><div><h3>Student Activity This Week</h3><p className="admin-modal-subtitle">{activeUsersThisWeek.length} active, {inactiveUsersThisWeek.length} inactive in the last 7 days</p></div><button type="button" onClick={() => setShowActiveUsersModal(false)} className="admin-btn admin-btn--ghost">Close</button></div>
+        <div className="admin-card-head"><div><h3>User Activity This Week</h3><p className="admin-modal-subtitle">{activeUsersThisWeek.length} active, {inactiveUsersThisWeek.length} inactive in the last 7 days</p></div><button type="button" onClick={() => setShowActiveUsersModal(false)} className="admin-btn admin-btn--ghost">Close</button></div>
         <div className="admin-active-users-toolbar">
           <label className="admin-inline-filter">
             <span>Status</span>
             <select className="admin-filter-select" value={activityStatusFilter} onChange={e => setActivityStatusFilter(e.target.value)}>
-              <option value="all">All Students</option>
+              <option value="all">All Users</option>
               <option value="active">Active Only</option>
               <option value="inactive">Inactive Only</option>
             </select>
@@ -4043,7 +4145,7 @@ function AdminDashboardPage() {
         {filteredWeeklyStudentActivityRows.length ? (
           <>
             <div className="admin-table-wrap admin-active-users-table-wrap"><table className="admin-table admin-active-users-table">
-              <thead><tr><th>Student</th><th>Status</th><th>Speeches Analyzed</th><th>Minutes Practiced</th><th>Average Score</th><th>Last Active</th></tr></thead>
+              <thead><tr><th>User</th><th>Status</th><th>Speeches Analyzed</th><th>Minutes Practiced</th><th>Average Score</th><th>Last Active</th></tr></thead>
               <tbody>{paginatedWeeklyStudentActivityRows.map(user => (
                 <tr key={user.id}>
                   <td><strong>{user.name}</strong></td>
@@ -4069,7 +4171,7 @@ function AdminDashboardPage() {
             )}
           </>
         ) : (
-          <div className="admin-empty-chart">No students match this status.</div>
+          <div className="admin-empty-chart">No users match this status.</div>
         )}
       </div></div>, document.body)}
 
@@ -4077,7 +4179,7 @@ function AdminDashboardPage() {
         <div className="admin-card-head">
           <div>
             <h3>{adminAccessRoleForm.id ? 'Edit Access Role' : 'Create Access Role'}</h3>
-            <p className="admin-modal-subtitle">Choose what teachers can view or manage.</p>
+            <p className="admin-modal-subtitle">Choose what admins can view or manage.</p>
           </div>
           <button type="button" onClick={() => setShowAccessRoleModal(false)} className="admin-btn admin-btn--ghost">Close</button>
         </div>
@@ -4085,7 +4187,7 @@ function AdminDashboardPage() {
           <div className="admin-role-builder-fields">
             <label className="admin-create-field">
               <span>Role Name</span>
-              <input type="text" placeholder="Content Teacher" value={adminAccessRoleForm.name} onChange={e => setAdminAccessRoleForm(p => ({ ...p, name: e.target.value }))} />
+              <input type="text" placeholder="Content Admin" value={adminAccessRoleForm.name} onChange={e => setAdminAccessRoleForm(p => ({ ...p, name: e.target.value }))} />
             </label>
             <label className="admin-create-field">
               <span>Description</span>
@@ -4129,14 +4231,14 @@ function AdminDashboardPage() {
             <label className="admin-create-field">
               <span>Account Type</span>
               <select className="admin-filter-select" value={batchAccountType} onChange={handleBatchAccountTypeChange}>
-                <option value="user">Students</option>
-                <option value="admin">Teachers</option>
+                <option value="user">Users</option>
+                <option value="admin">Admins</option>
               </select>
             </label>
           ) : (
             <div className="admin-role-summary">
-              <strong>Student Accounts</strong>
-              <span>Students receive welcome invites and create their own passwords.</span>
+              <strong>User Accounts</strong>
+              <span>Users receive welcome invites and create their own passwords.</span>
             </div>
           )}
           {batchAccountType === 'admin' && (
@@ -4152,7 +4254,7 @@ function AdminDashboardPage() {
             <label className="admin-create-field">
               <span>Section</span>
               <select className="admin-filter-select" value={batchSectionId} onChange={e => setBatchSectionId(e.target.value)}>
-                <option value="">No section selected</option>
+                <option value="">{INDEPENDENT_LEARNERS_LABEL}</option>
                 {visibleSections.map(section => <option key={section.id} value={section.id}>{section.name}</option>)}
               </select>
             </label>
@@ -4166,7 +4268,7 @@ function AdminDashboardPage() {
             {batchImportStatus === 'idle' && <p>Select an Excel or CSV file to preview the batch rows.</p>}
             {batchImportStatus === 'reading' && <p>Reading spreadsheet...</p>}
             {batchImportStatus === 'error' && <p>{batchImportError}</p>}
-            {batchImportStatus === 'ready' && <p>{batchReadyRowCount} {batchAccountType === 'admin' ? 'teacher' : 'student'} account{batchReadyRowCount === 1 ? '' : 's'} ready for review.</p>}
+            {batchImportStatus === 'ready' && <p>{batchReadyRowCount} {batchAccountType === 'admin' ? 'admin' : 'user'} account{batchReadyRowCount === 1 ? '' : 's'} ready for review.</p>}
             {batchPreview?.columns?.length > 0 && (
               <div className="admin-batch-columns">
                 <span>Detected:</span>
@@ -4180,7 +4282,7 @@ function AdminDashboardPage() {
                     <tr>
                       <th>Last Name</th>
                       <th>First Name</th>
-                      {batchAccountType !== 'admin' && <th>Student No.</th>}
+                      {batchAccountType !== 'admin' && <th>ID / Student No.</th>}
                       <th>Email</th>
                     </tr>
                   </thead>
@@ -4222,7 +4324,7 @@ function AdminDashboardPage() {
         <div className="admin-card-head">
           <div>
             <h3>{sectionForm.id ? 'Edit Section' : 'Create Section'}</h3>
-            <p className="admin-modal-subtitle">Assign a teacher to the section they manage.</p>
+            <p className="admin-modal-subtitle">Assign an admin to the section they manage.</p>
           </div>
           <button type="button" onClick={() => setShowSectionModal(false)} className="admin-btn admin-btn--ghost">Close</button>
         </div>
@@ -4231,9 +4333,9 @@ function AdminDashboardPage() {
             <input type="text" placeholder="INF235" value={sectionForm.name} onChange={e => setSectionForm(p => ({ ...p, name: e.target.value }))} />
           </AdminUserField>
           {isSuperadmin && (
-            <AdminUserField label="Teacher">
+            <AdminUserField label="Admin">
               <select value={sectionForm.teacher_id} onChange={e => setSectionForm(p => ({ ...p, teacher_id: e.target.value }))}>
-                <option value="">Choose teacher</option>
+                <option value="">Choose admin</option>
                 {adminTeacherOptions.map(admin => <option key={admin.id} value={admin.id}>{getDisplayName(admin, admin.id)}</option>)}
               </select>
             </AdminUserField>
@@ -4254,7 +4356,7 @@ function AdminDashboardPage() {
         </div>
         <form className="admin-user-form" onSubmit={submitCreateAdmin}>
           <AdminUserField label="Email">
-            <input type="email" required placeholder="teacher@email.com" value={createAdminForm.email} onChange={e => setCreateAdminForm(p => ({ ...p, email: e.target.value }))} />
+            <input type="email" required placeholder="admin@email.com" value={createAdminForm.email} onChange={e => setCreateAdminForm(p => ({ ...p, email: e.target.value }))} />
           </AdminUserField>
           <AdminUserField label="First Name">
             <input type="text" placeholder="First name" value={createAdminForm.first_name} onChange={e => setCreateAdminForm(p => ({ ...p, first_name: e.target.value }))} />
@@ -4268,7 +4370,7 @@ function AdminDashboardPage() {
               onChange={handleCreateAdminRoleChange}
             >
               {adminAccessRoles.map(roleTemplate => <option key={roleTemplate.id} value={roleTemplate.id}>{roleTemplate.name}</option>)}
-              <option value="superadmin">Program Chair</option>
+              <option value="superadmin">Super Admin</option>
             </select>
           </AdminUserField>
           <div className="admin-modal-actions admin-modal-actions--end">
@@ -4280,21 +4382,21 @@ function AdminDashboardPage() {
       {creatingUser && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setCreatingUser(false)}><div className="admin-modal admin-user-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
         <div className="admin-card-head">
           <div>
-            <h3>Create Student</h3>
-            <p className="admin-modal-subtitle admin-student-create-note">Email is used for login. Bigkas sends a welcome invite so the student creates their own password.</p>
+            <h3>Create User</h3>
+            <p className="admin-modal-subtitle admin-student-create-note">Email is used for login. Bigkas sends a welcome invite so the user creates their own password.</p>
           </div>
           <button type="button" onClick={() => setCreatingUser(false)} className="admin-btn admin-btn--ghost">Close</button>
         </div>
         <form className="admin-user-form" onSubmit={submitCreateUser}>
           <AdminUserField label="Email">
-            <input type="email" required placeholder="student@email.com" value={userForm.email} onChange={e => setUserForm(p => ({ ...p, email: e.target.value }))} />
+            <input type="email" required placeholder="user@email.com" value={userForm.email} onChange={e => setUserForm(p => ({ ...p, email: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Student Number">
-            <input type="text" placeholder="Student number" value={userForm.student_number} onChange={e => setUserForm(p => ({ ...p, student_number: e.target.value }))} />
+          <AdminUserField label="ID / Student No.">
+            <input type="text" placeholder="Optional ID or student number" value={userForm.student_number} onChange={e => setUserForm(p => ({ ...p, student_number: e.target.value }))} />
           </AdminUserField>
           <AdminUserField label="Section">
             <select value={userForm.section_id} onChange={e => setUserForm(p => ({ ...p, section_id: e.target.value }))}>
-              <option value="">No section</option>
+              <option value="">{INDEPENDENT_LEARNERS_LABEL}</option>
               {visibleSections.map(section => <option key={section.id} value={section.id}>{section.name}</option>)}
             </select>
           </AdminUserField>
@@ -4317,7 +4419,7 @@ function AdminDashboardPage() {
       </div></div>, document.body)}
 
       {editingUser && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setEditingUser(null)}><div className="admin-modal admin-user-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
-        <div className="admin-card-head"><h3>Edit Student</h3><button type="button" onClick={() => setEditingUser(null)} className="admin-btn admin-btn--ghost">Close</button></div>
+        <div className="admin-card-head"><h3>Edit User</h3><button type="button" onClick={() => setEditingUser(null)} className="admin-btn admin-btn--ghost">Close</button></div>
         <form className="admin-user-form" onSubmit={submitUpdateUser}>
           <AdminUserField label="First Name">
             <input type="text" placeholder="First name" value={userForm.first_name} onChange={e => setUserForm(p => ({ ...p, first_name: e.target.value }))} />
@@ -4325,12 +4427,12 @@ function AdminDashboardPage() {
           <AdminUserField label="Last Name">
             <input type="text" placeholder="Last name" value={userForm.last_name} onChange={e => setUserForm(p => ({ ...p, last_name: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Student Number">
-            <input type="text" placeholder="Student number" value={userForm.student_number} onChange={e => setUserForm(p => ({ ...p, student_number: e.target.value }))} />
+          <AdminUserField label="ID / Student No.">
+            <input type="text" placeholder="Optional ID or student number" value={userForm.student_number} onChange={e => setUserForm(p => ({ ...p, student_number: e.target.value }))} />
           </AdminUserField>
-          <AdminUserField label="Section" help="Assigns this student to a teacher-handled section.">
+          <AdminUserField label="Section" help="Assigns this user to an admin-handled section.">
             <select value={userForm.section_id} onChange={e => setUserForm(p => ({ ...p, section_id: e.target.value }))}>
-              <option value="">No section</option>
+              <option value="">{INDEPENDENT_LEARNERS_LABEL}</option>
               {visibleSections.map(section => <option key={section.id} value={section.id}>{section.name}</option>)}
             </select>
           </AdminUserField>
@@ -4342,7 +4444,7 @@ function AdminDashboardPage() {
           </AdminUserField>
           <div className="admin-user-field admin-stage-progress-field">
             <span>Stage Progress</span>
-            <small>Teacher tool for demos, sync recovery, and support. It marks stages complete using the same journey progress table students use.</small>
+            <small>Admin tool for demos, sync recovery, and support. It marks stages complete using the same journey progress table users use.</small>
             <div className="admin-stage-progress-panel">
               <label className="admin-stage-progress-control">
                 <span>Journey</span>
@@ -4387,14 +4489,14 @@ function AdminDashboardPage() {
             </div>
           </div>
           <div className="admin-modal-actions">
-            <button type="button" onClick={() => requestUserArchiveState(editingUser, !isDeletedProfile(editingUser))} className={`admin-btn ${isDeletedProfile(editingUser) ? 'admin-btn--ghost' : 'admin-btn--danger'}`}>{isDeletedProfile(editingUser) ? 'Restore Student' : 'Archive Student'}</button>
+            <button type="button" onClick={() => requestUserArchiveState(editingUser, !isDeletedProfile(editingUser))} className={`admin-btn ${isDeletedProfile(editingUser) ? 'admin-btn--ghost' : 'admin-btn--danger'}`}>{isDeletedProfile(editingUser) ? 'Restore User' : 'Archive User'}</button>
             <button type="submit" className="admin-btn admin-btn--primary" disabled={savingUser}>{savingUser ? 'Saving...' : 'Save Changes'}</button>
           </div>
         </form>
       </div></div>, document.body)}
 
       {editingAdmin && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setEditingAdmin(null)}><div className="admin-modal admin-user-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
-        <div className="admin-card-head"><h3>Edit Teacher</h3><button type="button" onClick={() => setEditingAdmin(null)} className="admin-btn admin-btn--ghost">Close</button></div>
+        <div className="admin-card-head"><h3>Edit Admin</h3><button type="button" onClick={() => setEditingAdmin(null)} className="admin-btn admin-btn--ghost">Close</button></div>
         <form className="admin-user-form" onSubmit={submitUpdateAdmin}>
           <AdminUserField label="First Name">
             <input type="text" placeholder="First name" value={adminAccountForm.first_name} onChange={e => setAdminAccountForm(p => ({ ...p, first_name: e.target.value }))} />
@@ -4408,7 +4510,7 @@ function AdminDashboardPage() {
               onChange={handleAdminAccountRoleChange}
             >
               {adminAccessRoles.map(roleTemplate => <option key={roleTemplate.id} value={roleTemplate.id}>{roleTemplate.name}</option>)}
-              <option value="superadmin">Program Chair</option>
+              <option value="superadmin">Super Admin</option>
             </select>
           </AdminUserField>
           <div className="admin-modal-actions">
@@ -4418,7 +4520,7 @@ function AdminDashboardPage() {
               className={`admin-btn ${isDeletedProfile(editingAdmin) ? 'admin-btn--ghost' : 'admin-btn--danger'}`}
               disabled={editingAdmin.id === currentAdminId}
             >
-              {isDeletedProfile(editingAdmin) ? 'Restore Teacher' : 'Archive Teacher'}
+              {isDeletedProfile(editingAdmin) ? 'Restore Admin' : 'Archive Admin'}
             </button>
             <button type="submit" className="admin-btn admin-btn--primary" disabled={creatingAdmin}>{creatingAdmin ? 'Saving...' : 'Save Changes'}</button>
           </div>
@@ -4435,11 +4537,11 @@ function AdminDashboardPage() {
       </div></div>, document.body)}
 
       {pendingArchiveUser && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setPendingArchiveUser(null)}><div className="admin-modal admin-confirm-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
-        <h3>Archive {isAdminProfile(pendingArchiveUser) ? 'Teacher' : 'Student'}?</h3>
+        <h3>Archive {isAdminProfile(pendingArchiveUser) ? 'Admin' : 'User'}?</h3>
         <p>This will mark <strong>{getDisplayName(pendingArchiveUser, pendingArchiveUser.id)}</strong> as archived. The profile row stays in the database and can be restored later.</p>
         <div className="admin-modal-actions">
           <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setPendingArchiveUser(null)}>Cancel</button>
-          <button type="button" className="admin-btn admin-btn--danger" onClick={confirmArchiveUser}>Archive {isAdminProfile(pendingArchiveUser) ? 'Teacher' : 'Student'}</button>
+          <button type="button" className="admin-btn admin-btn--danger" onClick={confirmArchiveUser}>Archive {isAdminProfile(pendingArchiveUser) ? 'Admin' : 'User'}</button>
         </div>
       </div></div>, document.body)}
 
@@ -4450,7 +4552,7 @@ function AdminDashboardPage() {
           <strong> {getDisplayName(pendingStageProgress.user, pendingStageProgress.user.id)}</strong> in Journey {pendingStageProgress.journey}, through Stage {pendingStageProgress.completeThroughStage}.
         </p>
         {pendingStageProgress.shouldAdvance && (
-          <p>This will also move the student to Journey {pendingStageProgress.nextJourneyLevel}, making the completed journey trophy ready to claim.</p>
+          <p>This will also move the user to Journey {pendingStageProgress.nextJourneyLevel}, making the completed journey trophy ready to claim.</p>
         )}
         <div className="admin-modal-actions">
           <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setPendingStageProgress(null)} disabled={applyingStageProgress}>Cancel</button>
@@ -4523,7 +4625,7 @@ function AdminDashboardPage() {
       {pendingLevelAdd && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setPendingLevelAdd(null)}><div className="admin-modal admin-confirm-modal admin-warning-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
         <h3>Add Level {pendingLevelAdd}?</h3>
         <p>
-          This only adds Level {pendingLevelAdd} to the teacher dropdown. Confirm that the database rules and student content already support this level before saving activities to it.
+          This only adds Level {pendingLevelAdd} to the admin dropdown. Confirm that the database rules and user content already support this level before saving activities to it.
         </p>
         <div className="admin-modal-actions">
           <button type="button" className="admin-btn admin-btn--ghost" onClick={() => setPendingLevelAdd(null)}>Cancel</button>

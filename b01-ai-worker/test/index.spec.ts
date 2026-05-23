@@ -5,13 +5,52 @@ import {
 	SELF,
 } from "cloudflare:test";
 import { describe, it, expect } from "vitest";
-import worker from "../src/index";
+import worker, { detectFillerOccurrences, shouldUseFillerAudit } from "../src/index";
 
 // For now, you'll need to do something like this to get a correctly-typed
 // `Request` to pass to `worker.fetch()`.
 const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
 
 describe("B-01 AI worker", () => {
+	it("counts hard, contextual, and phrase fillers deterministically", () => {
+		const fillers = detectFillerOccurrences(
+			"Uhhh ummm uhmmm oh mm erm er ah uhu e huh eh mhm I think, you know, this is like basically ready.",
+		);
+
+		expect(fillers.map((item) => item.normalized)).toEqual([
+			"uh",
+			"um",
+			"uhm",
+			"oh",
+			"mm",
+			"erm",
+			"er",
+			"ah",
+			"uhu",
+			"e",
+			"huh",
+			"eh",
+			"mhm",
+			"you",
+			"know",
+			"like",
+			"basically",
+		]);
+		expect(fillers).toHaveLength(17);
+	});
+
+	it("prefers filler audit results when they recover more hard fillers", () => {
+		expect(shouldUseFillerAudit(
+			[{ kind: "contextual" }, { kind: "hard" }],
+			[{ kind: "contextual" }, { kind: "hard" }, { kind: "hard" }],
+		)).toBe(true);
+
+		expect(shouldUseFillerAudit(
+			[{ kind: "contextual" }, { kind: "hard" }],
+			[{ kind: "contextual" }, { kind: "hard" }],
+		)).toBe(false);
+	});
+
 	it("responds to health checks with CORS headers (unit style)", async () => {
 		const request = new IncomingRequest("http://example.com/health");
 		// Create an empty context to pass to `worker.fetch()`.

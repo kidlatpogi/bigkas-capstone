@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { IoChevronForward, IoChevronBack } from 'react-icons/io5';
+import { IoChevronForward, IoChevronBack, IoReload } from 'react-icons/io5';
 import { 
   ResponsiveContainer, 
   LineChart, 
@@ -15,6 +15,7 @@ import Confetti from 'react-confetti';
 import { useSessionContext } from '../../context/useSessionContext';
 import { useAuthContext } from '../../context/useAuthContext';
 import { supabase } from '../../lib/supabase';
+import { ENV } from '../../config/env';
 import { ROUTES } from '../../utils/constants';
 import { formatDate, formatDuration } from '../../utils/formatters';
 import { getSessionMode, getSessionSpeechType } from '../../utils/sessionFormatting';
@@ -24,6 +25,14 @@ import { buildStagePassResultForSession } from '../../utils/passingScore';
 import { recordActivityEvent } from '../../utils/activityProgress';
 import { persistActivityCompletion } from '../../services/journeyProgressService';
 import { useAllActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
+import {
+  cleanTranscriptWord,
+  countTranscriptFillers,
+  countTranscriptHardFillers,
+  getAnalysisFillerCount,
+  getAnalysisHardFillerCount,
+  getFillerTokenIndexes,
+} from '../../utils/transcriptHighlighting';
 
 const heroRobotImage = getSpriteUrl('Robot/0018.webp');
 const verbalSprite = getSpriteUrl('common/Verbal.webp');
@@ -33,12 +42,12 @@ import DetailedFeedbackPageMobile from './DetailedFeedbackPageMobile';
 import '../main/InnerPages.css';
 import './DetailedFeedbackPage.css';
 
-const FILLER_WORDS = ['um', 'uh', 'ah', 'like', 'err', 'uhm', 'well', 'basically', 'actually', 'literally'];
-
 const FOREST_GREEN = '#059669';
 const SOFT_SAGE = '#059669';
 const VIBRANT_ORANGE = '#F97316';
 const SESSION_MEDIA_BUCKET = 'session-recordings';
+const MEDIA_LOOKUP_ATTEMPTS = 30;
+const MEDIA_LOOKUP_DELAY_MS = 2000;
 
 function buildActivityLookup(activityTasks) {
   const lookup = new Map();
@@ -172,9 +181,29 @@ async function resolvePlayableStorageUrl(pathOrUrl) {
   return buildBucketPublicUrl(storagePath);
 }
 
+async function loadAudioBlobForFillerRecovery({ playbackUrl, storageUrl }) {
+  const storagePath = extractBucketStoragePath(storageUrl) || extractBucketStoragePath(playbackUrl);
+  if (storagePath) {
+    const { data, error } = await supabase.storage
+      .from(SESSION_MEDIA_BUCKET)
+      .download(storagePath);
+    if (!error && data) return data;
+  }
+
+  const audioResponse = await fetch(playbackUrl);
+  if (!audioResponse.ok) throw new Error(`Audio fetch failed with ${audioResponse.status}`);
+  return audioResponse.blob();
+}
+
 function isMissingVideoStorageColumn(error) {
   const msg = String(error?.message || '').toLowerCase();
   return msg.includes('video_storage_url') && msg.includes('does not exist');
+}
+
+function isUnauthorizedMediaLookup(error) {
+  const status = Number(error?.status || error?.code);
+  const msg = String(error?.message || '').toLowerCase();
+  return status === 401 || status === 403 || msg.includes('jwt') || msg.includes('unauthorized');
 }
 
 function parseRecordingTimestamp(path) {
@@ -278,6 +307,11 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
   const { currentSession, fetchSessionById, isLoading } = useSessionContext();
   const { user } = useAuthContext();
   const [recordingMedia, setRecordingMedia] = useState({ audioUrl: null, videoUrl: null, transcript: '' });
+  const [isReloadingMedia, setIsReloadingMedia] = useState(false);
+  const [mediaLookupToken, setMediaLookupToken] = useState(0);
+  const [mediaElementReloadToken, setMediaElementReloadToken] = useState(0);
+  const [recoveredFillerAnalysis, setRecoveredFillerAnalysis] = useState(null);
+  const fillerRecoveryKeyRef = useRef('');
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [showDetailed, setShowDetailed] = useState(() => {
     if (locationState?.showDetailed !== undefined) return !!locationState.showDetailed;
@@ -399,80 +433,104 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
     let isMounted = true;
     const loadSessionMedia = async () => {
       if (!sessionId) return;
-      let audioUrl = null;
-      let videoUrl = null;
-      const { data: richMedia, error: richMediaErr } = await supabase
-        .from('session_media')
-        .select('audio_url, video_storage_url, transcript')
-        .eq('session_id', sessionId)
-        .maybeSingle();
-
+      setIsReloadingMedia(true);
+      let audioUrl = session?.audio_url || null;
+      let videoUrl = session?.video_storage_url || session?.video_url || null;
       let mediaTranscript = '';
-      if (!richMediaErr && richMedia) {
-        audioUrl = richMedia.audio_url ?? null;
-        videoUrl = richMedia.video_storage_url ?? null;
-        mediaTranscript = String(richMedia.transcript || '').trim();
-      } else if (isMissingVideoStorageColumn(richMediaErr)) {
-        const { data: basicMedia } = await supabase
-          .from('session_media')
-          .select('audio_url, transcript')
-          .eq('session_id', sessionId)
-          .maybeSingle();
-        audioUrl = basicMedia?.audio_url ?? null;
-        mediaTranscript = String(basicMedia?.transcript || '').trim();
-      }
 
-      if (!mediaTranscript) {
-        const { data: transcriptOnlyMedia } = await supabase
-          .from('session_media')
-          .select('transcript')
-          .eq('session_id', sessionId)
-          .maybeSingle();
-        mediaTranscript = String(transcriptOnlyMedia?.transcript || '').trim();
-      }
+      const publishMedia = async () => {
+        const [resolvedAudioUrl, resolvedVideoUrl] = await Promise.all([
+          resolvePlayableStorageUrl(audioUrl),
+          resolvePlayableStorageUrl(videoUrl),
+        ]);
+        if (!isMounted) return;
+        setRecordingMedia((current) => ({
+          audioUrl: resolvedAudioUrl || current.audioUrl,
+          videoUrl: resolvedVideoUrl || current.videoUrl,
+          transcript: mediaTranscript || current.transcript,
+        }));
+      };
 
-      if (!mediaTranscript) {
-        const { data: sessionMediaFromJoin } = await supabase
-          .from('sessions')
-          .select('session_media(transcript)')
-          .eq('id', sessionId)
-          .maybeSingle();
-        const mediaFromJoin = Array.isArray(sessionMediaFromJoin?.session_media)
-          ? sessionMediaFromJoin.session_media[0]
-          : sessionMediaFromJoin?.session_media;
-        mediaTranscript = String(mediaFromJoin?.transcript || '').trim();
-      }
+      try {
+        for (let attempt = 0; attempt < MEDIA_LOOKUP_ATTEMPTS; attempt += 1) {
+          const { data: richMedia, error: richMediaErr } = await supabase
+            .from('session_media')
+            .select('audio_url, video_storage_url, transcript')
+            .eq('session_id', sessionId)
+            .maybeSingle();
 
-      if (!videoUrl) {
-        videoUrl = await findLikelyVideoUrl({
-          userId: session?.user_id,
-          createdAt: session?.created_at,
-        });
-      }
+          if (!richMediaErr && richMedia) {
+            audioUrl = richMedia.audio_url ?? null;
+            videoUrl = richMedia.video_storage_url ?? null;
+            mediaTranscript = String(richMedia.transcript || '').trim();
+          } else if (isUnauthorizedMediaLookup(richMediaErr)) {
+            break;
+          } else if (isMissingVideoStorageColumn(richMediaErr)) {
+            const { data: basicMedia, error: basicMediaErr } = await supabase
+              .from('session_media')
+              .select('audio_url, transcript')
+              .eq('session_id', sessionId)
+              .maybeSingle();
+            if (isUnauthorizedMediaLookup(basicMediaErr)) break;
+            audioUrl = basicMedia?.audio_url ?? audioUrl;
+            mediaTranscript = String(basicMedia?.transcript || mediaTranscript || '').trim();
+          }
 
-      if (!audioUrl) {
-        audioUrl = await findLikelyAudioUrl({
-          userId: session?.user_id,
-          createdAt: session?.created_at,
-        });
-      }
+          if (!mediaTranscript) {
+            const { data: sessionMediaFromJoin, error: sessionJoinErr } = await supabase
+              .from('sessions')
+              .select('session_media(transcript)')
+              .eq('id', sessionId)
+              .maybeSingle();
+            if (isUnauthorizedMediaLookup(sessionJoinErr)) break;
+            const mediaFromJoin = Array.isArray(sessionMediaFromJoin?.session_media)
+              ? sessionMediaFromJoin.session_media[0]
+              : sessionMediaFromJoin?.session_media;
+            mediaTranscript = String(mediaFromJoin?.transcript || '').trim();
+          }
 
-      if (!isMounted) return;
-      const [resolvedAudioUrl, resolvedVideoUrl] = await Promise.all([
-        resolvePlayableStorageUrl(audioUrl),
-        resolvePlayableStorageUrl(videoUrl),
-      ]);
-      if (!isMounted) return;
-      setRecordingMedia({
-        audioUrl: resolvedAudioUrl,
-        videoUrl: resolvedVideoUrl,
-        transcript: mediaTranscript,
-      });
+          const mediaUserId = session?.user_id || user?.id;
+          if (!videoUrl) {
+            videoUrl = await findLikelyVideoUrl({
+              userId: mediaUserId,
+              createdAt: session?.created_at,
+            });
+          }
+
+          if (!audioUrl) {
+            audioUrl = await findLikelyAudioUrl({
+              userId: mediaUserId,
+              createdAt: session?.created_at,
+            });
+          }
+
+          if (audioUrl || videoUrl || mediaTranscript) {
+            await publishMedia();
+          }
+
+          if ((audioUrl && videoUrl) || attempt === MEDIA_LOOKUP_ATTEMPTS - 1) break;
+          await new Promise((resolve) => setTimeout(resolve, MEDIA_LOOKUP_DELAY_MS));
+        }
+
+        if (!isMounted) return;
+        await publishMedia();
+      } finally {
+        if (isMounted) setIsReloadingMedia(false);
+      }
     };
 
     loadSessionMedia();
     return () => { isMounted = false; };
-  }, [session?.created_at, session?.user_id, sessionId]);
+  }, [
+    mediaLookupToken,
+    session?.audio_url,
+    session?.created_at,
+    session?.user_id,
+    session?.video_storage_url,
+    session?.video_url,
+    sessionId,
+    user?.id,
+  ]);
 
   const mode = getSessionMode(session);
   const isPreTest = mode === 'Pre-Test';
@@ -511,9 +569,14 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
     return Number.isFinite(score) && score >= 80;
   };
 
+  const recoveredTranscript = Number(recoveredFillerAnalysis?.filler_count || 0) > 0
+    ? String(recoveredFillerAnalysis?.transcript || '').trim()
+    : '';
   const overallTier = getScoreTier15(tripleV.entryPoint);
-  const rawTranscript = recordingMedia.transcript
+  const rawTranscript = recoveredTranscript
+    || recordingMedia.transcript
     || session?.transcript
+    || session?.transcript_exact
     || session?.target_text
     || session?.analysis?.transcript_exact
     || session?.analysis?.transcript
@@ -523,23 +586,93 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
 
   // Extraction of mispronunciations and filler data
   const analysisData = useMemo(() => {
+    let parsedAnalysis = {};
     try {
-      if (typeof session?.analysis === 'object' && session.analysis !== null) return session.analysis;
-      if (typeof session?.analysis === 'string') return JSON.parse(session.analysis);
+      if (typeof session?.analysis === 'object' && session.analysis !== null) parsedAnalysis = session.analysis;
+      if (typeof session?.analysis === 'string') parsedAnalysis = JSON.parse(session.analysis);
     } catch (e) {
       console.warn('Failed to parse session analysis for highlighting:', e);
     }
-    return {};
-  }, [session?.analysis]);
+    if (!recoveredFillerAnalysis) return parsedAnalysis;
+    return {
+      ...parsedAnalysis,
+      ...recoveredFillerAnalysis,
+      filler_count: Math.max(
+        Number(parsedAnalysis?.filler_count) || 0,
+        Number(recoveredFillerAnalysis?.filler_count) || 0,
+      ),
+    };
+  }, [recoveredFillerAnalysis, session?.analysis]);
 
   const mispronunciations = analysisData?.mispronunciations || [];
   
   const fillerCount = useMemo(() => {
-    if (analysisData?.filler_count !== undefined) return analysisData.filler_count;
-    // Fallback: count manually from transcript
-    const words = rawTranscript.toLowerCase().split(/\s+/);
-    return words.filter(w => FILLER_WORDS.includes(w.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ""))).length;
-  }, [rawTranscript, analysisData?.filler_count]);
+    const analysisCount = getAnalysisFillerCount(analysisData);
+    const transcriptCount = countTranscriptFillers(rawTranscript, analysisData);
+    if (analysisCount !== null) return Math.max(analysisCount, transcriptCount);
+    return transcriptCount;
+  }, [rawTranscript, analysisData]);
+
+  const hardFillerCount = useMemo(() => {
+    const analysisCount = getAnalysisHardFillerCount(analysisData);
+    const transcriptCount = countTranscriptHardFillers(rawTranscript, analysisData);
+    if (analysisCount !== null) return Math.max(analysisCount, transcriptCount);
+    return transcriptCount;
+  }, [rawTranscript, analysisData]);
+
+  useEffect(() => {
+    const workerBaseUrl = String(ENV.CLOUDFLARE_AI_WORKER_URL || '').replace(/\/+$/, '');
+    if (hardFillerCount > 0 || !workerBaseUrl || !recordingMedia.audioUrl) return undefined;
+
+    const recoveryKey = `${sessionId}:${recordingMedia.audioUrl}`;
+    if (fillerRecoveryKeyRef.current === recoveryKey) return undefined;
+    fillerRecoveryKeyRef.current = recoveryKey;
+
+    let cancelled = false;
+
+    const recoverFillersFromAudio = async () => {
+      try {
+        const audioBlob = await loadAudioBlobForFillerRecovery({
+          playbackUrl: recordingMedia.audioUrl,
+          storageUrl: session?.audio_url,
+        });
+        const transcribeUrl = `${workerBaseUrl}/transcribe?audit_fillers=true&topic=${encodeURIComponent(session?.topic || session?.objective_name || 'General Speaking')}`;
+        const transcribeResponse = await fetch(transcribeUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': audioBlob.type || 'audio/webm',
+          },
+          body: audioBlob,
+        });
+        if (!transcribeResponse.ok) throw new Error(`Filler recovery failed with ${transcribeResponse.status}`);
+        const recoveryData = await transcribeResponse.json();
+        if (cancelled) return;
+        const recoveredCount = Number(recoveryData?.filler_count);
+        if (Number.isFinite(recoveredCount) && recoveredCount > 0) {
+          setRecoveredFillerAnalysis({
+            transcript: String(recoveryData?.transcript || '').trim(),
+            filler_count: recoveredCount,
+            hard_filler_count: Number(recoveryData?.hard_filler_count) || 0,
+            filler_words: Array.isArray(recoveryData?.filler_words) ? recoveryData.filler_words : [],
+            filler_occurrences: Array.isArray(recoveryData?.filler_occurrences) ? recoveryData.filler_occurrences : [],
+          });
+        }
+      } catch (error) {
+        console.warn('[DetailedFeedbackPage] Filler recovery skipped:', error?.message || error);
+      }
+    };
+
+    recoverFillersFromAudio();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    hardFillerCount,
+    recordingMedia.audioUrl,
+    session?.objective_name,
+    session?.topic,
+    sessionId,
+  ]);
 
   if (windowWidth < 768) {
     return (
@@ -578,19 +711,14 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
     if (!rawTranscript) return <p className="df-practiced-text">No recorded text available.</p>;
 
     const words = rawTranscript.split(/\s+/);
-    const fillerWordsFromAnalysis = Array.isArray(analysisData?.filler_words) 
-      ? analysisData.filler_words.map(w => w.toLowerCase()) 
-      : [];
+    const fillerTokenIndexes = getFillerTokenIndexes(words, analysisData);
 
     return (
       <div className="df-practiced-text">
         {words.map((word, idx) => {
-          const cleanWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").toLowerCase();
-          
-          // Check if it's a filler: either in our global list OR specifically identified by analysis
-          const isFiller = FILLER_WORDS.includes(cleanWord) || fillerWordsFromAnalysis.includes(cleanWord);
-          
-          const mis = mispronunciations.find(m => m.word.toLowerCase() === cleanWord || m.heard?.toLowerCase() === cleanWord);
+          const cleanWord = cleanTranscriptWord(word);
+          const isFiller = fillerTokenIndexes.has(idx);
+          const mis = mispronunciations.find(m => cleanTranscriptWord(m.word) === cleanWord || cleanTranscriptWord(m.heard) === cleanWord);
 
           if (isFiller) {
             return (
@@ -617,6 +745,14 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
   
   const audioUrl = recordingMedia.audioUrl || buildBucketPublicUrl(session?.audio_url) || null;
   const videoUrl = recordingMedia.videoUrl || buildBucketPublicUrl(session?.video_storage_url) || buildBucketPublicUrl(session?.video_url) || null;
+  const mediaElementKey = `${mediaElementReloadToken}:${videoUrl || ''}:${audioUrl || ''}`;
+  const handleReloadRecording = () => {
+    if (audioUrl || videoUrl) {
+      setMediaElementReloadToken((value) => value + 1);
+      return;
+    }
+    setMediaLookupToken((value) => value + 1);
+  };
 
   const sourceNav = locationState?.source;
   let breadcrumbParent = mode;
@@ -876,16 +1012,27 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
                     </div>
                   </div>
                 </div>
-                <div style={{ padding: '24px', background: '#fff' }}>
+                <div className="df-recording-panel">
+                  <button
+                    type="button"
+                    className="df-media-reload-btn"
+                    onClick={handleReloadRecording}
+                    disabled={isReloadingMedia}
+                    aria-label="Reload session recording"
+                    title="Reload recording"
+                  >
+                    <IoReload aria-hidden="true" />
+                    <span>{isReloadingMedia ? 'Reloading' : 'Reload'}</span>
+                  </button>
                   <div className="df-recording-content">
                     {videoUrl && (
                       <div className="df-video-wrap" style={{ borderRadius: '16px', overflow: 'hidden', background: '#000', maxWidth: '800px', margin: '0 auto' }}>
-                        <video className="df-video" controls preload="metadata" src={videoUrl} style={{ width: '100%', display: 'block' }}>Your browser does not support video playback.</video>
+                        <video key={`video-${mediaElementKey}`} className="df-video" controls preload="metadata" src={videoUrl} style={{ width: '100%', display: 'block' }}>Your browser does not support video playback.</video>
                       </div>
                     )}
                     {audioUrl && (
                       <div className="df-audio-wrap" style={{ marginTop: videoUrl ? '24px' : '0', maxWidth: '800px', margin: videoUrl ? '24px auto 0' : '0 auto' }}>
-                        <audio className="df-audio" controls preload="metadata" src={audioUrl} style={{ width: '100%' }}>Your browser does not support audio playback.</audio>
+                        <audio key={`audio-${mediaElementKey}`} className="df-audio" controls preload="metadata" src={audioUrl} style={{ width: '100%' }}>Your browser does not support audio playback.</audio>
                       </div>
                     )}
                     {!videoUrl && !audioUrl && <p className="df-recordings-empty">No recording available for this session.</p>}

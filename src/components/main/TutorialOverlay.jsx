@@ -2,16 +2,17 @@ import { useEffect, useMemo, useRef, useState, memo } from 'react';
 import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import { getSpriteUrl, getVoiceUrl } from '../../utils/assetUtils';
 import { useAuthContext } from '../../context/useAuthContext';
+import './TutorialOverlay.css';
 
 const defaultRobotImage = getSpriteUrl('Robot/0008-noBulb-inverted.png');
 const tutorialVoice1 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 1.mp3');
 const tutorialVoice2 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 2.mp3');
 const tutorialVoice3 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 3.mp3');
-const tutorialVoice4 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 4.mp3');
+const tutorialVoice4 = 'https://assets.bigkas.site/Voices/Profiling%20and%20Pre-Testing/Pre-Testing%20Tutorial/pre-testing%20tutorial%204_new.mp3';
 const tutorialVoice5 = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 5.mp3');
 const tutorialVoiceFinal = getVoiceUrl('Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial FINAL.mp3');
 const defaultFinalRobotImage = getSpriteUrl('Robot/0002.webp');
-import './TutorialOverlay.css';
+const soundbarPreviewBars = Array.from({ length: 32 }, (_, index) => index);
 
 /**
  * Isolated typing component to prevent parent re-renders on every character typing cycle
@@ -121,6 +122,7 @@ function TutorialOverlay({
     if (user && typeof user.isAudioMuted === 'boolean') return user.isAudioMuted;
     return window.localStorage.getItem(GLOBAL_MUTE_KEY) === '1';
   });
+  const [soundbarSpotlightRect, setSoundbarSpotlightRect] = useState(null);
 
   useEffect(() => {
     if (user && typeof user.isAudioMuted === 'boolean') {
@@ -172,6 +174,18 @@ function TutorialOverlay({
       customVoiceRef.current.currentTime = 0;
       customVoiceRef.current = null;
     }
+  };
+
+  const playAudio = (audio, label = 'B-01 voice') => {
+    if (!audio) return;
+    audio.muted = false;
+    audio.currentTime = 0;
+    audio.onerror = () => {
+      console.warn(`[TutorialOverlay] ${label} unavailable.`);
+    };
+    audio.play().catch((err) => {
+      console.warn(`[TutorialOverlay] ${label} play failed:`, err);
+    });
   };
 
   const handleToggleMute = () => {
@@ -231,30 +245,7 @@ function TutorialOverlay({
       }
     }
 
-    if (!isMuted && isOpen && activeStep) {
-      stopAllAudios();
-      const voiceUrl =
-        stepTextSegment === 1 && activeStep.voicePart2
-          ? activeStep.voicePart2
-          : stepTextSegment === 0 && activeStep.voice
-            ? activeStep.voice
-            : null;
-
-      if (voiceUrl) {
-        const audio = new Audio(voiceUrl);
-        audio.muted = false;
-        customVoiceRef.current = audio;
-        audio.play().catch(() => {});
-      } else if (shouldUseAudio) {
-        const stepAudio = stepAudioRefs.current[currentStep];
-        if (stepAudio) {
-          stepAudio.muted = false;
-          stepAudio.currentTime = 0;
-          stepAudio.play().catch(() => {});
-        }
-      }
-    }
-  }, [isMuted, isOpen, activeStep, stepTextSegment, shouldUseAudio, currentStep]);
+  }, [isMuted]);
 
   useEffect(() => {
     if (isOpen) {
@@ -317,6 +308,46 @@ function TutorialOverlay({
         activeSpotlightRef.current.style.removeProperty('z-index');
         activeSpotlightRef.current = null;
       }
+    };
+  }, [isOpen, activeStep?.targetElementId]);
+
+  useEffect(() => {
+    if (!isOpen || activeStep?.targetElementId !== 'tutorial-target-soundbar') {
+      setSoundbarSpotlightRect(null);
+      return undefined;
+    }
+
+    let frameId = 0;
+
+    const updateSoundbarRect = () => {
+      frameId = window.requestAnimationFrame(() => {
+        const targetEl = document.getElementById('tutorial-target-soundbar');
+        if (!targetEl) {
+          setSoundbarSpotlightRect(null);
+          return;
+        }
+
+        const rect = targetEl.getBoundingClientRect();
+        setSoundbarSpotlightRect({
+          top: rect.top,
+          left: rect.left,
+          width: rect.width,
+          height: rect.height,
+        });
+      });
+    };
+
+    updateSoundbarRect();
+    window.addEventListener('resize', updateSoundbarRect);
+    window.addEventListener('scroll', updateSoundbarRect, true);
+
+    return () => {
+      if (frameId) {
+        window.cancelAnimationFrame(frameId);
+      }
+      window.removeEventListener('resize', updateSoundbarRect);
+      window.removeEventListener('scroll', updateSoundbarRect, true);
+      setSoundbarSpotlightRect(null);
     };
   }, [isOpen, activeStep?.targetElementId]);
 
@@ -417,16 +448,14 @@ function TutorialOverlay({
       // 1. Step-specific voice (segment 0: voice; segment 1: voicePart2 when provided)
       if (voiceUrl) {
         const audio = new Audio(voiceUrl);
-        audio.muted = false;
         customVoiceRef.current = audio;
-        audio.play().catch((err) => console.warn('[TutorialOverlay] Custom voice play failed:', err));
+        playAudio(audio, 'Custom voice');
       }
-      // 2. Fallback to hardcoded pre-test tutorial voices
+      // 2. Default pre-test tutorial voices
       else if (shouldUseAudio) {
         const stepAudio = stepAudioRefs.current[currentStep];
         if (stepAudio) {
-          stepAudio.currentTime = 0;
-          stepAudio.play().catch(() => {});
+          playAudio(stepAudio, `Tutorial voice ${currentStep + 1}`);
         }
       }
     }
@@ -485,6 +514,30 @@ function TutorialOverlay({
   return (
     <>
       <div className="tutorial-dark-bg" aria-hidden="true" />
+      {soundbarSpotlightRect && (
+        <div
+          className="tutorial-soundbar-spotlight-clone"
+          aria-hidden="true"
+          style={{
+            top: `${soundbarSpotlightRect.top}px`,
+            left: `${soundbarSpotlightRect.left}px`,
+            width: `${soundbarSpotlightRect.width}px`,
+            height: `${soundbarSpotlightRect.height}px`,
+          }}
+        >
+          <div className="tutorial-soundbar-preview-bars">
+            {soundbarPreviewBars.map((barIndex) => (
+              <span
+                key={barIndex}
+                style={{
+                  '--bar-index': barIndex,
+                  '--bar-height': `${18 + (barIndex % 8) * 9}%`,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
       <section
         className={`tutorial-overlay-wrapper${Array.isArray(steps) && steps.length > 0 ? ' is-custom-tutorial' : ' is-default-tutorial'}${activeStep.id === 'step-controls' ? ' is-controls-step' : ''}${activeStep.id === 'step-soundbar' ? ' is-soundbar-step' : ''}${activeStep.id === 'step-final' ? ' is-final-step' : ''}${activeStep.robotClassName ? ` ${activeStep.robotClassName}` : ''}`}
         aria-label="Training tutorial overlay"

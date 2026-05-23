@@ -73,31 +73,33 @@ export default function LandingPage({ managePageClass = true }) {
       document.body.classList.add('landing-page-active');
     }
 
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          const id = entry.target.id;
-          setActiveSection(id);
-          setActiveTheme(id === 'hero' ? 'light' : 'dark');
-        }
-      });
-    }, {
-      rootMargin: '-45% 0px -45% 0px',
-      threshold: 0.1,
-    });
-
     const sections = ['hero', 'how-it-works', 'features', 'science', 'section-5'];
-    sections.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
-    });
+    const updateActiveSectionFromScroll = () => {
+      const probeY = window.innerHeight * 0.35;
+      const currentSectionId = sections.find((id) => {
+        const el = document.getElementById(id);
+        if (!el) return false;
+        const rect = el.getBoundingClientRect();
+        return rect.top <= probeY && rect.bottom > probeY;
+      });
+
+      if (currentSectionId) {
+        setActiveSection(currentSectionId);
+        setActiveTheme(currentSectionId === 'hero' ? 'light' : 'dark');
+      }
+    };
+
+    updateActiveSectionFromScroll();
+    window.addEventListener('scroll', updateActiveSectionFromScroll, { passive: true });
+    window.addEventListener('resize', updateActiveSectionFromScroll);
 
     return () => {
       if (managePageClass) {
         document.documentElement.classList.remove('landing-page-active');
         document.body.classList.remove('landing-page-active');
       }
-      observer.disconnect();
+      window.removeEventListener('scroll', updateActiveSectionFromScroll);
+      window.removeEventListener('resize', updateActiveSectionFromScroll);
     };
   }, [managePageClass]);
 
@@ -290,8 +292,7 @@ export default function LandingPage({ managePageClass = true }) {
           'figma-nav',
           activeTheme === 'dark' && 'nav-theme-dark',
           activeSection === 'hero' && 'nav-on-hero',
-          (activeSection === 'how-it-works' || activeSection === 'science') &&
-            'nav-on-green-sections',
+          activeSection === 'science' && 'nav-on-green-sections',
           activeSection === 'features' && 'nav-menu-black',
           activeSection === 'section-5' && 'nav-on-last-section',
           menuOpen && 'menu-open',

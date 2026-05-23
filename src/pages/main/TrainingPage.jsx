@@ -99,6 +99,7 @@ const MAX_VIDEO_BLOB_BYTES = 18 * 1024 * 1024;
 
 /** Minimum recording length (seconds) before FastAPI / Supabase analysis runs. */
 const DEFAULT_MIN_RECORDING_SECONDS = 20;
+const FREE_PRETEST_MIN_RECORDING_SECONDS = 20;
 const PREPARING_AI_TIMEOUT_MS = 12000;
 
 // Cache API configuration for persistent asset storage (Lighthouse: Efficient cache lifetimes)
@@ -246,7 +247,7 @@ function TrainingPage() {
 
   const MIN_RECORDING_SECONDS = useMemo(() => {
     if (isFreePretestSession) {
-      return DEFAULT_MIN_RECORDING_SECONDS;
+      return FREE_PRETEST_MIN_RECORDING_SECONDS;
     }
     const match = objectiveText.match(/(\d+)\s+Seconds/i) || objectiveText.match(/for\s+(\d+)\s+s/i);
     if (match && match[1]) {

@@ -45,7 +45,7 @@ export default function LandingFooterSection({ navigateTo, onScrollToSection }) 
               <h4 className="footer-logo-text">Bigkas</h4>
             </div>
             <p>
-              A private speaking practice path with clear feedback, friendly guidance, and room to try again.
+              Private speaking practice with clear feedback, friendly guidance, and room to try again.
             </p>
             <Button
               variant="ink"

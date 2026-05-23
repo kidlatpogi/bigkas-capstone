@@ -5,13 +5,28 @@ import {
 	SELF,
 } from "cloudflare:test";
 import { describe, it, expect } from "vitest";
-import worker from "../src/index";
+import worker, { detectFillerOccurrences } from "../src/index";
 
 // For now, you'll need to do something like this to get a correctly-typed
 // `Request` to pass to `worker.fetch()`.
 const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
 
 describe("B-01 AI worker", () => {
+	it("counts hard, contextual, and phrase fillers deterministically", () => {
+		const fillers = detectFillerOccurrences(
+			"Um I think, you know, this is like basically ready.",
+		);
+
+		expect(fillers.map((item) => item.normalized)).toEqual([
+			"um",
+			"you",
+			"know",
+			"like",
+			"basically",
+		]);
+		expect(fillers).toHaveLength(5);
+	});
+
 	it("responds to health checks with CORS headers (unit style)", async () => {
 		const request = new IncomingRequest("http://example.com/health");
 		// Create an empty context to pass to `worker.fetch()`.

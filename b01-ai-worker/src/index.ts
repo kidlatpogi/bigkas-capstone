@@ -32,6 +32,173 @@ function corsResponse(response: Response) {
   });
 }
 
+const HARD_FILLER_WORDS = new Set([
+  "um",
+  "uh",
+  "ah",
+  "er",
+  "err",
+  "erm",
+  "uhm",
+  "hmm",
+  "mmm",
+]);
+
+const CONTEXTUAL_FILLER_WORDS = new Set([
+  "like",
+  "well",
+  "so",
+  "okay",
+  "ok",
+  "actually",
+  "basically",
+  "literally",
+  "honestly",
+  "right",
+  "alright",
+  "anyway",
+  "anyways",
+  "kinda",
+]);
+
+const FILLER_PHRASES = [
+  ["you", "know"],
+  ["i", "mean"],
+  ["kind", "of"],
+  ["sort", "of"],
+];
+
+type TranscriptWord = {
+  word: string;
+  start?: number;
+  end?: number;
+  confidence?: number;
+};
+
+type DeepgramWord = {
+  word?: unknown;
+  start?: unknown;
+  end?: unknown;
+  confidence?: unknown;
+};
+
+type DeepgramAlternative = {
+  transcript?: unknown;
+  words?: DeepgramWord[];
+};
+
+type DeepgramResponse = {
+  text?: unknown;
+  results?: {
+    channels?: {
+      alternatives?: DeepgramAlternative[];
+    }[];
+  };
+};
+
+type FillerOccurrence = TranscriptWord & {
+  index: number;
+  normalized: string;
+  kind: "hard" | "contextual" | "phrase";
+};
+
+const punctuationPattern = /[.,/#!$%^&*;:{}=\-_`~()"[\]?]/g;
+
+function cleanTranscriptWord(word: unknown) {
+  return String(word || "").replace(punctuationPattern, "").toLowerCase();
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error || "Unknown error");
+}
+
+function toTranscriptWords(transcript: string, words: TranscriptWord[] = []) {
+  if (Array.isArray(words) && words.length > 0) {
+    return words
+      .map((entry) => ({
+        ...entry,
+        word: String(entry?.word || "").trim(),
+      }))
+      .filter((entry) => entry.word);
+  }
+
+  return String(transcript || "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => ({ word }));
+}
+
+function getDeepgramAlternative(response: unknown): DeepgramAlternative | null {
+  const deepgramResponse = response as DeepgramResponse;
+  return deepgramResponse?.results?.channels?.[0]?.alternatives?.[0] || null;
+}
+
+function resolveDeepgramTranscript(response: unknown) {
+  const alternative = getDeepgramAlternative(response);
+  const deepgramResponse = response as DeepgramResponse;
+  return String(alternative?.transcript || deepgramResponse?.text || "").trim();
+}
+
+function resolveDeepgramWords(response: unknown): TranscriptWord[] {
+  const alternative = getDeepgramAlternative(response);
+  if (!Array.isArray(alternative?.words)) return [];
+
+  return alternative.words
+    .map((entry) => ({
+      word: String(entry?.word || "").trim(),
+      start: Number.isFinite(Number(entry?.start)) ? Number(entry.start) : undefined,
+      end: Number.isFinite(Number(entry?.end)) ? Number(entry.end) : undefined,
+      confidence: Number.isFinite(Number(entry?.confidence)) ? Number(entry.confidence) : undefined,
+    }))
+    .filter((entry: TranscriptWord) => entry.word);
+}
+
+export function detectFillerOccurrences(transcript: string, words: TranscriptWord[] = []) {
+  const transcriptWords = toTranscriptWords(transcript, words);
+  const normalizedWords = transcriptWords.map((entry) => cleanTranscriptWord(entry.word));
+  const occurrences = new Map<number, FillerOccurrence>();
+
+  normalizedWords.forEach((normalized, index) => {
+    if (HARD_FILLER_WORDS.has(normalized)) {
+      occurrences.set(index, {
+        ...transcriptWords[index],
+        index,
+        normalized,
+        kind: "hard",
+      });
+      return;
+    }
+
+    if (CONTEXTUAL_FILLER_WORDS.has(normalized)) {
+      occurrences.set(index, {
+        ...transcriptWords[index],
+        index,
+        normalized,
+        kind: "contextual",
+      });
+    }
+  });
+
+  FILLER_PHRASES.forEach((phrase) => {
+    for (let index = 0; index <= normalizedWords.length - phrase.length; index += 1) {
+      const matches = phrase.every((part, offset) => normalizedWords[index + offset] === part);
+      if (!matches) continue;
+
+      phrase.forEach((_, offset) => {
+        const wordIndex = index + offset;
+        occurrences.set(wordIndex, {
+          ...transcriptWords[wordIndex],
+          index: wordIndex,
+          normalized: normalizedWords[wordIndex],
+          kind: "phrase",
+        });
+      });
+    }
+  });
+
+  return Array.from(occurrences.values()).sort((a, b) => a.index - b.index);
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -126,17 +293,46 @@ export default {
     // --- ROUTE: /transcribe (Used by Python Backend) ---
     if (url.pathname === "/transcribe" && request.method === "POST") {
       try {
-        const audioBlob = await request.arrayBuffer();
-        
-        // 1. Speech-to-Text using Whisper
-        const whisperResponse = await env.AI.run("@cf/openai/whisper", {
-          audio: [...new Uint8Array(audioBlob)],
-        });
+        const audioBuffer = await request.arrayBuffer();
+        const contentType = request.headers.get("Content-Type") || "audio/webm";
 
-        const transcript = whisperResponse.text || "";
+        let transcript = "";
+        let transcriptWords: TranscriptWord[] = [];
+        let transcriptionModel = "@cf/deepgram/nova-3";
+
+        try {
+          const deepgramResponse = await env.AI.run("@cf/deepgram/nova-3", {
+            audio: {
+              body: new Response(audioBuffer).body,
+              contentType,
+            },
+            filler_words: true,
+            language: "en-US",
+            punctuate: true,
+            smart_format: false,
+          });
+
+          transcript = resolveDeepgramTranscript(deepgramResponse);
+          transcriptWords = resolveDeepgramWords(deepgramResponse);
+          if (!transcript) {
+            throw new Error("Nova-3 returned an empty transcript");
+          }
+        } catch (deepgramError: unknown) {
+          console.warn("[transcribe] Nova-3 transcription failed, falling back to Whisper:", getErrorMessage(deepgramError));
+          transcriptionModel = "@cf/openai/whisper";
+
+          const whisperResponse = await env.AI.run("@cf/openai/whisper", {
+            audio: [...new Uint8Array(audioBuffer)],
+          });
+
+          transcript = String(whisperResponse?.text || "").trim();
+        }
+
+        const fillerOccurrences = detectFillerOccurrences(transcript, transcriptWords);
+        const fillerWords = fillerOccurrences.map((occurrence) => occurrence.word);
 
         // 2. Fast Verbal Analysis using Llama-3
-        // We ask Llama to count fillers and evaluate relevance based on a topic if provided
+        // Filler counting is deterministic above, so the LLM only handles semantic judgment.
         const topic = url.searchParams.get("topic") || "General Speaking";
         
         const analysisPrompt = `Analyze this transcript for a public speaking app.
@@ -144,14 +340,13 @@ export default {
         Topic: "${topic}"
         
         Tasks:
-        1. Count the number of filler words (um, uh, like, so, basically).
-        2. Give a relevance score (1.0 to 5.0) compared to the topic.
-        3. Provide 2 short verbal coaching tips.
+        1. Give a relevance score (1.0 to 5.0) compared to the topic.
+        2. Provide 2 short verbal coaching tips.
+        Do not count filler words. They are computed separately by code.
 
         Return ONLY a JSON object:
         {
           "transcript": "...",
-          "filler_count": 0,
           "relevance_score": 0.0,
           "recommendations": ["tip1", "tip2"]
         }`;
@@ -173,7 +368,14 @@ export default {
           finalData = { transcript, error: "Analysis failed, but transcription succeeded" };
         }
 
-        return jsonResponse({ ...finalData, transcript });
+        return jsonResponse({
+          ...finalData,
+          transcript,
+          transcription_model: transcriptionModel,
+          filler_count: fillerOccurrences.length,
+          filler_words: fillerWords,
+          filler_occurrences: fillerOccurrences,
+        });
 
       } catch (e: any) {
         return jsonResponse({ error: e.message }, { status: 500 });

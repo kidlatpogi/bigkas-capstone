@@ -557,11 +557,11 @@
 }
 
 .confidence-grid.features-reveal > * {
-  opacity: 0;
-  transform: translateY(min(60vh, 520px));
+  opacity: 1;
+  transform: none;
   animation: none;
-  transition: transform 980ms ease-in-out, opacity 980ms ease-in-out;
-  transition-delay: calc(var(--d) * 100ms);
+  transition: none;
+  transition-delay: 0ms;
 }
 
 .confidence-grid.features-reveal > :nth-child(1) { --d: 0; }
@@ -1177,11 +1177,11 @@
   }
 
   .confidence-grid.features-reveal > * {
-    opacity: 0;
-    transform: translateY(min(60vh, 520px));
+    opacity: 1;
+    transform: none;
     animation: none;
-    transition: transform 980ms ease-in-out, opacity 980ms ease-in-out;
-    transition-delay: calc(var(--d) * 100ms);
+    transition: none;
+    transition-delay: 0ms;
   }
 
   .confidence-grid.features-reveal.is-active > * {

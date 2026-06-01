@@ -16,11 +16,8 @@ import {
   writeStoredProfileTheme,
 } from '../../utils/profileTheme';
 import {
-  getClaimedTrophyLevels,
-  getFeaturedTrophy,
   getTrophyImageUrl,
   getTrophyTitle,
-  setFeaturedTrophyLevel,
 } from '../../utils/trophyClaims';
 import {
   fetchUserTrophyClaims,
@@ -66,10 +63,16 @@ function SettingsProfilePage() {
 
   const userLevel = useMemo(() => getBigkasLevelFromUser(user), [user]);
   const currentLevelNumber = userLevel.levelNumber;
+  const unlockedThemeIds = useMemo(() => new Set(
+    THEME_CONFIG
+      .filter((theme) => theme.requires <= 0 || claimedTrophyLevels.includes(theme.requires))
+      .map((theme) => theme.id),
+  ), [claimedTrophyLevels]);
   const activeHeroTheme = useMemo(() => {
     if (heroThemeUserId !== (user?.id || null)) return DEFAULT_PROFILE_THEME;
+    if (!unlockedThemeIds.has(heroTheme)) return DEFAULT_PROFILE_THEME;
     return getAllowedProfileTheme(heroTheme, THEME_CONFIG, currentLevelNumber);
-  }, [currentLevelNumber, heroTheme, heroThemeUserId, user?.id]);
+  }, [currentLevelNumber, heroTheme, heroThemeUserId, unlockedThemeIds, user?.id]);
 
   const getThemeDecoration = (themeId) => {
     const config = THEME_CONFIG.find(t => t.id === themeId);
@@ -110,14 +113,8 @@ function SettingsProfilePage() {
     }
 
     fetchUserTrophyClaims(user.id)
-      .then(({ trophies, backendUnavailable }) => {
+      .then(({ trophies }) => {
         if (cancelled) return;
-        if (backendUnavailable) {
-          setClaimedTrophyLevels(getClaimedTrophyLevels(user.id));
-          setFeaturedTrophy(getFeaturedTrophy(user.id));
-          return;
-        }
-
         const levels = getClaimedTrophyLevelsFromRows(trophies);
         const featuredLevel = getFeaturedTrophyLevelFromRows(trophies);
         setClaimedTrophyLevels(levels);
@@ -219,10 +216,7 @@ function SettingsProfilePage() {
       const featuredLevel = getFeaturedTrophyLevelFromRows(trophies);
       setClaimedTrophyLevels(getClaimedTrophyLevelsFromRows(trophies));
       setFeaturedTrophy(featuredLevel ? { level: featuredLevel, label: `Level ${featuredLevel} Trophy`, title: getTrophyTitle(featuredLevel) } : null);
-    } catch {
-      const next = setFeaturedTrophyLevel(user?.id, level);
-      setFeaturedTrophy(getFeaturedTrophy(user?.id) || (next ? { level: next, label: `Level ${next} Trophy`, title: getTrophyTitle(next) } : null));
-    }
+    } catch {}
   }, [user?.id]);
 
   return (
@@ -485,7 +479,7 @@ function SettingsProfilePage() {
 
             <div className="theme-picker">
               {THEME_CONFIG.map((theme) => {
-                const isLocked = currentLevelNumber < theme.requires;
+                const isLocked = !unlockedThemeIds.has(theme.id);
                 const isActive = activeHeroTheme === theme.id;
 
                 return (
@@ -509,7 +503,7 @@ function SettingsProfilePage() {
                     </div>
                     <span>{theme.label}</span>
                     {isLocked && (
-                      <div className="theme-rank-banner">Requires Level {theme.requires}</div>
+                      <div className="theme-rank-banner">Claim Level {theme.requires} Trophy</div>
                     )}
                   </button>
                 );

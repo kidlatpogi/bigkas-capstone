@@ -9,6 +9,7 @@ import { FaVolumeMute } from '@react-icons/all-files/fa/FaVolumeMute';
 import { FaVolumeUp } from '@react-icons/all-files/fa/FaVolumeUp';
 import { IoChatbubbleEllipsesOutline } from '@react-icons/all-files/io5/IoChatbubbleEllipsesOutline';
 import { IoSend } from '@react-icons/all-files/io5/IoSend';
+import { IoFlame } from '@react-icons/all-files/io5/IoFlame';
 import { IoTrophyOutline } from '@react-icons/all-files/io5/IoTrophyOutline';
 import {
   GLOBAL_ACTIVITY_SCOPE,
@@ -49,7 +50,6 @@ const LottieFire = lazy(async () => {
   };
 });
 
-const iconFire = getAssetUrl('icons/Icon-Fire.svg');
 const robotMorningImage = getSpriteUrl('Robot/0018.webp');
 const robotNoonImage = getSpriteUrl('Robot/0001.webp');
 const robotNightImage = getSpriteUrl('Robot/0013.webp');
@@ -1406,7 +1406,7 @@ function ActivityPageMobile() {
               >
                 <div className="new-streak-top">
                   <div className="new-streak-fire">
-                    <Suspense fallback={<img src={iconFire} alt="" aria-hidden="true" />}>
+                    <Suspense fallback={<IoFlame aria-hidden="true" />}>
                       <LottieFire />
                     </Suspense>
                   </div>

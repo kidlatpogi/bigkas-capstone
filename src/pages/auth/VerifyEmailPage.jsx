@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, lazy, Suspense } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { authApi } from '@session/api/authApi';
+import { authApi, PENDING_SIGNUP_PASSWORD_KEY } from '@session/api/authApi';
 import { ROUTES } from '../../utils/constants';
 import VerifyEmailPageMobile from './VerifyEmailPageMobile';
 import './VerifyEmailPage.css';
@@ -111,6 +111,7 @@ export default function VerifyEmailPage() {
     await authApi.logout();
     setIsVerifying(false);
     window.localStorage.removeItem(PENDING_EMAIL_KEY);
+    window.sessionStorage.removeItem(PENDING_SIGNUP_PASSWORD_KEY);
     navigate(ROUTES.LOGIN, { state: { accountVerified: true }, replace: true });
   };
 
@@ -129,12 +130,19 @@ export default function VerifyEmailPage() {
     setTimeout(() => setResendMessage(''), 5000);
   };
 
+  const handleWrongEmail = async () => {
+    window.localStorage.removeItem(PENDING_EMAIL_KEY);
+    window.sessionStorage.removeItem(PENDING_SIGNUP_PASSWORD_KEY);
+    await authApi.logout().catch(() => {});
+    navigate(ROUTES.REGISTER, { replace: true });
+  };
+
   const maskedEmail = resolvedEmail.replace(/(.{2})(.*)(@.*)/, (_, a, b, c) => a + '*'.repeat(Math.min(b.length, 8)) + c);
 
   const commonProps = {
     maskedEmail, digits, inputRefs, isVerifying, isResending, error,
     resendMessage, resendCooldown, handleChange, handleKeyDown,
-    handleVerify, handleResend, bigkasLogo: bigkasLogoUrl, robotImgUrl, navigate
+    handleVerify, handleResend, handleWrongEmail, bigkasLogo: bigkasLogoUrl, robotImgUrl
   };
 
   return isMobileOrTablet ? (

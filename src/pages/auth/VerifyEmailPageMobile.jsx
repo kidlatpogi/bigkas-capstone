@@ -1,4 +1,3 @@
-import { ROUTES } from '../../utils/constants';
 import PushButton from '../../components/common/PushButton';
 import './VerifyEmailPageMobile.css';
 
@@ -22,8 +21,8 @@ function VerifyEmailPageMobile({
   handleKeyDown,
   handleVerify,
   handleResend,
+  handleWrongEmail,
   bigkasLogo,
-  navigate
 }) {
   return (
     <div className="auth-mobile-page">
@@ -131,7 +130,7 @@ function VerifyEmailPageMobile({
               </div>
 
               <div className="back-to-signup-mobile">
-                <button type="button" onClick={() => navigate(ROUTES.REGISTER)}>
+                <button type="button" onClick={handleWrongEmail}>
                   Wrong email? Go back
                 </button>
               </div>

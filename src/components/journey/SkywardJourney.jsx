@@ -1278,6 +1278,7 @@ export default function SkywardJourney({
   const handleNodeClick = useCallback(
     (step, index) => {
       if (step.nodeState === NODE_STATE.LOCKED) {
+        if (tooltipNodeId) setTooltipNodeId(null);
         setJiggleIndex(index);
         window.setTimeout(() => setJiggleIndex(null), 520);
         return;

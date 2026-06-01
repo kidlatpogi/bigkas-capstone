@@ -7,6 +7,7 @@ import { ENV } from '../config/env';
 import { ROUTES } from '../utils/constants';
 import { normalizeSpeakerPointsHistory } from '../utils/speakerPointsHistory';
 import { BIGKAS_LEVELS, getBigkasLevelFromScore, mapPercentToEntryScore } from '../utils/activityProgress';
+import { PENDING_SIGNUP_PASSWORD_KEY } from '../services/session/api/authApi';
 
 /**
  * Authentication Context — backed by Supabase Auth
@@ -979,7 +980,7 @@ export function AuthProvider({ children }) {
         'Archived profile check',
       ));
     } catch (err) {
-      console.warn('Bigkas Auth: archived-profile check timed out:', err);
+      console.debug('Bigkas Auth: archived-profile check skipped after timeout:', err);
       return null;
     }
 
@@ -1730,13 +1731,12 @@ export function AuthProvider({ children }) {
     const emailRedirectTo = getWebRedirectPath('/verify-email');
 
     try {
-      // Race the signup against a 15-second timeout.
-      // When Supabase's SMTP hangs (trying to send confirmation email),
-      // the signUp() promise never resolves — this prevents infinite loading.
-      const signupPromise = supabase.auth.signUp({
+      // Race the OTP request against a 15-second timeout.
+      // Supabase sends this through the Magic Link/OTP template with {{ .Token }}.
+      const signupPromise = supabase.auth.signInWithOtp({
         email: normalizedEmail,
-        password,
         options: {
+          shouldCreateUser: true,
           emailRedirectTo,
           data: {
             full_name: resolvedFullName,
@@ -1779,14 +1779,13 @@ export function AuthProvider({ children }) {
         // Try to recover by resending the confirmation email separately.
         if (errStatus === 500 || errMsg.toLowerCase().includes('internal server') || errMsg.toLowerCase().includes('sending confirmation')) {
           try {
-            const { error: resendErr } = await supabase.auth.resend({
-              type: 'signup',
+            const { error: resendErr } = await supabase.auth.signInWithOtp({
               email: normalizedEmail,
-              options: { emailRedirectTo },
+              options: { shouldCreateUser: false, emailRedirectTo },
             });
 
             if (!resendErr) {
-              // Recovery succeeded — the confirmation email was sent
+              // Recovery succeeded: the verification code email was sent.
               setPendingEmailVerification(true);
               setPendingEmail(normalizedEmail);
               return { success: true, requiresEmailConfirmation: true };
@@ -1795,7 +1794,7 @@ export function AuthProvider({ children }) {
             // Resend also failed, fall through to error
           }
 
-          const message = 'Account may have been created but the verification email could not be sent. Please try logging in, or try again in a few minutes.';
+          const message = 'Account may have been created but the verification code could not be sent. Please try logging in, or try again in a few minutes.';
           setError(message);
           return { success: false, error: message };
         }
@@ -1813,7 +1812,10 @@ export function AuthProvider({ children }) {
       }
 
       if (!data.session) {
-        // Email confirmation required — Supabase sends via configured SMTP
+        if (typeof window !== 'undefined') {
+          window.sessionStorage.setItem(PENDING_SIGNUP_PASSWORD_KEY, password);
+        }
+        // Email verification required. Supabase sends the 6-digit code via the Magic Link/OTP template.
         setPendingEmailVerification(true);
         setPendingEmail(normalizedEmail);
         return { success: true, requiresEmailConfirmation: true };
@@ -1822,7 +1824,7 @@ export function AuthProvider({ children }) {
     } catch (networkError) {
       setIsLoading(false);
       if (isBlockedByClient(networkError)) {
-        const msg = 'Registration blocked by your browser. Please disable ad-blockers for this site to receive the verification email.';
+        const msg = 'Registration blocked by your browser. Please disable ad-blockers for this site to receive the verification code.';
         setError(msg);
         return { success: false, error: msg, code: 'blocked_by_client' };
       }
@@ -1830,7 +1832,7 @@ export function AuthProvider({ children }) {
 
       // Signup request timed out — SMTP is likely hanging
       if (message === 'SIGNUP_TIMEOUT') {
-        const errorMsg = 'Account creation is taking too long (email service may be slow). Your account may have been created — try logging in. If not, please try again.';
+        const errorMsg = 'Account creation is taking too long (email service may be slow). Please try again in a moment.';
         setError(errorMsg);
         return { success: false, error: errorMsg };
       }
@@ -1885,7 +1887,7 @@ export function AuthProvider({ children }) {
     return { success: true };
   }, [clearAdminSession]);
 
-  /* ── Resend verification email ── */
+  /* ── Resend verification code ── */
   const resendVerificationEmail = useCallback(async (email) => {
     const normalizedEmail = (email || '').trim();
     if (!normalizedEmail) {
@@ -1894,11 +1896,10 @@ export function AuthProvider({ children }) {
 
     const emailRedirectTo = getWebRedirectPath('/verify-email');
 
-    // Resend via Supabase (sends through Brevo SMTP)
-    const { error: err } = await supabase.auth.resend({
-      type: 'signup',
+    // Resend via Supabase (sends through the Magic Link/OTP template)
+    const { error: err } = await supabase.auth.signInWithOtp({
       email: normalizedEmail,
-      options: { emailRedirectTo },
+      options: { shouldCreateUser: false, emailRedirectTo },
     });
 
     if (err) {
@@ -1907,7 +1908,7 @@ export function AuthProvider({ children }) {
       }
       const msg = (err.message || '').toLowerCase();
       if (msg.includes('rate limit') || msg.includes('too many') || err.status === 429) {
-        return { success: false, error: 'Please wait before requesting another verification email.' };
+        return { success: false, error: 'Please wait before requesting another verification code.' };
       }
       return { success: false, error: err.message };
     }

@@ -28,7 +28,6 @@ import { filterActivitiesForJourney } from '../../utils/journeyFiltering';
 import { FaVolumeMute } from '@react-icons/all-files/fa/FaVolumeMute';
 import { FaVolumeUp } from '@react-icons/all-files/fa/FaVolumeUp';
 
-const iconFire = getAssetUrl('icons/Icon-Fire.svg');
 const robotMorningImage = getSpriteUrl('Robot/0018.webp');
 const robotNoonImage = getSpriteUrl('Robot/0001.webp');
 const robotNightImage = getSpriteUrl('Robot/0013.webp');
@@ -1592,7 +1591,7 @@ function ActivityPage() {
               <div className="new-streak-top" style={{ justifyContent: 'space-between', width: '100%' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div className="new-streak-fire">
-                    <Suspense fallback={<img src={iconFire} alt="" aria-hidden="true" />}>
+                    <Suspense fallback={<IoFlame aria-hidden="true" />}>
                       <LottieFire />
                     </Suspense>
                   </div>

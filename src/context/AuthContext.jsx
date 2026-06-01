@@ -768,6 +768,69 @@ function resolveAuthLevelFields(meta = {}, profile = {}) {
   };
 }
 
+async function syncProfileWithUserFunction(profileUpdates) {
+  const { session, error: sessionError } = await ensureFreshAccessToken();
+  if (sessionError) return { error: sessionError.message || 'Unable to refresh profile sync session.' };
+
+  const { data, error } = await supabase.functions.invoke('sync-user-profile', {
+    body: { profile_updates: profileUpdates },
+    headers: session?.access_token
+      ? { Authorization: `Bearer ${session.access_token}` }
+      : undefined,
+  });
+
+  if (error) {
+    let functionMessage = '';
+    try {
+      const details = await error.context?.json?.();
+      functionMessage = details?.error || details?.message || '';
+    } catch {
+      functionMessage = '';
+    }
+    return { error: functionMessage || error.message || 'Profile was not synced.' };
+  }
+
+  if (data?.error) {
+    return { error: data.error };
+  }
+
+  return { profile: data?.profile || null };
+}
+
+async function syncProfileUpdates(userId, profileUpdates) {
+  if (!userId || !Object.keys(profileUpdates || {}).length) return { profile: null };
+
+  let { data, error } = await supabase
+    .from('profiles')
+    .update(profileUpdates)
+    .eq('id', userId)
+    .select('id');
+
+  if (error && isJwtExpiredError(error)) {
+    await ensureFreshAccessToken(null, { force: true });
+    ({ data, error } = await supabase
+      .from('profiles')
+      .update(profileUpdates)
+      .eq('id', userId)
+      .select('id'));
+  }
+
+  if (!error && Array.isArray(data) && data.length > 0) {
+    return { profile: data[0] };
+  }
+
+  const functionResult = await syncProfileWithUserFunction(profileUpdates);
+  if (functionResult.error) {
+    return {
+      error: error?.message
+        ? `${error.message}; ${functionResult.error}`
+        : functionResult.error,
+    };
+  }
+
+  return functionResult;
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => getStoredAdminSession());
@@ -1944,7 +2007,10 @@ export function AuthProvider({ children }) {
     }
 
     if (Object.keys(profileUpdates).length > 0 && data.user?.id) {
-      await supabase.from('profiles').update(profileUpdates).eq('id', data.user.id);
+      const profileSyncResult = await syncProfileUpdates(data.user.id, profileUpdates);
+      if (profileSyncResult.error) {
+        return { success: false, error: profileSyncResult.error };
+      }
     }
 
     const nextUser = buildUser({ user: data.user }, profileUpdates);

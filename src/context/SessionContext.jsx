@@ -108,12 +108,12 @@ function normalizeSessionOriginForPersistence(value) {
 
 function resolveAnalysisTranscript(analysisResult) {
   const candidates = [
-    analysisResult?.transcript,
     analysisResult?.transcript_exact,
     analysisResult?.analysis?.transcript_exact,
+    analysisResult?.transcript,
     analysisResult?.analysis?.transcript,
-    analysisResult?.data?.transcript,
     analysisResult?.data?.transcript_exact,
+    analysisResult?.data?.transcript,
   ];
   const first = candidates.find((value) => typeof value === 'string' && value.trim());
   return first ? first.trim() : '';
@@ -197,6 +197,7 @@ function normalizeSessionRow(session) {
     recs.map((item) => String(item?.recommendation_text || '').trim()),
   );
   const confidenceScore = toInt(metrics?.confidence_score ?? metrics?.overall_score ?? 0, 0);
+  const resolvedTranscript = sanitizeTranscriptForDisplay(media?.transcript, '') || sanitizeTranscriptForDisplay(resolveAnalysisTranscript(session), '');
 
   return {
     ...session,
@@ -229,8 +230,8 @@ function normalizeSessionRow(session) {
     eye_contact_score: metrics?.eye_contact_score == null ? null : toInt(metrics.eye_contact_score, 0),
     gesture_score: metrics?.gesture_score == null ? null : toInt(metrics.gesture_score, 0),
     duration_sec: session.duration ?? 0,
-    target_text: sanitizeTranscriptForDisplay(media?.transcript, ''),
-    transcript: sanitizeTranscriptForDisplay(media?.transcript, ''),
+    target_text: resolvedTranscript,
+    transcript: resolvedTranscript,
     analysis: media?.analysis || (feedback?.detailed_feedback ? feedback.detailed_feedback : null),
     feedback: feedback?.general_feedback || '',
     detailed_feedback: feedback?.detailed_feedback || '',

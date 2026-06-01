@@ -391,6 +391,8 @@ function ProgressPageMobile() {
                   type="button"
                   key={r} 
                   className={`progress-mobile-range-chip ${range === r ? 'active' : ''}`}
+                  aria-label={`Speaking Performance range: ${r}`}
+                  aria-pressed={range === r}
                   onClick={() => setRange(r)}
                 >
                   {r}
@@ -423,6 +425,8 @@ function ProgressPageMobile() {
                     type="button"
                     key={r} 
                     className={`progress-mobile-range-chip ${pillarRange === r ? 'active' : ''}`}
+                    aria-label={`Pillar Trends range: ${r}`}
+                    aria-pressed={pillarRange === r}
                     onClick={() => setPillarRange(r)}
                   >
                     {r}

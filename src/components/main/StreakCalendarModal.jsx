@@ -2,10 +2,8 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import Lottie from 'lottie-react';
-import { getAssetUrl } from '../../utils/assetUtils';
 import fireAnimationData from '../../assets/Lottie/fire.json';
 
-const iconFire = getAssetUrl('icons/Icon-Fire.svg');
 import './StreakCalendarModal.css';
 
 // Heatmap color scale: Dark (less) -> Light (more)

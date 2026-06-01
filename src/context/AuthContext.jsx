@@ -7,6 +7,7 @@ import { ENV } from '../config/env';
 import { ROUTES } from '../utils/constants';
 import { normalizeSpeakerPointsHistory } from '../utils/speakerPointsHistory';
 import { BIGKAS_LEVELS, getBigkasLevelFromScore, mapPercentToEntryScore } from '../utils/activityProgress';
+import { PENDING_SIGNUP_PASSWORD_KEY } from '../services/session/api/authApi';
 
 /**
  * Authentication Context — backed by Supabase Auth
@@ -695,7 +696,7 @@ function firstValidLevel(values = []) {
 }
 
 function resolveAuthEntryScore(meta = {}, profile = {}) {
-  const direct = normalizeEntryScore(profile.diagnostic_score ?? meta.speaker_entry_score);
+  const direct = normalizeEntryScore(meta.speaker_entry_score);
   if (direct) return direct;
 
   const finalScore = Number(meta.onboarding_level_analysis?.final_score);
@@ -703,51 +704,59 @@ function resolveAuthEntryScore(meta = {}, profile = {}) {
     return mapPercentToEntryScore(finalScore);
   }
 
-  return null;
+  return normalizeEntryScore(profile.diagnostic_score);
 }
 
-function resolveLevelFromSources(primary = [], fallbacks = [], entryScore = null) {
-  const elevatedPrimary = firstElevatedLevel(primary);
-  if (elevatedPrimary) return elevatedPrimary;
-
+function resolveLevelFromSources(assessed = [], progress = [], legacy = [], entryScore = null) {
   const derivedFromEntry = entryScore
     ? normalizeLevelNumber(getBigkasLevelFromScore(entryScore)?.levelNumber)
     : null;
+
+  const elevatedAssessed = firstElevatedLevel(assessed);
+  if (elevatedAssessed) return elevatedAssessed;
+
   if (derivedFromEntry && derivedFromEntry > 1) return derivedFromEntry;
 
-  const elevatedFallback = firstElevatedLevel(fallbacks);
-  if (elevatedFallback) return elevatedFallback;
+  const elevatedProgress = firstElevatedLevel(progress);
+  if (elevatedProgress) return elevatedProgress;
+
+  const elevatedLegacy = firstElevatedLevel(legacy);
+  if (elevatedLegacy) return elevatedLegacy;
 
   if (derivedFromEntry) return derivedFromEntry;
 
-  return firstValidLevel(primary) || firstValidLevel(fallbacks) || 1;
+  return firstValidLevel(assessed) || firstValidLevel(progress) || firstValidLevel(legacy) || 1;
 }
 
 function resolveAuthLevelFields(meta = {}, profile = {}) {
   const entryScore = resolveAuthEntryScore(meta, profile);
   const speakerLevelNumber = resolveLevelFromSources(
     [
-      profile.speaker_level,
       meta.speaker_level_number,
       meta.onboarding_level_analysis?.estimated_level_number,
     ],
     [
-      profile.current_level,
       meta.progress_level_number,
       meta.current_level,
+    ],
+    [
+      profile.speaker_level,
+      profile.current_level,
     ],
     entryScore,
   );
   const progressLevelNumber = resolveLevelFromSources(
     [
-      profile.current_level,
       meta.progress_level_number,
       meta.current_level,
     ],
     [
-      profile.speaker_level,
       meta.speaker_level_number,
       meta.onboarding_level_analysis?.estimated_level_number,
+    ],
+    [
+      profile.current_level,
+      profile.speaker_level,
     ],
     entryScore,
   );
@@ -758,6 +767,69 @@ function resolveAuthLevelFields(meta = {}, profile = {}) {
     speakerLevelNumber,
     progressLevelNumber,
   };
+}
+
+async function syncProfileWithUserFunction(profileUpdates) {
+  const { session, error: sessionError } = await ensureFreshAccessToken();
+  if (sessionError) return { error: sessionError.message || 'Unable to refresh profile sync session.' };
+
+  const { data, error } = await supabase.functions.invoke('sync-user-profile', {
+    body: { profile_updates: profileUpdates },
+    headers: session?.access_token
+      ? { Authorization: `Bearer ${session.access_token}` }
+      : undefined,
+  });
+
+  if (error) {
+    let functionMessage = '';
+    try {
+      const details = await error.context?.json?.();
+      functionMessage = details?.error || details?.message || '';
+    } catch {
+      functionMessage = '';
+    }
+    return { error: functionMessage || error.message || 'Profile was not synced.' };
+  }
+
+  if (data?.error) {
+    return { error: data.error };
+  }
+
+  return { profile: data?.profile || null };
+}
+
+async function syncProfileUpdates(userId, profileUpdates) {
+  if (!userId || !Object.keys(profileUpdates || {}).length) return { profile: null };
+
+  let { data, error } = await supabase
+    .from('profiles')
+    .update(profileUpdates)
+    .eq('id', userId)
+    .select('id');
+
+  if (error && isJwtExpiredError(error)) {
+    await ensureFreshAccessToken(null, { force: true });
+    ({ data, error } = await supabase
+      .from('profiles')
+      .update(profileUpdates)
+      .eq('id', userId)
+      .select('id'));
+  }
+
+  if (!error && Array.isArray(data) && data.length > 0) {
+    return { profile: data[0] };
+  }
+
+  const functionResult = await syncProfileWithUserFunction(profileUpdates);
+  if (functionResult.error) {
+    return {
+      error: error?.message
+        ? `${error.message}; ${functionResult.error}`
+        : functionResult.error,
+    };
+  }
+
+  return functionResult;
 }
 
 export function AuthProvider({ children }) {
@@ -908,7 +980,7 @@ export function AuthProvider({ children }) {
         'Archived profile check',
       ));
     } catch (err) {
-      console.warn('Bigkas Auth: archived-profile check timed out:', err);
+      console.debug('Bigkas Auth: archived-profile check skipped after timeout:', err);
       return null;
     }
 
@@ -1659,13 +1731,12 @@ export function AuthProvider({ children }) {
     const emailRedirectTo = getWebRedirectPath('/verify-email');
 
     try {
-      // Race the signup against a 15-second timeout.
-      // When Supabase's SMTP hangs (trying to send confirmation email),
-      // the signUp() promise never resolves — this prevents infinite loading.
-      const signupPromise = supabase.auth.signUp({
+      // Race the OTP request against a 15-second timeout.
+      // Supabase sends this through the Magic Link/OTP template with {{ .Token }}.
+      const signupPromise = supabase.auth.signInWithOtp({
         email: normalizedEmail,
-        password,
         options: {
+          shouldCreateUser: true,
           emailRedirectTo,
           data: {
             full_name: resolvedFullName,
@@ -1708,14 +1779,13 @@ export function AuthProvider({ children }) {
         // Try to recover by resending the confirmation email separately.
         if (errStatus === 500 || errMsg.toLowerCase().includes('internal server') || errMsg.toLowerCase().includes('sending confirmation')) {
           try {
-            const { error: resendErr } = await supabase.auth.resend({
-              type: 'signup',
+            const { error: resendErr } = await supabase.auth.signInWithOtp({
               email: normalizedEmail,
-              options: { emailRedirectTo },
+              options: { shouldCreateUser: false, emailRedirectTo },
             });
 
             if (!resendErr) {
-              // Recovery succeeded — the confirmation email was sent
+              // Recovery succeeded: the verification code email was sent.
               setPendingEmailVerification(true);
               setPendingEmail(normalizedEmail);
               return { success: true, requiresEmailConfirmation: true };
@@ -1724,7 +1794,7 @@ export function AuthProvider({ children }) {
             // Resend also failed, fall through to error
           }
 
-          const message = 'Account may have been created but the verification email could not be sent. Please try logging in, or try again in a few minutes.';
+          const message = 'Account may have been created but the verification code could not be sent. Please try logging in, or try again in a few minutes.';
           setError(message);
           return { success: false, error: message };
         }
@@ -1742,7 +1812,10 @@ export function AuthProvider({ children }) {
       }
 
       if (!data.session) {
-        // Email confirmation required — Supabase sends via configured SMTP
+        if (typeof window !== 'undefined') {
+          window.sessionStorage.setItem(PENDING_SIGNUP_PASSWORD_KEY, password);
+        }
+        // Email verification required. Supabase sends the 6-digit code via the Magic Link/OTP template.
         setPendingEmailVerification(true);
         setPendingEmail(normalizedEmail);
         return { success: true, requiresEmailConfirmation: true };
@@ -1751,7 +1824,7 @@ export function AuthProvider({ children }) {
     } catch (networkError) {
       setIsLoading(false);
       if (isBlockedByClient(networkError)) {
-        const msg = 'Registration blocked by your browser. Please disable ad-blockers for this site to receive the verification email.';
+        const msg = 'Registration blocked by your browser. Please disable ad-blockers for this site to receive the verification code.';
         setError(msg);
         return { success: false, error: msg, code: 'blocked_by_client' };
       }
@@ -1759,7 +1832,7 @@ export function AuthProvider({ children }) {
 
       // Signup request timed out — SMTP is likely hanging
       if (message === 'SIGNUP_TIMEOUT') {
-        const errorMsg = 'Account creation is taking too long (email service may be slow). Your account may have been created — try logging in. If not, please try again.';
+        const errorMsg = 'Account creation is taking too long (email service may be slow). Please try again in a moment.';
         setError(errorMsg);
         return { success: false, error: errorMsg };
       }
@@ -1814,7 +1887,7 @@ export function AuthProvider({ children }) {
     return { success: true };
   }, [clearAdminSession]);
 
-  /* ── Resend verification email ── */
+  /* ── Resend verification code ── */
   const resendVerificationEmail = useCallback(async (email) => {
     const normalizedEmail = (email || '').trim();
     if (!normalizedEmail) {
@@ -1823,11 +1896,10 @@ export function AuthProvider({ children }) {
 
     const emailRedirectTo = getWebRedirectPath('/verify-email');
 
-    // Resend via Supabase (sends through Brevo SMTP)
-    const { error: err } = await supabase.auth.resend({
-      type: 'signup',
+    // Resend via Supabase (sends through the Magic Link/OTP template)
+    const { error: err } = await supabase.auth.signInWithOtp({
       email: normalizedEmail,
-      options: { emailRedirectTo },
+      options: { shouldCreateUser: false, emailRedirectTo },
     });
 
     if (err) {
@@ -1836,7 +1908,7 @@ export function AuthProvider({ children }) {
       }
       const msg = (err.message || '').toLowerCase();
       if (msg.includes('rate limit') || msg.includes('too many') || err.status === 429) {
-        return { success: false, error: 'Please wait before requesting another verification email.' };
+        return { success: false, error: 'Please wait before requesting another verification code.' };
       }
       return { success: false, error: err.message };
     }
@@ -1936,7 +2008,10 @@ export function AuthProvider({ children }) {
     }
 
     if (Object.keys(profileUpdates).length > 0 && data.user?.id) {
-      await supabase.from('profiles').update(profileUpdates).eq('id', data.user.id);
+      const profileSyncResult = await syncProfileUpdates(data.user.id, profileUpdates);
+      if (profileSyncResult.error) {
+        return { success: false, error: profileSyncResult.error };
+      }
     }
 
     const nextUser = buildUser({ user: data.user }, profileUpdates);

@@ -1,4 +1,7 @@
 import { supabase } from '../lib/supabase';
+import { ENV } from '../config/env';
+
+let remoteTrophyBackendUnavailable = false;
 
 function isMissingTrophyBackend(error) {
   const message = String(error?.message || '').toLowerCase();
@@ -26,9 +29,17 @@ function normalizeTrophyRows(rows) {
     .sort((a, b) => a.level - b.level);
 }
 
+async function getCurrentUserId() {
+  const { data } = await supabase.auth.getUser();
+  return data?.user?.id || null;
+}
+
 export async function fetchUserTrophyClaims(userId) {
   const uid = String(userId || '').trim();
   if (!uid) return { trophies: [], backendUnavailable: false };
+  if (!ENV.ENABLE_REMOTE_TROPHIES || remoteTrophyBackendUnavailable) {
+    return { trophies: [], backendUnavailable: true };
+  }
 
   const { data, error } = await supabase
     .from('user_trophies')
@@ -38,6 +49,7 @@ export async function fetchUserTrophyClaims(userId) {
 
   if (error) {
     if (isMissingTrophyBackend(error)) {
+      remoteTrophyBackendUnavailable = true;
       return { trophies: [], backendUnavailable: true };
     }
     throw error;
@@ -52,13 +64,22 @@ export async function claimTrophyInDB(level) {
     throw new Error('Invalid trophy level.');
   }
 
+  if (!ENV.ENABLE_REMOTE_TROPHIES || remoteTrophyBackendUnavailable) {
+    const userId = await getCurrentUserId();
+    if (!userId) throw new Error('Please sign in before claiming a trophy.');
+    throw new Error('Trophy saving needs the latest database migration.');
+  }
+
   const { data, error } = await supabase.rpc('claim_user_trophy', {
     p_trophy_level: trophyLevel,
   });
 
   if (error) {
     if (isMissingTrophyBackend(error)) {
-      throw new Error('Trophy claiming is not ready yet. Please apply the latest database migration.');
+      remoteTrophyBackendUnavailable = true;
+      const userId = await getCurrentUserId();
+      if (!userId) throw new Error('Please sign in before claiming a trophy.');
+      throw new Error('Trophy saving needs the latest database migration.');
     }
     throw error;
   }
@@ -72,13 +93,22 @@ export async function setFeaturedTrophyInDB(level) {
     throw new Error('Invalid trophy level.');
   }
 
+  if (!ENV.ENABLE_REMOTE_TROPHIES || remoteTrophyBackendUnavailable) {
+    const userId = await getCurrentUserId();
+    if (!userId) throw new Error('Please sign in before choosing a featured trophy.');
+    throw new Error('Trophy saving needs the latest database migration.');
+  }
+
   const { data, error } = await supabase.rpc('set_featured_user_trophy', {
     p_trophy_level: trophyLevel,
   });
 
   if (error) {
     if (isMissingTrophyBackend(error)) {
-      throw new Error('Trophy featuring is not ready yet. Please apply the latest database migration.');
+      remoteTrophyBackendUnavailable = true;
+      const userId = await getCurrentUserId();
+      if (!userId) throw new Error('Please sign in before choosing a featured trophy.');
+      throw new Error('Trophy saving needs the latest database migration.');
     }
     throw error;
   }

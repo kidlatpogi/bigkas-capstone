@@ -882,17 +882,19 @@ function TrainingPage() {
 
   /* Start preview when idle - deferred significantly to protect LCP */
   useEffect(() => {
-    if (status === 'idle' || status === 'permission-denied') {
-      const timer = setTimeout(() => {
-        if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-          window.requestIdleCallback(() => initPreview());
-        } else {
-          initPreview();
-        }
-      }, 2500); // 2.5s delay to stay completely out of the critical LCP path
-      return () => clearTimeout(timer);
+    if (status !== 'idle' || isTutorialOverlayOpen) {
+      return undefined;
     }
-  }, [initPreview, status]);
+
+    const timer = setTimeout(() => {
+      if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+        window.requestIdleCallback(() => initPreview());
+      } else {
+        initPreview();
+      }
+    }, 2500); // 2.5s delay to stay completely out of the critical LCP path
+    return () => clearTimeout(timer);
+  }, [initPreview, isTutorialOverlayOpen, status]);
 
   /* ── Start recording ── */
   const startRecording = useCallback(async () => {
@@ -978,7 +980,7 @@ function TrainingPage() {
         setStatus('error');
       }
     }
-  }, [bumpElapsedSec, startWaveformLoop]);
+  }, [bumpElapsedSec, initPreview, startWaveformLoop]);
 
   /* ── 3..2..1 Countdown timer logic ── */
   const runTimerCountdown = useCallback(() => {
@@ -1016,9 +1018,12 @@ function TrainingPage() {
     if (isVisualReady || visualError) {
       runTimerCountdown();
     } else {
+      if (!isPreviewActive) {
+        initPreview();
+      }
       setStatus('preparing-ai');
     }
-  }, [isVisualReady, runTimerCountdown, visualError]);
+  }, [initPreview, isPreviewActive, isVisualReady, runTimerCountdown, visualError]);
 
   // Bridge Effect: Auto-start countdown when AI becomes ready during 'preparing-ai'
   useEffect(() => {

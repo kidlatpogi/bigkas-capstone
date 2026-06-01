@@ -293,7 +293,7 @@ export default function LandingPage({ managePageClass = true }) {
           activeTheme === 'dark' && 'nav-theme-dark',
           activeSection === 'hero' && 'nav-on-hero',
           activeSection === 'science' && 'nav-on-green-sections',
-          activeSection === 'features' && 'nav-menu-black',
+          (activeSection === 'how-it-works' || activeSection === 'features') && 'nav-menu-black',
           activeSection === 'section-5' && 'nav-on-last-section',
           menuOpen && 'menu-open',
           isNavVisible ? 'nav-visible' : 'nav-hidden',

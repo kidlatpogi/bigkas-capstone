@@ -1,12 +1,11 @@
 import { m, LazyMotion, domAnimation, AnimatePresence } from 'framer-motion';
 import PushButton from '../../components/common/PushButton';
-import { ROUTES } from '../../utils/constants';
 
 function VerifyEmailPageDesktop(props) {
   const { 
     maskedEmail, digits, inputRefs, isVerifying, error, resendMessage,
     resendCooldown, handleChange, handleKeyDown, handleVerify, handleResend,
-    bigkasLogo, robotImgUrl, navigate
+    handleWrongEmail, bigkasLogo, robotImgUrl
   } = props;
 
   const insightWords = [
@@ -123,7 +122,7 @@ function VerifyEmailPageDesktop(props) {
                   </m.div>
 
                   <m.div variants={itemVariants} className="signup-prompt-v2">
-                    <button className="back-btn-v2" onClick={() => navigate(ROUTES.REGISTER)}>
+                    <button className="back-btn-v2" onClick={handleWrongEmail}>
                       Wrong email? Go back
                     </button>
                   </m.div>

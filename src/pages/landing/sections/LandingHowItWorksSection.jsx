@@ -5,31 +5,27 @@ import ScrollDownIndicator from '../../../components/common/ScrollDownIndicator'
 const apkDownloadPath = '/downloads/Bigkas.apk';
 const apkIconPath = '/images/bigkas-apk-icon.png';
 
-const insightBubbles = [
-  { text: 'Presence', className: 'how-bubble--presence' },
-  { text: 'Visual', className: 'how-bubble--visual' },
-  { text: 'Vocal', className: 'how-bubble--vocal' },
-  { text: 'Flow', className: 'how-bubble--flow' },
-  { text: 'Confidence', className: 'how-bubble--confidence' },
-  { text: 'Growth', className: 'how-bubble--growth' },
-  { text: 'Eye Contact', className: 'how-bubble--eye-contact' },
-];
-
-const processSteps = [
+const workflowSteps = [
   {
+    tone: 'choose',
     icon: IoChatbubbleEllipses,
-    title: 'Pick a stage',
-    text: 'Open your Journey path, choose an unlocked activity, or jump into Randomizer or Free Speech practice.',
+    label: '01',
+    title: 'Pick a mode',
+    text: 'Open Journey, Randomizer, or Free Speech and choose the next prompt that fits your goal.',
   },
   {
+    tone: 'record',
     icon: IoMic,
-    title: 'Start one run',
-    text: 'B-01 sets the prompt, then you record a short attempt with the speaking task front and center.',
+    label: '02',
+    title: 'Speak once',
+    text: 'Keep the task front and center while you make a short private attempt with B-01 nearby.',
   },
   {
+    tone: 'improve',
     icon: IoRefresh,
-    title: 'Use the feedback',
-    text: 'Your score, EXP, streak, and DONE stamp update so the next activity or retake is obvious.',
+    label: '03',
+    title: 'Move forward',
+    text: 'Your score, EXP, streak, and DONE state make the next retake or activity easy to see.',
   },
 ];
 
@@ -52,57 +48,57 @@ export default function LandingHowItWorksSection({ howSectionRef, showScrollIndi
   };
 
   return (
-    <section id="how-it-works" className="how-it-works-redesign landing-path-section" ref={howSectionRef}>
-      <div className="how-bubble-field" aria-hidden="true">
-        {insightBubbles.map((bubble) => (
-          <span key={bubble.text} className={`how-insight-bubble ${bubble.className}`}>
-            {bubble.text}
-          </span>
-        ))}
-      </div>
-
+    <section id="how-it-works" className="how-it-works-redesign landing-how-path-section" ref={howSectionRef}>
       <Motion.div
-        className="section-shell path-shell path-shell--quest"
+        className="section-shell landing-how-path-shell"
         variants={containerVariants}
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, margin: '-100px' }}
       >
-        <div className="path-copy">
+        <div className="landing-how-path-copy">
           <Motion.div variants={itemVariants}>
-            <h2 className="how-headline">Practice that moves.</h2>
-            <p className="how-subheadline">
-              The Activity page is built around one clear loop: pick a stage, speak once, get feedback, and keep the journey moving.
+            <h2>Practice moves like a path.</h2>
+            <p>
+              Start with one small practice run, get a clear nudge from B-01, then continue to the next step without guessing
+              what changed.
             </p>
           </Motion.div>
 
-          <Motion.div variants={itemVariants} className="apk-download-panel" aria-label="Download the Bigkas Android APK">
-            <img src={apkIconPath} alt="" className="apk-download-b01" loading="lazy" aria-hidden="true" />
-            <div className="apk-download-copy">
-              <span className="apk-download-kicker">Android APK</span>
-              <h3>Take B-01 with you.</h3>
+          <Motion.a
+            variants={itemVariants}
+            className="landing-how-apk landing-how-android-button"
+            href={apkDownloadPath}
+            download="Bigkas.apk"
+            aria-label="Download Bigkas for Android"
+          >
+            <img src={apkIconPath} alt="" className="landing-how-apk-icon" loading="lazy" aria-hidden="true" />
+            <div className="landing-how-apk-copy">
+              <span>Android app</span>
+              <strong>Download to Android</strong>
               <p>Install Bigkas on Android and continue the same speaking loop from your phone.</p>
             </div>
-            <a className="apk-download-button" href={apkDownloadPath} download="Bigkas.apk">
+            <span className="landing-how-download" aria-hidden="true">
               <IoDownloadOutline aria-hidden="true" />
-              <span>Download APK</span>
-            </a>
-          </Motion.div>
+              <span>Download</span>
+            </span>
+          </Motion.a>
         </div>
 
-        <div className="path-map quest-stack" aria-label="How Bigkas practice works">
-          {processSteps.map((step, index) => (
+        <div className="landing-how-path-map" aria-label="How Bigkas practice works">
+          <div className="landing-how-path-line" aria-hidden="true" />
+          {workflowSteps.map((step) => (
             <Motion.article
               key={step.title}
-              className="quest-step-card"
+              className={`landing-how-path-node landing-how-path-node--${step.tone}`}
               variants={itemVariants}
-              whileHover={{ y: -4, rotate: index === 1 ? 0 : index === 0 ? -1 : 1 }}
+              whileHover={{ y: -6, scale: 1.02 }}
             >
-              <div className="quest-step-number">0{index + 1}</div>
-              <div className="quest-step-icon" aria-hidden="true">
+              <div className="landing-how-node-icon" aria-hidden="true">
                 <step.icon />
               </div>
-              <div>
+              <div className="landing-how-node-copy">
+                <span>{step.label}</span>
                 <h3>{step.title}</h3>
                 <p>{step.text}</p>
               </div>
@@ -111,7 +107,7 @@ export default function LandingHowItWorksSection({ howSectionRef, showScrollIndi
         </div>
       </Motion.div>
 
-      <ScrollDownIndicator hidden={!showScrollIndicator} white />
+      <ScrollDownIndicator hidden={!showScrollIndicator} />
     </section>
   );
 }

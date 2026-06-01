@@ -96,18 +96,20 @@ function levelNumberToEntryScore(levelNumber) {
 export function resolveSpeakerEntryScore(user) {
   if (!user) return 1.0;
   const meta = user;
-  const levelCandidates = [
+  const assessedLevelCandidates = [
     meta.speakerLevelNumber,
     meta.speaker_level_number,
+    meta.onboardingLevelAnalysis?.estimated_level_number,
+    meta.onboarding_level_analysis?.estimated_level_number,
+  ];
+  const progressLevelCandidates = [
     meta.progressLevelNumber,
     meta.progress_level_number,
     meta.currentLevel,
     meta.current_level,
-    meta.onboardingLevelAnalysis?.estimated_level_number,
-    meta.onboarding_level_analysis?.estimated_level_number,
   ];
 
-  for (const candidate of levelCandidates) {
+  for (const candidate of assessedLevelCandidates) {
     const level = normalizeStoredLevelNumber(candidate);
     if (level && level > 1) {
       return levelNumberToEntryScore(level);
@@ -124,7 +126,14 @@ export function resolveSpeakerEntryScore(user) {
     return mapPercentToEntryScore(fs);
   }
 
-  for (const candidate of levelCandidates) {
+  for (const candidate of progressLevelCandidates) {
+    const level = normalizeStoredLevelNumber(candidate);
+    if (level && level > 1) {
+      return levelNumberToEntryScore(level);
+    }
+  }
+
+  for (const candidate of [...assessedLevelCandidates, ...progressLevelCandidates]) {
     const entryScore = levelNumberToEntryScore(candidate);
     if (entryScore) return entryScore;
   }

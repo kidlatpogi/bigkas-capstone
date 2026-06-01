@@ -7,7 +7,6 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer,
   Cell
 } from 'recharts';
 import { 
@@ -146,18 +145,30 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
   const [pillarRange, setPillarRange] = useState('All');
   const [showMobileHistory, setShowMobileHistory] = useState(false);
   const graphRef = useRef(null);
-  const [graphWidth, setGraphWidth] = useState(0);
+  const chartContainerRef = useRef(null);
+  const [chartSize, setChartSize] = useState({ width: 0, height: 0 });
   const { tasks: activityTasks } = useAllActivitiesJourneyTasks();
 
   useEffect(() => {
-    if (!graphRef.current) return;
-    const observer = new ResizeObserver((entries) => {
-      for (let entry of entries) {
-        setGraphWidth(entry.contentRect.width);
-      }
-    });
-    observer.observe(graphRef.current);
-    return () => observer.disconnect();
+    const target = chartContainerRef.current;
+    if (!target || typeof ResizeObserver === 'undefined') return undefined;
+
+    const updateSize = () => {
+      const rect = target.getBoundingClientRect();
+      setChartSize({
+        width: Math.max(0, Math.round(rect.width)),
+        height: Math.max(0, Math.round(rect.height)),
+      });
+    };
+
+    updateSize();
+    const frameId = window.requestAnimationFrame(updateSize);
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(target);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      observer.disconnect();
+    };
   }, []);
 
   const userSessions = useMemo(() => {
@@ -502,6 +513,8 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
                     type="button"
                     key={r} 
                     className={`progress-range-chip ${range === r ? 'active' : ''}`}
+                    aria-label={`Speaking Performance range: ${r}`}
+                    aria-pressed={range === r}
                     onClick={() => setRange(r)}
                   >
                     {r}
@@ -509,9 +522,9 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
                 ))}
               </div>
             </div>
-            <div className="progress-chart-container">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <div className="progress-chart-container" ref={chartContainerRef}>
+              {chartSize.width > 0 && chartSize.height > 0 ? (
+                <BarChart width={chartSize.width} height={chartSize.height} data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                   <XAxis 
                     dataKey="label" 
@@ -538,7 +551,7 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
                     ))}
                   </Bar>
                 </BarChart>
-              </ResponsiveContainer>
+              ) : null}
             </div>
           </div>
 
@@ -552,6 +565,8 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
                     type="button"
                     key={r} 
                     className={`progress-range-chip ${pillarRange === r ? 'active' : ''}`}
+                    aria-label={`Pillar Trends range: ${r}`}
+                    aria-pressed={pillarRange === r}
                     onClick={() => setPillarRange(r)}
                   >
                     {r}

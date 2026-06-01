@@ -40,6 +40,7 @@ export const ENV = {
     normalizeBaseUrl(import.meta.env.VITE_CLOUDFLARE_AI_WORKER_URL) ||
     PROD_CLOUDFLARE_AI_WORKER_FALLBACK,
   ENABLE_SESSION_PERSISTENCE: import.meta.env.VITE_ENABLE_SESSION_PERSISTENCE !== 'false',
+  ENABLE_REMOTE_TROPHIES: import.meta.env.VITE_ENABLE_REMOTE_TROPHIES === 'true',
   ENABLE_DAILY_QUOTE_FETCH:
     (import.meta.env.PROD && import.meta.env.VITE_ENABLE_DAILY_QUOTE_FETCH !== 'false') ||
     import.meta.env.VITE_ENABLE_DAILY_QUOTE_FETCH === 'true',

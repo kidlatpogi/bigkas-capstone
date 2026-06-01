@@ -17,6 +17,7 @@ import 'react-loading-skeleton/dist/skeleton.css';
 import { ensureFreshAccessToken, supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
+import { getBigkasLevelFromScore, mapPercentToEntryScore } from '../../utils/activityProgress';
 import { ENV } from '../../config/env';
 import './AdminDashboardPage.css';
 
@@ -370,10 +371,87 @@ function isAdminProfile(profile) {
   return profile?.role === 'admin' || profile?.role === 'superadmin';
 }
 
+function normalizeAdminLevelNumber(value) {
+  const level = Number(value);
+  if (!Number.isFinite(level)) return null;
+  const rounded = Math.round(level);
+  if (rounded < 1 || rounded > 5) return null;
+  return rounded;
+}
+
+function normalizeAdminEntryScore(value) {
+  const score = Number(value);
+  if (!Number.isFinite(score) || score <= 0) return null;
+  if (score > 5 && score <= 100) return mapPercentToEntryScore(score);
+  if (score < 1 || score > 5) return null;
+  return Math.round(score * 100) / 100;
+}
+
+function firstElevatedAdminLevel(values) {
+  for (const value of values) {
+    const level = normalizeAdminLevelNumber(value);
+    if (level && level > 1) return level;
+  }
+  return null;
+}
+
+function firstValidAdminLevel(values) {
+  for (const value of values) {
+    const level = normalizeAdminLevelNumber(value);
+    if (level) return level;
+  }
+  return null;
+}
+
+function resolveAdminEntryScore(profile) {
+  const direct = normalizeAdminEntryScore(profile?.speaker_entry_score);
+  if (direct) return direct;
+
+  const finalScore = Number(profile?.onboarding_level_analysis?.final_score);
+  if (Number.isFinite(finalScore) && finalScore > 0) {
+    return mapPercentToEntryScore(finalScore);
+  }
+
+  return normalizeAdminEntryScore(profile?.diagnostic_score);
+}
+
 function getSpeakerLevelValue(profile) {
-  const level = Number(profile?.speaker_level || profile?.current_level || 1);
-  if (!Number.isFinite(level)) return 1;
-  return Math.min(5, Math.max(1, Math.round(level)));
+  const entryScore = resolveAdminEntryScore(profile);
+  const derivedFromEntry = entryScore
+    ? normalizeAdminLevelNumber(getBigkasLevelFromScore(entryScore)?.levelNumber)
+    : null;
+  const assessedLevels = [
+    profile?.speaker_level_number,
+    profile?.onboarding_level_analysis?.estimated_level_number,
+  ];
+  const progressLevels = [
+    profile?.progress_level_number,
+  ];
+  const legacyLevels = [
+    profile?.speaker_level,
+    profile?.current_level,
+  ];
+
+  return (
+    firstElevatedAdminLevel(assessedLevels) ||
+    (derivedFromEntry && derivedFromEntry > 1 ? derivedFromEntry : null) ||
+    firstElevatedAdminLevel(progressLevels) ||
+    firstElevatedAdminLevel(legacyLevels) ||
+    derivedFromEntry ||
+    firstValidAdminLevel(assessedLevels) ||
+    firstValidAdminLevel(progressLevels) ||
+    firstValidAdminLevel(legacyLevels) ||
+    1
+  );
+}
+
+function getProgressLevelValue(profile) {
+  return firstValidAdminLevel([
+    profile?.progress_level_number,
+    profile?.current_level,
+    profile?.onboarding_level_analysis?.estimated_level_number,
+    profile?.speaker_level_number,
+  ]) || 1;
 }
 
 function getAuditActionClass(action) {
@@ -1261,7 +1339,7 @@ function userToForm(user) {
     student_number: user?.student_number || '',
     section_id: '',
     role: user?.role || 'user',
-    current_level: user?.current_level || 1,
+    current_level: getProgressLevelValue(user),
     speaker_level: getSpeakerLevelValue(user),
     speaker_points: user?.speaker_points || 0,
   };
@@ -2106,6 +2184,7 @@ function AdminDashboardPage() {
       });
       const latestMs = userSessions.reduce((latest, session) => Math.max(latest, getSessionActivityTimestamp(session)), 0);
       const completedActivities = analyticsActivityProgressCountByUser.get(user.id) || 0;
+      const speakerLevel = getSpeakerLevelValue(user);
       return {
         id: user.id,
         name: getDisplayName(user, user.id),
@@ -2115,6 +2194,7 @@ function AdminDashboardPage() {
         averageScore: averageDashboardScore(scores),
         completedActivities,
         confidenceLevel: getConfidenceLevel(completedActivities),
+        speakerLevel,
         visualScore: averageDashboardScore(visualScores),
         vocalScore: averageDashboardScore(vocalScores),
         verbalScore: averageDashboardScore(verbalScores),
@@ -2244,7 +2324,7 @@ function AdminDashboardPage() {
           email: getProfileEmail(profile),
           status: isDeletedProfile(profile) ? 'Archived' : 'Active',
           createdAt: getTimestamp(profile.created_at),
-          journey: Number(profile.current_level) || 1,
+          journey: getProgressLevelValue(profile),
           speaking: getSpeakerLevelValue(profile),
         };
       });
@@ -2564,7 +2644,7 @@ function AdminDashboardPage() {
     });
     setStageProgressForm({
       ...STAGE_PROGRESS_INITIAL,
-      journey: clampJourneyLevel(user?.current_level || 1),
+      journey: clampJourneyLevel(getProgressLevelValue(user)),
     });
     setPendingStageProgress(null);
     setEditingUser(user);
@@ -3429,7 +3509,7 @@ function AdminDashboardPage() {
           getDisplayName(student, student.id),
           student.student_number || '-',
           getLearnerGroupLabel(student, sectionById, sectionIdByStudentId),
-          `Journey ${student.current_level || 1}`,
+          `Journey ${getProgressLevelValue(student)}`,
           isDeletedProfile(student) ? 'Archived' : 'Active',
         ]),
       };
@@ -3775,7 +3855,7 @@ function AdminDashboardPage() {
                     <td><strong>{student.name}</strong></td>
                     <td>{student.section}</td>
                     <td>{student.completedActivities}/30</td>
-                    <td>{student.confidenceLevel.level ? `Level ${student.confidenceLevel.level} - ${student.confidenceLevel.label}` : student.confidenceLevel.label}</td>
+                    <td>Level {student.speakerLevel}</td>
                     <td>{student.visualScore == null ? 'N/A' : `${student.visualScore}%`}</td>
                     <td>{student.vocalScore == null ? 'N/A' : `${student.vocalScore}%`}</td>
                     <td>{student.verbalScore == null ? 'N/A' : `${student.verbalScore}%`}</td>
@@ -3951,14 +4031,14 @@ function AdminDashboardPage() {
             <div className="admin-table-wrap"><table className="admin-table admin-account-table">
               <thead><tr><th>Name</th>{showUserManagementTypeColumn && <th>Account Type</th>}<th>Role / Section</th>{showUserManagementStudentColumns && <th>ID / Student No.</th>}<th>Email</th>{showUserManagementStudentColumns && <th>Journey</th>}{showUserManagementStudentColumns && <th>Speaking</th>}<th>Status</th><th>Actions</th></tr></thead>
               <tbody>
-                {paginatedUserManagementRows.map(({ profile: u, isAdminAccount, typeLabel, roleOrSection, name, email, speaking }) => (
+                {paginatedUserManagementRows.map(({ profile: u, isAdminAccount, typeLabel, roleOrSection, name, email, journey, speaking }) => (
                   <tr key={u.id}>
                     <td>{name}</td>
                     {showUserManagementTypeColumn && <td>{typeLabel}</td>}
                     <td>{roleOrSection}</td>
                     {showUserManagementStudentColumns && <td>{isAdminAccount ? '-' : u.student_number || '-'}</td>}
                     <td>{email}</td>
-                    {showUserManagementStudentColumns && <td>{isAdminAccount ? '-' : `J-${u.current_level || 1}`}</td>}
+                    {showUserManagementStudentColumns && <td>{isAdminAccount ? '-' : `J-${journey}`}</td>}
                     {showUserManagementStudentColumns && <td>{isAdminAccount ? '-' : `L-${speaking}`}</td>}
                     <td><span className={`admin-status-badge ${isDeletedProfile(u) ? 'is-archived' : 'is-active'}`}>{isDeletedProfile(u) ? 'Archived' : 'Active'}</span></td>
                     <td className="admin-actions-cell">
@@ -4076,7 +4156,7 @@ function AdminDashboardPage() {
               {reportType === 'students' && (
                 <>
                   <thead><tr><th>User</th><th>ID / Student No.</th><th>Section</th><th>Journey</th><th>Status</th></tr></thead>
-                  <tbody>{reportStudentRows.map(student => <tr key={student.id}><td>{getDisplayName(student, student.id)}</td><td>{student.student_number || '-'}</td><td>{getLearnerGroupLabel(student, sectionById, sectionIdByStudentId)}</td><td>Journey {student.current_level || 1}</td><td>{isDeletedProfile(student) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
+                  <tbody>{reportStudentRows.map(student => <tr key={student.id}><td>{getDisplayName(student, student.id)}</td><td>{student.student_number || '-'}</td><td>{getLearnerGroupLabel(student, sectionById, sectionIdByStudentId)}</td><td>Journey {getProgressLevelValue(student)}</td><td>{isDeletedProfile(student) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
                 </>
               )}
               {reportType === 'performance' && (

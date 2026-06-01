@@ -695,7 +695,7 @@ function firstValidLevel(values = []) {
 }
 
 function resolveAuthEntryScore(meta = {}, profile = {}) {
-  const direct = normalizeEntryScore(profile.diagnostic_score ?? meta.speaker_entry_score);
+  const direct = normalizeEntryScore(meta.speaker_entry_score);
   if (direct) return direct;
 
   const finalScore = Number(meta.onboarding_level_analysis?.final_score);
@@ -703,51 +703,59 @@ function resolveAuthEntryScore(meta = {}, profile = {}) {
     return mapPercentToEntryScore(finalScore);
   }
 
-  return null;
+  return normalizeEntryScore(profile.diagnostic_score);
 }
 
-function resolveLevelFromSources(primary = [], fallbacks = [], entryScore = null) {
-  const elevatedPrimary = firstElevatedLevel(primary);
-  if (elevatedPrimary) return elevatedPrimary;
-
+function resolveLevelFromSources(assessed = [], progress = [], legacy = [], entryScore = null) {
   const derivedFromEntry = entryScore
     ? normalizeLevelNumber(getBigkasLevelFromScore(entryScore)?.levelNumber)
     : null;
+
+  const elevatedAssessed = firstElevatedLevel(assessed);
+  if (elevatedAssessed) return elevatedAssessed;
+
   if (derivedFromEntry && derivedFromEntry > 1) return derivedFromEntry;
 
-  const elevatedFallback = firstElevatedLevel(fallbacks);
-  if (elevatedFallback) return elevatedFallback;
+  const elevatedProgress = firstElevatedLevel(progress);
+  if (elevatedProgress) return elevatedProgress;
+
+  const elevatedLegacy = firstElevatedLevel(legacy);
+  if (elevatedLegacy) return elevatedLegacy;
 
   if (derivedFromEntry) return derivedFromEntry;
 
-  return firstValidLevel(primary) || firstValidLevel(fallbacks) || 1;
+  return firstValidLevel(assessed) || firstValidLevel(progress) || firstValidLevel(legacy) || 1;
 }
 
 function resolveAuthLevelFields(meta = {}, profile = {}) {
   const entryScore = resolveAuthEntryScore(meta, profile);
   const speakerLevelNumber = resolveLevelFromSources(
     [
-      profile.speaker_level,
       meta.speaker_level_number,
       meta.onboarding_level_analysis?.estimated_level_number,
     ],
     [
-      profile.current_level,
       meta.progress_level_number,
       meta.current_level,
+    ],
+    [
+      profile.speaker_level,
+      profile.current_level,
     ],
     entryScore,
   );
   const progressLevelNumber = resolveLevelFromSources(
     [
-      profile.current_level,
       meta.progress_level_number,
       meta.current_level,
     ],
     [
-      profile.speaker_level,
       meta.speaker_level_number,
       meta.onboarding_level_analysis?.estimated_level_number,
+    ],
+    [
+      profile.current_level,
+      profile.speaker_level,
     ],
     entryScore,
   );

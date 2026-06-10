@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import { useAuthContext } from '../../context/useAuthContext';
 import { supabase } from '../../lib/supabase';
@@ -59,6 +59,7 @@ function formatEntryScale(percent0to100) {
 }
 
 const GLOBAL_MUTE_KEY = 'bigkas_global_audio_muted_v1';
+const DEVELOPER_PREVIEW_SESSION_KEY = 'bigkas_developer_onboarding_preview_v1';
 const RESULT_ROBOT_POOL = [
   robotImage0001,
   robotImage0002,
@@ -108,7 +109,12 @@ const LEVEL_CONTENT = {
 
 function UserAnalyzingPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, updateUserMetadata } = useAuthContext();
+  const isDeveloperPreview =
+    location.state?.developerPreview === true ||
+    (typeof window !== 'undefined' && window.sessionStorage.getItem(DEVELOPER_PREVIEW_SESSION_KEY) === '1');
+  const developerPreviewAnalysis = location.state?.developerPreviewAnalysis || {};
   const [error, setError] = useState('');
   const [isReady, setIsReady] = useState(false);
   const [isPersisting, setIsPersisting] = useState(false);
@@ -179,6 +185,35 @@ function UserAnalyzingPage() {
       let verbalScore = 0;
       let vocalScore = 0;
       let visualScore = 0;
+
+      if (isDeveloperPreview) {
+        freePretestScore = clampScore(developerPreviewAnalysis.freePretestScore ?? 72);
+        verbalScore = clampScore(developerPreviewAnalysis.verbalScore ?? 70);
+        vocalScore = clampScore(developerPreviewAnalysis.vocalScore ?? 74);
+        visualScore = clampScore(developerPreviewAnalysis.visualScore ?? 72);
+
+        const finalScore = calculateMehrabianTotal({
+          verbalScore,
+          vocalScore,
+          visualScore,
+        });
+        const entryScore = mapPercentToEntryScore(finalScore);
+        const levelBand = getBigkasLevelFromScore(entryScore);
+
+        if (!cancelled) {
+          setAnalysis({
+            verbalScore,
+            vocalScore,
+            visualScore,
+            freePretestScore,
+            finalScore,
+            levelNumber: levelBand.levelNumber,
+            levelName: levelBand.levelName,
+          });
+          setIsReady(true);
+        }
+        return;
+      }
 
       if (userPretestFreeScore > 0) {
         freePretestScore = userPretestFreeScore;
@@ -288,11 +323,30 @@ function UserAnalyzingPage() {
     return () => {
       cancelled = true;
     };
-  }, [user?.id, userPretestFreeScore, userPretestFreeSessionId]);
+  }, [
+    developerPreviewAnalysis.freePretestScore,
+    developerPreviewAnalysis.verbalScore,
+    developerPreviewAnalysis.visualScore,
+    developerPreviewAnalysis.vocalScore,
+    isDeveloperPreview,
+    user?.id,
+    userPretestFreeScore,
+    userPretestFreeSessionId,
+  ]);
 
   const persistAndReveal = useCallback(async () => {
     if (!isReady || isPersisting) return;
     if (showLevelReveal) return;
+
+    if (isDeveloperPreview) {
+      if (analyzingAudioRef.current) {
+        analyzingAudioRef.current.pause();
+        analyzingAudioRef.current.currentTime = 0;
+      }
+      setIsPersisted(true);
+      setShowLevelReveal(true);
+      return;
+    }
 
     if (!isPersisted) {
       setIsPersisting(true);
@@ -361,6 +415,7 @@ function UserAnalyzingPage() {
     isPersisted,
     isPersisting,
     isReady,
+    isDeveloperPreview,
     showLevelReveal,
     updateUserMetadata,
     user?.id,
@@ -517,6 +572,7 @@ function UserAnalyzingPage() {
     navigate(ROUTES.ACTIVITY, {
       replace: true,
       state: {
+        developerPreview: isDeveloperPreview,
         skywardEntrance: true,
         launchFreeSpeechTutorial: true,
         t: Date.now(),

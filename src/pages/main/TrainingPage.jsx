@@ -1141,8 +1141,18 @@ function TrainingPage() {
         setIsPreviewActive(false);
         setAnalysisProgress(100);
         setAnalysisStatusMessage('Preview complete. No data was saved.');
-        setStatus('idle');
-        setShowDeveloperPreviewComplete(true);
+        navigate(ROUTES.USER_ANALYZING, {
+          replace: true,
+          state: {
+            developerPreview: true,
+            developerPreviewAnalysis: {
+              freePretestScore: 72,
+              verbalScore: 70,
+              vocalScore: 74,
+              visualScore: 72,
+            },
+          },
+        });
         return;
       }
 

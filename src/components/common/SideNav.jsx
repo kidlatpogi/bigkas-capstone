@@ -162,7 +162,7 @@ export default function SideNav() {
       window.sessionStorage.removeItem('bigkas_pretest_tutorial_seen');
       window.localStorage.removeItem('bigkas_current_training_session');
     }
-    setDeveloperStatus('Preview mode: profiling and pre-test will not save data.');
+    setDeveloperStatus('Preview mode: full onboarding will not save data.');
     navigate(ROUTES.USER_PROFILING, {
       state: {
         developerPreview: true,
@@ -444,7 +444,7 @@ export default function SideNav() {
           <p className="side-nav-dev-title">Developer Power</p>
           <button type="button" className="side-nav-dev-btn" onClick={handleReplayProfilingPreview}>
             <IoStatsChartOutline className="side-nav-icon" aria-hidden="true" />
-            <span>Preview profiling</span>
+            <span>Preview onboarding</span>
           </button>
           <button type="button" className="side-nav-dev-btn" onClick={handleReplayFrameworksTutorial}>
             <IoBookOutline className="side-nav-icon" aria-hidden="true" />

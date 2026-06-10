@@ -108,6 +108,7 @@ const LAST_SHOWN_COMPLETION_EVENT_KEY = 'bigkas_last_completion_event_v1';
 const FREE_SPEECH_TUTORIAL_SEEN_KEY = 'bigkas_free_speech_tutorial_seen_v1';
 const TRAINING_SESSION_CACHE_KEY = 'bigkas_current_training_session';
 const AI_BANNER_CACHE_KEY = 'bigkas_ai_banner_cache_v1';
+const DEVELOPER_PREVIEW_SESSION_KEY = 'bigkas_developer_onboarding_preview_v1';
 const EIGHT_HOURS_MS = 8 * 60 * 60 * 1000;
 
 const B01_SUGGESTIONS = [
@@ -278,6 +279,9 @@ function ActivityPage() {
     typeof window === 'undefined' ? true : window.matchMedia('(min-width: 1025px)').matches,
   );
   const [entranceFromNav] = useState(() => location.state?.skywardEntrance === true);
+  const isDeveloperPreview =
+    location.state?.developerPreview === true ||
+    (typeof window !== 'undefined' && window.sessionStorage.getItem(DEVELOPER_PREVIEW_SESSION_KEY) === '1');
   const scopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
   const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
   const storedJourneyNumber = Math.max(1, Math.min(5, Number(user?.progressLevelNumber || user?.progress_level_number || 1) || 1));
@@ -1084,6 +1088,13 @@ function ActivityPage() {
   }, []);
 
   const handleTutorialFinish = useCallback(() => {
+    if (isDeveloperPreview) {
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.removeItem(DEVELOPER_PREVIEW_SESSION_KEY);
+      }
+      return;
+    }
+
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(FREE_SPEECH_TUTORIAL_SEEN_KEY, '1');
     }
@@ -1093,7 +1104,7 @@ function ActivityPage() {
       updateUserMetadata({ dashboard_tutorial_seen: true }).catch(() => { });
     }
 
-  }, [user, updateUserMetadata]);
+  }, [isDeveloperPreview, user, updateUserMetadata]);
 
   const handleCloseFreeSpeechOverlay = useCallback(() => {
     setShowFreeSpeechOverlay(false);

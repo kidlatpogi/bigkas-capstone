@@ -589,7 +589,7 @@ function UserAnalyzingPage() {
       {!showLevelReveal ? null : showScoreBreakdown ? (
         <section className="analyzing-intro">
           <div className="profiling-unit">
-            <article className="analyzing-bubble analyzing-bubble--result" aria-label="Score breakdown">
+            <article className="analyzing-bubble analyzing-bubble--result analyzing-bubble--score-breakdown" aria-label="Score breakdown">
               <p className="analyzing-bubble-kicker">B-01:</p>
               <p className="analyzing-result-text">{scoreBreakdownContent.text}</p>
 

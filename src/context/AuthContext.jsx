@@ -1071,6 +1071,7 @@ export function AuthProvider({ children }) {
 
           return {
             ...prev,
+            role: profile.role || prev.role || null,
             isProfilingCompleted: !!profile.is_profiling_completed,
             isPreTestCompleted: !!profile.is_pre_test_completed,
             dashboardTutorialSeen,

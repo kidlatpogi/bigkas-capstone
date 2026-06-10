@@ -245,3 +245,48 @@ export async function claimAchievementInDB(userId, achievementId) {
   return data?.unlocked_at ?? new Date().toISOString();
 }
 
+export async function claimAllAchievementsInDB(userId) {
+  if (!userId) throw new Error('Please sign in before claiming achievements.');
+
+  const achievements = await fetchAchievementRows();
+  const rows = achievements
+    .map((achievement) => achievement?.id)
+    .filter(Boolean)
+    .map((achievementId) => ({
+      user_id: userId,
+      achievement_id: achievementId,
+    }));
+
+  if (rows.length === 0) return [];
+
+  const { error: upsertError } = await supabase
+    .from('user_achievements')
+    .upsert(rows, {
+      onConflict: 'user_id, achievement_id',
+      ignoreDuplicates: true,
+    });
+
+  if (upsertError) throw upsertError;
+
+  const { data, error } = await supabase
+    .from('user_achievements')
+    .select('achievement_id, unlocked_at')
+    .eq('user_id', userId);
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function unclaimAllAchievementsInDB(userId) {
+  if (!userId) throw new Error('Please sign in before unclaiming achievements.');
+
+  const { data, error } = await supabase
+    .from('user_achievements')
+    .delete()
+    .eq('user_id', userId)
+    .select('achievement_id');
+
+  if (error) throw error;
+  return data ?? [];
+}
+

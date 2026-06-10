@@ -892,6 +892,7 @@ export function AuthProvider({ children }) {
     return {
       id: u.id,
       email: u.email,
+      role: profile.role || meta.role || null,
       name: fullName,
       firstName: meta.first_name || fallbackFirst,
       lastName: meta.last_name || fallbackLast,
@@ -1937,7 +1938,7 @@ export function AuthProvider({ children }) {
     };
     const { data, error: err } = await supabase.auth.updateUser({ data: metadataUpdates });
     if (err) return { success: false, error: err.message };
-    setUser((prev) => ({ ...prev, nickname: trimmed, ...buildUser({ user: data.user }) }));
+    setUser((prev) => ({ ...prev, nickname: trimmed, ...buildUser({ user: data.user }, { role: prev?.role }) }));
     return { success: true };
   }, [buildUser, user?.onboardingStage, user?.pretestCompleted, user?.profilingCompleted]);
 
@@ -2014,10 +2015,10 @@ export function AuthProvider({ children }) {
       }
     }
 
-    const nextUser = buildUser({ user: data.user }, profileUpdates);
+    const nextUser = buildUser({ user: data.user }, { ...profileUpdates, role: user?.role });
     setUser(nextUser);
     return { success: true, user: nextUser };
-  }, [buildUser]);
+  }, [buildUser, user?.role]);
 
   /* ── Update profile ── */
   const updateProfile = useCallback(async ({ name, full_name, first_name, last_name, nickname, avatarUrl, avatar_url }) => {

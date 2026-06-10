@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Volume2, VolumeX } from 'lucide-react';
 import { ROUTES } from '../../utils/constants';
 import { getAssetUrl, getVoiceUrl } from '../../utils/assetUtils';
@@ -19,6 +19,7 @@ const waveMp4 = getAssetUrl('Sprites/Robot Animated/Wave-mp4.mp4');
 const beforePretestingVoice = getVoiceUrl('Profiling and Pre-Testing/Before pre-testing.mp3');
 const PRETEST_MUTE_KEY = 'bigkas_profiling_intro_muted';
 const PRETEST_AUDIO_WINDOW_KEY = '__bigkasBeforePretestAudio';
+const DEVELOPER_PREVIEW_SESSION_KEY = 'bigkas_developer_onboarding_preview_v1';
 
 const introMessage = "You've made it to the final step! To wrap things up, let\u2019s try a quick Free Speech Pre-test.";
 const missionMessage =
@@ -59,7 +60,11 @@ function Typewriter({ text, onComplete, delay = 18, charsPerTick = 2 }) {
 
 function UserPretestPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const audioRef = useRef(null);
+  const isDeveloperPreview =
+    location.state?.developerPreview === true ||
+    (typeof window !== 'undefined' && window.sessionStorage.getItem(DEVELOPER_PREVIEW_SESSION_KEY) === '1');
   const [isTypingDone, setIsTypingDone] = useState(false);
   const [isMuted, setIsMuted] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -130,7 +135,10 @@ function UserPretestPage() {
 
     navigate(ROUTES.TRAINING, {
       replace: true,
-      state: PRETEST_TRAINING_STATE,
+      state: {
+        ...PRETEST_TRAINING_STATE,
+        developerPreview: isDeveloperPreview,
+      },
     });
   };
 

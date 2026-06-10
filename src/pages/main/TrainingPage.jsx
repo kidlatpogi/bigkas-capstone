@@ -178,6 +178,7 @@ function getMicSensitivityProfile() {
 }
 
 const SESSION_CACHE_KEY = 'bigkas_current_training_session';
+const DEVELOPER_PREVIEW_SESSION_KEY = 'bigkas_developer_onboarding_preview_v1';
 
 function clearSessionCache() {
   if (typeof window !== 'undefined') {
@@ -244,6 +245,10 @@ function TrainingPage() {
   const objectiveText = (state?.objective || state?.step?.objective || recoveredState?.objective || recoveredState?.step?.objective || '').trim();
   const isPreTestSession = String(sessionType || '').toLowerCase().includes('pre-test') || String(sessionType || '').toLowerCase().includes('pretest');
   const isFreePretestSession = isPreTestSession;
+  const isDeveloperPreview =
+    state?.developerPreview === true ||
+    recoveredState?.developerPreview === true ||
+    (typeof window !== 'undefined' && window.sessionStorage.getItem(DEVELOPER_PREVIEW_SESSION_KEY) === '1');
 
   const MIN_RECORDING_SECONDS = useMemo(() => {
     if (isFreePretestSession) {
@@ -292,6 +297,7 @@ function TrainingPage() {
   const [showPausedModal, setShowPausedModal] = useState(false);
   const [showMinDurationModal, setShowMinDurationModal] = useState(false);
   const [showOneMinWarning, setShowOneMinWarning] = useState(false);
+  const [showDeveloperPreviewComplete, setShowDeveloperPreviewComplete] = useState(false);
 
   const trainingSettingsScope = user?.id || 'guest';
   const [showSettings, setShowSettings] = useState(false);
@@ -1126,6 +1132,20 @@ function TrainingPage() {
         }
       }
 
+      if (isDeveloperPreview) {
+        clearSessionCache();
+        chunksRef.current = [];
+        visualChunksRef.current = [];
+        setElapsedSec(0);
+        recordingDurationSecRef.current = 0;
+        setIsPreviewActive(false);
+        setAnalysisProgress(100);
+        setAnalysisStatusMessage('Preview complete. No data was saved.');
+        setStatus('idle');
+        setShowDeveloperPreviewComplete(true);
+        return;
+      }
+
       // 6. Execute Backend Analysis
       console.log('[TrainingPage] Sending to AI analysis engine...');
       setAnalysisProgress(20);
@@ -1518,6 +1538,16 @@ function TrainingPage() {
         handleRestart();
       }
 
+      if (isDeveloperPreview) {
+        navigate(ROUTES.USER_PROFILING, {
+          replace: true,
+          state: {
+            developerPreview: true,
+          },
+        });
+        return;
+      }
+
       // Route guard only allows /onboarding/profiling when onboarding_stage is profiling.
       const result = await updateUserMetadata({ onboarding_stage: 'profiling' });
       if (!result?.success) {
@@ -1527,7 +1557,16 @@ function TrainingPage() {
     };
 
     void goBackToMission();
-  }, [handleRestart, isActive, navigate, updateUserMetadata]);
+  }, [handleRestart, isActive, isDeveloperPreview, navigate, updateUserMetadata]);
+
+  const handleDeveloperPreviewComplete = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem(DEVELOPER_PREVIEW_SESSION_KEY);
+      window.localStorage.removeItem(SESSION_CACHE_KEY);
+    }
+    setShowDeveloperPreviewComplete(false);
+    navigate(ROUTES.ACTIVITY, { replace: true });
+  }, [navigate]);
 
   const handleTemporaryLogout = useCallback(async () => {
     await logout();
@@ -2075,6 +2114,17 @@ function TrainingPage() {
           type="info"
           onCancel={() => setShowPausedModal(false)}
           onConfirm={handleResumeFromPausedModal}
+        />
+
+        <ConfirmationModal
+          isOpen={showDeveloperPreviewComplete}
+          title="Preview Complete"
+          message="Developer preview ended. No profiling answers, pre-test session, analysis, or onboarding metadata were saved."
+          confirmLabel="Back to Dashboard"
+          cancelLabel=""
+          type="info"
+          onCancel={handleDeveloperPreviewComplete}
+          onConfirm={handleDeveloperPreviewComplete}
         />
       </Suspense>
 

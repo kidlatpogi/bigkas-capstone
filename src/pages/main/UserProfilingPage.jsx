@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Volume2, VolumeX } from 'lucide-react';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
@@ -56,6 +56,7 @@ const INITIAL_FORM = {
 
 const INTRO_MUTE_KEY = 'bigkas_profiling_intro_muted';
 const PRETEST_AUDIO_WINDOW_KEY = '__bigkasBeforePretestAudio';
+const DEVELOPER_PREVIEW_SESSION_KEY = 'bigkas_developer_onboarding_preview_v1';
 const QUESTION_VOICE_SOURCES = [
   profilingQuestion1Voice,
   profilingQuestion2Voice,
@@ -148,7 +149,11 @@ function Typewriter({ text, onComplete, delay = 18, charsPerTick = 2 }) {
 
 function UserProfilingPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { updateUserMetadata, user, isAdminAuthenticated } = useAuthContext();
+  const isDeveloperPreview =
+    location.state?.developerPreview === true ||
+    (typeof window !== 'undefined' && window.sessionStorage.getItem(DEVELOPER_PREVIEW_SESSION_KEY) === '1');
   const introSecondMessage =
     'Before we begin, we need to assess your current Public Speaking Level. This includes 2 demographic questions, 10 short profiling questions and one small speaking pre-test. These tests ensure I can customize your experience and guide you smoothly throughout your entire journey!';
   const readyMessage =
@@ -156,8 +161,8 @@ function UserProfilingPage() {
   const outroFirstMessage = 'Nice work, your profiling questions are complete.';
   const outroMissionMessage = "Your Free Speech Pre-test is ready. Continue when you're ready for B-01's final instructions.";
 
-  const [screen, setScreen] = useState(() => (user?.profilingCompleted ? 'outro' : 'intro'));
-  const [introStep, setIntroStep] = useState(() => (user?.profilingCompleted ? 2 : 0));
+  const [screen, setScreen] = useState(() => (user?.profilingCompleted && !isDeveloperPreview ? 'outro' : 'intro'));
+  const [introStep, setIntroStep] = useState(() => (user?.profilingCompleted && !isDeveloperPreview ? 2 : 0));
   const [isIntroTypingDone, setIsIntroTypingDone] = useState(false);
   const [isReadyTypingDone, setIsReadyTypingDone] = useState(false);
   const [isOutroTypingDone, setIsOutroTypingDone] = useState(false);
@@ -165,7 +170,7 @@ function UserProfilingPage() {
   const [demographicIndex, setDemographicIndex] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isProfileSaved, setIsProfileSaved] = useState(() => Boolean(user?.profilingCompleted));
+  const [isProfileSaved, setIsProfileSaved] = useState(() => Boolean(user?.profilingCompleted && !isDeveloperPreview));
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [error, setError] = useState('');
   const [isMuted, setIsMuted] = useState(() => {
@@ -451,6 +456,15 @@ function UserProfilingPage() {
     setIsSubmitting(true);
     console.log('[Profiling] Validation passed. Submitting profile...');
 
+    if (isDeveloperPreview) {
+      setIsSubmitting(false);
+      console.log('[Profiling] Developer preview mode: profile was not saved.');
+      setIsOutroTypingDone(false);
+      setIsProfileSaved(true);
+      setScreen('outro');
+      return;
+    }
+
     const submittedBaselineScore = computeBaselineScore(workingForm);
     const submittedBaselineLevelNumber = getSpeakerLevelNumber(submittedBaselineScore);
     const payload = {
@@ -510,6 +524,20 @@ function UserProfilingPage() {
       }
     }
     setIsSubmitting(true);
+    if (isDeveloperPreview) {
+      setIsSubmitting(false);
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem('bigkas_current_training_session');
+        window.sessionStorage.removeItem('bigkas_pretest_tutorial_seen');
+      }
+      navigate(ROUTES.USER_PRETEST, {
+        replace: true,
+        state: {
+          developerPreview: true,
+        },
+      });
+      return;
+    }
     const result = await updateUserMetadata({
       onboarding_stage: 'pretest',
       pretest_completed: false,

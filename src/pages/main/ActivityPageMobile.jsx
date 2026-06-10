@@ -28,6 +28,7 @@ import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../servic
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import { filterActivitiesForJourney } from '../../utils/journeyFiltering';
 import { generateCoachInsights } from '../../utils/coachInsights';
+import { askB01Coach, getB01FallbackReply } from '../../utils/b01CoachChat';
 import './InnerPages.css';
 import './ActivityPageMobile.css';
 import './ActivityPage.css';
@@ -484,62 +485,29 @@ function ActivityPageMobile() {
     const assistantMessageId = Date.now();
     setChatMessages((prev) => [...prev, { role: 'assistant', content: '', id: assistantMessageId }]);
 
+    const progressContext = getProgressContext();
+    const contextMessage = {
+      role: 'system',
+      content: `CONTEXT: User Progress Snapshot: ${JSON.stringify(progressContext)}. Reference these specific numbers if asked about progress, growth, or stats.`,
+    };
+    const messages = [contextMessage, ...newMessages];
+
     try {
-      const contextMessage = {
-        role: 'system',
-        content: `CONTEXT: User Progress Snapshot: ${JSON.stringify(getProgressContext())}. Reference these specific numbers if asked about progress, growth, or stats.`,
-      };
-
-      const response = await fetch('https://b01-ai-worker.dzeref4000.workers.dev', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [contextMessage, ...newMessages],
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to connect to B-01');
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let done = false;
-      let accumulatedResponse = '';
-
-      setIsB01Typing(false);
-
-      while (!done) {
-        const { value, done: doneReading } = await reader.read();
-        done = doneReading;
-        const chunkValue = decoder.decode(value);
-
-        const lines = chunkValue.split('\n');
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            if (line.includes('[DONE]')) break;
-            try {
-              const data = JSON.parse(line.slice(6));
-              accumulatedResponse += data.response || '';
-
-              setChatMessages((prev) =>
-                prev.map((msg) =>
-                  msg.id === assistantMessageId ? { ...msg, content: accumulatedResponse } : msg,
-                ),
-              );
-            } catch (e) {
-              console.warn('Chunk parse error', e);
-            }
-          }
-        }
-      }
+      const reply = await askB01Coach({ messages, progressContext });
+      setChatMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === assistantMessageId ? { ...msg, content: reply } : msg,
+        ),
+      );
     } catch (error) {
       console.error('B-01 Error:', error);
+      const fallbackReply = getB01FallbackReply({ messages, progressContext });
       setChatMessages((prev) =>
         prev.map((msg) =>
           msg.id === assistantMessageId
             ? {
                 ...msg,
-                content:
-                  "I'm having a little trouble connecting to my brain right now. Please try again in a moment!",
+                content: fallbackReply,
               }
             : msg,
         ),

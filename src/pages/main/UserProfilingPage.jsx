@@ -57,6 +57,7 @@ const INITIAL_FORM = {
 const INTRO_MUTE_KEY = 'bigkas_profiling_intro_muted';
 const PRETEST_AUDIO_WINDOW_KEY = '__bigkasBeforePretestAudio';
 const DEVELOPER_PREVIEW_SESSION_KEY = 'bigkas_developer_onboarding_preview_v1';
+const OUTRO_TYPING_DONE_SESSION_KEY = 'bigkas_profiling_outro_typing_done_v1';
 const QUESTION_VOICE_SOURCES = [
   profilingQuestion1Voice,
   profilingQuestion2Voice,
@@ -165,7 +166,9 @@ function UserProfilingPage() {
   const [introStep, setIntroStep] = useState(() => (user?.profilingCompleted && !isDeveloperPreview ? 2 : 0));
   const [isIntroTypingDone, setIsIntroTypingDone] = useState(false);
   const [isReadyTypingDone, setIsReadyTypingDone] = useState(false);
-  const [isOutroTypingDone, setIsOutroTypingDone] = useState(false);
+  const [isOutroTypingDone, setIsOutroTypingDone] = useState(() => (
+    typeof window !== 'undefined' && window.sessionStorage.getItem(OUTRO_TYPING_DONE_SESSION_KEY) === '1'
+  ));
   const [form, setForm] = useState(INITIAL_FORM);
   const [demographicIndex, setDemographicIndex] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -460,6 +463,9 @@ function UserProfilingPage() {
       setIsSubmitting(false);
       console.log('[Profiling] Developer preview mode: profile was not saved.');
       setIsOutroTypingDone(false);
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.removeItem(OUTRO_TYPING_DONE_SESSION_KEY);
+      }
       setIsProfileSaved(true);
       setScreen('outro');
       return;
@@ -506,12 +512,16 @@ function UserProfilingPage() {
 
     console.log('[Profiling] Profile saved. Pre-test intro is ready.');
     setIsOutroTypingDone(false);
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem(OUTRO_TYPING_DONE_SESSION_KEY);
+    }
     setIsProfileSaved(true);
     setScreen('outro');
   };
 
   const continueToPretest = async () => {
     if (isSubmitting) return;
+    completeOutroTyping();
     stopAllIntroAudios();
     if (typeof window !== 'undefined') {
       const pretestAudio = new Audio(beforePretestingVoice);
@@ -629,6 +639,13 @@ function UserProfilingPage() {
       audio.pause();
       audio.currentTime = 0;
     });
+  };
+
+  const completeOutroTyping = () => {
+    setIsOutroTypingDone(true);
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem(OUTRO_TYPING_DONE_SESSION_KEY, '1');
+    }
   };
 
   const handleIntroContinue = () => {
@@ -937,7 +954,7 @@ function UserProfilingPage() {
                 {isOutroTypingDone ? (
                   outroMissionMessage
                 ) : (
-                  <Typewriter text={outroMissionMessage} onComplete={() => setIsOutroTypingDone(true)} />
+                  <Typewriter text={outroMissionMessage} onComplete={completeOutroTyping} />
                 )}
               </p>
               <div className="profiling-intro-actions profiling-intro-actions--end">

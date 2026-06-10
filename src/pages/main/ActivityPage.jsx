@@ -311,6 +311,7 @@ function ActivityPage() {
     height: typeof window !== 'undefined' ? window.innerHeight : 0,
   }));
   const [showFreeSpeechTutorial, setShowFreeSpeechTutorial] = useState(false);
+  const [activeFreeSpeechTutorialStepId, setActiveFreeSpeechTutorialStepId] = useState(null);
   const [showFreeSpeechOverlay, setShowFreeSpeechOverlay] = useState(false);
   const [isRankModalOpen, setIsRankModalOpen] = useState(false);
   const [freeSpeechDraftTopic, setFreeSpeechDraftTopic] = useState('');
@@ -826,6 +827,18 @@ function ActivityPage() {
     }
     return fullSteps;
   }, [user?.speakerLevelNumber, user?.onboardingLevelAnalysis, user?.speakerEntryScore, user?.speaker_entry_score, location.state?.skipTutorialIntro]);
+
+  const handleFreeSpeechTutorialStepChange = useCallback(({ step }) => {
+    setActiveFreeSpeechTutorialStepId(step?.id || null);
+  }, []);
+
+  const handleCloseFreeSpeechTutorial = useCallback(() => {
+    setShowFreeSpeechTutorial(false);
+    setActiveFreeSpeechTutorialStepId(null);
+  }, []);
+
+  const shouldAutoScrollJourneyTutorial =
+    showFreeSpeechTutorial && activeFreeSpeechTutorialStepId === 'step-roadmap';
 
   const assessmentTutorialSteps = useMemo(() => {
     const pLevel = currentJourneyNumber;
@@ -1343,8 +1356,9 @@ function ActivityPage() {
             isOpen={showFreeSpeechTutorial}
             steps={freeSpeechTutorialSteps}
             showAudioToggle
-            onClose={() => setShowFreeSpeechTutorial(false)}
+            onClose={handleCloseFreeSpeechTutorial}
             onFinish={handleTutorialFinish}
+            onActiveStepChange={handleFreeSpeechTutorialStepChange}
           />
         </Suspense>
       )}
@@ -1653,6 +1667,7 @@ function ActivityPage() {
               recommendedLevel={recommendedLevel}
               entranceFromNav={entranceFromNav}
               scrollToStepIndex={scrollToStepIndex}
+              autoScrollPreview={shouldAutoScrollJourneyTutorial}
               renderTaskCard={renderTaskCardForShell}
               onActiveTaskIdChange={handleActiveTaskIdChange}
             />

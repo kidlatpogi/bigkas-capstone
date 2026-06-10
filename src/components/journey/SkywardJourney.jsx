@@ -100,6 +100,7 @@ const MAP_SCALE = 1;
 /** Touch pan moves the map farther per finger pixel on narrow viewports (feels less “heavy”). */
 const MOBILE_PAN_SPEED = 1.38;
 const MOBILE_WHEEL_PAN_MULT = 1.12;
+const TUTORIAL_AUTOSCROLL_DURATION_MS = 16000;
 const DESKTOP_OFFSETS = [0, 120, 220, 220, 120, 0, -120, -220, -220, -120];
 const MOBILE_OFFSETS = [0, 45, 85, 85, 45, 0, -45, -85, -85, -45];
 
@@ -934,6 +935,7 @@ export default function SkywardJourney({
   renderStepContent,
   entranceFromNav = false,
   scrollToStepIndex = null,
+  autoScrollPreview = false,
   currentLevel = 1,
   recommendedLevel = 1,
   isPrevLevelDone = true,
@@ -952,6 +954,7 @@ export default function SkywardJourney({
   const mapRef = useRef({ tx: 0, ty: 0 });
   const pointerPanRef = useRef(null);
   const pinchRef = useRef(null);
+  const tutorialAutoScrollRef = useRef(null);
 
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
 
@@ -1163,6 +1166,82 @@ export default function SkywardJourney({
       vp.removeEventListener('wheel', onWheel);
     };
   }, [panelOpenId, isLockedLevel]);
+
+  useEffect(() => {
+    if (!autoScrollPreview || panelOpenId || pathPoints.length < 2) return undefined;
+    const vp = viewportRef.current;
+    const content = mapContentRef.current;
+    if (!vp || !content) return undefined;
+
+    if (tutorialAutoScrollRef.current) {
+      window.cancelAnimationFrame(tutorialAutoScrollRef.current);
+      tutorialAutoScrollRef.current = null;
+    }
+
+    const start = mapRef.current;
+    const lastPoint = pathPoints[pathPoints.length - 1];
+    const target = clampMapState(
+      {
+        tx: start.tx,
+        ty: (vp.clientHeight * 0.62) - (lastPoint.y * MAP_SCALE),
+      },
+      vp,
+      content,
+      MAP_SCALE,
+    );
+
+    if (Math.abs(target.ty - start.ty) < 1) return undefined;
+
+    const layer = mapLayerRef.current;
+    let lastStateSync = 0;
+    const startTime = performance.now();
+    const animate = (now) => {
+      const progress = Math.min(1, (now - startTime) / TUTORIAL_AUTOSCROLL_DURATION_MS);
+      const eased = progress * progress * progress * (progress * (progress * 6 - 15) + 10);
+      const next = clampMapState(
+        {
+          tx: start.tx + ((target.tx - start.tx) * eased),
+          ty: start.ty + ((target.ty - start.ty) * eased),
+        },
+        vp,
+        content,
+        MAP_SCALE,
+      );
+
+      mapRef.current = next;
+      if (layer) {
+        layer.style.transform = `translate3d(${next.tx}px, ${next.ty}px, 0) scale(${MAP_SCALE})`;
+        layer.style.willChange = 'transform';
+      }
+
+      if (now - lastStateSync > 650 || progress >= 1) {
+        lastStateSync = now;
+        setMap(next);
+      }
+
+      if (progress < 1) {
+        tutorialAutoScrollRef.current = window.requestAnimationFrame(animate);
+      } else {
+        tutorialAutoScrollRef.current = null;
+        if (layer) {
+          layer.style.removeProperty('will-change');
+        }
+      }
+    };
+
+    tutorialAutoScrollRef.current = window.requestAnimationFrame(animate);
+
+    return () => {
+      if (tutorialAutoScrollRef.current) {
+        window.cancelAnimationFrame(tutorialAutoScrollRef.current);
+        tutorialAutoScrollRef.current = null;
+      }
+      if (layer) {
+        layer.style.removeProperty('will-change');
+      }
+      setMap(mapRef.current);
+    };
+  }, [autoScrollPreview, panelOpenId, pathPoints]);
 
   const onPointerDownViewport = useCallback(
     (e) => {

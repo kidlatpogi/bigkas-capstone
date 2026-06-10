@@ -160,9 +160,13 @@ function UserAnalyzingPage() {
     const rawProfileScore = clampScore(user?.speakerProfile?.baseline_score ?? 0);
     return formatEntryScale(rawProfileScore);
   }, [user?.speakerProfile?.baseline_score]);
+  const profilingPercent = useMemo(
+    () => clampScore(user?.speakerProfile?.baseline_score ?? 0),
+    [user?.speakerProfile?.baseline_score],
+  );
   const pretestEntryScore = useMemo(
-    () => formatEntryScale(analysis.freePretestScore),
-    [analysis.freePretestScore],
+    () => formatEntryScale(analysis.finalScore),
+    [analysis.finalScore],
   );
   const visualEntryScore = useMemo(
     () => formatEntryScale(analysis.visualScore),
@@ -591,16 +595,19 @@ function UserAnalyzingPage() {
 
               <div className="analyzing-breakdown-score-page">
                 <p>
-                  Profiling (<strong className="analyzing-score-value">{profilingEntryScore}/5</strong>): Your personal comfort and confidence levels.
+                  Profiling (<strong className="analyzing-score-value">{profilingEntryScore}/5</strong>): Your answers created a comfort and confidence baseline: {profilingPercent}% mapped to the 1-5 scale.
                 </p>
                 <p>
-                  AI Pre-test (<strong className="analyzing-score-value">{pretestEntryScore}/5</strong>): An objective look at your Triple V:
+                  AI Pre-test (<strong className="analyzing-score-value">{pretestEntryScore}/5</strong>): Your recording was scored with Triple V: Visual 55% + Vocal 38% + Verbal 7% = {analysis.finalScore}%.
                 </p>
                 <ul className="analyzing-breakdown-list">
-                  <li>Visual (55%): <strong className="analyzing-score-value">{visualEntryScore}/5</strong> - Eye contact and gestures.</li>
-                  <li>Vocal (38%): <strong className="analyzing-score-value">{vocalEntryScore}/5</strong> - Pitch and Projection.</li>
-                  <li>Verbal (7%): <strong className="analyzing-score-value">{verbalEntryScore}/5</strong> - Vocabulary and filler use.</li>
+                  <li>Visual (55%): <strong className="analyzing-score-value">{visualEntryScore}/5</strong> from {analysis.visualScore}% - eye contact, posture, and gestures.</li>
+                  <li>Vocal (38%): <strong className="analyzing-score-value">{vocalEntryScore}/5</strong> from {analysis.vocalScore}% - pitch, projection, and pacing.</li>
+                  <li>Verbal (7%): <strong className="analyzing-score-value">{verbalEntryScore}/5</strong> from {analysis.verbalScore}% - vocabulary, clarity, and filler control.</li>
                 </ul>
+                <p>
+                  Your placement follows the weighted AI Pre-test score; profiling adds confidence context.
+                </p>
               </div>
 
               <div className="analyzing-actions">

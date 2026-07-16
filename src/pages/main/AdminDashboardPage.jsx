@@ -29,6 +29,7 @@ const SERVICE_HEALTH_CACHE_TTL_MS = 5 * 60 * 1000;
 const ACTIVE_USERS_PER_PAGE = 5;
 const BATCH_PREVIEW_ROWS_PER_PAGE = 5;
 const STAGE_PASS_ROWS_PER_PAGE = 10;
+const REPORTS_PER_PAGE = 10;
 const INDEPENDENT_LEARNERS_FILTER = 'independent-users';
 const INDEPENDENT_LEARNERS_LABEL = 'Independent Users';
 const DEFAULT_ADMIN_ACCESS_ROLE_ID = '00000000-0000-0000-0000-000000000101';
@@ -1431,6 +1432,10 @@ function AdminDashboardPage() {
   const [successModal, setSuccessModal] = useState(null);
   const [reportStartDate, setReportStartDate] = useState('');
   const [reportEndDate, setReportEndDate] = useState('');
+  const [reportAdminsPage, setReportAdminsPage] = useState(1);
+  const [reportUsersPage, setReportUsersPage] = useState(1);
+  const [reportPerformancePage, setReportPerformancePage] = useState(1);
+  const [reportAuditPage, setReportAuditPage] = useState(1);
 
   const showToast = (msg, type = 'success') => {
     setToastMessage({ text: msg, type });
@@ -1478,6 +1483,13 @@ function AdminDashboardPage() {
     if (adminAccessRoles.some(roleTemplate => roleTemplate.id === selectedAccessRoleId)) return;
     setSelectedAccessRoleId(adminAccessRoles[0]?.id || DEFAULT_ADMIN_ACCESS_ROLE_ID);
   }, [adminAccessRoles, selectedAccessRoleId]);
+
+  useEffect(() => {
+    setReportAdminsPage(1);
+    setReportUsersPage(1);
+    setReportPerformancePage(1);
+    setReportAuditPage(1);
+  }, [reportType, reportStartDate, reportEndDate]);
 
   useEffect(() => {
     let active = true;
@@ -2347,6 +2359,30 @@ function AdminDashboardPage() {
       };
     });
   }, [activityCompletions, metricBySession, reportStudentRows, sectionById, sectionIdByStudentId, sessions, reportStartDate, reportEndDate]);
+
+  const paginatedReportTeachers = useMemo(() => {
+    const start = (reportAdminsPage - 1) * REPORTS_PER_PAGE;
+    return filteredReportTeacherRows.slice(start, start + REPORTS_PER_PAGE);
+  }, [filteredReportTeacherRows, reportAdminsPage]);
+  const totalReportTeacherPages = Math.max(1, Math.ceil(filteredReportTeacherRows.length / REPORTS_PER_PAGE));
+
+  const paginatedReportStudents = useMemo(() => {
+    const start = (reportUsersPage - 1) * REPORTS_PER_PAGE;
+    return filteredReportStudentRows.slice(start, start + REPORTS_PER_PAGE);
+  }, [filteredReportStudentRows, reportUsersPage]);
+  const totalReportStudentPages = Math.max(1, Math.ceil(filteredReportStudentRows.length / REPORTS_PER_PAGE));
+
+  const paginatedReportPerformance = useMemo(() => {
+    const start = (reportPerformancePage - 1) * REPORTS_PER_PAGE;
+    return reportStudentPerformanceRows.slice(start, start + REPORTS_PER_PAGE);
+  }, [reportStudentPerformanceRows, reportPerformancePage]);
+  const totalReportPerformancePages = Math.max(1, Math.ceil(reportStudentPerformanceRows.length / REPORTS_PER_PAGE));
+
+  const paginatedReportAuditLogs = useMemo(() => {
+    const start = (reportAuditPage - 1) * REPORTS_PER_PAGE;
+    return reportAuditLogs.slice(start, start + REPORTS_PER_PAGE);
+  }, [reportAuditLogs, reportAuditPage]);
+  const totalReportAuditPages = Math.max(1, Math.ceil(reportAuditLogs.length / REPORTS_PER_PAGE));
 
   const userManagementRows = useMemo(() => {
     const includeUsers = userAccountTypeFilter === 'users' || userAccountTypeFilter === 'all';
@@ -4279,28 +4315,71 @@ function AdminDashboardPage() {
               {reportType === 'teachers' && (
                 <>
                   <thead><tr><th>Time</th><th>Admin</th><th>Email</th><th>Access Role</th><th>Sections</th><th>Status</th></tr></thead>
-                  <tbody>{filteredReportTeacherRows.map(admin => <tr key={admin.id}><td>{admin.created_at ? new Date(admin.created_at).toLocaleString() : '-'}</td><td>{getDisplayName(admin, admin.id)}</td><td>{getProfileEmail(admin)}</td><td>{admin.role === 'superadmin' ? 'Super Admin' : findAccessRole(adminAccessRoles, adminAccessAssignments[admin.id])?.name || 'Admin'}</td><td>{sections.filter(section => section.teacher_id === admin.id).length}</td><td>{isDeletedProfile(admin) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
+                  <tbody>{paginatedReportTeachers.map(admin => <tr key={admin.id}><td>{admin.created_at ? new Date(admin.created_at).toLocaleString() : '-'}</td><td>{getDisplayName(admin, admin.id)}</td><td>{getProfileEmail(admin)}</td><td>{admin.role === 'superadmin' ? 'Super Admin' : findAccessRole(adminAccessRoles, adminAccessAssignments[admin.id])?.name || 'Admin'}</td><td>{sections.filter(section => section.teacher_id === admin.id).length}</td><td>{isDeletedProfile(admin) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
                 </>
               )}
               {reportType === 'students' && (
                 <>
                   <thead><tr><th>Time</th><th>User</th><th>ID / Student No.</th><th>Section</th><th>Journey</th><th>Status</th></tr></thead>
-                  <tbody>{filteredReportStudentRows.map(student => <tr key={student.id}><td>{student.created_at ? new Date(student.created_at).toLocaleString() : '-'}</td><td>{getDisplayName(student, student.id)}</td><td>{student.student_number || '-'}</td><td>{getLearnerGroupLabel(student, sectionById, sectionIdByStudentId)}</td><td>Journey {getProgressLevelValue(student)}</td><td>{isDeletedProfile(student) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
+                  <tbody>{paginatedReportStudents.map(student => <tr key={student.id}><td>{student.created_at ? new Date(student.created_at).toLocaleString() : '-'}</td><td>{getDisplayName(student, student.id)}</td><td>{student.student_number || '-'}</td><td>{getLearnerGroupLabel(student, sectionById, sectionIdByStudentId)}</td><td>Journey {getProgressLevelValue(student)}</td><td>{isDeletedProfile(student) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
                 </>
               )}
               {reportType === 'performance' && (
                 <>
                   <thead><tr><th>Time</th><th>User</th><th>Section</th><th>Speeches</th><th>Minutes</th><th>Avg Score</th><th>Activities</th><th>Confidence Level</th></tr></thead>
-                  <tbody>{reportStudentPerformanceRows.map(row => <tr key={row.id}><td>{row.createdAt ? new Date(row.createdAt).toLocaleString() : '-'}</td><td>{row.name}</td><td>{row.section}</td><td>{row.speeches}</td><td>{row.minutes}</td><td>{row.averageScore ?? 'N/A'}</td><td>{row.completedActivities}/30</td><td>{row.confidenceLevel.level ? `Level ${row.confidenceLevel.level} - ${row.confidenceLevel.label}` : row.confidenceLevel.label}</td></tr>)}</tbody>
+                  <tbody>{paginatedReportPerformance.map(row => <tr key={row.id}><td>{row.createdAt ? new Date(row.createdAt).toLocaleString() : '-'}</td><td>{row.name}</td><td>{row.section}</td><td>{row.speeches}</td><td>{row.minutes}</td><td>{row.averageScore ?? 'N/A'}</td><td>{row.completedActivities}/30</td><td>{row.confidenceLevel.level ? `Level ${row.confidenceLevel.level} - ${row.confidenceLevel.label}` : row.confidenceLevel.label}</td></tr>)}</tbody>
                 </>
               )}
               {reportType === 'audit' && isSuperadmin && (
                 <>
                   <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Entity</th><th>Summary</th></tr></thead>
-                  <tbody>{reportAuditLogs.slice(0, 200).map(log => <tr key={log.id}><td>{new Date(log.created_at).toLocaleString()}</td><td>{getDisplayName(profiles.find(p => p.id === log.actor_id), log.actor_id || 'Unknown login')}</td><td>{formatAuditAction(log.action)}</td><td>{log.entity_type}</td><td>{JSON.stringify(log.new_values || log.old_values || {}).slice(0, 120) || '-'}</td></tr>)}</tbody>
+                  <tbody>{paginatedReportAuditLogs.map(log => <tr key={log.id}><td>{new Date(log.created_at).toLocaleString()}</td><td>{getDisplayName(profiles.find(p => p.id === log.actor_id), log.actor_id || 'Unknown login')}</td><td>{formatAuditAction(log.action)}</td><td>{log.entity_type}</td><td>{JSON.stringify(log.new_values || log.old_values || {}).slice(0, 120) || '-'}</td></tr>)}</tbody>
                 </>
               )}
             </table></div>
+
+            <div className="admin-pagination no-print">
+              {reportType === 'teachers' && (
+                <>
+                  <span className="admin-pagination-info">Showing {filteredReportTeacherRows.length ? ((reportAdminsPage - 1) * REPORTS_PER_PAGE) + 1 : 0}-{Math.min(reportAdminsPage * REPORTS_PER_PAGE, filteredReportTeacherRows.length)} of {filteredReportTeacherRows.length}</span>
+                  <div className="admin-pagination-controls">
+                    <button type="button" disabled={reportAdminsPage === 1} onClick={() => setReportAdminsPage(p => Math.max(1, p - 1))}>Prev</button>
+                    <button type="button" disabled>{reportAdminsPage} / {totalReportTeacherPages}</button>
+                    <button type="button" disabled={reportAdminsPage === totalReportTeacherPages} onClick={() => setReportAdminsPage(p => Math.min(totalReportTeacherPages, p + 1))}>Next</button>
+                  </div>
+                </>
+              )}
+              {reportType === 'students' && (
+                <>
+                  <span className="admin-pagination-info">Showing {filteredReportStudentRows.length ? ((reportUsersPage - 1) * REPORTS_PER_PAGE) + 1 : 0}-{Math.min(reportUsersPage * REPORTS_PER_PAGE, filteredReportStudentRows.length)} of {filteredReportStudentRows.length}</span>
+                  <div className="admin-pagination-controls">
+                    <button type="button" disabled={reportUsersPage === 1} onClick={() => setReportUsersPage(p => Math.max(1, p - 1))}>Prev</button>
+                    <button type="button" disabled>{reportUsersPage} / {totalReportStudentPages}</button>
+                    <button type="button" disabled={reportUsersPage === totalReportStudentPages} onClick={() => setReportUsersPage(p => Math.min(totalReportStudentPages, p + 1))}>Next</button>
+                  </div>
+                </>
+              )}
+              {reportType === 'performance' && (
+                <>
+                  <span className="admin-pagination-info">Showing {reportStudentPerformanceRows.length ? ((reportPerformancePage - 1) * REPORTS_PER_PAGE) + 1 : 0}-{Math.min(reportPerformancePage * REPORTS_PER_PAGE, reportStudentPerformanceRows.length)} of {reportStudentPerformanceRows.length}</span>
+                  <div className="admin-pagination-controls">
+                    <button type="button" disabled={reportPerformancePage === 1} onClick={() => setReportPerformancePage(p => Math.max(1, p - 1))}>Prev</button>
+                    <button type="button" disabled>{reportPerformancePage} / {totalReportPerformancePages}</button>
+                    <button type="button" disabled={reportPerformancePage === totalReportPerformancePages} onClick={() => setReportPerformancePage(p => Math.min(totalReportPerformancePages, p + 1))}>Next</button>
+                  </div>
+                </>
+              )}
+              {reportType === 'audit' && isSuperadmin && (
+                <>
+                  <span className="admin-pagination-info">Showing {reportAuditLogs.length ? ((reportAuditPage - 1) * REPORTS_PER_PAGE) + 1 : 0}-{Math.min(reportAuditPage * REPORTS_PER_PAGE, reportAuditLogs.length)} of {reportAuditLogs.length}</span>
+                  <div className="admin-pagination-controls">
+                    <button type="button" disabled={reportAuditPage === 1} onClick={() => setReportAuditPage(p => Math.max(1, p - 1))}>Prev</button>
+                    <button type="button" disabled>{reportAuditPage} / {totalReportAuditPages}</button>
+                    <button type="button" disabled={reportAuditPage === totalReportAuditPages} onClick={() => setReportAuditPage(p => Math.min(totalReportAuditPages, p + 1))}>Next</button>
+                  </div>
+                </>
+              )}
+            </div>
           </section>
         )}
 

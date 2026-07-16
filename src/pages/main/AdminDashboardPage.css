@@ -1997,6 +1997,7 @@ body:has(.admin-dashboard-page) .main-content {
   .admin-report-card .admin-btn,
   .admin-report-tabs,
   .admin-report-filters,
+  .admin-pagination,
   .admin-toast,
   .admin-modal-backdrop {
     display: none !important;

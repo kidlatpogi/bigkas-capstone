@@ -30,6 +30,8 @@ const ACTIVE_USERS_PER_PAGE = 5;
 const BATCH_PREVIEW_ROWS_PER_PAGE = 5;
 const STAGE_PASS_ROWS_PER_PAGE = 10;
 const REPORTS_PER_PAGE = 10;
+const RANKINGS_PER_PAGE = 10;
+const SECTIONS_PER_PAGE = 5;
 const INDEPENDENT_LEARNERS_FILTER = 'independent-users';
 const INDEPENDENT_LEARNERS_LABEL = 'Independent Users';
 const DEFAULT_ADMIN_ACCESS_ROLE_ID = '00000000-0000-0000-0000-000000000101';
@@ -1436,6 +1438,10 @@ function AdminDashboardPage() {
   const [reportUsersPage, setReportUsersPage] = useState(1);
   const [reportPerformancePage, setReportPerformancePage] = useState(1);
   const [reportAuditPage, setReportAuditPage] = useState(1);
+  const [rankingsPage, setRankingsPage] = useState(1);
+  const [sectionSearchQuery, setSectionSearchQuery] = useState('');
+  const [sectionSortKey, setSectionSortKey] = useState('name_asc');
+  const [sectionPage, setSectionPage] = useState(1);
 
   const showToast = (msg, type = 'success') => {
     setToastMessage({ text: msg, type });
@@ -1490,6 +1496,14 @@ function AdminDashboardPage() {
     setReportPerformancePage(1);
     setReportAuditPage(1);
   }, [reportType, reportStartDate, reportEndDate]);
+
+  useEffect(() => {
+    setRankingsPage(1);
+  }, [analyticsSectionFilter]);
+
+  useEffect(() => {
+    setSectionPage(1);
+  }, [activePage]);
 
   useEffect(() => {
     let active = true;
@@ -1729,6 +1743,49 @@ function AdminDashboardPage() {
     });
     return ids;
   }, [sectionStudentIdsBySectionId, visibleSections, isSuperadmin]);
+
+  const filteredAndSortedSections = useMemo(() => {
+    let res = visibleSections;
+
+    // Search filter
+    if (sectionSearchQuery.trim()) {
+      const q = sectionSearchQuery.toLowerCase();
+      res = res.filter((section) => {
+        const teacher = profiles.find(profile => profile.id === section.teacher_id);
+        const teacherName = getDisplayName(teacher, 'Unassigned admin').toLowerCase();
+        return section.name.toLowerCase().includes(q) || teacherName.includes(q);
+      });
+    }
+
+    // Sorting
+    res = res.slice().sort((a, b) => {
+      if (sectionSortKey === 'name_asc') {
+        return a.name.localeCompare(b.name);
+      }
+      if (sectionSortKey === 'name_desc') {
+        return b.name.localeCompare(a.name);
+      }
+      if (sectionSortKey === 'users_desc') {
+        const countA = sectionStudentIdsBySectionId.get(a.id)?.size || 0;
+        const countB = sectionStudentIdsBySectionId.get(b.id)?.size || 0;
+        return countB - countA;
+      }
+      if (sectionSortKey === 'users_asc') {
+        const countA = sectionStudentIdsBySectionId.get(a.id)?.size || 0;
+        const countB = sectionStudentIdsBySectionId.get(b.id)?.size || 0;
+        return countA - countB;
+      }
+      return 0;
+    });
+
+    return res;
+  }, [visibleSections, sectionSearchQuery, sectionSortKey, profiles, sectionStudentIdsBySectionId]);
+
+  const paginatedSections = useMemo(() => {
+    const start = (sectionPage - 1) * SECTIONS_PER_PAGE;
+    return filteredAndSortedSections.slice(start, start + SECTIONS_PER_PAGE);
+  }, [filteredAndSortedSections, sectionPage]);
+  const totalSectionPages = Math.max(1, Math.ceil(filteredAndSortedSections.length / SECTIONS_PER_PAGE));
 
   useEffect(() => {
     if (analyticsSectionFilter === 'all') return;
@@ -2227,6 +2284,12 @@ function AdminDashboardPage() {
         || a.name.localeCompare(b.name)
       ))
   ), [analyticsStudentRows]);
+
+  const paginatedRankedStudents = useMemo(() => {
+    const start = (rankingsPage - 1) * RANKINGS_PER_PAGE;
+    return analyticsRankedStudentRows.slice(start, start + RANKINGS_PER_PAGE);
+  }, [analyticsRankedStudentRows, rankingsPage]);
+  const totalRankingsPages = Math.max(1, Math.ceil(analyticsRankedStudentRows.length / RANKINGS_PER_PAGE));
 
   const analyticsSkillBreakdown = useMemo(() => {
     const metricRows = [
@@ -3977,9 +4040,9 @@ function AdminDashboardPage() {
               </div>
               <div className="admin-table-wrap admin-confidence-rank-table-wrap"><table className="admin-table admin-confidence-rank-table">
                 <thead><tr><th>Rank</th><th>User</th><th>Section</th><th>Activities</th><th>Level</th><th>Visual</th><th>Vocal</th><th>Verbal</th><th>Last Active</th></tr></thead>
-                <tbody>{analyticsRankedStudentRows.length ? analyticsRankedStudentRows.map((student, index) => (
+                <tbody>{paginatedRankedStudents.length ? paginatedRankedStudents.map((student, index) => (
                   <tr key={student.id}>
-                    <td>{index + 1}</td>
+                    <td>{((rankingsPage - 1) * RANKINGS_PER_PAGE) + index + 1}</td>
                     <td><strong>{student.name}</strong></td>
                     <td>{student.section}</td>
                     <td>{student.completedActivities}/30</td>
@@ -3991,6 +4054,14 @@ function AdminDashboardPage() {
                   </tr>
                 )) : <tr><td colSpan={9}>No users available for this scope.</td></tr>}</tbody>
               </table></div>
+              <div className="admin-pagination">
+                <span className="admin-pagination-info">Showing {analyticsRankedStudentRows.length ? ((rankingsPage - 1) * RANKINGS_PER_PAGE) + 1 : 0}-{Math.min(rankingsPage * RANKINGS_PER_PAGE, analyticsRankedStudentRows.length)} of {analyticsRankedStudentRows.length}</span>
+                <div className="admin-pagination-controls">
+                  <button type="button" disabled={rankingsPage === 1} onClick={() => setRankingsPage(p => Math.max(1, p - 1))}>Prev</button>
+                  <button type="button" disabled>{rankingsPage} / {totalRankingsPages}</button>
+                  <button type="button" disabled={rankingsPage === totalRankingsPages} onClick={() => setRankingsPage(p => Math.min(totalRankingsPages, p + 1))}>Next</button>
+                </div>
+              </div>
             </section>
           </>
         )}
@@ -4069,8 +4140,38 @@ function AdminDashboardPage() {
               </div>
               <button type="button" className="admin-btn admin-btn--ghost" onClick={openNewSection}>New Section</button>
             </div>
+            <div className="admin-table-controls" style={{ marginBottom: '16px' }}>
+              <div className="admin-table-actions" style={{ flexWrap: 'wrap', gap: '12px' }}>
+                <div className="admin-search-box">
+                  <HiMagnifyingGlass />
+                  <input
+                    type="text"
+                    placeholder="Search sections..."
+                    value={sectionSearchQuery}
+                    onChange={(e) => {
+                      setSectionSearchQuery(e.target.value);
+                      setSectionPage(1);
+                    }}
+                  />
+                </div>
+                <select
+                  className="admin-filter-select"
+                  value={sectionSortKey}
+                  onChange={(e) => {
+                    setSectionSortKey(e.target.value);
+                    setSectionPage(1);
+                  }}
+                  aria-label="Sort sections"
+                >
+                  <option value="name_asc">Sort: Name A-Z</option>
+                  <option value="name_desc">Sort: Name Z-A</option>
+                  <option value="users_desc">Sort: Users High-Low</option>
+                  <option value="users_asc">Sort: Users Low-High</option>
+                </select>
+              </div>
+            </div>
             <div className="admin-section-list">
-              {visibleSections.length ? visibleSections.map(section => {
+              {paginatedSections.length ? paginatedSections.map(section => {
                 const count = sectionStudentIdsBySectionId.get(section.id)?.size || 0;
                 const teacher = profiles.find(profile => profile.id === section.teacher_id);
                 return (
@@ -4085,7 +4186,15 @@ function AdminDashboardPage() {
                     </div>
                   </div>
                 );
-              }) : <div className="admin-empty-chart">No sections yet</div>}
+              }) : <div className="admin-empty-chart">No sections found</div>}
+            </div>
+            <div className="admin-pagination">
+              <span className="admin-pagination-info">Showing {filteredAndSortedSections.length ? ((sectionPage - 1) * SECTIONS_PER_PAGE) + 1 : 0}-{Math.min(sectionPage * SECTIONS_PER_PAGE, filteredAndSortedSections.length)} of {filteredAndSortedSections.length}</span>
+              <div className="admin-pagination-controls">
+                <button type="button" disabled={sectionPage === 1} onClick={() => setSectionPage(p => Math.max(1, p - 1))}>Prev</button>
+                <button type="button" disabled>{sectionPage} / {totalSectionPages}</button>
+                <button type="button" disabled={sectionPage === totalSectionPages} onClick={() => setSectionPage(p => Math.min(totalSectionPages, p + 1))}>Next</button>
+              </div>
             </div>
           </section>
           <section className="admin-card">
@@ -4413,7 +4522,14 @@ function AdminDashboardPage() {
               <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Entity</th><th>Details</th></tr></thead>
               <tbody>{paginatedAuditLogs.map(l => <tr key={l.id}><td>{new Date(l.created_at).toLocaleString()}</td><td>{getDisplayName(profiles.find(p => p.id === l.actor_id), l.actor_id || 'Unknown login')}</td><td><span className={`admin-audit-action-badge ${getAuditActionClass(l.action)}`}>{formatAuditAction(l.action)}</span></td><td>{l.entity_type}</td><td><button onClick={() => setInspectingLog(l)} className="admin-action-btn"><HiMagnifyingGlass /></button></td></tr>)}</tbody>
             </table></div>
-            {totalAuditPages > 1 && <div className="admin-pagination"><button disabled={auditPage === 1} onClick={() => setAuditPage(p => p - 1)}>Prev</button><span>{auditPage} / {totalAuditPages}</span><button disabled={auditPage === totalAuditPages} onClick={() => setAuditPage(p => p + 1)}>Next</button></div>}
+            <div className="admin-pagination">
+              <span className="admin-pagination-info">Showing {filteredAuditLogs.length ? ((auditPage - 1) * AUDIT_PER_PAGE) + 1 : 0}-{Math.min(auditPage * AUDIT_PER_PAGE, filteredAuditLogs.length)} of {filteredAuditLogs.length}</span>
+              <div className="admin-pagination-controls">
+                <button type="button" disabled={auditPage === 1} onClick={() => setAuditPage(p => Math.max(1, p - 1))}>Prev</button>
+                <button type="button" disabled>{auditPage} / {totalAuditPages}</button>
+                <button type="button" disabled={auditPage === totalAuditPages} onClick={() => setAuditPage(p => Math.min(totalAuditPages, p + 1))}>Next</button>
+              </div>
+            </div>
           </section>
         )}
       </section>

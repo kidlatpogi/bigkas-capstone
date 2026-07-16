@@ -82,7 +82,7 @@ function getSpeakerLevelNumber(score) {
 function computeBaselineScore(form) {
   const scoring = { Yes: 2, Sometimes: 6, No: 10 };
   let total = 0;
-  
+
   const keys = [
     'visual_eye_contact', 'visual_gestures', 'visual_energy', 'visual_posture',
     'vocal_projection', 'vocal_expression', 'vocal_pacing',
@@ -231,13 +231,13 @@ function UserProfilingPage() {
     if (typeof window === 'undefined') return;
 
     const toPreload = [];
-    
+
     // Initial intro audios
     if (screen === 'intro') {
       toPreload.push(introVoice1, introVoice2);
       // Next potential step
       toPreload.push(demographicGenderVoice);
-    } 
+    }
     else if (screen === 'demographics') {
       toPreload.push(demographicGenderVoice, demographicAgeVoice);
       // Next potential step
@@ -273,7 +273,7 @@ function UserProfilingPage() {
     stopAllIntroAudios();
     const audio = new Audio(sampleUrl);
     audio.muted = isMuted;
-    audio.play().catch(() => {});
+    audio.play().catch(() => { });
     audioMap.current[sampleUrl] = audio;
   };
 
@@ -326,7 +326,7 @@ function UserProfilingPage() {
       });
 
       audio.currentTime = 0;
-      audio.play().catch(() => {});
+      audio.play().catch(() => { });
     };
 
     if (screen === 'intro' && introStep === 0) {
@@ -354,7 +354,7 @@ function UserProfilingPage() {
     });
 
     audio.currentTime = 0;
-    audio.play().catch(() => {});
+    audio.play().catch(() => { });
   }, [currentIndex, isMuted, screen]);
 
   const updateField = (key, value) => {
@@ -432,10 +432,10 @@ function UserProfilingPage() {
 
   const handleSubmit = async ({ nextForm = null } = {}) => {
     if (isSubmitting) return;
-    
+
     // Use the provided form (for immediate updates) or the current state
     const workingForm = nextForm || form;
-    
+
     // Identify exactly what is missing for better debugging and user feedback
     const pendingProfiling = QUESTIONS.filter((q) => !isQuestionAnswered(q, workingForm[q.key]));
     const pendingDemographics = DEMOGRAPHIC_QUESTIONS.filter((q) => !isQuestionAnswered(q, workingForm[q.key]));
@@ -451,9 +451,9 @@ function UserProfilingPage() {
         ...pendingDemographics.map(q => q.label.split('?')[0] + '?'),
         ...pendingProfiling.map(q => `Question ${QUESTIONS.findIndex(pq => pq.key === q.key) + 1}`)
       ];
-      
+
       setError(`Please answer all questions before finishing. Missing: ${missingLabels.join(', ')}`);
-      
+
       // If profiling questions are missing, jump to the first missing one
       if (pendingProfiling.length > 0) {
         const firstMissingIdx = QUESTIONS.findIndex(q => q.key === pendingProfiling[0].key);
@@ -469,7 +469,7 @@ function UserProfilingPage() {
           setScreen('demographics');
         }
       }
-      
+
       return;
     }
 
@@ -553,7 +553,7 @@ function UserProfilingPage() {
       window[PRETEST_AUDIO_WINDOW_KEY] = pretestAudio;
       if (!isMuted) {
         pretestAudio.currentTime = 0;
-        pretestAudio.play().catch(() => {});
+        pretestAudio.play().catch(() => { });
       }
     }
     setIsSubmitting(true);
@@ -594,7 +594,7 @@ function UserProfilingPage() {
     }
     navigate(ROUTES.USER_PRETEST, { replace: true });
   };
-  const canProceedQuestion = currentQuestion 
+  const canProceedQuestion = currentQuestion
     ? isQuestionAnswered(currentQuestion, form[currentQuestion.key])
     : false;
 
@@ -710,9 +710,9 @@ function UserProfilingPage() {
           <div className="profiling-unit">
             <article className="profiling-intro-bubble profiling-intro-bubble--voice-select" aria-label="Voice selection">
               <p>
-                Hello! Before we embark on this exciting journey to master public speaking, please select my voice. You can listen to the samples below to choose the one that suits you best!
+                Welcome! Before we dive into mastering public speaking, let’s choose my voice. Listen to the samples below and select your favorite!
               </p>
-              
+
               <div style={{ display: 'flex', gap: '20px', margin: '24px 0', justifyContent: 'center' }}>
                 <button
                   type="button"

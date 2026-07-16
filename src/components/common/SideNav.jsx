@@ -171,6 +171,21 @@ export default function SideNav() {
     });
   };
 
+  const handleReplayPretestPreview = () => {
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem(DEVELOPER_PREVIEW_SESSION_KEY, '1');
+      window.sessionStorage.removeItem('bigkas_pretest_tutorial_seen');
+      window.localStorage.removeItem('bigkas_current_training_session');
+    }
+    setDeveloperStatus('Preview mode: pre-testing will not save data.');
+    navigate(ROUTES.USER_PRETEST, {
+      state: {
+        developerPreview: true,
+        t: Date.now(),
+      },
+    });
+  };
+
   const handleReplayFrameworksTutorial = () => {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem('bigkas_free_speech_tutorial_seen_v1', '0');
@@ -445,6 +460,10 @@ export default function SideNav() {
           <button type="button" className="side-nav-dev-btn" onClick={handleReplayProfilingPreview}>
             <IoStatsChartOutline className="side-nav-icon" aria-hidden="true" />
             <span>Preview onboarding</span>
+          </button>
+          <button type="button" className="side-nav-dev-btn" onClick={handleReplayPretestPreview}>
+            <IoStatsChartOutline className="side-nav-icon" aria-hidden="true" />
+            <span>Replay pre-testing</span>
           </button>
           <button type="button" className="side-nav-dev-btn" onClick={handleReplayFrameworksTutorial}>
             <IoBookOutline className="side-nav-icon" aria-hidden="true" />

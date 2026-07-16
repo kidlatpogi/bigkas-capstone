@@ -355,7 +355,7 @@ function TrainingPage() {
       user?.onboardingStage === 'completed' || 
       user?.onboardingStage === 'analyzing';
       
-    if (isAlreadyDone) return false;
+    if (isAlreadyDone && !isDeveloperPreview) return false;
 
     // Session Guard: Don't show again if they dismissed it in this session (prevents reload loop)
     const hasSeenInSession = typeof window !== 'undefined' && window.sessionStorage.getItem('bigkas_pretest_tutorial_seen') === '1';

@@ -2336,6 +2336,7 @@ function AdminDashboardPage() {
       const completedCount = clampActivityProgress(activityIds.size);
       return {
         id: student.id,
+        createdAt: student.created_at,
         name: getDisplayName(student, student.id),
         section: getLearnerGroupLabel(student, sectionById, sectionIdByStudentId),
         speeches: studentSessions.length,
@@ -3592,8 +3593,9 @@ function AdminDashboardPage() {
       return {
         title: `Users Report${dateTitleSuffix}`,
         filename: `bigkas-users-report${dateSuffix}`,
-        headers: ['User', 'ID / Student No.', 'Section', 'Journey', 'Status'],
+        headers: ['Time', 'User', 'ID / Student No.', 'Section', 'Journey', 'Status'],
         rows: filteredReportStudentRows.map(student => [
+          student.created_at ? new Date(student.created_at).toLocaleString() : '-',
           getDisplayName(student, student.id),
           student.student_number || '-',
           getLearnerGroupLabel(student, sectionById, sectionIdByStudentId),
@@ -3607,8 +3609,9 @@ function AdminDashboardPage() {
       return {
         title: `User Performance Report${dateTitleSuffix}`,
         filename: `bigkas-user-performance-report${dateSuffix}`,
-        headers: ['User', 'Section', 'Speeches', 'Minutes', 'Average Score', 'Activities', 'Confidence Level'],
+        headers: ['Time', 'User', 'Section', 'Speeches', 'Minutes', 'Average Score', 'Activities', 'Confidence Level'],
         rows: reportStudentPerformanceRows.map(row => [
+          row.createdAt ? new Date(row.createdAt).toLocaleString() : '-',
           row.name,
           row.section,
           row.speeches,
@@ -3638,8 +3641,9 @@ function AdminDashboardPage() {
     return {
       title: `Admins Report${dateTitleSuffix}`,
       filename: `bigkas-admins-report${dateSuffix}`,
-      headers: ['Admin', 'Email', 'Access Role', 'Sections', 'Status'],
+      headers: ['Time', 'Admin', 'Email', 'Access Role', 'Sections', 'Status'],
       rows: filteredReportTeacherRows.map(admin => [
+        admin.created_at ? new Date(admin.created_at).toLocaleString() : '-',
         getDisplayName(admin, admin.id),
         getProfileEmail(admin),
         admin.role === 'superadmin' ? 'Super Admin' : findAccessRole(adminAccessRoles, adminAccessAssignments[admin.id])?.name || 'Admin',
@@ -4274,20 +4278,20 @@ function AdminDashboardPage() {
             <div className="admin-table-wrap"><table className="admin-table">
               {reportType === 'teachers' && (
                 <>
-                  <thead><tr><th>Admin</th><th>Email</th><th>Access Role</th><th>Sections</th><th>Status</th></tr></thead>
-                  <tbody>{filteredReportTeacherRows.map(admin => <tr key={admin.id}><td>{getDisplayName(admin, admin.id)}</td><td>{getProfileEmail(admin)}</td><td>{admin.role === 'superadmin' ? 'Super Admin' : findAccessRole(adminAccessRoles, adminAccessAssignments[admin.id])?.name || 'Admin'}</td><td>{sections.filter(section => section.teacher_id === admin.id).length}</td><td>{isDeletedProfile(admin) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
+                  <thead><tr><th>Time</th><th>Admin</th><th>Email</th><th>Access Role</th><th>Sections</th><th>Status</th></tr></thead>
+                  <tbody>{filteredReportTeacherRows.map(admin => <tr key={admin.id}><td>{admin.created_at ? new Date(admin.created_at).toLocaleString() : '-'}</td><td>{getDisplayName(admin, admin.id)}</td><td>{getProfileEmail(admin)}</td><td>{admin.role === 'superadmin' ? 'Super Admin' : findAccessRole(adminAccessRoles, adminAccessAssignments[admin.id])?.name || 'Admin'}</td><td>{sections.filter(section => section.teacher_id === admin.id).length}</td><td>{isDeletedProfile(admin) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
                 </>
               )}
               {reportType === 'students' && (
                 <>
-                  <thead><tr><th>User</th><th>ID / Student No.</th><th>Section</th><th>Journey</th><th>Status</th></tr></thead>
-                  <tbody>{filteredReportStudentRows.map(student => <tr key={student.id}><td>{getDisplayName(student, student.id)}</td><td>{student.student_number || '-'}</td><td>{getLearnerGroupLabel(student, sectionById, sectionIdByStudentId)}</td><td>Journey {getProgressLevelValue(student)}</td><td>{isDeletedProfile(student) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
+                  <thead><tr><th>Time</th><th>User</th><th>ID / Student No.</th><th>Section</th><th>Journey</th><th>Status</th></tr></thead>
+                  <tbody>{filteredReportStudentRows.map(student => <tr key={student.id}><td>{student.created_at ? new Date(student.created_at).toLocaleString() : '-'}</td><td>{getDisplayName(student, student.id)}</td><td>{student.student_number || '-'}</td><td>{getLearnerGroupLabel(student, sectionById, sectionIdByStudentId)}</td><td>Journey {getProgressLevelValue(student)}</td><td>{isDeletedProfile(student) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
                 </>
               )}
               {reportType === 'performance' && (
                 <>
-                  <thead><tr><th>User</th><th>Section</th><th>Speeches</th><th>Minutes</th><th>Avg Score</th><th>Activities</th><th>Confidence Level</th></tr></thead>
-                  <tbody>{reportStudentPerformanceRows.map(row => <tr key={row.id}><td>{row.name}</td><td>{row.section}</td><td>{row.speeches}</td><td>{row.minutes}</td><td>{row.averageScore ?? 'N/A'}</td><td>{row.completedActivities}/30</td><td>{row.confidenceLevel.level ? `Level ${row.confidenceLevel.level} - ${row.confidenceLevel.label}` : row.confidenceLevel.label}</td></tr>)}</tbody>
+                  <thead><tr><th>Time</th><th>User</th><th>Section</th><th>Speeches</th><th>Minutes</th><th>Avg Score</th><th>Activities</th><th>Confidence Level</th></tr></thead>
+                  <tbody>{reportStudentPerformanceRows.map(row => <tr key={row.id}><td>{row.createdAt ? new Date(row.createdAt).toLocaleString() : '-'}</td><td>{row.name}</td><td>{row.section}</td><td>{row.speeches}</td><td>{row.minutes}</td><td>{row.averageScore ?? 'N/A'}</td><td>{row.completedActivities}/30</td><td>{row.confidenceLevel.level ? `Level ${row.confidenceLevel.level} - ${row.confidenceLevel.label}` : row.confidenceLevel.label}</td></tr>)}</tbody>
                 </>
               )}
               {reportType === 'audit' && isSuperadmin && (

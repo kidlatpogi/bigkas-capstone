@@ -2378,12 +2378,6 @@ function AdminDashboardPage() {
   }, [reportStudentPerformanceRows, reportPerformancePage]);
   const totalReportPerformancePages = Math.max(1, Math.ceil(reportStudentPerformanceRows.length / REPORTS_PER_PAGE));
 
-  const paginatedReportAuditLogs = useMemo(() => {
-    const start = (reportAuditPage - 1) * REPORTS_PER_PAGE;
-    return reportAuditLogs.slice(start, start + REPORTS_PER_PAGE);
-  }, [reportAuditLogs, reportAuditPage]);
-  const totalReportAuditPages = Math.max(1, Math.ceil(reportAuditLogs.length / REPORTS_PER_PAGE));
-
   const userManagementRows = useMemo(() => {
     const includeUsers = userAccountTypeFilter === 'users' || userAccountTypeFilter === 'all';
     const includeAdmins = isSuperadmin && (userAccountTypeFilter === 'admins' || userAccountTypeFilter === 'all');
@@ -2537,6 +2531,12 @@ function AdminDashboardPage() {
     }
     return filtered;
   }, [combinedAuditLogs, reportStartDate, reportEndDate]);
+
+  const paginatedReportAuditLogs = useMemo(() => {
+    const start = (reportAuditPage - 1) * REPORTS_PER_PAGE;
+    return reportAuditLogs.slice(start, start + REPORTS_PER_PAGE);
+  }, [reportAuditLogs, reportAuditPage]);
+  const totalReportAuditPages = Math.max(1, Math.ceil(reportAuditLogs.length / REPORTS_PER_PAGE));
 
   const filteredAuditLogs = useMemo(() => {
     let res = combinedAuditLogs;

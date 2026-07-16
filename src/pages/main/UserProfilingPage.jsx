@@ -270,7 +270,7 @@ function UserProfilingPage() {
   const playSample = (voiceKey) => {
     const sampleUrl = voiceKey === 'voice2'
       ? getVoiceUrl('Introductions/Voice 2 - Intro 1.mp3')
-      : getVoiceUrl('Voice 1/Introductions/Intro 1.mp3');
+      : getVoiceUrl('Introductions/Intro 1.mp3');
     stopAllIntroAudios();
     const audio = new Audio(sampleUrl);
     audio.muted = isMuted;

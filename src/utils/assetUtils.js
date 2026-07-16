@@ -108,6 +108,10 @@ if (typeof window !== 'undefined' && !window.__bigkasAudioOverridden) {
   const OriginalAudio = window.Audio;
   window.Audio = class DynamicAudio extends OriginalAudio {
     constructor(src) {
+      if (src === undefined) {
+        super();
+        return;
+      }
       let resolvedSrc = src;
       if (typeof src === 'string' && src.includes('/Voices/')) {
         if (src.includes('/Voice 1/') || src.includes('/Voice 2/') || src.includes('/Voice 2 -')) {
@@ -128,7 +132,8 @@ if (typeof window !== 'undefined' && !window.__bigkasAudioOverridden) {
               resolvedSrc = src.substring(0, index + 8) + 'Voice 2/' + relativePath;
             }
           } else {
-            resolvedSrc = src.substring(0, index + 8) + 'Voice 1/' + relativePath;
+            // For Voice 1, keep it exactly as it is (root of Voices/) since there is no 'Voice 1/' folder on the server
+            resolvedSrc = src;
           }
         }
       }

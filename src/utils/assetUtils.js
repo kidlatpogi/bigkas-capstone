@@ -42,11 +42,11 @@ export function getVoiceUrl(path) {
 const VOICE_2_MAPPING = {
   // Introductions
   'Introductions/Intro 1.mp3': 'Introductions/Voice%202%20-%20Intro%201.mp3',
-  'Introductions/Intro 2.mp3': 'Introductions/Intro%202.mp3',
+  'Introductions/Intro 2.mp3': 'Introductions/Voice%202%20-%20Intro%202.mp3',
   
   // Demographics
   'Demographic/Gender.mp3': 'Demographic/Voice%202%20-%20Gender.mp3',
-  'Demographic/Age.mp3': 'Demographic/Voice%202%20-%Age.mp3',
+  'Demographic/Age.mp3': 'Demographic/Voice%202%20-%20Age.mp3',
 
   // Profiling Questions
   'Profiling and Pre-Testing/Profiling Questions/Profiling Question 1.mp3': 'Profiling%20and%20Pre-Testing/Profiling%20Questions/Voice%202/Voice%202-%20Quesstion%201.mp3',
@@ -68,6 +68,7 @@ const VOICE_2_MAPPING = {
   'Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 2.mp3': 'Profiling%20and%20Pre-Testing/Pre-Testing%20Tutorial/Voice%202/Voice%202%20-%20pre-testing%20tutorial%202.mp3',
   'Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 3.mp3': 'Profiling%20and%20Pre-Testing/Pre-Testing%20Tutorial/Voice%202/Voice%202%20-%20pre-testing%20tutorial%203.mp3',
   'Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 4.mp3': 'Profiling%20and%20Pre-Testing/Pre-Testing%20Tutorial/Voice%202/Voice%202%20-%20pre-testing%20tutorial%204.mp3',
+  'Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 4_new.mp3': 'Profiling%20and%20Pre-Testing/Pre-Testing%20Tutorial/Voice%202/Voice%202%20-%20pre-testing%20tutorial%204.mp3',
   'Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial 5.mp3': 'Profiling%20and%20Pre-Testing/Pre-Testing%20Tutorial/Voice%202/Voice%202%20-%20pre-testing%20tutorial%205.mp3',
   'Profiling and Pre-Testing/Pre-Testing Tutorial/pre-testing tutorial FINAL.mp3': 'Profiling%20and%20Pre-Testing/Pre-Testing%20Tutorial/Voice%202/Voice%202%20-%20pre-testing%20tutorial%20FINAL.mp3',
 
@@ -89,6 +90,11 @@ const VOICE_2_MAPPING = {
   'Home Page/Welcome/Level 3.mp3': 'Home%20Page/Welcome/Voice%202%20-%20Level%203.mp3',
   'Home Page/Welcome/Level 4.mp3': 'Home%20Page/Welcome/Voice%202%20-%20Level%204.mp3',
   'Home Page/Welcome/Level 5.mp3': 'Home%20Page/Welcome/Voice%202%20-%20Level%205.mp3',
+  'Home Page/Welcome/Level_1_NEW.mp3': 'Home%20Page/Welcome/Voice%202%20-%20Level%201.mp3',
+  'Home Page/Welcome/Level_2_NEW.mp3': 'Home%20Page/Welcome/Voice%202%20-%20Level%202.mp3',
+  'Home Page/Welcome/Level_3_NEW.mp3': 'Home%20Page/Welcome/Voice%202%20-%20Level%203.mp3',
+  'Home Page/Welcome/Level_4_NEW.mp3': 'Home%20Page/Welcome/Voice%202%20-%20Level%204.mp3',
+  'Home Page/Welcome/Level_5_NEW.mp3': 'Home%20Page/Welcome/Voice%202%20-%20Level%205.mp3',
 
   // Home Page Tutorials
   'Home Page/Tutorials/Home Page Tutorial 1.mp3': 'Home%20Page/Tutorials/Voice%202%20-%20Home%20Page%20Tutorial%201.mp3',

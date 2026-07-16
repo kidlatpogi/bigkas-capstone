@@ -55,7 +55,6 @@ const INITIAL_FORM = {
 };
 
 const INTRO_MUTE_KEY = 'bigkas_profiling_intro_muted';
-const PRETEST_AUDIO_WINDOW_KEY = '__bigkasBeforePretestAudio';
 const DEVELOPER_PREVIEW_SESSION_KEY = 'bigkas_developer_onboarding_preview_v1';
 const QUESTION_VOICE_SOURCES = [
   profilingQuestion1Voice,
@@ -487,18 +486,6 @@ function UserProfilingPage() {
       setIsSubmitting(false);
       console.log('[Profiling] Developer preview mode: profile was not saved.');
       setIsProfileSaved(true);
-      
-      // Prime B-01 voice for Pretest page
-      if (typeof window !== 'undefined') {
-        const pretestAudio = new Audio(beforePretestingVoice);
-        pretestAudio.preload = 'auto';
-        pretestAudio.muted = isMuted;
-        window[PRETEST_AUDIO_WINDOW_KEY] = pretestAudio;
-        if (!isMuted) {
-          pretestAudio.currentTime = 0;
-          pretestAudio.play().catch(() => { });
-        }
-      }
 
       if (typeof window !== 'undefined') {
         window.localStorage.removeItem('bigkas_current_training_session');
@@ -542,28 +529,11 @@ function UserProfilingPage() {
       onboarding_stage: 'pretest',
     };
 
-    // Prime B-01 voice for Pretest page
-    if (typeof window !== 'undefined') {
-      const pretestAudio = new Audio(beforePretestingVoice);
-      pretestAudio.preload = 'auto';
-      pretestAudio.muted = isMuted;
-      window[PRETEST_AUDIO_WINDOW_KEY] = pretestAudio;
-      if (!isMuted) {
-        pretestAudio.currentTime = 0;
-        pretestAudio.play().catch(() => { });
-      }
-    }
-
     const result = await updateUserMetadata(payload);
     setIsSubmitting(false);
 
     if (!result?.success) {
       hasSubmittedProfileRef.current = false;
-      if (typeof window !== 'undefined') {
-        const pretestAudio = window[PRETEST_AUDIO_WINDOW_KEY];
-        pretestAudio?.pause?.();
-        delete window[PRETEST_AUDIO_WINDOW_KEY];
-      }
       setError(result?.error || 'Failed to save your profile. Please try again.');
       setScreen('questions');
       return;

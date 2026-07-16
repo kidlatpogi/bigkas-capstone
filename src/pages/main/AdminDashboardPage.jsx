@@ -1428,6 +1428,9 @@ function AdminDashboardPage() {
   const [showCreateAdminModal, setShowCreateAdminModal] = useState(false);
   const [activeUsersPage, setActiveUsersPage] = useState(1);
   const [activityStatusFilter, setActivityStatusFilter] = useState('all');
+  const [successModal, setSuccessModal] = useState(null);
+  const [reportStartDate, setReportStartDate] = useState('');
+  const [reportEndDate, setReportEndDate] = useState('');
 
   const showToast = (msg, type = 'success') => {
     setToastMessage({ text: msg, type });
@@ -2262,6 +2265,21 @@ function AdminDashboardPage() {
       .sort((a, b) => getDisplayName(a, a.id).localeCompare(getDisplayName(b, b.id)))
   ), [profiles]);
 
+  const filteredReportTeacherRows = useMemo(() => {
+    let filtered = reportTeacherRows;
+    if (reportStartDate) {
+      const start = new Date(reportStartDate);
+      start.setHours(0, 0, 0, 0);
+      filtered = filtered.filter(p => new Date(p.created_at || '') >= start);
+    }
+    if (reportEndDate) {
+      const end = new Date(reportEndDate);
+      end.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(p => new Date(p.created_at || '') <= end);
+    }
+    return filtered;
+  }, [reportTeacherRows, reportStartDate, reportEndDate]);
+
   const reportStudentRows = useMemo(() => (
     profiles
       .filter(profile => (
@@ -2271,16 +2289,49 @@ function AdminDashboardPage() {
       .sort((a, b) => getDisplayName(a, a.id).localeCompare(getDisplayName(b, b.id)))
   ), [profiles, visibleSectionStudentIds]);
 
-  const reportStudentPerformanceRows = useMemo(() => (
-    reportStudentRows.map((student) => {
-      const studentSessions = sessions.filter(session => getSessionUserId(session) === student.id && session.status !== 'error' && session.is_error !== true);
+  const filteredReportStudentRows = useMemo(() => {
+    let filtered = reportStudentRows;
+    if (reportStartDate) {
+      const start = new Date(reportStartDate);
+      start.setHours(0, 0, 0, 0);
+      filtered = filtered.filter(p => new Date(p.created_at || '') >= start);
+    }
+    if (reportEndDate) {
+      const end = new Date(reportEndDate);
+      end.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(p => new Date(p.created_at || '') <= end);
+    }
+    return filtered;
+  }, [reportStudentRows, reportStartDate, reportEndDate]);
+
+  const reportStudentPerformanceRows = useMemo(() => {
+    const start = reportStartDate ? new Date(reportStartDate) : null;
+    if (start) start.setHours(0, 0, 0, 0);
+    const end = reportEndDate ? new Date(reportEndDate) : null;
+    if (end) end.setHours(23, 59, 59, 999);
+
+    return reportStudentRows.map((student) => {
+      let studentSessions = sessions.filter(session => getSessionUserId(session) === student.id && session.status !== 'error' && session.is_error !== true);
+      if (start) {
+        studentSessions = studentSessions.filter(s => new Date(s.created_at || '') >= start);
+      }
+      if (end) {
+        studentSessions = studentSessions.filter(s => new Date(s.created_at || '') <= end);
+      }
+
       const scores = studentSessions.map(session => getDashboardSessionScore(session, metricBySession.get(session.id)));
+      
+      let filteredCompletions = activityCompletions.filter(completion => completion.user_id === student.id);
+      if (start) {
+        filteredCompletions = filteredCompletions.filter(c => new Date(c.completed_at || '') >= start);
+      }
+      if (end) {
+        filteredCompletions = filteredCompletions.filter(c => new Date(c.completed_at || '') <= end);
+      }
+
       const activityIds = new Set([
         ...studentSessions.map(session => String(session.activity_id || '').trim()).filter(Boolean),
-        ...activityCompletions
-          .filter(completion => completion.user_id === student.id)
-          .map(completion => String(completion.activity_id || '').trim())
-          .filter(Boolean),
+        ...filteredCompletions.map(completion => String(completion.activity_id || '').trim()).filter(Boolean),
       ]);
       const completedCount = clampActivityProgress(activityIds.size);
       return {
@@ -2293,8 +2344,8 @@ function AdminDashboardPage() {
         completedActivities: completedCount,
         confidenceLevel: getConfidenceLevel(completedCount),
       };
-    })
-  ), [activityCompletions, metricBySession, reportStudentRows, sectionById, sectionIdByStudentId, sessions]);
+    });
+  }, [activityCompletions, metricBySession, reportStudentRows, sectionById, sectionIdByStudentId, sessions, reportStartDate, reportEndDate]);
 
   const userManagementRows = useMemo(() => {
     const includeUsers = userAccountTypeFilter === 'users' || userAccountTypeFilter === 'all';
@@ -2434,6 +2485,21 @@ function AdminDashboardPage() {
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
     [auditLogs, authSecurityEvents]
   );
+
+  const reportAuditLogs = useMemo(() => {
+    let filtered = combinedAuditLogs;
+    if (reportStartDate) {
+      const start = new Date(reportStartDate);
+      start.setHours(0, 0, 0, 0);
+      filtered = filtered.filter(log => new Date(log.created_at || '') >= start);
+    }
+    if (reportEndDate) {
+      const end = new Date(reportEndDate);
+      end.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(log => new Date(log.created_at || '') <= end);
+    }
+    return filtered;
+  }, [combinedAuditLogs, reportStartDate, reportEndDate]);
 
   const filteredAuditLogs = useMemo(() => {
     let res = combinedAuditLogs;
@@ -2983,6 +3049,11 @@ function AdminDashboardPage() {
       await refreshProfiles();
       if (batchAccountType === 'admin') await refreshRbacData();
       showToast(`${createdCount} ${batchAccountType === 'admin' ? 'admin' : 'user'} account${createdCount === 1 ? '' : 's'} created. Welcome invite${createdCount === 1 ? '' : 's'} sent.`);
+      setSuccessModal({
+        title: 'Batch Account Creation Successful',
+        message: `${createdCount} ${batchAccountType === 'admin' ? 'admin' : 'user'} account${createdCount === 1 ? '' : 's'} have been successfully created.`,
+        emailMessage: 'Please ask the user(s) to check their email inbox for a verification/invitation link to set up their password.'
+      });
       setShowBatchAccountModal(false);
       resetBatchImportState();
     } catch (batchError) {
@@ -3282,6 +3353,11 @@ function AdminDashboardPage() {
       });
       await assignUserToSection(user.id, userForm.section_id);
       showToast('User created. Welcome invite sent.');
+      setSuccessModal({
+        title: 'User Created Successfully',
+        message: `The student account for ${email} has been successfully created.`,
+        emailMessage: 'Please ask the student to check their email inbox for an invitation link to set up their password.'
+      });
       setCreatingUser(false);
       setUserForm(USER_FORM_INITIAL);
       await refreshProfiles();
@@ -3442,6 +3518,11 @@ function AdminDashboardPage() {
       }
       await refreshRbacData();
       showToast('Admin created. Welcome invite sent.');
+      setSuccessModal({
+        title: 'Admin Created Successfully',
+        message: `The admin account for ${normalizedEmail} has been successfully created.`,
+        emailMessage: 'Please ask the administrator/teacher to check their email inbox for an invitation link to set up their password.'
+      });
       setCreateAdminForm(ADMIN_FORM_INITIAL);
       setShowCreateAdminModal(false);
       const { data: ps } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
@@ -3500,12 +3581,19 @@ function AdminDashboardPage() {
   };
 
   const getReportExportData = () => {
+    const dateSuffix = reportStartDate || reportEndDate
+      ? `-${reportStartDate || 'any'}-to-${reportEndDate || 'any'}`
+      : '';
+    const dateTitleSuffix = reportStartDate || reportEndDate
+      ? ` (${reportStartDate || 'Any'} to ${reportEndDate || 'Any'})`
+      : '';
+
     if (reportType === 'students') {
       return {
-        title: 'Users Report',
-        filename: 'bigkas-users-report',
+        title: `Users Report${dateTitleSuffix}`,
+        filename: `bigkas-users-report${dateSuffix}`,
         headers: ['User', 'ID / Student No.', 'Section', 'Journey', 'Status'],
-        rows: reportStudentRows.map(student => [
+        rows: filteredReportStudentRows.map(student => [
           getDisplayName(student, student.id),
           student.student_number || '-',
           getLearnerGroupLabel(student, sectionById, sectionIdByStudentId),
@@ -3517,8 +3605,8 @@ function AdminDashboardPage() {
 
     if (reportType === 'performance') {
       return {
-        title: 'User Performance Report',
-        filename: 'bigkas-user-performance-report',
+        title: `User Performance Report${dateTitleSuffix}`,
+        filename: `bigkas-user-performance-report${dateSuffix}`,
         headers: ['User', 'Section', 'Speeches', 'Minutes', 'Average Score', 'Activities', 'Confidence Level'],
         rows: reportStudentPerformanceRows.map(row => [
           row.name,
@@ -3534,10 +3622,10 @@ function AdminDashboardPage() {
 
     if (reportType === 'audit' && isSuperadmin) {
       return {
-        title: 'Audit Logs Report',
-        filename: 'bigkas-audit-logs-report',
+        title: `Audit Logs Report${dateTitleSuffix}`,
+        filename: `bigkas-audit-logs-report${dateSuffix}`,
         headers: ['Time', 'Actor', 'Action', 'Entity', 'Summary'],
-        rows: combinedAuditLogs.slice(0, 200).map(log => [
+        rows: reportAuditLogs.slice(0, 200).map(log => [
           new Date(log.created_at).toLocaleString(),
           getDisplayName(profiles.find(p => p.id === log.actor_id), log.actor_id || 'Unknown login'),
           formatAuditAction(log.action),
@@ -3548,10 +3636,10 @@ function AdminDashboardPage() {
     }
 
     return {
-      title: 'Admins Report',
-      filename: 'bigkas-admins-report',
+      title: `Admins Report${dateTitleSuffix}`,
+      filename: `bigkas-admins-report${dateSuffix}`,
       headers: ['Admin', 'Email', 'Access Role', 'Sections', 'Status'],
-      rows: reportTeacherRows.map(admin => [
+      rows: filteredReportTeacherRows.map(admin => [
         getDisplayName(admin, admin.id),
         getProfileEmail(admin),
         admin.role === 'superadmin' ? 'Super Admin' : findAccessRole(adminAccessRoles, adminAccessAssignments[admin.id])?.name || 'Admin',
@@ -4133,7 +4221,15 @@ function AdminDashboardPage() {
             <div className="admin-card-head">
               <div>
                 <h3>Reports Generation</h3>
-                <p className="admin-note">Printable reports for admins, users, and user performance.</p>
+                <p className="admin-note">
+                  {reportStartDate || reportEndDate ? (
+                    <>
+                      Showing reports {reportStartDate ? `from ${new Date(reportStartDate).toLocaleDateString()}` : ''} {reportEndDate ? `to ${new Date(reportEndDate).toLocaleDateString()}` : ''}
+                    </>
+                  ) : (
+                    'Printable reports for admins, users, and user performance.'
+                  )}
+                </p>
               </div>
               <div className="admin-report-actions">
                 <button type="button" className="admin-btn admin-btn--ghost" onClick={() => window.print()}>Print Report</button>
@@ -4146,17 +4242,46 @@ function AdminDashboardPage() {
               <button type="button" className={`admin-tab-btn ${reportType === 'performance' ? 'is-active' : ''}`} onClick={() => setReportType('performance')}>Performance</button>
               {isSuperadmin && <button type="button" className={`admin-tab-btn ${reportType === 'audit' ? 'is-active' : ''}`} onClick={() => setReportType('audit')}>Audit Logs</button>}
             </div>
+            <div className="admin-report-filters no-print">
+              <div className="admin-custom-date-range">
+                <span className="admin-report-filter-label">From:</span>
+                <input
+                  type="date"
+                  value={reportStartDate}
+                  onChange={(e) => setReportStartDate(e.target.value)}
+                />
+                <span className="admin-report-filter-label">To:</span>
+                <input
+                  type="date"
+                  value={reportEndDate}
+                  onChange={(e) => setReportEndDate(e.target.value)}
+                />
+                {(reportStartDate || reportEndDate) && (
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn--ghost"
+                    onClick={() => {
+                      setReportStartDate('');
+                      setReportEndDate('');
+                    }}
+                    style={{ minHeight: '40px', borderRadius: '10px' }}
+                  >
+                    Clear Dates
+                  </button>
+                )}
+              </div>
+            </div>
             <div className="admin-table-wrap"><table className="admin-table">
               {reportType === 'teachers' && (
                 <>
                   <thead><tr><th>Admin</th><th>Email</th><th>Access Role</th><th>Sections</th><th>Status</th></tr></thead>
-                  <tbody>{reportTeacherRows.map(admin => <tr key={admin.id}><td>{getDisplayName(admin, admin.id)}</td><td>{getProfileEmail(admin)}</td><td>{admin.role === 'superadmin' ? 'Super Admin' : findAccessRole(adminAccessRoles, adminAccessAssignments[admin.id])?.name || 'Admin'}</td><td>{sections.filter(section => section.teacher_id === admin.id).length}</td><td>{isDeletedProfile(admin) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
+                  <tbody>{filteredReportTeacherRows.map(admin => <tr key={admin.id}><td>{getDisplayName(admin, admin.id)}</td><td>{getProfileEmail(admin)}</td><td>{admin.role === 'superadmin' ? 'Super Admin' : findAccessRole(adminAccessRoles, adminAccessAssignments[admin.id])?.name || 'Admin'}</td><td>{sections.filter(section => section.teacher_id === admin.id).length}</td><td>{isDeletedProfile(admin) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
                 </>
               )}
               {reportType === 'students' && (
                 <>
                   <thead><tr><th>User</th><th>ID / Student No.</th><th>Section</th><th>Journey</th><th>Status</th></tr></thead>
-                  <tbody>{reportStudentRows.map(student => <tr key={student.id}><td>{getDisplayName(student, student.id)}</td><td>{student.student_number || '-'}</td><td>{getLearnerGroupLabel(student, sectionById, sectionIdByStudentId)}</td><td>Journey {getProgressLevelValue(student)}</td><td>{isDeletedProfile(student) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
+                  <tbody>{filteredReportStudentRows.map(student => <tr key={student.id}><td>{getDisplayName(student, student.id)}</td><td>{student.student_number || '-'}</td><td>{getLearnerGroupLabel(student, sectionById, sectionIdByStudentId)}</td><td>Journey {getProgressLevelValue(student)}</td><td>{isDeletedProfile(student) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
                 </>
               )}
               {reportType === 'performance' && (
@@ -4168,7 +4293,7 @@ function AdminDashboardPage() {
               {reportType === 'audit' && isSuperadmin && (
                 <>
                   <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Entity</th><th>Summary</th></tr></thead>
-                  <tbody>{combinedAuditLogs.slice(0, 200).map(log => <tr key={log.id}><td>{new Date(log.created_at).toLocaleString()}</td><td>{getDisplayName(profiles.find(p => p.id === log.actor_id), log.actor_id || 'Unknown login')}</td><td>{formatAuditAction(log.action)}</td><td>{log.entity_type}</td><td>{JSON.stringify(log.new_values || log.old_values || {}).slice(0, 120) || '-'}</td></tr>)}</tbody>
+                  <tbody>{reportAuditLogs.slice(0, 200).map(log => <tr key={log.id}><td>{new Date(log.created_at).toLocaleString()}</td><td>{getDisplayName(profiles.find(p => p.id === log.actor_id), log.actor_id || 'Unknown login')}</td><td>{formatAuditAction(log.action)}</td><td>{log.entity_type}</td><td>{JSON.stringify(log.new_values || log.old_values || {}).slice(0, 120) || '-'}</td></tr>)}</tbody>
                 </>
               )}
             </table></div>
@@ -4735,6 +4860,22 @@ function AdminDashboardPage() {
             <h4>After</h4>
             <pre><code>{JSON.stringify(inspectingLog.new_values || {}, null, 2)}</code></pre>
           </section>
+        </div>
+      </div></div>, document.body)}
+
+      {successModal && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setSuccessModal(null)}><div className="admin-modal admin-confirm-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px', color: '#10B981' }}>
+          <HiCheckCircle size={48} />
+        </div>
+        <h3 style={{ textAlign: 'center', marginBottom: '16px' }}>{successModal.title}</h3>
+        <p style={{ marginBottom: '16px', textAlign: 'center' }}>{successModal.message}</p>
+        <div className="admin-note" style={{ backgroundColor: 'rgba(16, 185, 129, 0.08)', borderLeft: '4px solid #10B981', padding: '16px', borderRadius: '4px', marginBottom: '24px' }}>
+          <p style={{ margin: 0, fontSize: '0.95rem', color: '#065F46', fontWeight: 500, lineHeight: 1.5 }}>
+            {successModal.emailMessage}
+          </p>
+        </div>
+        <div className="admin-modal-actions" style={{ justifyContent: 'center' }}>
+          <button type="button" className="admin-btn admin-btn--primary" style={{ minWidth: '120px' }} onClick={() => setSuccessModal(null)}>OK</button>
         </div>
       </div></div>, document.body)}
 

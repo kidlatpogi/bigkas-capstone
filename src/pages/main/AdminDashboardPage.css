@@ -1996,6 +1996,7 @@ body:has(.admin-dashboard-page) .main-content {
   .admin-header,
   .admin-report-card .admin-btn,
   .admin-report-tabs,
+  .admin-report-filters,
   .admin-toast,
   .admin-modal-backdrop {
     display: none !important;
@@ -3076,4 +3077,15 @@ body:has(.admin-dashboard-page) .main-content {
 @keyframes toast-slide {
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
+}
+
+.admin-report-filters {
+  margin-top: 8px;
+  margin-bottom: 24px;
+}
+
+.admin-report-filter-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--muted);
 }

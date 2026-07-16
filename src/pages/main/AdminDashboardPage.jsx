@@ -22,10 +22,7 @@ import { ENV } from '../../config/env';
 import './AdminDashboardPage.css';
 
 const SIDEBAR_WIDTH = 280;
-const SERVICE_HEALTH_TIMEOUT_MS = 8000;
 const DASHBOARD_QUERY_TIMEOUT_MS = 12000;
-const SERVICE_HEALTH_CACHE_KEY = 'bigkas_admin_service_health_v1';
-const SERVICE_HEALTH_CACHE_TTL_MS = 5 * 60 * 1000;
 const ACTIVE_USERS_PER_PAGE = 5;
 const BATCH_PREVIEW_ROWS_PER_PAGE = 5;
 const STAGE_PASS_ROWS_PER_PAGE = 10;
@@ -237,84 +234,6 @@ function getArchivedAt(profile) {
   return archivedAt;
 }
 
-function getHealthUrl(baseUrl, path) {
-  return `${String(baseUrl || '').replace(/\/+$/, '')}${path}`;
-}
-
-async function probeHealthEndpoint(url, options = {}) {
-  const startedAt = performance.now();
-  const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), SERVICE_HEALTH_TIMEOUT_MS);
-
-  try {
-    const response = await fetch(url, {
-      cache: 'no-store',
-      ...options,
-      headers: {
-        Accept: 'application/json',
-        ...(options.headers || {}),
-      },
-      signal: controller.signal,
-    });
-    const latencyMs = Math.round(performance.now() - startedAt);
-    const contentType = response.headers.get('content-type') || '';
-
-    if (contentType.includes('text/html')) {
-      return {
-        status: 'degraded',
-        label: 'Starting',
-        detail: 'Service returned startup page',
-        latencyMs,
-      };
-    }
-
-    if (!response.ok) {
-      return {
-        status: 'down',
-        label: 'Offline',
-        detail: `HTTP ${response.status}`,
-        latencyMs,
-      };
-    }
-
-    return {
-      status: 'online',
-      label: 'Healthy',
-      detail: `HTTP ${response.status}`,
-      latencyMs,
-    };
-  } finally {
-    window.clearTimeout(timeoutId);
-  }
-}
-
-async function probeServiceHealth(candidates) {
-  for (const candidate of candidates) {
-    try {
-      const result = await probeHealthEndpoint(candidate.url, candidate.options);
-      if (result.status === 'online' || result.status === 'degraded') {
-        return { ...result, checkedUrl: candidate.url };
-      }
-    } catch (error) {
-      if (error.name === 'AbortError') {
-        return {
-          status: 'down',
-          label: 'Timeout',
-          detail: `No response within ${SERVICE_HEALTH_TIMEOUT_MS / 1000}s`,
-          checkedUrl: candidate.url,
-        };
-      }
-    }
-  }
-
-  return {
-    status: 'down',
-    label: 'Offline',
-    detail: 'Health endpoint unavailable',
-    checkedUrl: candidates[0]?.url || '',
-  };
-}
-
 async function withTimeout(promise, label, timeoutMs = DASHBOARD_QUERY_TIMEOUT_MS) {
   let timeoutId;
   const timeout = new Promise((_, reject) => {
@@ -325,44 +244,6 @@ async function withTimeout(promise, label, timeoutMs = DASHBOARD_QUERY_TIMEOUT_M
     return await Promise.race([promise, timeout]);
   } finally {
     window.clearTimeout(timeoutId);
-  }
-}
-
-function getDefaultServiceHealth() {
-  return {
-    huggingFace: { status: 'checking', label: 'Checking', detail: 'Checking backend health', latencyMs: null },
-    cloudflare: { status: 'checking', label: 'Checking', detail: 'Checking Worker health', latencyMs: null },
-  };
-}
-
-function readCachedServiceHealth() {
-  if (typeof window === 'undefined') return null;
-
-  try {
-    const raw = window.localStorage.getItem(SERVICE_HEALTH_CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed?.value || Date.now() - Number(parsed.timestamp || 0) > SERVICE_HEALTH_CACHE_TTL_MS) {
-      window.localStorage.removeItem(SERVICE_HEALTH_CACHE_KEY);
-      return null;
-    }
-    return parsed.value;
-  } catch {
-    window.localStorage.removeItem(SERVICE_HEALTH_CACHE_KEY);
-    return null;
-  }
-}
-
-function writeCachedServiceHealth(value) {
-  if (typeof window === 'undefined') return;
-
-  try {
-    window.localStorage.setItem(SERVICE_HEALTH_CACHE_KEY, JSON.stringify({
-      timestamp: Date.now(),
-      value,
-    }));
-  } catch {
-    // Health cache is an optimization only.
   }
 }
 
@@ -1362,7 +1243,6 @@ function AdminDashboardPage() {
   const [sessions, setSessions] = useState([]);
   const [metrics, setMetrics] = useState([]);
   const [activityCompletions, setActivityCompletions] = useState([]);
-  const [, setServiceHealth] = useState(() => readCachedServiceHealth() || getDefaultServiceHealth());
   const [auditLogs, setAuditLogs] = useState([]);
   const [authSecurityEvents, setAuthSecurityEvents] = useState([]);
   const [auditSearchQuery, setAuditSearchQuery] = useState('');
@@ -1614,40 +1494,6 @@ function AdminDashboardPage() {
     loadCore();
     return () => { active = false; };
   }, [navigate]);
-
-  useEffect(() => {
-    if (activePage !== 'overview') return;
-    let active = true;
-
-    async function loadServiceHealth() {
-      const cached = readCachedServiceHealth();
-      if (cached) {
-        setServiceHealth(cached);
-        return;
-      }
-
-      setServiceHealth(getDefaultServiceHealth());
-
-      const [huggingFace, cloudflare] = await Promise.all([
-        probeServiceHealth([
-          { url: getHealthUrl(ENV.PYTHON_SERVICE_URL, '/health') },
-          { url: getHealthUrl(ENV.PYTHON_SERVICE_URL, '/api/health') },
-        ]),
-        probeServiceHealth([
-          { url: getHealthUrl(ENV.CLOUDFLARE_AI_WORKER_URL, '/health') },
-          { url: getHealthUrl(ENV.CLOUDFLARE_AI_WORKER_URL, '/random-topic') },
-        ]),
-      ]);
-
-      if (!active) return;
-      const nextHealth = { huggingFace, cloudflare };
-      setServiceHealth(nextHealth);
-      writeCachedServiceHealth(nextHealth);
-    }
-
-    loadServiceHealth();
-    return () => { active = false; };
-  }, [activePage]);
 
   useEffect(() => {
     if (!isSuperadmin || (activePage !== 'audit' && activePage !== 'reports' && activePage !== 'analytics')) return;

@@ -713,19 +713,17 @@ function UserProfilingPage() {
                 Hello! Before we embark on this exciting journey to master public speaking, please select my voice. You can listen to the samples below to choose the one that suits you best!
               </p>
               
-              <div className="profiling-options" style={{ marginTop: '1.2rem', marginBottom: '1.2rem' }}>
+              <div style={{ display: 'flex', gap: '20px', margin: '24px 0', justifyContent: 'center' }}>
                 <button
                   type="button"
                   onClick={() => {
                     handleSelectVoice('voice1');
                     playSample('voice1');
                   }}
-                  className={`profiling-option ${selectedVoice === 'voice1' ? 'is-active' : ''}`}
+                  className={`profiling-voice-square-btn ${selectedVoice === 'voice1' ? 'is-selected' : 'is-unselected'}`}
                 >
-                  <span className="profiling-option-main">
-                    <span className="profiling-option-badge">1</span>
-                    <span>Voice 1 (Male)</span>
-                  </span>
+                  <Volume2 size={24} />
+                  <span>Voice 1</span>
                 </button>
                 <button
                   type="button"
@@ -733,12 +731,10 @@ function UserProfilingPage() {
                     handleSelectVoice('voice2');
                     playSample('voice2');
                   }}
-                  className={`profiling-option ${selectedVoice === 'voice2' ? 'is-active' : ''}`}
+                  className={`profiling-voice-square-btn ${selectedVoice === 'voice2' ? 'is-selected' : 'is-unselected'}`}
                 >
-                  <span className="profiling-option-main">
-                    <span className="profiling-option-badge">2</span>
-                    <span>Voice 2 (Female)</span>
-                  </span>
+                  <Volume2 size={24} />
+                  <span>Voice 2</span>
                 </button>
               </div>
 

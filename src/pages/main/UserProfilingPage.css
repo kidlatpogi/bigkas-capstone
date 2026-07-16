@@ -1338,3 +1338,53 @@
     width: min(100%, 24rem);
   }
 }
+
+.profiling-voice-square-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 120px;
+  border: 0;
+  border-radius: 16px;
+  font-family: 'Fredoka', sans-serif;
+  font-size: clamp(0.95rem, 0.9rem + 0.2vw, 1.05rem);
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  gap: 8px;
+  outline: none;
+}
+
+.profiling-voice-square-btn.is-selected {
+  background: #059669;
+  color: #ffffff;
+  box-shadow: #047857 0 5px 0 0;
+}
+
+.profiling-voice-square-btn.is-selected:hover {
+  box-shadow: #047857 0 4px 0 0;
+  transform: translateY(2px);
+}
+
+.profiling-voice-square-btn.is-selected:active {
+  box-shadow: #047857 0 0 0 0;
+  transform: translateY(6px);
+}
+
+.profiling-voice-square-btn.is-unselected {
+  background: #e2e8f0;
+  color: #475569;
+  box-shadow: #cbd5e1 0 5px 0 0;
+}
+
+.profiling-voice-square-btn.is-unselected:hover {
+  box-shadow: #cbd5e1 0 4px 0 0;
+  transform: translateY(2px);
+}
+
+.profiling-voice-square-btn.is-unselected:active {
+  box-shadow: #cbd5e1 0 0 0 0;
+  transform: translateY(6px);
+}

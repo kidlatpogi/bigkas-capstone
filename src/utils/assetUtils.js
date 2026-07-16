@@ -99,10 +99,10 @@ const VOICE_2_MAPPING = {
   // Home Page Tutorials
   'Home Page/Tutorials/Home Page Tutorial 1.mp3': 'Home%20Page/Tutorials/Voice%202%20-%20Home%20Page%20Tutorial%201.mp3',
   'Home Page/Tutorials/Home Page Tutorial 2.mp3': 'Home%20Page/Tutorials/Voice%202%20-%20Home%20Page%20Tutorial%202.mp3',
-  'Home Page/Tutorials/Home Page Tutorial 3.mp3': 'Home%20Page/Tutorials/Voice%202%20-%20Home%20Page%20Tutorial%203.mp3',
-  'Home Page/Tutorials/Home Page Tutorial 4.mp3': 'Home%20Page/Tutorials/Voice%202%20-%20Home%20Page%20Tutorial%204.mp3',
-  'Home Page/Tutorials/Home Page Tutorial 5.mp3': 'Home%20Page/Tutorials/Voice%202%20-%20Home%20Page%20Tutorial%205.mp3',
-  'Home Page/Tutorials/Home Page Tutorial 6.mp3': 'Home%20Page/Tutorials/Voice%202%20-%20Home%20Page%20Tutorial%206.mp3',
+  'Home Page/Tutorials/Home Page Tutorial 4.mp3': 'Home%20Page/Tutorials/Voice%202%20-%20Home%20Page%20Tutorial%203.mp3',
+  'Home Page/Tutorials/Home Page Tutorial 3 Part 1.mp3': 'Home%20Page/Tutorials/Voice%202%20-%20Home%20Page%20Tutorial%204.mp3',
+  'Home Page/Tutorials/Home Page Tutorial 3 Part 2.mp3': 'Home%20Page/Tutorials/Voice%202%20-%20Home%20Page%20Tutorial%205.mp3',
+  'Home Page/Tutorials/Home Page Tutorial 5.mp3': 'Home%20Page/Tutorials/Voice%202%20-%20Home%20Page%20Tutorial%206.mp3',
 
   // Randomizer and Free Speech
   'Home Page/Randomizer and Free Speech Button/Randomizer.mp3': 'Home%20Page/Randomizer%20and%20Free%20Speech%20Button/Voice%202%20-%20Randomizer.mp3',

@@ -1,0 +1,1 @@
+import{a as t}from"./assetUtils-B8CiPS2C.js";const o={1:"Foundation Finisher",2:"Vocal Builder",3:"Clear Communicator",4:"Presence Specialist",5:"Bigkas Expert"};function i(e){return o[Number(e)]||""}function n(e){const r=Math.min(5,Math.max(1,Number(e)||1));return t(`Thropies/Trophy_Level_${r}.webp`)}export{i as a,n as g};

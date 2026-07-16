@@ -426,8 +426,7 @@ function TrainingPage() {
     isFreePretestSession && 
     isTutorialOverlayOpen && 
     status === 'idle' && 
-    user?.onboardingStage !== 'analyzing' &&
-    user?.onboardingStage !== 'completed';
+    (isDeveloperPreview || (user?.onboardingStage !== 'analyzing' && user?.onboardingStage !== 'completed'));
 
   const isStartBlockedByTutorial = hasActivePretestTutorial && !isActive && status !== 'countdown';
   const hidePermissionRetry = false;

@@ -38,3 +38,22 @@ export function getVoiceUrl(path) {
   const cleaned = path.replace(/^\/+/, '').replace(/^Voices\//, '');
   return getAssetUrl(`Voices/${cleaned}`);
 }
+
+if (typeof window !== 'undefined' && !window.__bigkasAudioOverridden) {
+  window.__bigkasAudioOverridden = true;
+  const OriginalAudio = window.Audio;
+  window.Audio = class DynamicAudio extends OriginalAudio {
+    constructor(src) {
+      let resolvedSrc = src;
+      if (typeof src === 'string' && src.includes('/Voices/') && !src.includes('/Voice 1/') && !src.includes('/Voice 2/')) {
+        const savedVoice = window.localStorage.getItem('bigkas_b01_voice');
+        const voicePrefix = savedVoice === 'voice2' ? 'Voice 2/' : 'Voice 1/';
+        const index = src.indexOf('/Voices/');
+        if (index !== -1) {
+          resolvedSrc = src.substring(0, index + 8) + voicePrefix + src.substring(index + 8);
+        }
+      }
+      super(resolvedSrc);
+    }
+  };
+}

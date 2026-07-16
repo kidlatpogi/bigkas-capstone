@@ -162,7 +162,21 @@ function UserProfilingPage() {
   const outroFirstMessage = 'Nice work, your profiling questions are complete.';
   const outroMissionMessage = "Your Free Speech Pre-test is ready. Continue when you're ready for B-01's final instructions.";
 
-  const [screen, setScreen] = useState(() => (user?.profilingCompleted && !isDeveloperPreview ? 'outro' : 'intro'));
+  const [selectedVoice, setSelectedVoice] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.localStorage.getItem('bigkas_b01_voice') || 'voice1';
+    }
+    return 'voice1';
+  });
+
+  const handleSelectVoice = (voiceKey) => {
+    setSelectedVoice(voiceKey);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('bigkas_b01_voice', voiceKey);
+    }
+  };
+
+  const [screen, setScreen] = useState(() => (user?.profilingCompleted && !isDeveloperPreview ? 'outro' : 'voice_select'));
   const [introStep, setIntroStep] = useState(() => (user?.profilingCompleted && !isDeveloperPreview ? 2 : 0));
   const [isIntroTypingDone, setIsIntroTypingDone] = useState(false);
   const [isReadyTypingDone, setIsReadyTypingDone] = useState(false);
@@ -253,6 +267,15 @@ function UserProfilingPage() {
       audioMap.current = {};
     };
   }, [screen, currentIndex, isMuted]);
+
+  const playSample = (voiceKey) => {
+    const sampleUrl = getVoiceUrl(`${voiceKey === 'voice2' ? 'Voice 2' : 'Voice 1'}/Sample.mp3`);
+    stopAllIntroAudios();
+    const audio = new Audio(sampleUrl);
+    audio.muted = isMuted;
+    audio.play().catch(() => {});
+    audioMap.current[sampleUrl] = audio;
+  };
 
   /**
    * BF-Cache & Resource Cleanup
@@ -682,6 +705,70 @@ function UserProfilingPage() {
 
   return (
     <div className={`user-profiling-page user-profiling-page--${screen} ${screen !== 'questions' ? 'is-gate-screen' : ''}`}>
+      {screen === 'voice_select' && (
+        <section className="profiling-intro profiling-gate--pop">
+          <div className="profiling-unit">
+            <article className="profiling-intro-bubble profiling-intro-bubble--voice-select" aria-label="Voice selection">
+              <p>
+                Hello! Before we embark on this exciting journey to master public speaking, please select my voice. You can listen to the samples below to choose the one that suits you best!
+              </p>
+              
+              <div className="profiling-options" style={{ marginTop: '1.2rem', marginBottom: '1.2rem' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleSelectVoice('voice1');
+                    playSample('voice1');
+                  }}
+                  className={`profiling-option ${selectedVoice === 'voice1' ? 'is-active' : ''}`}
+                >
+                  <span className="profiling-option-main">
+                    <span className="profiling-option-badge">1</span>
+                    <span>Voice 1 (Male)</span>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleSelectVoice('voice2');
+                    playSample('voice2');
+                  }}
+                  className={`profiling-option ${selectedVoice === 'voice2' ? 'is-active' : ''}`}
+                >
+                  <span className="profiling-option-main">
+                    <span className="profiling-option-badge">2</span>
+                    <span>Voice 2 (Female)</span>
+                  </span>
+                </button>
+              </div>
+
+              <div className="profiling-intro-actions">
+                <div className="profiling-submit-btn">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      stopAllIntroAudios();
+                      setScreen('intro');
+                      setIntroStep(0);
+                    }}
+                  >
+                    Continue
+                  </button>
+                </div>
+              </div>
+            </article>
+            <div className="profiling-intro-robot">
+              <div className="profiling-intro-robot-media" aria-hidden="true">
+                <video className="profiling-intro-video" autoPlay loop muted playsInline>
+                  <source src={waveWebm} type="video/webm" />
+                  <source src={waveMp4} type="video/mp4" />
+                </video>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {screen === 'intro' && (
         <section className="profiling-intro profiling-gate--pop">
           <div className="profiling-unit">

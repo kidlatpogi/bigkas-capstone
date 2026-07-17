@@ -120,7 +120,13 @@ if (typeof window !== 'undefined' && !window.__bigkasAudioOverridden) {
       }
       let resolvedSrc = src;
       if (typeof src === 'string' && src.includes('/Voices/')) {
-        if (src.includes('/Voice 1/') || src.includes('/Voice 2/') || src.includes('/Voice 2 -')) {
+        const decodedSrc = decodeURIComponent(src);
+        if (
+          decodedSrc.includes('/Voice 1/') ||
+          decodedSrc.includes('/Voice 2/') ||
+          decodedSrc.includes('/Voice 2 -') ||
+          decodedSrc.includes('/Voice 1 -')
+        ) {
           super(src);
           return;
         }

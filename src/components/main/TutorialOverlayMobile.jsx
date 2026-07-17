@@ -389,10 +389,11 @@ function TutorialOverlayMobile({
       isCustomTutorial && targetId === 'tutorial-target-home-journey' ? '4600' : '4800';
     const needsDashboard =
       targetId === 'tutorial-target-home-streak' || targetId === 'tutorial-target-home-rank' || targetId === 'tutorial-target-home-practice';
+    const isJourney = targetId === 'tutorial-target-home-journey';
     const shouldDisableTargetClicks =
       targetId === 'tutorial-target-home-streak' || targetId === 'tutorial-target-home-rank' || targetId === 'tutorial-target-home-practice';
-    const maxAttempts = needsDashboard ? 48 : 6;
-    const retryMs = needsDashboard ? 80 : 60;
+    const maxAttempts = (needsDashboard || isJourney) ? 48 : 6;
+    const retryMs = (needsDashboard || isJourney) ? 80 : 60;
 
     let cancelled = false;
     let retryTimer = null;
@@ -401,39 +402,42 @@ function TutorialOverlayMobile({
       if (cancelled || !targetId) return;
       const nextEl = document.getElementById(targetId);
       if (nextEl) {
-        nextEl.classList.add('tutorial-spotlight-active');
-        nextEl.style.setProperty('z-index', spotlightZIndex, 'important');
-        if (shouldDisableTargetClicks) {
-          nextEl.style.setProperty('pointer-events', 'none', 'important');
-        }
-        activeSpotlightRef.current = nextEl;
-        if (targetId === 'tutorial-target-home-practice') {
-          const scrollContainer = document.querySelector('.dashboard-overlay-scroll-content') || document.querySelector('.dashboard-overlay-content');
-          if (scrollContainer) {
-            try {
-              scrollContainer.scrollTo({ top: scrollContainer.scrollHeight, behavior: 'smooth' });
-            } catch (e) {
-              scrollContainer.scrollTop = scrollContainer.scrollHeight;
-            }
-            setTimeout(() => {
-              if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
-            }, 60);
+        const isJourneyTarget = targetId === 'tutorial-target-home-journey';
+        const activeNode = isJourneyTarget ? nextEl.querySelector('.skyward-journey-node--active') : true;
+        
+        if (activeNode) {
+          nextEl.classList.add('tutorial-spotlight-active');
+          nextEl.style.setProperty('z-index', spotlightZIndex, 'important');
+          if (shouldDisableTargetClicks) {
+            nextEl.style.setProperty('pointer-events', 'none', 'important');
           }
-        } else if (targetId === 'tutorial-target-home-journey') {
-          try {
-            const activeNode = nextEl.querySelector('.skyward-journey-node--active');
-            if (activeNode) {
-              activeNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            } else {
-              nextEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          activeSpotlightRef.current = nextEl;
+          if (targetId === 'tutorial-target-home-practice') {
+            const scrollContainer = document.querySelector('.dashboard-overlay-scroll-content') || document.querySelector('.dashboard-overlay-content');
+            if (scrollContainer) {
+              try {
+                scrollContainer.scrollTo({ top: scrollContainer.scrollHeight, behavior: 'smooth' });
+              } catch (e) {
+                scrollContainer.scrollTop = scrollContainer.scrollHeight;
+              }
+              setTimeout(() => {
+                if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
+              }, 60);
             }
-          } catch (e) {}
-        } else {
-          try {
-            nextEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          } catch (e) {}
+          } else if (isJourneyTarget) {
+            try {
+              const nodeToScroll = nextEl.querySelector('.skyward-journey-node--active');
+              if (nodeToScroll) {
+                nodeToScroll.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            } catch (e) {}
+          } else {
+            try {
+              nextEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } catch (e) {}
+          }
+          return;
         }
-        return;
       }
       if (attempt >= maxAttempts) return;
       retryTimer = window.setTimeout(() => applySpotlight(attempt + 1), retryMs);

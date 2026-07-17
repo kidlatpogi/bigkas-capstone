@@ -50,6 +50,7 @@ const ADMIN_PERMISSION_AREAS = [
 ];
 const BATCH_STUDENT_TEMPLATE_COLUMNS = ['Last Name', 'First Name', 'Student Number', 'Email'];
 const BATCH_TEACHER_TEMPLATE_COLUMNS = ['Last Name', 'First Name', 'Email'];
+const BATCH_SECTION_TEMPLATE_COLUMNS = ['Section Name', 'Teacher Email'];
 const STUDENT_ACCESS_ROLE_REVIEW = {
   id: STUDENT_ACCESS_ROLE_REVIEW_ID,
   name: 'User',
@@ -593,6 +594,7 @@ function normalizeBatchHeader(value) {
 }
 
 function getBatchTemplateColumns(accountType) {
+  if (accountType === 'section') return BATCH_SECTION_TEMPLATE_COLUMNS;
   return accountType === 'admin' ? BATCH_TEACHER_TEMPLATE_COLUMNS : BATCH_STUDENT_TEMPLATE_COLUMNS;
 }
 
@@ -602,6 +604,8 @@ function getBatchColumnKey(header) {
   if (normalized === 'firstname' || normalized === 'firsname' || normalized === 'givenname') return 'first_name';
   if (normalized === 'studentnumber' || normalized === 'studentno' || normalized === 'studentid') return 'student_number';
   if (normalized === 'email' || normalized === 'emailaddress') return 'email';
+  if (normalized === 'sectionname' || normalized === 'name' || normalized === 'section') return 'section_name';
+  if (normalized === 'teacheremail' || normalized === 'adminemail' || normalized === 'teacher') return 'teacher_email';
   return '';
 }
 
@@ -901,32 +905,42 @@ function buildBatchPreview(matrix, accountType) {
     if (key) acc[key] = index;
     return acc;
   }, {});
-  const requiredKeys = ['last_name', 'first_name', 'email'];
+
+  const requiredKeys = accountType === 'section'
+    ? ['section_name']
+    : ['last_name', 'first_name', 'email'];
+
   const labelsByKey = {
     last_name: 'Last Name',
     first_name: 'First Name',
     student_number: 'Student Number',
     email: 'Email',
+    section_name: 'Section Name',
+    teacher_email: 'Teacher Email',
   };
+
   const missingColumns = requiredKeys
     .filter(key => columnMap[key] === undefined)
     .map(key => labelsByKey[key]);
 
-  const parsedRows = rows.slice(1).map((row, index) => ({
-    rowNumber: index + 2,
-    last_name: row[columnMap.last_name] || '',
-    first_name: row[columnMap.first_name] || '',
-    student_number: row[columnMap.student_number] || '',
-    email: row[columnMap.email] || '',
-  })).filter(row => row.last_name || row.first_name || row.student_number || row.email);
-  const invalidRows = parsedRows.filter(row => (
-    !row.last_name
-    || !row.first_name
-    || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)
-  ));
+  const parsedRows = rows.slice(1).map((row, index) => {
+    const rowObj = { rowNumber: index + 2 };
+    Object.keys(columnMap).forEach(key => {
+      const idx = columnMap[key];
+      rowObj[key] = row[idx] || '';
+    });
+    return rowObj;
+  }).filter(row => Object.values(row).some(val => val !== '' && val !== row.rowNumber));
+
+  const invalidRows = parsedRows.filter(row => {
+    if (accountType === 'section') {
+      return !row.section_name;
+    }
+    return !row.last_name || !row.first_name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email);
+  });
 
   return {
-    columns: headerRow,
+    columns: requiredKeys.map(key => labelsByKey[key]),
     rows: parsedRows,
     invalidRows,
     missingColumns,
@@ -1408,6 +1422,7 @@ function AdminDashboardPage() {
   const [userPage, setUserPage] = useState(1);
   const USERS_PER_PAGE = 10;
   const [adminRosterPage, setAdminRosterPage] = useState(1);
+  const [adminSearchQuery, setAdminSearchQuery] = useState('');
   const ADMINS_PER_PAGE = 5;
   const [accessRolePage, setAccessRolePage] = useState(1);
   const ROLES_PER_PAGE = 5;
@@ -1424,6 +1439,7 @@ function AdminDashboardPage() {
   const [creatingContent, setCreatingContent] = useState(false);
   const [editingContent, setEditingContent] = useState(null);
   const [contentPage, setContentPage] = useState(1);
+  const [contentSearchQuery, setContentSearchQuery] = useState('');
   const [contentLevelFilter, setContentLevelFilter] = useState('all');
   const CONTENT_PER_PAGE = 10;
   const [contentLevelLimit, setContentLevelLimit] = useState(5);
@@ -1684,6 +1700,12 @@ function AdminDashboardPage() {
     () => profiles
       .filter(isAdminProfile)
       .filter((profile) => {
+        if (adminSearchQuery.trim()) {
+          const q = adminSearchQuery.toLowerCase();
+          const name = getDisplayName(profile, profile.id).toLowerCase();
+          const email = getProfileEmail(profile).toLowerCase();
+          if (!name.includes(q) && !email.includes(q)) return false;
+        }
         if (adminStatusFilter === 'active') return !isDeletedProfile(profile);
         if (adminStatusFilter === 'deleted') return isDeletedProfile(profile);
         return true;
@@ -1693,7 +1715,7 @@ function AdminDashboardPage() {
         if (deletedDelta !== 0) return deletedDelta;
         return getDisplayName(a, a.id).localeCompare(getDisplayName(b, b.id));
       }),
-    [profiles, adminStatusFilter]
+    [profiles, adminStatusFilter, adminSearchQuery]
   );
   const visibleSections = useMemo(() => {
     const activeSections = sections.filter(section => !section.archived_at);
@@ -2539,12 +2561,21 @@ function AdminDashboardPage() {
     return Array.from({ length: Math.max(5, contentLevelLimit, ...activityLevels, ...moduleLevels) }, (_, i) => i + 1);
   }, [activities, modules, contentLevelLimit]);
   const filteredContentItems = useMemo(() => {
-    if (contentLevelFilter === 'all') return contentItems;
-    return contentItems.filter(item => {
+    let list = contentItems;
+    if (contentSearchQuery.trim()) {
+      const q = contentSearchQuery.toLowerCase();
+      list = list.filter(item => {
+        const title = String(item.title || '').toLowerCase();
+        const objOrContent = String(item.objective || item.content || '').toLowerCase();
+        return title.includes(q) || objOrContent.includes(q);
+      });
+    }
+    if (contentLevelFilter === 'all') return list;
+    return list.filter(item => {
       const level = contentTab === 'activities' ? item.target_level : item.level_number;
       return Number(level) === Number(contentLevelFilter);
     });
-  }, [contentItems, contentLevelFilter, contentTab]);
+  }, [contentItems, contentLevelFilter, contentTab, contentSearchQuery]);
   const totalContentPages = Math.max(1, Math.ceil(filteredContentItems.length / CONTENT_PER_PAGE));
   const paginatedContentItems = useMemo(() => {
     const start = (contentPage - 1) * CONTENT_PER_PAGE;
@@ -3147,10 +3178,40 @@ function AdminDashboardPage() {
 
     try {
       for (const row of batchPreview.rows) {
-        const email = row.email.trim();
-        const firstName = row.first_name.trim();
-        const lastName = row.last_name.trim();
-        if (batchAccountType === 'admin') {
+        if (batchAccountType === 'section') {
+          const sectionName = String(row.section_name || '').trim();
+          const teacherEmail = String(row.teacher_email || '').trim().toLowerCase();
+          
+          let teacherId = currentAdminId;
+          if (teacherEmail) {
+            const foundTeacher = profiles.find(p => String(p.email || '').trim().toLowerCase() === teacherEmail && isAdminProfile(p));
+            if (foundTeacher) {
+              teacherId = foundTeacher.id;
+            }
+          }
+          
+          const payload = {
+            name: sectionName,
+            teacher_id: teacherId || null,
+            created_by: currentAdminId || null,
+            updated_at: new Date().toISOString(),
+          };
+          
+          const { data: secData, error: secError } = await supabase.from('sections').insert(payload).select('*').single();
+          if (secError) throw secError;
+          
+          await recordAuditLog({
+            action: 'create',
+            entityType: 'sections',
+            entityId: secData?.id || null,
+            oldValues: null,
+            newValues: secData || payload,
+          });
+        } else {
+          const email = row.email.trim();
+          const firstName = row.first_name.trim();
+          const lastName = row.last_name.trim();
+          if (batchAccountType === 'admin') {
           const { user, profile, invitation_sent } = await createConfirmedAdminUser({
             email,
             redirect_to: getAccountInviteRedirectUrl(),
@@ -3229,18 +3290,29 @@ function AdminDashboardPage() {
           });
           await assignUserToSection(user.id, batchSectionId);
         }
+      }
 
         createdCount += 1;
       }
 
-      await refreshProfiles();
-      if (batchAccountType === 'admin') await refreshRbacData();
-      showToast(`${createdCount} ${batchAccountType === 'admin' ? 'admin' : 'user'} account${createdCount === 1 ? '' : 's'} created. Welcome invite${createdCount === 1 ? '' : 's'} sent.`);
-      setSuccessModal({
-        title: 'Batch Account Creation Successful',
-        message: `${createdCount} ${batchAccountType === 'admin' ? 'admin' : 'user'} account${createdCount === 1 ? '' : 's'} have been successfully created.`,
-        emailMessage: 'Please ask the user(s) to check their email inbox for a verification/invitation link to set up their password.'
-      });
+      if (batchAccountType === 'section') {
+        await refreshRbacData();
+        showToast(`${createdCount} section${createdCount === 1 ? '' : 's'} created successfully.`);
+        setSuccessModal({
+          title: 'Batch Section Creation Successful',
+          message: `${createdCount} section${createdCount === 1 ? '' : 's'} have been successfully created.`,
+          emailMessage: null
+        });
+      } else {
+        await refreshProfiles();
+        if (batchAccountType === 'admin') await refreshRbacData();
+        showToast(`${createdCount} ${batchAccountType === 'admin' ? 'admin' : 'user'} account${createdCount === 1 ? '' : 's'} created. Welcome invite${createdCount === 1 ? '' : 's'} sent.`);
+        setSuccessModal({
+          title: 'Batch Account Creation Successful',
+          message: `${createdCount} ${batchAccountType === 'admin' ? 'admin' : 'user'} account${createdCount === 1 ? '' : 's'} have been successfully created.`,
+          emailMessage: 'Please ask the user(s) to check their email inbox for a verification/invitation link to set up their password.'
+        });
+      }
       setShowBatchAccountModal(false);
       resetBatchImportState();
     } catch (batchError) {
@@ -4230,7 +4302,16 @@ function AdminDashboardPage() {
                 </div>
                 <hr className="admin-section-divider" />
                 <article className="admin-card admin-management-card">
-                  <div className="admin-card-head" style={{ justifyContent: 'flex-end' }}>
+                  <div className="admin-card-head" style={{ gap: '10px', flexWrap: 'wrap' }}>
+                    <div className="admin-search-box" style={{ flex: 1, margin: 0 }}>
+                      <HiMagnifyingGlass />
+                      <input 
+                        type="text" 
+                        placeholder="Search admins..." 
+                        value={adminSearchQuery} 
+                        onChange={e => { setAdminSearchQuery(e.target.value); setAdminRosterPage(1); }} 
+                      />
+                    </div>
                     <button type="button" className="admin-btn admin-btn--primary" onClick={() => setShowCreateAdminModal(true)}>Create Admin</button>
                   </div>
                   <select
@@ -4530,7 +4611,16 @@ function AdminDashboardPage() {
             </div>
             <hr className="admin-section-divider" />
             <div className="admin-card">
-              <div className="admin-card-head" style={{ justifyContent: 'flex-end' }}>
+              <div className="admin-card-head" style={{ gap: '10px', flexWrap: 'wrap' }}>
+                <div className="admin-search-box" style={{ flex: 1, margin: 0 }}>
+                  <HiMagnifyingGlass />
+                  <input 
+                    type="text" 
+                    placeholder={`Search ${contentTab}...`} 
+                    value={contentSearchQuery} 
+                    onChange={e => { setContentSearchQuery(e.target.value); setContentPage(1); }} 
+                  />
+                </div>
                 <div className="admin-content-head-actions">
                   <select className="admin-filter-select" value={contentLevelFilter} onChange={e => setContentLevelFilter(e.target.value)} aria-label="Filter content by journey">
                     <option value="all">All Journeys</option>
@@ -4875,8 +4965,9 @@ function AdminDashboardPage() {
             <label className="admin-create-field">
               <span>Account Type</span>
               <select className="admin-filter-select" value={batchAccountType} onChange={handleBatchAccountTypeChange}>
-                <option value="user">Users</option>
+                <option value="user">Users (Students)</option>
                 <option value="admin">Admins</option>
+                <option value="section">Sections</option>
               </select>
             </label>
           ) : (
@@ -4924,19 +5015,37 @@ function AdminDashboardPage() {
                 <table className="admin-table admin-batch-preview-table">
                   <thead>
                     <tr>
-                      <th>Last Name</th>
-                      <th>First Name</th>
-                      {batchAccountType !== 'admin' && <th>ID / Student No.</th>}
-                      <th>Email</th>
+                      {batchAccountType === 'section' ? (
+                        <>
+                          <th>Section Name</th>
+                          <th>Teacher Email</th>
+                        </>
+                      ) : (
+                        <>
+                          <th>Last Name</th>
+                          <th>First Name</th>
+                          {batchAccountType !== 'admin' && <th>ID / Student No.</th>}
+                          <th>Email</th>
+                        </>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
                     {batchPreviewRows.map(row => (
                       <tr key={row.rowNumber} className={batchPreviewInvalidRowNumbers.has(row.rowNumber) ? 'is-invalid' : ''}>
-                        <td>{row.last_name || '-'}</td>
-                        <td>{row.first_name || '-'}</td>
-                        {batchAccountType !== 'admin' && <td>{row.student_number || '-'}</td>}
-                        <td>{row.email || '-'}</td>
+                        {batchAccountType === 'section' ? (
+                          <>
+                            <td>{row.section_name || '-'}</td>
+                            <td>{row.teacher_email || '-'}</td>
+                          </>
+                        ) : (
+                          <>
+                            <td>{row.last_name || '-'}</td>
+                            <td>{row.first_name || '-'}</td>
+                            {batchAccountType !== 'admin' && <td>{row.student_number || '-'}</td>}
+                            <td>{row.email || '-'}</td>
+                          </>
+                        )}
                       </tr>
                     ))}
                   </tbody>

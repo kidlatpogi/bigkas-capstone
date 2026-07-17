@@ -118,9 +118,33 @@ function SettingsPageMobile() {
     localStorage.setItem(AUTO_NEXT_KEY, autoNext.toString());
   }, [autoNext]);
 
+  const previewAudioRef = React.useRef(null);
+
+  const playVoiceSample = (voiceId) => {
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause();
+      previewAudioRef.current = null;
+    }
+    const sampleUrl = voiceId === 'voice2'
+      ? 'https://assets.bigkas.site/Voices/Voice%202%20-%20Sample.mp3'
+      : 'https://assets.bigkas.site/Voices/Voice%201%20-%20Sample.mp3';
+    
+    const audio = new Audio(sampleUrl);
+    previewAudioRef.current = audio;
+    audio.play().catch(err => console.log('Audio playback failed:', err));
+  };
+
   useEffect(() => {
     localStorage.setItem('bigkas_b01_voice', voicePreference);
   }, [voicePreference]);
+
+  useEffect(() => {
+    return () => {
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+      }
+    };
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -261,7 +285,11 @@ function SettingsPageMobile() {
                       <select 
                         className="sp-select"
                         value={voicePreference}
-                        onChange={(e) => setVoicePreference(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setVoicePreference(val);
+                          playVoiceSample(val);
+                        }}
                       >
                         <option value="voice1">Voice 1 (Male)</option>
                         <option value="voice2">Voice 2 (Female)</option>

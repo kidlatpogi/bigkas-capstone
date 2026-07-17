@@ -3655,8 +3655,8 @@ function AdminDashboardPage() {
       <section className="admin-main">
         <header className="admin-header">
           <div>
-            <p className="admin-kicker">Bigkas Analytics Engine</p>
-            <h1>Bigkas Command Center</h1>
+            <p className="admin-kicker">Bigkas Command Center</p>
+            <h1>{navItems.find(i => i.key === activePage)?.label || 'Command Center'}</h1>
             <p className="admin-subtitle">Role: <strong>{role === 'superadmin' ? 'Super Admin' : role === 'admin' ? 'Admin' : 'unknown'}</strong></p>
           </div>
         </header>
@@ -3711,28 +3711,48 @@ function AdminDashboardPage() {
                 </article>
               )}
             </section>
-            <section className="admin-grid admin-grid-1">
-              <article className="admin-card"><h3>User Registration</h3><div className="admin-chart-container">
-                {loading ? <Skeleton height={300} /> : <ResponsiveContainer width="100%" height={300}><AreaChart data={joinTrendData}><XAxis dataKey="date" /><YAxis /><Tooltip /><Area type="monotone" dataKey="users" name="Users" stroke="#33D2A4" fill="#33D2A433" /></AreaChart></ResponsiveContainer>}
-              </div></article>
-              <article className="admin-card"><h3>User Level Distribution</h3><div className="admin-chart-container">
-                {loading ? <Skeleton height={300} /> : <ResponsiveContainer width="100%" height={300}><BarChart data={levelBarData}><XAxis dataKey="level" /><YAxis /><Tooltip /><Bar dataKey="users" name="Users" fill="#33D2A4" radius={[8,8,0,0]} /></BarChart></ResponsiveContainer>}
-              </div></article>
+            <section className="admin-grid admin-grid-1" style={{ gap: '2rem' }}>
+              <div>
+                <div className="admin-section-header">
+                  <h2>User Registration</h2>
+                  <p className="admin-section-subtitle">Track new user sign-ups and registration trends over time.</p>
+                </div>
+                <hr className="admin-section-divider" />
+                <article className="admin-card">
+                  <div className="admin-chart-container">
+                    {loading ? <Skeleton height={300} /> : <ResponsiveContainer width="100%" height={300}><AreaChart data={joinTrendData}><XAxis dataKey="date" /><YAxis /><Tooltip /><Area type="monotone" dataKey="users" name="Users" stroke="#33D2A4" fill="#33D2A433" /></AreaChart></ResponsiveContainer>}
+                  </div>
+                </article>
+              </div>
+
+              <div>
+                <div className="admin-section-header">
+                  <h2>User Level Distribution</h2>
+                  <p className="admin-section-subtitle">Analyze how active users are distributed across Bigkas speaker proficiency levels.</p>
+                </div>
+                <hr className="admin-section-divider" />
+                <article className="admin-card">
+                  <div className="admin-chart-container">
+                    {loading ? <Skeleton height={300} /> : <ResponsiveContainer width="100%" height={300}><BarChart data={levelBarData}><XAxis dataKey="level" /><YAxis /><Tooltip /><Bar dataKey="users" name="Users" fill="#33D2A4" radius={[8,8,0,0]} /></BarChart></ResponsiveContainer>}
+                  </div>
+                </article>
+              </div>
             </section>
           </>
         )}
 
         {activePage === 'analytics' && (
           <>
+            <div className="admin-section-header">
+              <h2>{isSuperadmin ? 'System Analytics' : 'Section Analytics'}</h2>
+              <p className="admin-section-subtitle">
+                {isSuperadmin
+                  ? 'Super Admin view: all users, sections, confidence levels, and system monitoring.'
+                  : 'Admin view: only users and performance data from your assigned sections.'}
+              </p>
+            </div>
+            <hr className="admin-section-divider" />
             <section className="admin-analytics-filter-card">
-              <div className="admin-analytics-filter-copy">
-                <h3>{isSuperadmin ? 'System Analytics' : 'Section Analytics'}</h3>
-                <p>
-                  {isSuperadmin
-                    ? 'Super Admin view: all users, sections, confidence levels, and system monitoring.'
-                    : 'Admin view: only users and performance data from your assigned sections.'}
-                </p>
-              </div>
               <div className="admin-analytics-filters">
                 <label>
                   <span>Date Range</span>
@@ -3764,185 +3784,200 @@ function AdminDashboardPage() {
             </section>
 
             <section className="admin-grid admin-grid-1">
-              <article className="admin-card admin-tiered-scoring-card">
-                <div className="admin-card-head">
-                  <div>
-                    <h3>Tiered Scoring</h3>
-                    <p className="admin-chart-note">Users are grouped by attempted activities in the 30-activity confidence progression.</p>
+              <div>
+                <div className="admin-section-header">
+                  <h2>Tiered Scoring</h2>
+                  <p className="admin-section-subtitle">Users are grouped by attempted activities in the 30-activity confidence progression.</p>
+                </div>
+                <hr className="admin-section-divider" />
+                <article className="admin-card admin-tiered-scoring-card">
+                  <div className="admin-card-head" style={{ justifyContent: 'flex-end' }}>
+                    <label className="admin-inline-filter">
+                      <span>Speaker Level</span>
+                      <select className="admin-filter-select" value={analyticsSpeakerLevelFilter} onChange={e => setAnalyticsSpeakerLevelFilter(e.target.value)}>
+                        <option value="all">All Levels</option>
+                        <option value="1">Level 1: Novice</option>
+                        <option value="2">Level 2: Beginner</option>
+                        <option value="3">Level 3: Intermediate</option>
+                        <option value="4">Level 4: Advanced</option>
+                        <option value="5">Level 5: Expert</option>
+                      </select>
+                    </label>
                   </div>
-                  <label className="admin-inline-filter">
-                    <span>Speaker Level</span>
-                    <select className="admin-filter-select" value={analyticsSpeakerLevelFilter} onChange={e => setAnalyticsSpeakerLevelFilter(e.target.value)}>
-                      <option value="all">All Levels</option>
-                      <option value="1">Level 1: Novice</option>
-                      <option value="2">Level 2: Beginner</option>
-                      <option value="3">Level 3: Intermediate</option>
-                      <option value="4">Level 4: Advanced</option>
-                      <option value="5">Level 5: Expert</option>
-                    </select>
-                  </label>
-                </div>
-                <div className="admin-chart-container">
-                  {loading ? <Skeleton height={300} /> : analyticsConfidenceRows.some(row => row.students) ? (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={analyticsConfidenceRows}>
-                        <XAxis dataKey="range" />
-                        <YAxis allowDecimals={false} />
-                        <Tooltip />
-                        <Bar dataKey="students" fill="#33D2A4" radius={[8, 8, 0, 0]} name="Users" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : <div className="admin-empty-chart">No confidence progress yet</div>}
-                </div>
-              </article>
+                  <div className="admin-chart-container">
+                    {loading ? <Skeleton height={300} /> : analyticsConfidenceRows.some(row => row.students) ? (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={analyticsConfidenceRows}>
+                          <XAxis dataKey="range" />
+                          <YAxis allowDecimals={false} />
+                          <Tooltip />
+                          <Bar dataKey="students" fill="#33D2A4" radius={[8, 8, 0, 0]} name="Users" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : <div className="admin-empty-chart">No confidence progress yet</div>}
+                  </div>
+                </article>
+              </div>
             </section>
 
             <section className="admin-grid admin-grid-1">
-              <article className="admin-card">
-                <div className="admin-card-head">
-                  <div>
-                    <h3>Level Pass Rate</h3>
-                    <p className="admin-chart-note">Shows how many users passed or have not passed each speaker level requirement.</p>
+              <div>
+                <div className="admin-section-header">
+                  <h2>Level Pass Rate</h2>
+                  <p className="admin-section-subtitle">Shows how many users passed or have not passed each speaker level requirement.</p>
+                </div>
+                <hr className="admin-section-divider" />
+                <article className="admin-card">
+                  <div className="admin-card-head" style={{ justifyContent: 'flex-end' }}>
+                    <label className="admin-inline-filter">
+                      <span>Speaker Level</span>
+                      <select className="admin-filter-select" value={analyticsSpeakerLevelFilter} onChange={e => setAnalyticsSpeakerLevelFilter(e.target.value)}>
+                        <option value="all">All Levels</option>
+                        <option value="1">Level 1: Novice</option>
+                        <option value="2">Level 2: Beginner</option>
+                        <option value="3">Level 3: Intermediate</option>
+                        <option value="4">Level 4: Advanced</option>
+                        <option value="5">Level 5: Expert</option>
+                      </select>
+                    </label>
                   </div>
-                  <label className="admin-inline-filter">
-                    <span>Speaker Level</span>
-                    <select className="admin-filter-select" value={analyticsSpeakerLevelFilter} onChange={e => setAnalyticsSpeakerLevelFilter(e.target.value)}>
-                      <option value="all">All Levels</option>
-                      <option value="1">Level 1: Novice</option>
-                      <option value="2">Level 2: Beginner</option>
-                      <option value="3">Level 3: Intermediate</option>
-                      <option value="4">Level 4: Advanced</option>
-                      <option value="5">Level 5: Expert</option>
-                    </select>
-                  </label>
-                </div>
-                <div className="admin-chart-container admin-level-pass-chart">
-                  {loading ? <Skeleton height={300} /> : analyticsLevelPassRows.length ? (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={analyticsLevelPassRows}>
-                        <XAxis dataKey="level" />
-                        <YAxis allowDecimals={false} />
-                        <Tooltip />
-                        <Bar dataKey="passed" stackId="level-pass" fill="#33D2A4" radius={[0, 0, 8, 8]} name="Passed" />
-                        <Bar dataKey="notPassed" stackId="level-pass" fill="#F87171" radius={[8, 8, 0, 0]} name="Not Passed" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : <div className="admin-empty-chart">No users found for this filter</div>}
-                </div>
-              </article>
+                  <div className="admin-chart-container admin-level-pass-chart">
+                    {loading ? <Skeleton height={300} /> : analyticsLevelPassRows.length ? (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={analyticsLevelPassRows}>
+                          <XAxis dataKey="level" />
+                          <YAxis allowDecimals={false} />
+                          <Tooltip />
+                          <Bar dataKey="passed" stackId="level-pass" fill="#33D2A4" radius={[0, 0, 8, 8]} name="Passed" />
+                          <Bar dataKey="notPassed" stackId="level-pass" fill="#F87171" radius={[8, 8, 0, 0]} name="Not Passed" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : <div className="admin-empty-chart">No users found for this filter</div>}
+                  </div>
+                </article>
+              </div>
             </section>
 
             <section className="admin-grid admin-grid-1">
-              <article className="admin-card">
-                <div className="admin-card-head">
-                  <div>
-                    <h3>Stage Pass Rate</h3>
-                    <p className="admin-chart-note">Shows how many users passed or have not passed each individual stage requirement.</p>
+              <div>
+                <div className="admin-section-header">
+                  <h2>Stage Pass Rate</h2>
+                  <p className="admin-section-subtitle">Shows how many users passed or have not passed each individual stage requirement.</p>
+                </div>
+                <hr className="admin-section-divider" />
+                <article className="admin-card">
+                  <div className="admin-card-head" style={{ justifyContent: 'flex-end' }}>
+                    <label className="admin-inline-filter">
+                      <span>Speaker Level</span>
+                      <select className="admin-filter-select" value={analyticsSpeakerLevelFilter} onChange={e => setAnalyticsSpeakerLevelFilter(e.target.value)}>
+                        <option value="all">All Levels</option>
+                        <option value="1">Level 1: Novice</option>
+                        <option value="2">Level 2: Beginner</option>
+                        <option value="3">Level 3: Intermediate</option>
+                        <option value="4">Level 4: Advanced</option>
+                        <option value="5">Level 5: Expert</option>
+                      </select>
+                    </label>
                   </div>
-                  <label className="admin-inline-filter">
-                    <span>Speaker Level</span>
-                    <select className="admin-filter-select" value={analyticsSpeakerLevelFilter} onChange={e => setAnalyticsSpeakerLevelFilter(e.target.value)}>
-                      <option value="all">All Levels</option>
-                      <option value="1">Level 1: Novice</option>
-                      <option value="2">Level 2: Beginner</option>
-                      <option value="3">Level 3: Intermediate</option>
-                      <option value="4">Level 4: Advanced</option>
-                      <option value="5">Level 5: Expert</option>
-                    </select>
-                  </label>
-                </div>
-                <div className="admin-chart-container admin-level-pass-chart">
-                  {loading ? <Skeleton height={300} /> : analyticsStagePassRows.length ? (
-                    <ResponsiveContainer width="100%" height={320}>
-                      <BarChart data={paginatedAnalyticsStagePassRows}>
-                        <XAxis dataKey="chartLabel" />
-                        <YAxis allowDecimals={false} />
-                        <Tooltip />
-                        <Bar dataKey="passed" stackId="stage-pass" fill="#33D2A4" radius={[0, 0, 8, 8]} name="Passed" />
-                        <Bar dataKey="notPassed" stackId="stage-pass" fill="#F87171" radius={[8, 8, 0, 0]} name="Not Passed" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : <div className="admin-empty-chart">No stages found for this filter</div>}
-                </div>
-                <div className="admin-table-wrap admin-confidence-table-wrap admin-level-pass-table-wrap"><table className="admin-table admin-confidence-table admin-stage-pass-table">
-                  <thead><tr><th>Level</th><th>Stage</th><th>Stage Title</th><th>Target Focus</th><th>Passed</th><th>Not Passed</th><th>Pass Rate</th></tr></thead>
-                  <tbody>{paginatedAnalyticsStagePassRows.map(row => (
-                    <tr key={row.id}>
-                      <td>{row.level}</td>
-                      <td>{row.stageLabel}</td>
-                      <td>{row.title}</td>
-                      <td>{row.focus}</td>
-                      <td>{row.passed}</td>
-                      <td>{row.notPassed}</td>
-                      <td>{row.passRate}%</td>
-                    </tr>
-                  ))}</tbody>
-                </table></div>
-                {analyticsStagePassRows.length > 0 && (
-                  <div className="admin-pagination admin-stage-pass-pagination">
-                    <span className="admin-pagination-info">
-                      Showing {analyticsStageStartIndex + 1}-{Math.min(analyticsStageStartIndex + paginatedAnalyticsStagePassRows.length, analyticsStagePassRows.length)} of {analyticsStagePassRows.length} stages
-                    </span>
-                    <div className="admin-pagination-controls">
-                      <button type="button" onClick={() => setAnalyticsStagePage(page => Math.max(1, page - 1))} disabled={safeAnalyticsStagePage === 1}>Prev</button>
-                      <span>{safeAnalyticsStagePage} / {analyticsStageTotalPages}</span>
-                      <button type="button" onClick={() => setAnalyticsStagePage(page => Math.min(analyticsStageTotalPages, page + 1))} disabled={safeAnalyticsStagePage === analyticsStageTotalPages}>Next</button>
+                  <div className="admin-chart-container admin-level-pass-chart">
+                    {loading ? <Skeleton height={300} /> : analyticsStagePassRows.length ? (
+                      <ResponsiveContainer width="100%" height={320}>
+                        <BarChart data={paginatedAnalyticsStagePassRows}>
+                          <XAxis dataKey="chartLabel" />
+                          <YAxis allowDecimals={false} />
+                          <Tooltip />
+                          <Bar dataKey="passed" stackId="stage-pass" fill="#33D2A4" radius={[0, 0, 8, 8]} name="Passed" />
+                          <Bar dataKey="notPassed" stackId="stage-pass" fill="#F87171" radius={[8, 8, 0, 0]} name="Not Passed" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : <div className="admin-empty-chart">No stages found for this filter</div>}
+                  </div>
+                  <div className="admin-table-wrap admin-confidence-table-wrap admin-level-pass-table-wrap"><table className="admin-table admin-confidence-table admin-stage-pass-table">
+                    <thead><tr><th>Level</th><th>Stage</th><th>Stage Title</th><th>Target Focus</th><th>Passed</th><th>Not Passed</th><th>Pass Rate</th></tr></thead>
+                    <tbody>{paginatedAnalyticsStagePassRows.map(row => (
+                      <tr key={row.id}>
+                        <td>{row.level}</td>
+                        <td>{row.stageLabel}</td>
+                        <td>{row.title}</td>
+                        <td>{row.focus}</td>
+                        <td>{row.passed}</td>
+                        <td>{row.notPassed}</td>
+                        <td>{row.passRate}%</td>
+                      </tr>
+                    ))}</tbody>
+                  </table></div>
+                  {analyticsStagePassRows.length > 0 && (
+                    <div className="admin-pagination admin-stage-pass-pagination">
+                      <span className="admin-pagination-info">
+                        Showing {analyticsStageStartIndex + 1}-{Math.min(analyticsStageStartIndex + paginatedAnalyticsStagePassRows.length, analyticsStagePassRows.length)} of {analyticsStagePassRows.length} stages
+                      </span>
+                      <div className="admin-pagination-controls">
+                        <button type="button" onClick={() => setAnalyticsStagePage(page => Math.max(1, page - 1))} disabled={safeAnalyticsStagePage === 1}>Prev</button>
+                        <span>{safeAnalyticsStagePage} / {analyticsStageTotalPages}</span>
+                        <button type="button" onClick={() => setAnalyticsStagePage(page => Math.min(analyticsStageTotalPages, page + 1))} disabled={safeAnalyticsStagePage === analyticsStageTotalPages}>Next</button>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </article>
+                  )}
+                </article>
+              </div>
             </section>
 
             <section className="admin-grid admin-grid-1">
-              <article className="admin-card">
-                <h3>Skill Breakdown</h3>
-                <p className="admin-chart-note">Separate confidence measurements for Visual, Vocal, and Verbal scoring.</p>
-                <div className="admin-table-wrap admin-confidence-table-wrap"><table className="admin-table admin-confidence-table">
-                  <thead><tr><th>Skill</th><th>Average</th><th>Measured Users</th><th>Source</th></tr></thead>
-                  <tbody>{analyticsSkillBreakdown.map(row => (
-                    <tr key={row.skill}>
-                      <td><strong>{row.skill}</strong></td>
-                      <td>{row.average == null ? 'N/A' : `${row.average}%`}</td>
-                      <td>{row.measuredStudents}</td>
-                      <td>{row.description}</td>
-                    </tr>
-                  ))}</tbody>
-                </table></div>
-              </article>
+              <div>
+                <div className="admin-section-header">
+                  <h2>Skill Breakdown</h2>
+                  <p className="admin-section-subtitle">Separate confidence measurements for Visual, Vocal, and Verbal scoring.</p>
+                </div>
+                <hr className="admin-section-divider" />
+                <article className="admin-card">
+                  <div className="admin-table-wrap admin-confidence-table-wrap"><table className="admin-table admin-confidence-table">
+                    <thead><tr><th>Skill</th><th>Average</th><th>Measured Users</th><th>Source</th></tr></thead>
+                    <tbody>{analyticsSkillBreakdown.map(row => (
+                      <tr key={row.skill}>
+                        <td><strong>{row.skill}</strong></td>
+                        <td>{row.average == null ? 'N/A' : `${row.average}%`}</td>
+                        <td>{row.measuredStudents}</td>
+                        <td>{row.description}</td>
+                      </tr>
+                    ))}</tbody>
+                  </table></div>
+                </article>
+              </div>
             </section>
 
-            <section className="admin-card">
-              <div className="admin-card-head">
-                <div>
-                  <h3>User Confidence Rankings</h3>
-                  <p className="admin-note">Ranked user progress across activities and Visual, Vocal, and Verbal scores.</p>
-                </div>
+            <div>
+              <div className="admin-section-header">
+                <h2>User Confidence Rankings</h2>
+                <p className="admin-section-subtitle">Ranked user progress across activities and Visual, Vocal, and Verbal scores.</p>
               </div>
-              <div className="admin-table-wrap admin-confidence-rank-table-wrap"><table className="admin-table admin-confidence-rank-table">
-                <thead><tr><th>Rank</th><th>User</th><th>Section</th><th>Activities</th><th>Level</th><th>Visual</th><th>Vocal</th><th>Verbal</th><th>Last Active</th></tr></thead>
-                <tbody>{paginatedRankedStudents.length ? paginatedRankedStudents.map((student, index) => (
-                  <tr key={student.id}>
-                    <td>{((rankingsPage - 1) * RANKINGS_PER_PAGE) + index + 1}</td>
-                    <td><strong>{student.name}</strong></td>
-                    <td>{student.section}</td>
-                    <td>{student.completedActivities}/30</td>
-                    <td>{formatAdminSpeakerLevel(student.speakerLevel)}</td>
-                    <td>{student.visualScore == null ? 'N/A' : `${student.visualScore}%`}</td>
-                    <td>{student.vocalScore == null ? 'N/A' : `${student.vocalScore}%`}</td>
-                    <td>{student.verbalScore == null ? 'N/A' : `${student.verbalScore}%`}</td>
-                    <td>{student.lastActiveMs ? new Date(student.lastActiveMs).toLocaleString() : '-'}</td>
-                  </tr>
-                )) : <tr><td colSpan={9}>No users available for this scope.</td></tr>}</tbody>
-              </table></div>
-              <div className="admin-pagination">
-                <span className="admin-pagination-info">Showing {analyticsRankedStudentRows.length ? ((rankingsPage - 1) * RANKINGS_PER_PAGE) + 1 : 0}-{Math.min(rankingsPage * RANKINGS_PER_PAGE, analyticsRankedStudentRows.length)} of {analyticsRankedStudentRows.length}</span>
-                <div className="admin-pagination-controls">
-                  <button type="button" disabled={rankingsPage === 1} onClick={() => setRankingsPage(p => Math.max(1, p - 1))}>Prev</button>
-                  <button type="button" disabled>{rankingsPage} / {totalRankingsPages}</button>
-                  <button type="button" disabled={rankingsPage === totalRankingsPages} onClick={() => setRankingsPage(p => Math.min(totalRankingsPages, p + 1))}>Next</button>
+              <hr className="admin-section-divider" />
+              <section className="admin-card">
+                <div className="admin-table-wrap admin-confidence-rank-table-wrap"><table className="admin-table admin-confidence-rank-table">
+                  <thead><tr><th>Rank</th><th>User</th><th>Section</th><th>Activities</th><th>Level</th><th>Visual</th><th>Vocal</th><th>Verbal</th><th>Last Active</th></tr></thead>
+                  <tbody>{paginatedRankedStudents.length ? paginatedRankedStudents.map((student, index) => (
+                    <tr key={student.id}>
+                      <td>{((rankingsPage - 1) * RANKINGS_PER_PAGE) + index + 1}</td>
+                      <td><strong>{student.name}</strong></td>
+                      <td>{student.section}</td>
+                      <td>{student.completedActivities}/30</td>
+                      <td>{formatAdminSpeakerLevel(student.speakerLevel)}</td>
+                      <td>{student.visualScore == null ? 'N/A' : `${student.visualScore}%`}</td>
+                      <td>{student.vocalScore == null ? 'N/A' : `${student.vocalScore}%`}</td>
+                      <td>{student.verbalScore == null ? 'N/A' : `${student.verbalScore}%`}</td>
+                      <td>{student.lastActiveMs ? new Date(student.lastActiveMs).toLocaleString() : '-'}</td>
+                    </tr>
+                  )) : <tr><td colSpan={9}>No users available for this scope.</td></tr>}</tbody>
+                </table></div>
+                <div className="admin-pagination">
+                  <span className="admin-pagination-info">Showing {analyticsRankedStudentRows.length ? ((rankingsPage - 1) * RANKINGS_PER_PAGE) + 1 : 0}-{Math.min(rankingsPage * RANKINGS_PER_PAGE, analyticsRankedStudentRows.length)} of {analyticsRankedStudentRows.length}</span>
+                  <div className="admin-pagination-controls">
+                    <button type="button" disabled={rankingsPage === 1} onClick={() => setRankingsPage(p => Math.max(1, p - 1))}>Prev</button>
+                    <button type="button" disabled>{rankingsPage} / {totalRankingsPages}</button>
+                    <button type="button" disabled={rankingsPage === totalRankingsPages} onClick={() => setRankingsPage(p => Math.min(totalRankingsPages, p + 1))}>Next</button>
+                  </div>
                 </div>
-              </div>
-            </section>
+              </section>
+            </div>
           </>
         )}
 
@@ -3950,136 +3985,151 @@ function AdminDashboardPage() {
           <>
           {isSuperadmin && (
             <section className="admin-grid admin-grid-2 admin-user-setup-grid">
-              <article className="admin-card admin-management-card">
-                <div className="admin-card-head">
-                  <div>
-                    <h3>Admin Accounts</h3>
-                    <p className="admin-note">{adminRosterTitle}</p>
+              <div>
+                <div className="admin-section-header">
+                  <h2>Admin Accounts</h2>
+                  <p className="admin-section-subtitle">{adminRosterTitle}</p>
+                </div>
+                <hr className="admin-section-divider" />
+                <article className="admin-card admin-management-card">
+                  <div className="admin-card-head" style={{ justifyContent: 'flex-end' }}>
+                    <button type="button" className="admin-btn admin-btn--primary" onClick={() => setShowCreateAdminModal(true)}>Create Admin</button>
                   </div>
-                  <button type="button" className="admin-btn admin-btn--primary" onClick={() => setShowCreateAdminModal(true)}>Create Admin</button>
-                </div>
-                <select
-                  className="admin-filter-select admin-roster-filter"
-                  value={adminStatusFilter}
-                  onChange={e => setAdminStatusFilter(e.target.value)}
-                  aria-label="Filter admin accounts by status"
-                >
-                  <option value="active">Active Admins</option>
-                  <option value="deleted">Archived Admins</option>
-                </select>
-                <div className="admin-roster-list admin-roster-list--compact">
-                  {adminAccounts.length ? (
-                    adminAccounts.slice(0, 4).map(a => (
-                      <div key={a.id} className={`admin-roster-item ${isDeletedProfile(a) ? 'is-deleted' : 'is-active'}`}>
-                        <div className="admin-roster-info">
-                          <strong>{getDisplayName(a, a.id)}</strong>
-                          <span>{a.role === 'superadmin' ? 'Super Admin' : findAccessRole(adminAccessRoles, adminAccessAssignments[a.id])?.name || 'Admin'} - {isDeletedProfile(a) ? 'Archived' : 'Active'}</span>
+                  <select
+                    className="admin-filter-select admin-roster-filter"
+                    value={adminStatusFilter}
+                    onChange={e => setAdminStatusFilter(e.target.value)}
+                    aria-label="Filter admin accounts by status"
+                  >
+                    <option value="active">Active Admins</option>
+                    <option value="deleted">Archived Admins</option>
+                  </select>
+                  <div className="admin-roster-list admin-roster-list--compact">
+                    {adminAccounts.length ? (
+                      adminAccounts.slice(0, 4).map(a => (
+                        <div key={a.id} className={`admin-roster-item ${isDeletedProfile(a) ? 'is-deleted' : 'is-active'}`}>
+                          <div className="admin-roster-info">
+                            <strong>{getDisplayName(a, a.id)}</strong>
+                            <span>{a.role === 'superadmin' ? 'Super Admin' : findAccessRole(adminAccessRoles, adminAccessAssignments[a.id])?.name || 'Admin'} - {isDeletedProfile(a) ? 'Archived' : 'Active'}</span>
+                          </div>
+                          <button type="button" className="admin-action-btn" onClick={() => openEditAdmin(a)} title="Edit admin"><HiOutlinePencilSquare /></button>
                         </div>
-                        <button type="button" className="admin-action-btn" onClick={() => openEditAdmin(a)} title="Edit admin"><HiOutlinePencilSquare /></button>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="admin-empty-inline">No {adminStatusFilter === 'deleted' ? 'archived' : 'active'} admin accounts</div>
-                  )}
-                  {adminAccounts.length > 4 && <p className="admin-note">Showing 4 of {adminAccounts.length}. Use search/filter later for a full roster view.</p>}
-                </div>
-              </article>
-              <article className="admin-card admin-access-role-card admin-management-card">
-                <div className="admin-card-head">
+                      ))
+                    ) : (
+                      <div className="admin-empty-inline">No {adminStatusFilter === 'deleted' ? 'archived' : 'active'} admin accounts</div>
+                    )}
+                    {adminAccounts.length > 4 && <p className="admin-note">Showing 4 of {adminAccounts.length}. Use search/filter later for a full roster view.</p>}
+                  </div>
+                </article>
+              </div>
+
+              <div>
+                <div className="admin-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                   <div>
-                    <h3>Access Roles</h3>
-                    <p className="admin-note">Choose a role to review or edit permissions.</p>
+                    <h2>Access Roles</h2>
+                    <p className="admin-section-subtitle">Choose a role to review or edit permissions.</p>
                   </div>
                   <button type="button" className="admin-btn admin-btn--ghost" onClick={openNewAccessRole}>New Role</button>
                 </div>
-                <label className="admin-create-field">
-                  <span>Role</span>
-                  <select className="admin-filter-select" value={selectedAccessRoleId} onChange={e => setSelectedAccessRoleId(e.target.value)}>
-                    {accessRoleReviewOptions.map(roleTemplate => <option key={roleTemplate.id} value={roleTemplate.id}>{roleTemplate.name}</option>)}
-                  </select>
-                </label>
-                <div className="admin-role-summary">
-                  <strong>{selectedManagedAccessRole?.name || 'Role'}</strong>
-                  <span>{selectedManagedAccessRole?.description || 'No description'}</span>
-                  <p>{selectedManagedRolePermissions.length ? selectedManagedRolePermissions.join(', ') : 'No visible areas yet'}</p>
-                </div>
-                <div className="admin-card-actions">
-                  {!selectedManagedRoleIsStudent && <button type="button" className="admin-btn admin-btn--primary" onClick={openSelectedAccessRole}>Edit Permissions</button>}
-                  {selectedManagedAccessRole && !selectedManagedAccessRole.system && (
-                    <button type="button" className="admin-btn admin-btn--danger" onClick={() => requestDeleteAccessRole(selectedManagedAccessRole.id)}>Delete Role</button>
-                  )}
-                </div>
-              </article>
+                <hr className="admin-section-divider" />
+                <article className="admin-card admin-access-role-card admin-management-card">
+                  <label className="admin-create-field">
+                    <span>Role</span>
+                    <select className="admin-filter-select" value={selectedAccessRoleId} onChange={e => setSelectedAccessRoleId(e.target.value)}>
+                      {accessRoleReviewOptions.map(roleTemplate => <option key={roleTemplate.id} value={roleTemplate.id}>{roleTemplate.name}</option>)}
+                    </select>
+                  </label>
+                  <div className="admin-role-summary">
+                    <strong>{selectedManagedAccessRole?.name || 'Role'}</strong>
+                    <span>{selectedManagedAccessRole?.description || 'No description'}</span>
+                    <p>{selectedManagedRolePermissions.length ? selectedManagedRolePermissions.join(', ') : 'No visible areas yet'}</p>
+                  </div>
+                  <div className="admin-card-actions">
+                    {!selectedManagedRoleIsStudent && <button type="button" className="admin-btn admin-btn--primary" onClick={openSelectedAccessRole}>Edit Permissions</button>}
+                    {selectedManagedAccessRole && !selectedManagedAccessRole.system && (
+                      <button type="button" className="admin-btn admin-btn--danger" onClick={() => requestDeleteAccessRole(selectedManagedAccessRole.id)}>Delete Role</button>
+                    )}
+                  </div>
+                </article>
+              </div>
             </section>
           )}
-          <section className="admin-card admin-section-card">
-            <div className="admin-card-head">
+          <div>
+            <div className="admin-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
               <div>
-                <h3>Sections</h3>
-                <p className="admin-note">Admins manage users through assigned sections.</p>
+                <h2>Sections</h2>
+                <p className="admin-section-subtitle">Admins manage users through assigned sections.</p>
               </div>
               <button type="button" className="admin-btn admin-btn--ghost" onClick={openNewSection}>New Section</button>
             </div>
-            <div className="admin-table-controls" style={{ marginBottom: '16px' }}>
-              <div className="admin-table-actions" style={{ flexWrap: 'wrap', gap: '12px' }}>
-                <div className="admin-search-box">
-                  <HiMagnifyingGlass />
-                  <input
-                    type="text"
-                    placeholder="Search sections..."
-                    value={sectionSearchQuery}
+            <hr className="admin-section-divider" />
+            <section className="admin-card admin-section-card">
+              <div className="admin-table-controls" style={{ marginBottom: '16px' }}>
+                <div className="admin-table-actions" style={{ flexWrap: 'wrap', gap: '12px' }}>
+                  <div className="admin-search-box">
+                    <HiMagnifyingGlass />
+                    <input
+                      type="text"
+                      placeholder="Search sections..."
+                      value={sectionSearchQuery}
+                      onChange={(e) => {
+                        setSectionSearchQuery(e.target.value);
+                        setSectionPage(1);
+                      }}
+                    />
+                  </div>
+                  <select
+                    className="admin-filter-select"
+                    value={sectionSortKey}
                     onChange={(e) => {
-                      setSectionSearchQuery(e.target.value);
+                      setSectionSortKey(e.target.value);
                       setSectionPage(1);
                     }}
-                  />
+                    aria-label="Sort sections"
+                  >
+                    <option value="name_asc">Sort: Name A-Z</option>
+                    <option value="name_desc">Sort: Name Z-A</option>
+                    <option value="users_desc">Sort: Users High-Low</option>
+                    <option value="users_asc">Sort: Users Low-High</option>
+                  </select>
                 </div>
-                <select
-                  className="admin-filter-select"
-                  value={sectionSortKey}
-                  onChange={(e) => {
-                    setSectionSortKey(e.target.value);
-                    setSectionPage(1);
-                  }}
-                  aria-label="Sort sections"
-                >
-                  <option value="name_asc">Sort: Name A-Z</option>
-                  <option value="name_desc">Sort: Name Z-A</option>
-                  <option value="users_desc">Sort: Users High-Low</option>
-                  <option value="users_asc">Sort: Users Low-High</option>
-                </select>
               </div>
-            </div>
-            <div className="admin-section-list">
-              {paginatedSections.length ? paginatedSections.map(section => {
-                const count = sectionStudentIdsBySectionId.get(section.id)?.size || 0;
-                const teacher = profiles.find(profile => profile.id === section.teacher_id);
-                return (
-                  <div key={section.id} className="admin-section-item">
-                    <div>
-                      <strong>{section.name}</strong>
-                      <span>{count} user{count === 1 ? '' : 's'} - {getDisplayName(teacher, 'Unassigned admin')}</span>
+              <div className="admin-section-list">
+                {paginatedSections.length ? paginatedSections.map(section => {
+                  const count = sectionStudentIdsBySectionId.get(section.id)?.size || 0;
+                  const teacher = profiles.find(profile => profile.id === section.teacher_id);
+                  return (
+                    <div key={section.id} className="admin-section-item">
+                      <div>
+                        <strong>{section.name}</strong>
+                        <span>{count} user{count === 1 ? '' : 's'} - {getDisplayName(teacher, 'Unassigned admin')}</span>
+                      </div>
+                      <div className="admin-section-actions">
+                        <button type="button" className="admin-action-btn" onClick={() => editSection(section)} title="Edit section"><HiOutlinePencilSquare /></button>
+                        {canDeleteUsers && <button type="button" className="admin-action-btn is-delete" onClick={() => requestDeleteSection(section)} title="Delete section"><HiOutlineTrash /></button>}
+                      </div>
                     </div>
-                    <div className="admin-section-actions">
-                      <button type="button" className="admin-action-btn" onClick={() => editSection(section)} title="Edit section"><HiOutlinePencilSquare /></button>
-                      {canDeleteUsers && <button type="button" className="admin-action-btn is-delete" onClick={() => requestDeleteSection(section)} title="Delete section"><HiOutlineTrash /></button>}
-                    </div>
-                  </div>
-                );
-              }) : <div className="admin-empty-chart">No sections found</div>}
-            </div>
-            <div className="admin-pagination">
-              <span className="admin-pagination-info">Showing {filteredAndSortedSections.length ? ((sectionPage - 1) * SECTIONS_PER_PAGE) + 1 : 0}-{Math.min(sectionPage * SECTIONS_PER_PAGE, filteredAndSortedSections.length)} of {filteredAndSortedSections.length}</span>
-              <div className="admin-pagination-controls">
-                <button type="button" disabled={sectionPage === 1} onClick={() => setSectionPage(p => Math.max(1, p - 1))}>Prev</button>
-                <button type="button" disabled>{sectionPage} / {totalSectionPages}</button>
-                <button type="button" disabled={sectionPage === totalSectionPages} onClick={() => setSectionPage(p => Math.min(totalSectionPages, p + 1))}>Next</button>
+                  );
+                }) : <div className="admin-empty-chart">No sections found</div>}
               </div>
+              <div className="admin-pagination">
+                <span className="admin-pagination-info">Showing {filteredAndSortedSections.length ? ((sectionPage - 1) * SECTIONS_PER_PAGE) + 1 : 0}-{Math.min(sectionPage * SECTIONS_PER_PAGE, filteredAndSortedSections.length)} of {filteredAndSortedSections.length}</span>
+                <div className="admin-pagination-controls">
+                  <button type="button" disabled={sectionPage === 1} onClick={() => setSectionPage(p => Math.max(1, p - 1))}>Prev</button>
+                  <button type="button" disabled>{sectionPage} / {totalSectionPages}</button>
+                  <button type="button" disabled={sectionPage === totalSectionPages} onClick={() => setSectionPage(p => Math.min(totalSectionPages, p + 1))}>Next</button>
+                </div>
+              </div>
+            </section>
+          </div>
+          <div>
+            <div className="admin-section-header">
+              <h2>Account Management</h2>
+              <p className="admin-section-subtitle">Manage system users, journeys, levels, and statuses.</p>
             </div>
-          </section>
-          <section className="admin-card">
-            <div className="admin-table-controls">
-              <h3>Account Management</h3>
+            <hr className="admin-section-divider" />
+            <section className="admin-card">
+              <div className="admin-table-controls">
               <div className="admin-table-actions">
                 <div className="admin-search-box"><HiMagnifyingGlass /><input type="text" placeholder="Search..." value={userSearchQuery} onChange={e => { setUserSearchQuery(e.target.value); setUserPage(1); }} /></div>
                 {isSuperadmin && (
@@ -4193,18 +4243,28 @@ function AdminDashboardPage() {
               </div>
             </div>
           </section>
+          </div>
           </>
         )}
 
         {activePage === 'content' && (
-          <section className="admin-content-hub">
+          <div className="admin-content-hub">
             <div className="admin-tabs">
               {canViewActivities && <button className={`admin-tab-btn ${contentTab === 'activities' ? 'is-active' : ''}`} onClick={() => setContentTab('activities')}>Activities</button>}
               {canViewModules && <button className={`admin-tab-btn ${contentTab === 'modules' ? 'is-active' : ''}`} onClick={() => setContentTab('modules')}>Modules</button>}
             </div>
+            
+            <div className="admin-section-header">
+              <h2>{contentTab === 'activities' ? 'Activity Management' : 'Module Management'}</h2>
+              <p className="admin-section-subtitle">
+                {contentTab === 'activities'
+                  ? 'Manage pre-test baselines, practice activities, passing scores, and requirements.'
+                  : 'Manage reference sheets, educational lessons, and modules.'}
+              </p>
+            </div>
+            <hr className="admin-section-divider" />
             <div className="admin-card">
-              <div className="admin-card-head">
-                <h3>{contentTab === 'activities' ? 'Activity Management' : 'Module Management'}</h3>
+              <div className="admin-card-head" style={{ justifyContent: 'flex-end' }}>
                 <div className="admin-content-head-actions">
                   <select className="admin-filter-select" value={contentLevelFilter} onChange={e => setContentLevelFilter(e.target.value)} aria-label="Filter content by journey">
                     <option value="all">All Journeys</option>
@@ -4242,15 +4302,15 @@ function AdminDashboardPage() {
                 </div>
               </div>
             </div>
-          </section>
+          </div>
         )}
 
         {activePage === 'reports' && (
-          <section className="admin-card admin-report-card">
-            <div className="admin-card-head">
+          <div>
+            <div className="admin-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
               <div>
-                <h3>Reports Generation</h3>
-                <p className="admin-note">
+                <h2>Reports Generation</h2>
+                <p className="admin-section-subtitle">
                   {reportStartDate || reportEndDate ? (
                     <>
                       Showing reports {reportStartDate ? `from ${new Date(reportStartDate).toLocaleDateString()}` : ''} {reportEndDate ? `to ${new Date(reportEndDate).toLocaleDateString()}` : ''}
@@ -4260,11 +4320,13 @@ function AdminDashboardPage() {
                   )}
                 </p>
               </div>
-              <div className="admin-report-actions">
+              <div className="admin-report-actions no-print">
                 <button type="button" className="admin-btn admin-btn--ghost" onClick={() => window.print()}>Print Report</button>
                 <button type="button" className="admin-btn admin-btn--primary" onClick={saveReportExcel}>Save Excel</button>
               </div>
             </div>
+            <hr className="admin-section-divider" />
+            <section className="admin-card admin-report-card">
             <div className="admin-report-tabs">
               <button type="button" className={`admin-tab-btn ${reportType === 'teachers' ? 'is-active' : ''}`} onClick={() => setReportType('teachers')}>Admins</button>
               <button type="button" className={`admin-tab-btn ${reportType === 'students' ? 'is-active' : ''}`} onClick={() => setReportType('students')}>Users</button>
@@ -4370,12 +4432,18 @@ function AdminDashboardPage() {
               )}
             </div>
           </section>
+          </div>
         )}
 
         {activePage === 'audit' && isSuperadmin && (
-          <section className="admin-card">
-            <div className="admin-card-head">
-              <h3>System Audit Logs</h3>
+          <div>
+            <div className="admin-section-header">
+              <h2>System Audit Logs</h2>
+              <p className="admin-section-subtitle">Monitor and review administrative actions, system events, and security access logs.</p>
+            </div>
+            <hr className="admin-section-divider" />
+            <section className="admin-card">
+              <div className="admin-card-head" style={{ justifyContent: 'flex-end' }}>
               <div className="admin-audit-filters">
                 <div className="admin-search-box"><HiMagnifyingGlass /><input type="text" placeholder="Search Actor..." value={auditSearchQuery} onChange={e => { setAuditSearchQuery(e.target.value); setAuditPage(1); }} /></div>
                 <select className="admin-filter-select" value={auditActionFilter} onChange={e => { setAuditActionFilter(e.target.value); setAuditPage(1); }}>
@@ -4411,6 +4479,7 @@ function AdminDashboardPage() {
               </div>
             </div>
           </section>
+          </div>
         )}
       </section>
 

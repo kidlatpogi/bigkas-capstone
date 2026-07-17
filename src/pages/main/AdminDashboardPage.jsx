@@ -4698,7 +4698,7 @@ function AdminDashboardPage() {
         )}
 
         {activePage === 'reports' && (
-          <div>
+          <div className="admin-reports-page-wrapper">
             <div className="admin-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
               <div>
                 <h2>Reports Generation</h2>
@@ -5071,7 +5071,7 @@ function AdminDashboardPage() {
           </div>
           <div className="admin-modal-actions admin-modal-actions--end">
             <button type="submit" className="admin-btn admin-btn--primary" disabled={batchImportStatus !== 'ready'}>
-              {batchImportStatus === 'saving' ? 'Creating...' : 'Create Accounts & Send Invites'}
+              {batchImportStatus === 'saving' ? 'Creating...' : batchAccountType === 'section' ? 'Create Sections' : 'Create Accounts & Send Invites'}
             </button>
           </div>
         </form>

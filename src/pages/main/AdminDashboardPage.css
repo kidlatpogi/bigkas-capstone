@@ -2048,22 +2048,23 @@ body:has(.admin-dashboard-page) .main-content {
 
   .admin-rail,
   .admin-header,
-  .admin-report-card .admin-btn,
   .admin-report-tabs,
   .admin-report-filters,
   .admin-pagination,
   .admin-toast,
+  .admin-section-header,
+  .admin-section-divider,
   .admin-modal-backdrop {
     display: none !important;
   }
 
-  .admin-main {
+  .main-content,
+  .admin-main,
+  .admin-reports-page-wrapper,
+  .admin-report-card {
+    display: block !important;
     margin: 0 !important;
     padding: 0 !important;
-  }
-
-  .admin-main > :not(.admin-report-card) {
-    display: none !important;
   }
 
   .admin-report-card {

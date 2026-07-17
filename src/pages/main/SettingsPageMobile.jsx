@@ -367,7 +367,24 @@ function SettingsPageMobile() {
             </div>
 
             {/* Danger Zone */}
-
+            <div className="settings-form-section" style={{ marginTop: '24px' }}>
+              <div className="sp-list-group">
+                <button 
+                  type="button" 
+                  className="sp-list-item sp-list-item--danger" 
+                  onClick={() => setShowLogoutConfirm(true)}
+                >
+                  <div className="sp-list-icon">
+                    <IoLogOutOutline />
+                  </div>
+                  <div className="sp-list-content">
+                    <span className="sp-list-label">Log Out</span>
+                    <span className="sp-list-hint">Sign out of your Bigkas account</span>
+                  </div>
+                  <IoChevronForward className="sp-list-chevron" />
+                </button>
+              </div>
+            </div>
 
           </div>
         </div>

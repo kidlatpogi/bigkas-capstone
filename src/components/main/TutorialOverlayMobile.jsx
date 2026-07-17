@@ -19,6 +19,8 @@ const HOME_STREAK_STEP_TEXT_MOBILE =
   "Your Streak counter tracks how many consecutive days you've practiced. Consistency is the true secret to mastering public speaking! Log in and complete a daily activity to keep the fire burning and watch that number grow.";
 const HOME_STREAK_STEP_VOICE_MOBILE =
   'https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Streak-Counter.mp3';
+const HOME_STREAK_STEP_VOICE_MOBILE_V2 =
+  'https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Voice%202%20-%20Steak-Counter.mp3';
 const soundbarPreviewBars = Array.from({ length: 32 }, (_, index) => index);
 
 /**
@@ -185,7 +187,8 @@ function TutorialOverlayMobile({
   const bubbleVoiceUrl = useMemo(() => {
     if (!activeStep) return null;
     if (isNarrowViewport && activeStep.id === 'step-streak') {
-      return HOME_STREAK_STEP_VOICE_MOBILE;
+      const voicePref = localStorage.getItem('bigkas_b01_voice') || 'voice1';
+      return voicePref === 'voice2' ? HOME_STREAK_STEP_VOICE_MOBILE_V2 : HOME_STREAK_STEP_VOICE_MOBILE;
     }
     if (stepTextSegment === 1 && activeStep.voicePart2) {
       return activeStep.voicePart2;
@@ -418,7 +421,12 @@ function TutorialOverlayMobile({
           }
         } else if (targetId === 'tutorial-target-home-journey') {
           try {
-            nextEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            const activeNode = nextEl.querySelector('.skyward-journey-node--active');
+            if (activeNode) {
+              activeNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+              nextEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
           } catch (e) {}
         } else {
           try {

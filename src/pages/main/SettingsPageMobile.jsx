@@ -90,6 +90,9 @@ function SettingsPageMobile() {
   const [micSensitivity, setMicSensitivity] = useState(() => {
     return localStorage.getItem(MIC_SENSITIVITY_KEY) || '80';
   });
+  const [voicePreference, setVoicePreference] = useState(() => {
+    return localStorage.getItem('bigkas_b01_voice') || 'voice1';
+  });
   const [autoNext, setAutoNext] = useState(() => {
     return localStorage.getItem(AUTO_NEXT_KEY) === 'true';
   });
@@ -114,6 +117,10 @@ function SettingsPageMobile() {
   useEffect(() => {
     localStorage.setItem(AUTO_NEXT_KEY, autoNext.toString());
   }, [autoNext]);
+
+  useEffect(() => {
+    localStorage.setItem('bigkas_b01_voice', voicePreference);
+  }, [voicePreference]);
 
   const handleLogout = async () => {
     try {
@@ -237,6 +244,27 @@ function SettingsPageMobile() {
                         <option value="100">High (100%) - Quiet rooms</option>
                         <option value="80">Normal (80%) - Default</option>
                         <option value="50">Low (50%) - Noisy environments</option>
+                      </select>
+                      <IoChevronForward className="sp-select-icon" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="sp-list-item sp-list-item--interactive">
+                  <div className="sp-list-icon">
+                    <IoVolumeHighOutline />
+                  </div>
+                  <div className="sp-list-content">
+                    <span className="sp-list-label">Voice Preference</span>
+                    <span className="sp-list-hint">Choose assistant voice character</span>
+                    <div className="sp-select-wrapper">
+                      <select 
+                        className="sp-select"
+                        value={voicePreference}
+                        onChange={(e) => setVoicePreference(e.target.value)}
+                      >
+                        <option value="voice1">Voice 1 (Male)</option>
+                        <option value="voice2">Voice 2 (Female)</option>
                       </select>
                       <IoChevronForward className="sp-select-icon" />
                     </div>

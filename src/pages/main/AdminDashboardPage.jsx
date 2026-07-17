@@ -1284,6 +1284,10 @@ function AdminDashboardPage() {
   const [userSortKey, setUserSortKey] = useState('name_asc');
   const [userPage, setUserPage] = useState(1);
   const USERS_PER_PAGE = 10;
+  const [adminRosterPage, setAdminRosterPage] = useState(1);
+  const ADMINS_PER_PAGE = 5;
+  const [accessRolePage, setAccessRolePage] = useState(1);
+  const ROLES_PER_PAGE = 5;
   const [analyticsRange, setAnalyticsRange] = useState('30');
   const [analyticsSectionFilter, setAnalyticsSectionFilter] = useState('all');
   const [analyticsSpeakerLevelFilter, setAnalyticsSpeakerLevelFilter] = useState('all');
@@ -3527,6 +3531,14 @@ function AdminDashboardPage() {
       .filter(area => selectedManagedAccessRole?.permissions?.[area.key]?.view)
       .map(area => area.label);
 
+  const getAccessRolePermissionsList = (role) => {
+    if (!role) return [];
+    if (role.scope === 'student') return role.visibleAreas || [];
+    return ADMIN_PERMISSION_AREAS
+      .filter(area => role.permissions?.[area.key]?.view)
+      .map(area => area.label);
+  };
+
   const handleCreateAdminRoleChange = (event) => {
     const nextRoleValue = event.target.value;
     setCreateAdminForm(prev => (
@@ -3626,6 +3638,14 @@ function AdminDashboardPage() {
   const adminRosterTitle = `${adminAccounts.length} admin${adminAccounts.length === 1 ? '' : 's'}`;
   const canCreateUsers = canUseAdminPermission('users', 'create');
   const canDeleteUsers = canUseAdminPermission('users', 'delete');
+
+  const totalAdminPages = Math.ceil(adminAccounts.length / ADMINS_PER_PAGE);
+  const safeAdminPage = Math.min(adminRosterPage, totalAdminPages || 1);
+  const paginatedAdmins = adminAccounts.slice((safeAdminPage - 1) * ADMINS_PER_PAGE, safeAdminPage * ADMINS_PER_PAGE);
+
+  const totalRolePages = Math.ceil(accessRoleReviewOptions.length / ROLES_PER_PAGE);
+  const safeRolePage = Math.min(accessRolePage, totalRolePages || 1);
+  const paginatedAccessRoles = accessRoleReviewOptions.slice((safeRolePage - 1) * ROLES_PER_PAGE, safeRolePage * ROLES_PER_PAGE);
 
   const navItems = [
     { key: 'overview', label: 'Overview', icon: HiOutlineHomeModern, show: canUseAdminPermission('overview', 'view') },
@@ -3752,31 +3772,31 @@ function AdminDashboardPage() {
               </p>
             </div>
             <hr className="admin-section-divider" />
-            <section className="admin-analytics-filter-card">
-              <div className="admin-analytics-filters">
-                <label>
-                  <span>Date Range</span>
-                  <select className="admin-filter-select" value={analyticsRange} onChange={e => setAnalyticsRange(e.target.value)}>
-                    <option value="7">Last 7 days</option>
-                    <option value="30">Last 30 days</option>
-                    <option value="90">Last 90 days</option>
-                  </select>
-                  <small>Controls recent activity, skill scores, and audit previews.</small>
-                </label>
-                <label>
-                  <span>Section</span>
-                  <select className="admin-filter-select" value={analyticsSectionFilter} onChange={e => setAnalyticsSectionFilter(e.target.value)}>
-                    <option value="all">{isSuperadmin ? 'All users' : 'My sections'}</option>
-                    {isSuperadmin && <option value={INDEPENDENT_LEARNERS_FILTER}>{INDEPENDENT_LEARNERS_LABEL}</option>}
-                    {visibleSections.map(section => <option key={section.id} value={section.id}>{section.name}</option>)}
-                  </select>
-                  <small>{isSuperadmin ? 'Filter to one class section or independent users.' : 'Only assigned sections are available.'}</small>
-                </label>
-              </div>
-            </section>
+            <section className="admin-grid admin-grid-2" aria-label="Analytics scope and metrics">
+              <article className="admin-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div className="admin-analytics-filters" style={{ width: '100%' }}>
+                  <label>
+                    <span>Date Range</span>
+                    <select className="admin-filter-select" value={analyticsRange} onChange={e => setAnalyticsRange(e.target.value)}>
+                      <option value="7">Last 7 days</option>
+                      <option value="30">Last 30 days</option>
+                      <option value="90">Last 90 days</option>
+                    </select>
+                    <small>Controls recent activity, skill scores, and audit previews.</small>
+                  </label>
+                  <label>
+                    <span>Section</span>
+                    <select className="admin-filter-select" value={analyticsSectionFilter} onChange={e => setAnalyticsSectionFilter(e.target.value)}>
+                      <option value="all">{isSuperadmin ? 'All users' : 'My sections'}</option>
+                      {isSuperadmin && <option value={INDEPENDENT_LEARNERS_FILTER}>{INDEPENDENT_LEARNERS_LABEL}</option>}
+                      {visibleSections.map(section => <option key={section.id} value={section.id}>{section.name}</option>)}
+                    </select>
+                    <small>{isSuperadmin ? 'Filter to one class section or independent users.' : 'Only assigned sections are available.'}</small>
+                  </label>
+                </div>
+              </article>
 
-            <section className="admin-grid admin-grid-1" aria-label="Analytics summary">
-              <article className="admin-card admin-kpi-card">
+              <article className="admin-card admin-kpi-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
                 <p className="admin-kpi-label">USERS IN VIEW</p>
                 <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : analyticsKpis.students}</p>
                 <p className="admin-kpi-footer">{analyticsSpeakerLevelFilter === 'all' ? 'All speaker levels' : formatAdminSpeakerLevel(analyticsSpeakerLevelFilter)}</p>
@@ -3998,15 +4018,15 @@ function AdminDashboardPage() {
                   <select
                     className="admin-filter-select admin-roster-filter"
                     value={adminStatusFilter}
-                    onChange={e => setAdminStatusFilter(e.target.value)}
+                    onChange={e => { setAdminStatusFilter(e.target.value); setAdminRosterPage(1); }}
                     aria-label="Filter admin accounts by status"
                   >
                     <option value="active">Active Admins</option>
                     <option value="deleted">Archived Admins</option>
                   </select>
                   <div className="admin-roster-list admin-roster-list--compact">
-                    {adminAccounts.length ? (
-                      adminAccounts.slice(0, 4).map(a => (
+                    {paginatedAdmins.length ? (
+                      paginatedAdmins.map(a => (
                         <div key={a.id} className={`admin-roster-item ${isDeletedProfile(a) ? 'is-deleted' : 'is-active'}`}>
                           <div className="admin-roster-info">
                             <strong>{getDisplayName(a, a.id)}</strong>
@@ -4018,8 +4038,16 @@ function AdminDashboardPage() {
                     ) : (
                       <div className="admin-empty-inline">No {adminStatusFilter === 'deleted' ? 'archived' : 'active'} admin accounts</div>
                     )}
-                    {adminAccounts.length > 4 && <p className="admin-note">Showing 4 of {adminAccounts.length}. Use search/filter later for a full roster view.</p>}
                   </div>
+                  {totalAdminPages > 1 && (
+                    <div className="admin-pagination admin-compact-pagination">
+                      <span className="admin-pagination-info">{safeAdminPage} / {totalAdminPages}</span>
+                      <div className="admin-pagination-controls">
+                        <button type="button" onClick={() => setAdminRosterPage(p => Math.max(1, p - 1))} disabled={safeAdminPage === 1}>Prev</button>
+                        <button type="button" onClick={() => setAdminRosterPage(p => Math.min(totalAdminPages, p + 1))} disabled={safeAdminPage === totalAdminPages}>Next</button>
+                      </div>
+                    </div>
+                  )}
                 </article>
               </div>
 
@@ -4027,29 +4055,49 @@ function AdminDashboardPage() {
                 <div className="admin-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                   <div>
                     <h2>Access Roles</h2>
-                    <p className="admin-section-subtitle">Choose a role to review or edit permissions.</p>
+                    <p className="admin-section-subtitle">Review, create, and edit custom permissions for user roles.</p>
                   </div>
                   <button type="button" className="admin-btn admin-btn--ghost" onClick={openNewAccessRole}>New Role</button>
                 </div>
                 <hr className="admin-section-divider" />
                 <article className="admin-card admin-access-role-card admin-management-card">
-                  <label className="admin-create-field">
-                    <span>Role</span>
-                    <select className="admin-filter-select" value={selectedAccessRoleId} onChange={e => setSelectedAccessRoleId(e.target.value)}>
-                      {accessRoleReviewOptions.map(roleTemplate => <option key={roleTemplate.id} value={roleTemplate.id}>{roleTemplate.name}</option>)}
-                    </select>
-                  </label>
-                  <div className="admin-role-summary">
-                    <strong>{selectedManagedAccessRole?.name || 'Role'}</strong>
-                    <span>{selectedManagedAccessRole?.description || 'No description'}</span>
-                    <p>{selectedManagedRolePermissions.length ? selectedManagedRolePermissions.join(', ') : 'No visible areas yet'}</p>
+                  <div className="admin-roster-list admin-roster-list--compact">
+                    {paginatedAccessRoles.map(role => {
+                      const permissions = getAccessRolePermissionsList(role);
+                      return (
+                        <div key={role.id} className="admin-roster-item" style={{ alignItems: 'flex-start' }}>
+                          <div className="admin-roster-info">
+                            <strong>{role.name}</strong>
+                            <span style={{ fontSize: '0.78rem', color: '#64748b', display: 'block', margin: '4px 0' }}>{role.description || 'No description'}</span>
+                            <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                              Permissions: {permissions.length ? permissions.join(', ') : 'None'}
+                            </span>
+                          </div>
+                          <div className="admin-actions-cell" style={{ display: 'flex', gap: '6px', flexShrink: 0, alignSelf: 'center' }}>
+                            {role.scope !== 'student' && (
+                              <button type="button" className="admin-action-btn" onClick={() => { setSelectedAccessRoleId(role.id); openSelectedAccessRole(); }} title="Edit Permissions">
+                                <HiOutlinePencilSquare />
+                              </button>
+                            )}
+                            {!role.system && (
+                              <button type="button" className="admin-action-btn is-delete" onClick={() => requestDeleteAccessRole(role.id)} title="Delete Role">
+                                <HiOutlineTrash />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div className="admin-card-actions">
-                    {!selectedManagedRoleIsStudent && <button type="button" className="admin-btn admin-btn--primary" onClick={openSelectedAccessRole}>Edit Permissions</button>}
-                    {selectedManagedAccessRole && !selectedManagedAccessRole.system && (
-                      <button type="button" className="admin-btn admin-btn--danger" onClick={() => requestDeleteAccessRole(selectedManagedAccessRole.id)}>Delete Role</button>
-                    )}
-                  </div>
+                  {totalRolePages > 1 && (
+                    <div className="admin-pagination admin-compact-pagination">
+                      <span className="admin-pagination-info">{safeRolePage} / {totalRolePages}</span>
+                      <div className="admin-pagination-controls">
+                        <button type="button" onClick={() => setAccessRolePage(p => Math.max(1, p - 1))} disabled={safeRolePage === 1}>Prev</button>
+                        <button type="button" onClick={() => setAccessRolePage(p => Math.min(totalRolePages, p + 1))} disabled={safeRolePage === totalRolePages}>Next</button>
+                      </div>
+                    </div>
+                  )}
                 </article>
               </div>
             </section>

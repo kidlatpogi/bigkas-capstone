@@ -1483,6 +1483,13 @@ function AdminDashboardPage() {
   const [successModal, setSuccessModal] = useState(null);
   const [reportStartDate, setReportStartDate] = useState('');
   const [reportEndDate, setReportEndDate] = useState('');
+
+  useEffect(() => {
+    setReportAdminsPage(1);
+    setReportUsersPage(1);
+    setReportPerformancePage(1);
+    setReportAuditPage(1);
+  }, [reportStartDate, reportEndDate, reportType]);
   const [reportAdminsPage, setReportAdminsPage] = useState(1);
   const [reportUsersPage, setReportUsersPage] = useState(1);
   const [reportPerformancePage, setReportPerformancePage] = useState(1);
@@ -4312,6 +4319,7 @@ function AdminDashboardPage() {
                         onChange={e => { setAdminSearchQuery(e.target.value); setAdminRosterPage(1); }} 
                       />
                     </div>
+                    <button type="button" className="admin-btn admin-btn--ghost" onClick={() => { setBatchImportFile(null); setBatchImportStatus('idle'); setBatchPreview(null); setBatchAccountType('admin'); setShowBatchAccountModal(true); }}>Bulk Upload</button>
                     <button type="button" className="admin-btn admin-btn--primary" onClick={() => setShowCreateAdminModal(true)}>Create Admin</button>
                   </div>
                   <select
@@ -4407,7 +4415,10 @@ function AdminDashboardPage() {
                 <h2>Sections</h2>
                 <p className="admin-section-subtitle">Admins manage users through assigned sections.</p>
               </div>
-              <button type="button" className="admin-btn admin-btn--ghost" onClick={openNewSection}>New Section</button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button type="button" className="admin-btn admin-btn--ghost" onClick={() => { setBatchImportFile(null); setBatchImportStatus('idle'); setBatchPreview(null); setBatchAccountType('section'); setShowBatchAccountModal(true); }}>Bulk Upload</button>
+                <button type="button" className="admin-btn admin-btn--ghost" onClick={openNewSection}>New Section</button>
+              </div>
             </div>
             <hr className="admin-section-divider" />
             <section className="admin-card admin-section-card">
@@ -4534,7 +4545,7 @@ function AdminDashboardPage() {
                   <button
                     type="button"
                     className="admin-btn admin-btn--primary"
-                    onClick={openBatchAccountSetup}
+                    onClick={() => { setBatchImportFile(null); setBatchImportStatus('idle'); setBatchPreview(null); setBatchAccountType('user'); if (!batchSectionId && visibleSections[0]?.id) setBatchSectionId(visibleSections[0].id); setShowBatchAccountModal(true); }}
                   >
                     Open Batch Setup
                   </button>
@@ -4955,27 +4966,20 @@ function AdminDashboardPage() {
       {showBatchAccountModal && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setShowBatchAccountModal(false)}><div className="admin-modal admin-user-modal admin-batch-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
         <div className="admin-card-head">
           <div>
-            <h3>Batch Account Creation</h3>
-            <p className="admin-modal-subtitle">Excel/CSV setup with welcome invites sent by email.</p>
+            <h3>
+              {batchAccountType === 'admin' && 'Batch Admin Creation'}
+              {batchAccountType === 'section' && 'Batch Section Creation'}
+              {batchAccountType === 'user' && 'Batch Student Account Creation'}
+            </h3>
+            <p className="admin-modal-subtitle">
+              {batchAccountType === 'section'
+                ? 'Excel/CSV setup for bulk section imports.'
+                : 'Excel/CSV setup with welcome invites sent by email.'}
+            </p>
           </div>
           <button type="button" onClick={() => setShowBatchAccountModal(false)} className="admin-btn admin-btn--ghost">Close</button>
         </div>
         <form className="admin-batch-form" onSubmit={submitBatchAccountImport}>
-          {isSuperadmin ? (
-            <label className="admin-create-field">
-              <span>Account Type</span>
-              <select className="admin-filter-select" value={batchAccountType} onChange={handleBatchAccountTypeChange}>
-                <option value="user">Users (Students)</option>
-                <option value="admin">Admins</option>
-                <option value="section">Sections</option>
-              </select>
-            </label>
-          ) : (
-            <div className="admin-role-summary">
-              <strong>User Accounts</strong>
-              <span>Users receive welcome invites and create their own passwords.</span>
-            </div>
-          )}
           {batchAccountType === 'admin' && (
             <label className="admin-create-field">
               <span>Access Role</span>

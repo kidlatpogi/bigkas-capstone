@@ -1268,7 +1268,7 @@ function AdminDashboardPage() {
   const [auditActionFilter, setAuditActionFilter] = useState('all');
   const [auditEntityFilter, setAuditEntityFilter] = useState('all');
   const [auditPage, setAuditPage] = useState(1);
-  const AUDIT_PER_PAGE = 15;
+  const AUDIT_PER_PAGE = 10;
   const [inspectingLog, setInspectingLog] = useState(null);
   const [adminStatusFilter, setAdminStatusFilter] = useState('active');
   const [editingUser, setEditingUser] = useState(null);
@@ -3686,7 +3686,21 @@ function AdminDashboardPage() {
                 }}
               >
                 <p className="admin-kpi-label">ACTIVE / INACTIVE</p>
-                <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : `${kpis.activeThisWeek} / ${kpis.inactiveThisWeek}`}</p>
+                {loading ? (
+                  <p className="admin-kpi-value"><Skeleton width={60} /></p>
+                ) : (
+                  <div className="admin-kpi-value-split">
+                    <span className="admin-kpi-active" title="Active Users This Week">
+                      <span className="admin-status-dot is-active"></span>
+                      {kpis.activeThisWeek}<span className="admin-kpi-split-label">Active</span>
+                    </span>
+                    <span className="admin-kpi-split-separator">/</span>
+                    <span className="admin-kpi-inactive" title="Inactive Users This Week">
+                      <span className="admin-status-dot is-inactive"></span>
+                      {kpis.inactiveThisWeek}<span className="admin-kpi-split-label">Inactive</span>
+                    </span>
+                  </div>
+                )}
                 <p className="admin-kpi-footer">{kpis.activeDeltaText}</p>
               </article>
               {isSuperadmin && (
@@ -3697,7 +3711,7 @@ function AdminDashboardPage() {
                 </article>
               )}
             </section>
-            <section className="admin-grid admin-grid-2">
+            <section className="admin-grid admin-grid-1">
               <article className="admin-card"><h3>User Registration</h3><div className="admin-chart-container">
                 {loading ? <Skeleton height={300} /> : <ResponsiveContainer width="100%" height={300}><AreaChart data={joinTrendData}><XAxis dataKey="date" /><YAxis /><Tooltip /><Area type="monotone" dataKey="users" name="Users" stroke="#33D2A4" fill="#33D2A433" /></AreaChart></ResponsiveContainer>}
               </div></article>

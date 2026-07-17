@@ -350,6 +350,60 @@ body:has(.admin-dashboard-page) .main-content {
   color: var(--accent-dark);
 }
 
+.admin-kpi-value-split {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  margin: 0.25rem 0;
+  font-size: clamp(1.8rem, 3.2vw, 2.5rem);
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.admin-kpi-active {
+  color: #10B981;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.admin-kpi-inactive {
+  color: #64748B;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.admin-kpi-split-separator {
+  color: #E2E8F0;
+  font-weight: 300;
+}
+
+.admin-kpi-split-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748B;
+  text-transform: uppercase;
+}
+
+.admin-status-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.admin-status-dot.is-active {
+  background-color: #10B981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+}
+
+.admin-status-dot.is-inactive {
+  background-color: #94A3B8;
+}
+
 .admin-kpi-footer {
   margin: 0.6rem 0 0;
   font-size: 0.78rem;

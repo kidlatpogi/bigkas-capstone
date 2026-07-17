@@ -268,8 +268,8 @@ function UserProfilingPage() {
 
   const playSample = (voiceKey) => {
     const sampleUrl = voiceKey === 'voice2'
-      ? getVoiceUrl('Introductions/Voice 2 - Intro 1.mp3')
-      : getVoiceUrl('Introductions/Intro 1.mp3');
+      ? 'https://assets.bigkas.site/Voices/Voice%202%20-%20Sample.mp3'
+      : 'https://assets.bigkas.site/Voices/Voice%201%20-%20Sample.mp3';
     stopAllIntroAudios();
     const audio = new Audio(sampleUrl);
     audio.muted = isMuted;

@@ -231,8 +231,36 @@ function SettingsPage() {
                     <IoVolumeHighOutline />
                   </div>
                   <div className="sp-list-content">
-                    <span className="sp-list-label">Voice Preference</span>
-                    <span className="sp-list-hint">Choose assistant voice character</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <span className="sp-list-label">Voice Preference</span>
+                        <span className="sp-list-hint">Choose assistant voice character</span>
+                      </div>
+                      <button 
+                        type="button" 
+                        className="sp-listen-btn"
+                        onClick={() => playVoiceSample(voicePreference)}
+                        style={{
+                          background: 'rgba(16, 185, 129, 0.1)',
+                          border: 'none',
+                          color: '#10B981',
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          transition: 'all 0.2s',
+                          height: 'fit-content'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(16, 185, 129, 0.2)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)'; }}
+                      >
+                        <IoVolumeHighOutline size={14} /> Listen
+                      </button>
+                    </div>
                     <div className="sp-select-wrapper">
                       <select 
                         className="sp-select"

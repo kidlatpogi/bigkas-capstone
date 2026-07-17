@@ -27,6 +27,7 @@ import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import { filterActivitiesForJourney } from '../../utils/journeyFiltering';
 import { FaVolumeMute } from '@react-icons/all-files/fa/FaVolumeMute';
 import { FaVolumeUp } from '@react-icons/all-files/fa/FaVolumeUp';
+import { askB01Coach, getB01FallbackReply } from '../../utils/b01CoachChat';
 
 const robotMorningImage = getSpriteUrl('Robot/0018.webp');
 const robotNoonImage = getSpriteUrl('Robot/0001.webp');
@@ -108,6 +109,7 @@ const LAST_SHOWN_COMPLETION_EVENT_KEY = 'bigkas_last_completion_event_v1';
 const FREE_SPEECH_TUTORIAL_SEEN_KEY = 'bigkas_free_speech_tutorial_seen_v1';
 const TRAINING_SESSION_CACHE_KEY = 'bigkas_current_training_session';
 const AI_BANNER_CACHE_KEY = 'bigkas_ai_banner_cache_v1';
+const DEVELOPER_PREVIEW_SESSION_KEY = 'bigkas_developer_onboarding_preview_v1';
 const EIGHT_HOURS_MS = 8 * 60 * 60 * 1000;
 
 const B01_SUGGESTIONS = [
@@ -278,6 +280,9 @@ function ActivityPage() {
     typeof window === 'undefined' ? true : window.matchMedia('(min-width: 1025px)').matches,
   );
   const [entranceFromNav] = useState(() => location.state?.skywardEntrance === true);
+  const isDeveloperPreview =
+    location.state?.developerPreview === true ||
+    (typeof window !== 'undefined' && window.sessionStorage.getItem(DEVELOPER_PREVIEW_SESSION_KEY) === '1');
   const scopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
   const levelProgress = useMemo(() => getBigkasLevelFromUser(user), [user]);
   const storedJourneyNumber = Math.max(1, Math.min(5, Number(user?.progressLevelNumber || user?.progress_level_number || 1) || 1));
@@ -307,6 +312,7 @@ function ActivityPage() {
     height: typeof window !== 'undefined' ? window.innerHeight : 0,
   }));
   const [showFreeSpeechTutorial, setShowFreeSpeechTutorial] = useState(false);
+  const [activeFreeSpeechTutorialStepId, setActiveFreeSpeechTutorialStepId] = useState(null);
   const [showFreeSpeechOverlay, setShowFreeSpeechOverlay] = useState(false);
   const [isRankModalOpen, setIsRankModalOpen] = useState(false);
   const [freeSpeechDraftTopic, setFreeSpeechDraftTopic] = useState('');
@@ -601,59 +607,26 @@ function ActivityPage() {
     const assistantMessageId = Date.now();
     setChatMessages(prev => [...prev, { role: 'assistant', content: '', id: assistantMessageId }]);
 
+    const progressContext = getProgressContext();
+    const contextMessage = {
+      role: 'system',
+      content: `CONTEXT: User Progress Snapshot: ${JSON.stringify(progressContext)}. Reference these specific numbers if asked about progress, growth, or stats.`
+    };
+    const messages = [contextMessage, ...newMessages];
+
     try {
-      const contextMessage = {
-        role: 'system',
-        content: `CONTEXT: User Progress Snapshot: ${JSON.stringify(getProgressContext())}. Reference these specific numbers if asked about progress, growth, or stats.`
-      };
-
-      const response = await fetch('https://b01-ai-worker.dzeref4000.workers.dev', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [contextMessage, ...newMessages]
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to connect to B-01');
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let done = false;
-      let accumulatedResponse = '';
-
-      setIsB01Typing(false); // Hide spinner as text starts coming in
-
-      while (!done) {
-        const { value, done: doneReading } = await reader.read();
-        done = doneReading;
-        const chunkValue = decoder.decode(value);
-
-        // Cloudflare Workers AI streaming returns data prefixes like "data: {...}"
-        const lines = chunkValue.split('\n');
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            if (line.includes('[DONE]')) break;
-            try {
-              const data = JSON.parse(line.slice(6));
-              accumulatedResponse += data.response || '';
-
-              setChatMessages(prev => prev.map(msg =>
-                msg.id === assistantMessageId
-                  ? { ...msg, content: accumulatedResponse }
-                  : msg
-              ));
-            } catch (e) {
-              console.warn("Chunk parse error", e);
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('B-01 Error:', error);
+      const reply = await askB01Coach({ messages, progressContext });
       setChatMessages(prev => prev.map(msg =>
         msg.id === assistantMessageId
-          ? { ...msg, content: "I'm having a little trouble connecting to my brain right now. Please try again in a moment!" }
+          ? { ...msg, content: reply }
+          : msg
+      ));
+    } catch (error) {
+      console.error('B-01 Error:', error);
+      const fallbackReply = getB01FallbackReply({ messages, progressContext });
+      setChatMessages(prev => prev.map(msg =>
+        msg.id === assistantMessageId
+          ? { ...msg, content: fallbackReply }
           : msg
       ));
     } finally {
@@ -822,6 +795,18 @@ function ActivityPage() {
     }
     return fullSteps;
   }, [user?.speakerLevelNumber, user?.onboardingLevelAnalysis, user?.speakerEntryScore, user?.speaker_entry_score, location.state?.skipTutorialIntro]);
+
+  const handleFreeSpeechTutorialStepChange = useCallback(({ step }) => {
+    setActiveFreeSpeechTutorialStepId(step?.id || null);
+  }, []);
+
+  const handleCloseFreeSpeechTutorial = useCallback(() => {
+    setShowFreeSpeechTutorial(false);
+    setActiveFreeSpeechTutorialStepId(null);
+  }, []);
+
+  const shouldAutoScrollJourneyTutorial =
+    showFreeSpeechTutorial && activeFreeSpeechTutorialStepId === 'step-roadmap';
 
   const assessmentTutorialSteps = useMemo(() => {
     const pLevel = currentJourneyNumber;
@@ -1084,6 +1069,13 @@ function ActivityPage() {
   }, []);
 
   const handleTutorialFinish = useCallback(() => {
+    if (isDeveloperPreview) {
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.removeItem(DEVELOPER_PREVIEW_SESSION_KEY);
+      }
+      return;
+    }
+
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(FREE_SPEECH_TUTORIAL_SEEN_KEY, '1');
     }
@@ -1093,7 +1085,7 @@ function ActivityPage() {
       updateUserMetadata({ dashboard_tutorial_seen: true }).catch(() => { });
     }
 
-  }, [user, updateUserMetadata]);
+  }, [isDeveloperPreview, user, updateUserMetadata]);
 
   const handleCloseFreeSpeechOverlay = useCallback(() => {
     setShowFreeSpeechOverlay(false);
@@ -1332,8 +1324,9 @@ function ActivityPage() {
             isOpen={showFreeSpeechTutorial}
             steps={freeSpeechTutorialSteps}
             showAudioToggle
-            onClose={() => setShowFreeSpeechTutorial(false)}
+            onClose={handleCloseFreeSpeechTutorial}
             onFinish={handleTutorialFinish}
+            onActiveStepChange={handleFreeSpeechTutorialStepChange}
           />
         </Suspense>
       )}
@@ -1642,6 +1635,7 @@ function ActivityPage() {
               recommendedLevel={recommendedLevel}
               entranceFromNav={entranceFromNav}
               scrollToStepIndex={scrollToStepIndex}
+              autoScrollPreview={shouldAutoScrollJourneyTutorial}
               renderTaskCard={renderTaskCardForShell}
               onActiveTaskIdChange={handleActiveTaskIdChange}
             />

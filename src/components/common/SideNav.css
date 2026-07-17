@@ -611,6 +611,68 @@ body.activity-tutorial-open .side-nav {
   box-shadow: 0 10px 18px rgba(0, 0, 0, 0.14);
 }
 
+.side-nav-dev-tools {
+  margin-top: 14px;
+  padding: 12px 8px;
+  border-top: 1px solid rgba(247, 251, 255, 0.14);
+  border-bottom: 1px solid rgba(247, 251, 255, 0.14);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.side-nav-dev-title {
+  margin: 0 0 2px;
+  padding: 0 8px;
+  color: rgba(247, 251, 255, 0.72);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.side-nav-dev-btn {
+  min-height: 40px;
+  width: 100%;
+  padding: 0 10px;
+  border: 1px solid rgba(247, 251, 255, 0.16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(247, 251, 255, 0.9);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-align: left;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.side-nav-dev-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(249, 115, 22, 0.6);
+  color: #F18F01;
+  transform: translateX(-2px);
+}
+
+.side-nav-dev-btn:disabled {
+  cursor: wait;
+  opacity: 0.66;
+}
+
+.side-nav-dev-btn--danger:hover:not(:disabled) {
+  border-color: rgba(239, 68, 68, 0.58);
+  color: #fca5a5;
+}
+
+.side-nav-dev-status {
+  margin: 4px 8px 0;
+  color: rgba(247, 251, 255, 0.68);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
 .side-nav-logout {
   margin-top: auto;
   display: inline-flex;

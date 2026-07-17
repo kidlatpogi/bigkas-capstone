@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  IoChevronForward, 
+import {
+  IoChevronForward,
   IoLockClosedOutline,
   IoShieldCheckmarkOutline,
   IoPersonCircleOutline,
@@ -42,9 +42,12 @@ const AUTO_NEXT_KEY = 'pref_auto_next';
 function SettingsPage() {
   const navigate = useNavigate();
   const { user, updateProfile, updateUserMetadata, uploadAvatar, logout } = useAuthContext();
-  
+
   const [micSensitivity, setMicSensitivity] = useState(() => {
     return localStorage.getItem(MIC_SENSITIVITY_KEY) || '80';
+  });
+  const [voicePreference, setVoicePreference] = useState(() => {
+    return localStorage.getItem('bigkas_b01_voice') || 'voice1';
   });
   const [autoNext, setAutoNext] = useState(() => {
     return localStorage.getItem(AUTO_NEXT_KEY) === 'true';
@@ -70,6 +73,34 @@ function SettingsPage() {
   useEffect(() => {
     localStorage.setItem(AUTO_NEXT_KEY, autoNext.toString());
   }, [autoNext]);
+
+  const previewAudioRef = React.useRef(null);
+
+  const playVoiceSample = (voiceId) => {
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause();
+      previewAudioRef.current = null;
+    }
+    const sampleUrl = voiceId === 'voice2'
+      ? 'https://assets.bigkas.site/Voices/Voice%202%20-%20Sample.mp3'
+      : 'https://assets.bigkas.site/Voices/Voice%201%20-%20Sample.mp3';
+
+    const audio = new Audio(sampleUrl);
+    previewAudioRef.current = audio;
+    audio.play().catch(err => console.log('Audio playback failed:', err));
+  };
+
+  useEffect(() => {
+    localStorage.setItem('bigkas_b01_voice', voicePreference);
+  }, [voicePreference]);
+
+  useEffect(() => {
+    return () => {
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+      }
+    };
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -121,10 +152,10 @@ function SettingsPage() {
               <img src={mascotSprite} alt="" className="decoration-img decoration-mascot" />
             ) : (
               getThemeDecoration(heroTheme) && (
-                <img 
-                  src={getThemeDecoration(heroTheme)} 
-                  alt="" 
-                  className={`decoration-img ${heroTheme === 'trophy' ? 'decoration-trophy' : 'decoration-rank'}`} 
+                <img
+                  src={getThemeDecoration(heroTheme)}
+                  alt=""
+                  className={`decoration-img ${heroTheme === 'trophy' ? 'decoration-trophy' : 'decoration-rank'}`}
                 />
               )
             )}
@@ -138,7 +169,7 @@ function SettingsPage() {
 
         <div className="settings-content-wrapper">
           <div className="settings-main-card sp-preferences-card">
-            
+
             {/* Account Section */}
             <div className="settings-form-section">
               <h2 className="section-heading">Account</h2>
@@ -181,7 +212,7 @@ function SettingsPage() {
                     <span className="sp-list-label">Microphone Sensitivity</span>
                     <span className="sp-list-hint">Current: {micSensitivity}%</span>
                     <div className="sp-select-wrapper">
-                      <select 
+                      <select
                         className="sp-select"
                         value={micSensitivity}
                         onChange={(e) => setMicSensitivity(e.target.value)}
@@ -189,6 +220,59 @@ function SettingsPage() {
                         <option value="100">High (100%) - Quiet rooms</option>
                         <option value="80">Normal (80%) - Default</option>
                         <option value="50">Low (50%) - Noisy environments</option>
+                      </select>
+                      <IoChevronForward className="sp-select-icon" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="sp-list-item sp-list-item--interactive">
+                  <div className="sp-list-icon">
+                    <IoVolumeHighOutline />
+                  </div>
+                  <div className="sp-list-content">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <span className="sp-list-label">Voice Preference</span>
+                        <span className="sp-list-hint">Choose assistant voice character</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="sp-listen-btn"
+                        onClick={() => playVoiceSample(voicePreference)}
+                        style={{
+                          background: 'rgba(16, 185, 129, 0.1)',
+                          border: 'none',
+                          color: '#10B981',
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          transition: 'all 0.2s',
+                          height: 'fit-content'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(16, 185, 129, 0.2)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)'; }}
+                      >
+                        <IoVolumeHighOutline size={14} /> Listen
+                      </button>
+                    </div>
+                    <div className="sp-select-wrapper">
+                      <select
+                        className="sp-select"
+                        value={voicePreference}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setVoicePreference(val);
+                          playVoiceSample(val);
+                        }}
+                      >
+                        <option value="voice1">Voice 1</option>
+                        <option value="voice2">Voice 2</option>
                       </select>
                       <IoChevronForward className="sp-select-icon" />
                     </div>
@@ -221,7 +305,7 @@ function SettingsPage() {
                   </div>
                   <IoChevronForward className="sp-list-chevron" />
                 </button>
-                
+
                 <button className="sp-list-item" onClick={() => openLegal('privacy')}>
                   <div className="sp-list-content">
                     <span className="sp-list-label">Privacy Policy</span>

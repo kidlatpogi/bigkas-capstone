@@ -42,6 +42,7 @@ function TutorialOverlay({
   isOpen,
   onClose,
   onFinish,
+  onActiveStepChange,
   steps = null,
   robotImage = defaultRobotImage,
   finalRobotImage = defaultFinalRobotImage,
@@ -142,6 +143,15 @@ function TutorialOverlay({
   const [anchoredCompanionStyle, setAnchoredCompanionStyle] = useState(null);
 
   const activeStep = useMemo(() => tutorialSteps[currentStep], [tutorialSteps, currentStep]);
+
+  useEffect(() => {
+    if (!isOpen || !activeStep) return;
+    onActiveStepChange?.({
+      step: activeStep,
+      index: currentStep,
+      textSegment: stepTextSegment,
+    });
+  }, [activeStep, currentStep, isOpen, onActiveStepChange, stepTextSegment]);
 
   const displayedStepText = useMemo(() => {
     if (!activeStep?.text) return '';

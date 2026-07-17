@@ -337,6 +337,10 @@
   min-height: 14.5rem;
 }
 
+.analyzing-bubble--score-breakdown {
+  width: min(calc(100vw - 2rem), 42rem);
+}
+
 .analyzing-result-text {
   margin: 0.4rem 0 0;
   font-family: 'Nunito', sans-serif;

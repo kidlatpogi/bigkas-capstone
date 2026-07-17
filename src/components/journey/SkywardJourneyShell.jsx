@@ -23,6 +23,7 @@ function SkywardJourneyShell({
   recommendedLevel,
   entranceFromNav,
   scrollToStepIndex,
+  autoScrollPreview = false,
   renderTaskCard,
   onActiveTaskIdChange,
 }) {
@@ -239,6 +240,7 @@ function SkywardJourneyShell({
       onLevelChange={handleLevelChange}
       entranceFromNav={entranceFromNav}
       scrollToStepIndex={scrollToStepIndex}
+      autoScrollPreview={autoScrollPreview}
       renderStepContent={renderStepContent}
     />
   );

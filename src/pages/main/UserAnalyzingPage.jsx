@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import { useAuthContext } from '../../context/useAuthContext';
 import { supabase } from '../../lib/supabase';
@@ -59,6 +59,7 @@ function formatEntryScale(percent0to100) {
 }
 
 const GLOBAL_MUTE_KEY = 'bigkas_global_audio_muted_v1';
+const DEVELOPER_PREVIEW_SESSION_KEY = 'bigkas_developer_onboarding_preview_v1';
 const RESULT_ROBOT_POOL = [
   robotImage0001,
   robotImage0002,
@@ -108,7 +109,12 @@ const LEVEL_CONTENT = {
 
 function UserAnalyzingPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, updateUserMetadata } = useAuthContext();
+  const isDeveloperPreview =
+    location.state?.developerPreview === true ||
+    (typeof window !== 'undefined' && window.sessionStorage.getItem(DEVELOPER_PREVIEW_SESSION_KEY) === '1');
+  const developerPreviewAnalysis = location.state?.developerPreviewAnalysis || {};
   const [error, setError] = useState('');
   const [isReady, setIsReady] = useState(false);
   const [isPersisting, setIsPersisting] = useState(false);
@@ -154,9 +160,13 @@ function UserAnalyzingPage() {
     const rawProfileScore = clampScore(user?.speakerProfile?.baseline_score ?? 0);
     return formatEntryScale(rawProfileScore);
   }, [user?.speakerProfile?.baseline_score]);
+  const profilingPercent = useMemo(
+    () => clampScore(user?.speakerProfile?.baseline_score ?? 0),
+    [user?.speakerProfile?.baseline_score],
+  );
   const pretestEntryScore = useMemo(
-    () => formatEntryScale(analysis.freePretestScore),
-    [analysis.freePretestScore],
+    () => formatEntryScale(analysis.finalScore),
+    [analysis.finalScore],
   );
   const visualEntryScore = useMemo(
     () => formatEntryScale(analysis.visualScore),
@@ -179,6 +189,35 @@ function UserAnalyzingPage() {
       let verbalScore = 0;
       let vocalScore = 0;
       let visualScore = 0;
+
+      if (isDeveloperPreview) {
+        freePretestScore = clampScore(developerPreviewAnalysis.freePretestScore ?? 72);
+        verbalScore = clampScore(developerPreviewAnalysis.verbalScore ?? 70);
+        vocalScore = clampScore(developerPreviewAnalysis.vocalScore ?? 74);
+        visualScore = clampScore(developerPreviewAnalysis.visualScore ?? 72);
+
+        const finalScore = calculateMehrabianTotal({
+          verbalScore,
+          vocalScore,
+          visualScore,
+        });
+        const entryScore = mapPercentToEntryScore(finalScore);
+        const levelBand = getBigkasLevelFromScore(entryScore);
+
+        if (!cancelled) {
+          setAnalysis({
+            verbalScore,
+            vocalScore,
+            visualScore,
+            freePretestScore,
+            finalScore,
+            levelNumber: levelBand.levelNumber,
+            levelName: levelBand.levelName,
+          });
+          setIsReady(true);
+        }
+        return;
+      }
 
       if (userPretestFreeScore > 0) {
         freePretestScore = userPretestFreeScore;
@@ -288,11 +327,30 @@ function UserAnalyzingPage() {
     return () => {
       cancelled = true;
     };
-  }, [user?.id, userPretestFreeScore, userPretestFreeSessionId]);
+  }, [
+    developerPreviewAnalysis.freePretestScore,
+    developerPreviewAnalysis.verbalScore,
+    developerPreviewAnalysis.visualScore,
+    developerPreviewAnalysis.vocalScore,
+    isDeveloperPreview,
+    user?.id,
+    userPretestFreeScore,
+    userPretestFreeSessionId,
+  ]);
 
   const persistAndReveal = useCallback(async () => {
     if (!isReady || isPersisting) return;
     if (showLevelReveal) return;
+
+    if (isDeveloperPreview) {
+      if (analyzingAudioRef.current) {
+        analyzingAudioRef.current.pause();
+        analyzingAudioRef.current.currentTime = 0;
+      }
+      setIsPersisted(true);
+      setShowLevelReveal(true);
+      return;
+    }
 
     if (!isPersisted) {
       setIsPersisting(true);
@@ -361,6 +419,7 @@ function UserAnalyzingPage() {
     isPersisted,
     isPersisting,
     isReady,
+    isDeveloperPreview,
     showLevelReveal,
     updateUserMetadata,
     user?.id,
@@ -517,6 +576,7 @@ function UserAnalyzingPage() {
     navigate(ROUTES.ACTIVITY, {
       replace: true,
       state: {
+        developerPreview: isDeveloperPreview,
         skywardEntrance: true,
         launchFreeSpeechTutorial: true,
         t: Date.now(),
@@ -529,22 +589,25 @@ function UserAnalyzingPage() {
       {!showLevelReveal ? null : showScoreBreakdown ? (
         <section className="analyzing-intro">
           <div className="profiling-unit">
-            <article className="analyzing-bubble analyzing-bubble--result" aria-label="Score breakdown">
+            <article className="analyzing-bubble analyzing-bubble--result analyzing-bubble--score-breakdown" aria-label="Score breakdown">
               <p className="analyzing-bubble-kicker">B-01:</p>
               <p className="analyzing-result-text">{scoreBreakdownContent.text}</p>
 
               <div className="analyzing-breakdown-score-page">
                 <p>
-                  Profiling (<strong className="analyzing-score-value">{profilingEntryScore}/5</strong>): Your personal comfort and confidence levels.
+                  Profiling (<strong className="analyzing-score-value">{profilingEntryScore}/5</strong>): Your answers created a comfort and confidence baseline: {profilingPercent}% mapped to the 1-5 scale.
                 </p>
                 <p>
-                  AI Pre-test (<strong className="analyzing-score-value">{pretestEntryScore}/5</strong>): An objective look at your Triple V:
+                  AI Pre-test (<strong className="analyzing-score-value">{pretestEntryScore}/5</strong>): Your recording was scored with Triple V: Visual 55% + Vocal 38% + Verbal 7% = {analysis.finalScore}%.
                 </p>
                 <ul className="analyzing-breakdown-list">
-                  <li>Visual (55%): <strong className="analyzing-score-value">{visualEntryScore}/5</strong> - Eye contact and gestures.</li>
-                  <li>Vocal (38%): <strong className="analyzing-score-value">{vocalEntryScore}/5</strong> - Pitch and Projection.</li>
-                  <li>Verbal (7%): <strong className="analyzing-score-value">{verbalEntryScore}/5</strong> - Vocabulary and filler use.</li>
+                  <li>Visual (55%): <strong className="analyzing-score-value">{visualEntryScore}/5</strong> from {analysis.visualScore}% - eye contact, posture, and gestures.</li>
+                  <li>Vocal (38%): <strong className="analyzing-score-value">{vocalEntryScore}/5</strong> from {analysis.vocalScore}% - pitch, projection, and pacing.</li>
+                  <li>Verbal (7%): <strong className="analyzing-score-value">{verbalEntryScore}/5</strong> from {analysis.verbalScore}% - vocabulary, clarity, and filler control.</li>
                 </ul>
+                <p>
+                  Your placement follows the weighted AI Pre-test score; profiling adds confidence context.
+                </p>
               </div>
 
               <div className="analyzing-actions">

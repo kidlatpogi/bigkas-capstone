@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Volume2, VolumeX } from 'lucide-react';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
@@ -55,7 +55,7 @@ const INITIAL_FORM = {
 };
 
 const INTRO_MUTE_KEY = 'bigkas_profiling_intro_muted';
-const PRETEST_AUDIO_WINDOW_KEY = '__bigkasBeforePretestAudio';
+const DEVELOPER_PREVIEW_SESSION_KEY = 'bigkas_developer_onboarding_preview_v1';
 const QUESTION_VOICE_SOURCES = [
   profilingQuestion1Voice,
   profilingQuestion2Voice,
@@ -80,7 +80,7 @@ function getSpeakerLevelNumber(score) {
 function computeBaselineScore(form) {
   const scoring = { Yes: 2, Sometimes: 6, No: 10 };
   let total = 0;
-  
+
   const keys = [
     'visual_eye_contact', 'visual_gestures', 'visual_energy', 'visual_posture',
     'vocal_projection', 'vocal_expression', 'vocal_pacing',
@@ -148,24 +148,38 @@ function Typewriter({ text, onComplete, delay = 18, charsPerTick = 2 }) {
 
 function UserProfilingPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { updateUserMetadata, user, isAdminAuthenticated } = useAuthContext();
+  const isDeveloperPreview =
+    location.state?.developerPreview === true ||
+    (typeof window !== 'undefined' && window.sessionStorage.getItem(DEVELOPER_PREVIEW_SESSION_KEY) === '1');
   const introSecondMessage =
     'Before we begin, we need to assess your current Public Speaking Level. This includes 2 demographic questions, 10 short profiling questions and one small speaking pre-test. These tests ensure I can customize your experience and guide you smoothly throughout your entire journey!';
   const readyMessage =
     "Awesome! Since you're ready, let's jump right into your 10 profiling questions! And don't worry, you can answer every single one with a simple Yes, Sometimes, or No.";
-  const outroFirstMessage = 'Nice work, your profiling questions are complete.';
-  const outroMissionMessage = "Your Free Speech Pre-test is ready. Continue when you're ready for B-01's final instructions.";
+  const [selectedVoice, setSelectedVoice] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.localStorage.getItem('bigkas_b01_voice') || 'voice1';
+    }
+    return 'voice1';
+  });
 
-  const [screen, setScreen] = useState(() => (user?.profilingCompleted ? 'outro' : 'intro'));
-  const [introStep, setIntroStep] = useState(() => (user?.profilingCompleted ? 2 : 0));
+  const handleSelectVoice = (voiceKey) => {
+    setSelectedVoice(voiceKey);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('bigkas_b01_voice', voiceKey);
+    }
+  };
+
+  const [screen, setScreen] = useState('voice_select');
+  const [introStep, setIntroStep] = useState(0);
   const [isIntroTypingDone, setIsIntroTypingDone] = useState(false);
   const [isReadyTypingDone, setIsReadyTypingDone] = useState(false);
-  const [isOutroTypingDone, setIsOutroTypingDone] = useState(false);
   const [form, setForm] = useState(INITIAL_FORM);
   const [demographicIndex, setDemographicIndex] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isProfileSaved, setIsProfileSaved] = useState(() => Boolean(user?.profilingCompleted));
+  const [isProfileSaved, setIsProfileSaved] = useState(() => Boolean(user?.profilingCompleted && !isDeveloperPreview));
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [error, setError] = useState('');
   const [isMuted, setIsMuted] = useState(() => {
@@ -188,6 +202,12 @@ function UserProfilingPage() {
     }
   }, [isAdminAuthenticated, navigate]);
 
+  useEffect(() => {
+    if (user?.profilingCompleted && !isDeveloperPreview) {
+      navigate(ROUTES.USER_PRETEST, { replace: true });
+    }
+  }, [user?.profilingCompleted, isDeveloperPreview, navigate]);
+
   /**
    * Helper to get or create an audio instance for a source
    */
@@ -209,13 +229,13 @@ function UserProfilingPage() {
     if (typeof window === 'undefined') return;
 
     const toPreload = [];
-    
+
     // Initial intro audios
     if (screen === 'intro') {
       toPreload.push(introVoice1, introVoice2);
       // Next potential step
       toPreload.push(demographicGenderVoice);
-    } 
+    }
     else if (screen === 'demographics') {
       toPreload.push(demographicGenderVoice, demographicAgeVoice);
       // Next potential step
@@ -245,6 +265,17 @@ function UserProfilingPage() {
       audioMap.current = {};
     };
   }, [screen, currentIndex, isMuted]);
+
+  const playSample = (voiceKey) => {
+    const sampleUrl = voiceKey === 'voice2'
+      ? 'https://assets.bigkas.site/Voices/Voice%202%20-%20Sample.mp3'
+      : 'https://assets.bigkas.site/Voices/Voice%201%20-%20Sample.mp3';
+    stopAllIntroAudios();
+    const audio = new Audio(sampleUrl);
+    audio.muted = isMuted;
+    audio.play().catch(() => { });
+    audioMap.current[sampleUrl] = audio;
+  };
 
   /**
    * BF-Cache & Resource Cleanup
@@ -295,7 +326,7 @@ function UserProfilingPage() {
       });
 
       audio.currentTime = 0;
-      audio.play().catch(() => {});
+      audio.play().catch(() => { });
     };
 
     if (screen === 'intro' && introStep === 0) {
@@ -323,7 +354,7 @@ function UserProfilingPage() {
     });
 
     audio.currentTime = 0;
-    audio.play().catch(() => {});
+    audio.play().catch(() => { });
   }, [currentIndex, isMuted, screen]);
 
   const updateField = (key, value) => {
@@ -401,10 +432,10 @@ function UserProfilingPage() {
 
   const handleSubmit = async ({ nextForm = null } = {}) => {
     if (isSubmitting) return;
-    
+
     // Use the provided form (for immediate updates) or the current state
     const workingForm = nextForm || form;
-    
+
     // Identify exactly what is missing for better debugging and user feedback
     const pendingProfiling = QUESTIONS.filter((q) => !isQuestionAnswered(q, workingForm[q.key]));
     const pendingDemographics = DEMOGRAPHIC_QUESTIONS.filter((q) => !isQuestionAnswered(q, workingForm[q.key]));
@@ -420,9 +451,9 @@ function UserProfilingPage() {
         ...pendingDemographics.map(q => q.label.split('?')[0] + '?'),
         ...pendingProfiling.map(q => `Question ${QUESTIONS.findIndex(pq => pq.key === q.key) + 1}`)
       ];
-      
+
       setError(`Please answer all questions before finishing. Missing: ${missingLabels.join(', ')}`);
-      
+
       // If profiling questions are missing, jump to the first missing one
       if (pendingProfiling.length > 0) {
         const firstMissingIdx = QUESTIONS.findIndex(q => q.key === pendingProfiling[0].key);
@@ -438,7 +469,7 @@ function UserProfilingPage() {
           setScreen('demographics');
         }
       }
-      
+
       return;
     }
 
@@ -450,6 +481,24 @@ function UserProfilingPage() {
     setIsProfileSaved(false);
     setIsSubmitting(true);
     console.log('[Profiling] Validation passed. Submitting profile...');
+
+    if (isDeveloperPreview) {
+      setIsSubmitting(false);
+      console.log('[Profiling] Developer preview mode: profile was not saved.');
+      setIsProfileSaved(true);
+
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem('bigkas_current_training_session');
+        window.sessionStorage.removeItem('bigkas_pretest_tutorial_seen');
+      }
+      navigate(ROUTES.USER_PRETEST, {
+        replace: true,
+        state: {
+          developerPreview: true,
+        },
+      });
+      return;
+    }
 
     const submittedBaselineScore = computeBaselineScore(workingForm);
     const submittedBaselineLevelNumber = getSpeakerLevelNumber(submittedBaselineScore);
@@ -477,7 +526,7 @@ function UserProfilingPage() {
       pretest_free_score: null,
       onboarding_completed: false,
       onboarding_level_analysis: null,
-      onboarding_stage: 'profiling',
+      onboarding_stage: 'pretest',
     };
 
     const result = await updateUserMetadata(payload);
@@ -490,50 +539,15 @@ function UserProfilingPage() {
       return;
     }
 
-    console.log('[Profiling] Profile saved. Pre-test intro is ready.');
-    setIsOutroTypingDone(false);
+    console.log('[Profiling] Profile saved. Redirecting to pre-test...');
     setIsProfileSaved(true);
-    setScreen('outro');
-  };
-
-  const continueToPretest = async () => {
-    if (isSubmitting) return;
-    stopAllIntroAudios();
-    if (typeof window !== 'undefined') {
-      const pretestAudio = new Audio(beforePretestingVoice);
-      pretestAudio.preload = 'auto';
-      pretestAudio.muted = isMuted;
-      window[PRETEST_AUDIO_WINDOW_KEY] = pretestAudio;
-      if (!isMuted) {
-        pretestAudio.currentTime = 0;
-        pretestAudio.play().catch(() => {});
-      }
-    }
-    setIsSubmitting(true);
-    const result = await updateUserMetadata({
-      onboarding_stage: 'pretest',
-      pretest_completed: false,
-      pretest_scripted_completed: false,
-      pretest_free_completed: false,
-      onboarding_completed: false,
-    });
-    setIsSubmitting(false);
-    if (!result?.success) {
-      if (typeof window !== 'undefined') {
-        const pretestAudio = window[PRETEST_AUDIO_WINDOW_KEY];
-        pretestAudio?.pause?.();
-        delete window[PRETEST_AUDIO_WINDOW_KEY];
-      }
-      setError(result?.error || 'Failed to continue to pre-test. Please try again.');
-      return;
-    }
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem('bigkas_current_training_session');
       window.sessionStorage.removeItem('bigkas_pretest_tutorial_seen');
     }
     navigate(ROUTES.USER_PRETEST, { replace: true });
   };
-  const canProceedQuestion = currentQuestion 
+  const canProceedQuestion = currentQuestion
     ? isQuestionAnswered(currentQuestion, form[currentQuestion.key])
     : false;
 
@@ -603,6 +617,7 @@ function UserProfilingPage() {
     });
   };
 
+
   const handleIntroContinue = () => {
     stopAllIntroAudios();
     if (introStep === 0) {
@@ -637,6 +652,66 @@ function UserProfilingPage() {
 
   return (
     <div className={`user-profiling-page user-profiling-page--${screen} ${screen !== 'questions' ? 'is-gate-screen' : ''}`}>
+      {screen === 'voice_select' && (
+        <section className="profiling-intro profiling-gate--pop">
+          <div className="profiling-unit">
+            <article className="profiling-intro-bubble profiling-intro-bubble--voice-select" aria-label="Voice selection">
+              <p>
+                Welcome! Before we dive into mastering public speaking, let’s choose my voice. Listen to the samples below and select your favorite!
+              </p>
+
+              <div style={{ display: 'flex', gap: '20px', margin: '24px 0', justifyContent: 'center' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleSelectVoice('voice1');
+                    playSample('voice1');
+                  }}
+                  className={`profiling-voice-square-btn ${selectedVoice === 'voice1' ? 'is-selected' : 'is-unselected'}`}
+                >
+                  <Volume2 size={24} />
+                  <span>Voice 1</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleSelectVoice('voice2');
+                    playSample('voice2');
+                  }}
+                  className={`profiling-voice-square-btn ${selectedVoice === 'voice2' ? 'is-selected' : 'is-unselected'}`}
+                >
+                  <Volume2 size={24} />
+                  <span>Voice 2</span>
+                </button>
+              </div>
+
+              <div className="profiling-intro-actions">
+                <div className="profiling-submit-btn">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      stopAllIntroAudios();
+                      setScreen('intro');
+                      setIntroStep(0);
+                    }}
+                  >
+                    Continue
+                  </button>
+                </div>
+              </div>
+            </article>
+            <div className="profiling-intro-robot">
+              <div className="profiling-intro-robot-media" aria-hidden="true">
+                <video className="profiling-intro-video" autoPlay loop muted playsInline>
+                  <source src={waveWebm} type="video/webm" />
+                  <source src={waveMp4} type="video/mp4" />
+                </video>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {screen === 'intro' && (
         <section className="profiling-intro profiling-gate--pop">
           <div className="profiling-unit">
@@ -891,48 +966,6 @@ function UserProfilingPage() {
         </section>
       )}
 
-      {screen === 'outro' && (
-        <section className="profiling-intro profiling-intro--pretest profiling-gate--pop">
-          <div className="profiling-unit">
-            <article
-              className="profiling-intro-bubble profiling-intro-bubble--pretest profiling-intro-bubble--outro-typing"
-              aria-label="Before pre-testing message"
-            >
-              <p className="profiling-pretest-text">
-                <strong>B-01:</strong>
-                <br />
-                {outroFirstMessage}
-              </p>
-              <p className="profiling-pretest-text profiling-pretest-text--mission">
-                <strong>Your mission:</strong>
-                <br />
-                {isOutroTypingDone ? (
-                  outroMissionMessage
-                ) : (
-                  <Typewriter text={outroMissionMessage} onComplete={() => setIsOutroTypingDone(true)} />
-                )}
-              </p>
-              <div className="profiling-intro-actions profiling-intro-actions--end">
-                <div className="profiling-submit-btn">
-                  <button type="button" onClick={continueToPretest} disabled={!isOutroTypingDone || isSubmitting || !isProfileSaved}>
-                    {isSubmitting ? 'Saving...' : 'Start Pre-test'}
-                  </button>
-                </div>
-              </div>
-              {error && <p className="profiling-error">{error}</p>}
-            </article>
-
-            <div className="profiling-intro-robot">
-              <div className="profiling-intro-robot-media profiling-intro-robot-media--ready" aria-hidden="true">
-                <video className="profiling-intro-video" autoPlay loop muted playsInline>
-                  <source src={waveWebm} type="video/webm" />
-                  <source src={waveMp4} type="video/mp4" />
-                </video>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
       {renderAudioToggle()}
     </div>
   );

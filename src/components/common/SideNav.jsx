@@ -17,17 +17,25 @@ import {
   getClaimableAchievements,
   claimAchievement,
   claimAllAchievements,
+  syncClaimableAchievements,
 } from '../../utils/achievementClaims';
 import {
   getPublishedUnlockedBadgeIds,
   syncUnlockedBadgeIds,
 } from '../../utils/achievementNavBadge';
 import { getSpriteUrl } from '../../utils/assetUtils';
-import { claimAchievementInDB } from '../../services/achievementsService';
+import {
+  claimAllAchievementsInDB,
+  claimAchievementInDB,
+  fetchUserAchievements,
+  unclaimAllAchievementsInDB,
+} from '../../services/achievementsService';
 import './SideNav.css';
 
 const bigkasLogo = '/images/bigkas-logo-72.webp';
 const badgeImg = getSpriteUrl('Badges/Badge.png');
+const DEVELOPER_POWER_EMAIL = 'kidlat17@bigkas.site';
+const DEVELOPER_PREVIEW_SESSION_KEY = 'bigkas_developer_onboarding_preview_v1';
 
 const PRIMARY_NAV_ITEMS = [
   { to: ROUTES.ACTIVITY, label: 'Home', icon: IoHomeOutline },
@@ -35,6 +43,10 @@ const PRIMARY_NAV_ITEMS = [
   { to: ROUTES.FRAMEWORKS, label: 'Learn', icon: IoBookOutline },
   { to: ROUTES.ACHIEVEMENTS, label: 'Achievement', icon: IoMedalOutline },
 ];
+
+function normalizeRole(role) {
+  return String(role || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
 
 export default function SideNav() {
   const location = useLocation();
@@ -49,6 +61,11 @@ export default function SideNav() {
   const [notifTab, setNotifTab] = useState('all');
   const [claimingId, setClaimingId] = useState(null);
   const [congratsBadge, setCongratsBadge] = useState(null);
+  const [developerAction, setDeveloperAction] = useState('');
+  const [developerStatus, setDeveloperStatus] = useState('');
+  const hasDeveloperPowers =
+    String(user?.email || '').trim().toLowerCase() === DEVELOPER_POWER_EMAIL &&
+    normalizeRole(user?.role) === 'superadmin';
 
   const isSettingsRoute = useMemo(
     () => location.pathname === ROUTES.PROFILE || location.pathname.startsWith(ROUTES.SETTINGS),
@@ -126,6 +143,94 @@ export default function SideNav() {
       handleClaimNavigate();
     } finally {
       setClaimingId(null);
+    }
+  };
+
+  const refreshAchievementDevState = async () => {
+    if (!user?.id) return [];
+    const data = await fetchUserAchievements(user.id, user);
+    syncClaimableAchievements(data, user.id);
+    syncUnlockedBadgeIds(data.filter((achievement) => achievement.claimed).map((achievement) => achievement.id));
+    setClaimables(getClaimableAchievements(user.id));
+    setClaimableCount(getClaimableAchievementsCount(user.id));
+    return data;
+  };
+
+  const handleReplayProfilingPreview = () => {
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem(DEVELOPER_PREVIEW_SESSION_KEY, '1');
+      window.sessionStorage.removeItem('bigkas_pretest_tutorial_seen');
+      window.localStorage.removeItem('bigkas_current_training_session');
+    }
+    setDeveloperStatus('Preview mode: full onboarding will not save data.');
+    navigate(ROUTES.USER_PROFILING, {
+      state: {
+        developerPreview: true,
+        t: Date.now(),
+      },
+    });
+  };
+
+  const handleReplayPretestPreview = () => {
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem(DEVELOPER_PREVIEW_SESSION_KEY, '1');
+      window.sessionStorage.removeItem('bigkas_pretest_tutorial_seen');
+      window.localStorage.removeItem('bigkas_current_training_session');
+    }
+    setDeveloperStatus('Preview mode: pre-testing will not save data.');
+    navigate(ROUTES.USER_PRETEST, {
+      state: {
+        developerPreview: true,
+        t: Date.now(),
+      },
+    });
+  };
+
+  const handleReplayFrameworksTutorial = () => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('bigkas_free_speech_tutorial_seen_v1', '0');
+    }
+    setDeveloperStatus('Replaying the tutorial walkthrough.');
+    navigate(ROUTES.ACTIVITY, {
+      state: {
+        skywardEntrance: true,
+        launchFreeSpeechTutorial: true,
+        skipTutorialIntro: true,
+        t: Date.now(),
+      },
+    });
+  };
+
+  const handleClaimAchievementsForDev = async () => {
+    if (!user?.id || developerAction) return;
+    setDeveloperAction('claim');
+    setDeveloperStatus('');
+    try {
+      const rows = await claimAllAchievementsInDB(user.id);
+      claimAllAchievements(user.id);
+      await refreshAchievementDevState();
+      setDeveloperStatus(`Claimed ${rows.length} achievements for this account.`);
+    } catch (err) {
+      console.error('Developer achievement claim failed:', err);
+      setDeveloperStatus(err?.message || 'Failed to claim achievements.');
+    } finally {
+      setDeveloperAction('');
+    }
+  };
+
+  const handleUnclaimAchievementsForDev = async () => {
+    if (!user?.id || developerAction) return;
+    setDeveloperAction('unclaim');
+    setDeveloperStatus('');
+    try {
+      const rows = await unclaimAllAchievementsInDB(user.id);
+      await refreshAchievementDevState();
+      setDeveloperStatus(`Unclaimed ${rows.length} achievements for this account.`);
+    } catch (err) {
+      console.error('Developer achievement unclaim failed:', err);
+      setDeveloperStatus(err?.message || 'Failed to unclaim achievements.');
+    } finally {
+      setDeveloperAction('');
     }
   };
 
@@ -348,6 +453,43 @@ export default function SideNav() {
           </div>
         ) : null}
       </nav>
+
+      {hasDeveloperPowers ? (
+        <section className="side-nav-dev-tools" aria-label="Developer tools">
+          <p className="side-nav-dev-title">Developer Power</p>
+          <button type="button" className="side-nav-dev-btn" onClick={handleReplayProfilingPreview}>
+            <IoStatsChartOutline className="side-nav-icon" aria-hidden="true" />
+            <span>Preview onboarding</span>
+          </button>
+          <button type="button" className="side-nav-dev-btn" onClick={handleReplayPretestPreview}>
+            <IoStatsChartOutline className="side-nav-icon" aria-hidden="true" />
+            <span>Replay pre-testing</span>
+          </button>
+          <button type="button" className="side-nav-dev-btn" onClick={handleReplayFrameworksTutorial}>
+            <IoBookOutline className="side-nav-icon" aria-hidden="true" />
+            <span>Replay tutorial</span>
+          </button>
+          <button
+            type="button"
+            className="side-nav-dev-btn"
+            onClick={handleClaimAchievementsForDev}
+            disabled={developerAction !== ''}
+          >
+            <IoMedalOutline className="side-nav-icon" aria-hidden="true" />
+            <span>{developerAction === 'claim' ? 'Claiming...' : 'Claim achievements'}</span>
+          </button>
+          <button
+            type="button"
+            className="side-nav-dev-btn side-nav-dev-btn--danger"
+            onClick={handleUnclaimAchievementsForDev}
+            disabled={developerAction !== ''}
+          >
+            <IoMedalOutline className="side-nav-icon" aria-hidden="true" />
+            <span>{developerAction === 'unclaim' ? 'Unclaiming...' : 'Unclaim achievements'}</span>
+          </button>
+          {developerStatus ? <p className="side-nav-dev-status">{developerStatus}</p> : null}
+        </section>
+      ) : null}
 
       <button type="button" className="side-nav-logout" onClick={handleLogoutClick}>
         <IoLogOutOutline aria-hidden="true" />

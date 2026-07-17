@@ -299,6 +299,25 @@ function resolveAdminEntryScore(profile) {
   return normalizeAdminEntryScore(profile?.diagnostic_score);
 }
 
+function formatAdminSpeakerLevel(num) {
+  const n = Number(num);
+  if (n === 1) return 'Level 1: Novice';
+  if (n === 2) return 'Level 2: Beginner';
+  if (n === 3) return 'Level 3: Intermediate';
+  if (n === 4) return 'Level 4: Advanced';
+  if (n === 5) return 'Level 5: Expert';
+  return `Level ${num}`;
+}
+
+function formatAuditJson(val) {
+  if (!val) return '-';
+  let str = typeof val === 'string' ? val : JSON.stringify(val, null, 2);
+  str = str.replace(/"(speaker_level|speaker_level_number)":\s*([1-5])/g, (match, key, val) => {
+    return `"${key}": "${formatAdminSpeakerLevel(val)}"`;
+  });
+  return str;
+}
+
 function getSpeakerLevelValue(profile) {
   const entryScore = resolveAdminEntryScore(profile);
   const derivedFromEntry = entryScore
@@ -1021,7 +1040,7 @@ function AdminLevelSelect({ value, onChange, label }) {
     <select value={String(value || 1)} onChange={onChange} aria-label={label}>
       {[1, 2, 3, 4, 5].map(level => (
         <option key={level} value={level}>
-          Level {level}
+          {formatAdminSpeakerLevel(level)}
         </option>
       ))}
     </select>
@@ -1694,7 +1713,7 @@ function AdminDashboardPage() {
       const lv = getSpeakerLevelValue(p);
       if (counts[lv] != null) counts[lv] += 1;
     });
-    return Object.entries(counts).map(([lv, value]) => ({ label: `Level ${lv}`, value }));
+    return Object.entries(counts).map(([lv, value]) => ({ label: formatAdminSpeakerLevel(lv), value }));
   }, [visibleUsers]);
 
   const kpis = useMemo(() => {
@@ -2006,7 +2025,7 @@ function AdminDashboardPage() {
         notPassedStudents.sort((a, b) => a.localeCompare(b));
 
         return {
-          level: `Level ${level.level}`,
+          level: formatAdminSpeakerLevel(level.level),
           range: level.range,
           focus: formatActivityFocus(activitiesInRange),
           category: level.label,
@@ -2055,7 +2074,7 @@ function AdminDashboardPage() {
 
       return {
         id: activity.id,
-        level: `Level ${level}`,
+        level: formatAdminSpeakerLevel(level),
         stage,
         stageLabel: `Stage ${stage}`,
         chartLabel: `L${level}-S${stage}`,
@@ -3538,13 +3557,14 @@ function AdminDashboardPage() {
       return {
         title: `Users Report${dateTitleSuffix}`,
         filename: `bigkas-users-report${dateSuffix}`,
-        headers: ['Time', 'User', 'ID / Student No.', 'Section', 'Journey', 'Status'],
+        headers: ['Time', 'User', 'ID / Student No.', 'Section', 'Journey', 'Speaker Level', 'Status'],
         rows: filteredReportStudentRows.map(student => [
           student.created_at ? new Date(student.created_at).toLocaleString() : '-',
           getDisplayName(student, student.id),
           student.student_number || '-',
           getLearnerGroupLabel(student, sectionById, sectionIdByStudentId),
           `Journey ${getProgressLevelValue(student)}`,
+          formatAdminSpeakerLevel(getSpeakerLevelValue(student)),
           isDeletedProfile(student) ? 'Archived' : 'Active',
         ]),
       };
@@ -3578,7 +3598,7 @@ function AdminDashboardPage() {
           getDisplayName(profiles.find(p => p.id === log.actor_id), log.actor_id || 'Unknown login'),
           formatAuditAction(log.action),
           log.entity_type,
-          JSON.stringify(log.new_values || log.old_values || {}).slice(0, 120) || '-',
+          formatAuditJson(log.new_values || log.old_values).slice(0, 120) || '-',
         ]),
       };
     }
@@ -3725,7 +3745,7 @@ function AdminDashboardPage() {
               <article className="admin-card admin-kpi-card">
                 <p className="admin-kpi-label">USERS IN VIEW</p>
                 <p className="admin-kpi-value">{loading ? <Skeleton width={60} /> : analyticsKpis.students}</p>
-                <p className="admin-kpi-footer">{analyticsSpeakerLevelFilter === 'all' ? 'All speaker levels' : `Speaker Level ${analyticsSpeakerLevelFilter}`}</p>
+                <p className="admin-kpi-footer">{analyticsSpeakerLevelFilter === 'all' ? 'All speaker levels' : formatAdminSpeakerLevel(analyticsSpeakerLevelFilter)}</p>
               </article>
             </section>
 
@@ -3740,11 +3760,11 @@ function AdminDashboardPage() {
                     <span>Speaker Level</span>
                     <select className="admin-filter-select" value={analyticsSpeakerLevelFilter} onChange={e => setAnalyticsSpeakerLevelFilter(e.target.value)}>
                       <option value="all">All Levels</option>
-                      <option value="1">Level 1</option>
-                      <option value="2">Level 2</option>
-                      <option value="3">Level 3</option>
-                      <option value="4">Level 4</option>
-                      <option value="5">Level 5</option>
+                      <option value="1">Level 1: Novice</option>
+                      <option value="2">Level 2: Beginner</option>
+                      <option value="3">Level 3: Intermediate</option>
+                      <option value="4">Level 4: Advanced</option>
+                      <option value="5">Level 5: Expert</option>
                     </select>
                   </label>
                 </div>
@@ -3774,11 +3794,11 @@ function AdminDashboardPage() {
                     <span>Speaker Level</span>
                     <select className="admin-filter-select" value={analyticsSpeakerLevelFilter} onChange={e => setAnalyticsSpeakerLevelFilter(e.target.value)}>
                       <option value="all">All Levels</option>
-                      <option value="1">Level 1</option>
-                      <option value="2">Level 2</option>
-                      <option value="3">Level 3</option>
-                      <option value="4">Level 4</option>
-                      <option value="5">Level 5</option>
+                      <option value="1">Level 1: Novice</option>
+                      <option value="2">Level 2: Beginner</option>
+                      <option value="3">Level 3: Intermediate</option>
+                      <option value="4">Level 4: Advanced</option>
+                      <option value="5">Level 5: Expert</option>
                     </select>
                   </label>
                 </div>
@@ -3809,11 +3829,11 @@ function AdminDashboardPage() {
                     <span>Speaker Level</span>
                     <select className="admin-filter-select" value={analyticsSpeakerLevelFilter} onChange={e => setAnalyticsSpeakerLevelFilter(e.target.value)}>
                       <option value="all">All Levels</option>
-                      <option value="1">Level 1</option>
-                      <option value="2">Level 2</option>
-                      <option value="3">Level 3</option>
-                      <option value="4">Level 4</option>
-                      <option value="5">Level 5</option>
+                      <option value="1">Level 1: Novice</option>
+                      <option value="2">Level 2: Beginner</option>
+                      <option value="3">Level 3: Intermediate</option>
+                      <option value="4">Level 4: Advanced</option>
+                      <option value="5">Level 5: Expert</option>
                     </select>
                   </label>
                 </div>
@@ -3892,7 +3912,7 @@ function AdminDashboardPage() {
                     <td><strong>{student.name}</strong></td>
                     <td>{student.section}</td>
                     <td>{student.completedActivities}/30</td>
-                    <td>Level {student.speakerLevel}</td>
+                    <td>{formatAdminSpeakerLevel(student.speakerLevel)}</td>
                     <td>{student.visualScore == null ? 'N/A' : `${student.visualScore}%`}</td>
                     <td>{student.vocalScore == null ? 'N/A' : `${student.vocalScore}%`}</td>
                     <td>{student.verbalScore == null ? 'N/A' : `${student.verbalScore}%`}</td>
@@ -4122,7 +4142,7 @@ function AdminDashboardPage() {
                     {showUserManagementStudentColumns && <td>{isAdminAccount ? '-' : u.student_number || '-'}</td>}
                     <td>{email}</td>
                     {showUserManagementStudentColumns && <td>{isAdminAccount ? '-' : `J-${journey}`}</td>}
-                    {showUserManagementStudentColumns && <td>{isAdminAccount ? '-' : `L-${speaking}`}</td>}
+                    {showUserManagementStudentColumns && <td>{isAdminAccount ? '-' : formatAdminSpeakerLevel(speaking)}</td>}
                     <td><span className={`admin-status-badge ${isDeletedProfile(u) ? 'is-archived' : 'is-active'}`}>{isDeletedProfile(u) ? 'Archived' : 'Active'}</span></td>
                     <td className="admin-actions-cell">
                       {isAdminAccount ? (
@@ -4275,8 +4295,8 @@ function AdminDashboardPage() {
               )}
               {reportType === 'students' && (
                 <>
-                  <thead><tr><th>Time</th><th>User</th><th>ID / Student No.</th><th>Section</th><th>Journey</th><th>Status</th></tr></thead>
-                  <tbody>{paginatedReportStudents.map(student => <tr key={student.id}><td>{student.created_at ? new Date(student.created_at).toLocaleString() : '-'}</td><td>{getDisplayName(student, student.id)}</td><td>{student.student_number || '-'}</td><td>{getLearnerGroupLabel(student, sectionById, sectionIdByStudentId)}</td><td>Journey {getProgressLevelValue(student)}</td><td>{isDeletedProfile(student) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
+                   <thead><tr><th>Time</th><th>User</th><th>ID / Student No.</th><th>Section</th><th>Journey</th><th>Speaker Level</th><th>Status</th></tr></thead>
+                   <tbody>{paginatedReportStudents.map(student => <tr key={student.id}><td>{student.created_at ? new Date(student.created_at).toLocaleString() : '-'}</td><td>{getDisplayName(student, student.id)}</td><td>{student.student_number || '-'}</td><td>{getLearnerGroupLabel(student, sectionById, sectionIdByStudentId)}</td><td>Journey {getProgressLevelValue(student)}</td><td>{formatAdminSpeakerLevel(getSpeakerLevelValue(student))}</td><td>{isDeletedProfile(student) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
                 </>
               )}
               {reportType === 'performance' && (
@@ -4287,8 +4307,8 @@ function AdminDashboardPage() {
               )}
               {reportType === 'audit' && isSuperadmin && (
                 <>
-                  <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Entity</th><th>Summary</th></tr></thead>
-                  <tbody>{paginatedReportAuditLogs.map(log => <tr key={log.id}><td>{new Date(log.created_at).toLocaleString()}</td><td>{getDisplayName(profiles.find(p => p.id === log.actor_id), log.actor_id || 'Unknown login')}</td><td>{formatAuditAction(log.action)}</td><td>{log.entity_type}</td><td>{JSON.stringify(log.new_values || log.old_values || {}).slice(0, 120) || '-'}</td></tr>)}</tbody>
+                   <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Entity</th><th>Summary</th></tr></thead>
+                   <tbody>{paginatedReportAuditLogs.map(log => <tr key={log.id}><td>{new Date(log.created_at).toLocaleString()}</td><td>{getDisplayName(profiles.find(p => p.id === log.actor_id), log.actor_id || 'Unknown login')}</td><td>{formatAuditAction(log.action)}</td><td>{log.entity_type}</td><td>{formatAuditJson(log.new_values || log.old_values).slice(0, 120) || '-'}</td></tr>)}</tbody>
                 </>
               )}
             </table></div>
@@ -4823,7 +4843,7 @@ function AdminDashboardPage() {
               <AdminUserField label="Target Level">
                 <div className="admin-level-picker">
                   <select name="target_level" defaultValue={editingContent?.target_level || 1} required>
-                    {targetLevelOptions.map(level => <option key={level} value={level}>Level {level}</option>)}
+                    {targetLevelOptions.map(level => <option key={level} value={level}>{formatAdminSpeakerLevel(level)}</option>)}
                   </select>
                   <button type="button" className="admin-btn admin-btn--ghost" onClick={requestNextTargetLevel}>Add Level</button>
                 </div>
@@ -4856,7 +4876,7 @@ function AdminDashboardPage() {
         <h3>{pendingContentSave.duplicateActivity ? 'Overwrite Activity Slot?' : `Confirm ${pendingContentSave.mode === 'edit' ? 'Changes' : 'New Item'}?`}</h3>
         {pendingContentSave.duplicateActivity ? (
           <p>
-            Level {pendingContentSave.data.target_level}, order {pendingContentSave.data.activity_order} already has
+            {formatAdminSpeakerLevel(pendingContentSave.data.target_level)}, order {pendingContentSave.data.activity_order} already has
             <strong> {pendingContentSave.duplicateActivity.title || 'an activity'}</strong>. Continue only if this replacement is intentional.
           </p>
         ) : (
@@ -4899,11 +4919,11 @@ function AdminDashboardPage() {
         <div className="admin-payload-content">
           <section className="admin-payload-section">
             <h4>Before</h4>
-            <pre><code>{JSON.stringify(inspectingLog.old_values || {}, null, 2)}</code></pre>
+            <pre><code>{formatAuditJson(inspectingLog.old_values)}</code></pre>
           </section>
           <section className="admin-payload-section">
             <h4>After</h4>
-            <pre><code>{JSON.stringify(inspectingLog.new_values || {}, null, 2)}</code></pre>
+            <pre><code>{formatAuditJson(inspectingLog.new_values)}</code></pre>
           </section>
         </div>
       </div></div>, document.body)}

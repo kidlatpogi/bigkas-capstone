@@ -9,11 +9,11 @@ export const GLOBAL_ACTIVITY_SCOPE = 'global';
  * Bigkas speaker levels (1.0–5.0 entry-point scale).
  */
 export const BIGKAS_LEVELS = [
-  { number: 1, name: 'Knowing Fundamentals', threshold: 2.0 },
-  { number: 2, name: 'Learning Your Style', threshold: 3.0 },
-  { number: 3, name: 'Increasing Knowledge', threshold: 4.0 },
-  { number: 4, name: 'Building Skills', threshold: 5.0 },
-  { number: 5, name: 'Demonstrating Expertise', threshold: Infinity },
+  { number: 1, name: 'Novice', threshold: 2.0 },
+  { number: 2, name: 'Beginner', threshold: 3.0 },
+  { number: 3, name: 'Intermediate', threshold: 4.0 },
+  { number: 4, name: 'Advanced', threshold: 5.0 },
+  { number: 5, name: 'Expert', threshold: Infinity },
 ];
 
 const TASK_XP_MAP = {

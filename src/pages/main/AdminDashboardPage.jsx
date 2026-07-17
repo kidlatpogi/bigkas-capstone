@@ -50,6 +50,7 @@ const ADMIN_PERMISSION_AREAS = [
 ];
 const BATCH_STUDENT_TEMPLATE_COLUMNS = ['Last Name', 'First Name', 'Student Number', 'Email'];
 const BATCH_TEACHER_TEMPLATE_COLUMNS = ['Last Name', 'First Name', 'Email'];
+const BATCH_SECTION_TEMPLATE_COLUMNS = ['Section Name', 'Teacher Email'];
 const STUDENT_ACCESS_ROLE_REVIEW = {
   id: STUDENT_ACCESS_ROLE_REVIEW_ID,
   name: 'User',
@@ -593,6 +594,7 @@ function normalizeBatchHeader(value) {
 }
 
 function getBatchTemplateColumns(accountType) {
+  if (accountType === 'section') return BATCH_SECTION_TEMPLATE_COLUMNS;
   return accountType === 'admin' ? BATCH_TEACHER_TEMPLATE_COLUMNS : BATCH_STUDENT_TEMPLATE_COLUMNS;
 }
 
@@ -602,6 +604,8 @@ function getBatchColumnKey(header) {
   if (normalized === 'firstname' || normalized === 'firsname' || normalized === 'givenname') return 'first_name';
   if (normalized === 'studentnumber' || normalized === 'studentno' || normalized === 'studentid') return 'student_number';
   if (normalized === 'email' || normalized === 'emailaddress') return 'email';
+  if (normalized === 'sectionname' || normalized === 'name' || normalized === 'section') return 'section_name';
+  if (normalized === 'teacheremail' || normalized === 'adminemail' || normalized === 'teacher') return 'teacher_email';
   return '';
 }
 
@@ -735,6 +739,129 @@ function parseXlsxWorksheet(xml, sharedStrings) {
   }).filter(row => row.some(value => value !== ''));
 }
 
+function getActivityColumnKey(header) {
+  const n = normalizeBatchHeader(header);
+  if (n === 'title' || n === 'activitytitle' || n === 'name') return 'title';
+  if (n === 'targetlevel' || n === 'level' || n === 'journey' || n === 'journeylevel') return 'target_level';
+  if (n === 'activityorder' || n === 'order' || n === 'seq' || n === 'sequence') return 'activity_order';
+  if (n === 'objective' || n === 'objectives' || n === 'learningobjective' || n === 'goal') return 'objective';
+  if (n === 'passingscore' || n === 'score' || n === 'minscore') return 'passing_score';
+  if (n === 'phasename' || n === 'phase' || n === 'pillar') return 'phase_name';
+  if (n === 'purpose' || n === 'description') return 'purpose';
+  return '';
+}
+
+function getModuleColumnKey(header) {
+  const n = normalizeBatchHeader(header);
+  if (n === 'levelnumber' || n === 'level' || n === 'journey') return 'level_number';
+  if (n === 'lessonnumber' || n === 'lesson' || n === 'order' || n === 'lessonorder') return 'lesson_number';
+  if (n === 'title' || n === 'lessontitle' || n === 'name') return 'title';
+  if (n === 'content' || n === 'theory' || n === 'lessoncontent' || n === 'text' || n === 'body') return 'content';
+  if (n === 'projectfocus' || n === 'focus') return 'project_focus';
+  if (n === 'objectives' || n === 'objective') return 'objectives';
+  if (n === 'assignment' || n === 'activity' || n === 'exercise') return 'assignment';
+  return '';
+}
+
+function buildContentBatchPreview(matrix, type) {
+  const rows = matrix.filter(row => row.some(value => String(value || '').trim()));
+  if (!rows.length) {
+    return {
+      columns: [],
+      rows: [],
+      invalidRows: [],
+      missingColumns: type === 'activities' ? ['Title', 'Target Level', 'Activity Order', 'Objective'] : ['Title', 'Level Number', 'Lesson Number', 'Content'],
+    };
+  }
+
+  const headerRow = rows[0];
+  const columnMap = headerRow.reduce((acc, header, index) => {
+    const key = type === 'activities' ? getActivityColumnKey(header) : getModuleColumnKey(header);
+    if (key) acc[key] = index;
+    return acc;
+  }, {});
+
+  const requiredKeys = type === 'activities'
+    ? ['title', 'target_level', 'activity_order', 'objective']
+    : ['title', 'level_number', 'lesson_number', 'content'];
+
+  const labelsByKey = type === 'activities'
+    ? { title: 'Title', target_level: 'Target Level', activity_order: 'Activity Order', objective: 'Objective' }
+    : { title: 'Title', level_number: 'Level Number', lesson_number: 'Lesson Number', content: 'Content' };
+
+  const missingColumns = requiredKeys
+    .filter(key => columnMap[key] === undefined)
+    .map(key => labelsByKey[key]);
+
+  const parsedRows = [];
+  const invalidRows = [];
+
+  for (let r = 1; r < rows.length; r++) {
+    const rawRow = rows[r];
+    const rowObj = {};
+    let isValid = true;
+
+    Object.keys(columnMap).forEach(key => {
+      const idx = columnMap[key];
+      const val = String(rawRow[idx] || '').trim();
+      rowObj[key] = val;
+    });
+
+    if (type === 'modules') {
+      rowObj.theory = rowObj.content || '';
+      rowObj.project_focus = rowObj.project_focus || '';
+      rowObj.objectives = rowObj.objectives || '';
+      rowObj.assignment = rowObj.assignment || '';
+    }
+
+    requiredKeys.forEach(key => {
+      const val = rowObj[key];
+      if (val === undefined || val === '') {
+        isValid = false;
+      }
+    });
+
+    if (isValid) {
+      if (type === 'activities') {
+        const lvl = Number(rowObj.target_level);
+        const ord = Number(rowObj.activity_order);
+        if (isNaN(lvl) || lvl < 1 || isNaN(ord) || ord < 1) {
+          isValid = false;
+        } else {
+          rowObj.target_level = lvl;
+          rowObj.activity_order = ord;
+          if (rowObj.passing_score !== undefined && rowObj.passing_score !== '') {
+            const score = Number(rowObj.passing_score);
+            rowObj.passing_score = isNaN(score) ? null : score;
+          } else {
+            rowObj.passing_score = null;
+          }
+        }
+      } else {
+        const lvl = Number(rowObj.level_number);
+        if (isNaN(lvl) || lvl < 0 || lvl > 5) {
+          isValid = false;
+        } else {
+          rowObj.level_number = lvl;
+        }
+      }
+    }
+
+    if (isValid) {
+      parsedRows.push(rowObj);
+    } else {
+      invalidRows.push({ rowIndex: r + 1, data: rawRow });
+    }
+  }
+
+  return {
+    columns: requiredKeys.map(k => labelsByKey[k]),
+    rows: parsedRows,
+    invalidRows,
+    missingColumns,
+  };
+}
+
 async function parseBatchSpreadsheetFile(file) {
   const extension = file.name.split('.').pop()?.toLowerCase();
   if (extension === 'csv') {
@@ -778,32 +905,42 @@ function buildBatchPreview(matrix, accountType) {
     if (key) acc[key] = index;
     return acc;
   }, {});
-  const requiredKeys = ['last_name', 'first_name', 'email'];
+
+  const requiredKeys = accountType === 'section'
+    ? ['section_name']
+    : ['last_name', 'first_name', 'email'];
+
   const labelsByKey = {
     last_name: 'Last Name',
     first_name: 'First Name',
     student_number: 'Student Number',
     email: 'Email',
+    section_name: 'Section Name',
+    teacher_email: 'Teacher Email',
   };
+
   const missingColumns = requiredKeys
     .filter(key => columnMap[key] === undefined)
     .map(key => labelsByKey[key]);
 
-  const parsedRows = rows.slice(1).map((row, index) => ({
-    rowNumber: index + 2,
-    last_name: row[columnMap.last_name] || '',
-    first_name: row[columnMap.first_name] || '',
-    student_number: row[columnMap.student_number] || '',
-    email: row[columnMap.email] || '',
-  })).filter(row => row.last_name || row.first_name || row.student_number || row.email);
-  const invalidRows = parsedRows.filter(row => (
-    !row.last_name
-    || !row.first_name
-    || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)
-  ));
+  const parsedRows = rows.slice(1).map((row, index) => {
+    const rowObj = { rowNumber: index + 2 };
+    Object.keys(columnMap).forEach(key => {
+      const idx = columnMap[key];
+      rowObj[key] = row[idx] || '';
+    });
+    return rowObj;
+  }).filter(row => Object.values(row).some(val => val !== '' && val !== row.rowNumber));
+
+  const invalidRows = parsedRows.filter(row => {
+    if (accountType === 'section') {
+      return !row.section_name;
+    }
+    return !row.last_name || !row.first_name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email);
+  });
 
   return {
-    columns: headerRow,
+    columns: requiredKeys.map(key => labelsByKey[key]),
     rows: parsedRows,
     invalidRows,
     missingColumns,
@@ -1285,6 +1422,7 @@ function AdminDashboardPage() {
   const [userPage, setUserPage] = useState(1);
   const USERS_PER_PAGE = 10;
   const [adminRosterPage, setAdminRosterPage] = useState(1);
+  const [adminSearchQuery, setAdminSearchQuery] = useState('');
   const ADMINS_PER_PAGE = 5;
   const [accessRolePage, setAccessRolePage] = useState(1);
   const ROLES_PER_PAGE = 5;
@@ -1301,11 +1439,19 @@ function AdminDashboardPage() {
   const [creatingContent, setCreatingContent] = useState(false);
   const [editingContent, setEditingContent] = useState(null);
   const [contentPage, setContentPage] = useState(1);
+  const [contentSearchQuery, setContentSearchQuery] = useState('');
   const [contentLevelFilter, setContentLevelFilter] = useState('all');
   const CONTENT_PER_PAGE = 10;
   const [contentLevelLimit, setContentLevelLimit] = useState(5);
   const [pendingContentSave, setPendingContentSave] = useState(null);
   const [pendingLevelAdd, setPendingLevelAdd] = useState(null);
+
+  const [contentBatchFile, setContentBatchFile] = useState(null);
+  const [contentBatchPreview, setContentBatchPreview] = useState(null);
+  const [showContentBatchPreviewModal, setShowContentBatchPreviewModal] = useState(false);
+  const [contentBatchImportStatus, setContentBatchImportStatus] = useState('idle');
+  const [contentBatchImportError, setContentBatchImportError] = useState('');
+  const [contentPreviewPage, setContentPreviewPage] = useState(1);
 
   const [creatingAdmin, setCreatingAdmin] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -1337,6 +1483,13 @@ function AdminDashboardPage() {
   const [successModal, setSuccessModal] = useState(null);
   const [reportStartDate, setReportStartDate] = useState('');
   const [reportEndDate, setReportEndDate] = useState('');
+
+  useEffect(() => {
+    setReportAdminsPage(1);
+    setReportUsersPage(1);
+    setReportPerformancePage(1);
+    setReportAuditPage(1);
+  }, [reportStartDate, reportEndDate, reportType]);
   const [reportAdminsPage, setReportAdminsPage] = useState(1);
   const [reportUsersPage, setReportUsersPage] = useState(1);
   const [reportPerformancePage, setReportPerformancePage] = useState(1);
@@ -1554,6 +1707,12 @@ function AdminDashboardPage() {
     () => profiles
       .filter(isAdminProfile)
       .filter((profile) => {
+        if (adminSearchQuery.trim()) {
+          const q = adminSearchQuery.toLowerCase();
+          const name = getDisplayName(profile, profile.id).toLowerCase();
+          const email = getProfileEmail(profile).toLowerCase();
+          if (!name.includes(q) && !email.includes(q)) return false;
+        }
         if (adminStatusFilter === 'active') return !isDeletedProfile(profile);
         if (adminStatusFilter === 'deleted') return isDeletedProfile(profile);
         return true;
@@ -1563,7 +1722,7 @@ function AdminDashboardPage() {
         if (deletedDelta !== 0) return deletedDelta;
         return getDisplayName(a, a.id).localeCompare(getDisplayName(b, b.id));
       }),
-    [profiles, adminStatusFilter]
+    [profiles, adminStatusFilter, adminSearchQuery]
   );
   const visibleSections = useMemo(() => {
     const activeSections = sections.filter(section => !section.archived_at);
@@ -2409,12 +2568,21 @@ function AdminDashboardPage() {
     return Array.from({ length: Math.max(5, contentLevelLimit, ...activityLevels, ...moduleLevels) }, (_, i) => i + 1);
   }, [activities, modules, contentLevelLimit]);
   const filteredContentItems = useMemo(() => {
-    if (contentLevelFilter === 'all') return contentItems;
-    return contentItems.filter(item => {
+    let list = contentItems;
+    if (contentSearchQuery.trim()) {
+      const q = contentSearchQuery.toLowerCase();
+      list = list.filter(item => {
+        const title = String(item.title || '').toLowerCase();
+        const objOrContent = String(item.objective || item.content || '').toLowerCase();
+        return title.includes(q) || objOrContent.includes(q);
+      });
+    }
+    if (contentLevelFilter === 'all') return list;
+    return list.filter(item => {
       const level = contentTab === 'activities' ? item.target_level : item.level_number;
       return Number(level) === Number(contentLevelFilter);
     });
-  }, [contentItems, contentLevelFilter, contentTab]);
+  }, [contentItems, contentLevelFilter, contentTab, contentSearchQuery]);
   const totalContentPages = Math.max(1, Math.ceil(filteredContentItems.length / CONTENT_PER_PAGE));
   const paginatedContentItems = useMemo(() => {
     const start = (contentPage - 1) * CONTENT_PER_PAGE;
@@ -2895,6 +3063,94 @@ function AdminDashboardPage() {
     await readBatchImportFile(file);
   };
 
+  const readContentBatchFile = async (file, type = contentTab) => {
+    setContentBatchFile(file);
+    setContentBatchImportStatus('reading');
+    setContentBatchImportError('');
+    setContentBatchPreview(null);
+    setContentPreviewPage(1);
+
+    try {
+      const matrix = await parseBatchSpreadsheetFile(file);
+      const preview = buildContentBatchPreview(matrix, type);
+      setContentBatchPreview(preview);
+      if (preview.missingColumns.length) {
+        setContentBatchImportStatus('error');
+        setContentBatchImportError(`Missing required columns: ${preview.missingColumns.join(', ')}`);
+        return;
+      }
+      if (!preview.rows.length) {
+        setContentBatchImportStatus('error');
+        setContentBatchImportError('No content rows were found below the header row.');
+        return;
+      }
+      if (preview.invalidRows.length) {
+        setContentBatchImportStatus('error');
+        setContentBatchImportError(`${preview.invalidRows.length} row${preview.invalidRows.length === 1 ? '' : 's'} contain invalid/empty values or bad numeric types.`);
+        return;
+      }
+      setContentBatchImportStatus('ready');
+      showToast(`${preview.rows.length} ${type === 'activities' ? 'activity' : 'module'} row${preview.rows.length === 1 ? '' : 's'} detected`);
+    } catch (fileError) {
+      setContentBatchImportStatus('error');
+      setContentBatchImportError(fileError.message || 'Failed to read the selected file.');
+    }
+  };
+
+  const handleContentFileChange = async (e) => {
+    const file = e.target.files?.[0] || null;
+    if (!file) {
+      setContentBatchFile(null);
+      setContentBatchImportStatus('idle');
+      setContentBatchImportError('');
+      setContentBatchPreview(null);
+      setContentPreviewPage(1);
+      return;
+    }
+    await readContentBatchFile(file);
+  };
+
+  const submitContentBatchImport = async () => {
+    if (!contentBatchFile || !contentBatchPreview?.rows?.length) return;
+    setContentBatchImportStatus('saving');
+    
+    try {
+      const { error } = await supabase.from(contentTab).insert(contentBatchPreview.rows);
+      if (error) throw error;
+
+      await recordAuditLog({
+        action: 'create',
+        entityType: contentTab,
+        newValues: {
+          bulk_upload: true,
+          count: contentBatchPreview.rows.length,
+          rows: contentBatchPreview.rows,
+        },
+      });
+
+      showToast(`Successfully imported ${contentBatchPreview.rows.length} items to ${contentTab === 'activities' ? 'Activities' : 'Modules'}`);
+      
+      // Reset state
+      setContentBatchFile(null);
+      setContentBatchPreview(null);
+      setShowContentBatchPreviewModal(false);
+      setContentBatchImportStatus('idle');
+      setContentPreviewPage(1);
+
+      // Refresh content list
+      const query = supabase.from(contentTab).select('*');
+      const { data: ref } = contentTab === 'activities'
+        ? await query.order('target_level', { ascending: true }).order('activity_order', { ascending: true })
+        : await query.order('level_number', { ascending: true }).order('lesson_number', { ascending: true });
+      if (contentTab === 'activities') setActivities(ref || []); else setModules(ref || []);
+
+    } catch (uploadError) {
+      setContentBatchImportStatus('error');
+      setContentBatchImportError(uploadError.message || 'Failed to insert rows into the database.');
+      showToast(uploadError.message || 'Failed to insert rows', 'error');
+    }
+  };
+
   const handleBatchAccountTypeChange = async (e) => {
     const nextType = e.target.value;
     setBatchAccountType(nextType);
@@ -2929,10 +3185,40 @@ function AdminDashboardPage() {
 
     try {
       for (const row of batchPreview.rows) {
-        const email = row.email.trim();
-        const firstName = row.first_name.trim();
-        const lastName = row.last_name.trim();
-        if (batchAccountType === 'admin') {
+        if (batchAccountType === 'section') {
+          const sectionName = String(row.section_name || '').trim();
+          const teacherEmail = String(row.teacher_email || '').trim().toLowerCase();
+          
+          let teacherId = currentAdminId;
+          if (teacherEmail) {
+            const foundTeacher = profiles.find(p => String(p.email || '').trim().toLowerCase() === teacherEmail && isAdminProfile(p));
+            if (foundTeacher) {
+              teacherId = foundTeacher.id;
+            }
+          }
+          
+          const payload = {
+            name: sectionName,
+            teacher_id: teacherId || null,
+            created_by: currentAdminId || null,
+            updated_at: new Date().toISOString(),
+          };
+          
+          const { data: secData, error: secError } = await supabase.from('sections').insert(payload).select('*').single();
+          if (secError) throw secError;
+          
+          await recordAuditLog({
+            action: 'create',
+            entityType: 'sections',
+            entityId: secData?.id || null,
+            oldValues: null,
+            newValues: secData || payload,
+          });
+        } else {
+          const email = row.email.trim();
+          const firstName = row.first_name.trim();
+          const lastName = row.last_name.trim();
+          if (batchAccountType === 'admin') {
           const { user, profile, invitation_sent } = await createConfirmedAdminUser({
             email,
             redirect_to: getAccountInviteRedirectUrl(),
@@ -3011,18 +3297,29 @@ function AdminDashboardPage() {
           });
           await assignUserToSection(user.id, batchSectionId);
         }
+      }
 
         createdCount += 1;
       }
 
-      await refreshProfiles();
-      if (batchAccountType === 'admin') await refreshRbacData();
-      showToast(`${createdCount} ${batchAccountType === 'admin' ? 'admin' : 'user'} account${createdCount === 1 ? '' : 's'} created. Welcome invite${createdCount === 1 ? '' : 's'} sent.`);
-      setSuccessModal({
-        title: 'Batch Account Creation Successful',
-        message: `${createdCount} ${batchAccountType === 'admin' ? 'admin' : 'user'} account${createdCount === 1 ? '' : 's'} have been successfully created.`,
-        emailMessage: 'Please ask the user(s) to check their email inbox for a verification/invitation link to set up their password.'
-      });
+      if (batchAccountType === 'section') {
+        await refreshRbacData();
+        showToast(`${createdCount} section${createdCount === 1 ? '' : 's'} created successfully.`);
+        setSuccessModal({
+          title: 'Batch Section Creation Successful',
+          message: `${createdCount} section${createdCount === 1 ? '' : 's'} have been successfully created.`,
+          emailMessage: null
+        });
+      } else {
+        await refreshProfiles();
+        if (batchAccountType === 'admin') await refreshRbacData();
+        showToast(`${createdCount} ${batchAccountType === 'admin' ? 'admin' : 'user'} account${createdCount === 1 ? '' : 's'} created. Welcome invite${createdCount === 1 ? '' : 's'} sent.`);
+        setSuccessModal({
+          title: 'Batch Account Creation Successful',
+          message: `${createdCount} ${batchAccountType === 'admin' ? 'admin' : 'user'} account${createdCount === 1 ? '' : 's'} have been successfully created.`,
+          emailMessage: 'Please ask the user(s) to check their email inbox for a verification/invitation link to set up their password.'
+        });
+      }
       setShowBatchAccountModal(false);
       resetBatchImportState();
     } catch (batchError) {
@@ -4012,7 +4309,17 @@ function AdminDashboardPage() {
                 </div>
                 <hr className="admin-section-divider" />
                 <article className="admin-card admin-management-card">
-                  <div className="admin-card-head" style={{ justifyContent: 'flex-end' }}>
+                  <div className="admin-card-head" style={{ gap: '10px', flexWrap: 'wrap' }}>
+                    <div className="admin-search-box" style={{ flex: 1, margin: 0 }}>
+                      <HiMagnifyingGlass />
+                      <input 
+                        type="text" 
+                        placeholder="Search admins..." 
+                        value={adminSearchQuery} 
+                        onChange={e => { setAdminSearchQuery(e.target.value); setAdminRosterPage(1); }} 
+                      />
+                    </div>
+                    <button type="button" className="admin-btn admin-btn--ghost" onClick={() => { setBatchImportFile(null); setBatchImportStatus('idle'); setBatchPreview(null); setBatchAccountType('admin'); setShowBatchAccountModal(true); }}>Bulk Upload</button>
                     <button type="button" className="admin-btn admin-btn--primary" onClick={() => setShowCreateAdminModal(true)}>Create Admin</button>
                   </div>
                   <select
@@ -4108,7 +4415,10 @@ function AdminDashboardPage() {
                 <h2>Sections</h2>
                 <p className="admin-section-subtitle">Admins manage users through assigned sections.</p>
               </div>
-              <button type="button" className="admin-btn admin-btn--ghost" onClick={openNewSection}>New Section</button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button type="button" className="admin-btn admin-btn--ghost" onClick={() => { setBatchImportFile(null); setBatchImportStatus('idle'); setBatchPreview(null); setBatchAccountType('section'); setShowBatchAccountModal(true); }}>Bulk Upload</button>
+                <button type="button" className="admin-btn admin-btn--ghost" onClick={openNewSection}>New Section</button>
+              </div>
             </div>
             <hr className="admin-section-divider" />
             <section className="admin-card admin-section-card">
@@ -4235,7 +4545,7 @@ function AdminDashboardPage() {
                   <button
                     type="button"
                     className="admin-btn admin-btn--primary"
-                    onClick={openBatchAccountSetup}
+                    onClick={() => { setBatchImportFile(null); setBatchImportStatus('idle'); setBatchPreview(null); setBatchAccountType('user'); if (!batchSectionId && visibleSections[0]?.id) setBatchSectionId(visibleSections[0].id); setShowBatchAccountModal(true); }}
                   >
                     Open Batch Setup
                   </button>
@@ -4312,7 +4622,16 @@ function AdminDashboardPage() {
             </div>
             <hr className="admin-section-divider" />
             <div className="admin-card">
-              <div className="admin-card-head" style={{ justifyContent: 'flex-end' }}>
+              <div className="admin-card-head" style={{ gap: '10px', flexWrap: 'wrap' }}>
+                <div className="admin-search-box" style={{ flex: 1, margin: 0 }}>
+                  <HiMagnifyingGlass />
+                  <input 
+                    type="text" 
+                    placeholder={`Search ${contentTab}...`} 
+                    value={contentSearchQuery} 
+                    onChange={e => { setContentSearchQuery(e.target.value); setContentPage(1); }} 
+                  />
+                </div>
                 <div className="admin-content-head-actions">
                   <select className="admin-filter-select" value={contentLevelFilter} onChange={e => setContentLevelFilter(e.target.value)} aria-label="Filter content by journey">
                     <option value="all">All Journeys</option>
@@ -4332,8 +4651,33 @@ function AdminDashboardPage() {
                     </p>
                   </div>
                   <div className="admin-content-bulk-actions">
-                    <button type="button" className="admin-btn admin-btn--ghost" disabled>Choose File</button>
-                    <button type="button" className="admin-btn admin-btn--primary" disabled>Preview Upload</button>
+                    <input 
+                      type="file" 
+                      id="content-bulk-file-input"
+                      style={{ display: 'none' }} 
+                      accept=".csv,.xlsx" 
+                      onChange={handleContentFileChange} 
+                    />
+                    {contentBatchFile && (
+                      <span className="admin-note" style={{ marginRight: '10px', color: contentBatchImportStatus === 'error' ? '#ef4444' : '#10b981', fontSize: '0.85rem', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        Selected: <strong>{contentBatchFile.name}</strong> {contentBatchImportStatus === 'ready' ? `(${contentBatchPreview?.rows?.length} rows)` : ''}
+                      </span>
+                    )}
+                    <button 
+                      type="button" 
+                      className="admin-btn admin-btn--ghost" 
+                      onClick={() => document.getElementById('content-bulk-file-input')?.click()}
+                    >
+                      {contentBatchFile ? 'Change File' : 'Choose File'}
+                    </button>
+                    <button 
+                      type="button" 
+                      className="admin-btn admin-btn--primary" 
+                      disabled={contentBatchImportStatus !== 'ready'}
+                      onClick={() => setShowContentBatchPreviewModal(true)}
+                    >
+                      Preview Upload
+                    </button>
                   </div>
                 </div>
               )}
@@ -4354,7 +4698,7 @@ function AdminDashboardPage() {
         )}
 
         {activePage === 'reports' && (
-          <div>
+          <div className="admin-reports-page-wrapper">
             <div className="admin-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
               <div>
                 <h2>Reports Generation</h2>
@@ -4622,26 +4966,20 @@ function AdminDashboardPage() {
       {showBatchAccountModal && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setShowBatchAccountModal(false)}><div className="admin-modal admin-user-modal admin-batch-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
         <div className="admin-card-head">
           <div>
-            <h3>Batch Account Creation</h3>
-            <p className="admin-modal-subtitle">Excel/CSV setup with welcome invites sent by email.</p>
+            <h3>
+              {batchAccountType === 'admin' && 'Batch Admin Creation'}
+              {batchAccountType === 'section' && 'Batch Section Creation'}
+              {batchAccountType === 'user' && 'Batch Student Account Creation'}
+            </h3>
+            <p className="admin-modal-subtitle">
+              {batchAccountType === 'section'
+                ? 'Excel/CSV setup for bulk section imports.'
+                : 'Excel/CSV setup with welcome invites sent by email.'}
+            </p>
           </div>
           <button type="button" onClick={() => setShowBatchAccountModal(false)} className="admin-btn admin-btn--ghost">Close</button>
         </div>
         <form className="admin-batch-form" onSubmit={submitBatchAccountImport}>
-          {isSuperadmin ? (
-            <label className="admin-create-field">
-              <span>Account Type</span>
-              <select className="admin-filter-select" value={batchAccountType} onChange={handleBatchAccountTypeChange}>
-                <option value="user">Users</option>
-                <option value="admin">Admins</option>
-              </select>
-            </label>
-          ) : (
-            <div className="admin-role-summary">
-              <strong>User Accounts</strong>
-              <span>Users receive welcome invites and create their own passwords.</span>
-            </div>
-          )}
           {batchAccountType === 'admin' && (
             <label className="admin-create-field">
               <span>Access Role</span>
@@ -4681,19 +5019,37 @@ function AdminDashboardPage() {
                 <table className="admin-table admin-batch-preview-table">
                   <thead>
                     <tr>
-                      <th>Last Name</th>
-                      <th>First Name</th>
-                      {batchAccountType !== 'admin' && <th>ID / Student No.</th>}
-                      <th>Email</th>
+                      {batchAccountType === 'section' ? (
+                        <>
+                          <th>Section Name</th>
+                          <th>Teacher Email</th>
+                        </>
+                      ) : (
+                        <>
+                          <th>Last Name</th>
+                          <th>First Name</th>
+                          {batchAccountType !== 'admin' && <th>ID / Student No.</th>}
+                          <th>Email</th>
+                        </>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
                     {batchPreviewRows.map(row => (
                       <tr key={row.rowNumber} className={batchPreviewInvalidRowNumbers.has(row.rowNumber) ? 'is-invalid' : ''}>
-                        <td>{row.last_name || '-'}</td>
-                        <td>{row.first_name || '-'}</td>
-                        {batchAccountType !== 'admin' && <td>{row.student_number || '-'}</td>}
-                        <td>{row.email || '-'}</td>
+                        {batchAccountType === 'section' ? (
+                          <>
+                            <td>{row.section_name || '-'}</td>
+                            <td>{row.teacher_email || '-'}</td>
+                          </>
+                        ) : (
+                          <>
+                            <td>{row.last_name || '-'}</td>
+                            <td>{row.first_name || '-'}</td>
+                            {batchAccountType !== 'admin' && <td>{row.student_number || '-'}</td>}
+                            <td>{row.email || '-'}</td>
+                          </>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -4715,10 +5071,83 @@ function AdminDashboardPage() {
           </div>
           <div className="admin-modal-actions admin-modal-actions--end">
             <button type="submit" className="admin-btn admin-btn--primary" disabled={batchImportStatus !== 'ready'}>
-              {batchImportStatus === 'saving' ? 'Creating...' : 'Create Accounts & Send Invites'}
+              {batchImportStatus === 'saving' ? 'Creating...' : batchAccountType === 'section' ? 'Create Sections' : 'Create Accounts & Send Invites'}
             </button>
           </div>
         </form>
+      </div></div>, document.body)}
+
+      {showContentBatchPreviewModal && contentBatchPreview && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setShowContentBatchPreviewModal(false)}><div className="admin-modal admin-user-modal admin-batch-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+        <div className="admin-card-head">
+          <div>
+            <h3>Bulk {contentTab === 'activities' ? 'Activity' : 'Module'} Import Preview</h3>
+            <p className="admin-modal-subtitle">Review rows parsed from {contentBatchFile?.name || 'spreadsheet'}.</p>
+          </div>
+          <button type="button" onClick={() => setShowContentBatchPreviewModal(false)} className="admin-btn admin-btn--ghost">Close</button>
+        </div>
+        <div className="admin-batch-form" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="admin-batch-preview">
+            <p><strong>{contentBatchPreview.rows.length}</strong> {contentTab === 'activities' ? 'activities' : 'modules'} ready to be imported.</p>
+            <div className="admin-batch-preview-table-wrap">
+              <table className="admin-table admin-batch-preview-table">
+                <thead>
+                  <tr>
+                    {contentTab === 'activities' ? (
+                      <>
+                        <th>Title</th>
+                        <th>Target Level</th>
+                        <th>Activity Order</th>
+                        <th>Objective</th>
+                      </>
+                    ) : (
+                      <>
+                        <th>Title</th>
+                        <th>Level Number</th>
+                        <th>Lesson Number</th>
+                        <th>Content</th>
+                      </>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {contentBatchPreview.rows.slice((contentPreviewPage - 1) * 5, contentPreviewPage * 5).map((row, idx) => (
+                    <tr key={idx}>
+                      <td><strong>{row.title}</strong></td>
+                      <td>{contentTab === 'activities' ? row.target_level : row.level_number}</td>
+                      <td>{contentTab === 'activities' ? row.activity_order : row.lesson_number}</td>
+                      <td style={{ maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {contentTab === 'activities' ? row.objective : row.content}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="admin-batch-preview-pagination">
+                <span>
+                  Showing {((contentPreviewPage - 1) * 5) + 1}-{Math.min(contentPreviewPage * 5, contentBatchPreview.rows.length)} of {contentBatchPreview.rows.length}
+                </span>
+                {Math.ceil(contentBatchPreview.rows.length / 5) > 1 && (
+                  <div className="admin-batch-preview-pagination-controls">
+                    <button type="button" onClick={() => setContentPreviewPage(p => Math.max(1, p - 1))} disabled={contentPreviewPage === 1}>Prev</button>
+                    <strong>{contentPreviewPage} / {Math.ceil(contentBatchPreview.rows.length / 5)}</strong>
+                    <button type="button" onClick={() => setContentPreviewPage(p => Math.min(Math.ceil(contentBatchPreview.rows.length / 5), p + 1))} disabled={contentPreviewPage === Math.ceil(contentBatchPreview.rows.length / 5)}>Next</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="admin-modal-actions admin-modal-actions--end">
+            <button type="button" onClick={() => setShowContentBatchPreviewModal(false)} className="admin-btn admin-btn--ghost">Cancel</button>
+            <button 
+              type="button" 
+              className="admin-btn admin-btn--primary" 
+              disabled={contentBatchImportStatus === 'saving'}
+              onClick={submitContentBatchImport}
+            >
+              {contentBatchImportStatus === 'saving' ? 'Importing...' : 'Confirm Bulk Upload'}
+            </button>
+          </div>
+        </div>
       </div></div>, document.body)}
 
       {showSectionModal && createPortal(<div className="admin-modal-backdrop admin-main-modal-backdrop" role="presentation" onClick={() => setShowSectionModal(false)}><div className="admin-modal admin-user-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>

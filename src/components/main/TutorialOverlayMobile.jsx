@@ -19,6 +19,8 @@ const HOME_STREAK_STEP_TEXT_MOBILE =
   "Your Streak counter tracks how many consecutive days you've practiced. Consistency is the true secret to mastering public speaking! Log in and complete a daily activity to keep the fire burning and watch that number grow.";
 const HOME_STREAK_STEP_VOICE_MOBILE =
   'https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Streak-Counter.mp3';
+const HOME_STREAK_STEP_VOICE_MOBILE_V2 =
+  'https://assets.bigkas.site/Voices/Home%20Page/Tutorials/Voice%202%20-%20Steak-Counter.mp3';
 const soundbarPreviewBars = Array.from({ length: 32 }, (_, index) => index);
 
 /**
@@ -185,7 +187,8 @@ function TutorialOverlayMobile({
   const bubbleVoiceUrl = useMemo(() => {
     if (!activeStep) return null;
     if (isNarrowViewport && activeStep.id === 'step-streak') {
-      return HOME_STREAK_STEP_VOICE_MOBILE;
+      const voicePref = localStorage.getItem('bigkas_b01_voice') || 'voice1';
+      return voicePref === 'voice2' ? HOME_STREAK_STEP_VOICE_MOBILE_V2 : HOME_STREAK_STEP_VOICE_MOBILE;
     }
     if (stepTextSegment === 1 && activeStep.voicePart2) {
       return activeStep.voicePart2;
@@ -386,10 +389,11 @@ function TutorialOverlayMobile({
       isCustomTutorial && targetId === 'tutorial-target-home-journey' ? '4600' : '4800';
     const needsDashboard =
       targetId === 'tutorial-target-home-streak' || targetId === 'tutorial-target-home-rank' || targetId === 'tutorial-target-home-practice';
+    const isJourney = targetId === 'tutorial-target-home-journey';
     const shouldDisableTargetClicks =
       targetId === 'tutorial-target-home-streak' || targetId === 'tutorial-target-home-rank' || targetId === 'tutorial-target-home-practice';
-    const maxAttempts = needsDashboard ? 48 : 6;
-    const retryMs = needsDashboard ? 80 : 60;
+    const maxAttempts = (needsDashboard || isJourney) ? 48 : 6;
+    const retryMs = (needsDashboard || isJourney) ? 80 : 60;
 
     let cancelled = false;
     let retryTimer = null;
@@ -398,34 +402,42 @@ function TutorialOverlayMobile({
       if (cancelled || !targetId) return;
       const nextEl = document.getElementById(targetId);
       if (nextEl) {
-        nextEl.classList.add('tutorial-spotlight-active');
-        nextEl.style.setProperty('z-index', spotlightZIndex, 'important');
-        if (shouldDisableTargetClicks) {
-          nextEl.style.setProperty('pointer-events', 'none', 'important');
-        }
-        activeSpotlightRef.current = nextEl;
-        if (targetId === 'tutorial-target-home-practice') {
-          const scrollContainer = document.querySelector('.dashboard-overlay-scroll-content') || document.querySelector('.dashboard-overlay-content');
-          if (scrollContainer) {
-            try {
-              scrollContainer.scrollTo({ top: scrollContainer.scrollHeight, behavior: 'smooth' });
-            } catch (e) {
-              scrollContainer.scrollTop = scrollContainer.scrollHeight;
-            }
-            setTimeout(() => {
-              if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
-            }, 60);
+        const isJourneyTarget = targetId === 'tutorial-target-home-journey';
+        const activeNode = isJourneyTarget ? nextEl.querySelector('.skyward-journey-node--active') : true;
+        
+        if (activeNode) {
+          nextEl.classList.add('tutorial-spotlight-active');
+          nextEl.style.setProperty('z-index', spotlightZIndex, 'important');
+          if (shouldDisableTargetClicks) {
+            nextEl.style.setProperty('pointer-events', 'none', 'important');
           }
-        } else if (targetId === 'tutorial-target-home-journey') {
-          try {
-            nextEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          } catch (e) {}
-        } else {
-          try {
-            nextEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          } catch (e) {}
+          activeSpotlightRef.current = nextEl;
+          if (targetId === 'tutorial-target-home-practice') {
+            const scrollContainer = document.querySelector('.dashboard-overlay-scroll-content') || document.querySelector('.dashboard-overlay-content');
+            if (scrollContainer) {
+              try {
+                scrollContainer.scrollTo({ top: scrollContainer.scrollHeight, behavior: 'smooth' });
+              } catch (e) {
+                scrollContainer.scrollTop = scrollContainer.scrollHeight;
+              }
+              setTimeout(() => {
+                if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
+              }, 60);
+            }
+          } else if (isJourneyTarget) {
+            try {
+              const nodeToScroll = nextEl.querySelector('.skyward-journey-node--active');
+              if (nodeToScroll) {
+                nodeToScroll.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            } catch (e) {}
+          } else {
+            try {
+              nextEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } catch (e) {}
+          }
+          return;
         }
-        return;
       }
       if (attempt >= maxAttempts) return;
       retryTimer = window.setTimeout(() => applySpotlight(attempt + 1), retryMs);

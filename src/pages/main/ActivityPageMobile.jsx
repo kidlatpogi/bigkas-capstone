@@ -29,6 +29,19 @@ import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import { filterActivitiesForJourney } from '../../utils/journeyFiltering';
 import { generateCoachInsights } from '../../utils/coachInsights';
 import { askB01Coach, getB01FallbackReply } from '../../utils/b01CoachChat';
+import { IoStatsChartOutline } from '@react-icons/all-files/io5/IoStatsChartOutline';
+import { IoBookOutline } from '@react-icons/all-files/io5/IoBookOutline';
+import { IoMedalOutline } from '@react-icons/all-files/io5/IoMedalOutline';
+import {
+  claimAllAchievements,
+  syncClaimableAchievements,
+} from '../../utils/achievementClaims';
+import {
+  claimAllAchievementsInDB,
+  unclaimAllAchievementsInDB,
+  fetchUserAchievements,
+} from '../../services/achievementsService';
+import { syncUnlockedBadgeIds } from '../../utils/achievementNavBadge';
 import './InnerPages.css';
 import './ActivityPageMobile.css';
 import './ActivityPage.css';
@@ -319,6 +332,105 @@ function ActivityPageMobile() {
   const audioContextRef = useRef(null);
   const overlayAudioRef = useRef(null);
   const chatScrollRef = useRef(null);
+
+  // Developer options states & handlers
+  const [developerAction, setDeveloperAction] = useState('');
+  const [developerStatus, setDeveloperStatus] = useState('');
+
+  const DEVELOPER_POWER_EMAIL = 'kidlat17@bigkas.site';
+  const DEVELOPER_PREVIEW_SESSION_KEY = 'bigkas_developer_onboarding_preview_v1';
+
+  const hasDeveloperPowers =
+    String(user?.email || '').trim().toLowerCase() === DEVELOPER_POWER_EMAIL &&
+    String(user?.role || '').trim().toLowerCase() === 'superadmin';
+
+  const handleReplayProfilingPreview = () => {
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem(DEVELOPER_PREVIEW_SESSION_KEY, '1');
+      window.sessionStorage.removeItem('bigkas_pretest_tutorial_seen');
+      window.localStorage.removeItem('bigkas_current_training_session');
+    }
+    setDeveloperStatus('Preview mode: full onboarding will not save data.');
+    setShowDashboardOverlay(false);
+    navigate(ROUTES.USER_PROFILING, {
+      state: {
+        developerPreview: true,
+        t: Date.now(),
+      },
+    });
+  };
+
+  const handleReplayPretestPreview = () => {
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem(DEVELOPER_PREVIEW_SESSION_KEY, '1');
+      window.sessionStorage.removeItem('bigkas_pretest_tutorial_seen');
+      window.localStorage.removeItem('bigkas_current_training_session');
+    }
+    setDeveloperStatus('Preview mode: pre-testing will not save data.');
+    setShowDashboardOverlay(false);
+    navigate(ROUTES.USER_PRETEST, {
+      state: {
+        developerPreview: true,
+        t: Date.now(),
+      },
+    });
+  };
+
+  const handleReplayFrameworksTutorial = () => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('bigkas_free_speech_tutorial_seen_v1', '0');
+    }
+    setDeveloperStatus('Replaying the tutorial walkthrough.');
+    setShowDashboardOverlay(false);
+    navigate(ROUTES.ACTIVITY, {
+      state: {
+        skywardEntrance: true,
+        launchFreeSpeechTutorial: true,
+        skipTutorialIntro: true,
+        t: Date.now(),
+      },
+    });
+  };
+
+  const refreshAchievementDevState = async () => {
+    if (!user?.id) return;
+    const data = await fetchUserAchievements(user.id, user);
+    syncClaimableAchievements(data, user.id);
+    syncUnlockedBadgeIds(data.filter((achievement) => achievement.claimed).map((achievement) => achievement.id));
+  };
+
+  const handleClaimAchievementsForDev = async () => {
+    if (!user?.id || developerAction) return;
+    setDeveloperAction('claim');
+    setDeveloperStatus('');
+    try {
+      const rows = await claimAllAchievementsInDB(user.id);
+      claimAllAchievements(user.id);
+      await refreshAchievementDevState();
+      setDeveloperStatus(`Claimed ${rows.length} achievements for this account.`);
+    } catch (err) {
+      console.error('Developer achievement claim failed:', err);
+      setDeveloperStatus(err?.message || 'Failed to claim achievements.');
+    } finally {
+      setDeveloperAction('');
+    }
+  };
+
+  const handleUnclaimAchievementsForDev = async () => {
+    if (!user?.id || developerAction) return;
+    setDeveloperAction('unclaim');
+    setDeveloperStatus('');
+    try {
+      const rows = await unclaimAllAchievementsInDB(user.id);
+      await refreshAchievementDevState();
+      setDeveloperStatus(`Unclaimed ${rows.length} achievements for this account.`);
+    } catch (err) {
+      console.error('Developer achievement unclaim failed:', err);
+      setDeveloperStatus(err?.message || 'Failed to unclaim achievements.');
+    } finally {
+      setDeveloperAction('');
+    }
+  };
 
   // Clean up effects
   useEffect(() => {
@@ -1077,7 +1189,8 @@ function ActivityPageMobile() {
             .activity-page-mobile-root.activity-page--skyward-entrance .skyward-journey.skyward-journey-container {
               padding: 0 !important;
               width: 100% !important;
-            }
+
+            }
           }
         `}
       </style>
@@ -1488,6 +1601,47 @@ function ActivityPageMobile() {
                   </div>
                 </div>
               </section>
+
+              {/* Developer options on Mobile dashboard */}
+              {hasDeveloperPowers && (
+                <section className="side-nav-dev-tools new-widget" aria-label="Developer tools" style={{ gap: '10px', background: '#fefefe', marginTop: '20px' }}>
+                  <h2 className="new-widget-title" style={{ fontSize: '1.1rem', margin: '0 0 4px 0', fontWeight: '800', color: '#dc2626' }}>Developer Power</h2>
+                  
+                  <button type="button" className="activity-mobile-dashboard-btn side-nav-dev-btn" onClick={handleReplayProfilingPreview} style={{ height: '40px', padding: '0 1rem', background: '#4b5563', boxShadow: 'none', borderRadius: '12px' }}>
+                    <IoStatsChartOutline className="side-nav-icon" aria-hidden="true" style={{ marginRight: '8px' }} />
+                    <span>Preview onboarding</span>
+                  </button>
+                  <button type="button" className="activity-mobile-dashboard-btn side-nav-dev-btn" onClick={handleReplayPretestPreview} style={{ height: '40px', padding: '0 1rem', background: '#4b5563', boxShadow: 'none', borderRadius: '12px' }}>
+                    <IoStatsChartOutline className="side-nav-icon" aria-hidden="true" style={{ marginRight: '8px' }} />
+                    <span>Replay pre-testing</span>
+                  </button>
+                  <button type="button" className="activity-mobile-dashboard-btn side-nav-dev-btn" onClick={handleReplayFrameworksTutorial} style={{ height: '40px', padding: '0 1rem', background: '#4b5563', boxShadow: 'none', borderRadius: '12px' }}>
+                    <IoBookOutline className="side-nav-icon" aria-hidden="true" style={{ marginRight: '8px' }} />
+                    <span>Replay tutorial</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="activity-mobile-dashboard-btn side-nav-dev-btn"
+                    onClick={handleClaimAchievementsForDev}
+                    disabled={developerAction !== ''}
+                    style={{ height: '40px', padding: '0 1rem', background: '#4b5563', boxShadow: 'none', borderRadius: '12px' }}
+                  >
+                    <IoMedalOutline className="side-nav-icon" aria-hidden="true" style={{ marginRight: '8px' }} />
+                    <span>{developerAction === 'claim' ? 'Claiming...' : 'Claim achievements'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="activity-mobile-dashboard-btn side-nav-dev-btn side-nav-dev-btn--danger"
+                    onClick={handleUnclaimAchievementsForDev}
+                    disabled={developerAction !== ''}
+                    style={{ height: '40px', padding: '0 1rem', background: '#dc2626', boxShadow: 'none', borderRadius: '12px' }}
+                  >
+                    <IoMedalOutline className="side-nav-icon" aria-hidden="true" style={{ marginRight: '8px' }} />
+                    <span>{developerAction === 'unclaim' ? 'Unclaiming...' : 'Unclaim achievements'}</span>
+                  </button>
+                  {developerStatus ? <p className="side-nav-dev-status" style={{ fontSize: '13px', margin: '4px 0 0 0', color: '#4b5563' }}>{developerStatus}</p> : null}
+                </section>
+              )}
             </div>
           </div>
         </section>

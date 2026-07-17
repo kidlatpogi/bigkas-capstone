@@ -768,6 +768,10 @@ body.randomizer-overlay-open {
   overscroll-behavior-y: contain;
 }
 
+.dashboard-overlay-scroll-content .activity-mobile-dashboard-btn {
+  width: 100% !important;
+}
+
 /* Ported Desktop Widget Styles for Mobile Overlay */
 .dashboard-overlay-content .new-banner-streak,
 .dashboard-overlay-content .new-widget {

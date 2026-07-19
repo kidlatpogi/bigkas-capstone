@@ -632,35 +632,8 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
     let cancelled = false;
 
     const recoverFillersFromAudio = async () => {
-      try {
-        const audioBlob = await loadAudioBlobForFillerRecovery({
-          playbackUrl: recordingMedia.audioUrl,
-          storageUrl: session?.audio_url,
-        });
-        const transcribeUrl = `${workerBaseUrl}/transcribe?audit_fillers=true&topic=${encodeURIComponent(session?.topic || session?.objective_name || 'General Speaking')}`;
-        const transcribeResponse = await fetch(transcribeUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': audioBlob.type || 'audio/webm',
-          },
-          body: audioBlob,
-        });
-        if (!transcribeResponse.ok) throw new Error(`Filler recovery failed with ${transcribeResponse.status}`);
-        const recoveryData = await transcribeResponse.json();
-        if (cancelled) return;
-        const recoveredCount = Number(recoveryData?.filler_count);
-        if (Number.isFinite(recoveredCount) && recoveredCount > 0) {
-          setRecoveredFillerAnalysis({
-            transcript: String(recoveryData?.transcript || '').trim(),
-            filler_count: recoveredCount,
-            hard_filler_count: Number(recoveryData?.hard_filler_count) || 0,
-            filler_words: Array.isArray(recoveryData?.filler_words) ? recoveryData.filler_words : [],
-            filler_occurrences: Array.isArray(recoveryData?.filler_occurrences) ? recoveryData.filler_occurrences : [],
-          });
-        }
-      } catch (error) {
-        console.warn('[DetailedFeedbackPage] Filler recovery skipped:', error?.message || error);
-      }
+      // Disabled frontend filler recovery to prevent 500 error on unsupported webm format.
+      // The backend now securely transcodes to WAV and extracts fillers reliably.
     };
 
     recoverFillersFromAudio();

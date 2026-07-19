@@ -352,7 +352,7 @@ export default {
         
         Output only the message text.`;
 
-        const response = await runAIWithRetry(env, "@cf/meta/llama-3.1-8b-instruct", {
+        const response = await runAIWithRetry(env, "@cf/meta/llama-3.1-8b-instruct-fp8", {
           messages: [
             { role: "system", content: "You are a helpful dashboard assistant for students in Dasmariñas, Cavite." },
             { role: "user", content: prompt }
@@ -381,7 +381,7 @@ export default {
         3. Provide a title and a 1-sentence instruction that is supportive and low-pressure.
         4. Return ONLY a JSON object: {"title": "...", "body": "..."}`;
 
-        const response = await runAIWithRetry(env, "@cf/meta/llama-3.1-8b-instruct", {
+        const response = await runAIWithRetry(env, "@cf/meta/llama-3.1-8b-instruct-fp8", {
           messages: [
             { role: "system", content: "You are a friendly, relatable vlog-style topic generator for students in Dasmariñas, Cavite. Output only valid JSON." },
             { role: "user", content: prompt }
@@ -483,7 +483,7 @@ export default {
           "recommendations": ["tip1", "tip2"]
         }`;
 
-        const analysisResponse = await runAIWithRetry(env, "@cf/meta/llama-3.1-8b-instruct", {
+        const analysisResponse = await runAIWithRetry(env, "@cf/meta/llama-3.1-8b-instruct-fp8", {
           messages: [
             { role: "system", content: "You are a speech analysis engine. Output only valid JSON." },
             { role: "user", content: analysisPrompt }
@@ -540,7 +540,7 @@ export default {
         - Never say "I don't have data".
         - Data-first answers only.`;
 
-        const stream = await runAIWithRetry(env, '@cf/meta/llama-3.1-8b-instruct', {
+        const stream = await runAIWithRetry(env, '@cf/meta/llama-3.1-8b-instruct-fp8', {
           messages: [
             { role: 'system', content: systemPrompt },
             ...filteredMessages

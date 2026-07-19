@@ -71,6 +71,10 @@ else:
 # Fallback local in-memory store
 analysis_jobs_local: Dict[str, Any] = {}
 
+import os, json
+JOB_DIR = "/tmp/bigkas_jobs"
+os.makedirs(JOB_DIR, exist_ok=True)
+
 def get_job_state(job_id: str) -> Optional[Dict[str, Any]]:
     if redis_client:
         try:
@@ -79,6 +83,16 @@ def get_job_state(job_id: str) -> Optional[Dict[str, Any]]:
                 return json.loads(val)
         except Exception as e:
             print(f"[Redis] Failed to get job status from Redis: {e}")
+    
+    # Fallback to disk storage (multi-worker safe)
+    job_file = os.path.join(JOB_DIR, f"{job_id}.json")
+    if os.path.exists(job_file):
+        try:
+            with open(job_file, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"[Disk] Failed to read job state: {e}")
+            
     return analysis_jobs_local.get(job_id)
 
 def set_job_state(job_id: str, state: Dict[str, Any]) -> None:
@@ -88,6 +102,15 @@ def set_job_state(job_id: str, state: Dict[str, Any]) -> None:
             return
         except Exception as e:
             print(f"[Redis] Failed to set job status in Redis: {e}")
+            
+    # Fallback to disk storage (multi-worker safe)
+    try:
+        job_file = os.path.join(JOB_DIR, f"{job_id}.json")
+        with open(job_file, "w") as f:
+            json.dump(state, f)
+    except Exception as e:
+        print(f"[Disk] Failed to save job state: {e}")
+        
     analysis_jobs_local[job_id] = state
 
 # Limit heavy CPU audio processing to 2 concurrent tasks per worker

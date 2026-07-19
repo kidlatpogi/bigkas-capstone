@@ -1561,6 +1561,17 @@ function TrainingPage() {
     // Reset visual analysis explicitly
     stopAnalysis();
     initPreview();
+    
+    // Slight delay to ensure DOM and camera are ready before booting MediaPipe
+    setTimeout(() => {
+      if (isMountedRef.current && videoRef.current && visualCanvasRef.current) {
+        startAnalysis({
+          videoElement: videoRef.current,
+          canvasElement: visualCanvasRef.current,
+          isTutorialMode: false,
+        });
+      }
+    }, 300);
   };
 
 

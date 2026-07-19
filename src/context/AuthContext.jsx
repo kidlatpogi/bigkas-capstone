@@ -1042,6 +1042,28 @@ export function AuthProvider({ children }) {
           return;
         }
 
+        // --- Clash of Clans Session Ejection logic ---
+        if (typeof window !== 'undefined') {
+          let localToken = sessionStorage.getItem('bigkas_session_token');
+          if (!localToken) {
+            localToken = crypto.randomUUID();
+            sessionStorage.setItem('bigkas_session_token', localToken);
+            // Async write to database, do not block profile load
+            supabase.from('profiles').update({ active_session_token: localToken }).eq('id', userId).catch(() => {});
+          } else if (profile.active_session_token && profile.active_session_token !== localToken) {
+            // Mismatch! Eject device
+            setError('Logged Out: Another device or tab has logged into this account.');
+            setUser(null);
+            clearAdminSession();
+            sessionStorage.removeItem('bigkas_session_token');
+            await supabase.auth.signOut({ scope: 'local' });
+            return;
+          } else if (!profile.active_session_token) {
+            // No token on remote, sync it
+            supabase.from('profiles').update({ active_session_token: localToken }).eq('id', userId).catch(() => {});
+          }
+        }
+
         setUser(prev => {
           if (prev?.id !== userId) return prev;
 
@@ -1921,11 +1943,24 @@ export function AuthProvider({ children }) {
   /* ── Logout ── */
   const logout = useCallback(async () => {
     setIsLoading(true);
+    if (user?.id) {
+      try {
+        await supabase
+          .from('profiles')
+          .update({ active_session_token: null })
+          .eq('id', user.id);
+      } catch (e) {
+        console.warn('Signout session token clear failed:', e);
+      }
+    }
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('bigkas_session_token');
+    }
     await supabase.auth.signOut();
     setUser(null);
     clearAdminSession();
     setIsLoading(false);
-  }, [clearAdminSession]);
+  }, [clearAdminSession, user?.id]);
 
   /* ── Update nickname ── */
   const updateNickname = useCallback(async (nickname) => {

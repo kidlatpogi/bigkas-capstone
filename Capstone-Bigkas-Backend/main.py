@@ -39,9 +39,58 @@ def _parse_origins(raw_origins: str) -> List[str]:
     return origins or DEFAULT_CORS_ORIGINS
 
 
-# In-memory store for background analysis jobs
-# In a production environment with multiple workers, use Redis/Postgres.
-analysis_jobs: Dict[str, Any] = {}
+import redis
+
+# Redis Configuration for shared task state
+REDIS_URL = os.getenv("REDIS_URL")
+redis_client = None
+if REDIS_URL:
+    try:
+        redis_client = redis.Redis.from_url(REDIS_URL, decode_responses=True)
+        print("[Redis] Connected using REDIS_URL.")
+    except Exception as e:
+        print(f"[Redis] Connection to REDIS_URL failed: {e}")
+else:
+    REDIS_HOST = os.getenv("REDIS_HOST")
+    REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
+    REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
+    if REDIS_HOST:
+        try:
+            redis_client = redis.Redis(
+                host=REDIS_HOST,
+                port=REDIS_PORT,
+                password=REDIS_PASSWORD,
+                ssl=True,
+                decode_responses=True
+            )
+            print(f"[Redis] Connected using REDIS_HOST={REDIS_HOST}.")
+        except Exception as e:
+            print(f"[Redis] Connection to REDIS_HOST failed: {e}")
+
+# Fallback local in-memory store
+analysis_jobs_local: Dict[str, Any] = {}
+
+def get_job_state(job_id: str) -> Optional[Dict[str, Any]]:
+    if redis_client:
+        try:
+            val = redis_client.get(f"job:{job_id}")
+            if val:
+                return json.loads(val)
+        except Exception as e:
+            print(f"[Redis] Failed to get job status from Redis: {e}")
+    return analysis_jobs_local.get(job_id)
+
+def set_job_state(job_id: str, state: Dict[str, Any]) -> None:
+    if redis_client:
+        try:
+            redis_client.set(f"job:{job_id}", json.dumps(state), ex=1800) # Expire in 30 minutes
+            return
+        except Exception as e:
+            print(f"[Redis] Failed to set job status in Redis: {e}")
+    analysis_jobs_local[job_id] = state
+
+# Limit heavy CPU audio processing to 2 concurrent tasks per worker
+cpu_semaphore = asyncio.Semaphore(2)
 
 # Define logger
 logging.basicConfig(level=logging.INFO)
@@ -644,7 +693,7 @@ def persist_to_supabase(
 
 @app.get("/api/analysis-status/{job_id}")
 async def get_analysis_status(job_id: str):
-    job = analysis_jobs.get(job_id)
+    job = get_job_state(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Analysis job not found.")
     
@@ -674,16 +723,20 @@ async def run_analysis_task(
         # 1. EXTRACT METRICS
         msg = "Step 1/4: Analyzing vocal dynamics (pitch, jitter, pace)..."
         print(f"[Job] {job_id} - {msg}")
-        analysis_jobs[job_id].update({"progress": 15, "message": msg})
-        vocal_metrics, duration_seconds = await asyncio.to_thread(
-            extract_vocal_metrics, audio_bytes, "recording.wav"
-        )
+        job_state = get_job_state(job_id) or {}
+        job_state.update({"progress": 15, "message": msg})
+        set_job_state(job_id, job_state)
+        
+        async with cpu_semaphore:
+            vocal_metrics, duration_seconds = await asyncio.to_thread(
+                extract_vocal_metrics, audio_bytes, "recording.wav"
+            )
         print(f"[Job] {job_id} - Vocal metrics extracted ({duration_seconds}s).")
         
         # 2. COMPRESS AUDIO (MP3)
         msg = "Step 2/4: Optimizing audio for cloud AI processing..."
         print(f"[Job] {job_id} - {msg}")
-        analysis_jobs[job_id].update({"progress": 35, "message": msg})
+        job_state = get_job_state(job_id) or {}; job_state.update({"progress": 35, "message": msg}); set_job_state(job_id, job_state)
         def _compress_audio():
             import subprocess
             cmd = ['ffmpeg', '-y', '-i', 'pipe:0', '-t', '305', '-acodec', 'libmp3lame', '-ab', '32k', '-ac', '1', '-ar', '16000', '-f', 'mp3', 'pipe:1']
@@ -701,7 +754,7 @@ async def run_analysis_task(
         # 3. CLOUDFLARE (Whisper + Llama)
         msg = "Step 3/4: Processing speech with Cloudflare AI (Whisper/Llama)..."
         print(f"[Job] {job_id} - {msg}")
-        analysis_jobs[job_id].update({"progress": 55, "message": msg})
+        job_state = get_job_state(job_id) or {}; job_state.update({"progress": 55, "message": msg}); set_job_state(job_id, job_state)
         verbal_payload = await analyze_with_cloudflare(clean_audio_bytes, topic)
         print(f"[Job] {job_id} - Cloudflare analysis complete.")
         
@@ -711,7 +764,7 @@ async def run_analysis_task(
         # 4. PERSIST TO SUPABASE
         msg = "Step 4/4: Finalizing results and generating feedback..."
         print(f"[Job] {job_id} - {msg}")
-        analysis_jobs[job_id].update({"progress": 90, "message": msg})
+        job_state = get_job_state(job_id) or {}; job_state.update({"progress": 90, "message": msg}); set_job_state(job_id, job_state)
         combined_analysis = {
             "visual": visual_payload,
             "vocal": vocal_metrics,
@@ -758,11 +811,11 @@ async def run_analysis_task(
             "recommendations": combined_analysis.get("recommendations", []),
         }
 
-        analysis_jobs[job_id] = {"status": "completed", "data": result_data}
+        set_job_state(job_id, {"status": "completed", "data": result_data})
         print(f"[Job] Task {job_id} completed successfully.")
     except Exception as e:
         logger.error(f"Background task {job_id} failed: {e}")
-        analysis_jobs[job_id] = {"status": "error", "error": str(e)}
+        set_job_state(job_id, {"status": "error", "error": str(e)})
 
 @app.post("/api/analyze-speech")
 async def analyze_speech(
@@ -794,7 +847,7 @@ async def analyze_speech(
         parsed_answers = []
 
     # Initialize job state
-    analysis_jobs[job_id] = {"status": "processing", "progress": 5}
+    set_job_state(job_id, {"status": "processing", "progress": 5})
     
     print(f"[POST] Spawning background task for Job: {job_id}")
     background_tasks.add_task(

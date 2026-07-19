@@ -246,7 +246,12 @@ function TrainingPage() {
   const sessionType = state?.sessionType || recoveredState?.sessionType || focus;
   const freeTopic = (state?.freeTopic || recoveredState?.freeTopic || '').trim();
   const objectiveText = (state?.objective || state?.step?.objective || recoveredState?.objective || recoveredState?.step?.objective || '').trim();
-  const isPreTestSession = String(sessionType || '').toLowerCase().includes('pre-test') || String(sessionType || '').toLowerCase().includes('pretest');
+  let isPreTestSession = String(sessionType || '').toLowerCase().includes('pre-test') || String(sessionType || '').toLowerCase().includes('pretest');
+
+  // Fix: Prevent stale cache from forcing a pre-test session if the user is already past the pre-test stage
+  if ((user?.onboardingStage === 'completed' || user?.onboardingStage === 'analyzing') && isPreTestSession) {
+    isPreTestSession = false;
+  }
 
   useEffect(() => {
     if (!checkPacing || isPreTestSession) return;
@@ -270,10 +275,11 @@ function TrainingPage() {
     };
   }, [checkPacing, isPreTestSession]);
   const isFreePretestSession = isPreTestSession;
-  const isDeveloperPreview =
+  const isDeveloperPreview = isPreTestSession && (
     state?.developerPreview === true ||
     recoveredState?.developerPreview === true ||
-    (typeof window !== 'undefined' && window.sessionStorage.getItem(DEVELOPER_PREVIEW_SESSION_KEY) === '1');
+    (typeof window !== 'undefined' && window.sessionStorage.getItem(DEVELOPER_PREVIEW_SESSION_KEY) === '1')
+  );
 
   const MIN_RECORDING_SECONDS = useMemo(() => {
     if (isFreePretestSession) {
@@ -1551,6 +1557,10 @@ function TrainingPage() {
     visualChunksRef.current = [];
     visualMimeRef.current = '';
     clearSessionCache();
+    
+    // Reset visual analysis explicitly
+    stopAnalysis();
+    initPreview();
   };
 
 

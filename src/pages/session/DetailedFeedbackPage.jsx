@@ -155,8 +155,9 @@ function buildBucketPublicUrl(pathOrUrl) {
     .replace(new RegExp(`^${SESSION_MEDIA_BUCKET}/`), '')
     .split('?')[0];
 
-  // Use the R2 base URL via getAssetUrl
-  return getAssetUrl(cleaned);
+  // Use Supabase Public URL for session media, not the static assets R2 bucket
+  const { data } = supabase.storage.from(SESSION_MEDIA_BUCKET).getPublicUrl(cleaned);
+  return data?.publicUrl || value;
 }
 
 function extractBucketStoragePath(pathOrUrl) {
@@ -907,7 +908,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
                 <h2 className="sr-section-title">Performance Timeline</h2>
                 <p className="sr-section-subtitle">Real-time fluctuations in your Triple V performance metrics throughout the session</p>
               </div>
-              <div className="df-card" style={{ height: '400px', padding: '24px 16px 16px' }}>
+              <div className="df-card" style={{ width: '100%', height: '400px', padding: '24px 16px 16px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={timelineData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />

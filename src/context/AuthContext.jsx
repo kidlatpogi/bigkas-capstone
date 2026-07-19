@@ -1049,7 +1049,7 @@ export function AuthProvider({ children }) {
             localToken = crypto.randomUUID();
             sessionStorage.setItem('bigkas_session_token', localToken);
             // Async write to database, do not block profile load
-            supabase.from('profiles').update({ active_session_token: localToken }).eq('id', userId).catch(() => {});
+            supabase.from('profiles').update({ active_session_token: localToken }).eq('id', userId).then(({ error }) => { if (error) console.error('Session sync error:', error); });
           } else if (profile.active_session_token && profile.active_session_token !== localToken) {
             // Mismatch! Eject device
             setError('Logged Out: Another device or tab has logged into this account.');
@@ -1060,7 +1060,7 @@ export function AuthProvider({ children }) {
             return;
           } else if (!profile.active_session_token) {
             // No token on remote, sync it
-            supabase.from('profiles').update({ active_session_token: localToken }).eq('id', userId).catch(() => {});
+            supabase.from('profiles').update({ active_session_token: localToken }).eq('id', userId).then(({ error }) => { if (error) console.error('Session sync error:', error); });
           }
         }
 

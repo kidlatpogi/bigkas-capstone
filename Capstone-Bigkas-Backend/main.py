@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import subprocess
+import asyncio
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
@@ -90,7 +91,13 @@ def set_job_state(job_id: str, state: Dict[str, Any]) -> None:
     analysis_jobs_local[job_id] = state
 
 # Limit heavy CPU audio processing to 2 concurrent tasks per worker
-cpu_semaphore = asyncio.Semaphore(2)
+cpu_semaphore = None
+
+def get_cpu_semaphore():
+    global cpu_semaphore
+    if cpu_semaphore is None:
+        cpu_semaphore = asyncio.Semaphore(2)
+    return cpu_semaphore
 
 # Define logger
 logging.basicConfig(level=logging.INFO)
@@ -727,7 +734,7 @@ async def run_analysis_task(
         job_state.update({"progress": 15, "message": msg})
         set_job_state(job_id, job_state)
         
-        async with cpu_semaphore:
+        async with get_cpu_semaphore():
             vocal_metrics, duration_seconds = await asyncio.to_thread(
                 extract_vocal_metrics, audio_bytes, "recording.wav"
             )

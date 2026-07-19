@@ -1260,7 +1260,8 @@ export function AuthProvider({ children }) {
         return;
       }
 
-      const nextUser = buildUser(session);
+      const cachedProfile = session?.user?.id ? profileRequestCache.get(session.user.id)?.profile : null;
+      const nextUser = buildUser(session, cachedProfile || {});
       setUser(nextUser);
       if (nextUser?.id) {
         void fetchAndMergeProfile(nextUser.id);
@@ -1320,7 +1321,8 @@ export function AuthProvider({ children }) {
       const blockedProfile = await rejectArchivedSession(session);
       if (blockedProfile) return;
 
-      const nextUser = buildUser(session);
+      const cachedProfile = session?.user?.id ? profileRequestCache.get(session.user.id)?.profile : null;
+      const nextUser = buildUser(session, cachedProfile || {});
       const emailConfirmed = hasVerifiedAuthIdentity(session?.user);
 
       if (session?.user && !emailConfirmed) {
@@ -1549,12 +1551,14 @@ export function AuthProvider({ children }) {
 
       setPendingEmailVerification(false);
       setPendingEmail(null);
-      setUser(buildUser(data.session));
+      const cachedProfile = data.session?.user?.id ? profileRequestCache.get(data.session.user.id)?.profile : null;
+      const nextUser = buildUser(data.session, cachedProfile || {});
+      setUser(nextUser);
       if (data.user?.id) {
         void fetchAndMergeProfile(data.user.id);
       }
       await registerLoginSuccess('user', normalizedEmail);
-      return { success: true, user: buildUser(data.session) };
+      return { success: true, user: nextUser };
     } catch (networkError) {
       setIsLoading(false);
       if (isBlockedByClient(networkError)) {
@@ -1711,10 +1715,12 @@ export function AuthProvider({ children }) {
 
       setPendingEmailVerification(false);
       setPendingEmail(null);
-      setUser(buildUser(data.session));
+      const cachedProfile = data.session?.user?.id ? profileRequestCache.get(data.session.user.id)?.profile : null;
+      const nextUser = buildUser(data.session, cachedProfile || {});
+      setUser(nextUser);
       persistAdminSession();
       await registerLoginSuccess('admin', normalizedEmail);
-      return { success: true, user: buildUser(data.session) };
+      return { success: true, user: nextUser };
     } catch {
       setUser(null);
       clearAdminSession();

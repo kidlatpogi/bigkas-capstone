@@ -3,10 +3,16 @@ DECLARE
     i INT;
     new_user_id UUID;
 BEGIN
-    -- Remove any previously created dummy student accounts to prevent duplicate key errors
-    DELETE FROM auth.users WHERE email LIKE 'student%@example.com';
+    -- Clean up all dependent records first to prevent foreign key issues
+    DELETE FROM public.session_recommendations WHERE session_id IN (SELECT id FROM public.sessions WHERE user_id IN (SELECT id FROM auth.users WHERE LOWER(email) LIKE 'student%@example.com'));
+    DELETE FROM public.session_feedback WHERE session_id IN (SELECT id FROM public.sessions WHERE user_id IN (SELECT id FROM auth.users WHERE LOWER(email) LIKE 'student%@example.com'));
+    DELETE FROM public.session_media WHERE session_id IN (SELECT id FROM public.sessions WHERE user_id IN (SELECT id FROM auth.users WHERE LOWER(email) LIKE 'student%@example.com'));
+    DELETE FROM public.session_metrics WHERE session_id IN (SELECT id FROM public.sessions WHERE user_id IN (SELECT id FROM auth.users WHERE LOWER(email) LIKE 'student%@example.com'));
+    DELETE FROM public.sessions WHERE user_id IN (SELECT id FROM auth.users WHERE LOWER(email) LIKE 'student%@example.com');
+    DELETE FROM public.profiles WHERE id IN (SELECT id FROM auth.users WHERE LOWER(email) LIKE 'student%@example.com');
+    DELETE FROM auth.users WHERE LOWER(email) LIKE 'student%@example.com';
 
-    FOR i IN 1..50 LOOP
+    FOR i IN 1..100 LOOP
         new_user_id := gen_random_uuid();
         
         -- Insert into auth.users
@@ -31,11 +37,11 @@ BEGIN
             '00000000-0000-0000-0000-000000000000',
             'authenticated',
             'authenticated',
-            'student' || lpad(i::text, 2, '0') || '@example.com',
+            'student' || (case when i = 100 then '100' else lpad(i::text, 2, '0') end) || '@example.com',
             crypt('@Admin321', gen_salt('bf')),
             now(),
             '{"provider":"email","providers":["email"]}',
-            jsonb_build_object('firstName', 'Student', 'lastName', lpad(i::text, 2, '0'), 'nickname', 'S' || lpad(i::text, 2, '0')),
+            jsonb_build_object('firstName', 'Student', 'lastName', (case when i = 100 then '100' else lpad(i::text, 2, '0') end), 'nickname', 'S' || (case when i = 100 then '100' else lpad(i::text, 2, '0') end)),
             now(),
             now(),
             '',

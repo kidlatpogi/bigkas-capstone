@@ -376,8 +376,8 @@ async def analyze_with_cloudflare(audio_bytes: bytes, topic: str) -> Dict[str, A
     import urllib.parse
     worker_url = f"{B01_WORKER_URL}/transcribe?topic={urllib.parse.quote(topic)}"
     
-    max_retries = 3
-    retry_delay = 2.0
+    max_retries = 5
+    retry_delay = 5.0
     
     async with httpx.AsyncClient(timeout=180.0) as client:
         for attempt in range(max_retries):
@@ -389,10 +389,10 @@ async def analyze_with_cloudflare(audio_bytes: bytes, topic: str) -> Dict[str, A
                     headers={"Content-Type": "audio/wav"},
                 )
                 
-                if response.status_code == 503:
-                    print(f"[AI] Cloudflare returned 503. Retrying in {retry_delay}s...")
+                if response.status_code in [429, 502, 503, 504]:
+                    print(f"[AI] Cloudflare returned {response.status_code}. Retrying in {retry_delay}s...")
                     await asyncio.sleep(retry_delay)
-                    retry_delay *= 2
+                    retry_delay *= 1.5 # Exponential backoff
                     continue
                     
                 response.raise_for_status()
@@ -421,11 +421,11 @@ async def analyze_with_cloudflare(audio_bytes: bytes, topic: str) -> Dict[str, A
                     return {
                         "transcript_exact": "Analysis service currently unavailable.",
                         "verbal_metrics": {"context_score": 3.0, "filler_count": 0},
-                        "feedback_summary": "We couldn't reach the AI coach. Please try again in a few minutes.",
+                        "feedback_summary": "We couldn't reach the AI coach due to high server load. Please try again in a few minutes.",
                         "recommendations": ["Check your internet connection", "Try a shorter recording"]
                     }
                 await asyncio.sleep(retry_delay)
-                retry_delay *= 2
+                retry_delay *= 1.5
 
     return {}
 
@@ -750,48 +750,47 @@ async def run_analysis_task(
     speaking_mode: str,
 ):
     try:
-        # 1. EXTRACT METRICS
-        msg = "Step 1/4: Analyzing vocal dynamics (pitch, jitter, pace)..."
+        # 1 & 2. EXTRACT VOCAL METRICS & CLOUDFLARE AI (CONCURRENTLY)
+        msg = "Step 1-3: Analyzing vocal dynamics and processing speech via Cloudflare AI concurrently..."
         print(f"[Job] {job_id} - {msg}")
         job_state = get_job_state(job_id) or {}
-        job_state.update({"progress": 15, "message": msg})
+        job_state.update({"progress": 25, "message": msg})
         set_job_state(job_id, job_state)
         
-        async with get_cpu_semaphore():
-            vocal_metrics, duration_seconds = await asyncio.to_thread(
-                extract_vocal_metrics, audio_bytes, "recording.wav"
-            )
-        print(f"[Job] {job_id} - Vocal metrics extracted ({duration_seconds}s).")
+        async def run_vocal():
+            async with get_cpu_semaphore():
+                metrics, duration = await asyncio.to_thread(
+                    extract_vocal_metrics, audio_bytes, "recording.wav"
+                )
+                print(f"[Job] {job_id} - Vocal metrics extracted ({duration}s).")
+                return metrics, duration
+
+        async def run_cloudflare():
+            def _compress_audio():
+                import subprocess
+                cmd = ['ffmpeg', '-y', '-i', 'pipe:0', '-t', '305', '-acodec', 'pcm_s16le', '-ac', '1', '-ar', '16000', '-f', 'wav', 'pipe:1']
+                p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                stdout, stderr = p.communicate(input=audio_bytes, timeout=60)
+                if p.returncode != 0:
+                    logger.error(f"FFmpeg failed: {stderr.decode()}")
+                return stdout
+            
+            clean_audio_bytes = await asyncio.to_thread(_compress_audio)
+            print(f"[Job] {job_id} - Audio compressed ({len(clean_audio_bytes)} bytes). Sending to Cloudflare...")
+            payload = await analyze_with_cloudflare(clean_audio_bytes, topic)
+            print(f"[Job] {job_id} - Cloudflare analysis complete.")
+            return payload
+
+        # Run heavy tasks concurrently
+        (vocal_metrics, duration_seconds), verbal_payload = await asyncio.gather(
+            run_vocal(),
+            run_cloudflare()
+        )
         
-        # 2. COMPRESS AUDIO (MP3)
-        msg = "Step 2/4: Optimizing audio for cloud AI processing..."
-        print(f"[Job] {job_id} - {msg}")
-        job_state = get_job_state(job_id) or {}; job_state.update({"progress": 35, "message": msg}); set_job_state(job_id, job_state)
-        def _compress_audio():
-            import subprocess
-            cmd = ['ffmpeg', '-y', '-i', 'pipe:0', '-t', '305', '-acodec', 'libmp3lame', '-ab', '32k', '-ac', '1', '-ar', '16000', '-f', 'mp3', 'pipe:1']
-            p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = p.communicate(input=audio_bytes, timeout=60)
-            if p.returncode != 0:
-                logger.error(f"FFmpeg failed: {stderr.decode()}")
-            return stdout
-        clean_audio_bytes = await asyncio.to_thread(_compress_audio)
-        print(f"[Job] {job_id} - Audio compressed ({len(clean_audio_bytes)} bytes).")
-        
-        # Free up original heavy audio buffer
+        # Free up heavy audio buffer
         del audio_bytes
 
-        # 3. CLOUDFLARE (Whisper + Llama)
-        msg = "Step 3/4: Processing speech with Cloudflare AI (Whisper/Llama)..."
-        print(f"[Job] {job_id} - {msg}")
-        job_state = get_job_state(job_id) or {}; job_state.update({"progress": 55, "message": msg}); set_job_state(job_id, job_state)
-        verbal_payload = await analyze_with_cloudflare(clean_audio_bytes, topic)
-        print(f"[Job] {job_id} - Cloudflare analysis complete.")
-        
-        # Free up compressed buffer
-        del clean_audio_bytes
-
-        # 4. PERSIST TO SUPABASE
+        # 3. PERSIST TO SUPABASE
         msg = "Step 4/4: Finalizing results and generating feedback..."
         print(f"[Job] {job_id} - {msg}")
         job_state = get_job_state(job_id) or {}; job_state.update({"progress": 90, "message": msg}); set_job_state(job_id, job_state)

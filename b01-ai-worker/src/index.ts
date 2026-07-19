@@ -37,7 +37,7 @@ async function runAIWithRetry(env: Env, model: string, payload: any, maxRetries 
   let delay = 2000;
   while (true) {
     try {
-      return await runAIWithRetry(env, model, payload);
+      return await env.AI.run(model, payload);
     } catch (e: any) {
       attempt++;
       if (attempt >= maxRetries) throw e;
@@ -236,10 +236,10 @@ function arrayBufferToBase64(buffer: ArrayBuffer) {
 }
 
 async function transcribeWithWhisper(env: Env, audioBuffer: ArrayBuffer) {
-  const whisperResponse = await runAIWithRetry(env, "@cf/openai/whisper", {
-    audio: [...new Uint8Array(audioBuffer)],
+  const whisperResponse = await runAIWithRetry(env, "@cf/openai/whisper-large-v3-turbo", {
+    audio: arrayBufferToBase64(audioBuffer),
   });
-  return String(whisperResponse?.text || "").trim();
+  return resolveWhisperLargeTranscript(whisperResponse);
 }
 
 function resolveWhisperLargeTranscript(response: unknown) {
@@ -352,7 +352,7 @@ export default {
         
         Output only the message text.`;
 
-        const response = await runAIWithRetry(env, "@cf/meta/llama-3-8b-instruct", {
+        const response = await runAIWithRetry(env, "@cf/meta/llama-3.1-8b-instruct", {
           messages: [
             { role: "system", content: "You are a helpful dashboard assistant for students in Dasmariñas, Cavite." },
             { role: "user", content: prompt }
@@ -381,7 +381,7 @@ export default {
         3. Provide a title and a 1-sentence instruction that is supportive and low-pressure.
         4. Return ONLY a JSON object: {"title": "...", "body": "..."}`;
 
-        const response = await runAIWithRetry(env, "@cf/meta/llama-3-8b-instruct", {
+        const response = await runAIWithRetry(env, "@cf/meta/llama-3.1-8b-instruct", {
           messages: [
             { role: "system", content: "You are a friendly, relatable vlog-style topic generator for students in Dasmariñas, Cavite. Output only valid JSON." },
             { role: "user", content: prompt }
@@ -433,8 +433,7 @@ export default {
           }
         } catch (deepgramError: unknown) {
           console.warn("[transcribe] Nova-3 transcription failed, falling back to Whisper:", getErrorMessage(deepgramError));
-          transcriptionModel = "@cf/openai/whisper";
-
+          transcriptionModel = "@cf/openai/whisper-large-v3-turbo";
           transcript = await transcribeWithWhisper(env, audioBuffer);
         }
 
@@ -484,7 +483,7 @@ export default {
           "recommendations": ["tip1", "tip2"]
         }`;
 
-        const analysisResponse = await runAIWithRetry(env, "@cf/meta/llama-3-8b-instruct", {
+        const analysisResponse = await runAIWithRetry(env, "@cf/meta/llama-3.1-8b-instruct", {
           messages: [
             { role: "system", content: "You are a speech analysis engine. Output only valid JSON." },
             { role: "user", content: analysisPrompt }
@@ -515,7 +514,8 @@ export default {
         });
 
       } catch (e: any) {
-        return jsonResponse({ error: e.message }, { status: 500 });
+        console.error("Transcribe Error:", e.stack || e.message);
+        return jsonResponse({ error: e.message, stack: e.stack }, { status: 500 });
       }
     }
 
@@ -540,7 +540,7 @@ export default {
         - Never say "I don't have data".
         - Data-first answers only.`;
 
-        const stream = await runAIWithRetry(env, '@cf/meta/llama-3-8b-instruct', {
+        const stream = await runAIWithRetry(env, '@cf/meta/llama-3.1-8b-instruct', {
           messages: [
             { role: 'system', content: systemPrompt },
             ...filteredMessages

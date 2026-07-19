@@ -222,7 +222,10 @@ function TrainingPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { state } = location;
-  const { analyseAndSave } = useSessionContext();
+  const { analyseAndSave, checkPacing } = useSessionContext();
+  const [pacingBlocked, setPacingBlocked] = useState(false);
+  const [pacingReason, setPacingReason] = useState('');
+  const [showRestModal, setShowRestModal] = useState(false);
   const { user, updateUserMetadata, logout } = useAuthContext();
   const activityScopeKey = user?.id || GLOBAL_ACTIVITY_SCOPE;
 
@@ -243,12 +246,40 @@ function TrainingPage() {
   const sessionType = state?.sessionType || recoveredState?.sessionType || focus;
   const freeTopic = (state?.freeTopic || recoveredState?.freeTopic || '').trim();
   const objectiveText = (state?.objective || state?.step?.objective || recoveredState?.objective || recoveredState?.step?.objective || '').trim();
-  const isPreTestSession = String(sessionType || '').toLowerCase().includes('pre-test') || String(sessionType || '').toLowerCase().includes('pretest');
+  let isPreTestSession = String(sessionType || '').toLowerCase().includes('pre-test') || String(sessionType || '').toLowerCase().includes('pretest');
+
+  // Fix: Prevent stale cache from forcing a pre-test session if the user is already past the pre-test stage
+  if ((user?.onboardingStage === 'completed' || user?.onboardingStage === 'analyzing') && isPreTestSession) {
+    isPreTestSession = false;
+  }
+
+  useEffect(() => {
+    if (!checkPacing || isPreTestSession) return;
+    
+    let active = true;
+    const runCheck = async () => {
+      const res = await checkPacing();
+      if (!active) return;
+      if (!res.allowed) {
+        setPacingReason(res.reason);
+        setPacingBlocked(true);
+        if (res.reason.includes('Rest Limit')) {
+          setShowRestModal(true);
+        }
+      }
+    };
+    runCheck();
+    
+    return () => {
+      active = false;
+    };
+  }, [checkPacing, isPreTestSession]);
   const isFreePretestSession = isPreTestSession;
-  const isDeveloperPreview =
+  const isDeveloperPreview = isPreTestSession && (
     state?.developerPreview === true ||
     recoveredState?.developerPreview === true ||
-    (typeof window !== 'undefined' && window.sessionStorage.getItem(DEVELOPER_PREVIEW_SESSION_KEY) === '1');
+    (typeof window !== 'undefined' && window.sessionStorage.getItem(DEVELOPER_PREVIEW_SESSION_KEY) === '1')
+  );
 
   const MIN_RECORDING_SECONDS = useMemo(() => {
     if (isFreePretestSession) {
@@ -887,7 +918,7 @@ function TrainingPage() {
 
   /* Start preview when idle - deferred significantly to protect LCP */
   useEffect(() => {
-    if (status !== 'idle' || isTutorialOverlayOpen) {
+    if (status !== 'idle' || isTutorialOverlayOpen || pacingBlocked) {
       return undefined;
     }
 
@@ -1526,6 +1557,21 @@ function TrainingPage() {
     visualChunksRef.current = [];
     visualMimeRef.current = '';
     clearSessionCache();
+    
+    // Reset visual analysis explicitly
+    stopAnalysis();
+    initPreview();
+    
+    // Slight delay to ensure DOM and camera are ready before booting MediaPipe
+    setTimeout(() => {
+      if (isMountedRef.current && videoRef.current && visualCanvasRef.current) {
+        startAnalysis({
+          videoElement: videoRef.current,
+          canvasElement: visualCanvasRef.current,
+          isTutorialMode: false,
+        });
+      }
+    }, 300);
   };
 
 
@@ -1648,6 +1694,35 @@ function TrainingPage() {
 
   return (
     <div className="tp-page tp-page--free-pretest" ref={freeLayoutObserverRef}>
+      {pacingBlocked && !showRestModal && (
+        <div className="tp-pacing-cooldown-banner">
+          ⚠️ {pacingReason || 'Please wait a moment before trying again.'}
+        </div>
+      )}
+
+      {showRestModal && (
+        <div className="rest-overlay-modal-backdrop">
+          <div className="rest-overlay-modal-card">
+            <div className="rest-overlay-modal-icon">🥤</div>
+            <h2>Time to Take a Rest!</h2>
+            <p>
+              You have completed 10 practice sessions in the past hour. To protect your voice and review what B-01 has coached, take a brief break!
+            </p>
+            <p className="rest-overlay-modal-footer">
+              Grab some water and come back in a while!
+            </p>
+            <button 
+              className="rest-overlay-modal-button"
+              onClick={() => {
+                setShowRestModal(false);
+                navigate('/dashboard');
+              }}
+            >
+              Okay, Coach B-01!
+            </button>
+          </div>
+        </div>
+      )}
       {!isPreTestSession && (
         <div className="history-session-view-header dashboard-anim-top">
           <button
@@ -1820,7 +1895,7 @@ function TrainingPage() {
               <button
                 className={`tp-record-btn${isActive ? ' tp-record-btn--active' : ' tp-record-btn--start'}`}
                 onClick={isActive ? stopRecording : handleStartClick}
-                disabled={status === 'countdown' || status === 'preparing-ai' || isStartBlockedByTutorial}
+                disabled={status === 'countdown' || status === 'preparing-ai' || isStartBlockedByTutorial || pacingBlocked}
                 aria-label={isActive ? 'Stop' : 'Start'}
               >
                 {isActive ? (

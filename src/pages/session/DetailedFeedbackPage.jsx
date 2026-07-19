@@ -155,8 +155,9 @@ function buildBucketPublicUrl(pathOrUrl) {
     .replace(new RegExp(`^${SESSION_MEDIA_BUCKET}/`), '')
     .split('?')[0];
 
-  // Use the R2 base URL via getAssetUrl
-  return getAssetUrl(cleaned);
+  // Use Supabase Public URL for session media, not the static assets R2 bucket
+  const { data } = supabase.storage.from(SESSION_MEDIA_BUCKET).getPublicUrl(cleaned);
+  return data?.publicUrl || value;
 }
 
 function extractBucketStoragePath(pathOrUrl) {
@@ -631,35 +632,8 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
     let cancelled = false;
 
     const recoverFillersFromAudio = async () => {
-      try {
-        const audioBlob = await loadAudioBlobForFillerRecovery({
-          playbackUrl: recordingMedia.audioUrl,
-          storageUrl: session?.audio_url,
-        });
-        const transcribeUrl = `${workerBaseUrl}/transcribe?audit_fillers=true&topic=${encodeURIComponent(session?.topic || session?.objective_name || 'General Speaking')}`;
-        const transcribeResponse = await fetch(transcribeUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': audioBlob.type || 'audio/webm',
-          },
-          body: audioBlob,
-        });
-        if (!transcribeResponse.ok) throw new Error(`Filler recovery failed with ${transcribeResponse.status}`);
-        const recoveryData = await transcribeResponse.json();
-        if (cancelled) return;
-        const recoveredCount = Number(recoveryData?.filler_count);
-        if (Number.isFinite(recoveredCount) && recoveredCount > 0) {
-          setRecoveredFillerAnalysis({
-            transcript: String(recoveryData?.transcript || '').trim(),
-            filler_count: recoveredCount,
-            hard_filler_count: Number(recoveryData?.hard_filler_count) || 0,
-            filler_words: Array.isArray(recoveryData?.filler_words) ? recoveryData.filler_words : [],
-            filler_occurrences: Array.isArray(recoveryData?.filler_occurrences) ? recoveryData.filler_occurrences : [],
-          });
-        }
-      } catch (error) {
-        console.warn('[DetailedFeedbackPage] Filler recovery skipped:', error?.message || error);
-      }
+      // Disabled frontend filler recovery to prevent 500 error on unsupported webm format.
+      // The backend now securely transcodes to WAV and extracts fillers reliably.
     };
 
     recoverFillersFromAudio();
@@ -907,7 +881,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
                 <h2 className="sr-section-title">Performance Timeline</h2>
                 <p className="sr-section-subtitle">Real-time fluctuations in your Triple V performance metrics throughout the session</p>
               </div>
-              <div className="df-card" style={{ height: '400px', padding: '24px 16px 16px' }}>
+              <div className="df-card" style={{ width: '100%', height: '400px', padding: '24px 16px 16px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={timelineData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />

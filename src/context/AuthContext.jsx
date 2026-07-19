@@ -1042,6 +1042,28 @@ export function AuthProvider({ children }) {
           return;
         }
 
+        // --- Clash of Clans Session Ejection logic ---
+        if (typeof window !== 'undefined') {
+          let localToken = sessionStorage.getItem('bigkas_session_token');
+          if (!localToken) {
+            localToken = crypto.randomUUID();
+            sessionStorage.setItem('bigkas_session_token', localToken);
+            // Async write to database, do not block profile load
+            supabase.from('profiles').update({ active_session_token: localToken }).eq('id', userId).then(({ error }) => { if (error) console.error('Session sync error:', error); });
+          } else if (profile.active_session_token && profile.active_session_token !== localToken) {
+            // Mismatch! Eject device
+            setError('Logged Out: Another device or tab has logged into this account.');
+            setUser(null);
+            clearAdminSession();
+            sessionStorage.removeItem('bigkas_session_token');
+            await supabase.auth.signOut({ scope: 'local' });
+            return;
+          } else if (!profile.active_session_token) {
+            // No token on remote, sync it
+            supabase.from('profiles').update({ active_session_token: localToken }).eq('id', userId).then(({ error }) => { if (error) console.error('Session sync error:', error); });
+          }
+        }
+
         setUser(prev => {
           if (prev?.id !== userId) return prev;
 
@@ -1238,7 +1260,8 @@ export function AuthProvider({ children }) {
         return;
       }
 
-      const nextUser = buildUser(session);
+      const cachedProfile = session?.user?.id ? profileRequestCache.get(session.user.id)?.profile : null;
+      const nextUser = buildUser(session, cachedProfile || {});
       setUser(nextUser);
       if (nextUser?.id) {
         void fetchAndMergeProfile(nextUser.id);
@@ -1298,7 +1321,8 @@ export function AuthProvider({ children }) {
       const blockedProfile = await rejectArchivedSession(session);
       if (blockedProfile) return;
 
-      const nextUser = buildUser(session);
+      const cachedProfile = session?.user?.id ? profileRequestCache.get(session.user.id)?.profile : null;
+      const nextUser = buildUser(session, cachedProfile || {});
       const emailConfirmed = hasVerifiedAuthIdentity(session?.user);
 
       if (session?.user && !emailConfirmed) {
@@ -1527,12 +1551,14 @@ export function AuthProvider({ children }) {
 
       setPendingEmailVerification(false);
       setPendingEmail(null);
-      setUser(buildUser(data.session));
+      const cachedProfile = data.session?.user?.id ? profileRequestCache.get(data.session.user.id)?.profile : null;
+      const nextUser = buildUser(data.session, cachedProfile || {});
+      setUser(nextUser);
       if (data.user?.id) {
         void fetchAndMergeProfile(data.user.id);
       }
       await registerLoginSuccess('user', normalizedEmail);
-      return { success: true, user: buildUser(data.session) };
+      return { success: true, user: nextUser };
     } catch (networkError) {
       setIsLoading(false);
       if (isBlockedByClient(networkError)) {
@@ -1689,10 +1715,12 @@ export function AuthProvider({ children }) {
 
       setPendingEmailVerification(false);
       setPendingEmail(null);
-      setUser(buildUser(data.session));
+      const cachedProfile = data.session?.user?.id ? profileRequestCache.get(data.session.user.id)?.profile : null;
+      const nextUser = buildUser(data.session, cachedProfile || {});
+      setUser(nextUser);
       persistAdminSession();
       await registerLoginSuccess('admin', normalizedEmail);
-      return { success: true, user: buildUser(data.session) };
+      return { success: true, user: nextUser };
     } catch {
       setUser(null);
       clearAdminSession();
@@ -1921,11 +1949,24 @@ export function AuthProvider({ children }) {
   /* ── Logout ── */
   const logout = useCallback(async () => {
     setIsLoading(true);
+    if (user?.id) {
+      try {
+        await supabase
+          .from('profiles')
+          .update({ active_session_token: null })
+          .eq('id', user.id);
+      } catch (e) {
+        console.warn('Signout session token clear failed:', e);
+      }
+    }
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('bigkas_session_token');
+    }
     await supabase.auth.signOut();
     setUser(null);
     clearAdminSession();
     setIsLoading(false);
-  }, [clearAdminSession]);
+  }, [clearAdminSession, user?.id]);
 
   /* ── Update nickname ── */
   const updateNickname = useCallback(async (nickname) => {

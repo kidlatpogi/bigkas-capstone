@@ -492,6 +492,71 @@ export function SessionProvider({ children }) {
     window.localStorage.removeItem(LEGACY_LOCAL_SESSIONS_KEY);
   }, []);
 
+  /* ── Clash of Clans style Session Integrity heartbeat ── */
+  const checkSessionIntegrity = useCallback(async () => {
+    const uid = await getUserId();
+    if (!uid) return;
+    if (typeof window === 'undefined') return;
+
+    const localToken = sessionStorage.getItem('bigkas_session_token');
+    if (!localToken) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('active_session_token')
+        .eq('id', uid)
+        .single();
+
+      if (error) {
+        console.warn('Session integrity check failed to query profiles:', error.message);
+        return;
+      }
+
+      if (data && data.active_session_token && data.active_session_token !== localToken) {
+        // Clash of Clans ejection
+        alert('Logged Out: Another device or browser tab has logged into this account. Disconnecting...');
+        sessionStorage.removeItem('bigkas_session_token');
+        await supabase.auth.signOut();
+        window.location.href = '/login';
+      }
+    } catch (e) {
+      console.warn('Error during session integrity heartbeat:', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const interval = setInterval(() => {
+      if (active) checkSessionIntegrity();
+    }, 15000); // Check every 15 seconds
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [checkSessionIntegrity]);
+
+  /* ── Submission Pacing Check (1-minute cooldown, 10 runs per hour) ── */
+  const checkPacing = useCallback(async () => {
+    const uid = await getUserId();
+    if (!uid) return { allowed: false, reason: 'Not authenticated' };
+
+    try {
+      const { data, error } = await supabase.rpc('check_user_pacing', { user_uuid: uid });
+      if (error) throw error;
+      
+      if (Array.isArray(data) && data.length > 0) {
+        return { allowed: !!data[0].allowed, reason: data[0].reason || '' };
+      }
+      return { allowed: true, reason: '' };
+    } catch (err) {
+      console.error('Failed to run check_user_pacing RPC:', err);
+      // Fallback to true if RPC function fails (to avoid blocking user on config error)
+      return { allowed: true, reason: '' };
+    }
+  }, []);
+
   /* ── Helpers ── */
   const getUserId = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -1128,6 +1193,7 @@ export function SessionProvider({ children }) {
     clearCurrentSession,
     clearError,
     reset,
+    checkPacing,
   };
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import subprocess
+import asyncio
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
@@ -39,9 +40,87 @@ def _parse_origins(raw_origins: str) -> List[str]:
     return origins or DEFAULT_CORS_ORIGINS
 
 
-# In-memory store for background analysis jobs
-# In a production environment with multiple workers, use Redis/Postgres.
-analysis_jobs: Dict[str, Any] = {}
+import redis
+
+# Redis Configuration for shared task state
+REDIS_URL = os.getenv("REDIS_URL")
+redis_client = None
+if REDIS_URL:
+    try:
+        redis_client = redis.Redis.from_url(REDIS_URL, decode_responses=True)
+        print("[Redis] Connected using REDIS_URL.")
+    except Exception as e:
+        print(f"[Redis] Connection to REDIS_URL failed: {e}")
+else:
+    REDIS_HOST = os.getenv("REDIS_HOST")
+    REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
+    REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
+    if REDIS_HOST:
+        try:
+            redis_client = redis.Redis(
+                host=REDIS_HOST,
+                port=REDIS_PORT,
+                password=REDIS_PASSWORD,
+                ssl=True,
+                decode_responses=True
+            )
+            print(f"[Redis] Connected using REDIS_HOST={REDIS_HOST}.")
+        except Exception as e:
+            print(f"[Redis] Connection to REDIS_HOST failed: {e}")
+
+# Fallback local in-memory store
+analysis_jobs_local: Dict[str, Any] = {}
+
+import os, json
+JOB_DIR = "/tmp/bigkas_jobs"
+os.makedirs(JOB_DIR, exist_ok=True)
+
+def get_job_state(job_id: str) -> Optional[Dict[str, Any]]:
+    if redis_client:
+        try:
+            val = redis_client.get(f"job:{job_id}")
+            if val:
+                return json.loads(val)
+        except Exception as e:
+            print(f"[Redis] Failed to get job status from Redis: {e}")
+    
+    # Fallback to disk storage (multi-worker safe)
+    job_file = os.path.join(JOB_DIR, f"{job_id}.json")
+    if os.path.exists(job_file):
+        try:
+            with open(job_file, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"[Disk] Failed to read job state: {e}")
+            
+    return analysis_jobs_local.get(job_id)
+
+def set_job_state(job_id: str, state: Dict[str, Any]) -> None:
+    if redis_client:
+        try:
+            redis_client.set(f"job:{job_id}", json.dumps(state), ex=1800) # Expire in 30 minutes
+            return
+        except Exception as e:
+            print(f"[Redis] Failed to set job status in Redis: {e}")
+            
+    # Fallback to disk storage (multi-worker safe)
+    try:
+        job_file = os.path.join(JOB_DIR, f"{job_id}.json")
+        with open(job_file, "w") as f:
+            json.dump(state, f)
+    except Exception as e:
+        print(f"[Disk] Failed to save job state: {e}")
+        
+    analysis_jobs_local[job_id] = state
+
+# Limit heavy CPU audio processing to 2 concurrent tasks per worker
+cpu_semaphore = None
+
+def get_cpu_semaphore():
+    global cpu_semaphore
+    if cpu_semaphore is None:
+        cpu_semaphore = asyncio.Semaphore(2)
+    return cpu_semaphore
 
 # Define logger
 logging.basicConfig(level=logging.INFO)
@@ -297,8 +376,8 @@ async def analyze_with_cloudflare(audio_bytes: bytes, topic: str) -> Dict[str, A
     import urllib.parse
     worker_url = f"{B01_WORKER_URL}/transcribe?topic={urllib.parse.quote(topic)}"
     
-    max_retries = 3
-    retry_delay = 2.0
+    max_retries = 5
+    retry_delay = 5.0
     
     async with httpx.AsyncClient(timeout=180.0) as client:
         for attempt in range(max_retries):
@@ -310,10 +389,10 @@ async def analyze_with_cloudflare(audio_bytes: bytes, topic: str) -> Dict[str, A
                     headers={"Content-Type": "audio/wav"},
                 )
                 
-                if response.status_code == 503:
-                    print(f"[AI] Cloudflare returned 503. Retrying in {retry_delay}s...")
+                if response.status_code in [429, 502, 503, 504]:
+                    print(f"[AI] Cloudflare returned {response.status_code}. Retrying in {retry_delay}s...")
                     await asyncio.sleep(retry_delay)
-                    retry_delay *= 2
+                    retry_delay *= 1.5 # Exponential backoff
                     continue
                     
                 response.raise_for_status()
@@ -342,11 +421,11 @@ async def analyze_with_cloudflare(audio_bytes: bytes, topic: str) -> Dict[str, A
                     return {
                         "transcript_exact": "Analysis service currently unavailable.",
                         "verbal_metrics": {"context_score": 3.0, "filler_count": 0},
-                        "feedback_summary": "We couldn't reach the AI coach. Please try again in a few minutes.",
+                        "feedback_summary": "We couldn't reach the AI coach due to high server load. Please try again in a few minutes.",
                         "recommendations": ["Check your internet connection", "Try a shorter recording"]
                     }
                 await asyncio.sleep(retry_delay)
-                retry_delay *= 2
+                retry_delay *= 1.5
 
     return {}
 
@@ -644,7 +723,7 @@ def persist_to_supabase(
 
 @app.get("/api/analysis-status/{job_id}")
 async def get_analysis_status(job_id: str):
-    job = analysis_jobs.get(job_id)
+    job = get_job_state(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Analysis job not found.")
     
@@ -671,47 +750,50 @@ async def run_analysis_task(
     speaking_mode: str,
 ):
     try:
-        # 1. EXTRACT METRICS
-        msg = "Step 1/4: Analyzing vocal dynamics (pitch, jitter, pace)..."
+        # 1 & 2. EXTRACT VOCAL METRICS & CLOUDFLARE AI (CONCURRENTLY)
+        msg = "Step 1-3: Analyzing vocal dynamics and processing speech via Cloudflare AI concurrently..."
         print(f"[Job] {job_id} - {msg}")
-        analysis_jobs[job_id].update({"progress": 15, "message": msg})
-        vocal_metrics, duration_seconds = await asyncio.to_thread(
-            extract_vocal_metrics, audio_bytes, "recording.wav"
+        job_state = get_job_state(job_id) or {}
+        job_state.update({"progress": 25, "message": msg})
+        set_job_state(job_id, job_state)
+        
+        async def run_vocal():
+            async with get_cpu_semaphore():
+                metrics, duration = await asyncio.to_thread(
+                    extract_vocal_metrics, audio_bytes, "recording.wav"
+                )
+                print(f"[Job] {job_id} - Vocal metrics extracted ({duration}s).")
+                return metrics, duration
+
+        async def run_cloudflare():
+            def _compress_audio():
+                import subprocess
+                cmd = ['ffmpeg', '-y', '-i', 'pipe:0', '-t', '305', '-acodec', 'pcm_s16le', '-ac', '1', '-ar', '16000', '-f', 'wav', 'pipe:1']
+                p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                stdout, stderr = p.communicate(input=audio_bytes, timeout=60)
+                if p.returncode != 0:
+                    logger.error(f"FFmpeg failed: {stderr.decode()}")
+                return stdout
+            
+            clean_audio_bytes = await asyncio.to_thread(_compress_audio)
+            print(f"[Job] {job_id} - Audio compressed ({len(clean_audio_bytes)} bytes). Sending to Cloudflare...")
+            payload = await analyze_with_cloudflare(clean_audio_bytes, topic)
+            print(f"[Job] {job_id} - Cloudflare analysis complete.")
+            return payload
+
+        # Run heavy tasks concurrently
+        (vocal_metrics, duration_seconds), verbal_payload = await asyncio.gather(
+            run_vocal(),
+            run_cloudflare()
         )
-        print(f"[Job] {job_id} - Vocal metrics extracted ({duration_seconds}s).")
         
-        # 2. COMPRESS AUDIO (MP3)
-        msg = "Step 2/4: Optimizing audio for cloud AI processing..."
-        print(f"[Job] {job_id} - {msg}")
-        analysis_jobs[job_id].update({"progress": 35, "message": msg})
-        def _compress_audio():
-            import subprocess
-            cmd = ['ffmpeg', '-y', '-i', 'pipe:0', '-t', '305', '-acodec', 'libmp3lame', '-ab', '32k', '-ac', '1', '-ar', '16000', '-f', 'mp3', 'pipe:1']
-            p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = p.communicate(input=audio_bytes, timeout=60)
-            if p.returncode != 0:
-                logger.error(f"FFmpeg failed: {stderr.decode()}")
-            return stdout
-        clean_audio_bytes = await asyncio.to_thread(_compress_audio)
-        print(f"[Job] {job_id} - Audio compressed ({len(clean_audio_bytes)} bytes).")
-        
-        # Free up original heavy audio buffer
+        # Free up heavy audio buffer
         del audio_bytes
 
-        # 3. CLOUDFLARE (Whisper + Llama)
-        msg = "Step 3/4: Processing speech with Cloudflare AI (Whisper/Llama)..."
-        print(f"[Job] {job_id} - {msg}")
-        analysis_jobs[job_id].update({"progress": 55, "message": msg})
-        verbal_payload = await analyze_with_cloudflare(clean_audio_bytes, topic)
-        print(f"[Job] {job_id} - Cloudflare analysis complete.")
-        
-        # Free up compressed buffer
-        del clean_audio_bytes
-
-        # 4. PERSIST TO SUPABASE
+        # 3. PERSIST TO SUPABASE
         msg = "Step 4/4: Finalizing results and generating feedback..."
         print(f"[Job] {job_id} - {msg}")
-        analysis_jobs[job_id].update({"progress": 90, "message": msg})
+        job_state = get_job_state(job_id) or {}; job_state.update({"progress": 90, "message": msg}); set_job_state(job_id, job_state)
         combined_analysis = {
             "visual": visual_payload,
             "vocal": vocal_metrics,
@@ -758,11 +840,11 @@ async def run_analysis_task(
             "recommendations": combined_analysis.get("recommendations", []),
         }
 
-        analysis_jobs[job_id] = {"status": "completed", "data": result_data}
+        set_job_state(job_id, {"status": "completed", "data": result_data})
         print(f"[Job] Task {job_id} completed successfully.")
     except Exception as e:
         logger.error(f"Background task {job_id} failed: {e}")
-        analysis_jobs[job_id] = {"status": "error", "error": str(e)}
+        set_job_state(job_id, {"status": "error", "error": str(e)})
 
 @app.post("/api/analyze-speech")
 async def analyze_speech(
@@ -794,7 +876,7 @@ async def analyze_speech(
         parsed_answers = []
 
     # Initialize job state
-    analysis_jobs[job_id] = {"status": "processing", "progress": 5}
+    set_job_state(job_id, {"status": "processing", "progress": 5})
     
     print(f"[POST] Spawning background task for Job: {job_id}")
     background_tasks.add_task(

@@ -32,6 +32,27 @@ function corsResponse(response: Response) {
   });
 }
 
+async function runAIWithRetry(env: Env, model: string, payload: any, maxRetries = 3): Promise<any> {
+  let attempt = 0;
+  let delay = 2000;
+  while (true) {
+    try {
+      return await env.AI.run(model, payload);
+    } catch (e: any) {
+      attempt++;
+      if (attempt >= maxRetries) throw e;
+      const msg = (e?.message || "").toLowerCase();
+      if (msg.includes("503") || msg.includes("429") || msg.includes("timeout") || msg.includes("overloaded") || msg.includes("internal")) {
+        console.warn(`[AI Retry] Model ${model} failed (Attempt ${attempt}): ${e.message}. Retrying in ${delay}ms...`);
+        await new Promise(r => setTimeout(r, delay));
+        delay *= 1.5;
+      } else {
+        throw e;
+      }
+    }
+  }
+}
+
 const HARD_FILLER_WORDS = new Set([
   "um",
   "uh",
@@ -215,10 +236,10 @@ function arrayBufferToBase64(buffer: ArrayBuffer) {
 }
 
 async function transcribeWithWhisper(env: Env, audioBuffer: ArrayBuffer) {
-  const whisperResponse = await env.AI.run("@cf/openai/whisper", {
-    audio: [...new Uint8Array(audioBuffer)],
+  const whisperResponse = await runAIWithRetry(env, "@cf/openai/whisper-large-v3-turbo", {
+    audio: arrayBufferToBase64(audioBuffer),
   });
-  return String(whisperResponse?.text || "").trim();
+  return resolveWhisperLargeTranscript(whisperResponse);
 }
 
 function resolveWhisperLargeTranscript(response: unknown) {
@@ -232,7 +253,7 @@ function resolveWhisperLargeTranscript(response: unknown) {
 }
 
 async function transcribeVerbatimWithWhisperLarge(env: Env, audioBuffer: ArrayBuffer) {
-  const response = await env.AI.run("@cf/openai/whisper-large-v3-turbo", {
+  const response = await runAIWithRetry(env, "@cf/openai/whisper-large-v3-turbo", {
     audio: arrayBufferToBase64(audioBuffer),
     task: "transcribe",
     language: "en",
@@ -331,7 +352,7 @@ export default {
         
         Output only the message text.`;
 
-        const response = await env.AI.run("@cf/meta/llama-3-8b-instruct", {
+        const response = await runAIWithRetry(env, "@cf/meta/llama-3.1-8b-instruct-fp8", {
           messages: [
             { role: "system", content: "You are a helpful dashboard assistant for students in Dasmariñas, Cavite." },
             { role: "user", content: prompt }
@@ -360,7 +381,7 @@ export default {
         3. Provide a title and a 1-sentence instruction that is supportive and low-pressure.
         4. Return ONLY a JSON object: {"title": "...", "body": "..."}`;
 
-        const response = await env.AI.run("@cf/meta/llama-3-8b-instruct", {
+        const response = await runAIWithRetry(env, "@cf/meta/llama-3.1-8b-instruct-fp8", {
           messages: [
             { role: "system", content: "You are a friendly, relatable vlog-style topic generator for students in Dasmariñas, Cavite. Output only valid JSON." },
             { role: "user", content: prompt }
@@ -394,7 +415,7 @@ export default {
         const shouldAuditFillers = url.searchParams.get("audit_fillers") === "true";
 
         try {
-          const deepgramResponse = await env.AI.run("@cf/deepgram/nova-3", {
+          const deepgramResponse = await runAIWithRetry(env, "@cf/deepgram/nova-3", {
             audio: {
               body: new Response(audioBuffer).body,
               contentType,
@@ -412,8 +433,7 @@ export default {
           }
         } catch (deepgramError: unknown) {
           console.warn("[transcribe] Nova-3 transcription failed, falling back to Whisper:", getErrorMessage(deepgramError));
-          transcriptionModel = "@cf/openai/whisper";
-
+          transcriptionModel = "@cf/openai/whisper-large-v3-turbo";
           transcript = await transcribeWithWhisper(env, audioBuffer);
         }
 
@@ -463,7 +483,7 @@ export default {
           "recommendations": ["tip1", "tip2"]
         }`;
 
-        const analysisResponse = await env.AI.run("@cf/meta/llama-3-8b-instruct", {
+        const analysisResponse = await runAIWithRetry(env, "@cf/meta/llama-3.1-8b-instruct-fp8", {
           messages: [
             { role: "system", content: "You are a speech analysis engine. Output only valid JSON." },
             { role: "user", content: analysisPrompt }
@@ -494,7 +514,8 @@ export default {
         });
 
       } catch (e: any) {
-        return jsonResponse({ error: e.message }, { status: 500 });
+        console.error("Transcribe Error:", e.stack || e.message);
+        return jsonResponse({ error: e.message, stack: e.stack }, { status: 500 });
       }
     }
 
@@ -519,7 +540,7 @@ export default {
         - Never say "I don't have data".
         - Data-first answers only.`;
 
-        const stream = await env.AI.run('@cf/meta/llama-3-8b-instruct', {
+        const stream = await runAIWithRetry(env, '@cf/meta/llama-3.1-8b-instruct-fp8', {
           messages: [
             { role: 'system', content: systemPrompt },
             ...filteredMessages

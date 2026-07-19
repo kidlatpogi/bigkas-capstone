@@ -453,6 +453,7 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
   }, [rawTranscript, analysisData]);
 
   useEffect(() => {
+    return; // Disabled redundant frontend filler recovery to prevent direct audio/webm uploads to the Cloudflare worker
     const workerBaseUrl = String(ENV.CLOUDFLARE_AI_WORKER_URL || '').replace(/\/+$/, '');
     if (hardFillerCount > 0 || !workerBaseUrl || !recordingMedia.audioUrl) return undefined;
 

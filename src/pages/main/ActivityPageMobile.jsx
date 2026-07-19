@@ -1327,12 +1327,12 @@ function ActivityPageMobile() {
                 </Button>
               </div>
               {!isStreakRecoveryMode && (
-                <div className="tutorial-audio-action">
+                <div className="randomizer-overlay-audio-action">
                   <button
                     type="button"
                     aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
                     title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                    className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
+                    className={`randomizer-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
                     onClick={handleToggleMute}
                   >
                     {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}
@@ -1390,12 +1390,12 @@ function ActivityPageMobile() {
                   Start
                 </Button>
               </div>
-              <div className="tutorial-audio-action">
+              <div className="randomizer-overlay-audio-action">
                 <button
                   type="button"
                   aria-label={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
                   title={user?.isAudioMuted ? 'Unmute B-01 voice' : 'Mute B-01 voice'}
-                  className={`tutorial-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
+                  className={`randomizer-audio-toggle ${user?.isAudioMuted ? 'is-muted' : 'is-unmuted'}`}
                   onClick={handleToggleMute}
                 >
                   {user?.isAudioMuted ? <FaVolumeMute aria-hidden="true" /> : <FaVolumeUp aria-hidden="true" />}

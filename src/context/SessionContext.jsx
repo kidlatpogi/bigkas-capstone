@@ -6,7 +6,6 @@ import {
   sanitizeRecommendationLines,
   sanitizeTranscriptForDisplay,
 } from '../utils/analysisTranscript';
-import { getOrGenerateInstanceToken, handleSessionEjection } from '../utils/sessionIntegrity';
 
 const PAGE_SIZE = 10;
 const LEGACY_LOCAL_SESSIONS_KEY = 'bigkas_local_sessions_v1';
@@ -492,126 +491,6 @@ export function SessionProvider({ children }) {
     // Prevent stale local-only records from being shown after switching to DB-only persistence.
     window.localStorage.removeItem(LEGACY_LOCAL_SESSIONS_KEY);
   }, []);
-
-  /* ── Clash of Clans Real-Time Session Integrity & Ejection ── */
-  const checkSessionIntegrity = useCallback(async () => {
-    const uid = await getUserId();
-    if (!uid) return;
-    if (typeof window === 'undefined') return;
-
-    const myToken = getOrGenerateInstanceToken();
-    if (!myToken) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('active_session_token')
-        .eq('id', uid)
-        .single();
-
-      if (error) {
-        console.warn('[SessionIntegrity] Query failed:', error.message);
-        return;
-      }
-
-      if (data && data.active_session_token && data.active_session_token !== myToken) {
-        handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
-      }
-    } catch (e) {
-      console.warn('[SessionIntegrity] Error during heartbeat:', e);
-    }
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    let channel = null;
-    let bc = null;
-
-    const setupRealtimeAndBroadcast = async () => {
-      const uid = await getUserId();
-      if (!uid || !active || typeof window === 'undefined') return;
-
-      const myToken = getOrGenerateInstanceToken();
-
-      // Initial check
-      checkSessionIntegrity();
-
-      // 1. Supabase Realtime WebSocket subscription (for cross-device / cross-browser immediate ejection)
-      channel = supabase
-        .channel(`profile-integrity-${uid}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'profiles',
-            filter: `id=eq.${uid}`,
-          },
-          (payload) => {
-            const remoteToken = payload.new?.active_session_token;
-            if (remoteToken && remoteToken !== myToken && active) {
-              handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
-            }
-          }
-        )
-        .subscribe();
-
-      // 2. BroadcastChannel listener (for instant <1ms cross-tab ejection in the same browser)
-      if (typeof BroadcastChannel !== 'undefined') {
-        try {
-          bc = new BroadcastChannel('bigkas_session_channel_v2');
-          bc.onmessage = (event) => {
-            const data = event.data;
-            if (data && data.type === 'SESSION_CLAIMED' && data.userId === uid && data.token !== myToken && active) {
-              handleSessionEjection('Logged Out: Another browser tab has logged into this account. Disconnecting...', supabase);
-            }
-          };
-        } catch (e) {
-          console.warn('[SessionIntegrity] BC setup error:', e);
-        }
-      }
-
-      // 3. Storage event fallback (for cross-tab in browsers where BroadcastChannel is restricted)
-      const handleStorageEvent = (event) => {
-        if (event.key === 'bigkas_last_claimed_session_event' && event.newValue && active) {
-          try {
-            const data = JSON.parse(event.newValue);
-            if (data.type === 'SESSION_CLAIMED' && data.userId === uid && data.token !== myToken) {
-              handleSessionEjection('Logged Out: Another browser tab has logged into this account. Disconnecting...', supabase);
-            }
-          } catch (e) {
-            // ignore
-          }
-        }
-      };
-      window.addEventListener('storage', handleStorageEvent);
-
-      return () => {
-        window.removeEventListener('storage', handleStorageEvent);
-      };
-    };
-
-    let cleanupStorage = null;
-    setupRealtimeAndBroadcast().then((cleanup) => {
-      if (cleanup && typeof cleanup === 'function') cleanupStorage = cleanup;
-    });
-
-    const interval = setInterval(() => {
-      if (active) checkSessionIntegrity();
-    }, 10000); // Heartbeat every 10 seconds as backup
-
-    return () => {
-      active = false;
-      clearInterval(interval);
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
-      if (bc && typeof bc.close === 'function') {
-        bc.close();
-      }
-      if (cleanupStorage) cleanupStorage();
-    };
-  }, [checkSessionIntegrity]);
 
   /* ── Submission Pacing Check (1-minute cooldown, 10 runs per hour) ── */
   const checkPacing = useCallback(async () => {

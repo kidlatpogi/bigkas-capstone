@@ -8,7 +8,7 @@ import { ROUTES } from '../utils/constants';
 import { normalizeSpeakerPointsHistory } from '../utils/speakerPointsHistory';
 import { BIGKAS_LEVELS, getBigkasLevelFromScore, mapPercentToEntryScore } from '../utils/activityProgress';
 import { PENDING_SIGNUP_PASSWORD_KEY } from '../services/session/api/authApi';
-import { getOrGenerateInstanceToken, broadcastSessionClaimed } from '../utils/sessionIntegrity';
+import { getOrGenerateInstanceToken, broadcastSessionClaimed, handleSessionEjection } from '../utils/sessionIntegrity';
 
 /**
  * Authentication Context — backed by Supabase Auth
@@ -1049,7 +1049,13 @@ export function AuthProvider({ children }) {
           const claimedKey = `bigkas_instance_claimed_${userId}`;
           const alreadyClaimed = window.sessionStorage.getItem(claimedKey) === '1';
 
-          if (!alreadyClaimed || profile.active_session_token !== myToken) {
+          // If this tab already claimed previously, but the database now has a different token, another device took over!
+          if (alreadyClaimed && profile.active_session_token && profile.active_session_token !== myToken) {
+            handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
+            return;
+          }
+
+          if (!alreadyClaimed || !profile.active_session_token || profile.active_session_token !== myToken) {
             window.sessionStorage.setItem(claimedKey, '1');
             broadcastSessionClaimed(userId, myToken);
             supabase
@@ -1057,8 +1063,12 @@ export function AuthProvider({ children }) {
               .update({ active_session_token: myToken })
               .eq('id', userId)
               .then(({ error }) => {
-                if (error) console.error('[SessionIntegrity] Claim sync error:', error);
+                if (error) console.warn('[SessionIntegrity] Profile claim sync error:', error.message);
               });
+            supabase
+              .auth
+              .updateUser({ data: { active_session_token: myToken } })
+              .catch(() => {});
           }
         }
 
@@ -2217,6 +2227,109 @@ export function AuthProvider({ children }) {
   }, [clearAdminSession]);
 
   const clearError = useCallback(() => setError(null), []);
+
+  /* ── Real-Time Single-Instance Heartbeat & Subscription ── */
+  useEffect(() => {
+    if (!user?.id || typeof window === 'undefined') return;
+
+    let active = true;
+    const myToken = getOrGenerateInstanceToken();
+    const uid = user.id;
+
+    // 1. Check integrity against both Supabase Auth user_metadata AND profiles table
+    const verifyIntegrity = async () => {
+      if (!active) return;
+      try {
+        // First check user_metadata (always works regardless of SQL migrations)
+        const { data: authData } = await supabase.auth.getUser();
+        const metaToken = authData?.user?.user_metadata?.active_session_token;
+        if (metaToken && metaToken !== myToken && active) {
+          handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
+          return;
+        }
+
+        // Second check profiles table
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('active_session_token')
+          .eq('id', uid)
+          .single();
+        const profileToken = profileData?.active_session_token;
+        if (profileToken && profileToken !== myToken && active) {
+          handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    // Initial check right after user is confirmed
+    verifyIntegrity();
+
+    // 2. Supabase Realtime WebSocket subscription
+    const channel = supabase
+      .channel(`auth-integrity-${uid}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${uid}`,
+        },
+        (payload) => {
+          const remoteToken = payload.new?.active_session_token;
+          if (remoteToken && remoteToken !== myToken && active) {
+            handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
+          }
+        }
+      )
+      .subscribe();
+
+    // 3. BroadcastChannel listener (instant <1ms cross-tab ejection within the same browser engine)
+    let bc = null;
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        bc = new BroadcastChannel('bigkas_session_channel_v2');
+        bc.onmessage = (event) => {
+          const data = event.data;
+          if (data && data.type === 'SESSION_CLAIMED' && data.userId === uid && data.token !== myToken && active) {
+            handleSessionEjection('Logged Out: Another browser tab has logged into this account. Disconnecting...', supabase);
+          }
+        };
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    // 4. Storage event fallback (for cross-tab where BroadcastChannel is restricted)
+    const handleStorageEvent = (event) => {
+      if (event.key === 'bigkas_last_claimed_session_event' && event.newValue && active) {
+        try {
+          const data = JSON.parse(event.newValue);
+          if (data.type === 'SESSION_CLAIMED' && data.userId === uid && data.token !== myToken) {
+            handleSessionEjection('Logged Out: Another browser tab has logged into this account. Disconnecting...', supabase);
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageEvent);
+
+    // 5. Periodic heartbeat every 4 seconds
+    const interval = setInterval(() => {
+      if (active) verifyIntegrity();
+    }, 4000);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+      window.removeEventListener('storage', handleStorageEvent);
+      if (channel) supabase.removeChannel(channel);
+      if (bc && typeof bc.close === 'function') bc.close();
+    };
+  }, [user?.id]);
 
   const value = {
     user, isInitializing, isLoading, isAuthenticated: !!user, isAdminAuthenticated, error,

@@ -8,6 +8,7 @@ import { ROUTES } from '../utils/constants';
 import { normalizeSpeakerPointsHistory } from '../utils/speakerPointsHistory';
 import { BIGKAS_LEVELS, getBigkasLevelFromScore, mapPercentToEntryScore } from '../utils/activityProgress';
 import { PENDING_SIGNUP_PASSWORD_KEY } from '../services/session/api/authApi';
+import { getOrGenerateInstanceToken, broadcastSessionClaimed } from '../utils/sessionIntegrity';
 
 /**
  * Authentication Context — backed by Supabase Auth
@@ -1042,25 +1043,22 @@ export function AuthProvider({ children }) {
           return;
         }
 
-        // --- Clash of Clans Session Ejection logic ---
+        // --- Clash of Clans Real-Time Session Claiming & Ejection logic ---
         if (typeof window !== 'undefined') {
-          let localToken = localStorage.getItem('bigkas_session_token');
-          if (!localToken) {
-            localToken = crypto.randomUUID();
-            localStorage.setItem('bigkas_session_token', localToken);
-            // Async write to database, do not block profile load
-            supabase.from('profiles').update({ active_session_token: localToken }).eq('id', userId).then(({ error }) => { if (error) console.error('Session sync error:', error); });
-          } else if (profile.active_session_token && profile.active_session_token !== localToken) {
-            // Mismatch! Eject device
-            setError('Logged Out: Another device or tab has logged into this account.');
-            setUser(null);
-            clearAdminSession();
-            localStorage.removeItem('bigkas_session_token');
-            await supabase.auth.signOut({ scope: 'local' });
-            return;
-          } else if (!profile.active_session_token) {
-            // No token on remote, sync it
-            supabase.from('profiles').update({ active_session_token: localToken }).eq('id', userId).then(({ error }) => { if (error) console.error('Session sync error:', error); });
+          const myToken = getOrGenerateInstanceToken();
+          const claimedKey = `bigkas_instance_claimed_${userId}`;
+          const alreadyClaimed = window.sessionStorage.getItem(claimedKey) === '1';
+
+          if (!alreadyClaimed || profile.active_session_token !== myToken) {
+            window.sessionStorage.setItem(claimedKey, '1');
+            broadcastSessionClaimed(userId, myToken);
+            supabase
+              .from('profiles')
+              .update({ active_session_token: myToken })
+              .eq('id', userId)
+              .then(({ error }) => {
+                if (error) console.error('[SessionIntegrity] Claim sync error:', error);
+              });
           }
         }
 
@@ -1960,7 +1958,12 @@ export function AuthProvider({ children }) {
       }
     }
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('bigkas_session_token');
+      try {
+        localStorage.removeItem('bigkas_session_token');
+        sessionStorage.removeItem('bigkas_instance_token_v2');
+      } catch (e) {
+        // ignore
+      }
     }
     await supabase.auth.signOut();
     setUser(null);

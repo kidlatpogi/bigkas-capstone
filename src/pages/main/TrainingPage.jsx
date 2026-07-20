@@ -275,6 +275,34 @@ function TrainingPage() {
       active = false;
     };
   }, [checkPacing, isPreTestSession]);
+
+  useEffect(() => {
+    const handleEjection = () => {
+      console.warn('[TrainingPage] Session ejected! Aborting active recording & streams.');
+      try {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+        }
+      } catch (e) {
+        // ignore
+      }
+      try {
+        if (cameraStreamRef?.current) {
+          cameraStreamRef.current.getTracks().forEach((track) => track.stop());
+        }
+        if (audioStreamRef?.current) {
+          audioStreamRef.current.getTracks().forEach((track) => track.stop());
+        }
+      } catch (e) {
+        // ignore
+      }
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+
+    window.addEventListener('bigkas_session_ejected', handleEjection);
+    return () => window.removeEventListener('bigkas_session_ejected', handleEjection);
+  }, []);
+
   const isFreePretestSession = isPreTestSession;
   const isDeveloperPreview = isPreTestSession && (
     state?.developerPreview === true ||

@@ -223,6 +223,15 @@ export default function TestAudioVideoPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const handleEjection = () => {
+      if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
+      stopMicTest();
+    };
+    window.addEventListener('bigkas_session_ejected', handleEjection);
+    return () => window.removeEventListener('bigkas_session_ejected', handleEjection);
+  }, [stopMicTest]);
+
   const camStatus = cameraPermission === null ? 'warn' : cameraPermission && cameraReady ? 'ok' : 'err';
   const camStatusText = cameraPermission === null ? 'Requesting camera...' : cameraPermission ? (cameraReady ? 'Camera active' : 'Initializing...') : 'Permission denied';
   const micStatusColor = audioPermission === false ? 'err' : isMicTesting ? 'ok' : 'warn';

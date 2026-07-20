@@ -20,7 +20,11 @@ export function getOrGenerateInstanceToken() {
   }
 
   if (!window.__bigkasInstanceToken) {
-    window.__bigkasInstanceToken = crypto.randomUUID();
+    let stored = null;
+    try {
+      stored = window.sessionStorage.getItem(INSTANCE_TOKEN_KEY);
+    } catch (e) {}
+    window.__bigkasInstanceToken = stored || crypto.randomUUID();
   }
 
   activeInstanceToken = window.__bigkasInstanceToken;

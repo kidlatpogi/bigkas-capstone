@@ -991,7 +991,7 @@ export function AuthProvider({ children }) {
     const selectProfile = () =>
       supabase
         .from('profiles')
-        .select('role, archived_at, is_profiling_completed, is_pre_test_completed, dashboard_tutorial_seen, current_level, speaker_level, diagnostic_score, diagnostic_completed_at')
+        .select('role, archived_at, is_profiling_completed, is_pre_test_completed, dashboard_tutorial_seen, current_level, speaker_level, diagnostic_score, diagnostic_completed_at, active_session_token, active_device_fingerprint')
         .eq('id', userId)
         .maybeSingle();
 
@@ -2329,7 +2329,7 @@ export function AuthProvider({ children }) {
       if (!active) return;
       try {
         const timeSinceClaim = Date.now() - (window.__bigkasClaimTimestamp || 0);
-        const inClaimGracePeriod = timeSinceClaim < 3000; // 3s grace period while our claim settles in DB
+        const inClaimGracePeriod = timeSinceClaim < 1500; // 1.5s grace period while our claim settles in DB
 
         // First check profiles table (only if outside initial grace period so async DB update doesn't race)
         if (!inClaimGracePeriod) {
@@ -2337,7 +2337,7 @@ export function AuthProvider({ children }) {
             .from('profiles')
             .select('active_session_token')
             .eq('id', uid)
-            .single();
+            .maybeSingle();
           const profileToken = profileData?.active_session_token;
           if (profileToken && profileToken !== myToken && active) {
             handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
@@ -2422,10 +2422,10 @@ export function AuthProvider({ children }) {
     };
     window.addEventListener('storage', handleStorageEvent);
 
-    // 5. Periodic heartbeat every 4 seconds
+    // 5. Periodic heartbeat every 2.5 seconds
     const interval = setInterval(() => {
       if (active) verifyIntegrity();
-    }, 4000);
+    }, 2500);
 
     return () => {
       active = false;

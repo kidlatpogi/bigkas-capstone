@@ -843,7 +843,10 @@ export function AuthProvider({ children }) {
   const [pendingEmailVerification, setPendingEmailVerification] = useState(false);
   const [pendingEmail, setPendingEmail] = useState(null);
   const [sessionEjectedReason, setSessionEjectedReason] = useState(null);
-  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem('bigkas_maintenance_mode_cache') === 'true';
+  });
   const signupCooldownUntilRef = useRef(0);
   const signupInProgressRef = useRef(false);
   const loginInProgressRef = useRef(false);
@@ -857,6 +860,40 @@ export function AuthProvider({ children }) {
       setUser(null);
     }
   }, [user?.id, isMaintenanceMode, user, isAdminAuthenticated]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    checkSystemMaintenanceMode(supabase).then((mVal) => {
+      setIsMaintenanceMode(mVal);
+      try {
+        window.localStorage.setItem('bigkas_maintenance_mode_cache', mVal ? 'true' : 'false');
+      } catch (e) {}
+    });
+
+    const settingsChannel = supabase
+      .channel('auth-system-settings-global')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'system_settings',
+        },
+        async () => {
+          const mVal = await checkSystemMaintenanceMode(supabase);
+          setIsMaintenanceMode(mVal);
+          try {
+            window.localStorage.setItem('bigkas_maintenance_mode_cache', mVal ? 'true' : 'false');
+          } catch (e) {}
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(settingsChannel);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1085,11 +1122,8 @@ export function AuthProvider({ children }) {
           }
 
           if (alreadyClaimed && !isFreshLogin && profile.active_session_token && profile.active_session_token !== myToken) {
-            const timeSinceClaim = Date.now() - (window.__bigkasClaimTimestamp || 0);
-            if (timeSinceClaim >= 10000) {
-              handleSessionEjection('Logged Out: Another browser tab or device has logged into this account. Disconnecting...', supabase);
-              return;
-            }
+            handleSessionEjection('Logged Out: Another browser tab or device has logged into this account. Disconnecting...', supabase);
+            return;
           } else if (!alreadyClaimed || isFreshLogin || !profile.active_session_token) {
             window.sessionStorage.setItem(claimedKey, '1');
             window.__bigkasClaimTimestamp = Date.now();
@@ -2295,7 +2329,7 @@ export function AuthProvider({ children }) {
       if (!active) return;
       try {
         const timeSinceClaim = Date.now() - (window.__bigkasClaimTimestamp || 0);
-        const inClaimGracePeriod = timeSinceClaim < 10000; // 10s grace period while our claim settles in DB
+        const inClaimGracePeriod = timeSinceClaim < 3000; // 3s grace period while our claim settles in DB
 
         // First check profiles table (only if outside initial grace period so async DB update doesn't race)
         if (!inClaimGracePeriod) {
@@ -2350,8 +2384,7 @@ export function AuthProvider({ children }) {
         },
         (payload) => {
           const remoteToken = payload.new?.active_session_token;
-          const timeSinceClaim = Date.now() - (window.__bigkasClaimTimestamp || 0);
-          if (remoteToken && remoteToken !== myToken && timeSinceClaim >= 10000 && active) {
+          if (remoteToken && remoteToken !== myToken && active) {
             handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
           }
         }

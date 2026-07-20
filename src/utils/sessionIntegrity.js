@@ -15,48 +15,20 @@ let isEjectionModalTriggered = false;
 export function getOrGenerateInstanceToken() {
   if (typeof window === 'undefined') return 'server-instance';
 
-  if (activeInstanceToken) return activeInstanceToken;
-
-  let storedToken = window.sessionStorage.getItem(INSTANCE_TOKEN_KEY);
-
-  // Initialize ping channel to detect if another open tab already has this exact token (e.g. Chrome Duplicate Tab)
-  if (!pingChannel && typeof BroadcastChannel !== 'undefined') {
-    try {
-      pingChannel = new BroadcastChannel(INSTANCE_PING_CHANNEL);
-      pingChannel.onmessage = (event) => {
-        const data = event.data;
-        if (!data || !data.type) return;
-
-        // If another tab asks who has this token, and we are active with it, reply that we own it
-        if (data.type === 'PING_TOKEN' && data.token === activeInstanceToken && data.tabId !== window.__bigkasTabId) {
-          pingChannel.postMessage({ type: 'TOKEN_OWNED', token: activeInstanceToken, tabId: window.__bigkasTabId });
-        }
-        // If we just asked and another existing tab already owns our token, generate a brand new token!
-        else if (data.type === 'TOKEN_OWNED' && data.token === storedToken && data.tabId !== window.__bigkasTabId) {
-          console.warn('[SessionIntegrity] Duplicate tab collision detected! Generating fresh instance token.');
-          storedToken = crypto.randomUUID();
-          window.sessionStorage.setItem(INSTANCE_TOKEN_KEY, storedToken);
-          activeInstanceToken = storedToken;
-        }
-      };
-    } catch (e) {
-      console.warn('[SessionIntegrity] BroadcastChannel not supported:', e);
-    }
+  if (activeInstanceToken && window.__bigkasInstanceToken === activeInstanceToken) {
+    return activeInstanceToken;
   }
 
-  if (!window.__bigkasTabId) {
-    window.__bigkasTabId = crypto.randomUUID();
+  if (!window.__bigkasInstanceToken) {
+    window.__bigkasInstanceToken = crypto.randomUUID();
   }
 
-  if (!storedToken) {
-    storedToken = crypto.randomUUID();
-    window.sessionStorage.setItem(INSTANCE_TOKEN_KEY, storedToken);
-  } else if (pingChannel) {
-    // Ping all tabs to verify no one else is currently using this storedToken (e.g., duplicated tab)
-    pingChannel.postMessage({ type: 'PING_TOKEN', token: storedToken, tabId: window.__bigkasTabId });
+  activeInstanceToken = window.__bigkasInstanceToken;
+  try {
+    window.sessionStorage.setItem(INSTANCE_TOKEN_KEY, activeInstanceToken);
+  } catch (e) {
+    // ignore
   }
-
-  activeInstanceToken = storedToken;
   return activeInstanceToken;
 }
 
@@ -131,6 +103,7 @@ export function clearInstanceClaimKeys() {
     // ignore
   }
   activeInstanceToken = null;
+  if (typeof window !== 'undefined') window.__bigkasInstanceToken = null;
   isEjectionModalTriggered = false;
 }
 

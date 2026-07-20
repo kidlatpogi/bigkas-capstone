@@ -8,7 +8,7 @@ import { ROUTES } from '../utils/constants';
 import { normalizeSpeakerPointsHistory } from '../utils/speakerPointsHistory';
 import { BIGKAS_LEVELS, getBigkasLevelFromScore, mapPercentToEntryScore } from '../utils/activityProgress';
 import { PENDING_SIGNUP_PASSWORD_KEY } from '../services/session/api/authApi';
-import { getOrGenerateInstanceToken, broadcastSessionClaimed, handleSessionEjection, finalizeSessionEjection } from '../utils/sessionIntegrity';
+import { getOrGenerateInstanceToken, broadcastSessionClaimed, handleSessionEjection, finalizeSessionEjection, clearInstanceClaimKeys, getDeviceFingerprint, checkSystemParallelAccountPolicy, checkSystemMaintenanceMode, forceClaimSession } from '../utils/sessionIntegrity';
 import ConfirmationModal from '../components/common/ConfirmationModal';
 
 /**
@@ -843,6 +843,10 @@ export function AuthProvider({ children }) {
   const [pendingEmailVerification, setPendingEmailVerification] = useState(false);
   const [pendingEmail, setPendingEmail] = useState(null);
   const [sessionEjectedReason, setSessionEjectedReason] = useState(null);
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem('bigkas_maintenance_mode_cache') === 'true';
+  });
   const signupCooldownUntilRef = useRef(0);
   const signupInProgressRef = useRef(false);
   const loginInProgressRef = useRef(false);
@@ -851,7 +855,45 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     currentUserIdRef.current = user?.id || null;
-  }, [user?.id]);
+    if (isMaintenanceMode && user && user.role !== 'admin' && user.role !== 'superadmin' && !isAdminAuthenticated) {
+      void supabase.auth.signOut({ scope: 'local' });
+      setUser(null);
+    }
+  }, [user?.id, isMaintenanceMode, user, isAdminAuthenticated]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    checkSystemMaintenanceMode(supabase).then((mVal) => {
+      setIsMaintenanceMode(mVal);
+      try {
+        window.localStorage.setItem('bigkas_maintenance_mode_cache', mVal ? 'true' : 'false');
+      } catch (e) {}
+    });
+
+    const settingsChannel = supabase
+      .channel('auth-system-settings-global')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'system_settings',
+        },
+        async () => {
+          const mVal = await checkSystemMaintenanceMode(supabase);
+          setIsMaintenanceMode(mVal);
+          try {
+            window.localStorage.setItem('bigkas_maintenance_mode_cache', mVal ? 'true' : 'false');
+          } catch (e) {}
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(settingsChannel);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1055,34 +1097,37 @@ export function AuthProvider({ children }) {
           return;
         }
 
-        // --- Clash of Clans Real-Time Session Claiming & Ejection logic ---
+        // --- Session Claiming (decoupled from profile loading) ---
         if (typeof window !== 'undefined') {
-          const myToken = getOrGenerateInstanceToken();
-          const claimedKey = `bigkas_instance_claimed_${userId}`;
-          const alreadyClaimed = window.sessionStorage.getItem(claimedKey) === '1';
+          const isFreshLogin = loginInProgressRef.current || adminLoginInProgressRef.current || signupInProgressRef.current;
 
-          // If this tab already claimed previously, but the database now has a different token, another device took over!
-          if (alreadyClaimed && profile.active_session_token && profile.active_session_token !== myToken) {
-            handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
-            return;
+          // Check if Admin has disabled parallel multi-account sessions on the same device
+          if (isFreshLogin) {
+            const isMultiAccountAllowed = await checkSystemParallelAccountPolicy(supabase);
+            if (!isMultiAccountAllowed) {
+              const myFingerprint = getDeviceFingerprint();
+              try {
+                const { data: deviceConflict } = await supabase
+                  .from('profiles')
+                  .select('id, full_name')
+                  .neq('id', userId)
+                  .not('active_session_token', 'is', null)
+                  .eq('active_device_fingerprint', myFingerprint)
+                  .maybeSingle();
+                if (deviceConflict) {
+                  handleSessionEjection(`Strict Device Lock: Another account (${deviceConflict.full_name || 'User'}) is already active on this device. Only one account per device is allowed.`, supabase);
+                  return;
+                }
+              } catch (e) {
+                console.warn('[SessionIntegrity] Device conflict check error:', e);
+              }
+            }
           }
 
-          if (!alreadyClaimed || !profile.active_session_token || profile.active_session_token !== myToken) {
-            window.sessionStorage.setItem(claimedKey, '1');
-            broadcastSessionClaimed(userId, myToken);
-            supabase
-              .from('profiles')
-              .update({ active_session_token: myToken })
-              .eq('id', userId)
-              .then(({ error }) => {
-                if (error) console.warn('[SessionIntegrity] Profile claim sync error:', error.message);
-              });
-            supabase
-              .auth
-              .updateUser({ data: { active_session_token: myToken } })
-              .catch(() => {});
-          }
+          // Always claim the session (writes active_session_token to DB)
+          await forceClaimSession(supabase, userId);
         }
+
 
         setUser(prev => {
           if (prev?.id !== userId) return prev;
@@ -1391,6 +1436,8 @@ export function AuthProvider({ children }) {
         const accessToken = params.get('access_token');
         const refreshToken = params.get('refresh_token');
 
+        clearInstanceClaimKeys();
+
         if (code) {
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
           if (exchangeError) throw exchangeError;
@@ -1485,6 +1532,7 @@ export function AuthProvider({ children }) {
     setIsLoading(true);
     setError(null);
     clearAdminSession();
+    clearInstanceClaimKeys();
     loginInProgressRef.current = true;
 
     try {
@@ -1569,13 +1617,28 @@ export function AuthProvider({ children }) {
         };
       }
 
+      const maintenanceActive = await checkSystemMaintenanceMode(supabase);
+      if (maintenanceActive) {
+        let userRole = data.user?.user_metadata?.role;
+        if (!userRole && data.user?.id) {
+          const { data: roleRow } = await supabase.from('profiles').select('role').eq('id', data.user.id).maybeSingle();
+          userRole = roleRow?.role;
+        }
+        if (userRole !== 'admin' && userRole !== 'superadmin') {
+          await supabase.auth.signOut({ scope: 'local' });
+          const maintMsg = 'System is currently under maintenance. Please come back later.';
+          setError(maintMsg);
+          return { success: false, code: 'maintenance_mode', error: maintMsg };
+        }
+      }
+
       setPendingEmailVerification(false);
       setPendingEmail(null);
       const cachedProfile = data.session?.user?.id ? profileRequestCache.get(data.session.user.id)?.profile : null;
       const nextUser = buildUser(data.session, cachedProfile || {});
       setUser(nextUser);
       if (data.user?.id) {
-        void fetchAndMergeProfile(data.user.id);
+        await fetchAndMergeProfile(data.user.id);
       }
       await registerLoginSuccess('user', normalizedEmail);
       return { success: true, user: nextUser };
@@ -1628,6 +1691,7 @@ export function AuthProvider({ children }) {
 
     setIsLoading(true);
     setError(null);
+    clearInstanceClaimKeys();
     adminLoginInProgressRef.current = true;
 
     try {
@@ -1738,6 +1802,9 @@ export function AuthProvider({ children }) {
       const cachedProfile = data.session?.user?.id ? profileRequestCache.get(data.session.user.id)?.profile : null;
       const nextUser = buildUser(data.session, cachedProfile || {});
       setUser(nextUser);
+      if (data.user?.id) {
+        await fetchAndMergeProfile(data.user.id);
+      }
       persistAdminSession();
       await registerLoginSuccess('admin', normalizedEmail);
       return { success: true, user: nextUser };
@@ -1768,8 +1835,16 @@ export function AuthProvider({ children }) {
       return { success: false, error: message };
     }
 
+    const maintenanceActive = await checkSystemMaintenanceMode(supabase);
+    if (maintenanceActive) {
+      const message = 'System is currently under maintenance. New account registration is temporarily disabled. Please come back later.';
+      setError(message);
+      return { success: false, error: message };
+    }
+
     setIsLoading(true);
     setError(null);
+    clearInstanceClaimKeys();
     signupInProgressRef.current = true;
     const normalizedEmail = (email || '').trim();
     const resolvedFirstName = (firstName || '').trim();
@@ -1907,6 +1982,7 @@ export function AuthProvider({ children }) {
     setIsLoading(true);
     setError(null);
     clearAdminSession();
+    clearInstanceClaimKeys();
 
     rememberOAuthReturnPath(ROUTES.ACTIVITY);
     const redirectTo = getOAuthRedirectPath(ROUTES.AUTH_CALLBACK);
@@ -1979,14 +2055,7 @@ export function AuthProvider({ children }) {
         console.warn('Signout session token clear failed:', e);
       }
     }
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.removeItem('bigkas_session_token');
-        sessionStorage.removeItem('bigkas_instance_token_v2');
-      } catch (e) {
-        // ignore
-      }
-    }
+    clearInstanceClaimKeys();
     await supabase.auth.signOut();
     setUser(null);
     clearAdminSession();
@@ -2248,30 +2317,68 @@ export function AuthProvider({ children }) {
     const myToken = getOrGenerateInstanceToken();
     const uid = user.id;
 
-    // 1. Check integrity against both Supabase Auth user_metadata AND profiles table
+    // Helper to check if this specific tab has successfully claimed the active session
+    const isClaimedByMe = () => {
+      if (typeof window === 'undefined') return false;
+      const claimedKey = `bigkas_instance_claimed_${uid}`;
+      return window.sessionStorage.getItem(claimedKey) === '1';
+    };
+
+    // 1. Check integrity against profiles table and strict device policy
     const verifyIntegrity = async () => {
       if (!active) return;
       try {
-        // First check user_metadata (always works regardless of SQL migrations)
-        const { data: authData } = await supabase.auth.getUser();
-        const metaToken = authData?.user?.user_metadata?.active_session_token;
-        if (metaToken && metaToken !== myToken && active) {
-          handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
-          return;
+        const timeSinceClaim = Date.now() - (window.__bigkasClaimTimestamp || 0);
+        const inClaimGracePeriod = timeSinceClaim < 3000; // 3s grace period while our claim settles in DB
+
+        // First check: poll profiles table for session token mismatch (only if claimed by this tab)
+        if (!inClaimGracePeriod && isClaimedByMe()) {
+          const { data: profileData, error: profileErr } = await supabase
+            .from('profiles')
+            .select('active_session_token')
+            .eq('id', uid)
+            .maybeSingle();
+
+          if (profileErr) {
+            // Column might not exist — log once but don't crash the heartbeat
+            if (!window.__bigkasIntegrityWarnLogged) {
+              console.warn('[SessionIntegrity] verifyIntegrity query error:', profileErr.message, '(code:', profileErr.code, ')');
+              window.__bigkasIntegrityWarnLogged = true;
+            }
+          } else {
+            const profileToken = profileData?.active_session_token;
+            if (profileToken && profileToken !== myToken && active) {
+              handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
+              return;
+            }
+          }
         }
 
-        // Second check profiles table
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('active_session_token')
-          .eq('id', uid)
-          .single();
-        const profileToken = profileData?.active_session_token;
-        if (profileToken && profileToken !== myToken && active) {
-          handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
+        // Second check: strict device policy if multi-account is disabled
+        const isMultiAccountAllowed = await checkSystemParallelAccountPolicy(supabase);
+        if (!isMultiAccountAllowed && active) {
+          const myFingerprint = getDeviceFingerprint();
+          try {
+            const { data: conflict } = await supabase
+              .from('profiles')
+              .select('id, full_name')
+              .neq('id', uid)
+              .not('active_session_token', 'is', null)
+              .eq('active_device_fingerprint', myFingerprint)
+              .maybeSingle();
+            if (conflict && active) {
+              handleSessionEjection(`Strict Device Lock: Another account (${conflict.full_name || 'User'}) is active on this device. Only one account is allowed per device when multi-account parallel sessions is disabled by Admin.`, supabase);
+            }
+          } catch (deviceErr) {
+            console.warn('[SessionIntegrity] Device conflict check error in heartbeat:', deviceErr);
+          }
         }
+
+        // Third check: Maintenance Mode
+        const maintenance = await checkSystemMaintenanceMode(supabase);
+        if (active) setIsMaintenanceMode(maintenance);
       } catch (e) {
-        // ignore
+        console.warn('[SessionIntegrity] verifyIntegrity unexpected error:', e);
       }
     };
 
@@ -2290,6 +2397,7 @@ export function AuthProvider({ children }) {
           filter: `id=eq.${uid}`,
         },
         (payload) => {
+          if (!isClaimedByMe()) return;
           const remoteToken = payload.new?.active_session_token;
           if (remoteToken && remoteToken !== myToken && active) {
             handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
@@ -2298,12 +2406,13 @@ export function AuthProvider({ children }) {
       )
       .subscribe();
 
-    // 3. BroadcastChannel listener (instant <1ms cross-tab ejection within the same browser engine)
+    // 3. BroadcastChannel listener (instant cross-tab ejection within the same browser engine)
     let bc = null;
     if (typeof BroadcastChannel !== 'undefined') {
       try {
         bc = new BroadcastChannel('bigkas_session_channel_v2');
         bc.onmessage = (event) => {
+          if (!isClaimedByMe()) return;
           const data = event.data;
           if (data && data.type === 'SESSION_CLAIMED' && data.userId === uid && data.token !== myToken && active) {
             handleSessionEjection('Logged Out: Another browser tab has logged into this account. Disconnecting...', supabase);
@@ -2317,9 +2426,10 @@ export function AuthProvider({ children }) {
     // 4. Storage event fallback (for cross-tab where BroadcastChannel is restricted)
     const handleStorageEvent = (event) => {
       if (event.key === 'bigkas_last_claimed_session_event' && event.newValue && active) {
+        if (!isClaimedByMe()) return;
         try {
           const data = JSON.parse(event.newValue);
-          if (data.type === 'SESSION_CLAIMED' && data.userId === uid && data.token !== myToken) {
+          if (data.type === 'SESSION_CLAIMED' && data.userId === uid && data.token !== myToken && active) {
             handleSessionEjection('Logged Out: Another browser tab has logged into this account. Disconnecting...', supabase);
           }
         } catch (e) {
@@ -2329,10 +2439,10 @@ export function AuthProvider({ children }) {
     };
     window.addEventListener('storage', handleStorageEvent);
 
-    // 5. Periodic heartbeat every 4 seconds
+    // 5. Periodic heartbeat every 2.5 seconds
     const interval = setInterval(() => {
       if (active) verifyIntegrity();
-    }, 4000);
+    }, 2500);
 
     return () => {
       active = false;
@@ -2343,9 +2453,17 @@ export function AuthProvider({ children }) {
     };
   }, [user?.id]);
 
+  const isExcludedFromMaintenance =
+    isAdminAuthenticated ||
+    user?.role === 'admin' ||
+    user?.role === 'superadmin' ||
+    (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin'));
+
+  const showMaintenanceScreen = isMaintenanceMode && !isExcludedFromMaintenance;
+
   const value = {
     user, isInitializing, isLoading, isAuthenticated: !!user, isAdminAuthenticated, error,
-    pendingEmailVerification, pendingEmail,
+    pendingEmailVerification, pendingEmail, isMaintenanceMode,
     login, logout, register, updateNickname, updateProfile,
     updateUserMetadata,
     changePassword, uploadAvatar, deactivateAccount, deleteAccount, clearError,
@@ -2369,6 +2487,75 @@ export function AuthProvider({ children }) {
         }}
         type="info"
       />
+      {showMaintenanceScreen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 999999,
+          background: 'radial-gradient(circle at center, #1e293b 0%, #0f172a 100%)',
+          color: '#f8fafc',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '2rem',
+          textAlign: 'center',
+          fontFamily: 'system-ui, -apple-system, sans-serif'
+        }}>
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '24px',
+            padding: '40px 32px',
+            maxWidth: '480px',
+            width: '100%',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(12px)'
+          }}>
+            <div style={{
+              width: '72px',
+              height: '72px',
+              borderRadius: '50%',
+              background: 'rgba(245, 158, 11, 0.15)',
+              border: '2px solid rgba(245, 158, 11, 0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 24px auto',
+              fontSize: '32px'
+            }}>
+              🛠️
+            </div>
+            <h2 style={{ fontSize: '1.75rem', fontWeight: 700, margin: '0 0 16px 0', color: '#f1f5f9' }}>
+              System Under Maintenance
+            </h2>
+            <p style={{ fontSize: '1rem', lineHeight: 1.6, color: '#94a3b8', margin: '0 0 28px 0' }}>
+              Bigkas is currently undergoing scheduled maintenance and system upgrades to improve your experience. Please come back later.
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              style={{
+                padding: '12px 24px',
+                borderRadius: '12px',
+                background: '#f59e0b',
+                color: '#0f172a',
+                border: 'none',
+                fontWeight: 600,
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)'
+              }}
+            >
+              Check Status & Reload
+            </button>
+          </div>
+        </div>
+      )}
     </AuthContext.Provider>
   );
 }

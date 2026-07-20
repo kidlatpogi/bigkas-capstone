@@ -64,7 +64,7 @@ export default function SideNav() {
   const [developerAction, setDeveloperAction] = useState('');
   const [developerStatus, setDeveloperStatus] = useState('');
   const hasDeveloperPowers =
-    String(user?.email || '').trim().toLowerCase() === DEVELOPER_POWER_EMAIL &&
+    String(user?.email || '').trim().toLowerCase() === DEVELOPER_POWER_EMAIL ||
     normalizeRole(user?.role) === 'superadmin';
 
   const isSettingsRoute = useMemo(

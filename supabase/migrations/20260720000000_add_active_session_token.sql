@@ -11,3 +11,13 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles;
 -- Set REPLICA IDENTITY FULL so Realtime sends the full NEW row on UPDATE events
 -- Without this, Realtime may only send the primary key columns
 ALTER TABLE public.profiles REPLICA IDENTITY FULL;
+
+-- Allow users to update their own active_session_token and active_device_fingerprint columns directly
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can update own session tokens" ON public.profiles;
+CREATE POLICY "Users can update own session tokens" ON public.profiles
+  FOR UPDATE
+  USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
+

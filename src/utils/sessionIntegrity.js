@@ -187,15 +187,47 @@ export async function forceClaimSession(supabaseClient, userId) {
   const claimedKey = `bigkas_instance_claimed_${userId}`;
 
   try {
-    const { error } = await supabaseClient
-      .from('profiles')
-      .update({ active_session_token: myToken, active_device_fingerprint: myFingerprint })
-      .eq('id', userId);
+    let updateSuccess = false;
 
-    if (error) {
-      // Column might not exist yet — log but don't crash
-      console.warn('[SessionIntegrity] forceClaimSession DB error:', error.message, '(code:', error.code, ')');
-      return { success: false, error: error.message };
+    // Try direct update first
+    try {
+      const { data, error } = await supabaseClient
+        .from('profiles')
+        .update({ active_session_token: myToken, active_device_fingerprint: myFingerprint })
+        .eq('id', userId)
+        .select('id');
+
+      if (!error && Array.isArray(data) && data.length > 0) {
+        updateSuccess = true;
+      } else if (error) {
+        console.warn('[SessionIntegrity] forceClaimSession direct DB error:', error.message, '(code:', error.code, ')');
+      }
+    } catch (e) {
+      console.warn('[SessionIntegrity] Direct update failed, trying Edge Function fallback...', e);
+    }
+
+    // Fallback to Edge Function if direct update did not succeed
+    if (!updateSuccess) {
+      console.log('[SessionIntegrity] Direct profile update was filtered by RLS or failed. Falling back to sync-user-profile edge function.');
+      
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      const { data: edgeData, error: edgeError } = await supabaseClient.functions.invoke('sync-user-profile', {
+        body: {
+          profile_updates: {
+            active_session_token: myToken,
+            active_device_fingerprint: myFingerprint,
+          }
+        },
+        headers: session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : undefined,
+      });
+
+      if (edgeError || edgeData?.error) {
+        const errMsg = edgeError?.message || edgeData?.error || 'Edge function sync failed';
+        console.warn('[SessionIntegrity] forceClaimSession edge function fallback error:', errMsg);
+        return { success: false, error: errMsg };
+      }
     }
 
     // Mark as claimed in sessionStorage

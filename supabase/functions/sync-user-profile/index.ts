@@ -16,6 +16,8 @@ const ALLOWED_PROFILE_KEYS = new Set([
   'dashboard_tutorial_seen',
   'demographic_profile',
   'speaker_profile',
+  'active_session_token',
+  'active_device_fingerprint',
 ]);
 
 function jsonResponse(body: unknown, status = 200) {

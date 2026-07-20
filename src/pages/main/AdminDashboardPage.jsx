@@ -18,7 +18,7 @@ import { ensureFreshAccessToken, supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import { getBigkasLevelFromScore, mapPercentToEntryScore } from '../../utils/activityProgress';
-import { checkSystemParallelAccountPolicy, setSystemParallelAccountPolicy } from '../../utils/sessionIntegrity';
+import { checkSystemParallelAccountPolicy, setSystemParallelAccountPolicy, checkSystemMaintenanceMode, setSystemMaintenanceMode } from '../../utils/sessionIntegrity';
 import { ENV } from '../../config/env';
 import './AdminDashboardPage.css';
 
@@ -1397,6 +1397,8 @@ function AdminDashboardPage() {
   const [activePage, setActivePage] = useState('overview');
   const [multiAccountEnabled, setMultiAccountEnabled] = useState(true);
   const [updatingMultiAccountSetting, setUpdatingMultiAccountSetting] = useState(false);
+  const [maintenanceModeEnabled, setMaintenanceModeEnabled] = useState(false);
+  const [updatingMaintenanceSetting, setUpdatingMaintenanceSetting] = useState(false);
   const [settingUpdateMsg, setSettingUpdateMsg] = useState('');
 
   const [profiles, setProfiles] = useState([]);
@@ -1590,8 +1592,14 @@ function AdminDashboardPage() {
         if (!active) return;
         setCurrentAdminId(authData.user.id);
         setRole(roleProfile.role);
-        const policyVal = await checkSystemParallelAccountPolicy(supabase);
-        if (active) setMultiAccountEnabled(policyVal);
+        const [policyVal, maintenanceVal] = await Promise.all([
+          checkSystemParallelAccountPolicy(supabase),
+          checkSystemMaintenanceMode(supabase),
+        ]);
+        if (active) {
+          setMultiAccountEnabled(policyVal);
+          setMaintenanceModeEnabled(maintenanceVal);
+        }
 
         const results = await Promise.allSettled([
           withTimeout(fetchAdminDirectory({ includeAnalytics: true }), 'Profiles'),
@@ -3970,6 +3978,26 @@ function AdminDashboardPage() {
     }
   };
 
+  const handleToggleMaintenancePolicy = async () => {
+    setUpdatingMaintenanceSetting(true);
+    setSettingUpdateMsg('');
+    try {
+      const nextVal = !maintenanceModeEnabled;
+      const res = await setSystemMaintenanceMode(supabase, nextVal);
+      if (res.success) {
+        setMaintenanceModeEnabled(nextVal);
+        setSettingUpdateMsg(`Successfully updated: System Maintenance Mode is now ${nextVal ? 'ENABLED (All non-admin logins and access blocked)' : 'DISABLED (System operating normally)'}.`);
+        setTimeout(() => setSettingUpdateMsg(''), 5000);
+      } else {
+        setError(`Failed to update maintenance mode setting: ${res.error || 'Unknown error'}`);
+      }
+    } catch (e) {
+      setError(`Error updating maintenance mode setting: ${e.message}`);
+    } finally {
+      setUpdatingMaintenanceSetting(false);
+    }
+  };
+
   const navItems = [
     { key: 'overview', label: 'Overview', icon: HiOutlineHomeModern, show: canUseAdminPermission('overview', 'view') },
     { key: 'analytics', label: 'Analytics', icon: HiOutlineChartBarSquare, show: canUseAdminPermission('analytics', 'view') },
@@ -4009,56 +4037,6 @@ function AdminDashboardPage() {
 
         {activePage === 'overview' && (
           <>
-            <div className="admin-card" style={{ padding: '20px', marginBottom: '24px', border: '1px solid var(--border-color)', borderRadius: '12px', background: 'var(--card-bg)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
-                <div style={{ flex: '1 1 320px' }}>
-                  <h3 style={{ margin: '0 0 8px 0', fontSize: '1.1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <HiOutlineCog6Tooth size={20} />
-                    Parallel Multi-Account Sessions (Incognito / Multi-Browser)
-                  </h3>
-                  <p style={{ margin: '0 0 8px 0', fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                    Controls whether different user accounts (e.g., Account 1 in Normal Chrome, Account 2 in Chrome Incognito or Edge) can log in simultaneously on the same physical computer and record speech training sessions concurrently (Facebook-style multi-account support).
-                  </p>
-                  <div style={{ display: 'flex', gap: '12px', fontSize: '0.82rem', marginTop: '8px', flexWrap: 'wrap' }}>
-                    <span style={{ padding: '4px 8px', borderRadius: '6px', background: multiAccountEnabled ? '#10b98120' : '#64748b20', color: multiAccountEnabled ? '#10b981' : '#64748b', fontWeight: 600 }}>
-                      {multiAccountEnabled ? 'Scenario 1 Allowed (Parallel Multi-Account)' : 'Strict Device Lock (1 Account per PC)'}
-                    </span>
-                    <span style={{ padding: '4px 8px', borderRadius: '6px', background: '#f59e0b20', color: '#f59e0b', fontWeight: 500 }}>
-                      Scenario 2 Always Blocked (Same Account Duplicate Login)
-                    </span>
-                  </div>
-                  {settingUpdateMsg && (
-                    <p style={{ margin: '8px 0 0 0', fontSize: '0.84rem', color: '#10b981', fontWeight: 500 }}>
-                      {settingUpdateMsg}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <button
-                    type="button"
-                    disabled={updatingMultiAccountSetting}
-                    onClick={handleToggleMultiAccountPolicy}
-                    style={{
-                      padding: '10px 18px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      fontWeight: 600,
-                      cursor: updatingMultiAccountSetting ? 'not-allowed' : 'pointer',
-                      background: multiAccountEnabled ? '#10b981' : '#64748b',
-                      color: '#ffffff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
-                    {updatingMultiAccountSetting ? 'Updating...' : multiAccountEnabled ? 'Turn OFF (Strict Single-Device)' : 'Turn ON (Allow Multi-Account)'}
-                  </button>
-                </div>
-              </div>
-            </div>
-
             <section className={`admin-grid ${isSuperadmin ? 'admin-grid-3' : 'admin-grid-2'}`} aria-label="Management overview metrics">
               <article className="admin-card admin-kpi-card">
                 <p className="admin-kpi-label">TOTAL USERS</p>
@@ -5012,6 +4990,57 @@ function AdminDashboardPage() {
                     }}
                   >
                     {updatingMultiAccountSetting ? 'Saving Policy...' : multiAccountEnabled ? 'Turn OFF (Require Strict 1-Account per PC)' : 'Turn ON (Allow Multi-Account / Incognito)'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="admin-card" style={{ padding: '24px', marginBottom: '24px', border: '1px solid var(--border-color)', borderRadius: '12px', background: 'var(--card-bg)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
+                <div style={{ flex: '1 1 400px' }}>
+                  <h3 style={{ margin: '0 0 12px 0', fontSize: '1.2rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <HiOutlineCog6Tooth size={24} />
+                    System Maintenance Mode
+                  </h3>
+                  <p style={{ margin: '0 0 12px 0', fontSize: '0.92rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                    Controls whether the Bigkas system is currently under active maintenance. When enabled:
+                  </p>
+                  <ul style={{ margin: '0 0 16px 20px', padding: 0, fontSize: '0.9rem', color: 'var(--text-main)', lineHeight: 1.6 }}>
+                    <li style={{ marginBottom: '8px' }}>
+                      <strong>Block Student Logins & Access:</strong> All non-admin users attempting to log in, register, or navigate the application will be blocked and shown a full-screen maintenance overlay ("System is currently under maintenance. Please come back later.").
+                    </li>
+                    <li>
+                      <strong>Admin Access Preserved:</strong> Administrators and Super Admins bypass maintenance restrictions, allowing you to access the dashboard, test features, and turn off Maintenance Mode when ready.
+                    </li>
+                  </ul>
+                  <div style={{ display: 'flex', gap: '12px', fontSize: '0.85rem', marginTop: '12px', flexWrap: 'wrap' }}>
+                    <span style={{ padding: '6px 12px', borderRadius: '6px', background: maintenanceModeEnabled ? '#ef444420' : '#10b98120', color: maintenanceModeEnabled ? '#ef4444' : '#10b981', fontWeight: 600 }}>
+                      Current Status: {maintenanceModeEnabled ? 'UNDER MAINTENANCE (Non-Admin Access Blocked)' : 'NORMAL OPERATION (System Online)'}
+                    </span>
+                  </div>
+                </div>
+                <div style={{ alignSelf: 'center' }}>
+                  <button
+                    type="button"
+                    disabled={updatingMaintenanceSetting}
+                    onClick={handleToggleMaintenancePolicy}
+                    style={{
+                      padding: '12px 24px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      fontWeight: 600,
+                      fontSize: '0.95rem',
+                      cursor: updatingMaintenanceSetting ? 'not-allowed' : 'pointer',
+                      background: maintenanceModeEnabled ? '#ef4444' : '#10b981',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      boxShadow: '0 4px 6px rgba(0,0,0,0.15)',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {updatingMaintenanceSetting ? 'Updating...' : maintenanceModeEnabled ? 'Turn OFF Maintenance Mode (Restore Public Access)' : 'Turn ON Maintenance Mode (Block Public Access)'}
                   </button>
                 </div>
               </div>

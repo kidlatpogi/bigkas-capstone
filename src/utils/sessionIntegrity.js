@@ -224,3 +224,43 @@ export async function setSystemParallelAccountPolicy(supabaseClient, enabled) {
   }
 }
 
+/**
+ * Checks if Maintenance Mode is enabled (`key = 'maintenance_mode'`).
+ * Defaults to false if setting is not set or cannot be read.
+ */
+export async function checkSystemMaintenanceMode(supabaseClient) {
+  if (!supabaseClient) return false;
+  try {
+    const { data, error } = await supabaseClient
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'maintenance_mode')
+      .maybeSingle();
+    if (error || !data) return false;
+    return data.value?.enabled === true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Updates the global system setting for Maintenance Mode (`key = 'maintenance_mode'`).
+ */
+export async function setSystemMaintenanceMode(supabaseClient, enabled) {
+  if (!supabaseClient) return { success: false, error: 'No Supabase client' };
+  try {
+    const { error } = await supabaseClient
+      .from('system_settings')
+      .upsert({
+        key: 'maintenance_mode',
+        value: { enabled: Boolean(enabled) },
+        updated_at: new Date().toISOString(),
+      });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e?.message || 'Update failed' };
+  }
+}
+
+

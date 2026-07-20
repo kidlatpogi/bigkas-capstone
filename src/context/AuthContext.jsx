@@ -1393,6 +1393,8 @@ export function AuthProvider({ children }) {
         const accessToken = params.get('access_token');
         const refreshToken = params.get('refresh_token');
 
+        clearInstanceClaimKeys();
+
         if (code) {
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
           if (exchangeError) throw exchangeError;
@@ -1774,6 +1776,7 @@ export function AuthProvider({ children }) {
 
     setIsLoading(true);
     setError(null);
+    clearInstanceClaimKeys();
     signupInProgressRef.current = true;
     const normalizedEmail = (email || '').trim();
     const resolvedFirstName = (firstName || '').trim();
@@ -1911,6 +1914,7 @@ export function AuthProvider({ children }) {
     setIsLoading(true);
     setError(null);
     clearAdminSession();
+    clearInstanceClaimKeys();
 
     rememberOAuthReturnPath(ROUTES.ACTIVITY);
     const redirectTo = getOAuthRedirectPath(ROUTES.AUTH_CALLBACK);

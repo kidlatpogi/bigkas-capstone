@@ -1,1 +1,0 @@
-import{r as o}from"./vendor-framework-CmdwDIpY.js";import{$ as e}from"./index-CLK3Z4g7.js";function n(){const t=o.useContext(e);if(!t)throw new Error("useSessionContext must be used within a SessionProvider");return t}export{n as u};

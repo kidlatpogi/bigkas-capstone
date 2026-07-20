@@ -122,6 +122,16 @@ def get_cpu_semaphore():
         cpu_semaphore = asyncio.Semaphore(2)
     return cpu_semaphore
 
+# Limit overall parallel job analysis to 5 concurrent tasks to prevent OOM / server crashes
+job_semaphore = None
+
+def get_job_semaphore():
+    global job_semaphore
+    if job_semaphore is None:
+        job_semaphore = asyncio.Semaphore(5)
+    return job_semaphore
+
+
 # Define logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -749,6 +759,8 @@ async def run_analysis_task(
     session_origin: str,
     speaking_mode: str,
 ):
+    semaphore = get_job_semaphore()
+    await semaphore.acquire()
     try:
         # 1 & 2. EXTRACT VOCAL METRICS & CLOUDFLARE AI (CONCURRENTLY)
         msg = "Step 1-3: Analyzing vocal dynamics and processing speech via Cloudflare AI concurrently..."
@@ -845,6 +857,8 @@ async def run_analysis_task(
     except Exception as e:
         logger.error(f"Background task {job_id} failed: {e}")
         set_job_state(job_id, {"status": "error", "error": str(e)})
+    finally:
+        semaphore.release()
 
 @app.post("/api/analyze-speech")
 async def analyze_speech(

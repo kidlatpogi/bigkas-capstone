@@ -1044,10 +1044,10 @@ export function AuthProvider({ children }) {
 
         // --- Clash of Clans Session Ejection logic ---
         if (typeof window !== 'undefined') {
-          let localToken = sessionStorage.getItem('bigkas_session_token');
+          let localToken = localStorage.getItem('bigkas_session_token');
           if (!localToken) {
             localToken = crypto.randomUUID();
-            sessionStorage.setItem('bigkas_session_token', localToken);
+            localStorage.setItem('bigkas_session_token', localToken);
             // Async write to database, do not block profile load
             supabase.from('profiles').update({ active_session_token: localToken }).eq('id', userId).then(({ error }) => { if (error) console.error('Session sync error:', error); });
           } else if (profile.active_session_token && profile.active_session_token !== localToken) {
@@ -1055,7 +1055,7 @@ export function AuthProvider({ children }) {
             setError('Logged Out: Another device or tab has logged into this account.');
             setUser(null);
             clearAdminSession();
-            sessionStorage.removeItem('bigkas_session_token');
+            localStorage.removeItem('bigkas_session_token');
             await supabase.auth.signOut({ scope: 'local' });
             return;
           } else if (!profile.active_session_token) {
@@ -1960,7 +1960,7 @@ export function AuthProvider({ children }) {
       }
     }
     if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('bigkas_session_token');
+      localStorage.removeItem('bigkas_session_token');
     }
     await supabase.auth.signOut();
     setUser(null);

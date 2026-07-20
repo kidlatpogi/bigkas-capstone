@@ -4,6 +4,8 @@ import { Capacitor } from '@capacitor/core';
 import { useAuthContext } from '../context/useAuthContext';
 import { ENV } from '../config/env';
 import { ROUTES } from '../utils/constants';
+import { fetchUserAchievements } from '../services/achievementsService';
+import { syncClaimableAchievements } from '../utils/achievementClaims';
 
 // Auth Pages
 const AdminLoginPage = lazy(() => import('../pages/auth/AdminLoginPage'));
@@ -216,6 +218,40 @@ function ProtectedRoute() {
     mediaQuery.addListener(handleViewportChange);
     return () => mediaQuery.removeListener(handleViewportChange);
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) return;
+
+    let active = true;
+    let lastSyncTime = 0;
+
+    const performSync = async () => {
+      const now = Date.now();
+      // Throttle syncs to once every 10 seconds
+      if (now - lastSyncTime < 10000) return;
+      lastSyncTime = now;
+
+      try {
+        const data = await fetchUserAchievements(user.id, user);
+        if (active) {
+          syncClaimableAchievements(data, user.id);
+        }
+      } catch (err) {
+        console.warn('[AchievementSync] Background fetch failed:', err);
+      }
+    };
+
+    // Run on mount or when user/pathname changes
+    performSync();
+
+    // Run every 30 seconds
+    const interval = setInterval(performSync, 30000);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [isAuthenticated, user?.id, pathname]);
 
   const hideMainNav =
     pathname === ROUTES.USER_PROFILING ||

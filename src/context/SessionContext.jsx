@@ -498,7 +498,7 @@ export function SessionProvider({ children }) {
     if (!uid) return;
     if (typeof window === 'undefined') return;
 
-    const localToken = sessionStorage.getItem('bigkas_session_token');
+    const localToken = localStorage.getItem('bigkas_session_token');
     if (!localToken) return;
 
     try {
@@ -516,7 +516,7 @@ export function SessionProvider({ children }) {
       if (data && data.active_session_token && data.active_session_token !== localToken) {
         // Clash of Clans ejection
         alert('Logged Out: Another device or browser tab has logged into this account. Disconnecting...');
-        sessionStorage.removeItem('bigkas_session_token');
+        localStorage.removeItem('bigkas_session_token');
         await supabase.auth.signOut();
         window.location.href = '/login';
       }

@@ -341,7 +341,7 @@ function ActivityPageMobile() {
   const DEVELOPER_PREVIEW_SESSION_KEY = 'bigkas_developer_onboarding_preview_v1';
 
   const hasDeveloperPowers =
-    String(user?.email || '').trim().toLowerCase() === DEVELOPER_POWER_EMAIL &&
+    String(user?.email || '').trim().toLowerCase() === DEVELOPER_POWER_EMAIL ||
     String(user?.role || '').trim().toLowerCase() === 'superadmin';
 
   const handleReplayProfilingPreview = () => {

@@ -87,6 +87,10 @@ export async function handleSessionEjection(reasonMessage, supabase) {
   );
 }
 
+export function resetSessionEjectionFlag() {
+  isEjectionModalTriggered = false;
+}
+
 /**
  * Clears all local session tokens, sessionStorage claim keys, and resets ejection flags.
  * Used during logout, login attempts, and session ejection cleanup.

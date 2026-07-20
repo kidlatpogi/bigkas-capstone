@@ -112,20 +112,36 @@ export async function handleSessionEjection(reasonMessage, supabase) {
 }
 
 /**
+ * Clears all local session tokens, sessionStorage claim keys, and resets ejection flags.
+ * Used during logout, login attempts, and session ejection cleanup.
+ */
+export function clearInstanceClaimKeys() {
+  if (typeof window === 'undefined') return;
+  try {
+    const keysToRemove = [];
+    for (let i = 0; i < window.sessionStorage.length; i += 1) {
+      const key = window.sessionStorage.key(i);
+      if (key && (key.startsWith('bigkas_instance_claimed_') || key === INSTANCE_TOKEN_KEY)) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((key) => window.sessionStorage.removeItem(key));
+    window.localStorage.removeItem('bigkas_session_token');
+  } catch (e) {
+    // ignore
+  }
+  activeInstanceToken = null;
+  isEjectionModalTriggered = false;
+}
+
+/**
  * Called when the user clicks "OKay" on the Session Ejected dialog overlay.
  * Clears local session tokens, signs out locally, and redirects to /login.
  */
 export async function finalizeSessionEjection(supabaseClient) {
   if (typeof window === 'undefined') return;
 
-  try {
-    window.sessionStorage.removeItem(INSTANCE_TOKEN_KEY);
-    window.localStorage.removeItem('bigkas_session_token');
-  } catch (e) {
-    // ignore
-  }
-
-  activeInstanceToken = null;
+  clearInstanceClaimKeys();
 
   if (supabaseClient && typeof supabaseClient.auth?.signOut === 'function') {
     try {

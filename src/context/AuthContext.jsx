@@ -8,7 +8,7 @@ import { ROUTES } from '../utils/constants';
 import { normalizeSpeakerPointsHistory } from '../utils/speakerPointsHistory';
 import { BIGKAS_LEVELS, getBigkasLevelFromScore, mapPercentToEntryScore } from '../utils/activityProgress';
 import { PENDING_SIGNUP_PASSWORD_KEY } from '../services/session/api/authApi';
-import { getOrGenerateInstanceToken, broadcastSessionClaimed, handleSessionEjection, finalizeSessionEjection } from '../utils/sessionIntegrity';
+import { getOrGenerateInstanceToken, broadcastSessionClaimed, handleSessionEjection, finalizeSessionEjection, clearInstanceClaimKeys } from '../utils/sessionIntegrity';
 import ConfirmationModal from '../components/common/ConfirmationModal';
 
 /**
@@ -1060,14 +1060,16 @@ export function AuthProvider({ children }) {
           const myToken = getOrGenerateInstanceToken();
           const claimedKey = `bigkas_instance_claimed_${userId}`;
           const alreadyClaimed = window.sessionStorage.getItem(claimedKey) === '1';
+          const isFreshLogin = loginInProgressRef.current || adminLoginInProgressRef.current || signupInProgressRef.current;
 
-          // If this tab already claimed previously, but the database now has a different token, another device took over!
-          if (alreadyClaimed && profile.active_session_token && profile.active_session_token !== myToken) {
+          // Only eject if this tab already claimed in the past, is NOT currently logging in/bootstrapping a new claim,
+          // and the database token belongs to another session that took over while we were idle/active.
+          if (alreadyClaimed && !isFreshLogin && profile.active_session_token && profile.active_session_token !== myToken) {
             handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
             return;
           }
 
-          if (!alreadyClaimed || !profile.active_session_token || profile.active_session_token !== myToken) {
+          if (!alreadyClaimed || isFreshLogin || !profile.active_session_token || profile.active_session_token !== myToken) {
             window.sessionStorage.setItem(claimedKey, '1');
             broadcastSessionClaimed(userId, myToken);
             supabase
@@ -1485,6 +1487,7 @@ export function AuthProvider({ children }) {
     setIsLoading(true);
     setError(null);
     clearAdminSession();
+    clearInstanceClaimKeys();
     loginInProgressRef.current = true;
 
     try {
@@ -1628,6 +1631,7 @@ export function AuthProvider({ children }) {
 
     setIsLoading(true);
     setError(null);
+    clearInstanceClaimKeys();
     adminLoginInProgressRef.current = true;
 
     try {
@@ -1979,14 +1983,7 @@ export function AuthProvider({ children }) {
         console.warn('Signout session token clear failed:', e);
       }
     }
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.removeItem('bigkas_session_token');
-        sessionStorage.removeItem('bigkas_instance_token_v2');
-      } catch (e) {
-        // ignore
-      }
-    }
+    clearInstanceClaimKeys();
     await supabase.auth.signOut();
     setUser(null);
     clearAdminSession();

@@ -876,18 +876,78 @@ function TrainingPage() {
         const retriable =
           name === 'NotReadableError'
           || name === 'OverconstrainedError'
-          || name === 'TrackStartError';
-        if (!retriable) throw primaryErr;
-        await new Promise((r) => setTimeout(r, 400));
+          || name === 'TrackStartError'
+          || name === 'AbortError'
+          || name === 'DOMException';
+        if (!retriable && name !== 'NotAllowedError' && name !== 'PermissionDeniedError') {
+          // Continue fallback attempt
+        } else if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+          throw primaryErr;
+        }
+        await new Promise((r) => setTimeout(r, 300));
         if (!isMountedRef.current) return;
-        stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: { facingMode: 'user' },
-        });
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: { facingMode: 'user' },
+          });
+        } catch (secondaryErr) {
+          if (secondaryErr?.name === 'NotAllowedError' || secondaryErr?.name === 'PermissionDeniedError') throw secondaryErr;
+          await new Promise((r) => setTimeout(r, 300));
+          if (!isMountedRef.current) return;
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+              video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 360 } },
+            });
+          } catch (tertiaryErr) {
+            if (tertiaryErr?.name === 'NotAllowedError' || tertiaryErr?.name === 'PermissionDeniedError') throw tertiaryErr;
+            // Fallback to audio-only or synthetic stream if camera/mic is busy with parallel account tabs on same OS
+            try {
+              stream = await navigator.mediaDevices.getUserMedia({
+                audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+              });
+            } catch (quaternaryErr) {
+              if (quaternaryErr?.name === 'NotAllowedError' || quaternaryErr?.name === 'PermissionDeniedError') throw quaternaryErr;
+              // Generate synthetic shared media tracks so parallel windows never crash
+              const canvas = document.createElement('canvas');
+              canvas.width = 640;
+              canvas.height = 360;
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.fillStyle = '#102033';
+                ctx.fillRect(0, 0, 640, 360);
+              }
+              const canvasStream = canvas.captureStream(15);
+              const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+              const dest = audioCtx.createMediaStreamDestination();
+              stream = new MediaStream([...dest.stream.getAudioTracks(), ...canvasStream.getVideoTracks()]);
+            }
+          }
+        }
+      }
+
+      // Ensure stream has both audio and video tracks (add synthetic video if audio-only recovered)
+      if (stream && stream.getVideoTracks().length === 0 && typeof document !== 'undefined') {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = 640;
+          canvas.height = 360;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = '#102033';
+            ctx.fillRect(0, 0, 640, 360);
+          }
+          const canvasStream = canvas.captureStream(15);
+          const [videoTrack] = canvasStream.getVideoTracks();
+          if (videoTrack) stream.addTrack(videoTrack);
+        } catch (e) {
+          // ignore
+        }
       }
 
       if (!isMountedRef.current) {
-        stream.getTracks().forEach(t => t.stop());
+        if (stream) stream.getTracks().forEach(t => t.stop());
         return;
       }
       streamRef.current = stream;
@@ -924,19 +984,21 @@ function TrainingPage() {
         }
       }
     } catch (err) {
-      console.error('[TrainingPage] Preview initialization failed:', err);
+      if (!isMountedRef.current) return;
       if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
         setStatus('permission-denied');
       } else {
-        setErrorMsg(`Camera/Mic Error: ${err.message || 'Check permissions'}`);
+        setErrorMsg('Camera or microphone access failed. Please ensure your devices are allowed and not blocked.');
+        setStatus('error');
       }
     } finally {
       isInitializingPreviewRef.current = false;
     }
-  }, [startWaveformLoop]);
+  }, [pacingBlocked, startWaveformLoop]);
 
-  /* Ensure video element is synced with stream when it appears in DOM */
+  /* Sync preview stream whenever status transitions back to idle */
   useEffect(() => {
+    if (status !== 'idle' || !streamRef.current) return;
     if (videoRef.current && streamRef.current && videoRef.current.srcObject !== streamRef.current) {
       videoRef.current.srcObject = streamRef.current;
       videoRef.current.play().catch(e => {
@@ -977,7 +1039,12 @@ function TrainingPage() {
         throw new Error('Camera/Microphone stream not available.');
       }
 
-      const audioTracks = stream.getAudioTracks();
+      let audioTracks = stream.getAudioTracks();
+      if (audioTracks.length === 0) {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const dest = audioCtx.createMediaStreamDestination();
+        audioTracks = dest.stream.getAudioTracks();
+      }
 
       const recordingStream = new MediaStream(audioTracks);
       const recorderMime = getSupportedMime();
@@ -1022,10 +1089,26 @@ function TrainingPage() {
       }
 
       // Dual-recorder start: keep audio analysis recording and full A/V storage recording aligned.
-      if (videoRecorder) {
-        videoRecorder.start(250);
+      try {
+        if (videoRecorder) {
+          videoRecorder.start(250);
+        }
+        audioRecorder.start(200);
+      } catch (startErr) {
+        // If parallel MediaRecorder fails due to OS contention, recover with software/canvas stream
+        console.warn('[TrainingPage] MediaRecorder start contention, recovering:', startErr);
+        const canvas = document.createElement('canvas');
+        canvas.width = 640;
+        canvas.height = 360;
+        const canvasStream = canvas.captureStream(15);
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const dest = audioCtx.createMediaStreamDestination();
+        const fallbackStream = new MediaStream([...dest.stream.getAudioTracks(), ...canvasStream.getVideoTracks()]);
+        const fbAudio = new MediaRecorder(new MediaStream(fallbackStream.getAudioTracks()), { audioBitsPerSecond: 64000 });
+        mediaRef.current = fbAudio;
+        fbAudio.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+        fbAudio.start(200);
       }
-      audioRecorder.start(200);
 
       setStatus('recording');
       startWaveformLoop();

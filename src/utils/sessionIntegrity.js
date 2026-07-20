@@ -153,3 +153,74 @@ export async function finalizeSessionEjection(supabaseClient) {
 
   window.location.href = '/login';
 }
+
+/**
+ * Returns a stable, deterministic device fingerprint for the current client device.
+ * Used when strict single-device multi-account lock is enabled.
+ */
+export function getDeviceFingerprint() {
+  if (typeof window === 'undefined') return 'server-device';
+  try {
+    const nav = window.navigator || {};
+    const screen = window.screen || {};
+    const components = [
+      nav.platform || 'unknown-platform',
+      `${screen.width || 0}x${screen.height || 0}x${screen.colorDepth || 0}`,
+      Intl?.DateTimeFormat()?.resolvedOptions()?.timeZone || 'unknown-tz',
+      nav.hardwareConcurrency || 2,
+      nav.deviceMemory || 4,
+      nav.maxTouchPoints || 0,
+    ];
+    // Hash string using simple fast hashing
+    const rawString = components.join('|');
+    let hash = 0;
+    for (let i = 0; i < rawString.length; i += 1) {
+      const char = rawString.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash |= 0;
+    }
+    return `dev_${Math.abs(hash).toString(36)}`;
+  } catch (e) {
+    return 'dev_default';
+  }
+}
+
+/**
+ * Checks if the system setting allowing parallel multi-account sessions on the same device is enabled.
+ * Defaults to true if setting is not set or cannot be read.
+ */
+export async function checkSystemParallelAccountPolicy(supabaseClient) {
+  if (!supabaseClient) return true;
+  try {
+    const { data, error } = await supabaseClient
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'multi_account_parallel_sessions')
+      .maybeSingle();
+    if (error || !data) return true;
+    return data.value?.enabled !== false;
+  } catch (e) {
+    return true;
+  }
+}
+
+/**
+ * Updates the global system setting allowing or disallowing parallel multi-account sessions on the same device.
+ */
+export async function setSystemParallelAccountPolicy(supabaseClient, enabled) {
+  if (!supabaseClient) return { success: false, error: 'No Supabase client' };
+  try {
+    const { error } = await supabaseClient
+      .from('system_settings')
+      .upsert({
+        key: 'multi_account_parallel_sessions',
+        value: { enabled: Boolean(enabled) },
+        updated_at: new Date().toISOString(),
+      });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e?.message || 'Update failed' };
+  }
+}
+

@@ -18,6 +18,7 @@ import { ensureFreshAccessToken, supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import { getBigkasLevelFromScore, mapPercentToEntryScore } from '../../utils/activityProgress';
+import { checkSystemParallelAccountPolicy, setSystemParallelAccountPolicy } from '../../utils/sessionIntegrity';
 import { ENV } from '../../config/env';
 import './AdminDashboardPage.css';
 
@@ -1394,6 +1395,9 @@ function AdminDashboardPage() {
   const [role, setRole] = useState('');
   const [currentAdminId, setCurrentAdminId] = useState('');
   const [activePage, setActivePage] = useState('overview');
+  const [multiAccountEnabled, setMultiAccountEnabled] = useState(true);
+  const [updatingMultiAccountSetting, setUpdatingMultiAccountSetting] = useState(false);
+  const [settingUpdateMsg, setSettingUpdateMsg] = useState('');
 
   const [profiles, setProfiles] = useState([]);
   const [sessions, setSessions] = useState([]);
@@ -1586,6 +1590,8 @@ function AdminDashboardPage() {
         if (!active) return;
         setCurrentAdminId(authData.user.id);
         setRole(roleProfile.role);
+        const policyVal = await checkSystemParallelAccountPolicy(supabase);
+        if (active) setMultiAccountEnabled(policyVal);
 
         const results = await Promise.allSettled([
           withTimeout(fetchAdminDirectory({ includeAnalytics: true }), 'Profiles'),
@@ -3944,6 +3950,26 @@ function AdminDashboardPage() {
   const safeRolePage = Math.min(accessRolePage, totalRolePages || 1);
   const paginatedAccessRoles = accessRoleReviewOptions.slice((safeRolePage - 1) * ROLES_PER_PAGE, safeRolePage * ROLES_PER_PAGE);
 
+  const handleToggleMultiAccountPolicy = async () => {
+    setUpdatingMultiAccountSetting(true);
+    setSettingUpdateMsg('');
+    try {
+      const nextVal = !multiAccountEnabled;
+      const res = await setSystemParallelAccountPolicy(supabase, nextVal);
+      if (res.success) {
+        setMultiAccountEnabled(nextVal);
+        setSettingUpdateMsg(`Successfully updated: Parallel multi-account sessions are now ${nextVal ? 'ALLOWED (Facebook style)' : 'BLOCKED (Strict single-device mode)'}.`);
+        setTimeout(() => setSettingUpdateMsg(''), 5000);
+      } else {
+        setError(`Failed to update setting: ${res.error || 'Unknown error'}`);
+      }
+    } catch (e) {
+      setError(`Error updating setting: ${e.message}`);
+    } finally {
+      setUpdatingMultiAccountSetting(false);
+    }
+  };
+
   const navItems = [
     { key: 'overview', label: 'Overview', icon: HiOutlineHomeModern, show: canUseAdminPermission('overview', 'view') },
     { key: 'analytics', label: 'Analytics', icon: HiOutlineChartBarSquare, show: canUseAdminPermission('analytics', 'view') },
@@ -3951,6 +3977,7 @@ function AdminDashboardPage() {
     { key: 'content', label: 'Content Hub', icon: HiOutlineChartBarSquare, show: canViewActivities || canViewModules },
     { key: 'reports', label: 'Reports', icon: HiOutlineChartBarSquare, show: canUseAdminPermission('reports', 'view') },
     { key: 'audit', label: 'Audit Logs', icon: HiOutlineCog6Tooth, show: isSuperadmin },
+    { key: 'settings', label: 'System Settings', icon: HiOutlineCog6Tooth, show: isSuperadmin || canUseAdminPermission('overview', 'view') },
   ].filter(i => i.show);
 
   return (
@@ -3982,6 +4009,56 @@ function AdminDashboardPage() {
 
         {activePage === 'overview' && (
           <>
+            <div className="admin-card" style={{ padding: '20px', marginBottom: '24px', border: '1px solid var(--border-color)', borderRadius: '12px', background: 'var(--card-bg)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+                <div style={{ flex: '1 1 320px' }}>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '1.1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <HiOutlineCog6Tooth size={20} />
+                    Parallel Multi-Account Sessions (Incognito / Multi-Browser)
+                  </h3>
+                  <p style={{ margin: '0 0 8px 0', fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                    Controls whether different user accounts (e.g., Account 1 in Normal Chrome, Account 2 in Chrome Incognito or Edge) can log in simultaneously on the same physical computer and record speech training sessions concurrently (Facebook-style multi-account support).
+                  </p>
+                  <div style={{ display: 'flex', gap: '12px', fontSize: '0.82rem', marginTop: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ padding: '4px 8px', borderRadius: '6px', background: multiAccountEnabled ? '#10b98120' : '#64748b20', color: multiAccountEnabled ? '#10b981' : '#64748b', fontWeight: 600 }}>
+                      {multiAccountEnabled ? 'Scenario 1 Allowed (Parallel Multi-Account)' : 'Strict Device Lock (1 Account per PC)'}
+                    </span>
+                    <span style={{ padding: '4px 8px', borderRadius: '6px', background: '#f59e0b20', color: '#f59e0b', fontWeight: 500 }}>
+                      Scenario 2 Always Blocked (Same Account Duplicate Login)
+                    </span>
+                  </div>
+                  {settingUpdateMsg && (
+                    <p style={{ margin: '8px 0 0 0', fontSize: '0.84rem', color: '#10b981', fontWeight: 500 }}>
+                      {settingUpdateMsg}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <button
+                    type="button"
+                    disabled={updatingMultiAccountSetting}
+                    onClick={handleToggleMultiAccountPolicy}
+                    style={{
+                      padding: '10px 18px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      fontWeight: 600,
+                      cursor: updatingMultiAccountSetting ? 'not-allowed' : 'pointer',
+                      background: multiAccountEnabled ? '#10b981' : '#64748b',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {updatingMultiAccountSetting ? 'Updating...' : multiAccountEnabled ? 'Turn OFF (Strict Single-Device)' : 'Turn ON (Allow Multi-Account)'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <section className={`admin-grid ${isSuperadmin ? 'admin-grid-3' : 'admin-grid-2'}`} aria-label="Management overview metrics">
               <article className="admin-card admin-kpi-card">
                 <p className="admin-kpi-label">TOTAL USERS</p>
@@ -4871,6 +4948,74 @@ function AdminDashboardPage() {
               </div>
             </div>
           </section>
+          </div>
+        )}
+
+        {activePage === 'settings' && (
+          <div>
+            <div className="admin-section-header">
+              <h2>System Security & Device Policy Settings</h2>
+              <p className="admin-section-subtitle">Configure multi-device login policies, parallel session limits, and security enforcement.</p>
+            </div>
+            <hr className="admin-section-divider" />
+            <div className="admin-card" style={{ padding: '24px', marginBottom: '24px', border: '1px solid var(--border-color)', borderRadius: '12px', background: 'var(--card-bg)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
+                <div style={{ flex: '1 1 400px' }}>
+                  <h3 style={{ margin: '0 0 12px 0', fontSize: '1.2rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <HiOutlineCog6Tooth size={24} />
+                    Parallel Multi-Account Sessions (Facebook-style Incognito Support)
+                  </h3>
+                  <p style={{ margin: '0 0 12px 0', fontSize: '0.92rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                    Controls how the system handles multiple unique user accounts logging in on the same physical device/browser setup across different profiles or incognito tabs:
+                  </p>
+                  <ul style={{ margin: '0 0 16px 20px', padding: 0, fontSize: '0.9rem', color: 'var(--text-main)', lineHeight: 1.6 }}>
+                    <li style={{ marginBottom: '8px' }}>
+                      <strong>Scenario 1 (Different Accounts on Same Device):</strong> Chrome: Account 1, Chrome Incognito: Account 2, Edge: Account 3.
+                      When turned <strong>ON</strong>, multiple accounts can operate independently on the same machine and run speech training sessions concurrently without logging each other out.
+                      When turned <strong>OFF</strong>, strict device lock is enforced and only 1 account is permitted per computer.
+                    </li>
+                    <li>
+                      <strong>Scenario 2 (Same Account Duplicate Login):</strong> Chrome: Account 1, Chrome Incognito or Other Device: Account 1.
+                      <strong>Always Forbidden:</strong> Logging into the exact same account from a new browser/device always ejects the prior session with a notification dialogue.
+                    </li>
+                  </ul>
+                  <div style={{ display: 'flex', gap: '12px', fontSize: '0.85rem', marginTop: '12px', flexWrap: 'wrap' }}>
+                    <span style={{ padding: '6px 12px', borderRadius: '6px', background: multiAccountEnabled ? '#10b98120' : '#64748b20', color: multiAccountEnabled ? '#10b981' : '#64748b', fontWeight: 600 }}>
+                      Current Status: {multiAccountEnabled ? 'ON — Parallel Multi-Account Sessions Allowed' : 'OFF — Strict 1 Account per Device Mode'}
+                    </span>
+                  </div>
+                  {settingUpdateMsg && (
+                    <p style={{ margin: '12px 0 0 0', fontSize: '0.9rem', color: '#10b981', fontWeight: 600 }}>
+                      {settingUpdateMsg}
+                    </p>
+                  )}
+                </div>
+                <div style={{ alignSelf: 'center' }}>
+                  <button
+                    type="button"
+                    disabled={updatingMultiAccountSetting}
+                    onClick={handleToggleMultiAccountPolicy}
+                    style={{
+                      padding: '12px 24px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      fontWeight: 600,
+                      fontSize: '0.95rem',
+                      cursor: updatingMultiAccountSetting ? 'not-allowed' : 'pointer',
+                      background: multiAccountEnabled ? '#10b981' : '#64748b',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      boxShadow: '0 4px 6px rgba(0,0,0,0.15)',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {updatingMultiAccountSetting ? 'Saving Policy...' : multiAccountEnabled ? 'Turn OFF (Require Strict 1-Account per PC)' : 'Turn ON (Allow Multi-Account / Incognito)'}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </section>

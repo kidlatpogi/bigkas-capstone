@@ -8,7 +8,7 @@ import { ROUTES } from '../utils/constants';
 import { normalizeSpeakerPointsHistory } from '../utils/speakerPointsHistory';
 import { BIGKAS_LEVELS, getBigkasLevelFromScore, mapPercentToEntryScore } from '../utils/activityProgress';
 import { PENDING_SIGNUP_PASSWORD_KEY } from '../services/session/api/authApi';
-import { getOrGenerateInstanceToken, broadcastSessionClaimed, handleSessionEjection, finalizeSessionEjection, clearInstanceClaimKeys } from '../utils/sessionIntegrity';
+import { getOrGenerateInstanceToken, broadcastSessionClaimed, handleSessionEjection, finalizeSessionEjection, clearInstanceClaimKeys, getDeviceFingerprint, checkSystemParallelAccountPolicy } from '../utils/sessionIntegrity';
 import ConfirmationModal from '../components/common/ConfirmationModal';
 
 /**
@@ -1058,9 +1058,26 @@ export function AuthProvider({ children }) {
         // --- Clash of Clans Real-Time Session Claiming & Ejection logic ---
         if (typeof window !== 'undefined') {
           const myToken = getOrGenerateInstanceToken();
+          const myFingerprint = getDeviceFingerprint();
           const claimedKey = `bigkas_instance_claimed_${userId}`;
           const alreadyClaimed = window.sessionStorage.getItem(claimedKey) === '1';
           const isFreshLogin = loginInProgressRef.current || adminLoginInProgressRef.current || signupInProgressRef.current;
+
+          // Check if Admin has disabled parallel multi-account sessions on the same device
+          const isMultiAccountAllowed = await checkSystemParallelAccountPolicy(supabase);
+          if (!isMultiAccountAllowed && isFreshLogin) {
+            const { data: deviceConflict } = await supabase
+              .from('profiles')
+              .select('id, full_name')
+              .neq('id', userId)
+              .not('active_session_token', 'is', null)
+              .eq('active_device_fingerprint', myFingerprint)
+              .maybeSingle();
+            if (deviceConflict) {
+              handleSessionEjection(`Strict Device Lock: Another account (${deviceConflict.full_name || 'User'}) is already active on this device. Only one account per device is allowed.`, supabase);
+              return;
+            }
+          }
 
           // Only eject if this tab already claimed in the past, is NOT currently logging in/bootstrapping a new claim,
           // and the database token belongs to another session that took over while we were idle/active.
@@ -1074,7 +1091,7 @@ export function AuthProvider({ children }) {
             broadcastSessionClaimed(userId, myToken);
             supabase
               .from('profiles')
-              .update({ active_session_token: myToken })
+              .update({ active_session_token: myToken, active_device_fingerprint: myFingerprint })
               .eq('id', userId)
               .then(({ error }) => {
                 if (error) console.warn('[SessionIntegrity] Profile claim sync error:', error.message);
@@ -2270,6 +2287,23 @@ export function AuthProvider({ children }) {
         const profileToken = profileData?.active_session_token;
         if (profileToken && profileToken !== myToken && active) {
           handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
+          return;
+        }
+
+        // Third check strict device policy if multi-account is disabled
+        const isMultiAccountAllowed = await checkSystemParallelAccountPolicy(supabase);
+        if (!isMultiAccountAllowed && active) {
+          const myFingerprint = getDeviceFingerprint();
+          const { data: conflict } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .neq('id', uid)
+            .not('active_session_token', 'is', null)
+            .eq('active_device_fingerprint', myFingerprint)
+            .maybeSingle();
+          if (conflict && active) {
+            handleSessionEjection(`Strict Device Lock: Another account (${conflict.full_name || 'User'}) is active on this device. Only one account is allowed per device when multi-account parallel sessions is disabled by Admin.`, supabase);
+          }
         }
       } catch (e) {
         // ignore

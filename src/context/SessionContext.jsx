@@ -492,51 +492,6 @@ export function SessionProvider({ children }) {
     window.localStorage.removeItem(LEGACY_LOCAL_SESSIONS_KEY);
   }, []);
 
-  /* ── Clash of Clans style Session Integrity heartbeat ── */
-  const checkSessionIntegrity = useCallback(async () => {
-    const uid = await getUserId();
-    if (!uid) return;
-    if (typeof window === 'undefined') return;
-
-    const localToken = localStorage.getItem('bigkas_session_token');
-    if (!localToken) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('active_session_token')
-        .eq('id', uid)
-        .single();
-
-      if (error) {
-        console.warn('Session integrity check failed to query profiles:', error.message);
-        return;
-      }
-
-      if (data && data.active_session_token && data.active_session_token !== localToken) {
-        // Clash of Clans ejection
-        alert('Logged Out: Another device or browser tab has logged into this account. Disconnecting...');
-        localStorage.removeItem('bigkas_session_token');
-        await supabase.auth.signOut();
-        window.location.href = '/login';
-      }
-    } catch (e) {
-      console.warn('Error during session integrity heartbeat:', e);
-    }
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    const interval = setInterval(() => {
-      if (active) checkSessionIntegrity();
-    }, 15000); // Check every 15 seconds
-
-    return () => {
-      active = false;
-      clearInterval(interval);
-    };
-  }, [checkSessionIntegrity]);
-
   /* ── Submission Pacing Check (1-minute cooldown, 10 runs per hour) ── */
   const checkPacing = useCallback(async () => {
     const uid = await getUserId();

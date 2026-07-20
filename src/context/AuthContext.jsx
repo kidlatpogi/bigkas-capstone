@@ -8,6 +8,8 @@ import { ROUTES } from '../utils/constants';
 import { normalizeSpeakerPointsHistory } from '../utils/speakerPointsHistory';
 import { BIGKAS_LEVELS, getBigkasLevelFromScore, mapPercentToEntryScore } from '../utils/activityProgress';
 import { PENDING_SIGNUP_PASSWORD_KEY } from '../services/session/api/authApi';
+import { getOrGenerateInstanceToken, broadcastSessionClaimed, handleSessionEjection, finalizeSessionEjection } from '../utils/sessionIntegrity';
+import ConfirmationModal from '../components/common/ConfirmationModal';
 
 /**
  * Authentication Context — backed by Supabase Auth
@@ -840,6 +842,7 @@ export function AuthProvider({ children }) {
   const [error, setError] = useState(null);
   const [pendingEmailVerification, setPendingEmailVerification] = useState(false);
   const [pendingEmail, setPendingEmail] = useState(null);
+  const [sessionEjectedReason, setSessionEjectedReason] = useState(null);
   const signupCooldownUntilRef = useRef(0);
   const signupInProgressRef = useRef(false);
   const loginInProgressRef = useRef(false);
@@ -849,6 +852,16 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     currentUserIdRef.current = user?.id || null;
   }, [user?.id]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleModalTrigger = (e) => {
+      const reason = e.detail?.reason || 'Another device or browser tab has logged into this account. Only one active account session is allowed at a time.';
+      setSessionEjectedReason(reason);
+    };
+    window.addEventListener('bigkas_trigger_ejection_modal', handleModalTrigger);
+    return () => window.removeEventListener('bigkas_trigger_ejection_modal', handleModalTrigger);
+  }, []);
 
   const resolveAvatarUrl = useCallback((avatarValue) => {
     if (!avatarValue) return null;
@@ -1042,25 +1055,32 @@ export function AuthProvider({ children }) {
           return;
         }
 
-        // --- Clash of Clans Session Ejection logic ---
+        // --- Clash of Clans Real-Time Session Claiming & Ejection logic ---
         if (typeof window !== 'undefined') {
-          let localToken = localStorage.getItem('bigkas_session_token');
-          if (!localToken) {
-            localToken = crypto.randomUUID();
-            localStorage.setItem('bigkas_session_token', localToken);
-            // Async write to database, do not block profile load
-            supabase.from('profiles').update({ active_session_token: localToken }).eq('id', userId).then(({ error }) => { if (error) console.error('Session sync error:', error); });
-          } else if (profile.active_session_token && profile.active_session_token !== localToken) {
-            // Mismatch! Eject device
-            setError('Logged Out: Another device or tab has logged into this account.');
-            setUser(null);
-            clearAdminSession();
-            localStorage.removeItem('bigkas_session_token');
-            await supabase.auth.signOut({ scope: 'local' });
+          const myToken = getOrGenerateInstanceToken();
+          const claimedKey = `bigkas_instance_claimed_${userId}`;
+          const alreadyClaimed = window.sessionStorage.getItem(claimedKey) === '1';
+
+          // If this tab already claimed previously, but the database now has a different token, another device took over!
+          if (alreadyClaimed && profile.active_session_token && profile.active_session_token !== myToken) {
+            handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
             return;
-          } else if (!profile.active_session_token) {
-            // No token on remote, sync it
-            supabase.from('profiles').update({ active_session_token: localToken }).eq('id', userId).then(({ error }) => { if (error) console.error('Session sync error:', error); });
+          }
+
+          if (!alreadyClaimed || !profile.active_session_token || profile.active_session_token !== myToken) {
+            window.sessionStorage.setItem(claimedKey, '1');
+            broadcastSessionClaimed(userId, myToken);
+            supabase
+              .from('profiles')
+              .update({ active_session_token: myToken })
+              .eq('id', userId)
+              .then(({ error }) => {
+                if (error) console.warn('[SessionIntegrity] Profile claim sync error:', error.message);
+              });
+            supabase
+              .auth
+              .updateUser({ data: { active_session_token: myToken } })
+              .catch(() => {});
           }
         }
 
@@ -1960,7 +1980,12 @@ export function AuthProvider({ children }) {
       }
     }
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('bigkas_session_token');
+      try {
+        localStorage.removeItem('bigkas_session_token');
+        sessionStorage.removeItem('bigkas_instance_token_v2');
+      } catch (e) {
+        // ignore
+      }
     }
     await supabase.auth.signOut();
     setUser(null);
@@ -2215,6 +2240,109 @@ export function AuthProvider({ children }) {
 
   const clearError = useCallback(() => setError(null), []);
 
+  /* ── Real-Time Single-Instance Heartbeat & Subscription ── */
+  useEffect(() => {
+    if (!user?.id || typeof window === 'undefined') return;
+
+    let active = true;
+    const myToken = getOrGenerateInstanceToken();
+    const uid = user.id;
+
+    // 1. Check integrity against both Supabase Auth user_metadata AND profiles table
+    const verifyIntegrity = async () => {
+      if (!active) return;
+      try {
+        // First check user_metadata (always works regardless of SQL migrations)
+        const { data: authData } = await supabase.auth.getUser();
+        const metaToken = authData?.user?.user_metadata?.active_session_token;
+        if (metaToken && metaToken !== myToken && active) {
+          handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
+          return;
+        }
+
+        // Second check profiles table
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('active_session_token')
+          .eq('id', uid)
+          .single();
+        const profileToken = profileData?.active_session_token;
+        if (profileToken && profileToken !== myToken && active) {
+          handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    // Initial check right after user is confirmed
+    verifyIntegrity();
+
+    // 2. Supabase Realtime WebSocket subscription
+    const channel = supabase
+      .channel(`auth-integrity-${uid}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${uid}`,
+        },
+        (payload) => {
+          const remoteToken = payload.new?.active_session_token;
+          if (remoteToken && remoteToken !== myToken && active) {
+            handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
+          }
+        }
+      )
+      .subscribe();
+
+    // 3. BroadcastChannel listener (instant <1ms cross-tab ejection within the same browser engine)
+    let bc = null;
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        bc = new BroadcastChannel('bigkas_session_channel_v2');
+        bc.onmessage = (event) => {
+          const data = event.data;
+          if (data && data.type === 'SESSION_CLAIMED' && data.userId === uid && data.token !== myToken && active) {
+            handleSessionEjection('Logged Out: Another browser tab has logged into this account. Disconnecting...', supabase);
+          }
+        };
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    // 4. Storage event fallback (for cross-tab where BroadcastChannel is restricted)
+    const handleStorageEvent = (event) => {
+      if (event.key === 'bigkas_last_claimed_session_event' && event.newValue && active) {
+        try {
+          const data = JSON.parse(event.newValue);
+          if (data.type === 'SESSION_CLAIMED' && data.userId === uid && data.token !== myToken) {
+            handleSessionEjection('Logged Out: Another browser tab has logged into this account. Disconnecting...', supabase);
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageEvent);
+
+    // 5. Periodic heartbeat every 4 seconds
+    const interval = setInterval(() => {
+      if (active) verifyIntegrity();
+    }, 4000);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+      window.removeEventListener('storage', handleStorageEvent);
+      if (channel) supabase.removeChannel(channel);
+      if (bc && typeof bc.close === 'function') bc.close();
+    };
+  }, [user?.id]);
+
   const value = {
     user, isInitializing, isLoading, isAuthenticated: !!user, isAdminAuthenticated, error,
     pendingEmailVerification, pendingEmail,
@@ -2224,7 +2352,25 @@ export function AuthProvider({ children }) {
     adminLogin, loginWithGoogle, resendVerificationEmail,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      <ConfirmationModal
+        isOpen={!!sessionEjectedReason}
+        title="Session Disconnected"
+        message={sessionEjectedReason || 'Another device or browser tab has logged into this account. Only one active account session is allowed at a time.'}
+        confirmLabel="OKay"
+        cancelLabel={null}
+        onConfirm={async () => {
+          await finalizeSessionEjection(supabase);
+        }}
+        onCancel={async () => {
+          await finalizeSessionEjection(supabase);
+        }}
+        type="info"
+      />
+    </AuthContext.Provider>
+  );
 }
 
 export default AuthContext;

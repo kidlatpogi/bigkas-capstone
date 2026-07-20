@@ -8,7 +8,8 @@ import { ROUTES } from '../utils/constants';
 import { normalizeSpeakerPointsHistory } from '../utils/speakerPointsHistory';
 import { BIGKAS_LEVELS, getBigkasLevelFromScore, mapPercentToEntryScore } from '../utils/activityProgress';
 import { PENDING_SIGNUP_PASSWORD_KEY } from '../services/session/api/authApi';
-import { getOrGenerateInstanceToken, broadcastSessionClaimed, handleSessionEjection } from '../utils/sessionIntegrity';
+import { getOrGenerateInstanceToken, broadcastSessionClaimed, handleSessionEjection, finalizeSessionEjection } from '../utils/sessionIntegrity';
+import ConfirmationModal from '../components/common/ConfirmationModal';
 
 /**
  * Authentication Context — backed by Supabase Auth
@@ -841,6 +842,7 @@ export function AuthProvider({ children }) {
   const [error, setError] = useState(null);
   const [pendingEmailVerification, setPendingEmailVerification] = useState(false);
   const [pendingEmail, setPendingEmail] = useState(null);
+  const [sessionEjectedReason, setSessionEjectedReason] = useState(null);
   const signupCooldownUntilRef = useRef(0);
   const signupInProgressRef = useRef(false);
   const loginInProgressRef = useRef(false);
@@ -850,6 +852,16 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     currentUserIdRef.current = user?.id || null;
   }, [user?.id]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleModalTrigger = (e) => {
+      const reason = e.detail?.reason || 'Another device or browser tab has logged into this account. Only one active account session is allowed at a time.';
+      setSessionEjectedReason(reason);
+    };
+    window.addEventListener('bigkas_trigger_ejection_modal', handleModalTrigger);
+    return () => window.removeEventListener('bigkas_trigger_ejection_modal', handleModalTrigger);
+  }, []);
 
   const resolveAvatarUrl = useCallback((avatarValue) => {
     if (!avatarValue) return null;
@@ -2340,7 +2352,25 @@ export function AuthProvider({ children }) {
     adminLogin, loginWithGoogle, resendVerificationEmail,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      <ConfirmationModal
+        isOpen={!!sessionEjectedReason}
+        title="Session Disconnected"
+        message={sessionEjectedReason || 'Another device or browser tab has logged into this account. Only one active account session is allowed at a time.'}
+        confirmLabel="OKay"
+        cancelLabel={null}
+        onConfirm={async () => {
+          await finalizeSessionEjection(supabase);
+        }}
+        onCancel={async () => {
+          await finalizeSessionEjection(supabase);
+        }}
+        type="info"
+      />
+    </AuthContext.Provider>
+  );
 }
 
 export default AuthContext;

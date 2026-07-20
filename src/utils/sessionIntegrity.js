@@ -5,6 +5,7 @@ const INSTANCE_PING_CHANNEL = 'bigkas_instance_ping_v2';
 let activeInstanceToken = null;
 let broadcastChannel = null;
 let pingChannel = null;
+let isEjectionModalTriggered = false;
 
 /**
  * Returns a unique instance token for the current browser tab window.
@@ -88,18 +89,35 @@ export function broadcastSessionClaimed(userId, token) {
 }
 
 /**
- * Executes immediate session ejection (Clash of Clans style).
- * Dispatches event to abort active media streams, clears local state, and signs out.
+ * Triggers session ejection modal dialog (Clash of Clans style).
+ * Dispatches event to abort active media streams and open the ConfirmationModal overlay.
  */
 export async function handleSessionEjection(reasonMessage, supabase) {
   if (typeof window === 'undefined') return;
+  if (isEjectionModalTriggered) return;
+  isEjectionModalTriggered = true;
 
-  console.warn('[SessionIntegrity] Ejecting session:', reasonMessage);
+  console.warn('[SessionIntegrity] Triggering session ejection dialogue:', reasonMessage);
 
   // 1. Dispatch global event so active training/recording views immediately stop media devices
   window.dispatchEvent(new Event('bigkas_session_ejected'));
 
-  // 2. Clear tokens
+  // 2. Trigger global modal dialogue overlay in AuthContext
+  const messageText = reasonMessage || 'Another device or browser tab has logged into this account. Only one active account session is allowed at a time.';
+  window.dispatchEvent(
+    new CustomEvent('bigkas_trigger_ejection_modal', {
+      detail: { reason: messageText },
+    })
+  );
+}
+
+/**
+ * Called when the user clicks "OKay" on the Session Ejected dialog overlay.
+ * Clears local session tokens, signs out locally, and redirects to /login.
+ */
+export async function finalizeSessionEjection(supabaseClient) {
+  if (typeof window === 'undefined') return;
+
   try {
     window.sessionStorage.removeItem(INSTANCE_TOKEN_KEY);
     window.localStorage.removeItem('bigkas_session_token');
@@ -109,19 +127,13 @@ export async function handleSessionEjection(reasonMessage, supabase) {
 
   activeInstanceToken = null;
 
-  // 3. Show prompt to the user
-  const alertText = reasonMessage || 'Logged Out: Another device or browser tab has logged into this account. Disconnecting...';
-  alert(alertText);
-
-  // 4. Sign out locally without destroying remote token of the new active session
-  if (supabase && typeof supabase.auth?.signOut === 'function') {
+  if (supabaseClient && typeof supabaseClient.auth?.signOut === 'function') {
     try {
-      await supabase.auth.signOut({ scope: 'local' });
+      await supabaseClient.auth.signOut({ scope: 'local' });
     } catch (e) {
       console.warn('[SessionIntegrity] SignOut error:', e);
     }
   }
 
-  // 5. Redirect to login
   window.location.href = '/login';
 }

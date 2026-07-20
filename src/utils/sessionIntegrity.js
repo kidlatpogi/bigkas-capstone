@@ -1,16 +1,16 @@
 const INSTANCE_TOKEN_KEY = 'bigkas_instance_token_v2';
 const SESSION_BROADCAST_KEY = 'bigkas_session_channel_v2';
-const INSTANCE_PING_CHANNEL = 'bigkas_instance_ping_v2';
+const DEVICE_FINGERPRINT_KEY = 'bigkas_device_fingerprint_v1';
 
 let activeInstanceToken = null;
 let broadcastChannel = null;
-let pingChannel = null;
 let isEjectionModalTriggered = false;
 
 /**
  * Returns a unique instance token for the current browser tab window.
  * Uses sessionStorage so each tab gets its own unique token.
- * Also includes duplicate-tab collision detection via BroadcastChannel.
+ * Duplicated tabs get a FRESH token because sessionStorage is cloned but
+ * the in-memory variable is reset.
  */
 export function getOrGenerateInstanceToken() {
   if (typeof window === 'undefined') return 'server-instance';
@@ -23,16 +23,14 @@ export function getOrGenerateInstanceToken() {
     let stored = null;
     try {
       stored = window.sessionStorage.getItem(INSTANCE_TOKEN_KEY);
-    } catch (e) {}
+    } catch (e) { /* ignore */ }
     window.__bigkasInstanceToken = stored || crypto.randomUUID();
   }
 
   activeInstanceToken = window.__bigkasInstanceToken;
   try {
     window.sessionStorage.setItem(INSTANCE_TOKEN_KEY, activeInstanceToken);
-  } catch (e) {
-    // ignore
-  }
+  } catch (e) { /* ignore */ }
   return activeInstanceToken;
 }
 
@@ -59,16 +57,14 @@ export function broadcastSessionClaimed(userId, token) {
   // Fallback via localStorage for browsers without BroadcastChannel support or cross-origin frames
   try {
     window.localStorage.setItem('bigkas_last_claimed_session_event', JSON.stringify(payload));
-  } catch (e) {
-    // ignore storage quota errors
-  }
+  } catch (e) { /* ignore storage quota errors */ }
 }
 
 /**
- * Triggers session ejection modal dialog (Clash of Clans style).
+ * Triggers session ejection modal dialog.
  * Dispatches event to abort active media streams and open the ConfirmationModal overlay.
  */
-export async function handleSessionEjection(reasonMessage, supabase) {
+export async function handleSessionEjection(reasonMessage, _supabase) {
   if (typeof window === 'undefined') return;
   if (isEjectionModalTriggered) return;
   isEjectionModalTriggered = true;
@@ -107,9 +103,7 @@ export function clearInstanceClaimKeys() {
     }
     keysToRemove.forEach((key) => window.sessionStorage.removeItem(key));
     window.localStorage.removeItem('bigkas_session_token');
-  } catch (e) {
-    // ignore
-  }
+  } catch (e) { /* ignore */ }
   activeInstanceToken = null;
   if (typeof window !== 'undefined') window.__bigkasInstanceToken = null;
   isEjectionModalTriggered = false;
@@ -137,11 +131,17 @@ export async function finalizeSessionEjection(supabaseClient) {
 
 /**
  * Returns a stable, deterministic device fingerprint for the current client device.
- * Used when strict single-device multi-account lock is enabled.
+ * Persisted in localStorage so the same browser profile always returns the same value.
+ * Different browser profiles (e.g. normal vs incognito) produce different fingerprints
+ * because they have separate localStorage scopes.
  */
 export function getDeviceFingerprint() {
   if (typeof window === 'undefined') return 'server-device';
   try {
+    // Check localStorage for a previously persisted fingerprint
+    const cached = window.localStorage.getItem(DEVICE_FINGERPRINT_KEY);
+    if (cached) return cached;
+
     const nav = window.navigator || {};
     const screen = window.screen || {};
     const components = [
@@ -151,8 +151,10 @@ export function getDeviceFingerprint() {
       nav.hardwareConcurrency || 2,
       nav.deviceMemory || 4,
       nav.maxTouchPoints || 0,
+      // Add userAgent to differentiate Brave vs Edge vs Chrome
+      (nav.userAgent || '').substring(0, 80),
     ];
-    // Hash string using simple fast hashing
+    // Simple fast hash
     const rawString = components.join('|');
     let hash = 0;
     for (let i = 0; i < rawString.length; i += 1) {
@@ -160,9 +162,54 @@ export function getDeviceFingerprint() {
       hash = (hash << 5) - hash + char;
       hash |= 0;
     }
-    return `dev_${Math.abs(hash).toString(36)}`;
+    const fingerprint = `dev_${Math.abs(hash).toString(36)}`;
+    window.localStorage.setItem(DEVICE_FINGERPRINT_KEY, fingerprint);
+    return fingerprint;
   } catch (e) {
     return 'dev_default';
+  }
+}
+
+/**
+ * CORE SESSION CLAIMING FUNCTION
+ * Writes this tab's session token + device fingerprint directly to the profiles table.
+ * This is a standalone function that doesn't depend on loadSessionProfile or any cached data.
+ * If the column doesn't exist yet (migration not applied), it logs a warning but doesn't crash.
+ *
+ * @returns {{ success: boolean, error?: string }}
+ */
+export async function forceClaimSession(supabaseClient, userId) {
+  if (!supabaseClient || !userId) return { success: false, error: 'Missing client or userId' };
+  if (typeof window === 'undefined') return { success: false, error: 'SSR context' };
+
+  const myToken = getOrGenerateInstanceToken();
+  const myFingerprint = getDeviceFingerprint();
+  const claimedKey = `bigkas_instance_claimed_${userId}`;
+
+  try {
+    const { error } = await supabaseClient
+      .from('profiles')
+      .update({ active_session_token: myToken, active_device_fingerprint: myFingerprint })
+      .eq('id', userId);
+
+    if (error) {
+      // Column might not exist yet — log but don't crash
+      console.warn('[SessionIntegrity] forceClaimSession DB error:', error.message, '(code:', error.code, ')');
+      return { success: false, error: error.message };
+    }
+
+    // Mark as claimed in sessionStorage
+    window.sessionStorage.setItem(claimedKey, '1');
+    window.__bigkasClaimTimestamp = Date.now();
+
+    // Broadcast to same-browser tabs
+    broadcastSessionClaimed(userId, myToken);
+
+    console.log('[SessionIntegrity] Session claimed successfully for user:', userId, 'token:', myToken.substring(0, 8) + '...');
+    return { success: true };
+  } catch (e) {
+    console.warn('[SessionIntegrity] forceClaimSession exception:', e);
+    return { success: false, error: e?.message || 'Unknown error' };
   }
 }
 
@@ -243,5 +290,3 @@ export async function setSystemMaintenanceMode(supabaseClient, enabled) {
     return { success: false, error: e?.message || 'Update failed' };
   }
 }
-
-

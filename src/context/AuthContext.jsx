@@ -8,7 +8,7 @@ import { ROUTES } from '../utils/constants';
 import { normalizeSpeakerPointsHistory } from '../utils/speakerPointsHistory';
 import { BIGKAS_LEVELS, getBigkasLevelFromScore, mapPercentToEntryScore } from '../utils/activityProgress';
 import { PENDING_SIGNUP_PASSWORD_KEY } from '../services/session/api/authApi';
-import { getOrGenerateInstanceToken, broadcastSessionClaimed, handleSessionEjection, finalizeSessionEjection, clearInstanceClaimKeys, getDeviceFingerprint, checkSystemParallelAccountPolicy, checkSystemMaintenanceMode } from '../utils/sessionIntegrity';
+import { getOrGenerateInstanceToken, broadcastSessionClaimed, handleSessionEjection, finalizeSessionEjection, clearInstanceClaimKeys, getDeviceFingerprint, checkSystemParallelAccountPolicy, checkSystemMaintenanceMode, forceClaimSession } from '../utils/sessionIntegrity';
 import ConfirmationModal from '../components/common/ConfirmationModal';
 
 /**
@@ -991,7 +991,7 @@ export function AuthProvider({ children }) {
     const selectProfile = () =>
       supabase
         .from('profiles')
-        .select('role, archived_at, is_profiling_completed, is_pre_test_completed, dashboard_tutorial_seen, current_level, speaker_level, diagnostic_score, diagnostic_completed_at, active_session_token, active_device_fingerprint')
+        .select('role, archived_at, is_profiling_completed, is_pre_test_completed, dashboard_tutorial_seen, current_level, speaker_level, diagnostic_score, diagnostic_completed_at')
         .eq('id', userId)
         .maybeSingle();
 
@@ -1097,43 +1097,35 @@ export function AuthProvider({ children }) {
           return;
         }
 
-        // --- Clash of Clans Real-Time Session Claiming & Ejection logic ---
+        // --- Session Claiming (decoupled from profile loading) ---
         if (typeof window !== 'undefined') {
-          const myToken = getOrGenerateInstanceToken();
-          const myFingerprint = getDeviceFingerprint();
-          const claimedKey = `bigkas_instance_claimed_${userId}`;
-          const alreadyClaimed = window.sessionStorage.getItem(claimedKey) === '1';
           const isFreshLogin = loginInProgressRef.current || adminLoginInProgressRef.current || signupInProgressRef.current;
 
           // Check if Admin has disabled parallel multi-account sessions on the same device
-          const isMultiAccountAllowed = await checkSystemParallelAccountPolicy(supabase);
-          if (!isMultiAccountAllowed && isFreshLogin) {
-            const { data: deviceConflict } = await supabase
-              .from('profiles')
-              .select('id, full_name')
-              .neq('id', userId)
-              .not('active_session_token', 'is', null)
-              .eq('active_device_fingerprint', myFingerprint)
-              .maybeSingle();
-            if (deviceConflict) {
-              handleSessionEjection(`Strict Device Lock: Another account (${deviceConflict.full_name || 'User'}) is already active on this device. Only one account per device is allowed.`, supabase);
-              return;
+          if (isFreshLogin) {
+            const isMultiAccountAllowed = await checkSystemParallelAccountPolicy(supabase);
+            if (!isMultiAccountAllowed) {
+              const myFingerprint = getDeviceFingerprint();
+              try {
+                const { data: deviceConflict } = await supabase
+                  .from('profiles')
+                  .select('id, full_name')
+                  .neq('id', userId)
+                  .not('active_session_token', 'is', null)
+                  .eq('active_device_fingerprint', myFingerprint)
+                  .maybeSingle();
+                if (deviceConflict) {
+                  handleSessionEjection(`Strict Device Lock: Another account (${deviceConflict.full_name || 'User'}) is already active on this device. Only one account per device is allowed.`, supabase);
+                  return;
+                }
+              } catch (e) {
+                console.warn('[SessionIntegrity] Device conflict check error:', e);
+              }
             }
           }
 
-          if (alreadyClaimed && !isFreshLogin && profile.active_session_token && profile.active_session_token !== myToken) {
-            handleSessionEjection('Logged Out: Another browser tab or device has logged into this account. Disconnecting...', supabase);
-            return;
-          } else if (!alreadyClaimed || isFreshLogin || !profile.active_session_token) {
-            window.sessionStorage.setItem(claimedKey, '1');
-            window.__bigkasClaimTimestamp = Date.now();
-            broadcastSessionClaimed(userId, myToken);
-            const { error: syncErr } = await supabase
-              .from('profiles')
-              .update({ active_session_token: myToken, active_device_fingerprint: myFingerprint })
-              .eq('id', userId);
-            if (syncErr) console.warn('[SessionIntegrity] Profile claim sync error:', syncErr.message);
-          }
+          // Always claim the session (writes active_session_token to DB)
+          await forceClaimSession(supabase, userId);
         }
 
 
@@ -2330,42 +2322,56 @@ export function AuthProvider({ children }) {
       if (!active) return;
       try {
         const timeSinceClaim = Date.now() - (window.__bigkasClaimTimestamp || 0);
-        const inClaimGracePeriod = timeSinceClaim < 1500; // 1.5s grace period while our claim settles in DB
+        const inClaimGracePeriod = timeSinceClaim < 3000; // 3s grace period while our claim settles in DB
 
-        // First check profiles table (only if outside initial grace period so async DB update doesn't race)
+        // First check: poll profiles table for session token mismatch
         if (!inClaimGracePeriod) {
-          const { data: profileData } = await supabase
+          const { data: profileData, error: profileErr } = await supabase
             .from('profiles')
             .select('active_session_token')
             .eq('id', uid)
             .maybeSingle();
-          const profileToken = profileData?.active_session_token;
-          if (profileToken && profileToken !== myToken && active) {
-            handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
-            return;
+
+          if (profileErr) {
+            // Column might not exist — log once but don't crash the heartbeat
+            if (!window.__bigkasIntegrityWarnLogged) {
+              console.warn('[SessionIntegrity] verifyIntegrity query error:', profileErr.message, '(code:', profileErr.code, ')');
+              window.__bigkasIntegrityWarnLogged = true;
+            }
+          } else {
+            const profileToken = profileData?.active_session_token;
+            if (profileToken && profileToken !== myToken && active) {
+              handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
+              return;
+            }
           }
         }
 
-        // Second check strict device policy if multi-account is disabled
+        // Second check: strict device policy if multi-account is disabled
         const isMultiAccountAllowed = await checkSystemParallelAccountPolicy(supabase);
         if (!isMultiAccountAllowed && active) {
           const myFingerprint = getDeviceFingerprint();
-          const { data: conflict } = await supabase
-            .from('profiles')
-            .select('id, full_name')
-            .neq('id', uid)
-            .not('active_session_token', 'is', null)
-            .eq('active_device_fingerprint', myFingerprint)
-            .maybeSingle();
-          if (conflict && active) {
-            handleSessionEjection(`Strict Device Lock: Another account (${conflict.full_name || 'User'}) is active on this device. Only one account is allowed per device when multi-account parallel sessions is disabled by Admin.`, supabase);
+          try {
+            const { data: conflict } = await supabase
+              .from('profiles')
+              .select('id, full_name')
+              .neq('id', uid)
+              .not('active_session_token', 'is', null)
+              .eq('active_device_fingerprint', myFingerprint)
+              .maybeSingle();
+            if (conflict && active) {
+              handleSessionEjection(`Strict Device Lock: Another account (${conflict.full_name || 'User'}) is active on this device. Only one account is allowed per device when multi-account parallel sessions is disabled by Admin.`, supabase);
+            }
+          } catch (deviceErr) {
+            console.warn('[SessionIntegrity] Device conflict check error in heartbeat:', deviceErr);
           }
         }
-        // Third check Maintenance Mode
+
+        // Third check: Maintenance Mode
         const maintenance = await checkSystemMaintenanceMode(supabase);
         if (active) setIsMaintenanceMode(maintenance);
       } catch (e) {
-        // ignore
+        console.warn('[SessionIntegrity] verifyIntegrity unexpected error:', e);
       }
     };
 

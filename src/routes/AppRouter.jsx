@@ -6,6 +6,8 @@ import { ENV } from '../config/env';
 import { ROUTES } from '../utils/constants';
 import { fetchUserAchievements } from '../services/achievementsService';
 import { syncClaimableAchievements } from '../utils/achievementClaims';
+import { syncUnlockedBadgeIds } from '../utils/achievementNavBadge';
+import { supabase } from '../lib/supabase';
 
 // Auth Pages
 const AdminLoginPage = lazy(() => import('../pages/auth/AdminLoginPage'));
@@ -225,16 +227,17 @@ function ProtectedRoute() {
     let active = true;
     let lastSyncTime = 0;
 
-    const performSync = async () => {
+    const performSync = async (force = false) => {
       const now = Date.now();
-      // Throttle syncs to once every 10 seconds
-      if (now - lastSyncTime < 10000) return;
+      // Throttle non-forced syncs to once every 10 seconds
+      if (!force && now - lastSyncTime < 10000) return;
       lastSyncTime = now;
 
       try {
         const data = await fetchUserAchievements(user.id, user);
         if (active) {
           syncClaimableAchievements(data, user.id);
+          syncUnlockedBadgeIds((data || []).map((a) => a.achievement_id));
         }
       } catch (err) {
         console.warn('[AchievementSync] Background fetch failed:', err);
@@ -244,12 +247,28 @@ function ProtectedRoute() {
     // Run on mount or when user/pathname changes
     performSync();
 
-    // Run every 30 seconds
-    const interval = setInterval(performSync, 30000);
+    // Supabase Realtime WebSocket subscription for instant notification bell & achievement updates
+    const channel = supabase
+      .channel(`realtime-notifications-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'user_achievements', filter: `user_id=eq.${user.id}` },
+        () => performSync(true)
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'user_trophies', filter: `user_id=eq.${user.id}` },
+        () => performSync(true)
+      )
+      .subscribe();
+
+    // Run every 30 seconds as backup
+    const interval = setInterval(() => performSync(), 30000);
 
     return () => {
       active = false;
       clearInterval(interval);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [isAuthenticated, user?.id, pathname]);
 

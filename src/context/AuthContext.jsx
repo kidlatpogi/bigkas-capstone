@@ -2317,6 +2317,13 @@ export function AuthProvider({ children }) {
     const myToken = getOrGenerateInstanceToken();
     const uid = user.id;
 
+    // Helper to check if this specific tab has successfully claimed the active session
+    const isClaimedByMe = () => {
+      if (typeof window === 'undefined') return false;
+      const claimedKey = `bigkas_instance_claimed_${uid}`;
+      return window.sessionStorage.getItem(claimedKey) === '1';
+    };
+
     // 1. Check integrity against profiles table and strict device policy
     const verifyIntegrity = async () => {
       if (!active) return;
@@ -2324,8 +2331,8 @@ export function AuthProvider({ children }) {
         const timeSinceClaim = Date.now() - (window.__bigkasClaimTimestamp || 0);
         const inClaimGracePeriod = timeSinceClaim < 3000; // 3s grace period while our claim settles in DB
 
-        // First check: poll profiles table for session token mismatch
-        if (!inClaimGracePeriod) {
+        // First check: poll profiles table for session token mismatch (only if claimed by this tab)
+        if (!inClaimGracePeriod && isClaimedByMe()) {
           const { data: profileData, error: profileErr } = await supabase
             .from('profiles')
             .select('active_session_token')
@@ -2390,6 +2397,7 @@ export function AuthProvider({ children }) {
           filter: `id=eq.${uid}`,
         },
         (payload) => {
+          if (!isClaimedByMe()) return;
           const remoteToken = payload.new?.active_session_token;
           if (remoteToken && remoteToken !== myToken && active) {
             handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
@@ -2404,6 +2412,7 @@ export function AuthProvider({ children }) {
       try {
         bc = new BroadcastChannel('bigkas_session_channel_v2');
         bc.onmessage = (event) => {
+          if (!isClaimedByMe()) return;
           const data = event.data;
           if (data && data.type === 'SESSION_CLAIMED' && data.userId === uid && data.token !== myToken && active) {
             handleSessionEjection('Logged Out: Another browser tab has logged into this account. Disconnecting...', supabase);
@@ -2417,6 +2426,7 @@ export function AuthProvider({ children }) {
     // 4. Storage event fallback (for cross-tab where BroadcastChannel is restricted)
     const handleStorageEvent = (event) => {
       if (event.key === 'bigkas_last_claimed_session_event' && event.newValue && active) {
+        if (!isClaimedByMe()) return;
         try {
           const data = JSON.parse(event.newValue);
           if (data.type === 'SESSION_CLAIMED' && data.userId === uid && data.token !== myToken && active) {

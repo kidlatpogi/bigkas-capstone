@@ -1128,13 +1128,11 @@ export function AuthProvider({ children }) {
             window.sessionStorage.setItem(claimedKey, '1');
             window.__bigkasClaimTimestamp = Date.now();
             broadcastSessionClaimed(userId, myToken);
-            supabase
+            const { error: syncErr } = await supabase
               .from('profiles')
               .update({ active_session_token: myToken, active_device_fingerprint: myFingerprint })
-              .eq('id', userId)
-              .then(({ error }) => {
-                if (error) console.warn('[SessionIntegrity] Profile claim sync error:', error.message);
-              });
+              .eq('id', userId);
+            if (syncErr) console.warn('[SessionIntegrity] Profile claim sync error:', syncErr.message);
           }
         }
 
@@ -1648,7 +1646,7 @@ export function AuthProvider({ children }) {
       const nextUser = buildUser(data.session, cachedProfile || {});
       setUser(nextUser);
       if (data.user?.id) {
-        void fetchAndMergeProfile(data.user.id);
+        await fetchAndMergeProfile(data.user.id);
       }
       await registerLoginSuccess('user', normalizedEmail);
       return { success: true, user: nextUser };
@@ -1812,6 +1810,9 @@ export function AuthProvider({ children }) {
       const cachedProfile = data.session?.user?.id ? profileRequestCache.get(data.session.user.id)?.profile : null;
       const nextUser = buildUser(data.session, cachedProfile || {});
       setUser(nextUser);
+      if (data.user?.id) {
+        await fetchAndMergeProfile(data.user.id);
+      }
       persistAdminSession();
       await registerLoginSuccess('admin', normalizedEmail);
       return { success: true, user: nextUser };

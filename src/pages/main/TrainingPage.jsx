@@ -5,6 +5,7 @@ import { AlertCircle, ChevronLeft, RotateCcw, Eye, EyeOff } from 'lucide-react';
 import { useSessionContext } from '../../context/useSessionContext';
 import { useAuthContext } from '../../context/useAuthContext';
 import { buildRoute, ROUTES } from '../../utils/constants';
+import PushButton from '../../components/common/PushButton';
 
 // Lazy load heavy components to reduce initial Script Evaluation time
 const TutorialOverlay = lazy(() => import('../../components/main/TutorialOverlay'));
@@ -1711,15 +1712,17 @@ function TrainingPage() {
             <p className="rest-overlay-modal-footer">
               Grab some water and come back in a while!
             </p>
-            <button 
-              className="rest-overlay-modal-button"
+            <PushButton
+              bgColor="#059669"
+              shadowColor="#047857"
+              textColor="#FFFFFF"
               onClick={() => {
                 setShowRestModal(false);
                 navigate('/dashboard');
               }}
             >
-              Okay, Coach B-01!
-            </button>
+              OKay
+            </PushButton>
           </div>
         </div>
       )}

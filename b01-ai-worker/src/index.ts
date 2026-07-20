@@ -474,13 +474,16 @@ export default {
         Tasks:
         1. Give a relevance score (1.0 to 5.0) compared to the topic.
         2. Provide 2 short verbal coaching tips.
+        3. Identify any words in the transcript that are likely mispronounced, misspelled, grammatically incorrect in context, or phonetic misinterpretations of words (especially Philippine names, places, or common English words, e.g. "Vite" instead of "Cavite", "Bullyan" instead of "Bulihan", "Selangka" instead of "Silang", "Las Marinas" instead of "Dasmariñas"). Return them in a "mispronunciations" array where each item has "word" (exactly as it appears in the transcript) and "correction" (the correct spelling/word).
         Do not count filler words. They are computed separately by code.
 
         Return ONLY a JSON object:
         {
-          "transcript": "...",
           "relevance_score": 0.0,
-          "recommendations": ["tip1", "tip2"]
+          "recommendations": ["tip1", "tip2"],
+          "mispronunciations": [
+            {"word": "example_misspelled", "correction": "example_correct"}
+          ]
         }`;
 
         const analysisResponse = await runAIWithRetry(env, "@cf/meta/llama-3.1-8b-instruct-fp8", {

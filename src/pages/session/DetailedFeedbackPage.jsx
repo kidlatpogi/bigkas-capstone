@@ -346,9 +346,13 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
 
   const activityLookup = useMemo(() => buildActivityLookup(effectiveActivityTasks), [effectiveActivityTasks]);
   const rawSession = useMemo(() => {
-    if (hasCompleteLocationState) return locationState;
-    if (String(currentSession?.id || '') === String(sessionId || '')) return currentSession;
-    return null;
+    const fromState = hasCompleteLocationState ? locationState : null;
+    const fromContext = String(currentSession?.id || '') === String(sessionId || '') ? currentSession : null;
+    if (!fromState && !fromContext) return null;
+    return {
+      ...fromState,
+      ...fromContext
+    };
   }, [currentSession, hasCompleteLocationState, locationState, sessionId]);
   const session = useMemo(() => mergeSessionActivity(rawSession, activityLookup), [activityLookup, rawSession]);
 
@@ -697,7 +701,7 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
           if (isFiller) {
             return (
               <span key={idx} className="transcript-word transcript-word--filler">
-                {word}
+                {word}{' '}
               </span>
             );
           }
@@ -705,8 +709,8 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
           if (mis) {
             return (
               <span key={idx} className="transcript-word transcript-word--mispronounced" title={`Heard: ${mis.heard || mis.word}, Correct: ${mis.suggestion || mis.correction}`}>
-                {word}
-                <span className="transcript-word-correction">({mis.suggestion || mis.correction})</span>
+                {word}{' '}
+                <span className="transcript-word-correction">({mis.suggestion || mis.correction})</span>{' '}
               </span>
             );
           }

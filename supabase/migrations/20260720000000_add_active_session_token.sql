@@ -4,9 +4,20 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS active_session_token TEXT;
 -- Ensure active_device_fingerprint exists for strict device-lock mode
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS active_device_fingerprint TEXT;
 
--- Enable Supabase Realtime on the profiles table so postgres_changes subscriptions work
+-- Enable Supabase Realtime on the profiles table conditionally so postgres_changes subscriptions work
 -- This is REQUIRED for cross-browser instant ejection via WebSocket
-ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' 
+      AND schemaname = 'public' 
+      AND tablename = 'profiles'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles;
+  END IF;
+END $$;
+
 
 -- Set REPLICA IDENTITY FULL so Realtime sends the full NEW row on UPDATE events
 -- Without this, Realtime may only send the primary key columns

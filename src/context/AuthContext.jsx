@@ -1079,15 +1079,9 @@ export function AuthProvider({ children }) {
             }
           }
 
-          // Only eject if this tab already claimed in the past, is NOT currently logging in/bootstrapping a new claim,
-          // and the database token belongs to another session that took over while we were idle/active.
-          if (alreadyClaimed && !isFreshLogin && profile.active_session_token && profile.active_session_token !== myToken) {
-            handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
-            return;
-          }
-
           if (!alreadyClaimed || isFreshLogin || !profile.active_session_token || profile.active_session_token !== myToken) {
             window.sessionStorage.setItem(claimedKey, '1');
+            window.__bigkasClaimTimestamp = Date.now();
             broadcastSessionClaimed(userId, myToken);
             supabase
               .from('profiles')
@@ -1096,12 +1090,9 @@ export function AuthProvider({ children }) {
               .then(({ error }) => {
                 if (error) console.warn('[SessionIntegrity] Profile claim sync error:', error.message);
               });
-            supabase
-              .auth
-              .updateUser({ data: { active_session_token: myToken } })
-              .catch(() => {});
           }
         }
+
 
         setUser(prev => {
           if (prev?.id !== userId) return prev;
@@ -2266,31 +2257,28 @@ export function AuthProvider({ children }) {
     const myToken = getOrGenerateInstanceToken();
     const uid = user.id;
 
-    // 1. Check integrity against both Supabase Auth user_metadata AND profiles table
+    // 1. Check integrity against profiles table and strict device policy
     const verifyIntegrity = async () => {
       if (!active) return;
       try {
-        // First check user_metadata (always works regardless of SQL migrations)
-        const { data: authData } = await supabase.auth.getUser();
-        const metaToken = authData?.user?.user_metadata?.active_session_token;
-        if (metaToken && metaToken !== myToken && active) {
-          handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
-          return;
+        const timeSinceClaim = Date.now() - (window.__bigkasClaimTimestamp || 0);
+        const inClaimGracePeriod = timeSinceClaim < 10000; // 10s grace period while our claim settles in DB
+
+        // First check profiles table (only if outside initial grace period so async DB update doesn't race)
+        if (!inClaimGracePeriod) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('active_session_token')
+            .eq('id', uid)
+            .single();
+          const profileToken = profileData?.active_session_token;
+          if (profileToken && profileToken !== myToken && active) {
+            handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
+            return;
+          }
         }
 
-        // Second check profiles table
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('active_session_token')
-          .eq('id', uid)
-          .single();
-        const profileToken = profileData?.active_session_token;
-        if (profileToken && profileToken !== myToken && active) {
-          handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
-          return;
-        }
-
-        // Third check strict device policy if multi-account is disabled
+        // Second check strict device policy if multi-account is disabled
         const isMultiAccountAllowed = await checkSystemParallelAccountPolicy(supabase);
         if (!isMultiAccountAllowed && active) {
           const myFingerprint = getDeviceFingerprint();
@@ -2326,14 +2314,15 @@ export function AuthProvider({ children }) {
         },
         (payload) => {
           const remoteToken = payload.new?.active_session_token;
-          if (remoteToken && remoteToken !== myToken && active) {
+          const timeSinceClaim = Date.now() - (window.__bigkasClaimTimestamp || 0);
+          if (remoteToken && remoteToken !== myToken && timeSinceClaim >= 10000 && active) {
             handleSessionEjection('Logged Out: Another device or browser tab has logged into this account. Disconnecting...', supabase);
           }
         }
       )
       .subscribe();
 
-    // 3. BroadcastChannel listener (instant <1ms cross-tab ejection within the same browser engine)
+    // 3. BroadcastChannel listener (instant cross-tab ejection within the same browser engine)
     let bc = null;
     if (typeof BroadcastChannel !== 'undefined') {
       try {
@@ -2341,7 +2330,10 @@ export function AuthProvider({ children }) {
         bc.onmessage = (event) => {
           const data = event.data;
           if (data && data.type === 'SESSION_CLAIMED' && data.userId === uid && data.token !== myToken && active) {
-            handleSessionEjection('Logged Out: Another browser tab has logged into this account. Disconnecting...', supabase);
+            // If the incoming claim occurred AFTER our own claim timestamp, then another tab genuinely claimed our account
+            if ((data.timestamp || 0) > (window.__bigkasClaimTimestamp || 0)) {
+              handleSessionEjection('Logged Out: Another browser tab has logged into this account. Disconnecting...', supabase);
+            }
           }
         };
       } catch (e) {
@@ -2355,7 +2347,9 @@ export function AuthProvider({ children }) {
         try {
           const data = JSON.parse(event.newValue);
           if (data.type === 'SESSION_CLAIMED' && data.userId === uid && data.token !== myToken) {
-            handleSessionEjection('Logged Out: Another browser tab has logged into this account. Disconnecting...', supabase);
+            if ((data.timestamp || 0) > (window.__bigkasClaimTimestamp || 0)) {
+              handleSessionEjection('Logged Out: Another browser tab has logged into this account. Disconnecting...', supabase);
+            }
           }
         } catch (e) {
           // ignore

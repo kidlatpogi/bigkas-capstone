@@ -16,6 +16,8 @@ from scoring_logic import compute_full_diagnostic, format_diagnostic_log_line
 load_dotenv()
 
 B01_WORKER_URL = os.getenv("B01_WORKER_URL", "https://b01-ai-worker.kidlat.workers.dev")
+if "dzeref4000.workers.dev" in B01_WORKER_URL:
+    B01_WORKER_URL = B01_WORKER_URL.replace("dzeref4000.workers.dev", "kidlat.workers.dev")
 MAX_AUDIO_SIZE_MB = int(os.getenv("MAX_AUDIO_SIZE_MB", "20"))
 
 DEFAULT_CORS_ORIGINS = [

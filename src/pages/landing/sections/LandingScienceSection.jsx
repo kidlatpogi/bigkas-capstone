@@ -1,30 +1,52 @@
+import { useEffect } from 'react';
 import { motion as Motion } from 'framer-motion';
-import { IoAnalytics, IoCheckmarkCircle, IoEye, IoMic, IoPulse } from 'react-icons/io5';
 
-const b01Mascot = 'https://assets.bigkas.site/Sprites/Robot/0001.webp';
+import gearIcon from './science-icons/gear.png';
+import marketDemandIcon from './science-icons/market-demand.png';
+import publicSpeakingIcon from './science-icons/public-speaking.png';
 
 const sciencePoints = [
   {
-    icon: IoPulse,
-    label: 'Voice',
-    title: 'Steadier sound',
-    text: 'Pitch, loudness, and pauses become easy-to-read signals.',
+    icon: marketDemandIcon,
+    title: 'Identifying Triggers',
+    text: 'Nervousness usually hides in plain sight. Our biometric analysis detects the exact moments your voice shakes or your gestures become stiff, isolating the specific triggers of your stage fright.',
   },
   {
-    icon: IoEye,
-    label: 'Presence',
-    title: 'Cleaner delivery',
-    text: 'Posture and eye contact cues connect to how confident you appear.',
+    icon: gearIcon,
+    title: 'Correcting Habits',
+    text: 'Once your unconscious habits are brought to light, you can begin the work to improve them. The system highlights your filler words and provides personalized AI recommendations, giving you clear steps to refine your delivery.',
   },
   {
-    icon: IoMic,
-    label: 'Pacing',
-    title: 'Less rushing',
-    text: 'You see where the run needs more breath, clarity, or control.',
+    icon: publicSpeakingIcon,
+    title: 'Mastering Delivery',
+    text: "By combining vocal steadiness with aligned visual gestures, you rewire how you communicate. The science isn't just about tracking data; it's about building lasting self-assurance on any stage.",
   },
 ];
 
 export default function LandingScienceSection() {
+  useEffect(() => {
+    const section = document.getElementById('science');
+    if (!section) return undefined;
+
+    const toggleScienceNav = (isVisible) => {
+      document.body.classList.toggle('science-nav-visible', isVisible);
+    };
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        toggleScienceNav(entry.isIntersecting && entry.intersectionRatio > 0.35);
+      },
+      { threshold: [0, 0.35, 0.6] },
+    );
+
+    observer.observe(section);
+
+    return () => {
+      observer.disconnect();
+      toggleScienceNav(false);
+    };
+  }, []);
+
   return (
     <section id="science" className="science-section-premium b01-science-section">
       <div className="section-shell b01-science-shell">
@@ -49,64 +71,27 @@ export default function LandingScienceSection() {
             feeling like a report card.
           </Motion.p>
 
-          <Motion.div
-            className="science-wave-card"
-            initial={{ opacity: 0, y: 18 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.16 }}
-            aria-label="Example practice signal"
-          >
-            <div className="science-wave-bars" aria-hidden="true">
-              {[42, 70, 34, 88, 54, 76, 40, 64, 50, 82, 38, 58].map((height, index) => (
-                <span key={index} style={{ '--bar-height': `${height}%` }} />
-              ))}
-            </div>
-            <div>
-              <strong>One run becomes a clearer next round.</strong>
-              <p>Volume, pauses, face cues, and pacing are translated into plain-language feedback.</p>
-            </div>
-          </Motion.div>
+          <p className="premium-subtitle">
+            TalkTics isn't just a tool; it's a diagnostic instrument. We bridge the gap between social anxiety and
+            articulate communication through validated biometric analysis.
+          </p>
         </div>
 
-        <div className="science-lab-board science-signal-board">
-          <Motion.div
-            className="science-mascot-card science-mascot-card--signal"
-            initial={{ opacity: 0, scale: 0.94 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-          >
-            <img src={b01Mascot} alt="B-01 reviewing feedback" className="science-b01-img" loading="lazy" />
-            <div className="science-check-pill">
-              <IoCheckmarkCircle />
-              Try this line slower
-            </div>
-          </Motion.div>
-
-          <div className="science-point-list science-signal-list">
-            {sciencePoints.map((point, index) => {
-              const Icon = point.icon;
-              return (
-                <Motion.article
-                  key={point.title}
-                  className="science-point-card"
-                  initial={{ opacity: 0, x: 24 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.08 }}
-                >
-                  <span className="science-point-label">{point.label}</span>
-                  <div className="science-point-icon" aria-hidden="true">
-                    <Icon />
-                  </div>
-                  <div>
-                    <h3>{point.title}</h3>
-                    <p>{point.text}</p>
-                  </div>
-                </Motion.article>
-              );
-            })}
-          </div>
+        <div className="science-point-list science-draft-grid">
+          {sciencePoints.map((point) => {
+            return (
+              <article
+                key={point.title}
+                className="science-point-card science-draft-card"
+              >
+                <div className="science-point-icon" aria-hidden="true">
+                  <img src={point.icon} alt="" loading="lazy" />
+                </div>
+                <h3>{point.title}</h3>
+                <p>{point.text}</p>
+              </article>
+            );
+          })}
         </div>
       </div>
     </section>

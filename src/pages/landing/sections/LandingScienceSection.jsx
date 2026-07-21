@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import { IoAnalytics, IoCheckmarkCircle, IoEye, IoMic, IoPulse } from 'react-icons/io5';
 
 const b01Mascot = 'https://assets.bigkas.site/Sprites/Robot/0001.webp';
@@ -29,16 +29,16 @@ export default function LandingScienceSection() {
     <section id="science" className="science-section-premium b01-science-section">
       <div className="section-shell b01-science-shell">
         <div className="science-copy-center">
-          <motion.h2
+          <Motion.h2
             className="premium-title"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
             Real signals, friendly nudges.
-          </motion.h2>
+          </Motion.h2>
 
-          <motion.p
+          <Motion.p
             className="premium-subtitle"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -47,9 +47,9 @@ export default function LandingScienceSection() {
           >
             TalkTics reads the messy parts of practice, then turns them into clear next moves. B-01 keeps the science from
             feeling like a report card.
-          </motion.p>
+          </Motion.p>
 
-          <motion.div
+          <Motion.div
             className="science-wave-card"
             initial={{ opacity: 0, y: 18 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -66,11 +66,11 @@ export default function LandingScienceSection() {
               <strong>One run becomes a clearer next round.</strong>
               <p>Volume, pauses, face cues, and pacing are translated into plain-language feedback.</p>
             </div>
-          </motion.div>
+          </Motion.div>
         </div>
 
         <div className="science-lab-board science-signal-board">
-          <motion.div
+          <Motion.div
             className="science-mascot-card science-mascot-card--signal"
             initial={{ opacity: 0, scale: 0.94 }}
             whileInView={{ opacity: 1, scale: 1 }}
@@ -81,13 +81,13 @@ export default function LandingScienceSection() {
               <IoCheckmarkCircle />
               Try this line slower
             </div>
-          </motion.div>
+          </Motion.div>
 
           <div className="science-point-list science-signal-list">
             {sciencePoints.map((point, index) => {
               const Icon = point.icon;
               return (
-                <motion.article
+                <Motion.article
                   key={point.title}
                   className="science-point-card"
                   initial={{ opacity: 0, x: 24 }}
@@ -103,7 +103,7 @@ export default function LandingScienceSection() {
                     <h3>{point.title}</h3>
                     <p>{point.text}</p>
                   </div>
-                </motion.article>
+                </Motion.article>
               );
             })}
           </div>

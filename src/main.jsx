@@ -91,7 +91,7 @@ class AppErrorBoundary extends Component {
   }
 
   componentDidCatch(error) {
-    console.error('[Bigkas] App render failed', error);
+    console.error('[TalkTics] App render failed', error);
     recoverFromStaleBuildAsset(error?.message || error);
   }
 

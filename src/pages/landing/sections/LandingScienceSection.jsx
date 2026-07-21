@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { motion as Motion } from 'framer-motion';
 
 import gearIcon from './science-icons/gear.png';
 import marketDemandIcon from './science-icons/market-demand.png';
@@ -50,16 +51,16 @@ export default function LandingScienceSection() {
     <section id="science" className="science-section-premium b01-science-section">
       <div className="section-shell b01-science-shell">
         <div className="science-copy-center">
-          <motion.h2
+          <Motion.h2
             className="premium-title"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
             Real signals, friendly nudges.
-          </motion.h2>
+          </Motion.h2>
 
-          <motion.p
+          <Motion.p
             className="premium-subtitle"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -68,10 +69,10 @@ export default function LandingScienceSection() {
           >
             TalkTics reads the messy parts of practice, then turns them into clear next moves. B-01 keeps the science from
             feeling like a report card.
-          </motion.p>
+          </Motion.p>
 
           <p className="premium-subtitle">
-            Bigkas isn't just a tool; it's a diagnostic instrument. We bridge the gap between social anxiety and
+            TalkTics isn't just a tool; it's a diagnostic instrument. We bridge the gap between social anxiety and
             articulate communication through validated biometric analysis.
           </p>
         </div>

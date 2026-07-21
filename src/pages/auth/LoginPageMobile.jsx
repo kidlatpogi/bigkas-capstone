@@ -169,10 +169,10 @@ function LoginPageMobile({ managePageClass = true }) {
 
   // SEO Metadata
   useEffect(() => {
-    document.title = 'Login | Bigkas — Master Public Speaking';
+    document.title = 'Login | TalkTics — Master Public Speaking';
     const metaDesc = document.querySelector('meta[name="description"]') || document.createElement('meta');
     metaDesc.name = 'description';
-    metaDesc.content = 'Login to your Bigkas account to continue your public speaking journey. Access your sessions, feedback, and personalized AI training.';
+    metaDesc.content = 'Login to your TalkTics account to continue your public speaking journey. Access your sessions, feedback, and personalized AI training.';
     if (!metaDesc.parentNode) document.head.appendChild(metaDesc);
   }, []);
 
@@ -313,13 +313,13 @@ function LoginPageMobile({ managePageClass = true }) {
       <div className="auth-brand-logo-mobile">
         <img 
           src={bigkasLogo} 
-          alt="Bigkas Logo" 
+          alt="TalkTics Logo" 
           width="32" 
           height="32" 
           fetchPriority="high" 
           loading="eager"
         />
-        <span>Bigkas</span>
+        <span>TalkTics</span>
       </div>
 
       {/* 3. Main Form Content (Flattened) */}

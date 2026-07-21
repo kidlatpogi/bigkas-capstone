@@ -38,11 +38,11 @@ export default function LandingFooterSection({ navigateTo, onScrollToSection }) 
               <img 
                 src={bigkasLogo} 
                 srcSet={bigkasLogo}
-                alt="Bigkas" 
+                alt="TalkTics" 
                 className="footer-logo-img" 
                 loading="lazy" 
               />
-              <h4 className="footer-logo-text">Bigkas</h4>
+              <h4 className="footer-logo-text">TalkTics</h4>
             </div>
             <p>
               Private speaking practice with clear feedback, friendly guidance, and room to try again.
@@ -78,7 +78,7 @@ export default function LandingFooterSection({ navigateTo, onScrollToSection }) 
         </div>
 
         <div className="landing-footer-bottom">
-          <p>(c) 2026 Bigkas. Built for better speaking.</p>
+          <p>(c) 2026 TalkTics. Built for better speaking.</p>
         </div>
       </footer>
       <LegalModal

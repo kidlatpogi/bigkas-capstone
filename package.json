@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:android": "npm run build && node -e \"const fs=require('fs'); fs.rmSync('dist/downloads/Bigkas.apk',{force:true});\" && cap sync android",
+    "build:android": "npm run build && node -e \"const fs=require('fs'); fs.rmSync('dist/downloads/TalkTics.apk',{force:true});\" && cap sync android",
     "apk:debug": "npm run build:android && cd android && gradlew.bat assembleDebug",
     "apk:release": "npm run build:android && cd android && gradlew.bat assembleRelease",
     "lint": "eslint .",

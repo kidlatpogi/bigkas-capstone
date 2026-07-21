@@ -2159,7 +2159,7 @@ function TrainingPage() {
             <div className="tp-permission-icon" aria-hidden="true">🎙️</div>
             <h2 className="tp-permission-title">Microphone Required</h2>
             <p className="tp-permission-desc">
-              Bigkas needs access to your microphone to record your session.
+              TalkTics needs access to your microphone to record your session.
             </p>
             <ol className="tp-permission-steps">
               <li>Click the <strong>lock 🔒</strong> icon in your browser&rsquo;s address bar</li>

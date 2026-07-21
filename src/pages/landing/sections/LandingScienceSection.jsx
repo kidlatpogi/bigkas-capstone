@@ -50,9 +50,25 @@ export default function LandingScienceSection() {
     <section id="science" className="science-section-premium b01-science-section">
       <div className="section-shell b01-science-shell">
         <div className="science-copy-center">
-          <h2 className="premium-title">
-            The Science Behind <span>Your Voice</span>
-          </h2>
+          <motion.h2
+            className="premium-title"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            Real signals, friendly nudges.
+          </motion.h2>
+
+          <motion.p
+            className="premium-subtitle"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.08 }}
+          >
+            TalkTics reads the messy parts of practice, then turns them into clear next moves. B-01 keeps the science from
+            feeling like a report card.
+          </motion.p>
 
           <p className="premium-subtitle">
             Bigkas isn't just a tool; it's a diagnostic instrument. We bridge the gap between social anxiety and

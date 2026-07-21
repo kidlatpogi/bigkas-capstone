@@ -1,11 +1,11 @@
 export const PRIVACY_POLICY = `
-BIGKAS PRIVACY POLICY
+TALKTICS PRIVACY POLICY
 PRIVACY POLICY
 
 Last Updated: April 12, 2026
 
 1. INTRODUCTION
-Bigkas is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your information in accordance with Republic Act No. 10173, also known as the Data Privacy Act of 2012 (DPA) of the Philippines.
+TalkTics is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your information in accordance with Republic Act No. 10173, also known as the Data Privacy Act of 2012 (DPA) of the Philippines.
 
 2. INFORMATION WE COLLECT
 To provide our AI-driven speaking coach services, we process the following types of data:
@@ -42,5 +42,5 @@ Under the Data Privacy Act of 2012, you have the right to:
 We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last Updated" date.
 
 9. CONTACT US
-If you have questions about this Privacy Policy or wish to exercise your rights, please contact the Bigkas Development Team.
+If you have questions about this Privacy Policy or wish to exercise your rights, please contact the TalkTics Development Team.
 `;

@@ -51,8 +51,8 @@ function ForgotPasswordPageMobile({
     <LazyMotion features={domAnimation}>
       <div className="auth-mobile-page">
         {/* Document Metadata (SEO) */}
-        <title>Forgot Password | Bigkas</title>
-        <meta name="description" content="Recover your Bigkas account password securely via mobile." />
+        <title>Forgot Password | TalkTics</title>
+        <meta name="description" content="Recover your TalkTics account password securely via mobile." />
 
         {/* 1. Background Visuals Layer */}
         <div className="auth-mobile-visual-bg">
@@ -87,13 +87,13 @@ function ForgotPasswordPageMobile({
         <div className="auth-brand-logo-mobile">
           <img
             src={bigkasLogo}
-            alt="Bigkas Logo"
+            alt="TalkTics Logo"
             width="32"
             height="32"
             fetchPriority="high"
             loading="eager"
           />
-          <span>Bigkas</span>
+          <span>TalkTics</span>
         </div>
 
         {/* 3. Main Form Content */}

@@ -27,8 +27,8 @@ function VerifyEmailPageMobile({
   return (
     <div className="auth-mobile-page">
       {/* Document Metadata (SEO) */}
-      <title>Verify Email | Bigkas</title>
-      <meta name="description" content="Verify your email address to activate your Bigkas account." />
+      <title>Verify Email | TalkTics</title>
+      <meta name="description" content="Verify your email address to activate your TalkTics account." />
 
         {/* 1. Background Visuals Layer */}
         <div className="auth-mobile-visual-bg">
@@ -60,8 +60,8 @@ function VerifyEmailPageMobile({
         </div>
 
         <div className="auth-brand-logo-mobile">
-          <div className="auth-logo-icon-mobile" aria-label="Bigkas Logo" />
-          <span>Bigkas</span>
+          <div className="auth-logo-icon-mobile" aria-label="TalkTics Logo" />
+          <span>TalkTics</span>
         </div>
 
         {/* 3. Main Form Content */}

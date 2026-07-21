@@ -46,7 +46,7 @@ export const ENV = {
     import.meta.env.VITE_ENABLE_DAILY_QUOTE_FETCH === 'true',
   ADMIN_LOGIN_SLUG: normalizedAdminLoginSlug,
   ADMIN_LOGIN_PATH: normalizedAdminLoginSlug ? `/admin-login/${normalizedAdminLoginSlug}` : null,
-  APP_NAME: 'Bigkas',
+  APP_NAME: 'TalkTics',
   IS_DEVELOPMENT: import.meta.env.DEV,
   IS_PRODUCTION: import.meta.env.PROD,
 };

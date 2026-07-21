@@ -13,7 +13,7 @@ export const StaggeredMenu = ({
   displaySocials = true,
   displayItemNumbering = true,
   className,
-  brandName = 'Bigkas',
+  brandName = 'TalkTics',
   userName = '',
   menuButtonColor = '#fff',
   openMenuButtonColor = '#fff',

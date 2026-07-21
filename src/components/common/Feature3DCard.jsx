@@ -77,7 +77,7 @@ export default function Feature3DCard({ title, text, tone = 'visual', imageUrl, 
             />
           )}
           <div className="icons">
-            <span className="logo-text">Bigkas</span>
+            <span className="logo-text">TalkTics</span>
           </div>
         </div>
 

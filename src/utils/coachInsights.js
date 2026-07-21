@@ -25,7 +25,7 @@ export function generateCoachInsights(sessions) {
   if (!Array.isArray(sessions) || sessions.length === 0) {
     return {
       growthUpdate: "Welcome! Start your first session to see your progress insights here.",
-      positiveQuote: "Welcome to Bigkas! Ready to unlock your speaking potential?",
+      positiveQuote: "Welcome to TalkTics! Ready to unlock your speaking potential?",
       growth: 0,
       strongestPillar: null
     };

@@ -720,7 +720,7 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
         <section className="df-mobile-hero-strip sr-mobile-hero dashboard-anim-top">
           <div className="df-mobile-hero-panel">
             <p className="df-mobile-hero-kicker">B-01:</p>
-            <img src={BIGKAS_LOGO_URL} alt="Bigkas" className="df-mobile-hero-logo" />
+            <img src={BIGKAS_LOGO_URL} alt="TalkTics" className="df-mobile-hero-logo" />
             <p className="new-banner-recs-title">Recommendations:</p>
             {recommendations.length > 0 && (
               <ul className="new-banner-recs-minilist">

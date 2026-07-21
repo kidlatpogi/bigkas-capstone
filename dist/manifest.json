@@ -1,7 +1,7 @@
 {
-  "name": "Bigkas",
-  "short_name": "Bigkas",
-  "description": "Bigkas - Master speaking with guided training and analysis.",
+  "name": "TalkTics",
+  "short_name": "TalkTics",
+  "description": "TalkTics - Master speaking with guided training and analysis.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

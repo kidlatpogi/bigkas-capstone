@@ -1129,8 +1129,8 @@ function downloadReportWorkbook(filename, title, headers, rows) {
     { name: 'xl/_rels/workbook.xml.rels', content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
     { name: 'xl/worksheets/sheet1.xml', content: worksheetXml },
     { name: 'xl/styles.xml', content: stylesXml },
-    { name: 'docProps/core.xml', content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>${escapeXmlCell(title)}</dc:title><dc:creator>Bigkas</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">${new Date().toISOString()}</dcterms:created></cp:coreProperties>` },
-    { name: 'docProps/app.xml', content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><Application>Bigkas</Application></Properties>` },
+    { name: 'docProps/core.xml', content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>${escapeXmlCell(title)}</dc:title><dc:creator>TalkTics</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">${new Date().toISOString()}</dcterms:created></cp:coreProperties>` },
+    { name: 'docProps/app.xml', content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><Application>TalkTics</Application></Properties>` },
   ];
   const archive = createZipArchive(files);
   const blob = new Blob([archive], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -2437,7 +2437,7 @@ function AdminDashboardPage() {
       }
 
       const scores = studentSessions.map(session => getDashboardSessionScore(session, metricBySession.get(session.id)));
-      
+
       let filteredCompletions = activityCompletions.filter(completion => completion.user_id === student.id);
       if (start) {
         filteredCompletions = filteredCompletions.filter(c => new Date(c.completed_at || '') >= start);
@@ -2716,10 +2716,10 @@ function AdminDashboardPage() {
     }
     const duplicateActivity = contentTab === 'activities'
       ? activities.find(a =>
-          String(a.id) !== String(editingContent?.id) &&
-          Number(a.target_level) === Number(data.target_level) &&
-          Number(a.activity_order) === Number(data.activity_order)
-        )
+        String(a.id) !== String(editingContent?.id) &&
+        Number(a.target_level) === Number(data.target_level) &&
+        Number(a.activity_order) === Number(data.activity_order)
+      )
       : null;
     setPendingContentSave({
       data,
@@ -3127,7 +3127,7 @@ function AdminDashboardPage() {
   const submitContentBatchImport = async () => {
     if (!contentBatchFile || !contentBatchPreview?.rows?.length) return;
     setContentBatchImportStatus('saving');
-    
+
     try {
       const { error } = await supabase.from(contentTab).insert(contentBatchPreview.rows);
       if (error) throw error;
@@ -3143,7 +3143,7 @@ function AdminDashboardPage() {
       });
 
       showToast(`Successfully imported ${contentBatchPreview.rows.length} items to ${contentTab === 'activities' ? 'Activities' : 'Modules'}`);
-      
+
       // Reset state
       setContentBatchFile(null);
       setContentBatchPreview(null);
@@ -3202,7 +3202,7 @@ function AdminDashboardPage() {
         if (batchAccountType === 'section') {
           const sectionName = String(row.section_name || '').trim();
           const teacherEmail = String(row.teacher_email || '').trim().toLowerCase();
-          
+
           let teacherId = currentAdminId;
           if (teacherEmail) {
             const foundTeacher = profiles.find(p => String(p.email || '').trim().toLowerCase() === teacherEmail && isAdminProfile(p));
@@ -3210,17 +3210,17 @@ function AdminDashboardPage() {
               teacherId = foundTeacher.id;
             }
           }
-          
+
           const payload = {
             name: sectionName,
             teacher_id: teacherId || null,
             created_by: currentAdminId || null,
             updated_at: new Date().toISOString(),
           };
-          
+
           const { data: secData, error: secError } = await supabase.from('sections').insert(payload).select('*').single();
           if (secError) throw secError;
-          
+
           await recordAuditLog({
             action: 'create',
             entityType: 'sections',
@@ -3233,85 +3233,85 @@ function AdminDashboardPage() {
           const firstName = row.first_name.trim();
           const lastName = row.last_name.trim();
           if (batchAccountType === 'admin') {
-          const { user, profile, invitation_sent } = await createConfirmedAdminUser({
-            email,
-            redirect_to: getAccountInviteRedirectUrl(),
-            first_name: firstName,
-            last_name: lastName,
-            username: null,
-            role: 'admin',
-            current_level: 1,
-            speaker_level: 1,
-            speaker_points: 0,
-          });
+            const { user, profile, invitation_sent } = await createConfirmedAdminUser({
+              email,
+              redirect_to: getAccountInviteRedirectUrl(),
+              first_name: firstName,
+              last_name: lastName,
+              username: null,
+              role: 'admin',
+              current_level: 1,
+              speaker_level: 1,
+              speaker_points: 0,
+            });
 
-          await recordAuditLog({
-            action: 'create',
-            entityType: 'profiles',
-            entityId: user.id,
-            oldValues: null,
-            newValues: {
-              ...(profile || {
-                id: user.id,
-                email,
-                role: 'admin',
-                first_name: firstName,
-                last_name: lastName,
-                username: null,
-              }),
-              access_role_id: batchAccessRoleId || DEFAULT_ADMIN_ACCESS_ROLE_ID,
-              batch_upload: true,
-              account_invite_sent: Boolean(invitation_sent),
-            },
-          });
+            await recordAuditLog({
+              action: 'create',
+              entityType: 'profiles',
+              entityId: user.id,
+              oldValues: null,
+              newValues: {
+                ...(profile || {
+                  id: user.id,
+                  email,
+                  role: 'admin',
+                  first_name: firstName,
+                  last_name: lastName,
+                  username: null,
+                }),
+                access_role_id: batchAccessRoleId || DEFAULT_ADMIN_ACCESS_ROLE_ID,
+                batch_upload: true,
+                account_invite_sent: Boolean(invitation_sent),
+              },
+            });
 
-          const { error: assignmentError } = await supabase
-            .from('admin_role_assignments')
-            .upsert({
-              admin_id: user.id,
-              role_id: batchAccessRoleId || DEFAULT_ADMIN_ACCESS_ROLE_ID,
-              assigned_by: currentAdminId || null,
-              assigned_at: new Date().toISOString(),
-            }, { onConflict: 'admin_id' });
-          if (assignmentError) throw assignmentError;
-        } else {
-          const studentNumber = row.student_number.trim();
-          const { user, profile, invitation_sent } = await createConfirmedAdminUser({
-            email,
-            redirect_to: getAccountInviteRedirectUrl(),
-            first_name: firstName,
-            last_name: lastName,
-            username: null,
-            student_number: studentNumber,
-            role: 'user',
-            current_level: 1,
-            speaker_level: 1,
-            speaker_points: 0,
-          });
+            const { error: assignmentError } = await supabase
+              .from('admin_role_assignments')
+              .upsert({
+                admin_id: user.id,
+                role_id: batchAccessRoleId || DEFAULT_ADMIN_ACCESS_ROLE_ID,
+                assigned_by: currentAdminId || null,
+                assigned_at: new Date().toISOString(),
+              }, { onConflict: 'admin_id' });
+            if (assignmentError) throw assignmentError;
+          } else {
+            const studentNumber = row.student_number.trim();
+            const { user, profile, invitation_sent } = await createConfirmedAdminUser({
+              email,
+              redirect_to: getAccountInviteRedirectUrl(),
+              first_name: firstName,
+              last_name: lastName,
+              username: null,
+              student_number: studentNumber,
+              role: 'user',
+              current_level: 1,
+              speaker_level: 1,
+              speaker_points: 0,
+            });
 
-          await recordAuditLog({
-            action: 'create',
-            entityType: 'profiles',
-            entityId: user.id,
-            oldValues: null,
-            newValues: {
-              ...(profile || {
-                id: user.id,
-                email,
-                role: 'user',
-                first_name: firstName,
-                last_name: lastName,
-                username: null,
-                student_number: studentNumber,
-              }),
-              section_id: batchSectionId || null,
-              batch_upload: true,
-              account_invite_sent: Boolean(invitation_sent),
-            },
-          });
-          await assignUserToSection(user.id, batchSectionId);
+            await recordAuditLog({
+              action: 'create',
+              entityType: 'profiles',
+              entityId: user.id,
+              oldValues: null,
+              newValues: {
+                ...(profile || {
+                  id: user.id,
+                  email,
+                  role: 'user',
+                  first_name: firstName,
+                  last_name: lastName,
+                  username: null,
+                  student_number: studentNumber,
+                }),
+                section_id: batchSectionId || null,
+                batch_upload: true,
+                account_invite_sent: Boolean(invitation_sent),
+              },
+            });
+            await assignUserToSection(user.id, batchSectionId);
+          }
         }
-      }
 
         createdCount += 1;
       }
@@ -4027,7 +4027,7 @@ function AdminDashboardPage() {
       <section className="admin-main">
         <header className="admin-header">
           <div>
-            <p className="admin-kicker">Bigkas Command Center</p>
+            <p className="admin-kicker">TalkTics Command Center</p>
             <h1>{navItems.find(i => i.key === activePage)?.label || 'Command Center'}</h1>
             <p className="admin-subtitle">Role: <strong>{role === 'superadmin' ? 'Super Admin' : role === 'admin' ? 'Admin' : 'unknown'}</strong></p>
           </div>
@@ -4100,12 +4100,12 @@ function AdminDashboardPage() {
               <div>
                 <div className="admin-section-header">
                   <h2>User Level Distribution</h2>
-                  <p className="admin-section-subtitle">Analyze how active users are distributed across Bigkas speaker proficiency levels.</p>
+                  <p className="admin-section-subtitle">Analyze how active users are distributed across TalkTics speaker proficiency levels.</p>
                 </div>
                 <hr className="admin-section-divider" />
                 <article className="admin-card">
                   <div className="admin-chart-container">
-                    {loading ? <Skeleton height={300} /> : <ResponsiveContainer width="100%" height={300}><BarChart data={levelBarData}><XAxis dataKey="level" /><YAxis /><Tooltip /><Bar dataKey="users" name="Users" fill="#33D2A4" radius={[8,8,0,0]} /></BarChart></ResponsiveContainer>}
+                    {loading ? <Skeleton height={300} /> : <ResponsiveContainer width="100%" height={300}><BarChart data={levelBarData}><XAxis dataKey="level" /><YAxis /><Tooltip /><Bar dataKey="users" name="Users" fill="#33D2A4" radius={[8, 8, 0, 0]} /></BarChart></ResponsiveContainer>}
                   </div>
                 </article>
               </div>
@@ -4355,308 +4355,308 @@ function AdminDashboardPage() {
 
         {activePage === 'users' && (
           <>
-          {isSuperadmin && (
-            <section className="admin-grid admin-grid-2 admin-user-setup-grid">
-              <div>
-                <div className="admin-section-header">
-                  <h2>Admin Accounts</h2>
-                  <p className="admin-section-subtitle">{adminRosterTitle}</p>
+            {isSuperadmin && (
+              <section className="admin-grid admin-grid-2 admin-user-setup-grid">
+                <div>
+                  <div className="admin-section-header">
+                    <h2>Admin Accounts</h2>
+                    <p className="admin-section-subtitle">{adminRosterTitle}</p>
+                  </div>
+                  <hr className="admin-section-divider" />
+                  <article className="admin-card admin-management-card">
+                    <div className="admin-card-head" style={{ gap: '10px', flexWrap: 'wrap' }}>
+                      <div className="admin-search-box" style={{ flex: 1, margin: 0 }}>
+                        <HiMagnifyingGlass />
+                        <input
+                          type="text"
+                          placeholder="Search admins..."
+                          value={adminSearchQuery}
+                          onChange={e => { setAdminSearchQuery(e.target.value); setAdminRosterPage(1); }}
+                        />
+                      </div>
+                      <button type="button" className="admin-btn admin-btn--ghost" onClick={() => { setBatchImportFile(null); setBatchImportStatus('idle'); setBatchPreview(null); setBatchAccountType('admin'); setShowBatchAccountModal(true); }}>Bulk Upload</button>
+                      <button type="button" className="admin-btn admin-btn--primary" onClick={() => setShowCreateAdminModal(true)}>Create Admin</button>
+                    </div>
+                    <select
+                      className="admin-filter-select admin-roster-filter"
+                      value={adminStatusFilter}
+                      onChange={e => { setAdminStatusFilter(e.target.value); setAdminRosterPage(1); }}
+                      aria-label="Filter admin accounts by status"
+                    >
+                      <option value="active">Active Admins</option>
+                      <option value="deleted">Archived Admins</option>
+                    </select>
+                    <div className="admin-roster-list admin-roster-list--compact">
+                      {paginatedAdmins.length ? (
+                        paginatedAdmins.map(a => (
+                          <div key={a.id} className={`admin-roster-item ${isDeletedProfile(a) ? 'is-deleted' : 'is-active'}`}>
+                            <div className="admin-roster-info">
+                              <strong>{getDisplayName(a, a.id)}</strong>
+                              <span>{a.role === 'superadmin' ? 'Super Admin' : findAccessRole(adminAccessRoles, adminAccessAssignments[a.id])?.name || 'Admin'} - {isDeletedProfile(a) ? 'Archived' : 'Active'}</span>
+                            </div>
+                            <button type="button" className="admin-action-btn" onClick={() => openEditAdmin(a)} title="Edit admin"><HiOutlinePencilSquare /></button>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="admin-empty-inline">No {adminStatusFilter === 'deleted' ? 'archived' : 'active'} admin accounts</div>
+                      )}
+                    </div>
+                    {totalAdminPages > 1 && (
+                      <div className="admin-pagination admin-compact-pagination">
+                        <span className="admin-pagination-info">{safeAdminPage} / {totalAdminPages}</span>
+                        <div className="admin-pagination-controls">
+                          <button type="button" onClick={() => setAdminRosterPage(p => Math.max(1, p - 1))} disabled={safeAdminPage === 1}>Prev</button>
+                          <button type="button" onClick={() => setAdminRosterPage(p => Math.min(totalAdminPages, p + 1))} disabled={safeAdminPage === totalAdminPages}>Next</button>
+                        </div>
+                      </div>
+                    )}
+                  </article>
                 </div>
-                <hr className="admin-section-divider" />
-                <article className="admin-card admin-management-card">
-                  <div className="admin-card-head" style={{ gap: '10px', flexWrap: 'wrap' }}>
-                    <div className="admin-search-box" style={{ flex: 1, margin: 0 }}>
+
+                <div>
+                  <div className="admin-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                    <div>
+                      <h2>Access Roles</h2>
+                      <p className="admin-section-subtitle">Review, create, and edit custom permissions for user roles.</p>
+                    </div>
+                    <button type="button" className="admin-btn admin-btn--ghost" onClick={openNewAccessRole}>New Role</button>
+                  </div>
+                  <hr className="admin-section-divider" />
+                  <article className="admin-card admin-access-role-card admin-management-card">
+                    <div className="admin-roster-list admin-roster-list--compact">
+                      {paginatedAccessRoles.map(role => {
+                        const permissions = getAccessRolePermissionsList(role);
+                        return (
+                          <div key={role.id} className="admin-roster-item" style={{ alignItems: 'flex-start' }}>
+                            <div className="admin-roster-info">
+                              <strong>{role.name}</strong>
+                              <span style={{ fontSize: '0.78rem', color: '#64748b', display: 'block', margin: '4px 0' }}>{role.description || 'No description'}</span>
+                              <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                                Permissions: {permissions.length ? permissions.join(', ') : 'None'}
+                              </span>
+                            </div>
+                            <div className="admin-actions-cell" style={{ display: 'flex', gap: '6px', flexShrink: 0, alignSelf: 'center' }}>
+                              {role.scope !== 'student' && (
+                                <button type="button" className="admin-action-btn" onClick={() => { setSelectedAccessRoleId(role.id); openSelectedAccessRole(); }} title="Edit Permissions">
+                                  <HiOutlinePencilSquare />
+                                </button>
+                              )}
+                              {!role.system && (
+                                <button type="button" className="admin-action-btn is-delete" onClick={() => requestDeleteAccessRole(role.id)} title="Delete Role">
+                                  <HiOutlineTrash />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {totalRolePages > 1 && (
+                      <div className="admin-pagination admin-compact-pagination">
+                        <span className="admin-pagination-info">{safeRolePage} / {totalRolePages}</span>
+                        <div className="admin-pagination-controls">
+                          <button type="button" onClick={() => setAccessRolePage(p => Math.max(1, p - 1))} disabled={safeRolePage === 1}>Prev</button>
+                          <button type="button" onClick={() => setAccessRolePage(p => Math.min(totalRolePages, p + 1))} disabled={safeRolePage === totalRolePages}>Next</button>
+                        </div>
+                      </div>
+                    )}
+                  </article>
+                </div>
+              </section>
+            )}
+            <div>
+              <div className="admin-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                <div>
+                  <h2>Sections</h2>
+                  <p className="admin-section-subtitle">Admins manage users through assigned sections.</p>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button type="button" className="admin-btn admin-btn--ghost" onClick={() => { setBatchImportFile(null); setBatchImportStatus('idle'); setBatchPreview(null); setBatchAccountType('section'); setShowBatchAccountModal(true); }}>Bulk Upload</button>
+                  <button type="button" className="admin-btn admin-btn--ghost" onClick={openNewSection}>New Section</button>
+                </div>
+              </div>
+              <hr className="admin-section-divider" />
+              <section className="admin-card admin-section-card">
+                <div className="admin-table-controls" style={{ marginBottom: '16px' }}>
+                  <div className="admin-table-actions" style={{ flexWrap: 'wrap', gap: '12px' }}>
+                    <div className="admin-search-box">
                       <HiMagnifyingGlass />
-                      <input 
-                        type="text" 
-                        placeholder="Search admins..." 
-                        value={adminSearchQuery} 
-                        onChange={e => { setAdminSearchQuery(e.target.value); setAdminRosterPage(1); }} 
+                      <input
+                        type="text"
+                        placeholder="Search sections..."
+                        value={sectionSearchQuery}
+                        onChange={(e) => {
+                          setSectionSearchQuery(e.target.value);
+                          setSectionPage(1);
+                        }}
                       />
                     </div>
-                    <button type="button" className="admin-btn admin-btn--ghost" onClick={() => { setBatchImportFile(null); setBatchImportStatus('idle'); setBatchPreview(null); setBatchAccountType('admin'); setShowBatchAccountModal(true); }}>Bulk Upload</button>
-                    <button type="button" className="admin-btn admin-btn--primary" onClick={() => setShowCreateAdminModal(true)}>Create Admin</button>
-                  </div>
-                  <select
-                    className="admin-filter-select admin-roster-filter"
-                    value={adminStatusFilter}
-                    onChange={e => { setAdminStatusFilter(e.target.value); setAdminRosterPage(1); }}
-                    aria-label="Filter admin accounts by status"
-                  >
-                    <option value="active">Active Admins</option>
-                    <option value="deleted">Archived Admins</option>
-                  </select>
-                  <div className="admin-roster-list admin-roster-list--compact">
-                    {paginatedAdmins.length ? (
-                      paginatedAdmins.map(a => (
-                        <div key={a.id} className={`admin-roster-item ${isDeletedProfile(a) ? 'is-deleted' : 'is-active'}`}>
-                          <div className="admin-roster-info">
-                            <strong>{getDisplayName(a, a.id)}</strong>
-                            <span>{a.role === 'superadmin' ? 'Super Admin' : findAccessRole(adminAccessRoles, adminAccessAssignments[a.id])?.name || 'Admin'} - {isDeletedProfile(a) ? 'Archived' : 'Active'}</span>
-                          </div>
-                          <button type="button" className="admin-action-btn" onClick={() => openEditAdmin(a)} title="Edit admin"><HiOutlinePencilSquare /></button>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="admin-empty-inline">No {adminStatusFilter === 'deleted' ? 'archived' : 'active'} admin accounts</div>
-                    )}
-                  </div>
-                  {totalAdminPages > 1 && (
-                    <div className="admin-pagination admin-compact-pagination">
-                      <span className="admin-pagination-info">{safeAdminPage} / {totalAdminPages}</span>
-                      <div className="admin-pagination-controls">
-                        <button type="button" onClick={() => setAdminRosterPage(p => Math.max(1, p - 1))} disabled={safeAdminPage === 1}>Prev</button>
-                        <button type="button" onClick={() => setAdminRosterPage(p => Math.min(totalAdminPages, p + 1))} disabled={safeAdminPage === totalAdminPages}>Next</button>
-                      </div>
-                    </div>
-                  )}
-                </article>
-              </div>
-
-              <div>
-                <div className="admin-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                  <div>
-                    <h2>Access Roles</h2>
-                    <p className="admin-section-subtitle">Review, create, and edit custom permissions for user roles.</p>
-                  </div>
-                  <button type="button" className="admin-btn admin-btn--ghost" onClick={openNewAccessRole}>New Role</button>
-                </div>
-                <hr className="admin-section-divider" />
-                <article className="admin-card admin-access-role-card admin-management-card">
-                  <div className="admin-roster-list admin-roster-list--compact">
-                    {paginatedAccessRoles.map(role => {
-                      const permissions = getAccessRolePermissionsList(role);
-                      return (
-                        <div key={role.id} className="admin-roster-item" style={{ alignItems: 'flex-start' }}>
-                          <div className="admin-roster-info">
-                            <strong>{role.name}</strong>
-                            <span style={{ fontSize: '0.78rem', color: '#64748b', display: 'block', margin: '4px 0' }}>{role.description || 'No description'}</span>
-                            <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic' }}>
-                              Permissions: {permissions.length ? permissions.join(', ') : 'None'}
-                            </span>
-                          </div>
-                          <div className="admin-actions-cell" style={{ display: 'flex', gap: '6px', flexShrink: 0, alignSelf: 'center' }}>
-                            {role.scope !== 'student' && (
-                              <button type="button" className="admin-action-btn" onClick={() => { setSelectedAccessRoleId(role.id); openSelectedAccessRole(); }} title="Edit Permissions">
-                                <HiOutlinePencilSquare />
-                              </button>
-                            )}
-                            {!role.system && (
-                              <button type="button" className="admin-action-btn is-delete" onClick={() => requestDeleteAccessRole(role.id)} title="Delete Role">
-                                <HiOutlineTrash />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {totalRolePages > 1 && (
-                    <div className="admin-pagination admin-compact-pagination">
-                      <span className="admin-pagination-info">{safeRolePage} / {totalRolePages}</span>
-                      <div className="admin-pagination-controls">
-                        <button type="button" onClick={() => setAccessRolePage(p => Math.max(1, p - 1))} disabled={safeRolePage === 1}>Prev</button>
-                        <button type="button" onClick={() => setAccessRolePage(p => Math.min(totalRolePages, p + 1))} disabled={safeRolePage === totalRolePages}>Next</button>
-                      </div>
-                    </div>
-                  )}
-                </article>
-              </div>
-            </section>
-          )}
-          <div>
-            <div className="admin-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-              <div>
-                <h2>Sections</h2>
-                <p className="admin-section-subtitle">Admins manage users through assigned sections.</p>
-              </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button type="button" className="admin-btn admin-btn--ghost" onClick={() => { setBatchImportFile(null); setBatchImportStatus('idle'); setBatchPreview(null); setBatchAccountType('section'); setShowBatchAccountModal(true); }}>Bulk Upload</button>
-                <button type="button" className="admin-btn admin-btn--ghost" onClick={openNewSection}>New Section</button>
-              </div>
-            </div>
-            <hr className="admin-section-divider" />
-            <section className="admin-card admin-section-card">
-              <div className="admin-table-controls" style={{ marginBottom: '16px' }}>
-                <div className="admin-table-actions" style={{ flexWrap: 'wrap', gap: '12px' }}>
-                  <div className="admin-search-box">
-                    <HiMagnifyingGlass />
-                    <input
-                      type="text"
-                      placeholder="Search sections..."
-                      value={sectionSearchQuery}
+                    <select
+                      className="admin-filter-select"
+                      value={sectionSortKey}
                       onChange={(e) => {
-                        setSectionSearchQuery(e.target.value);
+                        setSectionSortKey(e.target.value);
                         setSectionPage(1);
                       }}
-                    />
+                      aria-label="Sort sections"
+                    >
+                      <option value="name_asc">Sort: Name A-Z</option>
+                      <option value="name_desc">Sort: Name Z-A</option>
+                      <option value="users_desc">Sort: Users High-Low</option>
+                      <option value="users_asc">Sort: Users Low-High</option>
+                    </select>
                   </div>
-                  <select
-                    className="admin-filter-select"
-                    value={sectionSortKey}
-                    onChange={(e) => {
-                      setSectionSortKey(e.target.value);
-                      setSectionPage(1);
-                    }}
-                    aria-label="Sort sections"
-                  >
-                    <option value="name_asc">Sort: Name A-Z</option>
-                    <option value="name_desc">Sort: Name Z-A</option>
-                    <option value="users_desc">Sort: Users High-Low</option>
-                    <option value="users_asc">Sort: Users Low-High</option>
-                  </select>
                 </div>
+                <div className="admin-section-list">
+                  {paginatedSections.length ? paginatedSections.map(section => {
+                    const count = sectionStudentIdsBySectionId.get(section.id)?.size || 0;
+                    const teacher = profiles.find(profile => profile.id === section.teacher_id);
+                    return (
+                      <div key={section.id} className="admin-section-item">
+                        <div>
+                          <strong>{section.name}</strong>
+                          <span>{count} user{count === 1 ? '' : 's'} - {getDisplayName(teacher, 'Unassigned admin')}</span>
+                        </div>
+                        <div className="admin-section-actions">
+                          <button type="button" className="admin-action-btn" onClick={() => editSection(section)} title="Edit section"><HiOutlinePencilSquare /></button>
+                          {canDeleteUsers && <button type="button" className="admin-action-btn is-delete" onClick={() => requestDeleteSection(section)} title="Delete section"><HiOutlineTrash /></button>}
+                        </div>
+                      </div>
+                    );
+                  }) : <div className="admin-empty-chart">No sections found</div>}
+                </div>
+                <div className="admin-pagination">
+                  <span className="admin-pagination-info">Showing {filteredAndSortedSections.length ? ((sectionPage - 1) * SECTIONS_PER_PAGE) + 1 : 0}-{Math.min(sectionPage * SECTIONS_PER_PAGE, filteredAndSortedSections.length)} of {filteredAndSortedSections.length}</span>
+                  <div className="admin-pagination-controls">
+                    <button type="button" disabled={sectionPage === 1} onClick={() => setSectionPage(p => Math.max(1, p - 1))}>Prev</button>
+                    <button type="button" disabled>{sectionPage} / {totalSectionPages}</button>
+                    <button type="button" disabled={sectionPage === totalSectionPages} onClick={() => setSectionPage(p => Math.min(totalSectionPages, p + 1))}>Next</button>
+                  </div>
+                </div>
+              </section>
+            </div>
+            <div>
+              <div className="admin-section-header">
+                <h2>Account Management</h2>
+                <p className="admin-section-subtitle">Manage system users, journeys, levels, and statuses.</p>
               </div>
-              <div className="admin-section-list">
-                {paginatedSections.length ? paginatedSections.map(section => {
-                  const count = sectionStudentIdsBySectionId.get(section.id)?.size || 0;
-                  const teacher = profiles.find(profile => profile.id === section.teacher_id);
-                  return (
-                    <div key={section.id} className="admin-section-item">
-                      <div>
-                        <strong>{section.name}</strong>
-                        <span>{count} user{count === 1 ? '' : 's'} - {getDisplayName(teacher, 'Unassigned admin')}</span>
-                      </div>
-                      <div className="admin-section-actions">
-                        <button type="button" className="admin-action-btn" onClick={() => editSection(section)} title="Edit section"><HiOutlinePencilSquare /></button>
-                        {canDeleteUsers && <button type="button" className="admin-action-btn is-delete" onClick={() => requestDeleteSection(section)} title="Delete section"><HiOutlineTrash /></button>}
-                      </div>
+              <hr className="admin-section-divider" />
+              <section className="admin-card">
+                <div className="admin-table-controls">
+                  <div className="admin-table-actions">
+                    <div className="admin-search-box"><HiMagnifyingGlass /><input type="text" placeholder="Search..." value={userSearchQuery} onChange={e => { setUserSearchQuery(e.target.value); setUserPage(1); }} /></div>
+                    {isSuperadmin && (
+                      <select className="admin-filter-select" value={userAccountTypeFilter} onChange={e => {
+                        setUserAccountTypeFilter(e.target.value);
+                        setUserPage(1);
+                        if (e.target.value !== 'users') setUserLevelFilter('all');
+                      }}>
+                        <option value="users">Users</option>
+                        <option value="admins">Admins</option>
+                      </select>
+                    )}
+                    <select className="admin-filter-select" value={userLevelFilter} disabled={userAccountTypeFilter !== 'users'} onChange={e => { setUserLevelFilter(e.target.value); setUserPage(1); }}>
+                      <option value="all">All Journeys</option>
+                      <option value="1">Journey 1</option>
+                      <option value="2">Journey 2</option>
+                      <option value="3">Journey 3</option>
+                      <option value="4">Journey 4</option>
+                      <option value="5">Journey 5</option>
+                    </select>
+                    <select className="admin-filter-select" value={userStatusFilter} onChange={e => { setUserStatusFilter(e.target.value); setUserPage(1); }}>
+                      <option value="all">All Statuses</option>
+                      <option value="active">Active Accounts</option>
+                      <option value="deleted">Archived Accounts</option>
+                    </select>
+                    <select className="admin-filter-select" value={userSortKey} onChange={e => { setUserSortKey(e.target.value); setUserPage(1); }}>
+                      <option value="name_asc">Sort: Name A-Z</option>
+                      <option value="name_desc">Sort: Name Z-A</option>
+                      <option value="newest">Sort: Newest</option>
+                      <option value="oldest">Sort: Oldest</option>
+                      <option value="status">Sort: Status</option>
+                      <option value="type">Sort: Account Type</option>
+                      <option value="role_section">Sort: Role / Section</option>
+                      <option value="journey_asc">Sort: Journey Low-High</option>
+                      <option value="journey_desc">Sort: Journey High-Low</option>
+                    </select>
+                    {canUseAdminPermission('users', 'create') && (
+                      <button type="button" className="admin-btn admin-btn--primary" onClick={userAccountTypeFilter === 'admins' && isSuperadmin ? () => setShowCreateAdminModal(true) : openCreateUser}>
+                        {userAccountTypeFilter === 'admins' && isSuperadmin ? 'Create Admin' : 'Create User'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {canCreateUsers && (
+                  <div className="admin-account-batch-panel">
+                    <div>
+                      <h4>Batch Creation</h4>
+                      <p className="admin-note">
+                        {isSuperadmin
+                          ? 'Create user or admin accounts using the Excel/CSV template. Welcome invites are sent by email after saving.'
+                          : 'Upload users using: Last Name, First Name, optional ID / Student No., and Email. Users receive welcome invites after saving.'}
+                      </p>
                     </div>
-                  );
-                }) : <div className="admin-empty-chart">No sections found</div>}
-              </div>
-              <div className="admin-pagination">
-                <span className="admin-pagination-info">Showing {filteredAndSortedSections.length ? ((sectionPage - 1) * SECTIONS_PER_PAGE) + 1 : 0}-{Math.min(sectionPage * SECTIONS_PER_PAGE, filteredAndSortedSections.length)} of {filteredAndSortedSections.length}</span>
-                <div className="admin-pagination-controls">
-                  <button type="button" disabled={sectionPage === 1} onClick={() => setSectionPage(p => Math.max(1, p - 1))}>Prev</button>
-                  <button type="button" disabled>{sectionPage} / {totalSectionPages}</button>
-                  <button type="button" disabled={sectionPage === totalSectionPages} onClick={() => setSectionPage(p => Math.min(totalSectionPages, p + 1))}>Next</button>
-                </div>
-              </div>
-            </section>
-          </div>
-          <div>
-            <div className="admin-section-header">
-              <h2>Account Management</h2>
-              <p className="admin-section-subtitle">Manage system users, journeys, levels, and statuses.</p>
-            </div>
-            <hr className="admin-section-divider" />
-            <section className="admin-card">
-              <div className="admin-table-controls">
-              <div className="admin-table-actions">
-                <div className="admin-search-box"><HiMagnifyingGlass /><input type="text" placeholder="Search..." value={userSearchQuery} onChange={e => { setUserSearchQuery(e.target.value); setUserPage(1); }} /></div>
-                {isSuperadmin && (
-                  <select className="admin-filter-select" value={userAccountTypeFilter} onChange={e => {
-                    setUserAccountTypeFilter(e.target.value);
-                    setUserPage(1);
-                    if (e.target.value !== 'users') setUserLevelFilter('all');
-                  }}>
-                    <option value="users">Users</option>
-                    <option value="admins">Admins</option>
-                  </select>
+                    <div className="admin-batch-card-actions">
+                      <button
+                        type="button"
+                        className="admin-btn admin-btn--primary"
+                        onClick={() => { setBatchImportFile(null); setBatchImportStatus('idle'); setBatchPreview(null); setBatchAccountType('user'); if (!batchSectionId && visibleSections[0]?.id) setBatchSectionId(visibleSections[0].id); setShowBatchAccountModal(true); }}
+                      >
+                        Open Batch Setup
+                      </button>
+                      {batchImportFile && <p className="admin-note">Selected file: {batchImportFile.name}</p>}
+                    </div>
+                  </div>
                 )}
-                <select className="admin-filter-select" value={userLevelFilter} disabled={userAccountTypeFilter !== 'users'} onChange={e => { setUserLevelFilter(e.target.value); setUserPage(1); }}>
-                  <option value="all">All Journeys</option>
-                  <option value="1">Journey 1</option>
-                  <option value="2">Journey 2</option>
-                  <option value="3">Journey 3</option>
-                  <option value="4">Journey 4</option>
-                  <option value="5">Journey 5</option>
-                </select>
-                <select className="admin-filter-select" value={userStatusFilter} onChange={e => { setUserStatusFilter(e.target.value); setUserPage(1); }}>
-                  <option value="all">All Statuses</option>
-                  <option value="active">Active Accounts</option>
-                  <option value="deleted">Archived Accounts</option>
-                </select>
-                <select className="admin-filter-select" value={userSortKey} onChange={e => { setUserSortKey(e.target.value); setUserPage(1); }}>
-                  <option value="name_asc">Sort: Name A-Z</option>
-                  <option value="name_desc">Sort: Name Z-A</option>
-                  <option value="newest">Sort: Newest</option>
-                  <option value="oldest">Sort: Oldest</option>
-                  <option value="status">Sort: Status</option>
-                  <option value="type">Sort: Account Type</option>
-                  <option value="role_section">Sort: Role / Section</option>
-                  <option value="journey_asc">Sort: Journey Low-High</option>
-                  <option value="journey_desc">Sort: Journey High-Low</option>
-                </select>
-                {canUseAdminPermission('users', 'create') && (
-                  <button type="button" className="admin-btn admin-btn--primary" onClick={userAccountTypeFilter === 'admins' && isSuperadmin ? () => setShowCreateAdminModal(true) : openCreateUser}>
-                    {userAccountTypeFilter === 'admins' && isSuperadmin ? 'Create Admin' : 'Create User'}
-                  </button>
-                )}
-              </div>
-            </div>
-            {canCreateUsers && (
-              <div className="admin-account-batch-panel">
-                <div>
-                  <h4>Batch Creation</h4>
-                  <p className="admin-note">
-                    {isSuperadmin
-                      ? 'Create user or admin accounts using the Excel/CSV template. Welcome invites are sent by email after saving.'
-                      : 'Upload users using: Last Name, First Name, optional ID / Student No., and Email. Users receive welcome invites after saving.'}
-                  </p>
-                </div>
-                <div className="admin-batch-card-actions">
-                  <button
-                    type="button"
-                    className="admin-btn admin-btn--primary"
-                    onClick={() => { setBatchImportFile(null); setBatchImportStatus('idle'); setBatchPreview(null); setBatchAccountType('user'); if (!batchSectionId && visibleSections[0]?.id) setBatchSectionId(visibleSections[0].id); setShowBatchAccountModal(true); }}
-                  >
-                    Open Batch Setup
-                  </button>
-                  {batchImportFile && <p className="admin-note">Selected file: {batchImportFile.name}</p>}
-                </div>
-              </div>
-            )}
-            <div className="admin-table-wrap"><table className="admin-table admin-account-table">
-              <thead><tr><th>Name</th>{showUserManagementTypeColumn && <th>Account Type</th>}<th>Role / Section</th>{showUserManagementStudentColumns && <th>ID / Student No.</th>}<th>Email</th>{showUserManagementStudentColumns && <th>Journey</th>}{showUserManagementStudentColumns && <th>Speaking</th>}<th>Status</th><th>Actions</th></tr></thead>
-              <tbody>
-                {paginatedUserManagementRows.map(({ profile: u, isAdminAccount, typeLabel, roleOrSection, name, email, journey, speaking }) => (
-                  <tr key={u.id}>
-                    <td>{name}</td>
-                    {showUserManagementTypeColumn && <td>{typeLabel}</td>}
-                    <td>{roleOrSection}</td>
-                    {showUserManagementStudentColumns && <td>{isAdminAccount ? '-' : u.student_number || '-'}</td>}
-                    <td>{email}</td>
-                    {showUserManagementStudentColumns && <td>{isAdminAccount ? '-' : `J-${journey}`}</td>}
-                    {showUserManagementStudentColumns && <td>{isAdminAccount ? '-' : formatAdminSpeakerLevel(speaking)}</td>}
-                    <td><span className={`admin-status-badge ${isDeletedProfile(u) ? 'is-archived' : 'is-active'}`}>{isDeletedProfile(u) ? 'Archived' : 'Active'}</span></td>
-                    <td className="admin-actions-cell">
-                      {isAdminAccount ? (
-                        <>
-                          {isSuperadmin && <button type="button" onClick={() => openEditAdmin(u)} className="admin-action-btn" title="Edit admin"><HiOutlinePencilSquare /></button>}
-                          {isSuperadmin && (
-                            <button type="button" onClick={() => requestUserArchiveState(u, !isDeletedProfile(u))} className={`admin-action-btn ${isDeletedProfile(u) ? '' : 'is-delete'}`} title={isDeletedProfile(u) ? 'Restore admin' : 'Archive admin'} disabled={u.id === currentAdminId}>
-                              {isDeletedProfile(u) ? <HiCheckCircle /> : <HiOutlineTrash />}
-                            </button>
+                <div className="admin-table-wrap"><table className="admin-table admin-account-table">
+                  <thead><tr><th>Name</th>{showUserManagementTypeColumn && <th>Account Type</th>}<th>Role / Section</th>{showUserManagementStudentColumns && <th>ID / Student No.</th>}<th>Email</th>{showUserManagementStudentColumns && <th>Journey</th>}{showUserManagementStudentColumns && <th>Speaking</th>}<th>Status</th><th>Actions</th></tr></thead>
+                  <tbody>
+                    {paginatedUserManagementRows.map(({ profile: u, isAdminAccount, typeLabel, roleOrSection, name, email, journey, speaking }) => (
+                      <tr key={u.id}>
+                        <td>{name}</td>
+                        {showUserManagementTypeColumn && <td>{typeLabel}</td>}
+                        <td>{roleOrSection}</td>
+                        {showUserManagementStudentColumns && <td>{isAdminAccount ? '-' : u.student_number || '-'}</td>}
+                        <td>{email}</td>
+                        {showUserManagementStudentColumns && <td>{isAdminAccount ? '-' : `J-${journey}`}</td>}
+                        {showUserManagementStudentColumns && <td>{isAdminAccount ? '-' : formatAdminSpeakerLevel(speaking)}</td>}
+                        <td><span className={`admin-status-badge ${isDeletedProfile(u) ? 'is-archived' : 'is-active'}`}>{isDeletedProfile(u) ? 'Archived' : 'Active'}</span></td>
+                        <td className="admin-actions-cell">
+                          {isAdminAccount ? (
+                            <>
+                              {isSuperadmin && <button type="button" onClick={() => openEditAdmin(u)} className="admin-action-btn" title="Edit admin"><HiOutlinePencilSquare /></button>}
+                              {isSuperadmin && (
+                                <button type="button" onClick={() => requestUserArchiveState(u, !isDeletedProfile(u))} className={`admin-action-btn ${isDeletedProfile(u) ? '' : 'is-delete'}`} title={isDeletedProfile(u) ? 'Restore admin' : 'Archive admin'} disabled={u.id === currentAdminId}>
+                                  {isDeletedProfile(u) ? <HiCheckCircle /> : <HiOutlineTrash />}
+                                </button>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              {canUseAdminPermission('users', 'update') && <button type="button" onClick={() => openEditUser(u)} className="admin-action-btn" title="Edit user"><HiOutlinePencilSquare /></button>}
+                              {canUseAdminPermission('users', 'delete') && <button type="button" onClick={() => requestUserArchiveState(u, !isDeletedProfile(u))} className={`admin-action-btn ${isDeletedProfile(u) ? '' : 'is-delete'}`} title={isDeletedProfile(u) ? 'Restore user' : 'Archive user'}>
+                                {isDeletedProfile(u) ? <HiCheckCircle /> : <HiOutlineTrash />}
+                              </button>}
+                            </>
                           )}
-                        </>
-                      ) : (
-                        <>
-                          {canUseAdminPermission('users', 'update') && <button type="button" onClick={() => openEditUser(u)} className="admin-action-btn" title="Edit user"><HiOutlinePencilSquare /></button>}
-                          {canUseAdminPermission('users', 'delete') && <button type="button" onClick={() => requestUserArchiveState(u, !isDeletedProfile(u))} className={`admin-action-btn ${isDeletedProfile(u) ? '' : 'is-delete'}`} title={isDeletedProfile(u) ? 'Restore user' : 'Archive user'}>
-                            {isDeletedProfile(u) ? <HiCheckCircle /> : <HiOutlineTrash />}
-                          </button>}
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {!paginatedUserManagementRows.length && (
-                  <tr><td colSpan={userManagementColumnCount} className="admin-empty-table">No accounts match the selected filters</td></tr>
-                )}
-              </tbody>
-            </table></div>
-            <div className="admin-pagination">
-              <span className="admin-pagination-info">Showing {userManagementRows.length ? ((userPage - 1) * USERS_PER_PAGE) + 1 : 0}-{Math.min(userPage * USERS_PER_PAGE, userManagementRows.length)} of {userManagementRows.length}</span>
-              <div className="admin-pagination-controls">
-                <button type="button" disabled={userPage === 1} onClick={() => setUserPage(p => Math.max(1, p - 1))}>Prev</button>
-                <button type="button" disabled>{userPage} / {totalUserPages}</button>
-                <button type="button" disabled={userPage === totalUserPages} onClick={() => setUserPage(p => Math.min(totalUserPages, p + 1))}>Next</button>
-              </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {!paginatedUserManagementRows.length && (
+                      <tr><td colSpan={userManagementColumnCount} className="admin-empty-table">No accounts match the selected filters</td></tr>
+                    )}
+                  </tbody>
+                </table></div>
+                <div className="admin-pagination">
+                  <span className="admin-pagination-info">Showing {userManagementRows.length ? ((userPage - 1) * USERS_PER_PAGE) + 1 : 0}-{Math.min(userPage * USERS_PER_PAGE, userManagementRows.length)} of {userManagementRows.length}</span>
+                  <div className="admin-pagination-controls">
+                    <button type="button" disabled={userPage === 1} onClick={() => setUserPage(p => Math.max(1, p - 1))}>Prev</button>
+                    <button type="button" disabled>{userPage} / {totalUserPages}</button>
+                    <button type="button" disabled={userPage === totalUserPages} onClick={() => setUserPage(p => Math.min(totalUserPages, p + 1))}>Next</button>
+                  </div>
+                </div>
+              </section>
             </div>
-          </section>
-          </div>
           </>
         )}
 
@@ -4666,7 +4666,7 @@ function AdminDashboardPage() {
               {canViewActivities && <button className={`admin-tab-btn ${contentTab === 'activities' ? 'is-active' : ''}`} onClick={() => setContentTab('activities')}>Activities</button>}
               {canViewModules && <button className={`admin-tab-btn ${contentTab === 'modules' ? 'is-active' : ''}`} onClick={() => setContentTab('modules')}>Modules</button>}
             </div>
-            
+
             <div className="admin-section-header">
               <h2>{contentTab === 'activities' ? 'Activity Management' : 'Module Management'}</h2>
               <p className="admin-section-subtitle">
@@ -4680,11 +4680,11 @@ function AdminDashboardPage() {
               <div className="admin-card-head" style={{ gap: '10px', flexWrap: 'wrap' }}>
                 <div className="admin-search-box" style={{ flex: 1, margin: 0 }}>
                   <HiMagnifyingGlass />
-                  <input 
-                    type="text" 
-                    placeholder={`Search ${contentTab}...`} 
-                    value={contentSearchQuery} 
-                    onChange={e => { setContentSearchQuery(e.target.value); setContentPage(1); }} 
+                  <input
+                    type="text"
+                    placeholder={`Search ${contentTab}...`}
+                    value={contentSearchQuery}
+                    onChange={e => { setContentSearchQuery(e.target.value); setContentPage(1); }}
                   />
                 </div>
                 <div className="admin-content-head-actions">
@@ -4706,28 +4706,28 @@ function AdminDashboardPage() {
                     </p>
                   </div>
                   <div className="admin-content-bulk-actions">
-                    <input 
-                      type="file" 
+                    <input
+                      type="file"
                       id="content-bulk-file-input"
-                      style={{ display: 'none' }} 
-                      accept=".csv,.xlsx" 
-                      onChange={handleContentFileChange} 
+                      style={{ display: 'none' }}
+                      accept=".csv,.xlsx"
+                      onChange={handleContentFileChange}
                     />
                     {contentBatchFile && (
                       <span className="admin-note" style={{ marginRight: '10px', color: contentBatchImportStatus === 'error' ? '#ef4444' : '#10b981', fontSize: '0.85rem', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         Selected: <strong>{contentBatchFile.name}</strong> {contentBatchImportStatus === 'ready' ? `(${contentBatchPreview?.rows?.length} rows)` : ''}
                       </span>
                     )}
-                    <button 
-                      type="button" 
-                      className="admin-btn admin-btn--ghost" 
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn--ghost"
                       onClick={() => document.getElementById('content-bulk-file-input')?.click()}
                     >
                       {contentBatchFile ? 'Change File' : 'Choose File'}
                     </button>
-                    <button 
-                      type="button" 
-                      className="admin-btn admin-btn--primary" 
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn--primary"
                       disabled={contentBatchImportStatus !== 'ready'}
                       onClick={() => setShowContentBatchPreviewModal(true)}
                     >
@@ -4774,111 +4774,111 @@ function AdminDashboardPage() {
             </div>
             <hr className="admin-section-divider" />
             <section className="admin-card admin-report-card">
-            <div className="admin-report-tabs">
-              <button type="button" className={`admin-tab-btn ${reportType === 'teachers' ? 'is-active' : ''}`} onClick={() => setReportType('teachers')}>Admins</button>
-              <button type="button" className={`admin-tab-btn ${reportType === 'students' ? 'is-active' : ''}`} onClick={() => setReportType('students')}>Users</button>
-              <button type="button" className={`admin-tab-btn ${reportType === 'performance' ? 'is-active' : ''}`} onClick={() => setReportType('performance')}>Performance</button>
-              {isSuperadmin && <button type="button" className={`admin-tab-btn ${reportType === 'audit' ? 'is-active' : ''}`} onClick={() => setReportType('audit')}>Audit Logs</button>}
-            </div>
-            <div className="admin-report-filters no-print">
-              <div className="admin-custom-date-range">
-                <span className="admin-report-filter-label">From:</span>
-                <input
-                  type="date"
-                  value={reportStartDate}
-                  onChange={(e) => setReportStartDate(e.target.value)}
-                />
-                <span className="admin-report-filter-label">To:</span>
-                <input
-                  type="date"
-                  value={reportEndDate}
-                  onChange={(e) => setReportEndDate(e.target.value)}
-                />
-                {(reportStartDate || reportEndDate) && (
-                  <button
-                    type="button"
-                    className="admin-btn admin-btn--ghost"
-                    onClick={() => {
-                      setReportStartDate('');
-                      setReportEndDate('');
-                    }}
-                    style={{ minHeight: '40px', borderRadius: '10px' }}
-                  >
-                    Clear Dates
-                  </button>
+              <div className="admin-report-tabs">
+                <button type="button" className={`admin-tab-btn ${reportType === 'teachers' ? 'is-active' : ''}`} onClick={() => setReportType('teachers')}>Admins</button>
+                <button type="button" className={`admin-tab-btn ${reportType === 'students' ? 'is-active' : ''}`} onClick={() => setReportType('students')}>Users</button>
+                <button type="button" className={`admin-tab-btn ${reportType === 'performance' ? 'is-active' : ''}`} onClick={() => setReportType('performance')}>Performance</button>
+                {isSuperadmin && <button type="button" className={`admin-tab-btn ${reportType === 'audit' ? 'is-active' : ''}`} onClick={() => setReportType('audit')}>Audit Logs</button>}
+              </div>
+              <div className="admin-report-filters no-print">
+                <div className="admin-custom-date-range">
+                  <span className="admin-report-filter-label">From:</span>
+                  <input
+                    type="date"
+                    value={reportStartDate}
+                    onChange={(e) => setReportStartDate(e.target.value)}
+                  />
+                  <span className="admin-report-filter-label">To:</span>
+                  <input
+                    type="date"
+                    value={reportEndDate}
+                    onChange={(e) => setReportEndDate(e.target.value)}
+                  />
+                  {(reportStartDate || reportEndDate) && (
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn--ghost"
+                      onClick={() => {
+                        setReportStartDate('');
+                        setReportEndDate('');
+                      }}
+                      style={{ minHeight: '40px', borderRadius: '10px' }}
+                    >
+                      Clear Dates
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="admin-table-wrap"><table className="admin-table">
+                {reportType === 'teachers' && (
+                  <>
+                    <thead><tr><th>Time</th><th>Admin</th><th>Email</th><th>Access Role</th><th>Sections</th><th>Status</th></tr></thead>
+                    <tbody>{paginatedReportTeachers.map(admin => <tr key={admin.id}><td>{admin.created_at ? new Date(admin.created_at).toLocaleString() : '-'}</td><td>{getDisplayName(admin, admin.id)}</td><td>{getProfileEmail(admin)}</td><td>{admin.role === 'superadmin' ? 'Super Admin' : findAccessRole(adminAccessRoles, adminAccessAssignments[admin.id])?.name || 'Admin'}</td><td>{sections.filter(section => section.teacher_id === admin.id).length}</td><td>{isDeletedProfile(admin) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
+                  </>
+                )}
+                {reportType === 'students' && (
+                  <>
+                    <thead><tr><th>Time</th><th>User</th><th>ID / Student No.</th><th>Section</th><th>Journey</th><th>Speaker Level</th><th>Status</th></tr></thead>
+                    <tbody>{paginatedReportStudents.map(student => <tr key={student.id}><td>{student.created_at ? new Date(student.created_at).toLocaleString() : '-'}</td><td>{getDisplayName(student, student.id)}</td><td>{student.student_number || '-'}</td><td>{getLearnerGroupLabel(student, sectionById, sectionIdByStudentId)}</td><td>Journey {getProgressLevelValue(student)}</td><td>{formatAdminSpeakerLevel(getSpeakerLevelValue(student))}</td><td>{isDeletedProfile(student) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
+                  </>
+                )}
+                {reportType === 'performance' && (
+                  <>
+                    <thead><tr><th>Time</th><th>User</th><th>Section</th><th>Speeches</th><th>Minutes</th><th>Avg Score</th><th>Activities</th><th>Confidence Level</th></tr></thead>
+                    <tbody>{paginatedReportPerformance.map(row => <tr key={row.id}><td>{row.createdAt ? new Date(row.createdAt).toLocaleString() : '-'}</td><td>{row.name}</td><td>{row.section}</td><td>{row.speeches}</td><td>{row.minutes}</td><td>{row.averageScore ?? 'N/A'}</td><td>{row.completedActivities}/30</td><td>{row.confidenceLevel.level ? `Level ${row.confidenceLevel.level} - ${row.confidenceLevel.label}` : row.confidenceLevel.label}</td></tr>)}</tbody>
+                  </>
+                )}
+                {reportType === 'audit' && isSuperadmin && (
+                  <>
+                    <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Entity</th><th>Summary</th></tr></thead>
+                    <tbody>{paginatedReportAuditLogs.map(log => <tr key={log.id}><td>{new Date(log.created_at).toLocaleString()}</td><td>{getDisplayName(profiles.find(p => p.id === log.actor_id), log.actor_id || 'Unknown login')}</td><td>{formatAuditAction(log.action)}</td><td>{log.entity_type}</td><td>{formatAuditJson(log.new_values || log.old_values).slice(0, 120) || '-'}</td></tr>)}</tbody>
+                  </>
+                )}
+              </table></div>
+
+              <div className="admin-pagination no-print">
+                {reportType === 'teachers' && (
+                  <>
+                    <span className="admin-pagination-info">Showing {filteredReportTeacherRows.length ? ((reportAdminsPage - 1) * REPORTS_PER_PAGE) + 1 : 0}-{Math.min(reportAdminsPage * REPORTS_PER_PAGE, filteredReportTeacherRows.length)} of {filteredReportTeacherRows.length}</span>
+                    <div className="admin-pagination-controls">
+                      <button type="button" disabled={reportAdminsPage === 1} onClick={() => setReportAdminsPage(p => Math.max(1, p - 1))}>Prev</button>
+                      <button type="button" disabled>{reportAdminsPage} / {totalReportTeacherPages}</button>
+                      <button type="button" disabled={reportAdminsPage === totalReportTeacherPages} onClick={() => setReportAdminsPage(p => Math.min(totalReportTeacherPages, p + 1))}>Next</button>
+                    </div>
+                  </>
+                )}
+                {reportType === 'students' && (
+                  <>
+                    <span className="admin-pagination-info">Showing {filteredReportStudentRows.length ? ((reportUsersPage - 1) * REPORTS_PER_PAGE) + 1 : 0}-{Math.min(reportUsersPage * REPORTS_PER_PAGE, filteredReportStudentRows.length)} of {filteredReportStudentRows.length}</span>
+                    <div className="admin-pagination-controls">
+                      <button type="button" disabled={reportUsersPage === 1} onClick={() => setReportUsersPage(p => Math.max(1, p - 1))}>Prev</button>
+                      <button type="button" disabled>{reportUsersPage} / {totalReportStudentPages}</button>
+                      <button type="button" disabled={reportUsersPage === totalReportStudentPages} onClick={() => setReportUsersPage(p => Math.min(totalReportStudentPages, p + 1))}>Next</button>
+                    </div>
+                  </>
+                )}
+                {reportType === 'performance' && (
+                  <>
+                    <span className="admin-pagination-info">Showing {reportStudentPerformanceRows.length ? ((reportPerformancePage - 1) * REPORTS_PER_PAGE) + 1 : 0}-{Math.min(reportPerformancePage * REPORTS_PER_PAGE, reportStudentPerformanceRows.length)} of {reportStudentPerformanceRows.length}</span>
+                    <div className="admin-pagination-controls">
+                      <button type="button" disabled={reportPerformancePage === 1} onClick={() => setReportPerformancePage(p => Math.max(1, p - 1))}>Prev</button>
+                      <button type="button" disabled>{reportPerformancePage} / {totalReportPerformancePages}</button>
+                      <button type="button" disabled={reportPerformancePage === totalReportPerformancePages} onClick={() => setReportPerformancePage(p => Math.min(totalReportPerformancePages, p + 1))}>Next</button>
+                    </div>
+                  </>
+                )}
+                {reportType === 'audit' && isSuperadmin && (
+                  <>
+                    <span className="admin-pagination-info">Showing {reportAuditLogs.length ? ((reportAuditPage - 1) * REPORTS_PER_PAGE) + 1 : 0}-{Math.min(reportAuditPage * REPORTS_PER_PAGE, reportAuditLogs.length)} of {reportAuditLogs.length}</span>
+                    <div className="admin-pagination-controls">
+                      <button type="button" disabled={reportAuditPage === 1} onClick={() => setReportAuditPage(p => Math.max(1, p - 1))}>Prev</button>
+                      <button type="button" disabled>{reportAuditPage} / {totalReportAuditPages}</button>
+                      <button type="button" disabled={reportAuditPage === totalReportAuditPages} onClick={() => setReportAuditPage(p => Math.min(totalReportAuditPages, p + 1))}>Next</button>
+                    </div>
+                  </>
                 )}
               </div>
-            </div>
-            <div className="admin-table-wrap"><table className="admin-table">
-              {reportType === 'teachers' && (
-                <>
-                  <thead><tr><th>Time</th><th>Admin</th><th>Email</th><th>Access Role</th><th>Sections</th><th>Status</th></tr></thead>
-                  <tbody>{paginatedReportTeachers.map(admin => <tr key={admin.id}><td>{admin.created_at ? new Date(admin.created_at).toLocaleString() : '-'}</td><td>{getDisplayName(admin, admin.id)}</td><td>{getProfileEmail(admin)}</td><td>{admin.role === 'superadmin' ? 'Super Admin' : findAccessRole(adminAccessRoles, adminAccessAssignments[admin.id])?.name || 'Admin'}</td><td>{sections.filter(section => section.teacher_id === admin.id).length}</td><td>{isDeletedProfile(admin) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
-                </>
-              )}
-              {reportType === 'students' && (
-                <>
-                   <thead><tr><th>Time</th><th>User</th><th>ID / Student No.</th><th>Section</th><th>Journey</th><th>Speaker Level</th><th>Status</th></tr></thead>
-                   <tbody>{paginatedReportStudents.map(student => <tr key={student.id}><td>{student.created_at ? new Date(student.created_at).toLocaleString() : '-'}</td><td>{getDisplayName(student, student.id)}</td><td>{student.student_number || '-'}</td><td>{getLearnerGroupLabel(student, sectionById, sectionIdByStudentId)}</td><td>Journey {getProgressLevelValue(student)}</td><td>{formatAdminSpeakerLevel(getSpeakerLevelValue(student))}</td><td>{isDeletedProfile(student) ? 'Archived' : 'Active'}</td></tr>)}</tbody>
-                </>
-              )}
-              {reportType === 'performance' && (
-                <>
-                  <thead><tr><th>Time</th><th>User</th><th>Section</th><th>Speeches</th><th>Minutes</th><th>Avg Score</th><th>Activities</th><th>Confidence Level</th></tr></thead>
-                  <tbody>{paginatedReportPerformance.map(row => <tr key={row.id}><td>{row.createdAt ? new Date(row.createdAt).toLocaleString() : '-'}</td><td>{row.name}</td><td>{row.section}</td><td>{row.speeches}</td><td>{row.minutes}</td><td>{row.averageScore ?? 'N/A'}</td><td>{row.completedActivities}/30</td><td>{row.confidenceLevel.level ? `Level ${row.confidenceLevel.level} - ${row.confidenceLevel.label}` : row.confidenceLevel.label}</td></tr>)}</tbody>
-                </>
-              )}
-              {reportType === 'audit' && isSuperadmin && (
-                <>
-                   <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Entity</th><th>Summary</th></tr></thead>
-                   <tbody>{paginatedReportAuditLogs.map(log => <tr key={log.id}><td>{new Date(log.created_at).toLocaleString()}</td><td>{getDisplayName(profiles.find(p => p.id === log.actor_id), log.actor_id || 'Unknown login')}</td><td>{formatAuditAction(log.action)}</td><td>{log.entity_type}</td><td>{formatAuditJson(log.new_values || log.old_values).slice(0, 120) || '-'}</td></tr>)}</tbody>
-                </>
-              )}
-            </table></div>
-
-            <div className="admin-pagination no-print">
-              {reportType === 'teachers' && (
-                <>
-                  <span className="admin-pagination-info">Showing {filteredReportTeacherRows.length ? ((reportAdminsPage - 1) * REPORTS_PER_PAGE) + 1 : 0}-{Math.min(reportAdminsPage * REPORTS_PER_PAGE, filteredReportTeacherRows.length)} of {filteredReportTeacherRows.length}</span>
-                  <div className="admin-pagination-controls">
-                    <button type="button" disabled={reportAdminsPage === 1} onClick={() => setReportAdminsPage(p => Math.max(1, p - 1))}>Prev</button>
-                    <button type="button" disabled>{reportAdminsPage} / {totalReportTeacherPages}</button>
-                    <button type="button" disabled={reportAdminsPage === totalReportTeacherPages} onClick={() => setReportAdminsPage(p => Math.min(totalReportTeacherPages, p + 1))}>Next</button>
-                  </div>
-                </>
-              )}
-              {reportType === 'students' && (
-                <>
-                  <span className="admin-pagination-info">Showing {filteredReportStudentRows.length ? ((reportUsersPage - 1) * REPORTS_PER_PAGE) + 1 : 0}-{Math.min(reportUsersPage * REPORTS_PER_PAGE, filteredReportStudentRows.length)} of {filteredReportStudentRows.length}</span>
-                  <div className="admin-pagination-controls">
-                    <button type="button" disabled={reportUsersPage === 1} onClick={() => setReportUsersPage(p => Math.max(1, p - 1))}>Prev</button>
-                    <button type="button" disabled>{reportUsersPage} / {totalReportStudentPages}</button>
-                    <button type="button" disabled={reportUsersPage === totalReportStudentPages} onClick={() => setReportUsersPage(p => Math.min(totalReportStudentPages, p + 1))}>Next</button>
-                  </div>
-                </>
-              )}
-              {reportType === 'performance' && (
-                <>
-                  <span className="admin-pagination-info">Showing {reportStudentPerformanceRows.length ? ((reportPerformancePage - 1) * REPORTS_PER_PAGE) + 1 : 0}-{Math.min(reportPerformancePage * REPORTS_PER_PAGE, reportStudentPerformanceRows.length)} of {reportStudentPerformanceRows.length}</span>
-                  <div className="admin-pagination-controls">
-                    <button type="button" disabled={reportPerformancePage === 1} onClick={() => setReportPerformancePage(p => Math.max(1, p - 1))}>Prev</button>
-                    <button type="button" disabled>{reportPerformancePage} / {totalReportPerformancePages}</button>
-                    <button type="button" disabled={reportPerformancePage === totalReportPerformancePages} onClick={() => setReportPerformancePage(p => Math.min(totalReportPerformancePages, p + 1))}>Next</button>
-                  </div>
-                </>
-              )}
-              {reportType === 'audit' && isSuperadmin && (
-                <>
-                  <span className="admin-pagination-info">Showing {reportAuditLogs.length ? ((reportAuditPage - 1) * REPORTS_PER_PAGE) + 1 : 0}-{Math.min(reportAuditPage * REPORTS_PER_PAGE, reportAuditLogs.length)} of {reportAuditLogs.length}</span>
-                  <div className="admin-pagination-controls">
-                    <button type="button" disabled={reportAuditPage === 1} onClick={() => setReportAuditPage(p => Math.max(1, p - 1))}>Prev</button>
-                    <button type="button" disabled>{reportAuditPage} / {totalReportAuditPages}</button>
-                    <button type="button" disabled={reportAuditPage === totalReportAuditPages} onClick={() => setReportAuditPage(p => Math.min(totalReportAuditPages, p + 1))}>Next</button>
-                  </div>
-                </>
-              )}
-            </div>
-          </section>
+            </section>
           </div>
         )}
 
@@ -4891,41 +4891,41 @@ function AdminDashboardPage() {
             <hr className="admin-section-divider" />
             <section className="admin-card">
               <div className="admin-card-head" style={{ justifyContent: 'flex-end' }}>
-              <div className="admin-audit-filters">
-                <div className="admin-search-box"><HiMagnifyingGlass /><input type="text" placeholder="Search Actor..." value={auditSearchQuery} onChange={e => { setAuditSearchQuery(e.target.value); setAuditPage(1); }} /></div>
-                <select className="admin-filter-select" value={auditActionFilter} onChange={e => { setAuditActionFilter(e.target.value); setAuditPage(1); }}>
-                  <option value="all">All Actions</option>
-                  <option value="create">Create</option>
-                  <option value="update">Update</option>
-                  <option value="delete">Delete / Archive</option>
-                  <option value="restore">Restore</option>
-                  <option value="login_failed">Login Failed</option>
-                  <option value="login_locked">Account Locked</option>
-                  <option value="login_success">Login Success</option>
-                </select>
-                <select className="admin-filter-select" value={auditEntityFilter} onChange={e => { setAuditEntityFilter(e.target.value); setAuditPage(1); }}>
-                  <option value="all">All Entities</option>
-                  <option value="profiles">Profiles</option>
-                  <option value="activities">Activities</option>
-                  <option value="modules">Modules</option>
-                  <option value="system_settings">Settings</option>
-                  <option value="auth_security">Auth Security</option>
-                </select>
+                <div className="admin-audit-filters">
+                  <div className="admin-search-box"><HiMagnifyingGlass /><input type="text" placeholder="Search Actor..." value={auditSearchQuery} onChange={e => { setAuditSearchQuery(e.target.value); setAuditPage(1); }} /></div>
+                  <select className="admin-filter-select" value={auditActionFilter} onChange={e => { setAuditActionFilter(e.target.value); setAuditPage(1); }}>
+                    <option value="all">All Actions</option>
+                    <option value="create">Create</option>
+                    <option value="update">Update</option>
+                    <option value="delete">Delete / Archive</option>
+                    <option value="restore">Restore</option>
+                    <option value="login_failed">Login Failed</option>
+                    <option value="login_locked">Account Locked</option>
+                    <option value="login_success">Login Success</option>
+                  </select>
+                  <select className="admin-filter-select" value={auditEntityFilter} onChange={e => { setAuditEntityFilter(e.target.value); setAuditPage(1); }}>
+                    <option value="all">All Entities</option>
+                    <option value="profiles">Profiles</option>
+                    <option value="activities">Activities</option>
+                    <option value="modules">Modules</option>
+                    <option value="system_settings">Settings</option>
+                    <option value="auth_security">Auth Security</option>
+                  </select>
+                </div>
               </div>
-            </div>
-            <div className="admin-table-wrap"><table className="admin-table">
-              <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Entity</th><th>Details</th></tr></thead>
-              <tbody>{paginatedAuditLogs.map(l => <tr key={l.id}><td>{new Date(l.created_at).toLocaleString()}</td><td>{getDisplayName(profiles.find(p => p.id === l.actor_id), l.actor_id || 'Unknown login')}</td><td><span className={`admin-audit-action-badge ${getAuditActionClass(l.action)}`}>{formatAuditAction(l.action)}</span></td><td>{l.entity_type}</td><td><button onClick={() => setInspectingLog(l)} className="admin-action-btn"><HiMagnifyingGlass /></button></td></tr>)}</tbody>
-            </table></div>
-            <div className="admin-pagination">
-              <span className="admin-pagination-info">Showing {filteredAuditLogs.length ? ((auditPage - 1) * AUDIT_PER_PAGE) + 1 : 0}-{Math.min(auditPage * AUDIT_PER_PAGE, filteredAuditLogs.length)} of {filteredAuditLogs.length}</span>
-              <div className="admin-pagination-controls">
-                <button type="button" disabled={auditPage === 1} onClick={() => setAuditPage(p => Math.max(1, p - 1))}>Prev</button>
-                <button type="button" disabled>{auditPage} / {totalAuditPages}</button>
-                <button type="button" disabled={auditPage === totalAuditPages} onClick={() => setAuditPage(p => Math.min(totalAuditPages, p + 1))}>Next</button>
+              <div className="admin-table-wrap"><table className="admin-table">
+                <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Entity</th><th>Details</th></tr></thead>
+                <tbody>{paginatedAuditLogs.map(l => <tr key={l.id}><td>{new Date(l.created_at).toLocaleString()}</td><td>{getDisplayName(profiles.find(p => p.id === l.actor_id), l.actor_id || 'Unknown login')}</td><td><span className={`admin-audit-action-badge ${getAuditActionClass(l.action)}`}>{formatAuditAction(l.action)}</span></td><td>{l.entity_type}</td><td><button onClick={() => setInspectingLog(l)} className="admin-action-btn"><HiMagnifyingGlass /></button></td></tr>)}</tbody>
+              </table></div>
+              <div className="admin-pagination">
+                <span className="admin-pagination-info">Showing {filteredAuditLogs.length ? ((auditPage - 1) * AUDIT_PER_PAGE) + 1 : 0}-{Math.min(auditPage * AUDIT_PER_PAGE, filteredAuditLogs.length)} of {filteredAuditLogs.length}</span>
+                <div className="admin-pagination-controls">
+                  <button type="button" disabled={auditPage === 1} onClick={() => setAuditPage(p => Math.max(1, p - 1))}>Prev</button>
+                  <button type="button" disabled>{auditPage} / {totalAuditPages}</button>
+                  <button type="button" disabled={auditPage === totalAuditPages} onClick={() => setAuditPage(p => Math.min(totalAuditPages, p + 1))}>Next</button>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
           </div>
         )}
 
@@ -5003,7 +5003,7 @@ function AdminDashboardPage() {
                     System Maintenance Mode
                   </h3>
                   <p style={{ margin: '0 0 12px 0', fontSize: '0.92rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                    Controls whether the Bigkas system is currently under active maintenance. When enabled:
+                    Controls whether the TalkTics system is currently under active maintenance. When enabled:
                   </p>
                   <ul style={{ margin: '0 0 16px 20px', padding: 0, fontSize: '0.9rem', color: 'var(--text-main)', lineHeight: 1.6 }}>
                     <li style={{ marginBottom: '8px' }}>
@@ -5312,9 +5312,9 @@ function AdminDashboardPage() {
           </div>
           <div className="admin-modal-actions admin-modal-actions--end">
             <button type="button" onClick={() => setShowContentBatchPreviewModal(false)} className="admin-btn admin-btn--ghost">Cancel</button>
-            <button 
-              type="button" 
-              className="admin-btn admin-btn--primary" 
+            <button
+              type="button"
+              className="admin-btn admin-btn--primary"
               disabled={contentBatchImportStatus === 'saving'}
               onClick={submitContentBatchImport}
             >
@@ -5387,7 +5387,7 @@ function AdminDashboardPage() {
         <div className="admin-card-head">
           <div>
             <h3>Create User</h3>
-            <p className="admin-modal-subtitle admin-student-create-note">Email is used for login. Bigkas sends a welcome invite so the user creates their own password.</p>
+            <p className="admin-modal-subtitle admin-student-create-note">Email is used for login. TalkTics sends a welcome invite so the user creates their own password.</p>
           </div>
           <button type="button" onClick={() => setCreatingUser(false)} className="admin-btn admin-btn--ghost">Close</button>
         </div>

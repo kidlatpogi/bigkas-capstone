@@ -55,10 +55,10 @@ function RegisterPageMobile({ managePageClass = true }) {
 
   // SEO Metadata
   useEffect(() => {
-    document.title = 'Create Account | Bigkas — Master Public Speaking';
+    document.title = 'Create Account | TalkTics — Master Public Speaking';
     const metaDesc = document.querySelector('meta[name="description"]') || document.createElement('meta');
     metaDesc.name = 'description';
-    metaDesc.content = 'Join Bigkas today and start your AI-powered journey to public speaking excellence. Analyze your voice, master your presence, and empower your communication.';
+    metaDesc.content = 'Join TalkTics today and start your AI-powered journey to public speaking excellence. Analyze your voice, master your presence, and empower your communication.';
     if (!metaDesc.parentNode) document.head.appendChild(metaDesc);
   }, []);
 
@@ -186,13 +186,13 @@ function RegisterPageMobile({ managePageClass = true }) {
         <div className="auth-brand-logo-mobile">
           <img 
             src={bigkasLogo} 
-            alt="Bigkas Logo" 
+            alt="TalkTics Logo" 
             width="32" 
             height="32" 
             fetchPriority="high" 
             loading="eager"
           />
-          <span>Bigkas</span>
+          <span>TalkTics</span>
         </div>
 
         {/* 3. Main Form Content */}
@@ -200,7 +200,7 @@ function RegisterPageMobile({ managePageClass = true }) {
           <div className="auth-mobile-form-card">
             <div className="auth-form-header-mobile">
               <h1>Create Account</h1>
-              <p>Join Bigkas and empower your voice</p>
+              <p>Join TalkTics and empower your voice</p>
             </div>
 
             <form className="auth-form" onSubmit={handleSubmit}>

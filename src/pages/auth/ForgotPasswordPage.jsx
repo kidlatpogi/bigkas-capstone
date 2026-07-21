@@ -124,14 +124,14 @@ function ForgotPasswordPageDesktop({
               <div className="auth-brand-logo">
                 <img
                   src={bigkasLogoUrl}
-                  alt="Bigkas"
+                  alt="TalkTics"
                   className="auth-logo-img"
                   width="48"
                   height="48"
                   loading="eager"
                   fetchpriority="high"
                 />
-                <span>Bigkas</span>
+                <span>TalkTics</span>
               </div>
               <div className="auth-visual-content">
                 <div className="auth-robot-img-wrap">

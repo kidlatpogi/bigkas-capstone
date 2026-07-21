@@ -28,8 +28,8 @@ function VerifyEmailPageDesktop(props) {
           <div className="auth-card">
             <div className="auth-visual-side">
               <div className="auth-brand-logo">
-                <img src={bigkasLogo} alt="Bigkas" className="auth-logo-img" fetchpriority="high" />
-                <span>Bigkas</span>
+                <img src={bigkasLogo} alt="TalkTics" className="auth-logo-img" fetchpriority="high" />
+                <span>TalkTics</span>
               </div>
               
               <div className="auth-visual-content">

@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>Bigkas</string>
+        <string>TalkTics</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -25,9 +25,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Bigkas requires camera access to analyze facial expressions and gestures.</string>
+	<string>TalkTics requires camera access to analyze facial expressions and gestures.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Bigkas requires microphone access to record and analyze your speech.</string>
+	<string>TalkTics requires microphone access to record and analyze your speech.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

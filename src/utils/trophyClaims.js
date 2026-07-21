@@ -8,7 +8,7 @@ export const TROPHY_TITLES = {
   2: 'Vocal Builder',
   3: 'Clear Communicator',
   4: 'Presence Specialist',
-  5: 'Bigkas Expert',
+  5: 'TalkTics Expert',
 };
 
 function readClaims() {

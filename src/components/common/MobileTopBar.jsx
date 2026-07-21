@@ -32,7 +32,7 @@ function MobileTopBar() {
     <header className="mobile-top-bar" aria-label="Mobile top navigation">
       <div className="mobile-top-bar__brand-wrap">
         <img src={bigkasLogo} alt="" className="mobile-top-bar__logo" />
-        <span className="mobile-top-bar__brand">Bigkas</span>
+        <span className="mobile-top-bar__brand">TalkTics</span>
       </div>
       <Link className="mobile-top-bar__profile-link" to={ROUTES.PROFILE} aria-label="Go to profile">
         <div className="mobile-avatar" aria-hidden="true">

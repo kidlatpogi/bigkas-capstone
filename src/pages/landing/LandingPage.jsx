@@ -313,11 +313,11 @@ export default function LandingPage({ managePageClass = true }) {
               <img 
                 src={bigkasLogo} 
                 srcSet={bigkasLogo}
-                alt="Bigkas" 
+                alt="TalkTics" 
                 className="landing-logo-img" 
                 fetchPriority="high"
               />
-              <span className="logo-text">Bigkas</span>
+              <span className="logo-text">TalkTics</span>
             </div>
           </button>
 

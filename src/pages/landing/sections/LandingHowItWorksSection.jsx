@@ -2,7 +2,7 @@ import { motion as Motion } from 'framer-motion';
 import { IoChatbubbleEllipses, IoDownloadOutline, IoMic, IoRefresh } from 'react-icons/io5';
 import ScrollDownIndicator from '../../../components/common/ScrollDownIndicator';
 
-const apkDownloadPath = '/downloads/Bigkas.apk';
+const apkDownloadPath = '/downloads/TalkTics.apk';
 const apkIconPath = '/images/bigkas-apk-icon.png';
 
 const workflowSteps = [
@@ -69,14 +69,14 @@ export default function LandingHowItWorksSection({ howSectionRef, showScrollIndi
             variants={itemVariants}
             className="landing-how-apk landing-how-android-button"
             href={apkDownloadPath}
-            download="Bigkas.apk"
-            aria-label="Download Bigkas for Android"
+            download="TalkTics.apk"
+            aria-label="Download TalkTics for Android"
           >
             <img src={apkIconPath} alt="" className="landing-how-apk-icon" loading="lazy" aria-hidden="true" />
             <div className="landing-how-apk-copy">
               <span>Android app</span>
               <strong>Download to Android</strong>
-              <p>Install Bigkas on Android and continue the same speaking loop from your phone.</p>
+              <p>Install TalkTics on Android and continue the same speaking loop from your phone.</p>
             </div>
             <span className="landing-how-download" aria-hidden="true">
               <IoDownloadOutline aria-hidden="true" />
@@ -85,7 +85,7 @@ export default function LandingHowItWorksSection({ howSectionRef, showScrollIndi
           </Motion.a>
         </div>
 
-        <div className="landing-how-path-map" aria-label="How Bigkas practice works">
+        <div className="landing-how-path-map" aria-label="How TalkTics practice works">
           <div className="landing-how-path-line" aria-hidden="true" />
           {workflowSteps.map((step) => (
             <Motion.article

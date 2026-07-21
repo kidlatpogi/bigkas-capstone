@@ -100,8 +100,8 @@ class AppErrorBoundary extends Component {
       return (
         <div className="loading-screen" role="alert">
           <div className="loading-logo">
-            <img src="/images/bigkas-logo-72.webp" alt="Bigkas" className="loading-logo-image" />
-            <span>Bigkas</span>
+            <img src="/images/bigkas-logo-72.webp" alt="TalkTics" className="loading-logo-image" />
+            <span>TalkTics</span>
           </div>
           <button
             type="button"

@@ -1,11 +1,11 @@
 export const TERMS_AND_CONDITIONS = `
-BIGKAS TERMS AND CONDITIONS
+TALKTICS TERMS AND CONDITIONS
 TERMS AND CONDITIONS
 
 Last Updated: April 12, 2026
 
 1. ACCEPTANCE OF TERMS
-By accessing and using Bigkas (the "Application"), you agree to comply with and be bound by these Terms and Conditions, all applicable laws, and regulations in the Republic of the Philippines. If you do not agree with these terms, you are prohibited from using this Application.
+By accessing and using TalkTics (the "Application"), you agree to comply with and be bound by these Terms and Conditions, all applicable laws, and regulations in the Republic of the Philippines. If you do not agree with these terms, you are prohibited from using this Application.
 
 2. DATA PRIVACY AND BIOMETRIC PROCESSING
 In compliance with Republic Act No. 10173, otherwise known as the Data Privacy Act of 2012 (DPA):
@@ -24,7 +24,7 @@ b. Use the Application to record or upload content that violates the Cybercrime 
 c. Interfere with the security features of the Application or its cloud-based hosting services.
 
 5. LIMITATION OF LIABILITY
-Bigkas is an educational tool provided on an "as-is" basis. While the developers strive for high-fidelity feedback through AI modeling, we do not guarantee 100% accuracy in speaking assessments. The developers shall not be liable for any perceived lack of progress or data loss resulting from the 14-day auto-deletion security protocol.
+TalkTics is an educational tool provided on an "as-is" basis. While the developers strive for high-fidelity feedback through AI modeling, we do not guarantee 100% accuracy in speaking assessments. The developers shall not be liable for any perceived lack of progress or data loss resulting from the 14-day auto-deletion security protocol.
 
 6. TERMINATION
 We reserve the right to terminate or suspend access to our Application immediately, without prior notice or liability, for any reason whatsoever, including without limitation if you breach the Terms.
@@ -33,5 +33,5 @@ We reserve the right to terminate or suspend access to our Application immediate
 These Terms shall be governed and construed in accordance with the laws of the Republic of the Philippines. Any legal action arising from the use of this Application shall be filed in the competent courts of the Philippines.
 
 8. CONTACT INFORMATION
-For questions regarding these Terms or your data privacy rights, please contact the Bigkas Development Team.
+For questions regarding these Terms or your data privacy rights, please contact the TalkTics Development Team.
 `;

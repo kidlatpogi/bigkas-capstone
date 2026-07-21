@@ -335,7 +335,7 @@ function SettingsPage() {
       <ConfirmationModal
         isOpen={showLogoutConfirm}
         title="Log Out"
-        message="Are you sure you want to log out of Bigkas?"
+        message="Are you sure you want to log out of TalkTics?"
         confirmLabel="Log Out"
         cancelLabel="Cancel"
         onConfirm={handleLogout}

@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'org.nationalu.bigkas',
-  appName: 'Bigkas',
+  appName: 'TalkTics',
   webDir: 'dist',
   android: {
     adjustMarginsForEdgeToEdge: 'auto',

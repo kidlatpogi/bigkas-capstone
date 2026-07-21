@@ -64,8 +64,8 @@ function LoadingScreen() {
   return (
     <div className="loading-screen">
       <div className="loading-logo">
-        <img src={bigkasLogo} alt="Bigkas" className="loading-logo-image" />
-        <span>Bigkas</span>
+        <img src={bigkasLogo} alt="TalkTics" className="loading-logo-image" />
+        <span>TalkTics</span>
       </div>
       <div className="loading-spinner" aria-label="Loading" />
     </div>

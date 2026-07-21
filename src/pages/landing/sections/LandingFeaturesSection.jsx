@@ -34,7 +34,7 @@ export default function LandingFeaturesSection({
         <div className="features-heading">
           <h2>Three feedback lanes, one speaking goal.</h2>
           <p className="features-subtitle">
-            Bigkas keeps the feedback focused, readable, and easy to act on after each short practice session.
+            TalkTics keeps the feedback focused, readable, and easy to act on after each short practice session.
           </p>
         </div>
 

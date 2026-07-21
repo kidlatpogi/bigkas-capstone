@@ -20,7 +20,7 @@ export default function LandingHeroSection({
         <div className="hero-visual">
           <img 
             src={graduationSpeechImage}
-            alt="Bigkas coach" 
+            alt="TalkTics coach" 
             className="hero-character" 
             fetchPriority="high" 
           />
@@ -33,7 +33,7 @@ export default function LandingHeroSection({
           </h1>
           <div className="hero-info-pane">
             <p className="hero-body">
-              Bigkas provides a private, judgment-free space for Filipino learners to practice speaking through acoustic biomarkers and computer vision.
+              TalkTics provides a private, judgment-free space for Filipino learners to practice speaking through acoustic biomarkers and computer vision.
             </p>
             <div className="hero-actions">
               <PushButton

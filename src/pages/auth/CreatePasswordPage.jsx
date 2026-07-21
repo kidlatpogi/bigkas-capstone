@@ -160,15 +160,15 @@ function CreatePasswordPage() {
 
   return (
     <main className="create-password-page">
-      <section className="create-password-shell" aria-label="Create Bigkas password">
+      <section className="create-password-shell" aria-label="Create TalkTics password">
         <div className="create-password-visual">
           <div className="create-password-brand">
-            <img src={bigkasLogoUrl} alt="Bigkas" />
-            <span>Bigkas</span>
+            <img src={bigkasLogoUrl} alt="TalkTics" />
+            <span>TalkTics</span>
           </div>
-          <img className="create-password-robot" src={robotImgUrl} alt="Bigkas AI companion" />
+          <img className="create-password-robot" src={robotImgUrl} alt="TalkTics AI companion" />
           <div className="create-password-copy">
-            <h1>Welcome to Bigkas</h1>
+            <h1>Welcome to TalkTics</h1>
             <p>Create your password to start your public speaking journey.</p>
           </div>
         </div>

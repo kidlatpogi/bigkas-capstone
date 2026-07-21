@@ -280,8 +280,8 @@ export default function SideNav() {
       <div className="side-nav-brand">
         <div className="side-nav-brand-main">
           <div className="side-nav-brand-top">
-            <img src={bigkasLogo} alt="Bigkas" className="side-nav-brand-logo" />
-            <span className="side-nav-brand-text">Bigkas</span>
+            <img src={bigkasLogo} alt="TalkTics" className="side-nav-brand-logo" />
+            <span className="side-nav-brand-text">TalkTics</span>
           </div>
           <span className="side-nav-brand-subtitle">{displayName}</span>
         </div>

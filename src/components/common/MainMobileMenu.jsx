@@ -27,7 +27,7 @@ function MainMobileMenu() {
   return (
     <StaggeredMenu
       items={navItems}
-      brandName="Bigkas"
+      brandName="TalkTics"
       userName={displayName}
       menuButtonColor="#002d4f"
       accentColor="#ff9f1c"

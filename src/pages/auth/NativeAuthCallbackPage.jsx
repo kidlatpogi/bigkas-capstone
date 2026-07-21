@@ -45,7 +45,7 @@ function NativeAuthCallbackPage() {
       }}
     >
       <div>
-        <h1 style={{ margin: '0 0 8px', fontSize: '1.2rem' }}>Returning to Bigkas</h1>
+        <h1 style={{ margin: '0 0 8px', fontSize: '1.2rem' }}>Returning to TalkTics</h1>
         <p style={{ margin: 0, color: '#64748b' }}>You can close this tab if the app does not open automatically.</p>
       </div>
     </main>

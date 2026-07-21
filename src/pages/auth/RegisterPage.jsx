@@ -56,10 +56,10 @@ function RegisterPageDesktop({ managePageClass = true }) {
 
   // SEO Metadata
   useEffect(() => {
-    document.title = 'Create Account | Bigkas — Master Public Speaking';
+    document.title = 'Create Account | TalkTics — Master Public Speaking';
     const metaDesc = document.querySelector('meta[name="description"]') || document.createElement('meta');
     metaDesc.name = 'description';
-    metaDesc.content = 'Join Bigkas today and start your AI-powered journey to public speaking excellence. Analyze your voice, master your presence, and empower your communication.';
+    metaDesc.content = 'Join TalkTics today and start your AI-powered journey to public speaking excellence. Analyze your voice, master your presence, and empower your communication.';
     if (!metaDesc.parentNode) document.head.appendChild(metaDesc);
   }, []);
 
@@ -220,14 +220,14 @@ function RegisterPageDesktop({ managePageClass = true }) {
             <div className="auth-brand-logo">
               <img 
                 src={bigkasLogoUrl} 
-                alt="Bigkas" 
+                alt="TalkTics" 
                 className="auth-logo-img" 
                 width="48" 
                 height="48" 
                 loading="eager" 
                 fetchPriority="high"
               />
-              <span>Bigkas</span>
+              <span>TalkTics</span>
             </div>
               <div className="auth-visual-content">
               <div className="auth-robot-img-wrap">
@@ -269,7 +269,7 @@ function RegisterPageDesktop({ managePageClass = true }) {
             <div className="auth-form-side">
               <div className="auth-form-inner">
                 <m.h1 variants={itemVariants} className="auth-form-headline">Create Account</m.h1>
-                <m.p variants={itemVariants} className="auth-form-subline">Join Bigkas and start your speaking journey</m.p>
+                <m.p variants={itemVariants} className="auth-form-subline">Join TalkTics and start your speaking journey</m.p>
 
                 <form className="auth-form" onSubmit={handleSubmit}>
                   <AnimatePresence>

@@ -379,7 +379,7 @@ function SettingsPageMobile() {
                   </div>
                   <div className="sp-list-content">
                     <span className="sp-list-label">Log Out</span>
-                    <span className="sp-list-hint">Sign out of your Bigkas account</span>
+                    <span className="sp-list-hint">Sign out of your TalkTics account</span>
                   </div>
                   <IoChevronForward className="sp-list-chevron" />
                 </button>
@@ -400,7 +400,7 @@ function SettingsPageMobile() {
       <ConfirmationModal
         isOpen={showLogoutConfirm}
         title="Log Out"
-        message="Are you sure you want to log out of Bigkas?"
+        message="Are you sure you want to log out of TalkTics?"
         confirmLabel="Log Out"
         cancelLabel="Cancel"
         onConfirm={handleLogout}

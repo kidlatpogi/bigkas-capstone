@@ -45,7 +45,7 @@ export default function LandingScienceSection() {
             viewport={{ once: true }}
             transition={{ delay: 0.08 }}
           >
-            Bigkas reads the messy parts of practice, then turns them into clear next moves. B-01 keeps the science from
+            TalkTics reads the messy parts of practice, then turns them into clear next moves. B-01 keeps the science from
             feeling like a report card.
           </motion.p>
 

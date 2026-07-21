@@ -8,7 +8,7 @@ function normalizeMessages(messages) {
 
 function getWorkerUrl() {
   const baseUrl = String(ENV.CLOUDFLARE_AI_WORKER_URL || '').replace(/\/+$/, '');
-  return baseUrl || 'https://b01-ai-worker.dzeref4000.workers.dev';
+  return baseUrl || 'https://b01-ai-worker.kidlat.workers.dev';
 }
 
 function getLatestUserQuestion(messages) {

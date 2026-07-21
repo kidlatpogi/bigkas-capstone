@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../context/useAuthContext';
 import { useSessions } from '../../hooks/useSessions';
 import { ROUTES } from '../../utils/constants';
+import ENV from '../../config/env';
 import Button from '../../components/common/Button';
 import PushButton from '../../components/common/PushButton';
 import { IoChatbubbleEllipsesOutline } from '@react-icons/all-files/io5/IoChatbubbleEllipsesOutline';
@@ -563,7 +564,7 @@ function ActivityPage() {
           }
         }
 
-        const response = await fetch('https://b01-ai-worker.dzeref4000.workers.dev/banner-message', {
+        const response = await fetch(`${ENV.CLOUDFLARE_AI_WORKER_URL}/banner-message`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ context: getProgressContext() }),
@@ -1119,7 +1120,7 @@ function ActivityPage() {
   const handleRandomizeTopic = useCallback(async () => {
     setIsRandomizingTopic(true);
     try {
-      const response = await fetch('https://b01-ai-worker.dzeref4000.workers.dev/random-topic');
+      const response = await fetch(`${ENV.CLOUDFLARE_AI_WORKER_URL}/random-topic`);
       if (response.ok) {
         const data = await response.json();
         if (data.title) {

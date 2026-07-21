@@ -8,7 +8,7 @@ const normalizedAdminLoginSlug = (import.meta.env.VITE_ADMIN_LOGIN_SLUG || '')
   .replace(/^\/+|\/+$/g, '');
 
 const PROD_PYTHON_SERVICE_FALLBACK = 'https://kidlatpogi17-capstone-bigkas-backend.hf.space';
-const PROD_CLOUDFLARE_AI_WORKER_FALLBACK = 'https://b01-ai-worker.dzeref4000.workers.dev';
+const PROD_CLOUDFLARE_AI_WORKER_FALLBACK = 'https://b01-ai-worker.kidlat.workers.dev';
 
 function normalizeBaseUrl(url) {
   return String(url || '').trim().replace(/\/+$/, '');

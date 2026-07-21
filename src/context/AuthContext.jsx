@@ -1109,13 +1109,14 @@ export function AuthProvider({ children }) {
               try {
                 const { data: deviceConflict } = await supabase
                   .from('profiles')
-                  .select('id, full_name')
+                  .select('id, first_name, last_name')
                   .neq('id', userId)
                   .not('active_session_token', 'is', null)
                   .eq('active_device_fingerprint', myFingerprint)
                   .maybeSingle();
                 if (deviceConflict) {
-                  handleSessionEjection(`Strict Device Lock: Another account (${deviceConflict.full_name || 'User'}) is already active on this device. Only one account per device is allowed.`, supabase);
+                  const conflictedName = [deviceConflict.first_name, deviceConflict.last_name].filter(Boolean).join(' ') || 'User';
+                  handleSessionEjection(`Strict Device Lock: Another account (${conflictedName}) is already active on this device. Only one account per device is allowed.`, supabase);
                   return;
                 }
               } catch (e) {
@@ -2361,13 +2362,14 @@ export function AuthProvider({ children }) {
           try {
             const { data: conflict } = await supabase
               .from('profiles')
-              .select('id, full_name')
+              .select('id, first_name, last_name')
               .neq('id', uid)
               .not('active_session_token', 'is', null)
               .eq('active_device_fingerprint', myFingerprint)
               .maybeSingle();
             if (conflict && active) {
-              handleSessionEjection(`Strict Device Lock: Another account (${conflict.full_name || 'User'}) is active on this device. Only one account is allowed per device when multi-account parallel sessions is disabled by Admin.`, supabase);
+              const conflictedName = [conflict.first_name, conflict.last_name].filter(Boolean).join(' ') || 'User';
+              handleSessionEjection(`Strict Device Lock: Another account (${conflictedName}) is active on this device. Only one account is allowed per device when multi-account parallel sessions is disabled by Admin.`, supabase);
             }
           } catch (deviceErr) {
             console.warn('[SessionIntegrity] Device conflict check error in heartbeat:', deviceErr);

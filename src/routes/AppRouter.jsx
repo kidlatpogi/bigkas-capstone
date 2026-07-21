@@ -402,6 +402,48 @@ function PublicRoute() {
  */
 function AppRouter() {
   const isNative = Capacitor.isNativePlatform();
+  const location = useLocation();
+
+  useEffect(() => {
+    const path = location.pathname;
+    const baseTitle = 'TalkTics — Master Public Speaking';
+
+    if (path === ROUTES.LOGIN) {
+      document.title = 'Login | ' + baseTitle;
+    } else if (path === ROUTES.REGISTER) {
+      document.title = 'Create Account | ' + baseTitle;
+    } else if (path === ROUTES.FORGOT_PASSWORD) {
+      document.title = 'Forgot Password | ' + baseTitle;
+    } else if (path === ROUTES.CREATE_PASSWORD) {
+      document.title = 'Create Password | ' + baseTitle;
+    } else if (path === ROUTES.VERIFY_EMAIL) {
+      document.title = 'Verify Email | ' + baseTitle;
+    } else if (path === ROUTES.ACTIVITY) {
+      document.title = 'Activity | ' + baseTitle;
+    } else if (path === ROUTES.PROGRESS) {
+      document.title = 'Progress | ' + baseTitle;
+    } else if (path === ROUTES.ACHIEVEMENTS) {
+      document.title = 'Achievements | ' + baseTitle;
+    } else if (path === ROUTES.PROFILE) {
+      document.title = 'Profile | ' + baseTitle;
+    } else if (path === ROUTES.SETTINGS) {
+      document.title = 'Settings | ' + baseTitle;
+    } else if (path === ROUTES.TRAINING || path === ROUTES.TRAINING_SETUP) {
+      document.title = 'Training | ' + baseTitle;
+    } else if (path === ROUTES.FRAMEWORKS) {
+      document.title = 'Frameworks | ' + baseTitle;
+    } else if (path === ROUTES.PRACTICE) {
+      document.title = 'Practice | ' + baseTitle;
+    } else if (path.includes('/session/') || path === ROUTES.SESSION_DETAIL || path === ROUTES.SESSION_RESULT || path === ROUTES.DETAILED_FEEDBACK) {
+      document.title = 'Feedback | ' + baseTitle;
+    } else if (path === ROUTES.ADMIN_DASHBOARD) {
+      document.title = 'Admin Dashboard | ' + baseTitle;
+    } else if (path === ROUTES.HOME) {
+      document.title = 'TalkTics — Master Speaking';
+    } else {
+      document.title = baseTitle;
+    }
+  }, [location.pathname]);
 
   return (
     <Routes>

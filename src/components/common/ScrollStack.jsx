@@ -4,9 +4,7 @@ import PropTypes from 'prop-types';
 import './ScrollStack.css';
 
 export const ScrollStackItem = ({ children, itemClassName = '', style = {} }) => (
-  <div className={`scroll-stack-card ${itemClassName}`.trim()} style={style}>
-    {children}
-  </div>
+  <div className={`scroll-stack-card ${itemClassName}`.trim()} style={style}>{children}</div>
 );
 
 ScrollStackItem.propTypes = {
@@ -27,8 +25,9 @@ const ScrollStack = ({
   scaleDuration = 0.5,
   rotationAmount = 0,
   blurAmount = 0,
-  useWindowScroll = true,
-  onStackComplete,
+  useWindowScroll = false,
+  onActiveIndexChange,
+  onStackComplete
 }) => {
   const scrollerRef = useRef(null);
   const stackCompletedRef = useRef(false);
@@ -56,23 +55,24 @@ const ScrollStack = ({
       return {
         scrollTop: window.scrollY,
         containerHeight: window.innerHeight,
-        scrollContainer: document.documentElement,
+        scrollContainer: document.documentElement
       };
     } else {
       const scroller = scrollerRef.current;
       return {
         scrollTop: scroller?.scrollTop || 0,
         containerHeight: scroller?.clientHeight || window.innerHeight,
-        scrollContainer: scroller,
+        scrollContainer: scroller
       };
     }
   }, [useWindowScroll]);
 
   const getElementOffset = useCallback(
-    (element) => {
+    (element, index) => {
       if (useWindowScroll) {
         const rect = element.getBoundingClientRect();
-        return rect.top + window.scrollY;
+        const currentY = typeof index === 'number' ? (lastTransformsRef.current.get(index)?.translateY || 0) : 0;
+        return rect.top + window.scrollY - currentY;
       } else {
         return element.offsetTop;
       }
@@ -95,14 +95,20 @@ const ScrollStack = ({
 
     const endElementTop = endElement ? getElementOffset(endElement) : 0;
 
+    let activeIdx = 0;
     cardsRef.current.forEach((card, i) => {
       if (!card) return;
 
-      const cardTop = getElementOffset(card);
+      const cardTop = getElementOffset(card, i);
       const triggerStart = cardTop - stackPositionPx - itemStackDistance * i;
       const triggerEnd = cardTop - scaleEndPositionPx;
       const pinStart = cardTop - stackPositionPx - itemStackDistance * i;
       const pinEnd = endElementTop - containerHeight / 2;
+
+      // Track active index
+      if (scrollTop >= triggerStart - 50) {
+        activeIdx = i;
+      }
 
       const scaleProgress = calculateProgress(scrollTop, triggerStart, triggerEnd);
       const targetScale = baseScale + i * itemScale;
@@ -113,7 +119,7 @@ const ScrollStack = ({
       if (blurAmount) {
         let topCardIndex = 0;
         for (let j = 0; j < cardsRef.current.length; j++) {
-          const jCardTop = getElementOffset(cardsRef.current[j]);
+          const jCardTop = getElementOffset(cardsRef.current[j], j);
           const jTriggerStart = jCardTop - stackPositionPx - itemStackDistance * j;
           if (scrollTop >= jTriggerStart) {
             topCardIndex = j;
@@ -139,7 +145,7 @@ const ScrollStack = ({
         translateY: Math.round(translateY * 100) / 100,
         scale: Math.round(scale * 1000) / 1000,
         rotation: Math.round(rotation * 100) / 100,
-        blur: Math.round(blur * 100) / 100,
+        blur: Math.round(blur * 100) / 100
       };
 
       const lastTransform = lastTransformsRef.current.get(i);
@@ -171,6 +177,11 @@ const ScrollStack = ({
       }
     });
 
+    if (activeIndexRef.current !== activeIdx) {
+      activeIndexRef.current = activeIdx;
+      onActiveIndexChange?.(activeIdx);
+    }
+
     isUpdatingRef.current = false;
   }, [
     itemScale,
@@ -181,11 +192,12 @@ const ScrollStack = ({
     rotationAmount,
     blurAmount,
     useWindowScroll,
+    onActiveIndexChange,
     onStackComplete,
     calculateProgress,
     parsePercentage,
     getScrollData,
-    getElementOffset,
+    getElementOffset
   ]);
 
   const handleScroll = useCallback(() => {
@@ -196,19 +208,19 @@ const ScrollStack = ({
     if (useWindowScroll) {
       const lenis = new Lenis({
         duration: 1.2,
-        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        easing: t => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
         smoothWheel: true,
         touchMultiplier: 2,
         infinite: false,
         wheelMultiplier: 1,
         lerp: 0.1,
         syncTouch: true,
-        syncTouchLerp: 0.075,
+        syncTouchLerp: 0.075
       });
 
       lenis.on('scroll', handleScroll);
 
-      const raf = (time) => {
+      const raf = time => {
         lenis.raf(time);
         animationFrameRef.current = requestAnimationFrame(raf);
       };
@@ -224,7 +236,7 @@ const ScrollStack = ({
         wrapper: scroller,
         content: scroller.querySelector('.scroll-stack-inner'),
         duration: 1.2,
-        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        easing: t => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
         smoothWheel: true,
         touchMultiplier: 2,
         infinite: false,
@@ -235,12 +247,12 @@ const ScrollStack = ({
         lerp: 0.1,
         syncTouch: true,
         syncTouchLerp: 0.075,
-        touchInertia: 0.6,
+        touchInertia: 0.6
       });
 
       lenis.on('scroll', handleScroll);
 
-      const raf = (time) => {
+      const raf = time => {
         lenis.raf(time);
         animationFrameRef.current = requestAnimationFrame(raf);
       };
@@ -280,7 +292,14 @@ const ScrollStack = ({
     setupLenis();
     updateCardTransforms();
 
+    if (useWindowScroll) {
+      window.addEventListener('scroll', handleScroll, { passive: true });
+    }
+
     return () => {
+      if (useWindowScroll) {
+        window.removeEventListener('scroll', handleScroll);
+      }
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
@@ -306,12 +325,14 @@ const ScrollStack = ({
     onStackComplete,
     setupLenis,
     updateCardTransforms,
+    handleScroll
   ]);
 
   return (
     <div className={`scroll-stack-scroller ${className}`.trim()} ref={scrollerRef}>
       <div className="scroll-stack-inner">
         {children}
+        {/* Spacer so the last pin can release cleanly */}
         <div className="scroll-stack-end" />
       </div>
     </div>

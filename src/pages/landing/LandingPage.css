@@ -157,8 +157,8 @@ body.landing-page-active #root {
   z-index: 3;
   width: 100%;
   background: transparent;
-  /* Scroll track length for native pinning */
-  height: 240vh;
+  padding-top: 4rem;
+  padding-bottom: 25vh;
 }
 
 .features-container {
@@ -168,17 +168,14 @@ body.landing-page-active #root {
   display: grid;
   grid-template-columns: 1fr 1.35fr;
   gap: 4rem;
-  align-items: center;
-  
-  /* Native sticky viewport pinning */
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow: hidden;
+  align-items: flex-start;
+  position: relative;
 }
 
 /* Left Sticky Column */
 .features-left-sticky {
+  position: sticky;
+  top: 120px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;

@@ -244,7 +244,7 @@ export default function LandingPage({ managePageClass = true }) {
               useWindowScroll={true} 
               itemDistance={100} 
               itemStackDistance={35} 
-              stackPosition="20%" 
+              stackPosition="120px" 
               baseScale={0.88}
               onActiveIndexChange={setActiveIndex}
             >

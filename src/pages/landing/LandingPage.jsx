@@ -47,7 +47,7 @@ export default function LandingPage({ managePageClass = true }) {
   const cardNavItems = [
     {
       label: 'Platform',
-      bgColor: 'rgba(11, 57, 84, 0.85)',
+      bgColor: '#0B3954',
       textColor: '#FFFFFF',
       links: [
         { label: 'Login', href: ROUTES.LOGIN, ariaLabel: 'Login to TalkTics', isRoute: true },
@@ -56,7 +56,7 @@ export default function LandingPage({ managePageClass = true }) {
     },
     {
       label: 'Account',
-      bgColor: 'rgba(241, 143, 1, 0.85)',
+      bgColor: '#F18F01',
       textColor: '#FFFFFF',
       links: [
         { label: 'Sign In', href: ROUTES.LOGIN, ariaLabel: 'Sign In', isRoute: true },
@@ -65,7 +65,7 @@ export default function LandingPage({ managePageClass = true }) {
     },
     {
       label: 'Get Started',
-      bgColor: 'rgba(5, 150, 105, 0.85)',
+      bgColor: '#059669',
       textColor: '#FFFFFF',
       links: [
         { label: 'Start Free Practice', href: ROUTES.REGISTER, ariaLabel: 'Start Free Practice', isRoute: true },
@@ -96,7 +96,7 @@ export default function LandingPage({ managePageClass = true }) {
         logo={bigkasLogo}
         logoAlt="TalkTics"
         items={cardNavItems}
-        baseColor="rgba(255, 255, 255, 0.65)"
+        baseColor="#ffffff"
         menuColor="#0B3954"
         buttonBgColor="#059669"
         buttonTextColor="#ffffff"
@@ -118,6 +118,7 @@ export default function LandingPage({ managePageClass = true }) {
             <source src={gradVideo} type="video/mp4" />
           </video>
           <div className="hero-video-overlay" />
+          <div className="hero-video-bottom-blur" />
         </div>
 
         <div className="hero-video-content">

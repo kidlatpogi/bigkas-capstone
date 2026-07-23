@@ -9,19 +9,15 @@
   box-sizing: border-box;
 }
 
-/* Glassmorphism Navigation Bar Container */
+/* Clean Solid Navigation Bar Container (No Glassmorphism) */
 .card-nav {
   display: block;
   height: 60px;
   padding: 0;
-  background: rgba(255, 255, 255, 0.55);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.65);
+  background: #ffffff;
+  border: 1px solid rgba(11, 57, 84, 0.12);
   border-radius: 1.25rem;
-  box-shadow: 
-    0 12px 36px -4px rgba(11, 57, 84, 0.1),
-    0 1px 3px 0 rgba(255, 255, 255, 0.8) inset;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
   position: relative;
   overflow: hidden;
   will-change: height;
@@ -29,11 +25,9 @@
 }
 
 .card-nav.open {
-  background: rgba(255, 255, 255, 0.75);
-  border-color: rgba(255, 255, 255, 0.85);
-  box-shadow: 
-    0 20px 48px -4px rgba(11, 57, 84, 0.16),
-    0 1px 4px 0 rgba(255, 255, 255, 0.9) inset;
+  background: #ffffff;
+  border-color: rgba(11, 57, 84, 0.2);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
 }
 
 .card-nav-top {
@@ -130,8 +124,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
 }
 
 .card-nav-login-button:hover {
@@ -184,7 +176,7 @@
   pointer-events: auto;
 }
 
-/* Glassmorphic Inner Nav Cards */
+/* Inner Nav Cards */
 .nav-card {
   height: 100%;
   flex: 1 1 0;
@@ -196,10 +188,8 @@
   padding: 16px 18px;
   gap: 12px;
   user-select: none;
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .nav-card-label {

@@ -242,10 +242,13 @@ export default function LandingPage({ managePageClass = true }) {
           <div className="features-right-cards">
             <ScrollStack 
               useWindowScroll={true} 
-              itemDistance={100} 
+              itemDistance="60vh" 
               itemStackDistance={35} 
               stackPosition="120px" 
-              baseScale={0.88}
+              baseScale={1}
+              itemScale={0}
+              rotationAmount={0}
+              blurAmount={0}
               onActiveIndexChange={setActiveIndex}
             >
               {featureCards.map((card) => {

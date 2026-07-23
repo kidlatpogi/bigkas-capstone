@@ -279,8 +279,10 @@ const ScrollStack = ({
 
     cards.forEach((card, i) => {
       if (i < cards.length - 1) {
-        card.style.marginBottom = `${itemDistance}px`;
+        const dist = typeof itemDistance === 'number' ? `${itemDistance}px` : itemDistance;
+        card.style.marginBottom = dist;
       }
+      card.style.zIndex = i + 1;
       card.style.willChange = 'transform, filter';
       card.style.transformOrigin = 'top center';
       card.style.backfaceVisibility = 'hidden';

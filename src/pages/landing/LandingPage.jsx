@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { IoEye, IoMic, IoChatbubbleEllipses } from 'react-icons/io5';
 import { ROUTES } from '../../utils/constants';
 import { getAssetUrl } from '../../utils/assetUtils';
 import CardNav from '../../components/common/CardNav';
 import ShapeGrid from '../../components/common/ShapeGrid';
 import PushButton from '../../components/common/PushButton';
+import ScrollStack, { ScrollStackItem } from '../../components/common/ScrollStack';
 import gradVideo from '../../assets/landing/Grad-Video.mp4';
 import './LandingPage.css';
 
@@ -46,12 +48,12 @@ export default function LandingPage({ managePageClass = true }) {
 
   const cardNavItems = [
     {
-      label: 'Platform',
+      label: 'Features',
       bgColor: '#0B3954',
       textColor: '#FFFFFF',
       links: [
-        { label: 'Login', href: ROUTES.LOGIN, ariaLabel: 'Login to TalkTics', isRoute: true },
-        { label: 'Register', href: ROUTES.REGISTER, ariaLabel: 'Register for TalkTics', isRoute: true },
+        { label: 'Feedback Lanes', href: '#features', ariaLabel: 'Feedback Lanes Section' },
+        { label: 'Visual, Vocal & Verbal', href: '#features', ariaLabel: 'Visual, Vocal and Verbal Features' },
       ],
     },
     {
@@ -78,8 +80,38 @@ export default function LandingPage({ managePageClass = true }) {
     if (link.isRoute) {
       e.preventDefault();
       navigate(link.href);
+    } else if (link.href && link.href.startsWith('#')) {
+      e.preventDefault();
+      const el = document.querySelector(link.href);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
     }
   };
+
+  const featureCards = [
+    {
+      icon: IoEye,
+      accentColor: '#059669',
+      tag: 'VISUAL LANE',
+      title: 'Look steady & intentional',
+      text: 'Read posture, eye contact, and facial tension in real time so your delivery feels confident instead of frozen on stage.',
+    },
+    {
+      icon: IoMic,
+      accentColor: '#F18F01',
+      tag: 'VOCAL LANE',
+      title: 'Sound clear & resonant',
+      text: 'Track volume stability, pitch modulation, and speech shakiness so your voice becomes easier to control with every run-through.',
+    },
+    {
+      icon: IoChatbubbleEllipses,
+      accentColor: '#0B3954',
+      tag: 'VERBAL LANE',
+      title: 'Speak naturally & smoothly',
+      text: 'Review pronunciation cues and pacing feedback that help listeners follow your speech message without extra effort.',
+    },
+  ];
 
   return (
     <div className="landing-clean-wrapper">
@@ -106,6 +138,7 @@ export default function LandingPage({ managePageClass = true }) {
         onLinkClick={handleCardNavLinkClick}
       />
 
+      {/* 100vh Video Hero Section */}
       <section className="hero-video-section">
         <div className="video-background-wrapper">
           <video
@@ -132,7 +165,7 @@ export default function LandingPage({ managePageClass = true }) {
             <PushButton
               bgColor="#059669"
               shadowColor="#047857"
-              className="hero-btn-primary"
+              className="hero-btn-custom"
               onClick={() => navigateTo(ROUTES.REGISTER)}
             >
               Start Practicing - It&apos;s Free
@@ -140,13 +173,51 @@ export default function LandingPage({ managePageClass = true }) {
             <PushButton
               bgColor="#f18f01"
               shadowColor="#d97706"
-              className="hero-btn-secondary"
+              className="hero-btn-custom"
               onClick={() => navigateTo(ROUTES.LOGIN)}
             >
               Login to Account
             </PushButton>
           </div>
         </div>
+      </section>
+
+      {/* Features Section using ScrollStack */}
+      <section className="features-scroll-section" id="features">
+        <div className="features-section-header">
+          <h2 className="features-section-title">Three feedback lanes, one speaking goal.</h2>
+          <p className="features-section-subtitle">
+            TalkTics keeps feedback focused, readable, and easy to act on after each private practice session.
+          </p>
+        </div>
+
+        <ScrollStack 
+          useWindowScroll={true} 
+          itemDistance={70} 
+          itemStackDistance={30} 
+          stackPosition="25%" 
+          baseScale={0.88}
+        >
+          {featureCards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <ScrollStackItem key={card.title}>
+                <div className="feature-stack-card-content">
+                  <div className="feature-card-header">
+                    <span className="feature-card-tag" style={{ color: card.accentColor, borderColor: card.accentColor }}>
+                      {card.tag}
+                    </span>
+                    <div className="feature-card-icon" style={{ backgroundColor: card.accentColor }}>
+                      <Icon color="#ffffff" size={24} />
+                    </div>
+                  </div>
+                  <h3 className="feature-card-title">{card.title}</h3>
+                  <p className="feature-card-text">{card.text}</p>
+                </div>
+              </ScrollStackItem>
+            );
+          })}
+        </ScrollStack>
       </section>
     </div>
   );

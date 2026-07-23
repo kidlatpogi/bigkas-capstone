@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { IoEye, IoMic, IoChatbubbleEllipses, IoArrowForward } from 'react-icons/io5';
 import { ROUTES } from '../../utils/constants';
@@ -6,7 +6,6 @@ import { getAssetUrl } from '../../utils/assetUtils';
 import CardNav from '../../components/common/CardNav';
 import ShapeGrid from '../../components/common/ShapeGrid';
 import PushButton from '../../components/common/PushButton';
-import ScrollStack, { ScrollStackItem } from '../../components/common/ScrollStack';
 import gradVideo from '../../assets/landing/Grad-Video.mp4';
 import './LandingPage.css';
 
@@ -15,7 +14,6 @@ const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 export default function LandingPage({ managePageClass = true }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [activeIndex, setActiveIndex] = useState(0);
 
   function navigateTo(path) {
     navigate(path);
@@ -198,153 +196,106 @@ export default function LandingPage({ managePageClass = true }) {
         </div>
       </section>
 
-      {/* 2-Column Features Section matching Zeus Bautista Portfolio Layout */}
-      <section className="features-scroll-section" id="features">
-        <div className="features-container">
-          {/* Left Column: Sticky Title, Description & Pagination Indicators */}
-          <div className="features-left-sticky">
+      {/* Practice Lanes Section: 100vh Centered Header with 3 Columns 1 Row Grid */}
+      <section className="features-grid-section" id="features">
+        <div className="features-section-container">
+          {/* Centered Header with 3-Font Title Design */}
+          <div className="features-centered-header">
             <span className="features-tag">FEEDBACK LANES</span>
             <div className="features-title-group">
-              <span className="features-title-main">Practice</span>
-              <span className="features-title-sub">Lanes</span>
+              <h2 className="features-title-main">Practice Lanes</h2>
             </div>
             <p className="features-description">
               TalkTics keeps feedback focused, readable, and easy to act on after each private practice session using acoustic biomarkers and computer vision.
             </p>
-            
-            {/* Pagination Indicators from Portfolio Screenshot */}
-            <div className="features-pagination-list">
-              {featureCards.map((card, idx) => (
-                <div 
-                  key={idx} 
-                  className="features-pagination-item"
-                  onClick={() => {
-                    const cards = document.querySelectorAll('.scroll-stack-card');
-                    if (cards[idx]) {
-                      cards[idx].scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                  }}
-                >
-                  <div className={`pagination-num-box ${activeIndex === idx ? 'active' : 'inactive'}`}>
-                    {String(idx + 1).padStart(2, '0')}
-                  </div>
-                  {activeIndex === idx ? (
-                    <span className="pagination-indicator-line" />
-                  ) : (
-                    <span className="pagination-indicator-dot" />
-                  )}
-                </div>
-              ))}
-            </div>
           </div>
 
-          {/* Right Column: Stacking Colored Feature Cards */}
-          <div className="features-right-cards">
-            <ScrollStack 
-              useWindowScroll={true} 
-              itemDistance="60vh" 
-              itemStackDistance={35} 
-              stackPosition="120px" 
-              baseScale={1}
-              itemScale={0}
-              rotationAmount={0}
-              blurAmount={0}
-              onActiveIndexChange={setActiveIndex}
-            >
-              {featureCards.map((card) => {
-                const Icon = card.icon;
-                return (
-                  <ScrollStackItem key={card.title} style={{ backgroundColor: card.bgColor }}>
-                    {/* Visual overlay matching zeusbautista.site */}
-                    <div className="scroll-stack-card-overlay" />
-                    
-                    <div className="feature-stack-card-content">
-                      <div className="feature-card-header">
-                        <span className="feature-card-tag">
-                          {card.tag}
-                        </span>
-                        <div className="feature-card-header-right">
-                          <span className="feature-card-step">{card.step}</span>
-                          <div className="feature-card-icon">
-                            <Icon color="#ffffff" size={24} />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="feature-card-grid">
-                        {/* Info Column */}
-                        <div className="feature-card-info-col">
-                          <h3 className="feature-card-title">{card.title}</h3>
-                          <p className="feature-card-text">{card.text}</p>
-                          
-                          {/* Badges */}
-                          <div className="feature-card-badges-row">
-                            {card.badges.map((badge) => (
-                              <span key={badge} className="feature-card-pill">
-                                {badge}
-                              </span>
-                            ))}
-                          </div>
-
-                          {/* Action Button */}
-                          <button
-                            onClick={() => navigate(card.actionRoute)}
-                            className="feature-card-action-btn"
-                          >
-                            {card.actionText}
-                            <IoArrowForward size={16} />
-                          </button>
-                        </div>
-
-                        {/* Graphic Preview Column (Mockups matching portfolio) */}
-                        <div className="feature-card-preview-col">
-                          {card.previewType === 'camera' && (
-                            <div className="preview-mockup-frame camera-mock">
-                              <div className="camera-box-outline">
-                                <div className="camera-scan-glow" />
-                                <div className="face-grid-simulation">
-                                  <div className="node n1" />
-                                  <div className="node n2" />
-                                  <div className="node n3" />
-                                  <div className="node n4" />
-                                  <div className="line l1" />
-                                  <div className="line l2" />
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {card.previewType === 'audio' && (
-                            <div className="preview-mockup-frame audio-mock">
-                              <div className="audio-wave-simulation">
-                                <div className="bar b1" />
-                                <div className="bar b2" />
-                                <div className="bar b3" />
-                                <div className="bar b4" />
-                                <div className="bar b5" />
-                                <div className="bar b6" />
-                                <div className="bar b7" />
-                              </div>
-                            </div>
-                          )}
-
-                          {card.previewType === 'text' && (
-                            <div className="preview-mockup-frame text-mock">
-                              <div className="text-bubble-simulation">
-                                <div className="text-line t1" />
-                                <div className="text-line t2" />
-                                <div className="text-line t3" />
-                                <div className="text-bubble-glow" />
-                              </div>
-                            </div>
-                          )}
+          {/* 3 Columns 1 Row Grid */}
+          <div className="features-cards-3col-grid">
+            {featureCards.map((card) => {
+              const Icon = card.icon;
+              return (
+                <div key={card.title} className="feature-grid-card" style={{ backgroundColor: card.bgColor }}>
+                  <div className="scroll-stack-card-overlay" />
+                  
+                  <div className="feature-stack-card-content">
+                    <div className="feature-card-header">
+                      <span className="feature-card-tag">{card.tag}</span>
+                      <div className="feature-card-header-right">
+                        <span className="feature-card-step">{card.step}</span>
+                        <div className="feature-card-icon">
+                          <Icon color="#ffffff" size={20} />
                         </div>
                       </div>
                     </div>
-                  </ScrollStackItem>
-                );
-              })}
-            </ScrollStack>
+
+                    <div className="feature-card-info-col">
+                      <h3 className="feature-card-title">{card.title}</h3>
+                      <p className="feature-card-text">{card.text}</p>
+                      
+                      <div className="feature-card-badges-row">
+                        {card.badges.map((badge) => (
+                          <span key={badge} className="feature-card-pill">
+                            {badge}
+                          </span>
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={() => navigate(card.actionRoute)}
+                        className="feature-card-action-btn"
+                      >
+                        {card.actionText}
+                        <IoArrowForward size={16} />
+                      </button>
+                    </div>
+
+                    <div className="feature-card-preview-col">
+                      {card.previewType === 'camera' && (
+                        <div className="preview-mockup-frame camera-mock">
+                          <div className="camera-box-outline">
+                            <div className="camera-scan-glow" />
+                            <div className="face-grid-simulation">
+                              <div className="node n1" />
+                              <div className="node n2" />
+                              <div className="node n3" />
+                              <div className="node n4" />
+                              <div className="line l1" />
+                              <div className="line l2" />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {card.previewType === 'audio' && (
+                        <div className="preview-mockup-frame audio-mock">
+                          <div className="audio-wave-simulation">
+                            <div className="bar b1" />
+                            <div className="bar b2" />
+                            <div className="bar b3" />
+                            <div className="bar b4" />
+                            <div className="bar b5" />
+                            <div className="bar b6" />
+                            <div className="bar b7" />
+                          </div>
+                        </div>
+                      )}
+
+                      {card.previewType === 'text' && (
+                        <div className="preview-mockup-frame text-mock">
+                          <div className="text-bubble-simulation">
+                            <div className="text-line t1" />
+                            <div className="text-line t2" />
+                            <div className="text-line t3" />
+                            <div className="text-bubble-glow" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>

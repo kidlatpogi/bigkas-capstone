@@ -15,6 +15,7 @@ const CardNav = ({
   buttonBgColor = '#059669',
   buttonTextColor = '#ffffff',
   onCtaClick,
+  onLoginClick,
   onLogoClick,
   onLinkClick,
 }) => {
@@ -153,7 +154,7 @@ const CardNav = ({
 
   return (
     <div className={`card-nav-container ${className}`}>
-      <nav ref={navRef} className={`card-nav ${isExpanded ? 'open' : ''}`} style={{ backgroundColor: baseColor }}>
+      <nav ref={navRef} className={`card-nav ${isExpanded ? 'open' : ''}`}>
         <div className="card-nav-top">
           <div
             className={`hamburger-menu ${isHamburgerOpen ? 'open' : ''}`}
@@ -168,7 +169,7 @@ const CardNav = ({
             aria-label={isExpanded ? 'Close menu' : 'Open menu'}
             aria-expanded={isExpanded}
             tabIndex={0}
-            style={{ color: menuColor || '#000' }}
+            style={{ color: menuColor || '#0B3954' }}
           >
             <div className="hamburger-line" />
             <div className="hamburger-line" />
@@ -183,14 +184,23 @@ const CardNav = ({
             {logoAlt && <span className="logo-text-title">{logoAlt}</span>}
           </div>
 
-          <button
-            type="button"
-            className="card-nav-cta-button"
-            style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
-            onClick={() => { closeMenu(); onCtaClick?.(); }}
-          >
-            Get Started
-          </button>
+          <div className="card-nav-actions">
+            <button
+              type="button"
+              className="card-nav-login-button"
+              onClick={() => { closeMenu(); onLoginClick?.(); }}
+            >
+              Login
+            </button>
+            <button
+              type="button"
+              className="card-nav-cta-button"
+              style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
+              onClick={() => { closeMenu(); onCtaClick?.(); }}
+            >
+              Get Started
+            </button>
+          </div>
         </div>
 
         <div className="card-nav-content" aria-hidden={!isExpanded}>
@@ -249,6 +259,7 @@ CardNav.propTypes = {
   buttonBgColor: PropTypes.string,
   buttonTextColor: PropTypes.string,
   onCtaClick: PropTypes.func,
+  onLoginClick: PropTypes.func,
   onLogoClick: PropTypes.func,
   onLinkClick: PropTypes.func,
 };

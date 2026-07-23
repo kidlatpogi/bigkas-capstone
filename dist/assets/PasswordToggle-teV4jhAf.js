@@ -1,1 +1,0 @@
-import{j as r}from"./vendor-framework-CmdwDIpY.js";function d({isVisible:o,onToggle:e,label:t="password",disabled:n=!1}){return r.jsx("button",{type:"button",className:"pw-toggle-btn","aria-label":o?`Hide ${t}`:`Show ${t}`,title:o?`Hide ${t}`:`Show ${t}`,onClick:e,tabIndex:0,disabled:n,children:o?"Hide":"Show"})}export{d as default};

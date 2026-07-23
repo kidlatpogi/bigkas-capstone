@@ -1,3 +1,20 @@
+/* Document & Root Scroll Unlock for Landing Page */
+html.landing-page-active,
+body.landing-page-active {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  height: auto !important;
+  min-height: 100dvh !important;
+}
+
+#root:has(.landing-clean-wrapper),
+body.landing-page-active #root {
+  overflow-y: visible !important;
+  overflow-x: hidden !important;
+  height: auto !important;
+  min-height: 100dvh !important;
+}
+
 /* Clean Landing Page Wrapper & Background */
 .landing-clean-wrapper {
   position: relative;

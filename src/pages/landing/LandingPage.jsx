@@ -81,35 +81,86 @@ export default function LandingPage({ managePageClass = true }) {
     };
   }, []);
 
-  {/* Practice Lanes 3-step scroll reveal */}
+  {/* Practice Lanes scroll-jacking: block scroll until all 3 cards revealed */}
   useEffect(() => {
-    const handleScroll = () => {
-      const section = featuresSectionRef.current;
-      if (!section) return;
+    const section = featuresSectionRef.current;
+    if (!section) return;
 
+    // How much wheel delta per card step
+    const STEP_THRESHOLD = 350;
+    let accumulated = 0;
+    let touchStartY = 0;
+    let currentStep = 0; // 0 = card1 shown, 1 = card2 shown, 2 = card3 shown
+    let allRevealed = false;
+
+    const isInView = () => {
       const rect = section.getBoundingClientRect();
-      const totalScrollable = section.offsetHeight - window.innerHeight;
-      if (totalScrollable <= 0) return;
+      // Section is in the viewport when its top is near 0 (scrolled into view)
+      return rect.top <= 20 && rect.bottom > window.innerHeight * 0.3;
+    };
 
-      if (rect.top <= -totalScrollable) {
-        setVisibleLaneCount(3);
-        return;
+    const handleWheel = (e) => {
+      if (allRevealed) return;
+      if (!isInView()) return;
+
+      e.preventDefault();
+
+      accumulated += e.deltaY;
+
+      if (accumulated >= STEP_THRESHOLD && currentStep < 2) {
+        accumulated = 0;
+        currentStep++;
+        setVisibleLaneCount(currentStep + 1);
+        if (currentStep === 2) {
+          allRevealed = true;
+        }
+      } else if (accumulated < -STEP_THRESHOLD && currentStep > 0) {
+        accumulated = 0;
+        currentStep--;
+        setVisibleLaneCount(currentStep + 1);
       }
 
-      const progress = Math.max(0, Math.min(1, -rect.top / totalScrollable));
-
-      if (progress < 0.15) {
-        setVisibleLaneCount(1);
-      } else if (progress < 0.35) {
-        setVisibleLaneCount(2);
-      } else {
-        setVisibleLaneCount(3);
+      if (accumulated < -STEP_THRESHOLD && currentStep === 0) {
+        accumulated = 0;
       }
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
+    const handleTouchStart = (e) => {
+      touchStartY = e.touches[0].clientY;
+    };
+
+    const handleTouchMove = (e) => {
+      if (allRevealed) return;
+      if (!isInView()) return;
+
+      const deltaY = touchStartY - e.touches[0].clientY;
+      if (Math.abs(deltaY) < 10) return;
+
+      e.preventDefault();
+
+      if (deltaY > 0 && currentStep < 2) {
+        currentStep++;
+        setVisibleLaneCount(currentStep + 1);
+        touchStartY = e.touches[0].clientY;
+        if (currentStep === 2) {
+          allRevealed = true;
+        }
+      } else if (deltaY < 0 && currentStep > 0) {
+        currentStep--;
+        setVisibleLaneCount(currentStep + 1);
+        touchStartY = e.touches[0].clientY;
+      }
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+    return () => {
+      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+    };
   }, []);
 
   const cardNavItems = [

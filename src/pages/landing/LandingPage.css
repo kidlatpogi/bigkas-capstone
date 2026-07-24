@@ -157,20 +157,19 @@ body.landing-page-active #root {
   border-radius: 18px !important;
 }
 
-/* 3-Step Scroll Reveal Practice Lanes Section */
+/* Practice Lanes - Scroll-jacked card reveal */
 .features-grid-section {
   position: relative;
   z-index: 3;
   width: 100%;
-  min-height: 400vh;
+  min-height: 100vh;
   padding: 0;
   background: transparent;
 }
 
 .features-section-container {
-  position: sticky;
-  top: 0;
-  height: 100vh;
+  position: relative;
+  min-height: 100vh;
   width: 90%;
   max-width: 1560px;
   margin: 0 auto;
@@ -180,6 +179,7 @@ body.landing-page-active #root {
   justify-content: center;
   gap: 1.5rem;
   box-sizing: border-box;
+  padding: 4rem 0;
 }
 
 /* Centered Header */

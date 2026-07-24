@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { IoEye, IoMic, IoChatbubbleEllipses, IoArrowForward } from 'react-icons/io5';
+import { IoEye, IoMic, IoChatbubbleEllipses, IoArrowForward, IoLogoAndroid } from 'react-icons/io5';
 import { ROUTES } from '../../utils/constants';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import CardNav from '../../components/common/CardNav';
@@ -453,6 +453,85 @@ export default function LandingPage({ managePageClass = true }) {
           </div>
         </div>
       </section>
+
+      {/* Combined Footer + CTA Section matching zeusbautista.site design */}
+      <footer className="footer-cta-section" id="download">
+        <div className="footer-cta-container">
+          <div className="footer-cta-grid">
+            {/* Left Column: CTA Content */}
+            <div className="footer-cta-left">
+              <ScrollReveal as="span" textClassName="footer-cta-tag" baseRotation={0} baseOpacity={0.2} blurStrength={0}>
+                GET STARTED
+              </ScrollReveal>
+              <ScrollReveal as="h2" containerClassName="footer-cta-heading-wrap" textClassName="footer-cta-heading" baseRotation={2} baseOpacity={0.1} blurStrength={4}>
+                Start with one brave take.
+              </ScrollReveal>
+              <ScrollReveal as="p" textClassName="footer-cta-desc" baseRotation={0} baseOpacity={0.1} blurStrength={4}>
+                No audience. No pressure. Just a private speaking round, clear feedback, and B-01 keeping the next move easy to see.
+              </ScrollReveal>
+
+              <div className="footer-cta-actions">
+                <PushButton
+                  bgColor="#059669"
+                  shadowColor="#047857"
+                  className="footer-btn-custom"
+                  onClick={() => navigateTo(ROUTES.REGISTER)}
+                >
+                  Start Practicing - It&apos;s Free
+                </PushButton>
+
+                <PushButton
+                  bgColor="#0B3954"
+                  shadowColor="#062436"
+                  className="footer-btn-custom"
+                  onClick={() => window.open('https://assets.bigkas.site/downloads/talktics-android.apk', '_blank')}
+                >
+                  <IoLogoAndroid size={22} />
+                  Download for Android
+                </PushButton>
+              </div>
+            </div>
+
+            {/* Right Column: Navigation & Connections */}
+            <div className="footer-cta-right">
+              <span className="footer-cta-tag">NAVIGATION</span>
+              <ul className="footer-links-list">
+                <li>
+                  <a href="#how-it-works" onClick={(e) => handleCardNavLinkClick(e, { href: '#how-it-works' })}>
+                    How it Works
+                  </a>
+                </li>
+                <li>
+                  <a href="#features" onClick={(e) => handleCardNavLinkClick(e, { href: '#features' })}>
+                    Practice Lanes
+                  </a>
+                </li>
+                <li>
+                  <a href={ROUTES.LOGIN} onClick={(e) => handleCardNavLinkClick(e, { href: ROUTES.LOGIN, isRoute: true })}>
+                    Login
+                  </a>
+                </li>
+                <li>
+                  <a href={ROUTES.REGISTER} onClick={(e) => handleCardNavLinkClick(e, { href: ROUTES.REGISTER, isRoute: true })}>
+                    Create Account
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Faint Background Watermark Text */}
+          <div className="footer-watermark-text" aria-hidden="true">
+            TALKTICS
+          </div>
+
+          {/* Bottom Bar: Copyright & Contact */}
+          <div className="footer-bottom-bar">
+            <span className="footer-copyright">© 2026 TALKTICS. ALL RIGHTS RESERVED.</span>
+            <a href="mailto:support@talktics.site" className="footer-contact-email">support@talktics.site</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

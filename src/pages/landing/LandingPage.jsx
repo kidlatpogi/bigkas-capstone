@@ -270,14 +270,28 @@ export default function LandingPage({ managePageClass = true }) {
                       </div>
                     </div>
 
-                    <div className="hiw-session-audio-dots">
-                      ••••••••••••••••••••••••••••••••••••••••
+                    <div className="hiw-session-soundwave">
+                      <div className="hiw-sound-bar b1" />
+                      <div className="hiw-sound-bar b2" />
+                      <div className="hiw-sound-bar b3" />
+                      <div className="hiw-sound-bar b4" />
+                      <div className="hiw-sound-bar b5" />
+                      <div className="hiw-sound-bar b6" />
+                      <div className="hiw-sound-bar b7" />
+                      <div className="hiw-sound-bar b8" />
+                      <div className="hiw-sound-bar b9" />
+                      <div className="hiw-sound-bar b10" />
+                      <div className="hiw-sound-bar b11" />
+                      <div className="hiw-sound-bar b12" />
+                      <div className="hiw-sound-bar b13" />
+                      <div className="hiw-sound-bar b14" />
+                      <div className="hiw-sound-bar b15" />
                     </div>
 
                     <div className="hiw-session-controls">
-                      <span className="hiw-ctrl-btn secondary">Pause</span>
-                      <span className="hiw-ctrl-btn primary">Start</span>
-                      <span className="hiw-ctrl-btn secondary">Restart</span>
+                      <button type="button" className="hiw-ctrl-btn secondary">Pause</button>
+                      <button type="button" className="hiw-ctrl-btn primary">Start</button>
+                      <button type="button" className="hiw-ctrl-btn secondary">Restart</button>
                     </div>
                   </div>
                 </div>

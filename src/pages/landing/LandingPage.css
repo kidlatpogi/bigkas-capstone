@@ -837,43 +837,95 @@ body.landing-page-active #root {
   color: #f18f01;
   font-family: 'Nunito', sans-serif;
   font-weight: 900;
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   letter-spacing: 0.04em;
-  padding: 0.35rem 0.85rem;
+  padding: 0.25rem 0.65rem;
   border-radius: 99px;
 }
 
-.hiw-session-audio-dots {
-  color: #059669;
-  font-size: 1.05rem;
-  letter-spacing: 0.22em;
-  line-height: 1;
+.hiw-session-soundwave {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  width: 70%;
+  margin: 0 auto;
+}
+
+.hiw-sound-bar {
+  width: 5px;
+  background: #059669;
+  border-radius: 99px;
+  animation: hiwSoundWave 1.2s ease-in-out infinite alternate;
+}
+
+.hiw-sound-bar.b1  { height: 12px; animation-delay: 0.1s; }
+.hiw-sound-bar.b2  { height: 22px; animation-delay: 0.3s; }
+.hiw-sound-bar.b3  { height: 28px; animation-delay: 0.2s; }
+.hiw-sound-bar.b4  { height: 16px; animation-delay: 0.4s; }
+.hiw-sound-bar.b5  { height: 32px; animation-delay: 0.15s; }
+.hiw-sound-bar.b6  { height: 20px; animation-delay: 0.35s; }
+.hiw-sound-bar.b7  { height: 14px; animation-delay: 0.25s; }
+.hiw-sound-bar.b8  { height: 30px; animation-delay: 0.05s; }
+.hiw-sound-bar.b9  { height: 24px; animation-delay: 0.45s; }
+.hiw-sound-bar.b10 { height: 18px; animation-delay: 0.2s; }
+.hiw-sound-bar.b11 { height: 26px; animation-delay: 0.3s; }
+.hiw-sound-bar.b12 { height: 15px; animation-delay: 0.1s; }
+.hiw-sound-bar.b13 { height: 28px; animation-delay: 0.4s; }
+.hiw-sound-bar.b14 { height: 19px; animation-delay: 0.25s; }
+.hiw-sound-bar.b15 { height: 10px; animation-delay: 0.15s; }
+
+@keyframes hiwSoundWave {
+  0% { transform: scaleY(0.35); opacity: 0.6; }
+  100% { transform: scaleY(1); opacity: 1; }
 }
 
 .hiw-session-controls {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.65rem;
+  gap: 0.85rem;
 }
 
 .hiw-ctrl-btn {
   font-family: 'Nunito', sans-serif;
-  font-weight: 800;
-  font-size: 0.92rem;
-  padding: 0.5rem 1.2rem;
-  border-radius: 99px;
+  font-weight: 900;
+  font-size: 0.85rem;
+  padding: 0.45rem 1.15rem;
+  border-radius: 12px;
+  border: 0;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .hiw-ctrl-btn.primary {
   background: #059669;
   color: #ffffff;
-  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.38);
+  box-shadow: #047857 0px 4px 0px 0px;
 }
 
 .hiw-ctrl-btn.secondary {
   background: #a7f3d0;
   color: #047857;
+  box-shadow: #6ee7b7 0px 4px 0px 0px;
+}
+
+.hiw-ctrl-btn:hover {
+  transform: translateY(2px);
+}
+
+.hiw-ctrl-btn.primary:hover {
+  box-shadow: #047857 0px 2px 0px 0px;
+}
+
+.hiw-ctrl-btn.secondary:hover {
+  box-shadow: #6ee7b7 0px 2px 0px 0px;
 }
 
 /* Step 3 Home Page Results Widget */

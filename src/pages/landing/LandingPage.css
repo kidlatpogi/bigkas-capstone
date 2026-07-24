@@ -162,7 +162,7 @@ body.landing-page-active #root {
   position: relative;
   z-index: 3;
   width: 100%;
-  min-height: 280vh;
+  min-height: 360vh;
   padding: 0;
   background: transparent;
 }
@@ -178,7 +178,7 @@ body.landing-page-active #root {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2.5rem;
+  gap: 1.5rem;
   box-sizing: border-box;
 }
 
@@ -188,7 +188,7 @@ body.landing-page-active #root {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   max-width: 760px;
 }
 
@@ -210,7 +210,7 @@ body.landing-page-active #root {
 .features-title-main {
   font-family: 'Nunito', sans-serif;
   font-weight: 900;
-  font-size: clamp(2.8rem, 5vw, 4.2rem);
+  font-size: clamp(2.4rem, 4vw, 3.6rem);
   color: #C44900; /* Burnt orange matching portfolio site */
   letter-spacing: -0.05em;
   margin: 0;
@@ -220,9 +220,9 @@ body.landing-page-active #root {
 .features-description {
   font-family: 'Nunito', sans-serif;
   font-weight: 600;
-  font-size: clamp(1rem, 1.3vw, 1.15rem);
+  font-size: clamp(0.95rem, 1.2vw, 1.1rem);
   color: #4B5563;
-  line-height: 1.65;
+  line-height: 1.55;
   margin: 0;
 }
 
@@ -230,21 +230,21 @@ body.landing-page-active #root {
 .features-cards-3col-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 2rem;
+  gap: 1.75rem;
   width: 100%;
 }
 
 .feature-grid-card {
   position: relative;
   border-radius: 32px;
-  padding: 2.25rem 2rem;
+  padding: 1.75rem 1.6rem;
   overflow: hidden;
   color: #ffffff;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 480px;
+  min-height: 400px;
   transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease, box-shadow 0.3s ease;
   will-change: transform, opacity;
 }

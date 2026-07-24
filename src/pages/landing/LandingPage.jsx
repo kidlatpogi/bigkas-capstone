@@ -6,6 +6,7 @@ import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import CardNav from '../../components/common/CardNav';
 import ShapeGrid from '../../components/common/ShapeGrid';
 import PushButton from '../../components/common/PushButton';
+import ScrollReveal from '../../components/common/ScrollReveal';
 import gradVideo from '../../assets/landing/Grad-Video.mp4';
 import './LandingPage.css';
 
@@ -132,7 +133,7 @@ export default function LandingPage({ managePageClass = true }) {
   return (
     <div className="landing-clean-wrapper">
       <ShapeGrid 
-        squareSize={42} 
+        squareSize={120} 
         borderColor="rgba(0, 0, 0, 0.07)" 
         hoverFillColor="rgba(5, 150, 105, 0.14)" 
         shape="square" 
@@ -207,45 +208,54 @@ export default function LandingPage({ managePageClass = true }) {
             <div className="features-title-group">
               <h2 className="features-title-main">Practice moves like a path.</h2>
             </div>
-            <p className="features-description">
+            <ScrollReveal
+              baseOpacity={0.15}
+              enableBlur={true}
+              baseRotation={2}
+              blurStrength={6}
+              containerClassName="features-scroll-reveal-container"
+              textClassName="features-description"
+            >
               Start with one small practice run, get a clear nudge from B-01, then continue to the next step without guessing what changed.
-            </p>
+            </ScrollReveal>
           </div>
 
           {/* 3 Steps Container */}
           <div className="how-it-works-steps-wrapper">
             {/* SVG Dotted Curved Lines with Arrow Markers */}
-            <svg className="how-it-works-curved-svg" viewBox="0 0 900 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg className="how-it-works-curved-svg" viewBox="0 0 900 180" fill="none" xmlns="http://www.w3.org/2000/svg">
               <defs>
                 <marker
                   id="hiw-arrow"
                   viewBox="0 0 10 10"
-                  refX="6"
+                  refX="8"
                   refY="5"
-                  markerWidth="6"
-                  markerHeight="6"
+                  markerWidth="8"
+                  markerHeight="8"
                   orient="auto-start-reverse"
                 >
-                  <path d="M 0 1 L 8 5 L 0 9 z" fill="#059669" />
+                  <path d="M 0 1 L 9 5 L 0 9 z" fill="#059669" />
                 </marker>
               </defs>
 
-              {/* Path from Step 1 preview to Step 2 preview */}
+              {/* Dramatic Curved Path from Step 1 preview to Step 2 preview */}
               <path
-                d="M 230,65 C 270,105 320,105 365,65"
+                d="M 230,50 C 270,165 330,165 365,60"
                 stroke="#059669"
-                strokeWidth="2.5"
-                strokeDasharray="6 6"
+                strokeWidth="4"
+                strokeDasharray="12 10"
+                strokeLinecap="round"
                 fill="none"
                 markerEnd="url(#hiw-arrow)"
               />
 
-              {/* Path from Step 2 preview to Step 3 preview */}
+              {/* Dramatic Curved Path from Step 2 preview to Step 3 preview */}
               <path
-                d="M 535,65 C 575,25 625,25 670,65"
+                d="M 535,60 C 575,-25 625,-25 670,50"
                 stroke="#059669"
-                strokeWidth="2.5"
-                strokeDasharray="6 6"
+                strokeWidth="4"
+                strokeDasharray="12 10"
+                strokeLinecap="round"
                 fill="none"
                 markerEnd="url(#hiw-arrow)"
               />
@@ -320,7 +330,6 @@ export default function LandingPage({ managePageClass = true }) {
                     </div>
                     <div className="hiw-metrics-pills-row">
                       <span className="hiw-metric-pill score">Score: 92%</span>
-                      <span className="hiw-metric-pill exp">+150 EXP</span>
                       <span className="hiw-metric-pill streak">🔥 5 Streak</span>
                     </div>
                   </div>

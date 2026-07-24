@@ -162,7 +162,7 @@ body.landing-page-active #root {
   position: relative;
   z-index: 3;
   width: 100%;
-  min-height: 360vh;
+  min-height: 400vh;
   padding: 0;
   background: transparent;
 }

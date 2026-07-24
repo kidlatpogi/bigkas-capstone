@@ -91,14 +91,17 @@ export default function LandingPage({ managePageClass = true }) {
       const totalScrollable = section.offsetHeight - window.innerHeight;
       if (totalScrollable <= 0) return;
 
+      if (rect.top <= -totalScrollable) {
+        setVisibleLaneCount(3);
+        return;
+      }
+
       const progress = Math.max(0, Math.min(1, -rect.top / totalScrollable));
 
-      if (progress < 0.25) {
+      if (progress < 0.15) {
         setVisibleLaneCount(1);
-      } else if (progress < 0.50) {
+      } else if (progress < 0.35) {
         setVisibleLaneCount(2);
-      } else if (progress < 0.75) {
-        setVisibleLaneCount(3);
       } else {
         setVisibleLaneCount(3);
       }

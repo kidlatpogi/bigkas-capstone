@@ -81,47 +81,52 @@ export default function LandingPage({ managePageClass = true }) {
     };
   }, []);
 
-  {/* Practice Lanes scroll-jacking: block scroll until all 3 cards revealed */}
+  {/* Practice Lanes scroll-jacking: lock viewport at section, reveal cards one by one */}
   useEffect(() => {
     const section = featuresSectionRef.current;
     if (!section) return;
 
-    // How much wheel delta per card step
-    const STEP_THRESHOLD = 350;
+    const STEP_THRESHOLD = 300;
     let accumulated = 0;
     let touchStartY = 0;
-    let currentStep = 0; // 0 = card1 shown, 1 = card2 shown, 2 = card3 shown
-    let allRevealed = false;
+    let currentStep = 0; // 0=card1, 1=card2, 2=card3 (all revealed)
 
     const isInView = () => {
       const rect = section.getBoundingClientRect();
-      // Section is in the viewport when its top is near 0 (scrolled into view)
-      return rect.top <= 20 && rect.bottom > window.innerHeight * 0.3;
+      // Sticky container is pinned at top=0 while in view
+      return rect.top <= 2 && rect.top >= -2;
     };
 
     const handleWheel = (e) => {
-      if (allRevealed) return;
       if (!isInView()) return;
 
-      e.preventDefault();
+      const scrollingDown = e.deltaY > 0;
+      const scrollingUp = e.deltaY < 0;
 
+      // Allow scrolling up when at first card (let user go back up the page)
+      if (scrollingUp && currentStep <= 0) {
+        accumulated = 0;
+        return;
+      }
+
+      // Allow scrolling down when all cards are revealed
+      if (scrollingDown && currentStep >= 2) {
+        accumulated = 0;
+        return;
+      }
+
+      // Block native scroll and accumulate
+      e.preventDefault();
       accumulated += e.deltaY;
 
       if (accumulated >= STEP_THRESHOLD && currentStep < 2) {
         accumulated = 0;
         currentStep++;
         setVisibleLaneCount(currentStep + 1);
-        if (currentStep === 2) {
-          allRevealed = true;
-        }
-      } else if (accumulated < -STEP_THRESHOLD && currentStep > 0) {
+      } else if (accumulated <= -STEP_THRESHOLD && currentStep > 0) {
         accumulated = 0;
         currentStep--;
         setVisibleLaneCount(currentStep + 1);
-      }
-
-      if (accumulated < -STEP_THRESHOLD && currentStep === 0) {
-        accumulated = 0;
       }
     };
 
@@ -130,22 +135,24 @@ export default function LandingPage({ managePageClass = true }) {
     };
 
     const handleTouchMove = (e) => {
-      if (allRevealed) return;
       if (!isInView()) return;
 
       const deltaY = touchStartY - e.touches[0].clientY;
-      if (Math.abs(deltaY) < 10) return;
+      if (Math.abs(deltaY) < 8) return;
+
+      const swipingDown = deltaY > 0;
+      const swipingUp = deltaY < 0;
+
+      if (swipingUp && currentStep <= 0) return;
+      if (swipingDown && currentStep >= 2) return;
 
       e.preventDefault();
 
-      if (deltaY > 0 && currentStep < 2) {
+      if (swipingDown && currentStep < 2) {
         currentStep++;
         setVisibleLaneCount(currentStep + 1);
         touchStartY = e.touches[0].clientY;
-        if (currentStep === 2) {
-          allRevealed = true;
-        }
-      } else if (deltaY < 0 && currentStep > 0) {
+      } else if (swipingUp && currentStep > 0) {
         currentStep--;
         setVisibleLaneCount(currentStep + 1);
         touchStartY = e.touches[0].clientY;

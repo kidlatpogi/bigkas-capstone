@@ -162,14 +162,15 @@ body.landing-page-active #root {
   position: relative;
   z-index: 3;
   width: 100%;
-  min-height: 100vh;
+  min-height: 300vh;
   padding: 0;
   background: transparent;
 }
 
 .features-section-container {
-  position: relative;
-  min-height: 100vh;
+  position: sticky;
+  top: 0;
+  height: 100vh;
   width: 90%;
   max-width: 1560px;
   margin: 0 auto;
@@ -179,7 +180,7 @@ body.landing-page-active #root {
   justify-content: center;
   gap: 1.5rem;
   box-sizing: border-box;
-  padding: 4rem 0;
+  overflow: hidden;
 }
 
 /* Centered Header */

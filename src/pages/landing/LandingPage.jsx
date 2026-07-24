@@ -12,8 +12,8 @@ import './LandingPage.css';
 
 const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 const b01Mascot = getSpriteUrl('Robot/0001.webp');
-const crystalBallImage = getSpriteUrl('3d/crystal-ball.webp');
-const crownImage = getSpriteUrl('3d/crown.webp');
+const crystalBallImage = getSpriteUrl('common/crystal-ball.webp');
+const crownImage = getSpriteUrl('common/crown.webp');
 
 export default function LandingPage({ managePageClass = true }) {
   const location = useLocation();
@@ -64,7 +64,7 @@ export default function LandingPage({ managePageClass = true }) {
       bgColor: '#F18F01',
       textColor: '#FFFFFF',
       links: [
-        { label: 'Sign In', href: ROUTES.LOGIN, ariaLabel: 'Sign In', isRoute: true },
+        { label: 'Login', href: ROUTES.LOGIN, ariaLabel: 'Login to Account', isRoute: true },
         { label: 'Create Account', href: ROUTES.REGISTER, ariaLabel: 'Create Free Account', isRoute: true },
       ],
     },
@@ -293,17 +293,24 @@ export default function LandingPage({ managePageClass = true }) {
                 </div>
               </div>
 
-              {/* Step 03 */}
+              {/* Step 03 - Results Box Design */}
               <div className="how-it-works-step-card">
                 <div className="hiw-preview-frame hiw-preview-step3">
-                  <div className="hiw-mock-results-box">
-                    <div className="hiw-done-badge">
-                      <span className="hiw-done-check">✓</span>
-                      <span className="hiw-done-label">DONE</span>
+                  <div className="hiw-home-results-widget">
+                    <div className="hiw-results-head">
+                      <span className="hiw-results-kicker">OVERALL SCORE</span>
+                      <span className="hiw-results-badge">PERFORMANCE</span>
                     </div>
+
+                    <div className="hiw-results-score-row">
+                      <span className="hiw-results-big-score">92%</span>
+                      <span className="hiw-results-score-label">Confidence</span>
+                    </div>
+
                     <div className="hiw-metrics-pills-row">
-                      <span className="hiw-metric-pill score">Score: 92%</span>
+                      <span className="hiw-metric-pill done">✓ DONE</span>
                       <span className="hiw-metric-pill streak">🔥 5 Streak</span>
+                      <span className="hiw-metric-pill verbal">Verbal: Strong</span>
                     </div>
                   </div>
                 </div>
@@ -321,7 +328,7 @@ export default function LandingPage({ managePageClass = true }) {
             </div>
           </div>
         </div>
-      </section>ection>
+      </section>
 
       {/* Practice Lanes Section: 100vh Centered Header with 3 Columns 1 Row Grid */}
       <section className="features-grid-section" id="features">

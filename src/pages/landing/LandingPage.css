@@ -118,8 +118,10 @@ body.landing-page-active #root {
 }
 
 .title-highlight {
-  color: #f18f01;
+  color: #059669 !important;
   display: block;
+  background: none !important;
+  -webkit-text-fill-color: #059669 !important;
 }
 
 .hero-video-subtitle {
@@ -151,27 +153,33 @@ body.landing-page-active #root {
   flex: 0 0 auto !important;
 }
 
-/* 100vh Centered Practice Lanes Section */
+.hero-btn-custom button {
+  border-radius: 18px !important;
+}
+
+/* 3-Step Scroll Reveal Practice Lanes Section */
 .features-grid-section {
   position: relative;
   z-index: 3;
   width: 100%;
-  min-height: 100dvh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 0;
+  min-height: 280vh;
+  padding: 0;
   background: transparent;
 }
 
 .features-section-container {
+  position: sticky;
+  top: 0;
+  height: 100vh;
   width: 90%;
-  max-width: 1360px;
+  max-width: 1560px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3rem;
+  justify-content: center;
+  gap: 2.5rem;
+  box-sizing: border-box;
 }
 
 /* Centered Header */
@@ -230,13 +238,27 @@ body.landing-page-active #root {
   position: relative;
   border-radius: 32px;
   padding: 2.25rem 2rem;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  color: #ffffff;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   min-height: 480px;
-  overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease, box-shadow 0.3s ease;
+  will-change: transform, opacity;
+}
+
+.feature-grid-card.lane-hidden {
+  transform: translateX(100vw);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.feature-grid-card.lane-visible {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .feature-grid-card:hover {
@@ -612,7 +634,7 @@ body.landing-page-active #root {
 
 .how-it-works-section-container {
   width: 92%;
-  max-width: 1560px;
+  max-width: 1680px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -682,7 +704,7 @@ body.landing-page-active #root {
   flex-direction: column;
   gap: 1.1rem;
   width: 100%;
-  max-width: 380px;
+  max-width: 420px;
 }
 
 .hiw-home-practice-head {
@@ -781,7 +803,7 @@ body.landing-page-active #root {
   align-items: center;
   gap: 0.95rem;
   width: 100%;
-  max-width: 380px;
+  max-width: 420px;
 }
 
 .hiw-session-topic-pill {
@@ -841,6 +863,7 @@ body.landing-page-active #root {
   letter-spacing: 0.04em;
   padding: 0.25rem 0.65rem;
   border-radius: 99px;
+  transform: translateY(-3px);
 }
 
 .hiw-session-soundwave {
@@ -893,11 +916,16 @@ body.landing-page-active #root {
   font-weight: 900;
   font-size: 0.85rem;
   padding: 0.45rem 1.15rem;
-  border-radius: 12px;
+  border-radius: 99px !important;
   border: 0;
   cursor: pointer;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
   transition: all 0.15s ease;
   display: inline-flex;
   align-items: center;
@@ -1115,7 +1143,7 @@ body.landing-page-active #root {
   font-family: 'Nunito', sans-serif;
   font-weight: 900;
   font-size: clamp(1.6rem, 2.2vw, 2rem);
-  color: #0B3954;
+  color: #000000;
   margin: 0;
   line-height: 1.25;
 }
@@ -1139,79 +1167,10 @@ body.landing-page-active #root {
     gap: 3rem;
     max-width: 480px;
   }
-}
-
-/* ==========================================================================
-   Dual-Line Infinite Marquee Ticker (matching zeusbautista.site)
-   ========================================================================== */
-.talktics-marquee-banner {
-  position: relative;
-  z-index: 3;
-  width: 100%;
-  padding: 3rem 0;
-  overflow: hidden;
-  background: transparent;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  user-select: none;
-  pointer-events: none;
-}
-
-.marquee-track {
-  display: flex;
-  width: 100%;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.marquee-content {
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-  will-change: transform;
-}
-
-.track-left .marquee-content {
-  animation: marqueeScrollLeft 35s linear infinite;
-}
-
-.track-right .marquee-content {
-  animation: marqueeScrollRight 35s linear infinite;
-}
-
-.marquee-content span {
-  font-family: 'Nunito', sans-serif;
-  font-weight: 900;
-  font-size: clamp(2.8rem, 6vw, 6.5rem);
-  text-transform: uppercase;
-  letter-spacing: -0.03em;
-  line-height: 1;
-  color: #0B3954;
-}
-
-.track-left .marquee-content span:nth-child(4n+1) {
-  color: #059669;
-}
-
-.track-right .marquee-content span:nth-child(4n+1) {
-  color: #F18F01;
-}
-
-.marquee-dot {
-  font-size: clamp(1.8rem, 4vw, 4rem) !important;
-  color: #94a3b8 !important;
-  opacity: 0.6;
-}
-
-@keyframes marqueeScrollLeft {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
-@keyframes marqueeScrollRight {
-  0% { transform: translateX(-50%); }
-  100% { transform: translateX(0); }
+  .how-it-works-section {
+    min-height: auto;
+    padding: 4rem 0;
+  }
 }
 
 /* ==========================================================================

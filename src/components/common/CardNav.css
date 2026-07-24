@@ -147,13 +147,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.3);
+  box-shadow: none;
 }
 
 .card-nav-cta-button:hover {
   background-color: #047857;
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(5, 150, 105, 0.4);
+  box-shadow: none;
 }
 
 .card-nav-content {

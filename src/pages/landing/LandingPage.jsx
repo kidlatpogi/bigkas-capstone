@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { IoEye, IoMic, IoChatbubbleEllipses, IoArrowForward, IoLogoAndroid } from 'react-icons/io5';
 import { ROUTES } from '../../utils/constants';
@@ -7,6 +7,7 @@ import CardNav from '../../components/common/CardNav';
 import ShapeGrid from '../../components/common/ShapeGrid';
 import PushButton from '../../components/common/PushButton';
 import ScrollReveal from '../../components/common/ScrollReveal';
+import ParallaxTextSection from '../../components/common/ParallaxTextSection';
 import gradVideo from '../../assets/landing/Grad-Video.mp4';
 import './LandingPage.css';
 
@@ -18,6 +19,9 @@ const crownImage = getSpriteUrl('common/crown.webp');
 export default function LandingPage({ managePageClass = true }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const videoRef = useRef(null);
+  const featuresSectionRef = useRef(null);
+  const [visibleLaneCount, setVisibleLaneCount] = useState(1);
 
   function navigateTo(path) {
     navigate(path);
@@ -49,10 +53,64 @@ export default function LandingPage({ managePageClass = true }) {
     });
   }, [location]);
 
+  {/* Pause video when scrolled past hero section or on unmount */}
+  useEffect(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            videoEl.play().catch(() => {});
+          } else {
+            videoEl.pause();
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(videoEl);
+
+    return () => {
+      observer.disconnect();
+      if (videoEl) {
+        videoEl.pause();
+      }
+    };
+  }, []);
+
+  {/* Practice Lanes 3-step scroll reveal */}
+  useEffect(() => {
+    const handleScroll = () => {
+      const section = featuresSectionRef.current;
+      if (!section) return;
+
+      const rect = section.getBoundingClientRect();
+      const totalScrollable = section.offsetHeight - window.innerHeight;
+      if (totalScrollable <= 0) return;
+
+      const progress = Math.max(0, Math.min(1, -rect.top / totalScrollable));
+
+      if (progress < 0.28) {
+        setVisibleLaneCount(1);
+      } else if (progress < 0.62) {
+        setVisibleLaneCount(2);
+      } else {
+        setVisibleLaneCount(3);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const cardNavItems = [
     {
       label: 'Explore',
-      bgColor: '#0B3954',
+      bgColor: '#059669', // Green
       textColor: '#FFFFFF',
       links: [
         { label: 'How it Works', href: '#how-it-works', ariaLabel: 'How it Works Section' },
@@ -61,7 +119,7 @@ export default function LandingPage({ managePageClass = true }) {
     },
     {
       label: 'Account',
-      bgColor: '#F18F01',
+      bgColor: '#F18F01', // Orange
       textColor: '#FFFFFF',
       links: [
         { label: 'Login', href: ROUTES.LOGIN, ariaLabel: 'Login to Account', isRoute: true },
@@ -151,6 +209,7 @@ export default function LandingPage({ managePageClass = true }) {
       <section className="hero-video-section">
         <div className="video-background-wrapper">
           <video
+            ref={videoRef}
             autoPlay
             loop
             muted
@@ -344,53 +403,10 @@ export default function LandingPage({ managePageClass = true }) {
         </div>
       </section>
 
-      {/* Dual-Line Infinite Marquee Banner (matching zeusbautista.site design) */}
-      <div className="talktics-marquee-banner" aria-hidden="true">
-        <div className="marquee-track track-left">
-          <div className="marquee-content">
-            <span>PRACTICE &amp; DELIVERY</span>
-            <span className="marquee-dot">•</span>
-            <span>ACOUSTIC BIOMARKERS</span>
-            <span className="marquee-dot">•</span>
-            <span>COMPUTER VISION</span>
-            <span className="marquee-dot">•</span>
-            <span>PRIVATE ROUNDS</span>
-            <span className="marquee-dot">•</span>
-            <span>PRACTICE &amp; DELIVERY</span>
-            <span className="marquee-dot">•</span>
-            <span>ACOUSTIC BIOMARKERS</span>
-            <span className="marquee-dot">•</span>
-            <span>COMPUTER VISION</span>
-            <span className="marquee-dot">•</span>
-            <span>PRIVATE ROUNDS</span>
-            <span className="marquee-dot">•</span>
-          </div>
-        </div>
-
-        <div className="marquee-track track-right">
-          <div className="marquee-content">
-            <span>NO AUDIENCE &amp; NO PRESSURE</span>
-            <span className="marquee-dot">•</span>
-            <span>CONFIDENCE &amp; CLARITY</span>
-            <span className="marquee-dot">•</span>
-            <span>INSTANT COACHING</span>
-            <span className="marquee-dot">•</span>
-            <span>B-01 FEEDBACK</span>
-            <span className="marquee-dot">•</span>
-            <span>NO AUDIENCE &amp; NO PRESSURE</span>
-            <span className="marquee-dot">•</span>
-            <span>CONFIDENCE &amp; CLARITY</span>
-            <span className="marquee-dot">•</span>
-            <span>INSTANT COACHING</span>
-            <span className="marquee-dot">•</span>
-            <span>B-01 FEEDBACK</span>
-            <span className="marquee-dot">•</span>
-          </div>
-        </div>
-      </div>
+      <ParallaxTextSection />
 
       {/* Practice Lanes Section: 100vh Centered Header with 3 Columns 1 Row Grid */}
-      <section className="features-grid-section" id="features">
+      <section className="features-grid-section" id="features" ref={featuresSectionRef}>
         <div className="features-section-container">
           {/* Centered Header with 3-Font Title Design */}
           <div className="features-centered-header">
@@ -405,12 +421,17 @@ export default function LandingPage({ managePageClass = true }) {
             </ScrollReveal>
           </div>
 
-          {/* 3 Columns 1 Row Grid */}
+          {/* 3 Columns 1 Row Grid with 1-card-per-scroll reveal */}
           <div className="features-cards-3col-grid">
-            {featureCards.map((card) => {
+            {featureCards.map((card, idx) => {
               const Icon = card.icon;
+              const isVisible = idx < visibleLaneCount;
               return (
-                <div key={card.title} className="feature-grid-card" style={{ backgroundColor: card.bgColor }}>
+                <div
+                  key={card.title}
+                  className={`feature-grid-card ${isVisible ? 'lane-visible' : 'lane-hidden'}`}
+                  style={{ backgroundColor: card.bgColor }}
+                >
                   <div className="scroll-stack-card-overlay" />
                   
                   <div className="feature-stack-card-content">
@@ -425,12 +446,12 @@ export default function LandingPage({ managePageClass = true }) {
                     </div>
 
                     <div className="feature-card-info-col">
-                      <ScrollReveal as="h3" textClassName="feature-card-title" baseRotation={0} baseOpacity={0.15}>
+                      <h3 className="feature-card-title">
                         {card.title}
-                      </ScrollReveal>
-                      <ScrollReveal as="p" textClassName="feature-card-text" baseRotation={0} baseOpacity={0.1}>
+                      </h3>
+                      <p className="feature-card-text">
                         {card.text}
-                      </ScrollReveal>
+                      </p>
                       
                       <div className="feature-card-badges-row">
                         {card.badges.map((badge) => (
@@ -505,17 +526,15 @@ export default function LandingPage({ managePageClass = true }) {
           <div className="footer-cta-grid">
             {/* Left Column: CTA Content */}
             <div className="footer-cta-left">
-              <ScrollReveal as="span" textClassName="footer-cta-tag" baseRotation={0} baseOpacity={0.2} blurStrength={0}>
-                GET STARTED
-              </ScrollReveal>
-              <ScrollReveal as="h2" containerClassName="footer-cta-heading-wrap" textClassName="footer-cta-heading" baseRotation={2} baseOpacity={0.1} blurStrength={4}>
+              <span className="footer-cta-tag">GET STARTED</span>
+              <h2 className="footer-cta-heading">
                 <span className="footer-heading-light">START WITH</span>
                 <br />
                 <span className="footer-heading-dark">ONE BRAVE TAKE.</span>
-              </ScrollReveal>
-              <ScrollReveal as="p" textClassName="footer-cta-desc" baseRotation={0} baseOpacity={0.1} blurStrength={4}>
+              </h2>
+              <p className="footer-cta-desc">
                 No audience. No pressure. Just a private speaking round, clear feedback, and B-01 keeping the next move easy to see.
-              </ScrollReveal>
+              </p>
 
               <div className="footer-cta-actions">
                 <PushButton

@@ -464,7 +464,9 @@ export default function LandingPage({ managePageClass = true }) {
                 GET STARTED
               </ScrollReveal>
               <ScrollReveal as="h2" containerClassName="footer-cta-heading-wrap" textClassName="footer-cta-heading" baseRotation={2} baseOpacity={0.1} blurStrength={4}>
-                Start with one brave take.
+                <span className="footer-heading-light">START WITH</span>
+                <br />
+                <span className="footer-heading-dark">ONE BRAVE TAKE.</span>
               </ScrollReveal>
               <ScrollReveal as="p" textClassName="footer-cta-desc" baseRotation={0} baseOpacity={0.1} blurStrength={4}>
                 No audience. No pressure. Just a private speaking round, clear feedback, and B-01 keeping the next move easy to see.

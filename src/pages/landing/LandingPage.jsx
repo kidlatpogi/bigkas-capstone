@@ -12,6 +12,8 @@ import './LandingPage.css';
 
 const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 const b01Mascot = getSpriteUrl('Robot/0001.webp');
+const crystalBallImage = getSpriteUrl('3d/crystal-ball.webp');
+const crownImage = getSpriteUrl('3d/crown.webp');
 
 export default function LandingPage({ managePageClass = true }) {
   const location = useLocation();
@@ -49,13 +51,12 @@ export default function LandingPage({ managePageClass = true }) {
 
   const cardNavItems = [
     {
-      label: 'Features',
+      label: 'Explore',
       bgColor: '#0B3954',
       textColor: '#FFFFFF',
       links: [
         { label: 'How it Works', href: '#how-it-works', ariaLabel: 'How it Works Section' },
-        { label: 'Feedback Lanes', href: '#features', ariaLabel: 'Feedback Lanes Section' },
-        { label: 'Visual, Vocal & Verbal', href: '#features', ariaLabel: 'Visual, Vocal and Verbal Features' },
+        { label: 'Practice Lanes', href: '#features', ariaLabel: 'Practice Lanes Section' },
       ],
     },
     {
@@ -65,15 +66,6 @@ export default function LandingPage({ managePageClass = true }) {
       links: [
         { label: 'Sign In', href: ROUTES.LOGIN, ariaLabel: 'Sign In', isRoute: true },
         { label: 'Create Account', href: ROUTES.REGISTER, ariaLabel: 'Create Free Account', isRoute: true },
-      ],
-    },
-    {
-      label: 'Get Started',
-      bgColor: '#059669',
-      textColor: '#FFFFFF',
-      links: [
-        { label: 'Start Free Practice', href: ROUTES.REGISTER, ariaLabel: 'Start Free Practice', isRoute: true },
-        { label: 'Login to Dashboard', href: ROUTES.LOGIN, ariaLabel: 'Login to Dashboard', isRoute: true },
       ],
     },
   ];
@@ -217,103 +209,85 @@ export default function LandingPage({ managePageClass = true }) {
 
           {/* 3 Steps Container */}
           <div className="how-it-works-steps-wrapper">
-            {/* SVG Dotted Curved Lines with Arrow Markers */}
-            <svg className="how-it-works-curved-svg" viewBox="0 0 1200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <marker
-                  id="hiw-arrow"
-                  viewBox="0 0 10 10"
-                  refX="8"
-                  refY="5"
-                  markerWidth="8"
-                  markerHeight="8"
-                  orient="auto-start-reverse"
-                >
-                  <path d="M 0 1 L 9 5 L 0 9 z" fill="#059669" />
-                </marker>
-              </defs>
-
-              {/* Dramatic Curved Path from Step 1 to Step 2 */}
-              <path
-                d="M 350,60 C 400,160 420,160 460,60"
-                stroke="#059669"
-                strokeWidth="4"
-                strokeDasharray="10 8"
-                strokeLinecap="round"
-                fill="none"
-                markerEnd="url(#hiw-arrow)"
-              />
-
-              {/* Dramatic Curved Path from Step 2 to Step 3 */}
-              <path
-                d="M 740,60 C 780,-20 800,-20 840,60"
-                stroke="#059669"
-                strokeWidth="4"
-                strokeDasharray="10 8"
-                strokeLinecap="round"
-                fill="none"
-                markerEnd="url(#hiw-arrow)"
-              />
-            </svg>
-
             <div className="how-it-works-steps-grid">
-              {/* Step 01 */}
+              {/* Step 01 - Home Page Practice Widget Design */}
               <div className="how-it-works-step-card">
                 <div className="hiw-preview-frame hiw-preview-step1">
-                  <div className="hiw-mock-modes-stack">
-                    <div className="hiw-mode-pill active">
-                      <span className="hiw-mode-dot" />
-                      <span className="hiw-mode-name">Journey</span>
-                      <span className="hiw-mode-check">✓</span>
+                  <div className="hiw-home-practice-widget">
+                    <div className="hiw-home-practice-head">
+                      <span className="hiw-home-practice-kicker">JOURNEY 1</span>
+                      <span className="hiw-home-practice-sub">0 / 30 Stages Completed</span>
                     </div>
-                    <div className="hiw-mode-pill">
-                      <span className="hiw-mode-name">Randomizer</span>
-                    </div>
-                    <div className="hiw-mode-pill">
-                      <span className="hiw-mode-name">Free Speech</span>
+                    <div className="hiw-home-practice-group">
+                      <div className="hiw-home-btn-row hiw-home-btn-row--rand">
+                        <div className="hiw-home-btn-visual hiw-visual-rand">
+                          <img src={crystalBallImage} alt="Randomizer" className="hiw-home-btn-img" />
+                        </div>
+                        <div className="hiw-home-btn-meta">
+                          <p className="hiw-home-btn-label">Randomizer</p>
+                          <p className="hiw-home-btn-hint">Instant prompt to warm up your delivery.</p>
+                        </div>
+                      </div>
+                      <div className="hiw-home-btn-row hiw-home-btn-row--speech">
+                        <div className="hiw-home-btn-visual hiw-visual-speech">
+                          <img src={crownImage} alt="Free Speech" className="hiw-home-btn-img" />
+                        </div>
+                        <div className="hiw-home-btn-meta">
+                          <p className="hiw-home-btn-label">Free Speech</p>
+                          <p className="hiw-home-btn-hint">Open topic mode for confidence building.</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="hiw-step-details">
                   <span className="hiw-step-number hiw-num-navy">01</span>
-                  <ScrollReveal as="h3" textClassName="hiw-step-title" baseRotation={0} baseOpacity={0.15} blurStrength={2}>
+                  <ScrollReveal as="h3" textClassName="hiw-step-title" baseRotation={0} baseOpacity={0.2} blurStrength={2}>
                     Pick a mode
                   </ScrollReveal>
-                  <ScrollReveal as="p" textClassName="hiw-step-desc" baseRotation={0} baseOpacity={0.1} blurStrength={4}>
+                  <ScrollReveal as="p" textClassName="hiw-step-desc" baseRotation={0} baseOpacity={0.2} blurStrength={2}>
                     Open Journey, Randomizer, or Free Speech and choose the next prompt that fits your goal.
                   </ScrollReveal>
                 </div>
               </div>
 
-              {/* Step 02 */}
+              {/* Step 02 - Home Page Session Recording UI Design */}
               <div className="how-it-works-step-card">
                 <div className="hiw-preview-frame hiw-preview-step2">
-                  <div className="hiw-mock-speech-box">
-                    <div className="hiw-b01-nudge-badge">
-                      <img src={bigkasLogo} alt="B-01" className="hiw-b01-avatar-img" />
-                      <span className="hiw-b01-text">B-01 nearby</span>
+                  <div className="hiw-home-session-widget">
+                    <div className="hiw-session-topic-pill">
+                      <span className="hiw-topic-label">Topic:</span> My Favorite Study Spot in Dasma.
                     </div>
-                    <div className="hiw-waveform-anim">
-                      <div className="hiw-wave-bar b1" />
-                      <div className="hiw-wave-bar b2" />
-                      <div className="hiw-wave-bar b3" />
-                      <div className="hiw-wave-bar b4" />
-                      <div className="hiw-wave-bar b5" />
+
+                    <div className="hiw-session-video-box">
+                      <div className="hiw-camera-guide-corner top-left" />
+                      <div className="hiw-camera-guide-corner top-right" />
+                      <div className="hiw-camera-guide-corner bottom-left" />
+                      <div className="hiw-camera-guide-corner bottom-right" />
+                      <div className="hiw-camera-center-banner">
+                        CENTER YOURSELF — ENSURE HANDS ARE VISIBLE
+                      </div>
                     </div>
-                    <div className="hiw-rec-status">
-                      <span className="hiw-rec-dot" />
-                      <span>Short private attempt</span>
+
+                    <div className="hiw-session-audio-dots">
+                      ••••••••••••••••••••••••••••••••••••••••
+                    </div>
+
+                    <div className="hiw-session-controls">
+                      <span className="hiw-ctrl-btn secondary">Pause</span>
+                      <span className="hiw-ctrl-btn primary">Start</span>
+                      <span className="hiw-ctrl-btn secondary">Restart</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="hiw-step-details">
                   <span className="hiw-step-number hiw-num-orange">02</span>
-                  <ScrollReveal as="h3" textClassName="hiw-step-title" baseRotation={0} baseOpacity={0.15} blurStrength={2}>
+                  <ScrollReveal as="h3" textClassName="hiw-step-title" baseRotation={0} baseOpacity={0.2} blurStrength={2}>
                     Speak once
                   </ScrollReveal>
-                  <ScrollReveal as="p" textClassName="hiw-step-desc" baseRotation={0} baseOpacity={0.1} blurStrength={4}>
+                  <ScrollReveal as="p" textClassName="hiw-step-desc" baseRotation={0} baseOpacity={0.2} blurStrength={2}>
                     Keep the task front and center while you make a short private attempt with B-01 nearby.
                   </ScrollReveal>
                 </div>
@@ -336,10 +310,10 @@ export default function LandingPage({ managePageClass = true }) {
 
                 <div className="hiw-step-details">
                   <span className="hiw-step-number hiw-num-green">03</span>
-                  <ScrollReveal as="h3" textClassName="hiw-step-title" baseRotation={0} baseOpacity={0.15} blurStrength={2}>
+                  <ScrollReveal as="h3" textClassName="hiw-step-title" baseRotation={0} baseOpacity={0.2} blurStrength={2}>
                     Move forward
                   </ScrollReveal>
-                  <ScrollReveal as="p" textClassName="hiw-step-desc" baseRotation={0} baseOpacity={0.1} blurStrength={4}>
+                  <ScrollReveal as="p" textClassName="hiw-step-desc" baseRotation={0} baseOpacity={0.2} blurStrength={2}>
                     Your score, EXP, streak, and DONE state make the next retake or activity easy to see.
                   </ScrollReveal>
                 </div>
@@ -347,7 +321,7 @@ export default function LandingPage({ managePageClass = true }) {
             </div>
           </div>
         </div>
-      </section>
+      </section>ection>
 
       {/* Practice Lanes Section: 100vh Centered Header with 3 Columns 1 Row Grid */}
       <section className="features-grid-section" id="features">

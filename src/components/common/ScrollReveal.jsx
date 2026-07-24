@@ -10,13 +10,11 @@ const ScrollReveal = ({
   children,
   scrollContainerRef,
   enableBlur = true,
-  baseOpacity = 0.1,
+  baseOpacity = 0.25,
   baseRotation = 2,
   blurStrength = 4,
   containerClassName = '',
   textClassName = '',
-  rotationEnd = 'bottom 60%',
-  wordAnimationEnd = 'bottom 60%',
   as: Component = 'div'
 }) => {
   const containerRef = useRef(null);
@@ -55,14 +53,14 @@ const ScrollReveal = ({
           el,
           { transformOrigin: '0% 50%', rotate: baseRotation },
           {
-            ease: 'none',
+            ease: 'power2.out',
             rotate: 0,
+            duration: 0.8,
             scrollTrigger: {
               trigger: el,
               scroller,
-              start: 'top 90%',
-              end: rotationEnd,
-              scrub: 0.5
+              start: 'top 92%',
+              toggleActions: 'play none none reverse'
             }
           }
         );
@@ -73,43 +71,29 @@ const ScrollReveal = ({
 
       gsap.fromTo(
         targets,
-        { opacity: baseOpacity, willChange: 'opacity, filter' },
         {
-          ease: 'none',
+          opacity: baseOpacity,
+          filter: enableBlur ? `blur(${blurStrength}px)` : 'none',
+          willChange: 'opacity, filter'
+        },
+        {
+          ease: 'power2.out',
           opacity: 1,
-          stagger: wordElements.length > 0 ? 0.03 : 0,
+          filter: 'blur(0px)',
+          duration: 0.6,
+          stagger: wordElements.length > 0 ? 0.025 : 0,
           scrollTrigger: {
             trigger: el,
             scroller,
-            start: 'top 85%',
-            end: wordAnimationEnd,
-            scrub: 0.5
+            start: 'top 90%',
+            toggleActions: 'play none none reverse'
           }
         }
       );
-
-      if (enableBlur) {
-        gsap.fromTo(
-          targets,
-          { filter: `blur(${blurStrength}px)` },
-          {
-            ease: 'none',
-            filter: 'blur(0px)',
-            stagger: wordElements.length > 0 ? 0.03 : 0,
-            scrollTrigger: {
-              trigger: el,
-              scroller,
-              start: 'top 85%',
-              end: wordAnimationEnd,
-              scrub: 0.5
-            }
-          }
-        );
-      }
     }, el);
 
     return () => ctx.revert();
-  }, [scrollContainerRef, enableBlur, baseRotation, baseOpacity, rotationEnd, wordAnimationEnd, blurStrength]);
+  }, [scrollContainerRef, enableBlur, baseRotation, baseOpacity, blurStrength]);
 
   return (
     <Component ref={containerRef} className={`scroll-reveal ${containerClassName}`}>

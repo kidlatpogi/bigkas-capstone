@@ -676,122 +676,204 @@ body.landing-page-active #root {
   border-color: rgba(5, 150, 105, 0.35);
 }
 
-/* Step 1 Modes Stack */
-.hiw-mock-modes-stack {
+/* Step 1 Home Page Practice Widget (matching Image 2) */
+.hiw-home-practice-widget {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  width: 88%;
-  max-width: 250px;
+  width: 100%;
+  max-width: 290px;
 }
 
-.hiw-mode-pill {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.7rem 1.15rem;
-  border-radius: 14px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  font-family: 'Nunito', sans-serif;
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: #475569;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
-  transition: all 0.2s ease;
-}
-
-.hiw-mode-pill.active {
-  background: #059669;
-  color: #ffffff;
-  border-color: #059669;
-  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.28);
-}
-
-.hiw-mode-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #34d399;
-}
-
-.hiw-mode-check {
-  font-weight: 900;
-  font-size: 0.9rem;
-}
-
-/* Step 2 Speech Box */
-.hiw-mock-speech-box {
+.hiw-home-practice-head {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 1.1rem;
-  width: 90%;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0 0.2rem;
 }
 
-.hiw-b01-nudge-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  background: #fff7ed;
-  border: 1px solid #fed7aa;
-  padding: 0.5rem 1.15rem;
-  border-radius: 99px;
+.hiw-home-practice-kicker {
   font-family: 'Nunito', sans-serif;
-  font-weight: 800;
-  font-size: 0.92rem;
-  color: #c2410c;
-  box-shadow: 0 4px 14px rgba(241, 143, 1, 0.14);
+  font-weight: 900;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  color: #059669;
+  text-transform: uppercase;
 }
 
-.hiw-b01-avatar-img {
-  width: 28px;
-  height: 28px;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-
-.hiw-waveform-anim {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  height: 40px;
-}
-
-.hiw-wave-bar {
-  width: 5px;
-  background: #F18F01;
-  border-radius: 99px;
-  animation: hiwWave 1.2s ease-in-out infinite alternate;
-}
-
-.hiw-wave-bar.b1 { height: 14px; animation-delay: 0.1s; }
-.hiw-wave-bar.b2 { height: 32px; animation-delay: 0.3s; }
-.hiw-wave-bar.b3 { height: 40px; animation-delay: 0.2s; }
-.hiw-wave-bar.b4 { height: 22px; animation-delay: 0.4s; }
-.hiw-wave-bar.b5 { height: 12px; animation-delay: 0.15s; }
-
-@keyframes hiwWave {
-  0% { transform: scaleY(0.4); opacity: 0.6; }
-  100% { transform: scaleY(1); opacity: 1; }
-}
-
-.hiw-rec-status {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.hiw-home-practice-sub {
   font-family: 'Nunito', sans-serif;
   font-weight: 700;
-  font-size: 0.88rem;
+  font-size: 0.72rem;
   color: #64748b;
 }
 
-.hiw-rec-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #ef4444;
-  animation: hiwPulse 1.5s infinite;
+.hiw-home-practice-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.hiw-home-btn-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  text-align: left;
+}
+
+.hiw-home-btn-visual {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hiw-visual-rand {
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+}
+
+.hiw-visual-speech {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.hiw-home-btn-img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.hiw-home-btn-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.hiw-home-btn-label {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 0.85rem;
+  color: #0B3954;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.hiw-home-btn-hint {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 600;
+  font-size: 0.7rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.2;
+}
+
+/* Step 2 Home Page Session Recording UI (matching Image 3) */
+.hiw-home-session-widget {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  max-width: 290px;
+}
+
+.hiw-session-topic-pill {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 99px;
+  padding: 0.35rem 0.85rem;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 0.72rem;
+  color: #334155;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.hiw-topic-label {
+  color: #059669;
+  font-weight: 900;
+}
+
+.hiw-session-video-box {
+  position: relative;
+  width: 100%;
+  height: 105px;
+  background: #000000;
+  border-radius: 16px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 0.5rem;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.hiw-camera-guide-corner {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f18f01;
+}
+
+.hiw-camera-guide-corner.top-left { top: 10px; left: 14px; border-right: 0; border-bottom: 0; border-top-left-radius: 6px; }
+.hiw-camera-guide-corner.top-right { top: 10px; right: 14px; border-left: 0; border-bottom: 0; border-top-right-radius: 6px; }
+.hiw-camera-guide-corner.bottom-left { bottom: 10px; left: 14px; border-right: 0; border-top: 0; border-bottom-left-radius: 6px; }
+.hiw-camera-guide-corner.bottom-right { bottom: 10px; right: 14px; border-left: 0; border-top: 0; border-bottom-right-radius: 6px; }
+
+.hiw-camera-center-banner {
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid #f18f01;
+  color: #f18f01;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 0.58rem;
+  letter-spacing: 0.03em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 99px;
+}
+
+.hiw-session-audio-dots {
+  color: #059669;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  line-height: 1;
+}
+
+.hiw-session-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.hiw-ctrl-btn {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 0.7rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 99px;
+}
+
+.hiw-ctrl-btn.primary {
+  background: #059669;
+  color: #ffffff;
+  box-shadow: 0 3px 8px rgba(5, 150, 105, 0.3);
+}
+
+.hiw-ctrl-btn.secondary {
+  background: #a7f3d0;
+  color: #047857;
 }
 
 @keyframes hiwPulse {

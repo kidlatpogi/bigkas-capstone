@@ -472,8 +472,8 @@ export default function LandingPage({ managePageClass = true }) {
 
               <div className="footer-cta-actions">
                 <PushButton
-                  bgColor="#059669"
-                  shadowColor="#047857"
+                  bgColor="#0B3954"
+                  shadowColor="#062436"
                   className="footer-btn-custom"
                   onClick={() => navigateTo(ROUTES.REGISTER)}
                 >
@@ -481,12 +481,12 @@ export default function LandingPage({ managePageClass = true }) {
                 </PushButton>
 
                 <PushButton
-                  bgColor="#0B3954"
-                  shadowColor="#062436"
+                  bgColor="#F18F01"
+                  shadowColor="#c2410c"
                   className="footer-btn-custom"
                   onClick={() => window.open('https://assets.bigkas.site/downloads/talktics-android.apk', '_blank')}
                 >
-                  <IoLogoAndroid size={22} />
+                  <IoLogoAndroid size={20} />
                   Download for Android
                 </PushButton>
               </div>

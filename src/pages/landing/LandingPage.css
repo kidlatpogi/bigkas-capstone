@@ -1139,10 +1139,79 @@ body.landing-page-active #root {
     gap: 3rem;
     max-width: 480px;
   }
-  .how-it-works-section {
-    min-height: auto;
-    padding: 4rem 0;
-  }
+}
+
+/* ==========================================================================
+   Dual-Line Infinite Marquee Ticker (matching zeusbautista.site)
+   ========================================================================== */
+.talktics-marquee-banner {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  padding: 3rem 0;
+  overflow: hidden;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  user-select: none;
+  pointer-events: none;
+}
+
+.marquee-track {
+  display: flex;
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.marquee-content {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  will-change: transform;
+}
+
+.track-left .marquee-content {
+  animation: marqueeScrollLeft 35s linear infinite;
+}
+
+.track-right .marquee-content {
+  animation: marqueeScrollRight 35s linear infinite;
+}
+
+.marquee-content span {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: clamp(2.8rem, 6vw, 6.5rem);
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: #0B3954;
+}
+
+.track-left .marquee-content span:nth-child(4n+1) {
+  color: #059669;
+}
+
+.track-right .marquee-content span:nth-child(4n+1) {
+  color: #F18F01;
+}
+
+.marquee-dot {
+  font-size: clamp(1.8rem, 4vw, 4rem) !important;
+  color: #94a3b8 !important;
+  opacity: 0.6;
+}
+
+@keyframes marqueeScrollLeft {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes marqueeScrollRight {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
 }
 
 /* ==========================================================================

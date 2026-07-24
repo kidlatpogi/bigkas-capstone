@@ -344,6 +344,51 @@ export default function LandingPage({ managePageClass = true }) {
         </div>
       </section>
 
+      {/* Dual-Line Infinite Marquee Banner (matching zeusbautista.site design) */}
+      <div className="talktics-marquee-banner" aria-hidden="true">
+        <div className="marquee-track track-left">
+          <div className="marquee-content">
+            <span>PRACTICE &amp; DELIVERY</span>
+            <span className="marquee-dot">•</span>
+            <span>ACOUSTIC BIOMARKERS</span>
+            <span className="marquee-dot">•</span>
+            <span>COMPUTER VISION</span>
+            <span className="marquee-dot">•</span>
+            <span>PRIVATE ROUNDS</span>
+            <span className="marquee-dot">•</span>
+            <span>PRACTICE &amp; DELIVERY</span>
+            <span className="marquee-dot">•</span>
+            <span>ACOUSTIC BIOMARKERS</span>
+            <span className="marquee-dot">•</span>
+            <span>COMPUTER VISION</span>
+            <span className="marquee-dot">•</span>
+            <span>PRIVATE ROUNDS</span>
+            <span className="marquee-dot">•</span>
+          </div>
+        </div>
+
+        <div className="marquee-track track-right">
+          <div className="marquee-content">
+            <span>NO AUDIENCE &amp; NO PRESSURE</span>
+            <span className="marquee-dot">•</span>
+            <span>CONFIDENCE &amp; CLARITY</span>
+            <span className="marquee-dot">•</span>
+            <span>INSTANT COACHING</span>
+            <span className="marquee-dot">•</span>
+            <span>B-01 FEEDBACK</span>
+            <span className="marquee-dot">•</span>
+            <span>NO AUDIENCE &amp; NO PRESSURE</span>
+            <span className="marquee-dot">•</span>
+            <span>CONFIDENCE &amp; CLARITY</span>
+            <span className="marquee-dot">•</span>
+            <span>INSTANT COACHING</span>
+            <span className="marquee-dot">•</span>
+            <span>B-01 FEEDBACK</span>
+            <span className="marquee-dot">•</span>
+          </div>
+        </div>
+      </div>
+
       {/* Practice Lanes Section: 100vh Centered Header with 3 Columns 1 Row Grid */}
       <section className="features-grid-section" id="features">
         <div className="features-section-container">

@@ -1,0 +1,75 @@
+.parallax-text-section {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  overflow: hidden;
+  background: transparent;
+  padding: 5rem 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.parallax-text-rows {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.5rem;
+  width: 100%;
+}
+
+.parallax-text-row-track {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .parallax-text-section {
+    padding: 8rem 0;
+  }
+
+  .parallax-text-rows {
+    gap: 4rem;
+  }
+}
+
+.parallax-text-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  will-change: transform;
+  user-select: none;
+}
+
+.parallax-text-headline {
+  font-family: 'Nunito', sans-serif;
+  font-size: clamp(3.5rem, 12vw, 14rem);
+  font-weight: 900;
+  color: #06101e;
+  line-height: 0.95;
+  letter-spacing: -0.055em;
+  text-transform: uppercase;
+  -webkit-font-smoothing: antialiased;
+  paint-order: stroke fill;
+  -webkit-text-stroke: 2px #06101e;
+}
+
+.parallax-text-amp {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.75rem, 5vw, 5rem);
+  font-weight: 300;
+  font-style: italic;
+  color: #cbd5e1;
+  margin: 0 clamp(1.25rem, 4vw, 3.5rem);
+}
+
+@media (min-width: 768px) {
+  .parallax-text-headline {
+    font-size: clamp(6.5rem, 11vw, 14rem);
+    -webkit-text-stroke: 2.5px #06101e;
+  }
+}

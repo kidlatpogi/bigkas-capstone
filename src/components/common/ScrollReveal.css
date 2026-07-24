@@ -1,0 +1,14 @@
+.scroll-reveal {
+  display: inline-block;
+  margin: 0;
+  padding: 0;
+}
+
+.scroll-reveal-text {
+  display: inline;
+}
+
+.word {
+  display: inline-block;
+  white-space: pre;
+}

@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { IoEye, IoMic, IoChatbubbleEllipses, IoArrowForward } from 'react-icons/io5';
 import { ROUTES } from '../../utils/constants';
-import { getAssetUrl } from '../../utils/assetUtils';
+import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import CardNav from '../../components/common/CardNav';
 import ShapeGrid from '../../components/common/ShapeGrid';
 import PushButton from '../../components/common/PushButton';
@@ -10,6 +10,7 @@ import gradVideo from '../../assets/landing/Grad-Video.mp4';
 import './LandingPage.css';
 
 const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
+const b01Mascot = getSpriteUrl('Robot/0001.webp');
 
 export default function LandingPage({ managePageClass = true }) {
   const location = useLocation();
@@ -51,6 +52,7 @@ export default function LandingPage({ managePageClass = true }) {
       bgColor: '#0B3954',
       textColor: '#FFFFFF',
       links: [
+        { label: 'How it Works', href: '#how-it-works', ariaLabel: 'How it Works Section' },
         { label: 'Feedback Lanes', href: '#features', ariaLabel: 'Feedback Lanes Section' },
         { label: 'Visual, Vocal & Verbal', href: '#features', ariaLabel: 'Visual, Vocal and Verbal Features' },
       ],
@@ -192,6 +194,147 @@ export default function LandingPage({ managePageClass = true }) {
             >
               Login to Account
             </PushButton>
+          </div>
+        </div>
+      </section>
+
+      {/* How it Works Section */}
+      <section className="how-it-works-section" id="how-it-works">
+        <div className="how-it-works-section-container">
+          {/* Centered Header with Title Design matching Practice Lanes */}
+          <div className="features-centered-header">
+            <span className="features-tag">HOW IT WORKS</span>
+            <div className="features-title-group">
+              <h2 className="features-title-main">Practice moves like a path.</h2>
+            </div>
+            <p className="features-description">
+              Start with one small practice run, get a clear nudge from B-01, then continue to the next step without guessing what changed.
+            </p>
+          </div>
+
+          {/* 3 Steps Container */}
+          <div className="how-it-works-steps-wrapper">
+            {/* SVG Dotted Curved Lines with Arrow Markers */}
+            <svg className="how-it-works-curved-svg" viewBox="0 0 900 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <marker
+                  id="hiw-arrow"
+                  viewBox="0 0 10 10"
+                  refX="6"
+                  refY="5"
+                  markerWidth="6"
+                  markerHeight="6"
+                  orient="auto-start-reverse"
+                >
+                  <path d="M 0 1 L 8 5 L 0 9 z" fill="#059669" />
+                </marker>
+              </defs>
+
+              {/* Path from Step 1 preview to Step 2 preview */}
+              <path
+                d="M 230,65 C 270,105 320,105 365,65"
+                stroke="#059669"
+                strokeWidth="2.5"
+                strokeDasharray="6 6"
+                fill="none"
+                markerEnd="url(#hiw-arrow)"
+              />
+
+              {/* Path from Step 2 preview to Step 3 preview */}
+              <path
+                d="M 535,65 C 575,25 625,25 670,65"
+                stroke="#059669"
+                strokeWidth="2.5"
+                strokeDasharray="6 6"
+                fill="none"
+                markerEnd="url(#hiw-arrow)"
+              />
+            </svg>
+
+            <div className="how-it-works-steps-grid">
+              {/* Step 01 */}
+              <div className="how-it-works-step-card">
+                <div className="hiw-preview-frame hiw-preview-step1">
+                  <div className="hiw-mock-modes-stack">
+                    <div className="hiw-mode-pill active">
+                      <span className="hiw-mode-dot" />
+                      <span className="hiw-mode-name">Journey</span>
+                      <span className="hiw-mode-check">✓</span>
+                    </div>
+                    <div className="hiw-mode-pill">
+                      <span className="hiw-mode-name">Randomizer</span>
+                    </div>
+                    <div className="hiw-mode-pill">
+                      <span className="hiw-mode-name">Free Speech</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="hiw-step-details">
+                  <span className="hiw-step-number hiw-num-navy">01</span>
+                  <h3 className="hiw-step-title">Pick a mode</h3>
+                  <p className="hiw-step-desc">
+                    Open Journey, Randomizer, or Free Speech and choose the next prompt that fits your goal.
+                  </p>
+                </div>
+              </div>
+
+              {/* Step 02 */}
+              <div className="how-it-works-step-card">
+                <div className="hiw-preview-frame hiw-preview-step2">
+                  <div className="hiw-mock-speech-box">
+                    <div className="hiw-b01-nudge-badge">
+                      <img src={b01Mascot} alt="B-01" className="hiw-b01-avatar-img" />
+                      <span className="hiw-b01-text">B-01 nearby</span>
+                    </div>
+                    <div className="hiw-waveform-anim">
+                      <div className="hiw-wave-bar b1" />
+                      <div className="hiw-wave-bar b2" />
+                      <div className="hiw-wave-bar b3" />
+                      <div className="hiw-wave-bar b4" />
+                      <div className="hiw-wave-bar b5" />
+                    </div>
+                    <div className="hiw-rec-status">
+                      <span className="hiw-rec-dot" />
+                      <span>Short private attempt</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="hiw-step-details">
+                  <span className="hiw-step-number hiw-num-orange">02</span>
+                  <h3 className="hiw-step-title">Speak once</h3>
+                  <p className="hiw-step-desc">
+                    Keep the task front and center while you make a short private attempt with B-01 nearby.
+                  </p>
+                </div>
+              </div>
+
+              {/* Step 03 */}
+              <div className="how-it-works-step-card">
+                <div className="hiw-preview-frame hiw-preview-step3">
+                  <div className="hiw-mock-results-box">
+                    <div className="hiw-done-badge">
+                      <span className="hiw-done-check">✓</span>
+                      <span className="hiw-done-label">DONE</span>
+                    </div>
+                    <div className="hiw-metrics-pills-row">
+                      <span className="hiw-metric-pill score">Score: 92%</span>
+                      <span className="hiw-metric-pill exp">+150 EXP</span>
+                      <span className="hiw-metric-pill streak">🔥 5 Streak</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="hiw-step-details">
+                  <span className="hiw-step-number hiw-num-green">03</span>
+                  <h3 className="hiw-step-title">Move forward</h3>
+                  <p className="hiw-step-desc">
+                    Your score, EXP, streak, and DONE state make the next retake or activity easy to see.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

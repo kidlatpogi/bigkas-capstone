@@ -581,3 +581,331 @@ body.landing-page-active #root {
     height: 120px;
   }
 }
+
+/* ==========================================================================
+   How it Works Section
+   ========================================================================== */
+.how-it-works-section {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  min-height: 100dvh;
+  padding: 4rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+.how-it-works-section-container {
+  width: 90%;
+  max-width: 1360px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3.5rem;
+}
+
+.how-it-works-steps-wrapper {
+  width: 100%;
+  position: relative;
+}
+
+.how-it-works-curved-svg {
+  position: absolute;
+  top: 50px;
+  left: 0;
+  width: 100%;
+  height: 120px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.how-it-works-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2.5rem;
+  width: 100%;
+  position: relative;
+  z-index: 2;
+}
+
+.how-it-works-step-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  text-align: center;
+  align-items: center;
+}
+
+/* Step Mockup Preview Frames */
+.hiw-preview-frame {
+  width: 100%;
+  height: 200px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 24px;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.04);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.how-it-works-step-card:hover .hiw-preview-frame {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(11, 57, 84, 0.08);
+  border-color: rgba(5, 150, 105, 0.3);
+}
+
+/* Step 1 Modes Stack */
+.hiw-mock-modes-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 85%;
+  max-width: 220px;
+}
+
+.hiw-mode-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 1rem;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #475569;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+}
+
+.hiw-mode-pill.active {
+  background: #059669;
+  color: #ffffff;
+  border-color: #059669;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+}
+
+.hiw-mode-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #34d399;
+}
+
+.hiw-mode-check {
+  font-weight: 900;
+  font-size: 0.8rem;
+}
+
+/* Step 2 Speech Box */
+.hiw-mock-speech-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  width: 90%;
+}
+
+.hiw-b01-nudge-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  padding: 0.35rem 0.85rem;
+  border-radius: 99px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 0.82rem;
+  color: #c2410c;
+  box-shadow: 0 4px 12px rgba(241, 143, 1, 0.12);
+}
+
+.hiw-b01-avatar-img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.hiw-waveform-anim {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+}
+
+.hiw-wave-bar {
+  width: 4px;
+  background: #F18F01;
+  border-radius: 99px;
+  animation: hiwWave 1.2s ease-in-out infinite alternate;
+}
+
+.hiw-wave-bar.b1 { height: 12px; animation-delay: 0.1s; }
+.hiw-wave-bar.b2 { height: 26px; animation-delay: 0.3s; }
+.hiw-wave-bar.b3 { height: 32px; animation-delay: 0.2s; }
+.hiw-wave-bar.b4 { height: 18px; animation-delay: 0.4s; }
+.hiw-wave-bar.b5 { height: 10px; animation-delay: 0.15s; }
+
+@keyframes hiwWave {
+  0% { transform: scaleY(0.4); opacity: 0.6; }
+  100% { transform: scaleY(1); opacity: 1; }
+}
+
+.hiw-rec-status {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.hiw-rec-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: hiwPulse 1.5s infinite;
+}
+
+@keyframes hiwPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Step 3 Results Box */
+.hiw-mock-results-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  width: 90%;
+}
+
+.hiw-done-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+  padding: 0.4rem 0.9rem;
+  border-radius: 99px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.1);
+}
+
+.hiw-done-check {
+  font-weight: 900;
+  font-size: 0.9rem;
+}
+
+.hiw-metrics-pills-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.hiw-metric-pill {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 0.75rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 8px;
+}
+
+.hiw-metric-pill.score {
+  background: #f0fdf4;
+  color: #047857;
+}
+
+.hiw-metric-pill.exp {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.hiw-metric-pill.streak {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+/* Step Details Typography */
+.hiw-step-details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0 0.5rem;
+}
+
+.hiw-step-number {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 1.6rem;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.hiw-step-number.hiw-num-navy {
+  color: #0B3954;
+}
+
+.hiw-step-number.hiw-num-orange {
+  color: #F18F01;
+}
+
+.hiw-step-number.hiw-num-green {
+  color: #059669;
+}
+
+.hiw-step-title {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: clamp(1.2rem, 1.6vw, 1.45rem);
+  color: #0B3954;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.hiw-step-desc {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 600;
+  font-size: clamp(0.9rem, 1.1vw, 1rem);
+  color: #4B5563;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+  .how-it-works-curved-svg {
+    display: none;
+  }
+  .how-it-works-steps-grid {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+    max-width: 480px;
+  }
+  .how-it-works-section {
+    min-height: auto;
+    padding: 4rem 0;
+  }
+}
+
+

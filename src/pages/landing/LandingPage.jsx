@@ -93,10 +93,12 @@ export default function LandingPage({ managePageClass = true }) {
 
       const progress = Math.max(0, Math.min(1, -rect.top / totalScrollable));
 
-      if (progress < 0.28) {
+      if (progress < 0.25) {
         setVisibleLaneCount(1);
-      } else if (progress < 0.62) {
+      } else if (progress < 0.50) {
         setVisibleLaneCount(2);
+      } else if (progress < 0.75) {
+        setVisibleLaneCount(3);
       } else {
         setVisibleLaneCount(3);
       }

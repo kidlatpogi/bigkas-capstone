@@ -926,16 +926,29 @@ body.landing-page-active #root {
   align-items: center;
   justify-content: center;
 }
-  transition: all 0.15s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
 
 .hiw-ctrl-btn.primary {
-  background: #059669;
-  color: #ffffff;
-  box-shadow: #047857 0px 4px 0px 0px;
+  background: #059669 !important;
+  color: #ffffff !important;
+  box-shadow: #047857 0px 4px 0px 0px !important;
+}
+
+.hiw-ctrl-btn.secondary {
+  background: #a7f3d0 !important;
+  color: #047857 !important;
+  box-shadow: #6ee7b7 0px 4px 0px 0px !important;
+}
+
+.hiw-ctrl-btn:hover {
+  transform: translateY(2px) !important;
+}
+
+.hiw-ctrl-btn.primary:hover {
+  box-shadow: #047857 0px 2px 0px 0px !important;
+}
+
+.hiw-ctrl-btn.secondary:hover {
+  box-shadow: #6ee7b7 0px 2px 0px 0px !important;
 }
 
 .hiw-ctrl-btn.secondary {

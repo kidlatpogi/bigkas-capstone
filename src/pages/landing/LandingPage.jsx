@@ -133,7 +133,7 @@ export default function LandingPage({ managePageClass = true }) {
   return (
     <div className="landing-clean-wrapper">
       <ShapeGrid 
-        squareSize={38} 
+        squareSize={43} 
         borderColor="rgba(0, 0, 0, 0.08)" 
         hoverFillColor="rgba(5, 150, 105, 0.14)" 
         shape="square" 
@@ -204,13 +204,13 @@ export default function LandingPage({ managePageClass = true }) {
         <div className="how-it-works-section-container">
           {/* Centered Header with Title Design matching Practice Lanes */}
           <div className="features-centered-header">
-            <ScrollReveal baseRotation={0} baseOpacity={0.2} blurStrength={0}>
-              <span className="features-tag">HOW IT WORKS</span>
+            <ScrollReveal as="span" textClassName="features-tag" baseRotation={0} baseOpacity={0.2} blurStrength={0}>
+              HOW IT WORKS
             </ScrollReveal>
-            <ScrollReveal baseRotation={2} baseOpacity={0.1} blurStrength={4} containerClassName="features-title-group">
-              <h2 className="features-title-main">Practice moves like a path.</h2>
+            <ScrollReveal as="h2" containerClassName="features-title-group" textClassName="features-title-main" baseRotation={2} baseOpacity={0.1} blurStrength={4}>
+              Practice moves like a path.
             </ScrollReveal>
-            <ScrollReveal baseRotation={0} baseOpacity={0.1} blurStrength={6} textClassName="features-description">
+            <ScrollReveal as="p" textClassName="features-description" baseRotation={0} baseOpacity={0.1} blurStrength={6}>
               Start with one small practice run, get a clear nudge from B-01, then continue to the next step without guessing what changed.
             </ScrollReveal>
           </div>
@@ -218,7 +218,7 @@ export default function LandingPage({ managePageClass = true }) {
           {/* 3 Steps Container */}
           <div className="how-it-works-steps-wrapper">
             {/* SVG Dotted Curved Lines with Arrow Markers */}
-            <svg className="how-it-works-curved-svg" viewBox="0 0 1000 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg className="how-it-works-curved-svg" viewBox="0 0 1200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
               <defs>
                 <marker
                   id="hiw-arrow"
@@ -235,10 +235,10 @@ export default function LandingPage({ managePageClass = true }) {
 
               {/* Dramatic Curved Path from Step 1 to Step 2 */}
               <path
-                d="M 280,45 C 330,135 360,135 400,45"
+                d="M 350,60 C 400,160 420,160 460,60"
                 stroke="#059669"
-                strokeWidth="3.5"
-                strokeDasharray="8 6"
+                strokeWidth="4"
+                strokeDasharray="10 8"
                 strokeLinecap="round"
                 fill="none"
                 markerEnd="url(#hiw-arrow)"
@@ -246,10 +246,10 @@ export default function LandingPage({ managePageClass = true }) {
 
               {/* Dramatic Curved Path from Step 2 to Step 3 */}
               <path
-                d="M 610,45 C 650,-25 680,-25 720,45"
+                d="M 740,60 C 780,-20 800,-20 840,60"
                 stroke="#059669"
-                strokeWidth="3.5"
-                strokeDasharray="8 6"
+                strokeWidth="4"
+                strokeDasharray="10 8"
                 strokeLinecap="round"
                 fill="none"
                 markerEnd="url(#hiw-arrow)"
@@ -277,10 +277,10 @@ export default function LandingPage({ managePageClass = true }) {
 
                 <div className="hiw-step-details">
                   <span className="hiw-step-number hiw-num-navy">01</span>
-                  <ScrollReveal baseRotation={0} baseOpacity={0.2} blurStrength={2}>
-                    <h3 className="hiw-step-title">Pick a mode</h3>
+                  <ScrollReveal as="h3" textClassName="hiw-step-title" baseRotation={0} baseOpacity={0.15} blurStrength={2}>
+                    Pick a mode
                   </ScrollReveal>
-                  <ScrollReveal baseRotation={0} baseOpacity={0.1} blurStrength={4} textClassName="hiw-step-desc">
+                  <ScrollReveal as="p" textClassName="hiw-step-desc" baseRotation={0} baseOpacity={0.1} blurStrength={4}>
                     Open Journey, Randomizer, or Free Speech and choose the next prompt that fits your goal.
                   </ScrollReveal>
                 </div>
@@ -291,7 +291,7 @@ export default function LandingPage({ managePageClass = true }) {
                 <div className="hiw-preview-frame hiw-preview-step2">
                   <div className="hiw-mock-speech-box">
                     <div className="hiw-b01-nudge-badge">
-                      <img src={b01Mascot} alt="B-01" className="hiw-b01-avatar-img" />
+                      <img src={bigkasLogo} alt="B-01" className="hiw-b01-avatar-img" />
                       <span className="hiw-b01-text">B-01 nearby</span>
                     </div>
                     <div className="hiw-waveform-anim">
@@ -310,10 +310,10 @@ export default function LandingPage({ managePageClass = true }) {
 
                 <div className="hiw-step-details">
                   <span className="hiw-step-number hiw-num-orange">02</span>
-                  <ScrollReveal baseRotation={0} baseOpacity={0.2} blurStrength={2}>
-                    <h3 className="hiw-step-title">Speak once</h3>
+                  <ScrollReveal as="h3" textClassName="hiw-step-title" baseRotation={0} baseOpacity={0.15} blurStrength={2}>
+                    Speak once
                   </ScrollReveal>
-                  <ScrollReveal baseRotation={0} baseOpacity={0.1} blurStrength={4} textClassName="hiw-step-desc">
+                  <ScrollReveal as="p" textClassName="hiw-step-desc" baseRotation={0} baseOpacity={0.1} blurStrength={4}>
                     Keep the task front and center while you make a short private attempt with B-01 nearby.
                   </ScrollReveal>
                 </div>
@@ -336,10 +336,10 @@ export default function LandingPage({ managePageClass = true }) {
 
                 <div className="hiw-step-details">
                   <span className="hiw-step-number hiw-num-green">03</span>
-                  <ScrollReveal baseRotation={0} baseOpacity={0.2} blurStrength={2}>
-                    <h3 className="hiw-step-title">Move forward</h3>
+                  <ScrollReveal as="h3" textClassName="hiw-step-title" baseRotation={0} baseOpacity={0.15} blurStrength={2}>
+                    Move forward
                   </ScrollReveal>
-                  <ScrollReveal baseRotation={0} baseOpacity={0.1} blurStrength={4} textClassName="hiw-step-desc">
+                  <ScrollReveal as="p" textClassName="hiw-step-desc" baseRotation={0} baseOpacity={0.1} blurStrength={4}>
                     Your score, EXP, streak, and DONE state make the next retake or activity easy to see.
                   </ScrollReveal>
                 </div>
@@ -354,13 +354,13 @@ export default function LandingPage({ managePageClass = true }) {
         <div className="features-section-container">
           {/* Centered Header with 3-Font Title Design */}
           <div className="features-centered-header">
-            <ScrollReveal baseRotation={0} baseOpacity={0.2} blurStrength={0}>
-              <span className="features-tag">FEEDBACK LANES</span>
+            <ScrollReveal as="span" textClassName="features-tag" baseRotation={0} baseOpacity={0.2} blurStrength={0}>
+              FEEDBACK LANES
             </ScrollReveal>
-            <ScrollReveal baseRotation={2} baseOpacity={0.1} blurStrength={4} containerClassName="features-title-group">
-              <h2 className="features-title-main">Practice Lanes</h2>
+            <ScrollReveal as="h2" containerClassName="features-title-group" textClassName="features-title-main" baseRotation={2} baseOpacity={0.1} blurStrength={4}>
+              Practice Lanes
             </ScrollReveal>
-            <ScrollReveal baseRotation={0} baseOpacity={0.1} blurStrength={6} textClassName="features-description">
+            <ScrollReveal as="p" textClassName="features-description" baseRotation={0} baseOpacity={0.1} blurStrength={6}>
               TalkTics keeps feedback focused, readable, and easy to act on after each private practice session using acoustic biomarkers and computer vision.
             </ScrollReveal>
           </div>
@@ -385,8 +385,12 @@ export default function LandingPage({ managePageClass = true }) {
                     </div>
 
                     <div className="feature-card-info-col">
-                      <h3 className="feature-card-title">{card.title}</h3>
-                      <p className="feature-card-text">{card.text}</p>
+                      <ScrollReveal as="h3" textClassName="feature-card-title" baseRotation={0} baseOpacity={0.15}>
+                        {card.title}
+                      </ScrollReveal>
+                      <ScrollReveal as="p" textClassName="feature-card-text" baseRotation={0} baseOpacity={0.1}>
+                        {card.text}
+                      </ScrollReveal>
                       
                       <div className="feature-card-badges-row">
                         {card.badges.map((badge) => (

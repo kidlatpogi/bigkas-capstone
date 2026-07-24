@@ -21,8 +21,6 @@ export default function LandingPage({ managePageClass = true }) {
   const navigate = useNavigate();
   const videoRef = useRef(null);
   const featuresSectionRef = useRef(null);
-  const [visibleLaneCount, setVisibleLaneCount] = useState(1);
-
   function navigateTo(path) {
     navigate(path);
   }
@@ -78,95 +76,6 @@ export default function LandingPage({ managePageClass = true }) {
       if (videoEl) {
         videoEl.pause();
       }
-    };
-  }, []);
-
-  {/* Practice Lanes scroll-jacking: lock viewport at section, reveal cards one by one */}
-  useEffect(() => {
-    const section = featuresSectionRef.current;
-    if (!section) return;
-
-    const STEP_THRESHOLD = 300;
-    let accumulated = 0;
-    let touchStartY = 0;
-    let currentStep = 0; // 0=card1, 1=card2, 2=card3 (all revealed)
-
-    const isInView = () => {
-      const rect = section.getBoundingClientRect();
-      // Sticky container is pinned at top=0 while in view
-      return rect.top <= 2 && rect.top >= -2;
-    };
-
-    const handleWheel = (e) => {
-      if (!isInView()) return;
-
-      const scrollingDown = e.deltaY > 0;
-      const scrollingUp = e.deltaY < 0;
-
-      // Allow scrolling up when at first card (let user go back up the page)
-      if (scrollingUp && currentStep <= 0) {
-        accumulated = 0;
-        return;
-      }
-
-      // Allow scrolling down when all cards are revealed
-      if (scrollingDown && currentStep >= 2) {
-        accumulated = 0;
-        return;
-      }
-
-      // Block native scroll and accumulate
-      e.preventDefault();
-      accumulated += e.deltaY;
-
-      if (accumulated >= STEP_THRESHOLD && currentStep < 2) {
-        accumulated = 0;
-        currentStep++;
-        setVisibleLaneCount(currentStep + 1);
-      } else if (accumulated <= -STEP_THRESHOLD && currentStep > 0) {
-        accumulated = 0;
-        currentStep--;
-        setVisibleLaneCount(currentStep + 1);
-      }
-    };
-
-    const handleTouchStart = (e) => {
-      touchStartY = e.touches[0].clientY;
-    };
-
-    const handleTouchMove = (e) => {
-      if (!isInView()) return;
-
-      const deltaY = touchStartY - e.touches[0].clientY;
-      if (Math.abs(deltaY) < 8) return;
-
-      const swipingDown = deltaY > 0;
-      const swipingUp = deltaY < 0;
-
-      if (swipingUp && currentStep <= 0) return;
-      if (swipingDown && currentStep >= 2) return;
-
-      e.preventDefault();
-
-      if (swipingDown && currentStep < 2) {
-        currentStep++;
-        setVisibleLaneCount(currentStep + 1);
-        touchStartY = e.touches[0].clientY;
-      } else if (swipingUp && currentStep > 0) {
-        currentStep--;
-        setVisibleLaneCount(currentStep + 1);
-        touchStartY = e.touches[0].clientY;
-      }
-    };
-
-    window.addEventListener('wheel', handleWheel, { passive: false });
-    window.addEventListener('touchstart', handleTouchStart, { passive: true });
-    window.addEventListener('touchmove', handleTouchMove, { passive: false });
-
-    return () => {
-      window.removeEventListener('wheel', handleWheel);
-      window.removeEventListener('touchstart', handleTouchStart);
-      window.removeEventListener('touchmove', handleTouchMove);
     };
   }, []);
 
@@ -484,15 +393,14 @@ export default function LandingPage({ managePageClass = true }) {
             </ScrollReveal>
           </div>
 
-          {/* 3 Columns 1 Row Grid with 1-card-per-scroll reveal */}
+          {/* 3 Columns 1 Row Grid */}
           <div className="features-cards-3col-grid">
-            {featureCards.map((card, idx) => {
+            {featureCards.map((card) => {
               const Icon = card.icon;
-              const isVisible = idx < visibleLaneCount;
               return (
                 <div
                   key={card.title}
-                  className={`feature-grid-card ${isVisible ? 'lane-visible' : 'lane-hidden'}`}
+                  className="feature-grid-card"
                   style={{ backgroundColor: card.bgColor }}
                 >
                   <div className="scroll-stack-card-overlay" />

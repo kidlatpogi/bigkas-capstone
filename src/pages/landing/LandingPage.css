@@ -157,30 +157,24 @@ body.landing-page-active #root {
   border-radius: 18px !important;
 }
 
-/* Practice Lanes - Scroll-jacked card reveal */
+/* Practice Lanes Section */
 .features-grid-section {
   position: relative;
   z-index: 3;
   width: 100%;
-  min-height: 300vh;
-  padding: 0;
+  padding: 6rem 0;
   background: transparent;
 }
 
 .features-section-container {
-  position: sticky;
-  top: 0;
-  height: 100vh;
   width: 90%;
   max-width: 1560px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 1.5rem;
+  gap: 3rem;
   box-sizing: border-box;
-  overflow: hidden;
 }
 
 /* Centered Header */
@@ -189,7 +183,7 @@ body.landing-page-active #root {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   max-width: 760px;
 }
 
@@ -211,7 +205,7 @@ body.landing-page-active #root {
 .features-title-main {
   font-family: 'Nunito', sans-serif;
   font-weight: 900;
-  font-size: clamp(2.4rem, 4vw, 3.6rem);
+  font-size: clamp(2.8rem, 5vw, 4.2rem);
   color: #C44900; /* Burnt orange matching portfolio site */
   letter-spacing: -0.05em;
   margin: 0;
@@ -221,9 +215,9 @@ body.landing-page-active #root {
 .features-description {
   font-family: 'Nunito', sans-serif;
   font-weight: 600;
-  font-size: clamp(0.95rem, 1.2vw, 1.1rem);
+  font-size: clamp(1rem, 1.3vw, 1.15rem);
   color: #4B5563;
-  line-height: 1.55;
+  line-height: 1.65;
   margin: 0;
 }
 
@@ -231,35 +225,22 @@ body.landing-page-active #root {
 .features-cards-3col-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1.75rem;
+  gap: 2rem;
   width: 100%;
 }
 
 .feature-grid-card {
   position: relative;
   border-radius: 32px;
-  padding: 1.75rem 1.6rem;
+  padding: 2.25rem 2rem;
   overflow: hidden;
   color: #ffffff;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 400px;
-  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease, box-shadow 0.3s ease;
-  will-change: transform, opacity;
-}
-
-.feature-grid-card.lane-hidden {
-  transform: translateX(100vw);
-  opacity: 0;
-  pointer-events: none;
-}
-
-.feature-grid-card.lane-visible {
-  transform: translateX(0);
-  opacity: 1;
-  pointer-events: auto;
+  min-height: 480px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .feature-grid-card:hover {

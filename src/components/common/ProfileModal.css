@@ -5,11 +5,14 @@
 
 .profile-modal-backdrop {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   background: rgba(3, 7, 18, 0.4);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  z-index: 1190;
+  z-index: 1100;
 }
 
 .profile-modal-wrapper {
@@ -18,7 +21,7 @@
   bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   left: 0;
   right: 0;
-  z-index: 1195;
+  z-index: 1150;
   display: flex;
   flex-direction: column;
   align-items: center;

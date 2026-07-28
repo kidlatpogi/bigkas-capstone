@@ -7,5 +7,18 @@
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#ffffff",
-  "theme_color": "#010101"
+  "theme_color": "#010101",
+  "icons": [
+    {
+      "src": "/images/bigkas-apk-icon.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/bigkas-logo-72.webp",
+      "sizes": "72x72",
+      "type": "image/webp"
+    }
+  ]
 }

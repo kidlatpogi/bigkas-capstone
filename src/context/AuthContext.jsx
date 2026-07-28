@@ -2384,8 +2384,13 @@ export function AuthProvider({ children }) {
       }
     };
 
-    // Initial check right after user is confirmed
-    verifyIntegrity();
+    // Claim session for this instance first, then run initial integrity check
+    forceClaimSession(supabase, uid).then(() => {
+      if (active) verifyIntegrity();
+    }).catch(err => {
+      console.warn('[SessionIntegrity] Initial claim error:', err);
+      if (active) verifyIntegrity();
+    });
 
     // 2. Supabase Realtime WebSocket subscription
     const channel = supabase

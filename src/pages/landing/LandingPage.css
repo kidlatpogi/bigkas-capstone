@@ -1402,4 +1402,81 @@ body.landing-page-active #root {
   }
 }
 
+/* ==========================================================================
+   Small Phone Screen Responsiveness (iPhone 13 / 13 mini / 375px - 430px)
+   ========================================================================== */
+@media (max-width: 480px) {
+  .hero-video-content {
+    width: 92%;
+    gap: 1rem;
+    padding: 0 0.5rem;
+  }
+
+  .hero-video-title {
+    font-size: clamp(1.85rem, 8vw, 2.5rem);
+    line-height: 1.18;
+  }
+
+  .hero-video-subtitle {
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .hero-video-actions {
+    flex-direction: column;
+    width: 100%;
+    max-width: 320px;
+    gap: 0.75rem;
+  }
+
+  .hero-btn-custom {
+    min-width: 100% !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .features-grid-section {
+    padding: 3.5rem 0;
+  }
+
+  .features-cards-3col-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .feature-grid-card {
+    min-height: 380px;
+    padding: 1.75rem 1.5rem;
+    border-radius: 24px;
+  }
+
+  .footer-cta-container {
+    padding: 3.5rem 0 max(2rem, env(safe-area-inset-bottom, 2rem));
+  }
+
+  .footer-cta-heading {
+    font-size: clamp(2.2rem, 9vw, 3.2rem);
+  }
+
+  .footer-cta-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .footer-btn-custom {
+    width: 100% !important;
+  }
+
+  .footer-btn-custom button {
+    width: 100% !important;
+  }
+
+  .footer-bottom-bar {
+    flex-direction: column;
+    gap: 0.75rem;
+    text-align: center;
+  }
+}
+
 

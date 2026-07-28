@@ -172,12 +172,17 @@ function extractBucketStoragePath(pathOrUrl) {
 }
 
 async function resolvePlayableStorageUrl(pathOrUrl) {
+  if (!pathOrUrl) return null;
   const storagePath = extractBucketStoragePath(pathOrUrl);
   if (!storagePath) return buildBucketPublicUrl(pathOrUrl);
-  const { data, error } = await supabase.storage
-    .from(SESSION_MEDIA_BUCKET)
-    .createSignedUrl(storagePath, 3600);
-  if (!error && data?.signedUrl) return data.signedUrl;
+  try {
+    const { data, error } = await supabase.storage
+      .from(SESSION_MEDIA_BUCKET)
+      .createSignedUrl(storagePath, 3600);
+    if (!error && data?.signedUrl) return data.signedUrl;
+  } catch (err) {
+    console.warn('[resolvePlayableStorageUrl] Signed URL creation failed:', err);
+  }
   return buildBucketPublicUrl(storagePath);
 }
 

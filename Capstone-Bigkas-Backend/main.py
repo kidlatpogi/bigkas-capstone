@@ -677,7 +677,6 @@ def persist_to_supabase(
             supabase_client.table("profiles").update(profile_payload).eq("id", user_id).execute()
         except Exception as exc:
             _log_supabase_error("profiles", profile_payload, exc)
-            raise
 
     # 3. session_media
     media_payload = {
@@ -783,14 +782,18 @@ async def run_analysis_task(
             def _compress_audio():
                 import subprocess
                 cmd = ['ffmpeg', '-y', '-i', 'pipe:0', '-t', '305', '-acodec', 'pcm_s16le', '-ac', '1', '-ar', '16000', '-f', 'wav', 'pipe:1']
-                p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                stdout, stderr = p.communicate(input=audio_bytes, timeout=60)
-                if p.returncode != 0:
-                    logger.error(f"FFmpeg failed: {stderr.decode()}")
-                return stdout
+                try:
+                    p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    stdout, stderr = p.communicate(input=audio_bytes, timeout=60)
+                    if p.returncode == 0 and stdout and len(stdout) > 100:
+                        return stdout
+                    logger.warning(f"FFmpeg compression failed or output empty (code {p.returncode}). Using raw audio bytes.")
+                except Exception as exc:
+                    logger.warning(f"FFmpeg exception: {exc}. Using raw audio bytes.")
+                return audio_bytes
             
             clean_audio_bytes = await asyncio.to_thread(_compress_audio)
-            print(f"[Job] {job_id} - Audio compressed ({len(clean_audio_bytes)} bytes). Sending to Cloudflare...")
+            print(f"[Job] {job_id} - Audio payload prepared ({len(clean_audio_bytes)} bytes). Sending to Cloudflare...")
             payload = await analyze_with_cloudflare(clean_audio_bytes, topic)
             print(f"[Job] {job_id} - Cloudflare analysis complete.")
             return payload

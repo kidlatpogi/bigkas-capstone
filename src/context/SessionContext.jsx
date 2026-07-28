@@ -467,10 +467,11 @@ async function uploadSessionMediaBlob({ userId, blob, kind }) {
     .from(SESSION_MEDIA_BUCKET)
     .upload(filePath, blob, {
       contentType: blob.type || (kind === 'video' ? 'video/webm' : 'audio/webm'),
-      upsert: false,
+      upsert: true,
     });
 
   if (error) {
+    console.warn(`[SessionContext] Storage upload failed for ${filePath}:`, error.message);
     throw new Error(error.message || `Failed to upload ${kind} blob.`);
   }
 

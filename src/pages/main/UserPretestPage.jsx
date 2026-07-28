@@ -179,11 +179,7 @@ function UserPretestPage() {
 
           <div className="pretest-confirm-robot" aria-hidden="true">
             <div className="pretest-confirm-robot-media">
-              <video className="pretest-confirm-video" autoPlay loop muted playsInline style={{ mixBlendMode: 'screen', background: 'transparent' }}>
-                <source src={waveWebm} type="video/webm" />
-                <source src={waveMp4} type="video/mp4" />
-                <img src={robotPretestImage} alt="B-01" style={{ objectFit: 'contain', width: '100%', maxHeight: '42vh' }} />
-              </video>
+              <img src={robotPretestImage} alt="B-01" style={{ objectFit: 'contain', width: '100%', maxHeight: '42vh' }} />
             </div>
           </div>
         </div>

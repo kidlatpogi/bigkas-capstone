@@ -703,11 +703,7 @@ function UserProfilingPage() {
             </article>
             <div className="profiling-intro-robot">
               <div className="profiling-intro-robot-media" aria-hidden="true">
-                <video className="profiling-intro-video" autoPlay loop muted playsInline style={{ mixBlendMode: 'screen', background: 'transparent' }}>
-                  <source src={waveWebm} type="video/webm" />
-                  <source src={waveMp4} type="video/mp4" />
-                  <img src={robotWaveImage} alt="B-01" className="profiling-ready-image" style={{ objectFit: 'contain', width: '100%', maxHeight: '42vh' }} />
-                </video>
+                <img src={robotWaveImage} alt="B-01" className="profiling-ready-image" style={{ objectFit: 'contain', width: '100%', maxHeight: '42vh' }} />
               </div>
             </div>
           </div>
@@ -749,11 +745,7 @@ function UserProfilingPage() {
             </article>
             <div className="profiling-intro-robot">
               <div className="profiling-intro-robot-media" aria-hidden="true">
-                <video className="profiling-intro-video" autoPlay loop muted playsInline style={{ mixBlendMode: 'screen', background: 'transparent' }}>
-                  <source src={waveWebm} type="video/webm" />
-                  <source src={waveMp4} type="video/mp4" />
-                  <img src={robotWaveImage} alt="B-01" className="profiling-ready-image" style={{ objectFit: 'contain', width: '100%', maxHeight: '42vh' }} />
-                </video>
+                <img src={robotWaveImage} alt="B-01" className="profiling-ready-image" style={{ objectFit: 'contain', width: '100%', maxHeight: '42vh' }} />
               </div>
             </div>
           </div>
@@ -800,11 +792,7 @@ function UserProfilingPage() {
 
             <div className="profiling-intro-robot">
               <div className="profiling-intro-robot-media profiling-intro-robot-media--ready" aria-hidden="true">
-                <video className="profiling-intro-video" autoPlay loop muted playsInline style={{ mixBlendMode: 'screen', background: 'transparent' }}>
-                  <source src={waveWebm} type="video/webm" />
-                  <source src={waveMp4} type="video/mp4" />
-                  <img src={robotWaveImage} alt="B-01" className="profiling-ready-image" style={{ objectFit: 'contain', width: '100%', maxHeight: '42vh' }} />
-                </video>
+                <img src={robotWaveImage} alt="B-01" className="profiling-ready-image" style={{ objectFit: 'contain', width: '100%', maxHeight: '42vh' }} />
               </div>
             </div>
           </div>

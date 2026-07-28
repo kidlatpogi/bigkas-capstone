@@ -26,8 +26,9 @@
 .auth-mobile-visual-bg {
   position: relative;
   width: 100%;
-  height: 28vh; /* Reduced height to fit everything */
-  min-height: 200px;
+  height: auto;
+  min-height: calc(210px + env(safe-area-inset-top, 0px));
+  padding-top: calc(44px + env(safe-area-inset-top, 0px));
   background: linear-gradient(180deg, #34D399 0%, #059669 100%);
   display: flex;
   flex-direction: column;
@@ -35,6 +36,7 @@
   justify-content: center;
   overflow: hidden;
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .auth-mobile-header-accent {
@@ -52,14 +54,14 @@
   position: relative;
   z-index: 2;
   text-align: center;
-  padding: 10px 20px 40px; /* Reduced padding */
-  margin-top: 30px;
+  padding: 8px 20px 36px;
+  margin-top: 0;
 }
 
 .auth-mobile-robot-wrap {
   width: clamp(80px, 25vw, 120px); /* Smaller robot */
   height: clamp(80px, 25vw, 120px);
-  margin: 0 auto 5px;
+  margin: 10px auto 5px;
   filter: drop-shadow(0 20px 40px rgba(0,0,0,0.2));
   flex-shrink: 0;
 }
@@ -73,7 +75,7 @@
 .auth-mobile-hero-text h2 {
   font-family: 'Fredoka', sans-serif;
   color: #fff;
-  font-size: clamp(1.25rem, 6vw, 1.6rem);
+  font-size: clamp(1.2rem, 5.5vw, 1.5rem);
   margin: 0 0 4px;
 }
 
@@ -92,9 +94,9 @@
 
 .insight-chip-bg {
   position: absolute;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(4px);
-  padding: 6px 12px;
+  padding: 4px 10px;
   border-radius: 999px;
   color: #fff;
   font-weight: 700;
@@ -105,15 +107,15 @@
 /* 2. Brand Logo (Upper Left) */
 .auth-brand-logo-mobile {
   position: absolute;
-  top: calc(16px + env(safe-area-inset-top));
-  left: calc(16px + env(safe-area-inset-left));
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  left: calc(16px + env(safe-area-inset-left, 0px));
   z-index: 100;
   display: flex;
   align-items: center;
   gap: 8px;
   font-family: 'Fredoka', sans-serif;
   font-weight: 700;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   color: #fff;
 }
 

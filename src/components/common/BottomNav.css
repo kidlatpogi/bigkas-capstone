@@ -3,7 +3,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 1200;
+  z-index: 99999 !important;
   width: 100%;
   min-height: calc(64px + env(safe-area-inset-bottom, 0px));
   display: flex;
@@ -12,10 +12,10 @@
   padding:
     6px
     max(6px, env(safe-area-inset-right, 0px))
-    env(safe-area-inset-bottom, 0px)
+    max(10px, env(safe-area-inset-bottom, 0px))
     max(6px, env(safe-area-inset-left, 0px));
-  /* Translucent bar + blur reads closer to iOS / Material system chrome */
-  background: rgba(6, 78, 59, 0.88);
+  /* Duolingo style solid dark emerald bar */
+  background: #064e3b !important;
   border-top: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 18px 18px 0 0;
   box-shadow:
@@ -27,6 +27,19 @@
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   user-select: none;
+}
+
+/* Fills the safe-area and overscroll area behind Safari floating address bar (Duolingo style) */
+.bottom-nav::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 250px;
+  background: #064e3b;
+  pointer-events: none;
+  z-index: -1;
 }
 
 .bottom-nav__item {
@@ -49,7 +62,17 @@
   cursor: pointer;
   font-family: inherit;
   padding: 0;
-  -webkit-tap-highlight-color: transparent;
+  -webkit-tap-highlight-color: transparent !important;
+  touch-action: manipulation !important;
+  user-select: none;
+}
+
+@media (hover: none) {
+  .bottom-nav__item:hover,
+  .bottom-nav__pill:hover {
+    background: transparent !important;
+    transform: none !important;
+  }
 }
 
 .bottom-nav__item:active .bottom-nav__pill {

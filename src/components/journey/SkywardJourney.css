@@ -1751,7 +1751,6 @@
     height: var(--journey-map-shell-height, 100%);
     max-height: var(--journey-map-shell-height, 100%);
     overflow: hidden;
-    overscroll-behavior: none;
     touch-action: none;
   }
 

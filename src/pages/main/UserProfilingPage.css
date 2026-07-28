@@ -306,6 +306,8 @@
   gap: 0.5rem;
   position: relative;
   z-index: 8;
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 .profiling-intro-robot-media {
@@ -313,6 +315,9 @@
   overflow: hidden;
   display: flex;
   justify-content: center;
+  background: transparent !important;
+  background-color: transparent !important;
+  mix-blend-mode: screen !important;
 }
 
 .profiling-intro-robot-media--ready {
@@ -322,6 +327,9 @@
   z-index: 8;
   display: flex;
   justify-content: center;
+  background: transparent !important;
+  background-color: transparent !important;
+  mix-blend-mode: screen !important;
 }
 
 .profiling-intro-video {
@@ -334,6 +342,13 @@
   object-position: center;
   margin-left: 0;
   transform: none;
+  mix-blend-mode: screen !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
 }
 
 .profiling-ready-image {

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Volume2, VolumeX } from 'lucide-react';
 import { ROUTES } from '../../utils/constants';
-import { getAssetUrl, getVoiceUrl } from '../../utils/assetUtils';
+import { getAssetUrl, getSpriteUrl, getVoiceUrl } from '../../utils/assetUtils';
 import './UserPretestPage.css';
 
 const PRETEST_MIN_RECORDING_SECONDS = 20;
@@ -14,8 +14,9 @@ const PRETEST_TRAINING_STATE = {
   sessionType: 'pre-test',
 };
 
-const waveWebm = getAssetUrl('Sprites/Robot Animated/Wave-webm.webm');
-const waveMp4 = getAssetUrl('Sprites/Robot Animated/Wave-mp4.mp4');
+const waveWebm = 'https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Sprites/Robot%20Animated/Wave-webm.webm';
+const waveMp4 = 'https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Sprites/Robot%20Animated/Wave-mp4.mp4';
+const robotPretestImage = getSpriteUrl('Robot/0001.webp');
 const beforePretestingVoice = getVoiceUrl('Profiling and Pre-Testing/Before pre-testing.mp3');
 const PRETEST_MUTE_KEY = 'bigkas_profiling_intro_muted';
 const PRETEST_AUDIO_WINDOW_KEY = '__bigkasBeforePretestAudio';
@@ -178,10 +179,7 @@ function UserPretestPage() {
 
           <div className="pretest-confirm-robot" aria-hidden="true">
             <div className="pretest-confirm-robot-media">
-              <video className="pretest-confirm-video" autoPlay loop muted playsInline>
-                <source src={waveWebm} type="video/webm" />
-                <source src={waveMp4} type="video/mp4" />
-              </video>
+              <img src={robotPretestImage} alt="B-01" style={{ objectFit: 'contain', width: '100%', maxHeight: '42vh' }} />
             </div>
           </div>
         </div>

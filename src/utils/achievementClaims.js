@@ -1,3 +1,5 @@
+import { acknowledgeBadgeId, acknowledgeAllPublishedUnlockedBadges } from './achievementNavBadge';
+
 const CLAIMABLE_ACHIEVEMENTS_KEY = 'bigkas_claimable_achievements_v1';
 const ACHIEVEMENTS_UPDATED_EVENT = 'bigkas:achievements-updated';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -107,6 +109,7 @@ export function claimAchievement(id, userId, detail = {}) {
   const next = current.filter((entry) => (
     String(entry?.id) !== achievementId || String(entry?.userId || '') !== uid
   ));
+  acknowledgeBadgeId(achievementId);
   writeRawList(next, { action: 'claimed', id: achievementId, userId: uid, ...detail });
 }
 
@@ -114,6 +117,7 @@ export function claimAllAchievements(userId, detail = {}) {
   if (!userId) return;
   const uid = String(userId);
   const next = readRawList().filter((entry) => String(entry?.userId || '') !== uid);
+  acknowledgeAllPublishedUnlockedBadges();
   writeRawList(next, { action: 'claimed-all', userId: uid, ...detail });
 }
 

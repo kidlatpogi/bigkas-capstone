@@ -61,6 +61,7 @@ function getTrophyImagePriorityProps(trophy, currentLevelNumber) {
 export default function AchievementsPageMobile() {
   const { user } = useAuthContext();
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [rewardsModalOpen, setRewardsModalOpen] = useState(false);
   const [achievements, setAchievements] = useState([]);
   const [loadingBadges, setLoadingBadges] = useState(true);
@@ -114,8 +115,9 @@ export default function AchievementsPageMobile() {
     try {
       const data = await fetchUserAchievements(user.id, user);
       setAchievements(data);
-      syncClaimableAchievements(data, user.id);
-      syncUnlockedBadgeIds(data.filter((a) => a.claimed).map((a) => a.id));
+      const unclaimed = data.filter((a) => a.unlocked && !a.claimed).map((a) => a.id);
+      const claimed = data.filter((a) => a.claimed).map((a) => a.id);
+      syncUnlockedBadgeIds(unclaimed, claimed);
       acknowledgeAllPublishedUnlockedBadges();
     } catch (err) {
       setBadgesError(err?.message ?? 'Failed to load badges.');
@@ -256,18 +258,23 @@ export default function AchievementsPageMobile() {
 
   const filteredBadges = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
-    const sorted = [...achievements].sort((a, b) => (
+    let list = achievements.filter((a) => {
+      if (filterStatus === 'claimed') return a.claimed;
+      if (filterStatus === 'unclaimed') return !a.claimed;
+      return true;
+    });
+    list.sort((a, b) => (
       (Number(a.journeyNumber) || 999) - (Number(b.journeyNumber) || 999) ||
       (Number(a.stageNumber) || 999) - (Number(b.stageNumber) || 999) ||
       a.name.localeCompare(b.name)
     ));
-    if (!q) return sorted;
-    return sorted.filter((a) => (
+    if (!q) return list;
+    return list.filter((a) => (
       a.name.toLowerCase().includes(q) ||
       String(a.description || '').toLowerCase().includes(q) ||
       formatJourneyStage(a)?.toLowerCase().includes(q)
     ));
-  }, [achievements, searchTerm]);
+  }, [achievements, searchTerm, filterStatus]);
 
   const claimableAchievements = useMemo(() => achievements.filter((a) => a.claimable), [achievements]);
 
@@ -391,6 +398,30 @@ export default function AchievementsPageMobile() {
             <div className="mobile-search-wrapper">
               <IoSearch className="search-icon" aria-hidden="true" />
               <input type="text" placeholder="Search badges" className="mobile-search-input" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} aria-label="Search badges" />
+            </div>
+
+            <div className="achievements-mobile-filter-chips">
+              <button
+                type="button"
+                className={`achievements-mobile-chip${filterStatus === 'all' ? ' active' : ''}`}
+                onClick={() => setFilterStatus('all')}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                className={`achievements-mobile-chip${filterStatus === 'claimed' ? ' active' : ''}`}
+                onClick={() => setFilterStatus('claimed')}
+              >
+                Claimed
+              </button>
+              <button
+                type="button"
+                className={`achievements-mobile-chip${filterStatus === 'unclaimed' ? ' active' : ''}`}
+                onClick={() => setFilterStatus('unclaimed')}
+              >
+                Unclaimed
+              </button>
             </div>
           </div>
 

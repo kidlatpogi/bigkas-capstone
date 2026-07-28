@@ -42,8 +42,17 @@ function safeSave(key, values) {
  *
  * @param {string[]} ids - Array of unlocked achievement UUIDs.
  */
-export function syncUnlockedBadgeIds(ids) {
-  safeSave(UNLOCKED_CACHE_KEY, ids);
+export function syncUnlockedBadgeIds(ids, claimedIds = []) {
+  const unclaimed = Array.isArray(ids) ? ids.filter((id) => id && typeof id === 'string') : [];
+  safeSave(UNLOCKED_CACHE_KEY, unclaimed);
+  if (Array.isArray(claimedIds) && claimedIds.length > 0) {
+    const existingClaimed = safeParse(CLAIMED_REWARDS_KEY);
+    const existingAck = safeParse(STORAGE_KEY);
+    const mergedClaimed = [...new Set([...existingClaimed, ...claimedIds])];
+    const mergedAck = [...new Set([...existingAck, ...claimedIds])];
+    safeSave(CLAIMED_REWARDS_KEY, mergedClaimed);
+    safeSave(STORAGE_KEY, mergedAck);
+  }
   window.dispatchEvent(new CustomEvent(UPDATE_EVENT));
 }
 
@@ -66,12 +75,19 @@ function setAcknowledgedBadgeIds(ids) {
 /** How many unlocked badges the user hasn't opened Achievements to see yet. */
 export function getPendingAchievementBadgeCount() {
   const ack = new Set(getAcknowledgedBadgeIds());
-  return getPublishedUnlockedBadgeIds().filter((id) => !ack.has(id)).length;
+  const claimed = new Set(getClaimedRewardIds());
+  return getPublishedUnlockedBadgeIds().filter((id) => !ack.has(id) && !claimed.has(id)).length;
 }
 
 /** Call when the user visits the Achievements screen — clears the nav counter. */
 export function acknowledgeAllPublishedUnlockedBadges() {
   setAcknowledgedBadgeIds(getPublishedUnlockedBadgeIds());
+}
+
+export function acknowledgeBadgeId(id) {
+  if (!id) return;
+  const current = getAcknowledgedBadgeIds();
+  setAcknowledgedBadgeIds([...new Set([...current, String(id)])]);
 }
 
 export function subscribeAchievementBadgeUpdates(callback) {

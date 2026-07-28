@@ -6,8 +6,9 @@ import { ROUTES } from '../../utils/constants';
 import questionsData from '../../assets/data/profiling_questions.json';
 import { getAssetUrl, getSpriteUrl, getVoiceUrl } from '../../utils/assetUtils';
 
-const waveWebm = getAssetUrl('Sprites/Robot Animated/Wave-webm.webm');
-const waveMp4 = getAssetUrl('Sprites/Robot Animated/Wave-mp4.mp4');
+const waveWebm = 'https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Sprites/Robot%20Animated/Wave-webm.webm';
+const waveMp4 = 'https://pub-a6d99185fdb94cf9ba0253b64d18f08f.r2.dev/Sprites/Robot%20Animated/Wave-mp4.mp4';
+const robotWaveImage = getSpriteUrl('Robot/0001.webp');
 const robotQuestionImage = getSpriteUrl('Robot/0012.webp');
 
 const introVoice1 = getVoiceUrl('Introductions/Intro 1.mp3');
@@ -702,10 +703,7 @@ function UserProfilingPage() {
             </article>
             <div className="profiling-intro-robot">
               <div className="profiling-intro-robot-media" aria-hidden="true">
-                <video className="profiling-intro-video" autoPlay loop muted playsInline>
-                  <source src={waveWebm} type="video/webm" />
-                  <source src={waveMp4} type="video/mp4" />
-                </video>
+                <img src={robotWaveImage} alt="B-01" className="profiling-ready-image" style={{ objectFit: 'contain', width: '100%', maxHeight: '42vh' }} />
               </div>
             </div>
           </div>
@@ -747,10 +745,7 @@ function UserProfilingPage() {
             </article>
             <div className="profiling-intro-robot">
               <div className="profiling-intro-robot-media" aria-hidden="true">
-                <video className="profiling-intro-video" autoPlay loop muted playsInline>
-                  <source src={waveWebm} type="video/webm" />
-                  <source src={waveMp4} type="video/mp4" />
-                </video>
+                <img src={robotWaveImage} alt="B-01" className="profiling-ready-image" style={{ objectFit: 'contain', width: '100%', maxHeight: '42vh' }} />
               </div>
             </div>
           </div>
@@ -797,10 +792,7 @@ function UserProfilingPage() {
 
             <div className="profiling-intro-robot">
               <div className="profiling-intro-robot-media profiling-intro-robot-media--ready" aria-hidden="true">
-                <video className="profiling-intro-video" autoPlay loop muted playsInline>
-                  <source src={waveWebm} type="video/webm" />
-                  <source src={waveMp4} type="video/mp4" />
-                </video>
+                <img src={robotWaveImage} alt="B-01" className="profiling-ready-image" style={{ objectFit: 'contain', width: '100%', maxHeight: '42vh' }} />
               </div>
             </div>
           </div>

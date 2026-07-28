@@ -162,6 +162,9 @@
   display: flex;
   justify-content: center;
   overflow: hidden;
+  background: transparent !important;
+  background-color: transparent !important;
+  mix-blend-mode: screen !important;
 }
 
 .pretest-confirm-video {
@@ -172,6 +175,13 @@
   display: block;
   object-fit: contain;
   object-position: center;
+  mix-blend-mode: screen !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
 }
 
 .pretest-confirm-audio-action {

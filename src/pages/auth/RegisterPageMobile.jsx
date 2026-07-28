@@ -17,10 +17,10 @@ const LegalModal = lazy(() => import('../../components/Legal/LegalModal'));
 const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
 
 const INSIGHT_WORDS = [
-  { text: 'Visual', size: '0.85rem', opacity: 0.6, top: '15%', left: '12%', delay: 0 },
-  { text: 'Vocal', size: '0.8rem', opacity: 0.5, top: '22%', left: '80%', delay: 1 },
-  { text: 'Verbal', size: '0.75rem', opacity: 0.4, top: '68%', left: '8%', delay: 0.5 },
-  { text: 'Presence', size: '0.9rem', opacity: 0.7, top: '18%', left: '42%', delay: 1.2 },
+  { text: 'Visual', size: '0.78rem', opacity: 0.45, top: '10%', left: '72%', delay: 0 },
+  { text: 'Vocal', size: '0.75rem', opacity: 0.4, top: '65%', left: '78%', delay: 1 },
+  { text: 'Verbal', size: '0.75rem', opacity: 0.4, top: '70%', left: '8%', delay: 0.5 },
+  { text: 'Presence', size: '0.8rem', opacity: 0.5, top: '8%', left: '50%', delay: 1.2 },
 ];
 
 function RegisterPageMobile({ managePageClass = true }) {

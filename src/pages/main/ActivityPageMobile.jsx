@@ -303,6 +303,19 @@ function ActivityPageMobile() {
   // State
   const [activeTaskId, setActiveTaskId] = useState(null);
   const [showFreeSpeechTutorial, setShowFreeSpeechTutorial] = useState(false);
+  const [activeFreeSpeechTutorialStepId, setActiveFreeSpeechTutorialStepId] = useState(null);
+
+  const handleFreeSpeechTutorialStepChange = useCallback(({ step }) => {
+    setActiveFreeSpeechTutorialStepId(step?.id || null);
+  }, []);
+
+  const handleCloseFreeSpeechTutorial = useCallback(() => {
+    setShowFreeSpeechTutorial(false);
+    setActiveFreeSpeechTutorialStepId(null);
+  }, []);
+
+  const shouldAutoScrollJourneyTutorial =
+    showFreeSpeechTutorial && activeFreeSpeechTutorialStepId === 'step-roadmap';
   const [showRandomizerOverlay, setShowRandomizerOverlay] = useState(false);
   const [showFreeSpeechOverlay, setShowFreeSpeechOverlay] = useState(false);
   const [freeSpeechDraftTopic, setFreeSpeechDraftTopic] = useState('');
@@ -344,6 +357,15 @@ function ActivityPageMobile() {
   const hasDeveloperPowers =
     String(user?.email || '').trim().toLowerCase() === DEVELOPER_POWER_EMAIL ||
     String(user?.role || '').trim().toLowerCase() === 'superadmin';
+
+  useEffect(() => {
+    document.documentElement.classList.add('activity-page-mobile-active');
+    document.body.classList.add('activity-page-mobile-active');
+    return () => {
+      document.documentElement.classList.remove('activity-page-mobile-active');
+      document.body.classList.remove('activity-page-mobile-active');
+    };
+  }, []);
 
   const handleReplayProfilingPreview = () => {
     if (typeof window !== 'undefined') {
@@ -395,9 +417,9 @@ function ActivityPageMobile() {
 
   const refreshAchievementDevState = async () => {
     if (!user?.id) return;
-    const data = await fetchUserAchievements(user.id, user);
-    syncClaimableAchievements(data, user.id);
-    syncUnlockedBadgeIds(data.filter((achievement) => achievement.claimed).map((achievement) => achievement.id));
+    const unclaimed = data.filter((a) => a.unlocked && !a.claimed).map((a) => a.id);
+    const claimed = data.filter((a) => a.claimed).map((a) => a.id);
+    syncUnlockedBadgeIds(unclaimed, claimed);
   };
 
   const handleClaimAchievementsForDev = async () => {
@@ -1201,8 +1223,9 @@ function ActivityPageMobile() {
             isOpen={showFreeSpeechTutorial}
             steps={freeSpeechTutorialSteps}
             showAudioToggle
+            onStepChange={handleFreeSpeechTutorialStepChange}
             onCloseDashboard={closeDashboardForHomeJourneyTutorial}
-            onClose={() => setShowFreeSpeechTutorial(false)}
+            onClose={handleCloseFreeSpeechTutorial}
             onFinish={handleTutorialFinish}
           />
         </Suspense>
@@ -1425,6 +1448,7 @@ function ActivityPageMobile() {
           recommendedLevel={recommendedLevel}
           entranceFromNav={entranceFromNav}
           scrollToStepIndex={null}
+          autoScrollPreview={shouldAutoScrollJourneyTutorial}
           renderTaskCard={renderTaskCardForShell}
           onActiveTaskIdChange={handleActiveTaskIdChange}
         />
@@ -1602,47 +1626,6 @@ function ActivityPageMobile() {
                   </div>
                 </div>
               </section>
-
-              {/* Developer options on Mobile dashboard */}
-              {hasDeveloperPowers && (
-                <section className="side-nav-dev-tools new-widget" aria-label="Developer tools" style={{ gap: '10px', background: '#fefefe', marginTop: '20px' }}>
-                  <h2 className="new-widget-title" style={{ fontSize: '1.1rem', margin: '0 0 4px 0', fontWeight: '800', color: '#dc2626' }}>Developer Power</h2>
-                  
-                  <button type="button" className="activity-mobile-dashboard-btn side-nav-dev-btn" onClick={handleReplayProfilingPreview} style={{ height: '40px', padding: '0 1rem', background: '#4b5563', boxShadow: 'none', borderRadius: '12px' }}>
-                    <IoStatsChartOutline className="side-nav-icon" aria-hidden="true" style={{ marginRight: '8px' }} />
-                    <span>Preview onboarding</span>
-                  </button>
-                  <button type="button" className="activity-mobile-dashboard-btn side-nav-dev-btn" onClick={handleReplayPretestPreview} style={{ height: '40px', padding: '0 1rem', background: '#4b5563', boxShadow: 'none', borderRadius: '12px' }}>
-                    <IoStatsChartOutline className="side-nav-icon" aria-hidden="true" style={{ marginRight: '8px' }} />
-                    <span>Replay pre-testing</span>
-                  </button>
-                  <button type="button" className="activity-mobile-dashboard-btn side-nav-dev-btn" onClick={handleReplayFrameworksTutorial} style={{ height: '40px', padding: '0 1rem', background: '#4b5563', boxShadow: 'none', borderRadius: '12px' }}>
-                    <IoBookOutline className="side-nav-icon" aria-hidden="true" style={{ marginRight: '8px' }} />
-                    <span>Replay tutorial</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="activity-mobile-dashboard-btn side-nav-dev-btn"
-                    onClick={handleClaimAchievementsForDev}
-                    disabled={developerAction !== ''}
-                    style={{ height: '40px', padding: '0 1rem', background: '#4b5563', boxShadow: 'none', borderRadius: '12px' }}
-                  >
-                    <IoMedalOutline className="side-nav-icon" aria-hidden="true" style={{ marginRight: '8px' }} />
-                    <span>{developerAction === 'claim' ? 'Claiming...' : 'Claim achievements'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="activity-mobile-dashboard-btn side-nav-dev-btn side-nav-dev-btn--danger"
-                    onClick={handleUnclaimAchievementsForDev}
-                    disabled={developerAction !== ''}
-                    style={{ height: '40px', padding: '0 1rem', background: '#dc2626', boxShadow: 'none', borderRadius: '12px' }}
-                  >
-                    <IoMedalOutline className="side-nav-icon" aria-hidden="true" style={{ marginRight: '8px' }} />
-                    <span>{developerAction === 'unclaim' ? 'Unclaiming...' : 'Unclaim achievements'}</span>
-                  </button>
-                  {developerStatus ? <p className="side-nav-dev-status" style={{ fontSize: '13px', margin: '4px 0 0 0', color: '#4b5563' }}>{developerStatus}</p> : null}
-                </section>
-              )}
             </div>
           </div>
         </section>

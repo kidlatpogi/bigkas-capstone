@@ -1405,7 +1405,29 @@ body.landing-page-active #root {
 /* ==========================================================================
    Small Phone Screen Responsiveness (iPhone 13 / 13 mini / 375px - 430px)
    ========================================================================== */
+@media (max-width: 768px) {
+  .how-it-works-section {
+    padding: 3rem 0;
+  }
+  .how-it-works-steps-grid {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+    max-width: 100%;
+    width: 100%;
+  }
+  .hiw-preview-frame {
+    height: auto;
+    min-height: 310px;
+    padding: 1.5rem 1rem;
+    border-radius: 28px;
+  }
+}
+
 @media (max-width: 480px) {
+  .landing-clean-wrapper {
+    overflow-x: hidden;
+  }
+
   .hero-video-content {
     width: 92%;
     gap: 1rem;
@@ -1413,12 +1435,12 @@ body.landing-page-active #root {
   }
 
   .hero-video-title {
-    font-size: clamp(1.85rem, 8vw, 2.5rem);
-    line-height: 1.18;
+    font-size: clamp(1.85rem, 8vw, 2.4rem);
+    line-height: 1.16;
   }
 
   .hero-video-subtitle {
-    font-size: 0.95rem;
+    font-size: 0.92rem;
     line-height: 1.5;
   }
 
@@ -1439,15 +1461,106 @@ body.landing-page-active #root {
     padding: 3.5rem 0;
   }
 
+  .features-centered-header {
+    max-width: 100%;
+    padding: 0 0.5rem;
+  }
+
+  .features-title-main {
+    font-size: clamp(1.95rem, 7.5vw, 2.5rem);
+    line-height: 1.15;
+  }
+
+  .features-description {
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+
   .features-cards-3col-grid {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 1.25rem;
   }
 
   .feature-grid-card {
-    min-height: 380px;
-    padding: 1.75rem 1.5rem;
+    min-height: 360px;
+    padding: 1.5rem 1.25rem;
     border-radius: 24px;
+  }
+
+  /* How It Works Section Responsiveness */
+  .how-it-works-section {
+    padding: 3rem 0;
+  }
+
+  .how-it-works-steps-wrapper {
+    width: 100%;
+    margin-top: 1.5rem;
+  }
+
+  .how-it-works-step-card {
+    width: 100%;
+    gap: 1.25rem;
+  }
+
+  .hiw-preview-frame {
+    width: 100%;
+    height: auto;
+    min-height: 280px;
+    padding: 1.15rem 0.85rem;
+    border-radius: 24px;
+  }
+
+  .hiw-home-practice-widget,
+  .hiw-home-session-widget,
+  .hiw-home-results-widget {
+    width: 100%;
+    max-width: 100%;
+    gap: 0.75rem;
+  }
+
+  .hiw-home-btn-row {
+    padding: 0.75rem 0.85rem;
+    gap: 0.75rem;
+    border-radius: 16px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .hiw-home-btn-visual {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+  }
+
+  .hiw-home-btn-img {
+    width: 28px;
+    height: 28px;
+  }
+
+  .hiw-home-btn-label {
+    font-size: 1rem;
+  }
+
+  .hiw-home-btn-hint {
+    font-size: 0.8rem;
+  }
+
+  .hiw-step-details {
+    padding: 0;
+    gap: 0.4rem;
+  }
+
+  .hiw-step-number {
+    font-size: 2.2rem;
+  }
+
+  .hiw-step-title {
+    font-size: 1.4rem;
+  }
+
+  .hiw-step-desc {
+    font-size: 0.92rem;
+    line-height: 1.5;
   }
 
   .footer-cta-container {
@@ -1455,7 +1568,7 @@ body.landing-page-active #root {
   }
 
   .footer-cta-heading {
-    font-size: clamp(2.2rem, 9vw, 3.2rem);
+    font-size: clamp(2.1rem, 8.5vw, 3rem);
   }
 
   .footer-cta-actions {

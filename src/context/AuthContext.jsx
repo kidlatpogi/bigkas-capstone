@@ -1114,7 +1114,7 @@ export function AuthProvider({ children }) {
                   .not('active_session_token', 'is', null)
                   .eq('active_device_fingerprint', myFingerprint)
                   .maybeSingle();
-                if (deviceConflict) {
+                if (deviceConflict && deviceConflict.id !== userId) {
                   const conflictedName = [deviceConflict.first_name, deviceConflict.last_name].filter(Boolean).join(' ') || 'User';
                   handleSessionEjection(`Strict Device Lock: Another account (${conflictedName}) is already active on this device. Only one account per device is allowed.`, supabase);
                   return;
@@ -2050,7 +2050,7 @@ export function AuthProvider({ children }) {
       try {
         await supabase
           .from('profiles')
-          .update({ active_session_token: null })
+          .update({ active_session_token: null, active_device_fingerprint: null })
           .eq('id', user.id);
       } catch (e) {
         console.warn('Signout session token clear failed:', e);
@@ -2367,7 +2367,7 @@ export function AuthProvider({ children }) {
               .not('active_session_token', 'is', null)
               .eq('active_device_fingerprint', myFingerprint)
               .maybeSingle();
-            if (conflict && active) {
+            if (conflict && conflict.id !== uid && active) {
               const conflictedName = [conflict.first_name, conflict.last_name].filter(Boolean).join(' ') || 'User';
               handleSessionEjection(`Strict Device Lock: Another account (${conflictedName}) is active on this device. Only one account is allowed per device when multi-account parallel sessions is disabled by Admin.`, supabase);
             }

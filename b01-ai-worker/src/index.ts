@@ -236,9 +236,18 @@ function arrayBufferToBase64(buffer: ArrayBuffer) {
 }
 
 async function transcribeWithWhisper(env: Env, audioBuffer: ArrayBuffer) {
-  const whisperResponse = await runAIWithRetry(env, "@cf/openai/whisper-large-v3-turbo", {
-    audio: arrayBufferToBase64(audioBuffer),
-  });
+  const audioArray = Array.from(new Uint8Array(audioBuffer));
+  let whisperResponse;
+  try {
+    whisperResponse = await runAIWithRetry(env, "@cf/openai/whisper-large-v3-turbo", {
+      audio: audioArray,
+    });
+  } catch (err: unknown) {
+    console.warn("[transcribeWithWhisper] whisper-large-v3-turbo failed, trying fallback:", getErrorMessage(err));
+    whisperResponse = await runAIWithRetry(env, "@cf/openai/whisper", {
+      audio: audioArray,
+    });
+  }
   return resolveWhisperLargeTranscript(whisperResponse);
 }
 
@@ -253,15 +262,14 @@ function resolveWhisperLargeTranscript(response: unknown) {
 }
 
 async function transcribeVerbatimWithWhisperLarge(env: Env, audioBuffer: ArrayBuffer) {
+  const audioArray = Array.from(new Uint8Array(audioBuffer));
   const response = await runAIWithRetry(env, "@cf/openai/whisper-large-v3-turbo", {
-    audio: arrayBufferToBase64(audioBuffer),
+    audio: audioArray,
     task: "transcribe",
     language: "en",
     initial_prompt: VERBATIM_FILLER_PROMPT,
     condition_on_previous_text: false,
     vad_filter: false,
-    no_speech_threshold: 0.9,
-    log_prob_threshold: -2,
   });
   return resolveWhisperLargeTranscript(response);
 }
@@ -411,30 +419,13 @@ export default {
 
         let transcript = "";
         let transcriptWords: TranscriptWord[] = [];
-        let transcriptionModel = "@cf/deepgram/nova-3";
+        let transcriptionModel = "@cf/openai/whisper-large-v3-turbo";
         const shouldAuditFillers = url.searchParams.get("audit_fillers") === "true";
 
         try {
-          const deepgramResponse = await runAIWithRetry(env, "@cf/deepgram/nova-3", {
-            audio: {
-              body: new Response(audioBuffer).body,
-              contentType,
-            },
-            filler_words: true,
-            language: "en-US",
-            punctuate: true,
-            smart_format: false,
-          });
-
-          transcript = resolveDeepgramTranscript(deepgramResponse);
-          transcriptWords = resolveDeepgramWords(deepgramResponse);
-          if (!transcript) {
-            throw new Error("Nova-3 returned an empty transcript");
-          }
-        } catch (deepgramError: unknown) {
-          console.warn("[transcribe] Nova-3 transcription failed, falling back to Whisper:", getErrorMessage(deepgramError));
-          transcriptionModel = "@cf/openai/whisper-large-v3-turbo";
           transcript = await transcribeWithWhisper(env, audioBuffer);
+        } catch (whisperError: unknown) {
+          console.warn("[transcribe] Transcription failed:", getErrorMessage(whisperError));
         }
 
         let fillerOccurrences = detectFillerOccurrences(transcript, transcriptWords);

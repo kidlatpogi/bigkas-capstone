@@ -1074,7 +1074,7 @@ function TrainingPage() {
       mediaRef.current = audioRecorder;
       chunksRef.current = [];
       audioRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
+        if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
       };
 
       visualMediaRef.current = videoRecorder;

@@ -148,9 +148,18 @@ export async function finalizeSessionEjection(supabaseClient) {
 
   clearInstanceClaimKeys();
 
-  if (supabaseClient && typeof supabaseClient.auth?.signOut === 'function') {
+  if (supabaseClient) {
     try {
-      await supabaseClient.auth.signOut({ scope: 'local' });
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session?.user?.id) {
+        await supabaseClient
+          .from('profiles')
+          .update({ active_session_token: null, active_device_fingerprint: null })
+          .eq('id', session.user.id);
+      }
+      if (typeof supabaseClient.auth?.signOut === 'function') {
+        await supabaseClient.auth.signOut({ scope: 'local' });
+      }
     } catch (e) {
       console.warn('[SessionIntegrity] SignOut error:', e);
     }
@@ -160,39 +169,17 @@ export async function finalizeSessionEjection(supabaseClient) {
 }
 
 /**
- * Returns a stable, deterministic device fingerprint for the current client device.
- * Persisted in localStorage so the same browser profile always returns the same value.
- * Different browser profiles (e.g. normal vs incognito) produce different fingerprints
- * because they have separate localStorage scopes.
+ * Returns a unique, persistent device fingerprint for the current client device installation.
+ * Persisted in localStorage so the same browser profile always returns the same unique value.
+ * Uses a unique random UUID per installation to prevent false collisions between different devices.
  */
 export function getDeviceFingerprint() {
   if (typeof window === 'undefined') return 'server-device';
   try {
-    // Check localStorage for a previously persisted fingerprint
     const cached = window.localStorage.getItem(DEVICE_FINGERPRINT_KEY);
-    if (cached) return cached;
+    if (cached && cached.startsWith('dev_') && cached.length >= 10) return cached;
 
-    const nav = window.navigator || {};
-    const screen = window.screen || {};
-    const components = [
-      nav.platform || 'unknown-platform',
-      `${screen.width || 0}x${screen.height || 0}x${screen.colorDepth || 0}`,
-      Intl?.DateTimeFormat()?.resolvedOptions()?.timeZone || 'unknown-tz',
-      nav.hardwareConcurrency || 2,
-      nav.deviceMemory || 4,
-      nav.maxTouchPoints || 0,
-      // Add userAgent to differentiate Brave vs Edge vs Chrome
-      (nav.userAgent || '').substring(0, 80),
-    ];
-    // Simple fast hash
-    const rawString = components.join('|');
-    let hash = 0;
-    for (let i = 0; i < rawString.length; i += 1) {
-      const char = rawString.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash |= 0;
-    }
-    const fingerprint = `dev_${Math.abs(hash).toString(36)}`;
+    const fingerprint = `dev_${generateUUID().replace(/-/g, '').slice(0, 16)}`;
     window.localStorage.setItem(DEVICE_FINGERPRINT_KEY, fingerprint);
     return fingerprint;
   } catch (e) {

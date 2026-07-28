@@ -213,10 +213,18 @@ function SettingsPageMobile() {
   };
 
   const handleReplayFrameworksTutorial = () => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('bigkas_free_speech_tutorial_seen_v1', '0');
+    }
     setDeveloperStatus('Replaying the tutorial walkthrough.');
-    localStorage.removeItem('bigkas_frameworks_tutorial_seen_v1');
-    window.dispatchEvent(new Event('bigkas:reset-frameworks-tutorial'));
-    navigate(ROUTES.LEARN);
+    navigate(ROUTES.ACTIVITY, {
+      state: {
+        skywardEntrance: true,
+        launchFreeSpeechTutorial: true,
+        skipTutorialIntro: true,
+        t: Date.now(),
+      },
+    });
   };
 
   const handleClaimAchievementsForDev = async () => {

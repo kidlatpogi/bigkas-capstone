@@ -1346,6 +1346,17 @@ function TrainingPage() {
           throw new Error(result?.error || 'The analysis engine encountered an error. Please try again.');
         }
 
+        if (result.mediaReady) {
+          const media = await result.mediaReady;
+          if (media?.audioStorageUrl) {
+            result.data.audio_url = media.audioStorageUrl;
+          }
+          if (media?.videoStorageUrl) {
+            result.data.video_url = media.videoStorageUrl;
+            result.data.video_storage_url = media.videoStorageUrl;
+          }
+        }
+
         // 7. Update Metadata & Rewards (Non-blocking)
         console.log('[TrainingPage] Analysis success, preparing rewards...');
         const rawSessionScore = Number(result.data.confidence_score ?? result.data.score ?? 0);

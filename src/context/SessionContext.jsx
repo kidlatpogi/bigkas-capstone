@@ -146,6 +146,28 @@ function reducer(state, action) {
     case 'APPEND_SESSIONS': return { ...state, sessions: [...state.sessions, ...action.payload.sessions], pagination: { page: action.payload.page, total: action.payload.total, hasMore: action.payload.sessions.length === action.payload.pageSize, pageSize: action.payload.pageSize } };
     case 'SET_CURRENT':     return { ...state, currentSession: action.payload };
     case 'ADD_SESSION':     return { ...state, sessions: [action.payload, ...state.sessions] };
+    case 'UPDATE_SESSION_MEDIA':
+      return {
+        ...state,
+        sessions: state.sessions.map((s) => (
+          String(s.id) === String(action.payload.id)
+            ? {
+                ...s,
+                audio_url: action.payload.audioUrl ?? s.audio_url ?? null,
+                video_url: action.payload.videoUrl ?? s.video_url ?? null,
+                video_storage_url: action.payload.videoUrl ?? s.video_storage_url ?? null,
+              }
+            : s
+        )),
+        currentSession: state.currentSession && String(state.currentSession.id) === String(action.payload.id)
+          ? {
+              ...state.currentSession,
+              audio_url: action.payload.audioUrl ?? state.currentSession.audio_url ?? null,
+              video_url: action.payload.videoUrl ?? state.currentSession.video_url ?? null,
+              video_storage_url: action.payload.videoUrl ?? state.currentSession.video_storage_url ?? null,
+            }
+          : state.currentSession,
+      };
     case 'REMOVE_SESSION':  return { ...state, sessions: state.sessions.filter((s) => s.id !== action.payload) };
     case 'CLEAR_MEDIA_URLS':
       return {
@@ -972,14 +994,13 @@ export function SessionProvider({ children }) {
       }
 
       console.log('[SessionContext] AI Analysis complete.');
+      const backendSessionId = analysisResult.session_id || analysisResult.id;
 
-      // 6. Non-blocking finalization (Wait for media then update DB)
-      (async () => {
+      const finalizeSessionMedia = async () => {
         try {
           // A. Wait for background media upload to finish
           const { audioStorageUrl, videoStorageUrl } = await backgroundPersistence;
           
-          const backendSessionId = analysisResult.session_id || analysisResult.id;
           if (backendSessionId) {
             console.log('[SessionContext] Finalizing session metadata and media links in background...');
             
@@ -1007,11 +1028,24 @@ export function SessionProvider({ children }) {
               })
               .eq('session_id', backendSessionId);
             if (mediaErr) console.warn('[SessionContext] Session media link update failed:', mediaErr.message);
+
+            if (videoStorageUrl) setSessionVideoCacheEntry(backendSessionId, videoStorageUrl);
+            sessionDetailCache.delete(makeSessionDetailCacheKey(backendSessionId));
+            dispatch({
+              type: 'UPDATE_SESSION_MEDIA',
+              payload: {
+                id: backendSessionId,
+                audioUrl: audioStorageUrl,
+                videoUrl: videoStorageUrl,
+              },
+            });
           }
+          return { audioStorageUrl, videoStorageUrl };
         } catch (bgErr) {
           console.warn('[SessionContext] Background finalization error:', bgErr.message);
+          return { audioStorageUrl: null, videoStorageUrl: null };
         }
-      })();
+      };
 
       // Add created_at if missing for immediate UI feedback (like DetailedFeedbackPage)
       if (!analysisResult.created_at) {
@@ -1027,9 +1061,19 @@ export function SessionProvider({ children }) {
       setCachedEntry(sessionDetailCache, makeSessionDetailCacheKey(normalized.id), normalized);
       invalidateSessionCaches();
 
+      const mediaFinalizePromise = finalizeSessionMedia();
+
+      mediaFinalizePromise.then(({ audioStorageUrl, videoStorageUrl }) => {
+        if (!audioStorageUrl && !videoStorageUrl) return;
+        analysisResult.audio_url = audioStorageUrl;
+        analysisResult.video_url = videoStorageUrl;
+        analysisResult.video_storage_url = videoStorageUrl;
+      });
+
       return {
         success: true,
         data: analysisResult,
+        mediaReady: mediaFinalizePromise,
       };
     } catch (err) {
       console.error('[SessionContext] Analysis Error:', err.message);

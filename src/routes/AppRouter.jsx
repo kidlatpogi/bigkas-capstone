@@ -235,6 +235,8 @@ function ProtectedRoute() {
 
       try {
         const data = await fetchUserAchievements(user.id, user);
+        if (!active) return;
+        syncClaimableAchievements(data || [], user.id);
         const unclaimed = (data || []).filter((a) => a.unlocked && !a.claimed).map((a) => a.id);
         const claimed = (data || []).filter((a) => a.claimed).map((a) => a.id);
         syncUnlockedBadgeIds(unclaimed, claimed);

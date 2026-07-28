@@ -19,7 +19,7 @@ import { ROUTES } from '../../utils/constants';
 import { formatDate, formatDuration } from '../../utils/formatters';
 import { getSessionMode, getSessionSpeechType } from '../../utils/sessionFormatting';
 import { sanitizeRecommendationLines } from '../../utils/analysisTranscript';
-import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
+import { getSpriteUrl } from '../../utils/assetUtils';
 import { buildStagePassResultForSession } from '../../utils/passingScore';
 import { recordActivityEvent } from '../../utils/activityProgress';
 import { persistActivityCompletion } from '../../services/journeyProgressService';
@@ -222,12 +222,12 @@ function buildBucketPublicUrl(pathOrUrl) {
   const value = String(pathOrUrl || '').trim();
   if (!value) return null;
   
-  // If it's already a full R2 URL or other external URL, return as is
+  // If it's already a playable external URL, return as is.
   if (/^https?:\/\//i.test(value) && !value.includes('/storage/v1/object/')) {
     return value;
   }
 
-  // Handle Supabase storage paths by converting them to R2 paths if possible
+  // Session recordings live in Supabase storage, not in the static asset bucket.
   const marker = `/storage/v1/object/public/${SESSION_MEDIA_BUCKET}/`;
   const markerIdx = value.indexOf(marker);
   const signedMarker = `/storage/v1/object/sign/${SESSION_MEDIA_BUCKET}/`;
@@ -245,8 +245,8 @@ function buildBucketPublicUrl(pathOrUrl) {
     .replace(new RegExp(`^${SESSION_MEDIA_BUCKET}/`), '')
     .split('?')[0];
 
-  // Use the R2 base URL via getAssetUrl
-  return getAssetUrl(cleaned);
+  const { data } = supabase.storage.from(SESSION_MEDIA_BUCKET).getPublicUrl(cleaned);
+  return data?.publicUrl || value;
 }
 
 function buildReplayAction(session, navigate, isFree) {

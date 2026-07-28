@@ -202,14 +202,36 @@ function SettingsPageMobile() {
     );
   }, [user]);
 
+  const DEVELOPER_PREVIEW_SESSION_KEY = 'bigkas_developer_onboarding_preview_v1';
+
   const handleReplayProfilingPreview = () => {
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem(DEVELOPER_PREVIEW_SESSION_KEY, '1');
+      window.sessionStorage.removeItem('bigkas_pretest_tutorial_seen');
+      window.localStorage.removeItem('bigkas_current_training_session');
+    }
     setDeveloperStatus('Preview mode: full onboarding will not save data.');
-    navigate(`${ROUTES.USER_PROFILING}?mode=dev-preview`);
+    navigate(ROUTES.USER_PROFILING, {
+      state: {
+        developerPreview: true,
+        t: Date.now(),
+      },
+    });
   };
 
   const handleReplayPretestPreview = () => {
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem(DEVELOPER_PREVIEW_SESSION_KEY, '1');
+      window.sessionStorage.removeItem('bigkas_pretest_tutorial_seen');
+      window.localStorage.removeItem('bigkas_current_training_session');
+    }
     setDeveloperStatus('Preview mode: pre-testing will not save data.');
-    navigate(`${ROUTES.USER_PRETEST}?mode=dev-preview`);
+    navigate(ROUTES.USER_PRETEST, {
+      state: {
+        developerPreview: true,
+        t: Date.now(),
+      },
+    });
   };
 
   const handleReplayFrameworksTutorial = () => {

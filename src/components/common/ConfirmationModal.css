@@ -43,19 +43,26 @@
   position: absolute;
   top: 16px;
   right: 16px;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  aspect-ratio: 1 / 1 !important;
+  border-radius: 9999px !important;
   border: none;
   background: #F0F0F0;
   color: #010101;
   font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  flex-shrink: 0;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: background 0.15s;
   z-index: 10;
+  box-sizing: border-box;
 }
 
 .cm-close:hover {

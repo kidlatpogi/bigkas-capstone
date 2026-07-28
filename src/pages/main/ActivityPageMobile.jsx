@@ -417,9 +417,9 @@ function ActivityPageMobile() {
 
   const refreshAchievementDevState = async () => {
     if (!user?.id) return;
-    const data = await fetchUserAchievements(user.id, user);
-    syncClaimableAchievements(data, user.id);
-    syncUnlockedBadgeIds(data.filter((achievement) => achievement.claimed).map((achievement) => achievement.id));
+    const unclaimed = data.filter((a) => a.unlocked && !a.claimed).map((a) => a.id);
+    const claimed = data.filter((a) => a.claimed).map((a) => a.id);
+    syncUnlockedBadgeIds(unclaimed, claimed);
   };
 
   const handleClaimAchievementsForDev = async () => {

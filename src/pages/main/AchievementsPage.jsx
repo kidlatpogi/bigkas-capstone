@@ -115,8 +115,9 @@ export default function AchievementsPage() {
     try {
       const data = await fetchUserAchievements(user.id, user);
       setAchievements(data);
-      syncClaimableAchievements(data, user.id);
-      syncUnlockedBadgeIds(data.filter((a) => a.claimed).map((a) => a.id));
+      const unclaimed = data.filter((a) => a.unlocked && !a.claimed).map((a) => a.id);
+      const claimed = data.filter((a) => a.claimed).map((a) => a.id);
+      syncUnlockedBadgeIds(unclaimed, claimed);
       acknowledgeAllPublishedUnlockedBadges();
     } catch (err) {
       setBadgesError(err?.message ?? 'Failed to load badges.');

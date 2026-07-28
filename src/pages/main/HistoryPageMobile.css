@@ -8,10 +8,10 @@
   transform: translate(-50%, calc(100% + 16px));
   width: 100%;
   max-width: 500px;
-  height: min(90dvh, calc(100dvh - 64px - env(safe-area-inset-bottom, 0px)));
+  height: min(85dvh, calc(100dvh - 64px - env(safe-area-inset-bottom, 0px)));
   background: #FDFDF9;
-  border-radius: 32px 32px 0 0;
-  z-index: 1200;
+  border-radius: 24px 24px 0 0;
+  z-index: 2050 !important;
   display: flex;
   flex-direction: column;
   box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.2);

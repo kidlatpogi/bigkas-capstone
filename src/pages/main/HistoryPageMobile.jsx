@@ -226,12 +226,19 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
 
   if (!isOpen) return null;
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <>
-      <div className="bigkas-modal-scrim" onClick={handleClose} style={{ '--scrim-z': 1100 }} aria-hidden="true" />
+      <div
+        className="profile-modal-backdrop"
+        onClick={handleClose}
+        style={{ zIndex: 2000 }}
+        aria-hidden="true"
+      />
       <div
         className={`history-mobile-sidebar history-visible native-bottom-sheet${sheetDrag.isDragging ? ' is-dragging' : ''} ${selectedSessionId ? 'history-viewing-session' : ''}`}
-        style={sheetDrag.sheetStyle}
+        style={{ ...sheetDrag.sheetStyle, zIndex: 2050 }}
       >
         <div className={`history-mobile-container ${selectedSessionId ? 'slide-out-left' : 'slide-in-right'}`}>
           
@@ -398,6 +405,7 @@ export default function HistoryPageMobile({ isOpen, onClose, userSessions = [], 
           </div>
         )}
       </div>
-    </>
+    </>,
+    document.body
   );
 }

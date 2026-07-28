@@ -591,6 +591,42 @@
   box-shadow: 0 4px 12px rgba(0,0,0,0.02);
 }
 
+.achievements-mobile-filter-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.achievements-mobile-chip {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.achievements-mobile-chip.active {
+  background: #059669;
+  color: #ffffff;
+  border-color: #059669;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
+}
+
+.achievements-mobile-chip:active {
+  transform: scale(0.96);
+}
+
 .achievements-mobile-page .mobile-filter-row {
   display: grid;
   grid-template-columns: 1fr 1fr;

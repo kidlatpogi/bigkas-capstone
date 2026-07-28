@@ -1626,47 +1626,6 @@ function ActivityPageMobile() {
                   </div>
                 </div>
               </section>
-
-              {/* Developer options on Mobile dashboard */}
-              {hasDeveloperPowers && (
-                <section className="side-nav-dev-tools new-widget" aria-label="Developer tools" style={{ gap: '10px', background: '#fefefe', marginTop: '20px' }}>
-                  <h2 className="new-widget-title" style={{ fontSize: '1.1rem', margin: '0 0 4px 0', fontWeight: '800', color: '#dc2626' }}>Developer Power</h2>
-                  
-                  <button type="button" className="activity-mobile-dashboard-btn side-nav-dev-btn" onClick={handleReplayProfilingPreview} style={{ height: '40px', padding: '0 1rem', background: '#4b5563', boxShadow: 'none', borderRadius: '12px' }}>
-                    <IoStatsChartOutline className="side-nav-icon" aria-hidden="true" style={{ marginRight: '8px' }} />
-                    <span>Preview onboarding</span>
-                  </button>
-                  <button type="button" className="activity-mobile-dashboard-btn side-nav-dev-btn" onClick={handleReplayPretestPreview} style={{ height: '40px', padding: '0 1rem', background: '#4b5563', boxShadow: 'none', borderRadius: '12px' }}>
-                    <IoStatsChartOutline className="side-nav-icon" aria-hidden="true" style={{ marginRight: '8px' }} />
-                    <span>Replay pre-testing</span>
-                  </button>
-                  <button type="button" className="activity-mobile-dashboard-btn side-nav-dev-btn" onClick={handleReplayFrameworksTutorial} style={{ height: '40px', padding: '0 1rem', background: '#4b5563', boxShadow: 'none', borderRadius: '12px' }}>
-                    <IoBookOutline className="side-nav-icon" aria-hidden="true" style={{ marginRight: '8px' }} />
-                    <span>Replay tutorial</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="activity-mobile-dashboard-btn side-nav-dev-btn"
-                    onClick={handleClaimAchievementsForDev}
-                    disabled={developerAction !== ''}
-                    style={{ height: '40px', padding: '0 1rem', background: '#4b5563', boxShadow: 'none', borderRadius: '12px' }}
-                  >
-                    <IoMedalOutline className="side-nav-icon" aria-hidden="true" style={{ marginRight: '8px' }} />
-                    <span>{developerAction === 'claim' ? 'Claiming...' : 'Claim achievements'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="activity-mobile-dashboard-btn side-nav-dev-btn side-nav-dev-btn--danger"
-                    onClick={handleUnclaimAchievementsForDev}
-                    disabled={developerAction !== ''}
-                    style={{ height: '40px', padding: '0 1rem', background: '#dc2626', boxShadow: 'none', borderRadius: '12px' }}
-                  >
-                    <IoMedalOutline className="side-nav-icon" aria-hidden="true" style={{ marginRight: '8px' }} />
-                    <span>{developerAction === 'unclaim' ? 'Unclaiming...' : 'Unclaim achievements'}</span>
-                  </button>
-                  {developerStatus ? <p className="side-nav-dev-status" style={{ fontSize: '13px', margin: '4px 0 0 0', color: '#4b5563' }}>{developerStatus}</p> : null}
-                </section>
-              )}
             </div>
           </div>
         </section>

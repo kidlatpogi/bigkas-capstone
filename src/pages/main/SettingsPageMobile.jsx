@@ -10,7 +10,10 @@ import {
   IoVideocamOutline,
   IoColorPalette,
   IoVolumeMuteOutline,
-  IoVolumeHighOutline
+  IoVolumeHighOutline,
+  IoStatsChartOutline,
+  IoBookOutline,
+  IoMedalOutline
 } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
@@ -23,6 +26,8 @@ import { getSpriteUrl } from '../../utils/assetUtils';
 import { getBigkasLevelFromUser } from '../../utils/activityProgress';
 import { readStoredProfileTheme } from '../../utils/profileTheme';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
+import { fetchUserAchievements, claimAllAchievementsInDB, unclaimAllAchievementsInDB } from '../../services/achievementsService';
+import { syncUnlockedBadgeIds } from '../../utils/achievementNavBadge';
 
 const mascotSprite = getSpriteUrl('Robot/0001.webp');
 
@@ -177,6 +182,71 @@ function SettingsPageMobile() {
         title: 'Privacy Policy',
         content: PRIVACY_POLICY
       });
+    }
+  };
+
+  const [developerAction, setDeveloperAction] = useState('');
+  const [developerStatus, setDeveloperStatus] = useState('');
+
+  const hasDeveloperPowers = useMemo(() => {
+    if (!user) return false;
+    const email = String(user.email || '').toLowerCase();
+    const role = String(user.role || '').toLowerCase();
+    const appRole = String(user.app_metadata?.role || '').toLowerCase();
+    return (
+      role === 'admin' ||
+      appRole === 'admin' ||
+      Boolean(user.is_developer) ||
+      email.endsWith('@bigkas.site') ||
+      email === 'zeushack000@gmail.com'
+    );
+  }, [user]);
+
+  const handleReplayProfilingPreview = () => {
+    setDeveloperStatus('Preview mode: full onboarding will not save data.');
+    navigate(`${ROUTES.USER_PROFILING}?mode=dev-preview`);
+  };
+
+  const handleReplayPretestPreview = () => {
+    setDeveloperStatus('Preview mode: pre-testing will not save data.');
+    navigate(`${ROUTES.USER_PRETEST}?mode=dev-preview`);
+  };
+
+  const handleReplayFrameworksTutorial = () => {
+    setDeveloperStatus('Replaying the tutorial walkthrough.');
+    localStorage.removeItem('bigkas_frameworks_tutorial_seen_v1');
+    window.dispatchEvent(new Event('bigkas:reset-frameworks-tutorial'));
+    navigate(ROUTES.LEARN);
+  };
+
+  const handleClaimAchievementsForDev = async () => {
+    if (!user?.id || developerAction) return;
+    setDeveloperAction('claim');
+    setDeveloperStatus('');
+    try {
+      const rows = await claimAllAchievementsInDB(user.id);
+      const refreshed = await fetchUserAchievements(user.id, user);
+      syncUnlockedBadgeIds([], refreshed.filter((a) => a.claimed).map((a) => a.id));
+      setDeveloperStatus(`Claimed ${rows.length} achievements for this account.`);
+    } catch (err) {
+      setDeveloperStatus(err?.message || 'Failed to claim achievements.');
+    } finally {
+      setDeveloperAction('');
+    }
+  };
+
+  const handleUnclaimAchievementsForDev = async () => {
+    if (!user?.id || developerAction) return;
+    setDeveloperAction('unclaim');
+    setDeveloperStatus('');
+    try {
+      const rows = await unclaimAllAchievementsInDB(user.id);
+      syncUnlockedBadgeIds([], []);
+      setDeveloperStatus(`Unclaimed ${rows.length} achievements for this account.`);
+    } catch (err) {
+      setDeveloperStatus(err?.message || 'Failed to unclaim achievements.');
+    } finally {
+      setDeveloperAction('');
     }
   };
 
@@ -365,6 +435,54 @@ function SettingsPageMobile() {
 
               </div>
             </div>
+
+            {/* Developer Controls */}
+            {hasDeveloperPowers && (
+              <>
+                <div className="settings-divider" />
+                <div className="settings-form-section">
+                  <h2 className="section-heading" style={{ color: '#dc2626' }}>Developer Powers</h2>
+                  <div className="sp-list-group">
+                    <button type="button" className="sp-list-item" onClick={handleReplayProfilingPreview}>
+                      <div className="sp-list-icon"><IoStatsChartOutline /></div>
+                      <div className="sp-list-content">
+                        <span className="sp-list-label">Preview Onboarding</span>
+                      </div>
+                      <IoChevronForward className="sp-list-chevron" />
+                    </button>
+                    <button type="button" className="sp-list-item" onClick={handleReplayPretestPreview}>
+                      <div className="sp-list-icon"><IoStatsChartOutline /></div>
+                      <div className="sp-list-content">
+                        <span className="sp-list-label">Replay Pre-Testing</span>
+                      </div>
+                      <IoChevronForward className="sp-list-chevron" />
+                    </button>
+                    <button type="button" className="sp-list-item" onClick={handleReplayFrameworksTutorial}>
+                      <div className="sp-list-icon"><IoBookOutline /></div>
+                      <div className="sp-list-content">
+                        <span className="sp-list-label">Replay Tutorial</span>
+                      </div>
+                      <IoChevronForward className="sp-list-chevron" />
+                    </button>
+                    <button type="button" className="sp-list-item" onClick={handleClaimAchievementsForDev} disabled={developerAction !== ''}>
+                      <div className="sp-list-icon"><IoMedalOutline /></div>
+                      <div className="sp-list-content">
+                        <span className="sp-list-label">{developerAction === 'claim' ? 'Claiming...' : 'Claim Achievements'}</span>
+                      </div>
+                      <IoChevronForward className="sp-list-chevron" />
+                    </button>
+                    <button type="button" className="sp-list-item sp-list-item--danger" onClick={handleUnclaimAchievementsForDev} disabled={developerAction !== ''}>
+                      <div className="sp-list-icon"><IoMedalOutline /></div>
+                      <div className="sp-list-content">
+                        <span className="sp-list-label">{developerAction === 'unclaim' ? 'Unclaiming...' : 'Unclaim Achievements'}</span>
+                      </div>
+                      <IoChevronForward className="sp-list-chevron" />
+                    </button>
+                  </div>
+                  {developerStatus ? <p style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '6px', textAlign: 'center' }}>{developerStatus}</p> : null}
+                </div>
+              </>
+            )}
 
             {/* Danger Zone */}
             <div className="settings-form-section" style={{ marginTop: '24px' }}>

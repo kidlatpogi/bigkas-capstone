@@ -419,8 +419,8 @@ function SettingsPageMobile() {
                           playVoiceSample(val);
                         }}
                       >
-                        <option value="voice1">Voice 1 (Male)</option>
-                        <option value="voice2">Voice 2 (Female)</option>
+                        <option value="voice1">Voice 1</option>
+                        <option value="voice2">Voice 2</option>
                       </select>
                       <IoChevronForward className="sp-select-icon" />
                     </div>

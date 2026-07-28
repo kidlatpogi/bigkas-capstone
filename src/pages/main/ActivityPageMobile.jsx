@@ -303,6 +303,19 @@ function ActivityPageMobile() {
   // State
   const [activeTaskId, setActiveTaskId] = useState(null);
   const [showFreeSpeechTutorial, setShowFreeSpeechTutorial] = useState(false);
+  const [activeFreeSpeechTutorialStepId, setActiveFreeSpeechTutorialStepId] = useState(null);
+
+  const handleFreeSpeechTutorialStepChange = useCallback(({ step }) => {
+    setActiveFreeSpeechTutorialStepId(step?.id || null);
+  }, []);
+
+  const handleCloseFreeSpeechTutorial = useCallback(() => {
+    setShowFreeSpeechTutorial(false);
+    setActiveFreeSpeechTutorialStepId(null);
+  }, []);
+
+  const shouldAutoScrollJourneyTutorial =
+    showFreeSpeechTutorial && activeFreeSpeechTutorialStepId === 'step-roadmap';
   const [showRandomizerOverlay, setShowRandomizerOverlay] = useState(false);
   const [showFreeSpeechOverlay, setShowFreeSpeechOverlay] = useState(false);
   const [freeSpeechDraftTopic, setFreeSpeechDraftTopic] = useState('');
@@ -344,6 +357,15 @@ function ActivityPageMobile() {
   const hasDeveloperPowers =
     String(user?.email || '').trim().toLowerCase() === DEVELOPER_POWER_EMAIL ||
     String(user?.role || '').trim().toLowerCase() === 'superadmin';
+
+  useEffect(() => {
+    document.documentElement.classList.add('activity-page-mobile-active');
+    document.body.classList.add('activity-page-mobile-active');
+    return () => {
+      document.documentElement.classList.remove('activity-page-mobile-active');
+      document.body.classList.remove('activity-page-mobile-active');
+    };
+  }, []);
 
   const handleReplayProfilingPreview = () => {
     if (typeof window !== 'undefined') {
@@ -1201,8 +1223,9 @@ function ActivityPageMobile() {
             isOpen={showFreeSpeechTutorial}
             steps={freeSpeechTutorialSteps}
             showAudioToggle
+            onStepChange={handleFreeSpeechTutorialStepChange}
             onCloseDashboard={closeDashboardForHomeJourneyTutorial}
-            onClose={() => setShowFreeSpeechTutorial(false)}
+            onClose={handleCloseFreeSpeechTutorial}
             onFinish={handleTutorialFinish}
           />
         </Suspense>
@@ -1425,6 +1448,7 @@ function ActivityPageMobile() {
           recommendedLevel={recommendedLevel}
           entranceFromNav={entranceFromNav}
           scrollToStepIndex={null}
+          autoScrollPreview={shouldAutoScrollJourneyTutorial}
           renderTaskCard={renderTaskCardForShell}
           onActiveTaskIdChange={handleActiveTaskIdChange}
         />

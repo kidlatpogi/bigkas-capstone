@@ -4,12 +4,26 @@
    Layout: Fixed header + Scrollable journey container + Fixed bottom nav
    ========================================================================= */
 
+html.activity-page-mobile-active,
+body.activity-page-mobile-active {
+  overflow: hidden !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  overscroll-behavior: none !important;
+  touch-action: none !important;
+}
+
 .activity-page-mobile-root {
   width: calc(100% + var(--mobile-page-inset-left) + var(--mobile-page-inset-right));
   margin-left: calc(-1 * var(--mobile-page-inset-left));
   margin-right: calc(-1 * var(--mobile-page-inset-right));
   height: 100dvh;
   overflow: hidden;
+  touch-action: none;
+  overscroll-behavior: none;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -23,8 +37,32 @@
   background-size: 32px 32px, 100% 100%, 100% 100%;
   
   padding: max(16px, env(safe-area-inset-top, 0px)) var(--mobile-page-inset-right) 0 var(--mobile-page-inset-left);
-  gap: 20px; /* Equal vertical gap */
-  padding-bottom: calc(64px + 20px + env(safe-area-inset-bottom, 0px));
+  gap: 12px; /* Equal vertical gap */
+  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+}
+
+.activity-mobile-dashboard-section {
+  width: 100%;
+  flex-shrink: 0;
+  padding-bottom: clamp(12px, 2vh, 20px);
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: center;
+  z-index: 10;
+}
+
+.activity-mobile-dashboard-section.is-hidden {
+  display: none !important;
+}
+
+.activity-mobile-dashboard-btn {
+  width: 100% !important;
+  max-width: 520px;
+  height: 52px !important;
+  border-radius: 9999px !important;
+  font-size: 1.1rem !important;
+  font-weight: 800 !important;
+  box-shadow: 0 8px 20px -4px rgba(5, 150, 105, 0.4) !important;
 }
 
 .activity-mobile-top-strip {
@@ -174,18 +212,46 @@
   }
 
   .activity-mobile-journey-container .skyward-journey-anim-header.skyward-journey-header-card {
-    position: sticky !important;
-    top: 2px !important;
-    z-index: 20 !important;
-    margin-top: 0 !important;
-    flex-shrink: 0;
-    width: min(520px, 100%) !important;
+    position: relative !important;
+    top: 0 !important;
+    z-index: 25 !important;
+    margin-top: 6px !important;
+    margin-bottom: 6px !important;
+    flex-shrink: 0 !important;
+    width: calc(100% - 16px) !important;
+    max-width: 520px !important;
     margin-inline: auto !important;
-    border-radius: 18px !important;
-    padding: 12px !important;
+    border-radius: 16px !important;
+    padding: 6px 12px !important;
+    border: 2px solid #f18f01 !important;
+    box-shadow: 0 4px 14px rgba(241, 143, 1, 0.2) !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
   }
 
-  /* Ensure journey viewport is scrollable */
+  .activity-mobile-journey-container .skyward-journey-anim-header .skyward-journey-header-title,
+  .activity-mobile-journey-container .skyward-journey-anim-header h2,
+  .activity-mobile-journey-container .skyward-journey-anim-header h3 {
+    font-size: 0.75rem !important;
+    margin-bottom: 2px !important;
+    letter-spacing: 0.04em !important;
+    line-height: 1.1 !important;
+  }
+
+  .activity-mobile-journey-container .skyward-journey-anim-header button {
+    height: 28px !important;
+    min-height: 28px !important;
+    padding: 0 10px !important;
+    font-size: 0.7rem !important;
+  }
+
+  .activity-mobile-journey-container .skyward-journey-anim-header p,
+  .activity-mobile-journey-container .skyward-journey-anim-header span {
+    font-size: 0.68rem !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Ensure journey viewport is scrollable with sleek right scrollbar indicator */
   .skyward-journey {
     width: 100%;
     height: 100%;
@@ -194,6 +260,25 @@
   .skyward-journey-map-viewport {
     width: 100%;
     height: 100%;
+    overflow: hidden;
+    touch-action: pan-y;
+  }
+
+  .activity-mobile-journey-container::-webkit-scrollbar,
+  .activity-page-mobile-root::-webkit-scrollbar {
+    display: block !important;
+    width: 4px !important;
+  }
+
+  .activity-mobile-journey-container::-webkit-scrollbar-track,
+  .activity-page-mobile-root::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+
+  .activity-mobile-journey-container::-webkit-scrollbar-thumb,
+  .activity-page-mobile-root::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.35) !important;
+    border-radius: 999px !important;
   }
 
   .skyward-journey-container {

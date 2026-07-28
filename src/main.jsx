@@ -28,6 +28,38 @@ if (typeof String.prototype.replaceAll !== 'function') {
   };
 }
 
+if (typeof window !== 'undefined') {
+  if (!window.crypto) {
+    try {
+      window.crypto = {};
+    } catch {
+      /* ignore */
+    }
+  }
+  if (window.crypto && typeof window.crypto.randomUUID !== 'function') {
+    try {
+      window.crypto.randomUUID = function randomUUID() {
+        if (typeof window.crypto.getRandomValues === 'function') {
+          try {
+            return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
+              (c ^ (window.crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16),
+            );
+          } catch {
+            /* ignore */
+          }
+        }
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+          const r = (Math.random() * 16) | 0;
+          const v = c === 'x' ? r : (r & 0x3) | 0x8;
+          return v.toString(16);
+        });
+      };
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
 function clearNativeWebCaches() {
   if (!isNativePlatform || typeof window === 'undefined') return;
   clearClientCaches();
@@ -83,11 +115,11 @@ function recoverFromStaleBuildAsset(errorMessage) {
 class AppErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
   }
 
   componentDidCatch(error) {
@@ -97,6 +129,7 @@ class AppErrorBoundary extends Component {
 
   render() {
     if (this.state.hasError) {
+      const errorMessage = String(this.state.error?.message || this.state.error || 'Unknown rendering error');
       return (
         <div className="loading-screen" role="alert">
           <div className="loading-logo">
@@ -118,6 +151,24 @@ class AppErrorBoundary extends Component {
           >
             Reload App
           </button>
+          <div
+            style={{
+              marginTop: '16px',
+              padding: '12px 16px',
+              background: '#fee2e2',
+              border: '1px solid #fca5a5',
+              color: '#991b1b',
+              borderRadius: '12px',
+              fontSize: '13px',
+              maxWidth: '90%',
+              textAlign: 'left',
+              wordBreak: 'break-word',
+              fontFamily: 'monospace',
+            }}
+          >
+            <strong>Error Details:</strong>
+            <div style={{ marginTop: '4px' }}>{errorMessage}</div>
+          </div>
         </div>
       );
     }
@@ -156,17 +207,28 @@ createRoot(document.getElementById('root')).render(
   </StrictMode>,
 );
 
-// Register Service Worker for asset caching
-if (!isNativePlatform && 'serviceWorker' in navigator) {
+// Register Service Worker for asset caching (only on production & secure origins)
+const isSecureOrigin =
+  typeof window !== 'undefined' &&
+  (window.location.protocol === 'https:' ||
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1');
+
+if (import.meta.env.PROD && !isNativePlatform && isSecureOrigin && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(registration => {
-      registration.update().catch(() => {});
-      if (registration.waiting) {
-        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-      }
-      console.log('SW registered: ', registration);
-    }).catch(registrationError => {
-      console.log('SW registration failed: ', registrationError);
-    });
+    navigator.serviceWorker
+      .register('/sw.js', { updateViaCache: 'none' })
+      .then((registration) => {
+        registration.update().catch(() => {});
+        if (registration.waiting) {
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+      })
+      .catch(() => {});
   });
+} else if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  // Clear any existing Service Workers in dev mode to avoid stale iPhone caches
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    registrations.forEach((reg) => reg.unregister().catch(() => {}));
+  }).catch(() => {});
 }

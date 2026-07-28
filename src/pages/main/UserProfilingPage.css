@@ -334,6 +334,8 @@
   object-position: center;
   margin-left: 0;
   transform: none;
+  mix-blend-mode: screen !important;
+  background-color: transparent !important;
 }
 
 .profiling-ready-image {

@@ -237,7 +237,7 @@ function ProtectedRoute() {
         const data = await fetchUserAchievements(user.id, user);
         if (active) {
           syncClaimableAchievements(data, user.id);
-          syncUnlockedBadgeIds((data || []).map((a) => a.achievement_id));
+          syncUnlockedBadgeIds((data || []).filter((a) => a.claimed).map((a) => a.id));
         }
       } catch (err) {
         console.warn('[AchievementSync] Background fetch failed:', err);

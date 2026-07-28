@@ -172,6 +172,8 @@
   display: block;
   object-fit: contain;
   object-position: center;
+  mix-blend-mode: screen !important;
+  background-color: transparent !important;
 }
 
 .pretest-confirm-audio-action {

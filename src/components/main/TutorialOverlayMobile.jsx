@@ -51,6 +51,7 @@ function TutorialOverlayMobile({
   isOpen,
   onClose,
   onFinish,
+  onStepChange = undefined,
   steps = null,
   robotImage = defaultRobotImage,
   finalRobotImage = defaultFinalRobotImage,
@@ -347,7 +348,10 @@ function TutorialOverlayMobile({
 
   useEffect(() => {
     setStepTextSegment(0);
-  }, [currentStep]);
+    if (onStepChange && activeStep) {
+      onStepChange({ step: activeStep, index: currentStep });
+    }
+  }, [currentStep, activeStep, onStepChange]);
 
   useEffect(() => {
     dashboardFooterClickDoneRef.current = false;
@@ -854,23 +858,19 @@ function TutorialOverlayMobile({
           /* Ensure targeted elements inside the dashboard sheet elevate properly into the sheet's stacking context */
           .dashboard-overlay-content .tutorial-spotlight-active {
             position: relative !important;
-            z-index: 4800 !important;
+            z-index: 5500 !important;
             background: #ffffff !important;
-            box-shadow: 0 0 0 5px #34D399, 0 0 42px rgba(52, 211, 153, 0.9) !important;
-          }
-          .dashboard-overlay-wrapper:has(.tutorial-spotlight-active) .dashboard-overlay-content::after {
-            content: '' !important;
-            position: absolute !important;
-            inset: 0 !important;
-            z-index: 4700 !important;
-            pointer-events: none !important;
-            background: rgba(15, 23, 42, 0.5) !important;
-            -webkit-backdrop-filter: blur(4px) !important;
-            backdrop-filter: blur(4px) !important;
+            border-radius: 20px !important;
+            opacity: 1 !important;
+            filter: none !important;
+            box-shadow: 0 0 0 4px #34D399, 0 12px 36px rgba(0, 0, 0, 0.28) !important;
           }
           .dashboard-overlay-wrapper:has(.tutorial-spotlight-active) .dashboard-overlay-scroll-content > *:not(.tutorial-spotlight-active),
           .dashboard-overlay-wrapper:has(.tutorial-spotlight-active) .dashboard-overlay-header {
+            opacity: 0.35 !important;
+            filter: brightness(0.5) !important;
             pointer-events: none !important;
+            transition: opacity 0.3s ease, filter 0.3s ease !important;
           }
           .tutorial-overlay-wrapper.is-custom-tutorial .tutorial-companion-container {
             display: flex !important;

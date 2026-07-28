@@ -66,12 +66,19 @@ function setAcknowledgedBadgeIds(ids) {
 /** How many unlocked badges the user hasn't opened Achievements to see yet. */
 export function getPendingAchievementBadgeCount() {
   const ack = new Set(getAcknowledgedBadgeIds());
-  return getPublishedUnlockedBadgeIds().filter((id) => !ack.has(id)).length;
+  const claimed = new Set(getClaimedRewardIds());
+  return getPublishedUnlockedBadgeIds().filter((id) => !ack.has(id) && !claimed.has(id)).length;
 }
 
 /** Call when the user visits the Achievements screen — clears the nav counter. */
 export function acknowledgeAllPublishedUnlockedBadges() {
   setAcknowledgedBadgeIds(getPublishedUnlockedBadgeIds());
+}
+
+export function acknowledgeBadgeId(id) {
+  if (!id) return;
+  const current = getAcknowledgedBadgeIds();
+  setAcknowledgedBadgeIds([...new Set([...current, String(id)])]);
 }
 
 export function subscribeAchievementBadgeUpdates(callback) {

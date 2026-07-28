@@ -7,17 +7,18 @@
   position: fixed;
   inset: 0;
   background: rgba(3, 7, 18, 0.4);
-  backdrop-filter: blur(2px);
-  z-index: 49;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1190;
 }
 
 .profile-modal-wrapper {
   position: fixed;
-  /* Match BottomNav total stack: 64px row + 6px top padding + safe-area (nav uses border-box + same safe inset) */
-  bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+  /* Match BottomNav total stack height so sheet slides cleanly from behind bottom bar */
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   left: 0;
   right: 0;
-  z-index: 1001; /* Above bottom nav */
+  z-index: 1195;
   display: flex;
   flex-direction: column;
   align-items: center;

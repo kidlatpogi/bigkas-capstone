@@ -1249,7 +1249,6 @@ export default function SkywardJourney({
       if (pinchRef.current) return;
       if (tooltipNodeId) setTooltipNodeId(null);
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-      const t = e.target;
       const m = mapRef.current;
       pointerPanRef.current = {
         pid: e.pointerId,
@@ -1264,21 +1263,21 @@ export default function SkywardJourney({
     [panelOpenId, tooltipNodeId, isLockedLevel],
   );
 
-  const onPointerMoveViewport = useCallback((e) => {
-    // Removed isLockedLevel restriction to allow users to view locked maps.
-    const p = pointerPanRef.current;
-    if (!p || p.pid !== e.pointerId) return;
-    let dy = e.clientY - p.sy;
-    if (isMobile && e.pointerType === 'touch') {
-      dy *= MOBILE_PAN_SPEED;
-    }
-    const vp = viewportRef.current;
-    const content = mapContentRef.current;
-    if (!vp || !content) return;
-    setMap((m) =>
-      clampMapState({ ...m, ty: p.ty + dy }, vp, content, MAP_SCALE),
-    );
-  }, [isLockedLevel, isMobile]);
+  const onPointerMoveViewport = useCallback(
+    (e) => {
+      const p = pointerPanRef.current;
+      if (!p || p.pid !== e.pointerId) return;
+      let dy = e.clientY - p.sy;
+      if (isMobile && e.pointerType === 'touch') {
+        dy *= MOBILE_PAN_SPEED;
+      }
+      const vp = viewportRef.current;
+      const content = mapContentRef.current;
+      if (!vp || !content) return;
+      setMap((m) => clampMapState({ ...m, ty: p.ty + dy }, vp, content, MAP_SCALE));
+    },
+    [isLockedLevel, isMobile],
+  );
 
   const onPointerUpViewport = useCallback((e) => {
     const p = pointerPanRef.current;
@@ -1292,22 +1291,21 @@ export default function SkywardJourney({
     }
   }, []);
 
-  const onTouchStartPinch = useCallback((e) => {
-    // Removed isLockedLevel restriction to allow users to view locked maps.
-    if (e.touches.length === 2) {
-      pointerPanRef.current = null;
-      setMapLayerDragActive(false);
-      pinchRef.current = { active: true };
-    }
-  }, [isLockedLevel]);
-
-  const onTouchMovePinch = useCallback(
+  const onTouchStartPinch = useCallback(
     (e) => {
-      if (e.touches.length < 2 || !pinchRef.current) return;
-      e.preventDefault();
+      if (e.touches.length === 2) {
+        pointerPanRef.current = null;
+        setMapLayerDragActive(false);
+        pinchRef.current = { active: true };
+      }
     },
-    [],
+    [isLockedLevel],
   );
+
+  const onTouchMovePinch = useCallback((e) => {
+    if (e.touches.length < 2 || !pinchRef.current) return;
+    e.preventDefault();
+  }, []);
 
   const onTouchEndPinch = useCallback((e) => {
     if (e.touches.length < 2) pinchRef.current = null;
@@ -1333,7 +1331,6 @@ export default function SkywardJourney({
   const { solidPathD, dashedPathD } = useMemo(() => {
     let solid = '';
     let dashed = '';
-    if (pathPoints.length < 2) return { solidPathD: '', dashedPathD: '' };
 
     for (let i = 1; i < pathPoints.length; i++) {
       const prev = pathPoints[i - 1];

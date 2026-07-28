@@ -30,7 +30,7 @@ export function useAchievementNavBadge() {
   const [pending, setPending] = useState(readInitialPending);
 
   useEffect(() => {
-    return subscribeAchievementBadgeUpdates(() => {
+    const updateHandler = () => {
       const nextPending = getPendingAchievementBadgeCount();
       if (isAchievementsPath(location.pathname)) {
         if (nextPending > 0) acknowledgeAllPublishedUnlockedBadges();
@@ -38,7 +38,14 @@ export function useAchievementNavBadge() {
         return;
       }
       setPending(nextPending);
-    });
+    };
+
+    const unsubscribe = subscribeAchievementBadgeUpdates(updateHandler);
+    window.addEventListener('bigkas:achievements-updated', updateHandler);
+    return () => {
+      unsubscribe();
+      window.removeEventListener('bigkas:achievements-updated', updateHandler);
+    };
   }, [location.pathname]);
 
   useEffect(() => {

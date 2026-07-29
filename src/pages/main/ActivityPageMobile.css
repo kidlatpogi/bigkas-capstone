@@ -17,11 +17,12 @@ body.activity-page-mobile-active {
 }
 
 .activity-page-mobile-root {
-  --activity-mobile-bottom-clearance: calc(88px + env(safe-area-inset-bottom, 0px));
+  --activity-mobile-bottom-clearance: calc(76px + env(safe-area-inset-bottom, 0px));
   width: calc(100% + var(--mobile-page-inset-left) + var(--mobile-page-inset-right));
   margin-left: calc(-1 * var(--mobile-page-inset-left));
   margin-right: calc(-1 * var(--mobile-page-inset-right));
   height: 100dvh;
+  max-height: 100dvh;
   overflow: hidden;
   touch-action: none;
   overscroll-behavior: none;
@@ -45,8 +46,8 @@ body.activity-page-mobile-active {
 .activity-mobile-dashboard-section {
   width: 100%;
   flex-shrink: 0;
-  padding-bottom: clamp(12px, 2vh, 20px);
-  margin-bottom: 6px;
+  padding-bottom: clamp(6px, 1.5vh, 12px);
+  margin-bottom: 2px;
   display: flex;
   justify-content: center;
   z-index: 10;
@@ -304,8 +305,9 @@ body.activity-page-mobile-active {
     -moz-osx-font-smoothing: grayscale;
     color-scheme: light;
     isolation: isolate;
-    min-height: 100dvh;
-    min-height: -webkit-fill-available;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
     gap: 14px;
     padding-top: max(8px, env(safe-area-inset-top, 0px));
     padding-bottom: var(--activity-mobile-bottom-clearance);

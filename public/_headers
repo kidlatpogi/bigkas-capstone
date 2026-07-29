@@ -1,13 +1,21 @@
+# ── Security Headers (all responses) ──────────────────────────────────
 /*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(self), microphone=(self), geolocation=(), payment=()
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://assets.bigkas.site https://*.supabase.co; media-src 'self' blob: https://assets.bigkas.site; connect-src 'self' https://*.supabase.co https://*.hf.space wss://*.supabase.co; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; worker-src 'self' blob:
   Cache-Control: no-cache
 
+# ── HTML shell ────────────────────────────────────────────────────────
 /index.html
   Cache-Control: no-cache, no-store, must-revalidate
 
+# ── Service Worker ────────────────────────────────────────────────────
 /sw.js
   Cache-Control: no-cache, no-store, must-revalidate
 
-# Aggressive caching for static assets
+# ── Hashed static assets (immutable) ─────────────────────────────────
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 

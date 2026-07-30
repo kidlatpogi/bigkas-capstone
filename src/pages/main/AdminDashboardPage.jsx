@@ -3185,6 +3185,10 @@ function AdminDashboardPage() {
 
   const submitBatchAccountImport = async (e) => {
     e.preventDefault();
+    if (batchAccountType === 'section' && !isSuperadmin) {
+      showToast('Only Super Admin can create sections', 'error');
+      return;
+    }
     if (!batchImportFile) {
       showToast('Choose an Excel file first', 'error');
       return;
@@ -3352,6 +3356,10 @@ function AdminDashboardPage() {
 
   const submitSection = async (e) => {
     e.preventDefault();
+    if (!sectionForm.id && !isSuperadmin) {
+      showToast('Only Super Admin can create sections', 'error');
+      return;
+    }
     const name = sectionForm.name.trim();
     if (!name) {
       showToast('Section name is required', 'error');
@@ -3399,6 +3407,10 @@ function AdminDashboardPage() {
   };
 
   const openNewSection = () => {
+    if (!isSuperadmin) {
+      showToast('Only Super Admin can create sections', 'error');
+      return;
+    }
     setSectionForm({ id: '', name: '', teacher_id: '' });
     setShowSectionModal(true);
   };
@@ -4005,7 +4017,7 @@ function AdminDashboardPage() {
     { key: 'content', label: 'Content Hub', icon: HiOutlineChartBarSquare, show: canViewActivities || canViewModules },
     { key: 'reports', label: 'Reports', icon: HiOutlineChartBarSquare, show: canUseAdminPermission('reports', 'view') },
     { key: 'audit', label: 'Audit Logs', icon: HiOutlineCog6Tooth, show: isSuperadmin },
-    { key: 'settings', label: 'System Settings', icon: HiOutlineCog6Tooth, show: isSuperadmin || canUseAdminPermission('overview', 'view') },
+    { key: 'settings', label: 'System Settings', icon: HiOutlineCog6Tooth, show: isSuperadmin },
   ].filter(i => i.show);
 
   return (
@@ -4470,10 +4482,12 @@ function AdminDashboardPage() {
                   <h2>Sections</h2>
                   <p className="admin-section-subtitle">Admins manage users through assigned sections.</p>
                 </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button type="button" className="admin-btn admin-btn--ghost" onClick={() => { setBatchImportFile(null); setBatchImportStatus('idle'); setBatchPreview(null); setBatchAccountType('section'); setShowBatchAccountModal(true); }}>Bulk Upload</button>
-                  <button type="button" className="admin-btn admin-btn--ghost" onClick={openNewSection}>New Section</button>
-                </div>
+                {isSuperadmin && (
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button type="button" className="admin-btn admin-btn--ghost" onClick={() => { setBatchImportFile(null); setBatchImportStatus('idle'); setBatchPreview(null); setBatchAccountType('section'); setShowBatchAccountModal(true); }}>Bulk Upload</button>
+                    <button type="button" className="admin-btn admin-btn--ghost" onClick={openNewSection}>New Section</button>
+                  </div>
+                )}
               </div>
               <hr className="admin-section-divider" />
               <section className="admin-card admin-section-card">
@@ -4929,7 +4943,7 @@ function AdminDashboardPage() {
           </div>
         )}
 
-        {activePage === 'settings' && (
+        {activePage === 'settings' && isSuperadmin && (
           <div>
             <div className="admin-section-header">
               <h2>System Security & Device Policy Settings</h2>

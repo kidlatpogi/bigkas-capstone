@@ -521,7 +521,7 @@ export default function LandingPage({ managePageClass = true }) {
                   bgColor="#F18F01"
                   shadowColor="#c2410c"
                   className="footer-btn-custom"
-                  onClick={() => window.open('https://assets.bigkas.site/downloads/talktics-android.apk', '_blank')}
+                  onClick={() => window.open('/downloads/TalkTics.apk', '_blank')}
                 >
                   <IoLogoAndroid size={20} />
                   Download for Android

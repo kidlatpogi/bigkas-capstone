@@ -34,6 +34,8 @@ import {
 } from '../../utils/speakerPointsHistory';
 import { sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
 import { getSpriteUrl } from '../../utils/assetUtils';
+import Confetti from 'react-confetti';
+import { buildStagePassResultForSession } from '../../utils/passingScore';
 import { useAllActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 
 const heroRobotImage = getSpriteUrl('Robot/0018.webp');
@@ -434,7 +436,18 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
 
   const coachInsights = useMemo(() => generateCoachInsights(userSessions), [userSessions]);
 
-/* history session logic removed */
+  const [windowSize, setWindowSize] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 1200,
+    height: typeof window !== 'undefined' ? window.innerHeight : 800,
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
     <div

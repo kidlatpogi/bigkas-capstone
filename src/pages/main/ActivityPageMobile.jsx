@@ -642,7 +642,7 @@ function ActivityPageMobile() {
     setChatMessages(newMessages);
     setAskB01Query('');
     setIsB01Typing(true);
-    setAskB01Cooldown(15);
+    setAskB01Cooldown(30);
 
     const assistantMessageId = Date.now();
     setChatMessages((prev) => [...prev, { role: 'assistant', content: '', id: assistantMessageId }]);
@@ -851,7 +851,7 @@ function ActivityPageMobile() {
   const handleRandomizeTopic = useCallback(async () => {
     if (randomizerCooldown > 0 || isRandomizingTopic) return;
     setIsRandomizingTopic(true);
-    setRandomizerCooldown(5);
+    setRandomizerCooldown(10);
 
     try {
       const aiTopic = await fetchRandomizerTopicFromAI();

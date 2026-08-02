@@ -20,6 +20,7 @@ const heroRobotImage = getSpriteUrl('Robot/0018.webp');
 const visualSprite = getSpriteUrl('common/Visual.webp');
 const verbalSprite = getSpriteUrl('common/Verbal.webp');
 const vocalSprite = getSpriteUrl('common/Vocal.webp');
+import Confetti from 'react-confetti';
 import './ProgressPage.css'; 
 import './ProgressPageMobile.css';
 
@@ -341,8 +342,38 @@ function ProgressPageMobile() {
     });
   }, [pillarRange, userSessions]);
 
+  const [windowSize, setWindowSize] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 390,
+    height: typeof window !== 'undefined' ? window.innerHeight : 844,
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const showProgressConfetti = !!(
+    location.state?.stageUnlocked ||
+    location.state?.passed ||
+    location.state?.unlocked ||
+    location.state?.fromActivityTaskId === 'review-feedback'
+  );
+
   return (
     <div className="progress-page-mobile-root no-scrollbar">
+      {showProgressConfetti && (
+        <Confetti
+          width={windowSize.width}
+          height={windowSize.height}
+          recycle={false}
+          numberOfPieces={300}
+          gravity={0.2}
+          style={{ position: 'fixed', top: 0, left: 0, zIndex: 9999, pointerEvents: 'none' }}
+        />
+      )}
       <div className="progress-mobile-layout">
         <div className="progress-mobile-content">
           

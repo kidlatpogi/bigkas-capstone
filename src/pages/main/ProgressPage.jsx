@@ -34,6 +34,7 @@ import {
 } from '../../utils/speakerPointsHistory';
 import { sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
 import { getSpriteUrl } from '../../utils/assetUtils';
+import Confetti from 'react-confetti';
 import { useAllActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 
 const heroRobotImage = getSpriteUrl('Robot/0018.webp');
@@ -432,9 +433,25 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
     });
   }, [pillarRange, userSessions]);
 
-  const coachInsights = useMemo(() => generateCoachInsights(userSessions), [userSessions]);
+  const [windowSize, setWindowSize] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 1200,
+    height: typeof window !== 'undefined' ? window.innerHeight : 800,
+  });
 
-/* history session logic removed */
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const showProgressConfetti = !!(
+    location.state?.stageUnlocked ||
+    location.state?.passed ||
+    location.state?.unlocked ||
+    location.state?.fromActivityTaskId === 'review-feedback'
+  );
 
   return (
     <div
@@ -445,6 +462,16 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
         overflowY: 'auto',
       }}
     >
+      {showProgressConfetti && (
+        <Confetti
+          width={windowSize.width}
+          height={windowSize.height}
+          recycle={false}
+          numberOfPieces={300}
+          gravity={0.2}
+          style={{ position: 'fixed', top: 0, left: 0, zIndex: 9999, pointerEvents: 'none' }}
+        />
+      )}
       <div className="progress-main-layout">
         <div className="progress-left-content">
           {isMobile ? (

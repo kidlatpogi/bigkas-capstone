@@ -766,13 +766,13 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
 
   return (
     <div className={`sr-page-root ${isInnerView ? 'sr-page--inner' : ''} activity-page--skyward-entrance`}>
-      {shouldCelebrateScore(session) && !isInnerView && (
+      {(stagePassResult?.passed || shouldCelebrateScore(session)) && !isInnerView && (
         <Confetti
           width={windowSize.width}
           height={windowSize.height}
           recycle={false}
-          numberOfPieces={260}
-          gravity={0.25}
+          numberOfPieces={300}
+          gravity={0.2}
           className="score-confetti"
         />
       )}

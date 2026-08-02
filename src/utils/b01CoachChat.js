@@ -1,5 +1,5 @@
-import ENV from '../config/env';
-import { validateB01Query, B01_VALIDATION_REFUSAL_MESSAGE } from './b01Guard';
+import ENV from '../config/env.js';
+import { validateB01Query, B01_VALIDATION_REFUSAL_MESSAGE } from './b01Guard.js';
 
 function normalizeMessages(messages) {
   return Array.isArray(messages)
@@ -91,11 +91,11 @@ async function readWorkerResponse(response) {
 }
 
 const FREE_OPENROUTER_MODELS = [
-  'meta-llama/llama-3.3-70b-instruct:free',
-  'google/gemini-2.0-flash-exp:free',
-  'deepseek/deepseek-r1:free',
-  'qwen/qwen-2.5-coder-32b-instruct:free',
-  'mistralai/mistral-7b-instruct:free',
+  'openrouter/free',
+  'google/gemma-4-31b-it:free',
+  'google/gemma-4-26b-a4b-it:free',
+  'nvidia/nemotron-3-super-120b-a12b:free',
+  'openai/gpt-oss-20b:free',
 ];
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
@@ -193,12 +193,13 @@ Answer the user's question directly, clearly, concisely, and thoughtfully. Provi
 export async function fetchRandomizerTopicFromAI() {
   const systemPrompt = {
     role: 'system',
-    content: `You are an expert public speaking topic generator for TalkTics. Generate ONE fun, engaging, and thought-provoking public speaking topic title with a short 1-sentence prompt body.
-Format your output as raw JSON ONLY with keys "title" and "body". Example: {"title": "The Art of Storytelling", "body": "Explain how personal anecdotes make a speech memorable."}`
+    content: `You are an expert public speaking topic generator for TalkTics. Generate ONE fun, engaging, and highly relatable public speaking topic title with a short 1-sentence prompt body.
+Focus on topics relatable to Filipino university students, commuting in Dasmariñas/Cavite (Aguinaldo Highway traffic, jeepneys, UV Express, Kadiwa), student life at National University Dasmariñas (NU Dasma, Nationalians, campus routines, midterms), Filipino youth culture, or modern daily life challenges.
+Format your output as raw JSON ONLY with keys "title" and "body". Example: {"title": "Surviving the Aguinaldo Highway Commute", "body": "Share your best tips or funniest story about navigating daily traffic in Dasmariñas."}`
   };
   const userPrompt = {
     role: 'user',
-    content: 'Generate a random public speaking practice topic.'
+    content: 'Generate a random practice speech topic for a Filipino university student.'
   };
 
   const messages = [systemPrompt, userPrompt];
@@ -208,9 +209,14 @@ Format your output as raw JSON ONLY with keys "title" and "body". Example: {"tit
       const reply = await fetchFromOpenRouter(messages);
       if (reply) {
         const cleanJson = reply.replace(/```json/gi, '').replace(/```/g, '').trim();
-        const parsed = JSON.parse(cleanJson);
-        if (parsed.title) {
-          return { title: parsed.title, body: parsed.body || '' };
+        const firstBrace = cleanJson.indexOf('{');
+        const lastBrace = cleanJson.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace > firstBrace) {
+          const jsonSubstring = cleanJson.substring(firstBrace, lastBrace + 1);
+          const parsed = JSON.parse(jsonSubstring);
+          if (parsed.title) {
+            return { title: parsed.title, body: parsed.body || '' };
+          }
         }
       }
     } catch (e) {

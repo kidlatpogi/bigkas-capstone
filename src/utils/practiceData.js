@@ -77,6 +77,14 @@ export const SYSTEM_PREWRITTEN_SPEECHES = [
 ];
 
 export const RANDOM_TOPICS = [
+  // NU Dasmariñas & Local Cavite Student Life Topics
+  { title: 'Navigating the Aguinaldo Highway Rush Hour', body: 'Share your funniest or most memorable story about commuting through Dasmariñas traffic.' },
+  { title: 'Life as a Nationalian at NU Dasma', body: 'Discuss what makes student life, campus culture, and Nationalian pride special at NU Dasmariñas.' },
+  { title: 'Budget Meals and Kadiwa Market Finds', body: 'What are your favorite affordable food spots and street food gems around Dasmariñas?' },
+  { title: 'Surviving Midterms and Thesis Defense', body: 'Share your top strategies for managing stress and staying calm during major academic presentations.' },
+  { title: 'The Jeepney vs UV Express Commute Debate', body: 'Compare your daily travel options to campus and how you spend time during long rides.' },
+  { title: 'Campus Organization Leadership', body: 'How does participating in student organizations help build confidence and public speaking skills?' },
+
   // Original Initial Topics
   { title: 'The Future of Artificial Intelligence', body: 'Share your perspective on how AI will change society in the next decade — the opportunities, the challenges, and what we should do to prepare.' },
   { title: 'A Lesson I Learned the Hard Way', body: 'Tell a personal story about a mistake you made, what it cost you, and the valuable lesson it ultimately taught you.' },

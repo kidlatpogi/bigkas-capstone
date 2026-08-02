@@ -433,6 +433,8 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
     });
   }, [pillarRange, userSessions]);
 
+  const coachInsights = useMemo(() => generateCoachInsights(userSessions), [userSessions]);
+
   const [windowSize, setWindowSize] = useState({
     width: typeof window !== 'undefined' ? window.innerWidth : 1200,
     height: typeof window !== 'undefined' ? window.innerHeight : 800,

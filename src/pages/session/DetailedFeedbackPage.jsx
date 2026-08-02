@@ -766,14 +766,15 @@ function DetailedFeedbackPage({ sessionIdProp, isInnerView, onCloseInner, initia
 
   return (
     <div className={`sr-page-root ${isInnerView ? 'sr-page--inner' : ''} activity-page--skyward-entrance`}>
-      {(stagePassResult?.passed || shouldCelebrateScore(session)) && !isInnerView && (
+      {(stagePassResult?.passed || shouldCelebrateScore(session)) && (
         <Confetti
+          key={session?.id || 'stage-pass-confetti'}
           width={windowSize.width}
           height={windowSize.height}
           recycle={false}
-          numberOfPieces={300}
-          gravity={0.2}
-          className="score-confetti"
+          numberOfPieces={500}
+          gravity={0.12}
+          style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 99999, pointerEvents: 'none' }}
         />
       )}
 

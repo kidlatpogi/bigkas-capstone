@@ -709,18 +709,19 @@ function DetailedFeedbackPageMobile({ sessionIdProp, isInnerView, onCloseInner, 
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const showConfetti = (stagePassResult?.passed || Number(session?.confidence_score) >= 80) && !isInnerView;
+  const showConfetti = (stagePassResult?.passed || Number(session?.confidence_score) >= 80);
 
   return (
     <div className={`df-mobile-root no-scrollbar${isInnerView ? ' df-mobile-root--inner' : ''}`}>
       {showConfetti && (
         <Confetti
+          key={session?.id || 'stage-pass-confetti-mobile'}
           width={windowSize.width}
           height={windowSize.height}
           recycle={false}
-          numberOfPieces={300}
-          gravity={0.2}
-          style={{ position: 'fixed', top: 0, left: 0, zIndex: 9999, pointerEvents: 'none' }}
+          numberOfPieces={500}
+          gravity={0.12}
+          style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 99999, pointerEvents: 'none' }}
         />
       )}
       {shouldShowBreadcrumb && (

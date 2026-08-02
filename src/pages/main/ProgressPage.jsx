@@ -35,6 +35,7 @@ import {
 import { sanitizeTranscriptForDisplay } from '../../utils/analysisTranscript';
 import { getSpriteUrl } from '../../utils/assetUtils';
 import Confetti from 'react-confetti';
+import { buildStagePassResultForSession } from '../../utils/passingScore';
 import { useAllActivitiesJourneyTasks } from '../../hooks/useActivitiesJourneyTasks';
 
 const heroRobotImage = getSpriteUrl('Robot/0018.webp');
@@ -448,11 +449,18 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const latestSession = userSessions[0];
+  const latestStagePassResult = useMemo(() => {
+    if (!latestSession) return null;
+    return buildStagePassResultForSession(latestSession);
+  }, [latestSession]);
+
   const showProgressConfetti = !!(
     location.state?.stageUnlocked ||
     location.state?.passed ||
     location.state?.unlocked ||
-    location.state?.fromActivityTaskId === 'review-feedback'
+    location.state?.fromActivityTaskId === 'review-feedback' ||
+    latestStagePassResult?.passed
   );
 
   return (
@@ -466,12 +474,13 @@ function ProgressPage({ isMobile = false, renderVariant = 'desktop' }) {
     >
       {showProgressConfetti && (
         <Confetti
+          key={latestSession?.id || 'progress-stage-pass-confetti'}
           width={windowSize.width}
           height={windowSize.height}
           recycle={false}
-          numberOfPieces={300}
-          gravity={0.2}
-          style={{ position: 'fixed', top: 0, left: 0, zIndex: 9999, pointerEvents: 'none' }}
+          numberOfPieces={500}
+          gravity={0.12}
+          style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 99999, pointerEvents: 'none' }}
         />
       )}
       <div className="progress-main-layout">

@@ -28,38 +28,13 @@ function buildFallbackCoachReply(question, context) {
   const strongest = growth.strongestPillar || 'Visual';
   const growthText = growth.growthPercentage ?? '0.0';
 
-  // 1. Progress & Rank Summary
-  if (normalizedQuestion.includes('summarize') || normalizedQuestion.includes('progress') || normalizedQuestion.includes('stats') || normalizedQuestion.includes('rank') || normalizedQuestion.includes('growth')) {
+  // 1. Progress & Stats Summary
+  if (normalizedQuestion.includes('summarize') || normalizedQuestion.includes('progress') || normalizedQuestion.includes('stats')) {
     return `You are currently at Level ${levelNumber} (${levelName}) with ${totalSessions} analyzed practice session${totalSessions === 1 ? '' : 's'} and an average score of ${averageScore}. Your latest session scored ${latest?.score ?? 'N/A'}%, your overall growth is ${growthText}%, and your strongest pillar is ${strongest}.`;
   }
 
-  // 2. Vocal Variety
-  if (normalizedQuestion.includes('vocal') || normalizedQuestion.includes('variety') || normalizedQuestion.includes('pitch') || normalizedQuestion.includes('monotone') || normalizedQuestion.includes('inflection')) {
-    return `To master vocal variety, try pitch contrast: elevate your pitch when introducing key ideas and lower it when delivering powerful takeaways. Practice alternating between a energetic fast pace for exciting details and a measured slow pace for emphasis. Leaning into your ${strongest} strength will help your natural expression shine!`;
-  }
-
-  // 3. Confidence & Anxiety
-  if (normalizedQuestion.includes('confidence') || normalizedQuestion.includes('anxiety') || normalizedQuestion.includes('nervous') || normalizedQuestion.includes('fear') || normalizedQuestion.includes('stage fright')) {
-    return `For instant confidence on stage: plant your feet firmly shoulder-width apart, take three deep diaphragmatic breaths before your first sentence, and make steady eye contact with one person per thought. You have already completed ${totalSessions} practice sessions—trust your training!`;
-  }
-
-  // 4. Pacing & Speed
-  if (normalizedQuestion.includes('pace') || normalizedQuestion.includes('pacing') || normalizedQuestion.includes('speed') || normalizedQuestion.includes('fast') || normalizedQuestion.includes('slow')) {
-    return `Great delivery relies on deliberate pacing. Aim for 130 to 150 words per minute. When transitioning between points, insert a full 2-second silent pause—silence feels authoritative to your audience and gives you time to compose your next statement cleanly.`;
-  }
-
-  // 5. Filler Words
-  if (normalizedQuestion.includes('filler') || normalizedQuestion.includes('um') || normalizedQuestion.includes('uh') || normalizedQuestion.includes('like')) {
-    return `To eliminate filler words like 'um' and 'ah', replace them with silent pauses. Whenever you feel a filler word coming, gently close your lips, breathe through your nose, and begin your next sentence once your thought is clear.`;
-  }
-
-  // 6. Practice Tips & Next Steps
-  if (normalizedQuestion.includes('tip') || normalizedQuestion.includes('tips') || normalizedQuestion.includes('practice') || normalizedQuestion.includes('next') || normalizedQuestion.includes('recommend')) {
-    return `Here is your target for your next practice run: launch a 45-second Randomizer round. Open with a captivating 1-sentence hook, support it with two concise examples, and close with a punchy conclusion. Focus on your ${strongest} pillar during delivery!`;
-  }
-
-  // 7. General Coaching Fallback
-  return `As your B-01 AI speaking coach, I recommend focusing on structured delivery and intentional pausing. Based on your Level ${levelNumber} (${levelName}) profile with ${totalSessions} sessions logged and an average score of ${averageScore}, keep practicing regularly to sharpen your delivery!`;
+  // 2. Default Fallback when AI service is unavailable
+  return `As your B-01 AI speaking coach, I am ready to help you improve your public speaking skills! Based on your Level ${levelNumber} (${levelName}) profile with ${totalSessions} sessions logged and an average score of ${averageScore}, feel free to ask me any question about your delivery or practice goals.`;
 }
 
 function extractContentFromChunkData(data) {

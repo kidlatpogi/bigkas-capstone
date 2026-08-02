@@ -1172,6 +1172,11 @@ function ActivityPage() {
     }
   }, [handleRandomizeTopic, randomizerTopic]);
 
+  const handleCloseRandomizerOverlay = useCallback(() => {
+    setIsStreakRecoveryMode(false);
+    setShowRandomizerOverlay(false);
+  }, []);
+
   const handleStartRandomizerTopic = useCallback(() => {
     if (!randomizerTopic?.title) return;
     const isRecovery = isStreakRecoveryMode;

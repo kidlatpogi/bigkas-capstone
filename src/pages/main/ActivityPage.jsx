@@ -1164,13 +1164,17 @@ function ActivityPage() {
     });
   }, [randomizerCooldown, isRandomizingTopic]);
 
-  const handleRandomizerClick = useCallback(() => {
+  const handleRandomizerClick = useCallback(async () => {
     setIsStreakRecoveryMode(false);
     setShowRandomizerOverlay(true);
     if (!randomizerTopic) {
-      handleRandomizeTopic();
+      const { RANDOM_TOPICS } = await import('../../utils/practiceData');
+      if (Array.isArray(RANDOM_TOPICS) && RANDOM_TOPICS.length > 0) {
+        const randomIndex = Math.floor(Math.random() * RANDOM_TOPICS.length);
+        setRandomizerTopic(RANDOM_TOPICS[randomIndex]);
+      }
     }
-  }, [handleRandomizeTopic, randomizerTopic]);
+  }, [randomizerTopic]);
 
   const handleCloseRandomizerOverlay = useCallback(() => {
     setIsStreakRecoveryMode(false);

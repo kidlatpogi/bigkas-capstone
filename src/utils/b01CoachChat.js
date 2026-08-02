@@ -90,41 +90,53 @@ async function readWorkerResponse(response) {
     .trim();
 }
 
-const OPENROUTER_MODEL = 'meta-llama/llama-3.3-70b-instruct:free';
+const FREE_OPENROUTER_MODELS = [
+  'meta-llama/llama-3.3-70b-instruct:free',
+  'google/gemini-2.0-flash-exp:free',
+  'deepseek/deepseek-r1:free',
+  'qwen/qwen-2.5-coder-32b-instruct:free',
+  'mistralai/mistral-7b-instruct:free',
+];
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 async function fetchFromOpenRouter(messages) {
   const apiKey = ENV.OPENROUTER_API_KEY;
   if (!apiKey) return null;
 
-  const response = await fetch(OPENROUTER_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-      'HTTP-Referer': 'https://talktics.site',
-      'X-Title': 'TalkTics AI Coach',
-    },
-    body: JSON.stringify({
-      model: OPENROUTER_MODEL,
-      messages: messages,
-      temperature: 0.7,
-      max_tokens: 350,
-    }),
-  });
+  for (const model of FREE_OPENROUTER_MODELS) {
+    try {
+      const response = await fetch(OPENROUTER_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+          'HTTP-Referer': 'https://talktics.site',
+          'X-Title': 'TalkTics AI Coach',
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: messages,
+          temperature: 0.7,
+          max_tokens: 350,
+        }),
+      });
 
-  if (!response.ok) {
-    throw new Error(`OpenRouter returned ${response.status}`);
+      if (response.ok) {
+        const data = await response.json();
+        const content = extractContentFromChunkData(data);
+        if (content && content.trim()) {
+          return content.trim();
+        }
+      }
+    } catch (e) {
+      console.warn(`OpenRouter model ${model} failed, trying next:`, e);
+    }
   }
 
-  const data = await response.json();
-  const content = extractContentFromChunkData(data);
-  return content ? content.trim() : null;
+  return null;
 }
 
 export async function askB01Coach({ messages, progressContext }) {
-  void progressContext;
-
   const userQuestion = getLatestUserQuestion(messages);
   const validation = validateB01Query(userQuestion);
 
@@ -136,35 +148,46 @@ export async function askB01Coach({ messages, progressContext }) {
 
   const normalizedMessages = normalizeMessages(messages);
 
+  const systemMessage = {
+    role: 'system',
+    content: `You are B-01, an encouraging, articulate, and expert AI Public Speaking Coach for TalkTics.
+User context: Level ${progressContext?.currentLevel || 1} (${progressContext?.levelName || 'Novice'}), ${progressContext?.analyzedSessionsCount || 0} practice sessions, average score ${progressContext?.averageScore || 'N/A'}, strongest pillar: ${progressContext?.growthSummary?.strongestPillar || 'Visual'}.
+Answer the user's question directly, clearly, concisely, and thoughtfully. Provide practical, actionable advice within 2-4 sentences.`
+  };
+
+  const fullMessages = [systemMessage, ...normalizedMessages];
+
   // 1. Try OpenRouter free tier API first
   if (ENV.OPENROUTER_API_KEY) {
     try {
-      const openRouterReply = await fetchFromOpenRouter(normalizedMessages);
+      const openRouterReply = await fetchFromOpenRouter(fullMessages);
       if (openRouterReply) {
         return openRouterReply;
       }
     } catch (err) {
       console.warn('OpenRouter API call failed, falling back to worker:', err);
     }
+  } else {
+    console.warn('[Ask B-01] VITE_OPENROUTER_API_KEY is not configured in .env. OpenRouter requires an API key.');
   }
 
   // 2. Fallback to Cloudflare AI Worker
-  const response = await fetch(getWorkerUrl(), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: normalizedMessages }),
-  });
+  try {
+    const response = await fetch(getWorkerUrl(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: fullMessages }),
+    });
 
-  if (!response.ok) {
-    throw new Error(`B-01 worker returned ${response.status}`);
+    if (response.ok) {
+      const reply = await readWorkerResponse(response);
+      if (reply) return reply;
+    }
+  } catch (err) {
+    console.warn('B-01 worker failed:', err);
   }
 
-  const reply = await readWorkerResponse(response);
-  if (!reply) {
-    throw new Error('B-01 worker returned an empty response');
-  }
-
-  return reply;
+  return buildFallbackCoachReply(userQuestion, progressContext);
 }
 
 export async function fetchRandomizerTopicFromAI() {

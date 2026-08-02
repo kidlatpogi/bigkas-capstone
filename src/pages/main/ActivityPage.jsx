@@ -553,17 +553,21 @@ function ActivityPage() {
         timestamp: Date.now()
       }));
 
-      // 3. Optional: Fetch from AI for variety
-      setIsBannerLoading(true);
       try {
         const cached = window.localStorage.getItem(AI_BANNER_CACHE_KEY);
         if (cached) {
-          const { timestamp } = JSON.parse(cached);
-          if (Date.now() - timestamp < EIGHT_HOURS_MS) {
-            return;
+          try {
+            const { message, timestamp } = JSON.parse(cached);
+            if (Date.now() - timestamp < EIGHT_HOURS_MS && message) {
+              setBannerMessage(message);
+              return;
+            }
+          } catch (e) {
+            window.localStorage.removeItem(AI_BANNER_CACHE_KEY);
           }
         }
 
+        setIsBannerLoading(true);
         const response = await fetch(`${ENV.CLOUDFLARE_AI_WORKER_URL}/banner-message`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -586,7 +590,7 @@ function ActivityPage() {
       }
     };
     fetchBannerMessage();
-  }, [user?.id, getProgressContext]);
+  }, [user?.id]);
 
   useEffect(() => {
     if (chatScrollRef.current) {

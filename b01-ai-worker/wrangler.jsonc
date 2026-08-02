@@ -9,8 +9,5 @@
   "upload_source_maps": true,
   "compatibility_flags": [
     "nodejs_compat"
-  ],
-  "ai": {
-    "binding": "AI"
-  }
+  ]
 }

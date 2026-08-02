@@ -1,5 +1,7 @@
 export interface Env {
-  AI: any;
+  AI?: any;
+  GROQ_API_KEY?: string;
+  GEMINI_API_KEY?: string;
 }
 
 const corsHeaders = {
@@ -32,11 +34,95 @@ function corsResponse(response: Response) {
   });
 }
 
+async function runGroqLLM(apiKey: string, payload: any): Promise<any> {
+  const isStream = payload?.stream === true;
+  const messages = payload?.messages || [];
+
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      messages: messages,
+      temperature: 0.5,
+      stream: isStream,
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Groq LLM error ${res.status}: ${errText}`);
+  }
+
+  if (isStream) {
+    return res.body;
+  }
+
+  const data = (await res.json()) as any;
+  const content = data?.choices?.[0]?.message?.content || "";
+  return { response: content };
+}
+
+async function runGeminiLLM(apiKey: string, payload: any): Promise<any> {
+  const messages = payload?.messages || [];
+  const systemMsg = messages.find((m: any) => m.role === "system")?.content || "";
+  const userMsgs = messages.filter((m: any) => m.role !== "system").map((m: any) => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n");
+  
+  const fullPrompt = systemMsg ? `${systemMsg}\n\n${userMsgs}` : userMsgs;
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+  
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [{ text: fullPrompt }],
+        },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Gemini API error ${res.status}: ${errText}`);
+  }
+
+  const data = (await res.json()) as any;
+  const content = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  return { response: content };
+}
+
 async function runAIWithRetry(env: Env, model: string, payload: any, maxRetries = 3): Promise<any> {
+  if (env.GROQ_API_KEY && model.startsWith("@cf/meta/")) {
+    try {
+      return await runGroqLLM(env.GROQ_API_KEY, payload);
+    } catch (groqErr: any) {
+      console.warn(`[Groq LLM Fallback] Groq call failed: ${groqErr?.message || groqErr}. Falling back...`);
+    }
+  }
+
+  if (env.GEMINI_API_KEY && model.startsWith("@cf/meta/")) {
+    try {
+      return await runGeminiLLM(env.GEMINI_API_KEY, payload);
+    } catch (geminiErr: any) {
+      console.warn(`[Gemini LLM Fallback] Gemini call failed: ${geminiErr?.message || geminiErr}. Falling back...`);
+    }
+  }
+
   let attempt = 0;
   let delay = 2000;
   while (true) {
     try {
+      if (!env.AI) {
+        throw new Error("Cloudflare env.AI binding is unavailable.");
+      }
       return await env.AI.run(model, payload);
     } catch (e: any) {
       attempt++;
@@ -235,7 +321,40 @@ function arrayBufferToBase64(buffer: ArrayBuffer) {
   return btoa(binary);
 }
 
+async function transcribeWithGroq(apiKey: string, audioBuffer: ArrayBuffer): Promise<string> {
+  const blob = new Blob([audioBuffer], { type: "audio/wav" });
+  const formData = new FormData();
+  formData.append("file", blob, "audio.wav");
+  formData.append("model", "whisper-large-v3-turbo");
+  formData.append("response_format", "json");
+
+  const res = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Groq Whisper error ${res.status}: ${errText}`);
+  }
+
+  const data = (await res.json()) as { text?: string };
+  return String(data.text || "").trim();
+}
+
 async function transcribeWithWhisper(env: Env, audioBuffer: ArrayBuffer) {
+  if (env.GROQ_API_KEY) {
+    try {
+      console.log("[transcribeWithWhisper] Using Groq Whisper API...");
+      return await transcribeWithGroq(env.GROQ_API_KEY, audioBuffer);
+    } catch (groqErr: any) {
+      console.warn("[transcribeWithWhisper] Groq Whisper failed, falling back to Workers AI:", getErrorMessage(groqErr));
+    }
+  }
+
   const audioArray = Array.from(new Uint8Array(audioBuffer));
   let whisperResponse;
   try {
@@ -433,22 +552,10 @@ export default {
         let fillerAuditCount = 0;
         let fillerAuditModel = "";
 
-        if (shouldAuditFillers && transcriptionModel !== "@cf/openai/whisper") {
-          try {
-            fillerAuditTranscript = await transcribeVerbatimWithWhisperLarge(env, audioBuffer);
-            const auditOccurrences = detectFillerOccurrences(fillerAuditTranscript);
-            fillerAuditCount = auditOccurrences.length;
-            fillerAuditModel = "@cf/openai/whisper-large-v3-turbo";
-
-            if (shouldUseFillerAudit(fillerOccurrences, auditOccurrences)) {
-              transcript = fillerAuditTranscript;
-              transcriptWords = [];
-              fillerOccurrences = auditOccurrences;
-              transcriptionModel = `${transcriptionModel}+filler-audit`;
-            }
-          } catch (auditError: unknown) {
-            console.warn("[transcribe] Whisper filler audit skipped:", getErrorMessage(auditError));
-          }
+        if (shouldAuditFillers) {
+          // Additional filler audit call disabled to prevent duplicate audio transcription calls.
+          // Fillers are detected directly from the primary transcript above.
+          fillerAuditModel = "skipped-for-performance";
         }
 
         const fillerWords = fillerOccurrences.map((occurrence) => occurrence.word);

@@ -9,12 +9,12 @@
 # testing
 /coverage
 
-# next.js
-/.next/
-/out/
-
 # production
+/dist
 /build
+
+# scratch & temporary files
+/scratch
 
 # misc
 .DS_Store
@@ -37,16 +37,16 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
 
-# HG Folder
+# Backend & Database
 /Capstone-Bigkas-Backend
-
-# Supabase Folder
 /supabase
 /database
 
-# Cursor Rules
+# Workers
+/b01-ai-worker
+
+# Cursor & Agent Rules
 /.cursorrules
 /cursorrules
 

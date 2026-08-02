@@ -1,3 +1,0 @@
-# SPA route fallback is handled in functions/[[path]].js.
-# Keeping this file intentionally empty avoids Cloudflare Pages' /index.html
-# clean-URL normalization turning rewrite rules into 308 redirects.

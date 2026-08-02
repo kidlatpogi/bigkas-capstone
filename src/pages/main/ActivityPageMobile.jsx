@@ -29,7 +29,8 @@ import { ensureJourneyStarted, updateJourneyCurrentActivity } from '../../servic
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import { filterActivitiesForJourney } from '../../utils/journeyFiltering';
 import { generateCoachInsights } from '../../utils/coachInsights';
-import { askB01Coach, getB01FallbackReply } from '../../utils/b01CoachChat';
+import { askB01Coach, getB01FallbackReply, fetchRandomizerTopicFromAI } from '../../utils/b01CoachChat';
+import { B01_SUGGESTIONS } from '../../utils/b01Guard';
 import { IoStatsChartOutline } from '@react-icons/all-files/io5/IoStatsChartOutline';
 import { IoBookOutline } from '@react-icons/all-files/io5/IoBookOutline';
 import { IoMedalOutline } from '@react-icons/all-files/io5/IoMedalOutline';
@@ -117,13 +118,7 @@ function warmRankModalAssets() {
   return rankModalWarmPromise;
 }
 
-const B01_SUGGESTIONS = [
-  'Summarize my progress so far',
-  'How can I improve my confidence?',
-  'Give me tips for vocal variety',
-  'Explain my current rank and growth',
-  'What should I practice next?',
-];
+
 
 const DAY_MS = 86_400_000;
 const ACTIVITY_CELEBRATION_STORAGE_KEY = 'bigkas_pending_activity_celebration_v1';
@@ -334,6 +329,24 @@ function ActivityPageMobile() {
   const [isAskB01ModalOpen, setIsAskB01ModalOpen] = useState(false);
   const [askB01Query, setAskB01Query] = useState('');
   const [isB01Typing, setIsB01Typing] = useState(false);
+  const [askB01Cooldown, setAskB01Cooldown] = useState(0);
+  const [randomizerCooldown, setRandomizerCooldown] = useState(0);
+
+  useEffect(() => {
+    if (askB01Cooldown <= 0) return undefined;
+    const timer = setInterval(() => {
+      setAskB01Cooldown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [askB01Cooldown]);
+
+  useEffect(() => {
+    if (randomizerCooldown <= 0) return undefined;
+    const timer = setInterval(() => {
+      setRandomizerCooldown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [randomizerCooldown]);
   const [chatMessages, setChatMessages] = useState([
     {
       role: 'assistant',
@@ -569,10 +582,21 @@ function ActivityPageMobile() {
 
     const insights = generateCoachInsights(sessions);
 
+    let computedAverageScore = 'N/A';
+    if (sortedSessions.length > 0) {
+      const validScores = sortedSessions
+        .map((s) => Number(s.score || s.overall_score || s.overallScore || s.confidence_score))
+        .filter((sc) => Number.isFinite(sc) && sc > 0);
+      if (validScores.length > 0) {
+        const total = validScores.reduce((sum, val) => sum + val, 0);
+        computedAverageScore = `${Math.round(total / validScores.length)}%`;
+      }
+    }
+
     return {
       totalSessionCount: (sessions || []).filter((s) => s.status !== 'error' && s.is_error !== true).length,
       analyzedSessionsCount: sortedSessions.length,
-      averageScore: activityMetrics?.averageScore || 'N/A',
+      averageScore: computedAverageScore,
       currentLevel: levelProgress.levelNumber,
       levelName: levelProgress.levelName,
 
@@ -610,7 +634,7 @@ function ActivityPageMobile() {
 
   const handleSendMessage = async (customQuery = null) => {
     const query = (customQuery || askB01Query).trim();
-    if (!query || isB01Typing) return;
+    if (!query || isB01Typing || askB01Cooldown > 0) return;
 
     const userMessage = { role: 'user', content: query };
     const newMessages = [...chatMessages, userMessage];
@@ -618,6 +642,7 @@ function ActivityPageMobile() {
     setChatMessages(newMessages);
     setAskB01Query('');
     setIsB01Typing(true);
+    setAskB01Cooldown(30);
 
     const assistantMessageId = Date.now();
     setChatMessages((prev) => [...prev, { role: 'assistant', content: '', id: assistantMessageId }]);
@@ -824,15 +849,15 @@ function ActivityPageMobile() {
   };
 
   const handleRandomizeTopic = useCallback(async () => {
+    if (randomizerCooldown > 0 || isRandomizingTopic) return;
     setIsRandomizingTopic(true);
+    setRandomizerCooldown(10);
+
     try {
-      const response = await fetch(`${ENV.CLOUDFLARE_AI_WORKER_URL}/random-topic`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.title) {
-          setRandomizerTopic({ title: data.title, body: data.body || '' });
-          return;
-        }
+      const aiTopic = await fetchRandomizerTopicFromAI();
+      if (aiTopic && aiTopic.title) {
+        setRandomizerTopic(aiTopic);
+        return;
       }
     } catch (error) {
       console.error('Failed to fetch AI topic:', error);
@@ -840,18 +865,17 @@ function ActivityPageMobile() {
       setIsRandomizingTopic(false);
     }
 
-    // Fallback to local randomization only when the worker cannot supply a prompt.
+    // Fallback to local randomization only when the AI worker cannot supply a prompt.
     const { RANDOM_TOPICS } = await import('../../utils/practiceData');
-    if (!RANDOM_TOPICS.length) return;
+    if (!Array.isArray(RANDOM_TOPICS) || !RANDOM_TOPICS.length) return;
     setRandomizerTopic((current) => {
-      if (RANDOM_TOPICS.length === 1) return RANDOM_TOPICS[0];
-      let next = current;
-      while (next?.title === current?.title) {
-        next = RANDOM_TOPICS[Math.floor(Math.random() * RANDOM_TOPICS.length)];
-      }
-      return next;
+      const currentTitle = current?.title;
+      const candidates = RANDOM_TOPICS.filter((t) => t && t.title !== currentTitle);
+      const pool = candidates.length > 0 ? candidates : RANDOM_TOPICS;
+      const randomIndex = Math.floor(Math.random() * pool.length);
+      return pool[randomIndex];
     });
-  }, []);
+  }, [randomizerCooldown, isRandomizingTopic]);
 
   const handleStartRandomizerTopic = useCallback(() => {
     if (!randomizerTopic?.title) return;
@@ -1337,9 +1361,13 @@ function ActivityPageMobile() {
                   variant="practice"
                   className="randomizer-overlay-randomize-btn"
                   onClick={handleRandomizeTopic}
-                  disabled={isRandomizingTopic}
+                  disabled={isRandomizingTopic || randomizerCooldown > 0}
                 >
-                  {isRandomizingTopic ? 'Randomizing...' : 'Generate'}
+                  {isRandomizingTopic
+                    ? 'Randomizing...'
+                    : randomizerCooldown > 0
+                    ? `Generate (${randomizerCooldown}s)`
+                    : 'Generate'}
                 </Button>
                 <Button
                   variant="practice"
@@ -1745,11 +1773,23 @@ function ActivityPageMobile() {
                   onChange={(e) => setAskB01Query(e.target.value)}
                   disabled={isB01Typing}
                 />
-                <button type="submit" className="ask-b01-send-btn" disabled={!askB01Query.trim() || isB01Typing}>
-                  <IoSend />
+                <button
+                  type="submit"
+                  className="ask-b01-send-btn"
+                  disabled={!askB01Query.trim() || isB01Typing || askB01Cooldown > 0}
+                >
+                  {askB01Cooldown > 0 ? (
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{askB01Cooldown}s</span>
+                  ) : (
+                    <IoSend />
+                  )}
                 </button>
               </form>
-              <p className="ask-b01-disclaimer">B-01 can make mistakes. Please verify important information.</p>
+              <p className="ask-b01-disclaimer">
+                {askB01Cooldown > 0
+                  ? `Please wait ${askB01Cooldown} second${askB01Cooldown === 1 ? '' : 's'} before sending another message.`
+                  : 'B-01 can make mistakes. Please verify important information.'}
+              </p>
             </div>
           </div>
         </section>

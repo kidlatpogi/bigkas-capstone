@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { IoPersonOutline, IoSettingsOutline } from 'react-icons/io5';
+import { IoPersonOutline, IoSettingsOutline, IoLogOutOutline } from 'react-icons/io5';
 import { useAuthContext } from '../../context/useAuthContext';
 import { ROUTES } from '../../utils/constants';
 import { ensureProfileModalAvatarSrc, invalidateProfileModalAvatarCache } from '../../utils/profileModalAvatarCache';
@@ -155,6 +155,16 @@ export default function ProfileModal({ isOpen, onClose }) {
                 <IoSettingsOutline size={22} />
               </div>
               <span className="profile-modal-menu-text">Preferences</span>
+            </button>
+            <button
+              type="button"
+              className="profile-modal-menu-item profile-modal-menu-item--logout"
+              onClick={handleLogoutClick}
+            >
+              <div className="profile-modal-menu-icon" style={{ color: '#ef4444' }}>
+                <IoLogOutOutline size={22} />
+              </div>
+              <span className="profile-modal-menu-text" style={{ color: '#ef4444' }}>Log Out</span>
             </button>
           </nav>
         </div>

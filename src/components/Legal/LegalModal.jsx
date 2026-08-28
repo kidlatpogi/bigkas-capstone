@@ -88,19 +88,27 @@ const ModalTitle = styled.h2`
 `;
 
 const CloseIconButton = styled.button`
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  max-width: 36px !important;
+  max-height: 36px !important;
+  aspect-ratio: 1 / 1 !important;
+  border-radius: 9999px !important;
   border: none;
   background: #f1f5f9;
   color: #64748b;
-  display: inline-flex;
+  display: inline-flex !important;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  padding: 0;
+  padding: 0 !important;
+  margin: 0;
   flex-shrink: 0;
+  box-sizing: border-box;
   transition: all 0.15s ease;
+  line-height: 1;
 
   &:hover {
     background: #e2e8f0;

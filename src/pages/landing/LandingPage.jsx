@@ -8,6 +8,9 @@ import ShapeGrid from '../../components/common/ShapeGrid';
 import PushButton from '../../components/common/PushButton';
 import ScrollReveal from '../../components/common/ScrollReveal';
 import ParallaxTextSection from '../../components/common/ParallaxTextSection';
+import LegalModal from '../../components/Legal/LegalModal';
+import { TERMS_AND_CONDITIONS } from '../../constants/legal/terms';
+import { PRIVACY_POLICY } from '../../constants/legal/privacy';
 import gradVideo from '../../assets/landing/Grad-Video.mp4';
 import './LandingPage.css';
 
@@ -21,9 +24,23 @@ export default function LandingPage({ managePageClass = true }) {
   const navigate = useNavigate();
   const videoRef = useRef(null);
   const featuresSectionRef = useRef(null);
+  const [legalModal, setLegalModal] = useState({ isOpen: false, title: '', content: '' });
+
   function navigateTo(path) {
     navigate(path);
   }
+
+  const showTerms = (e) => {
+    if (e?.preventDefault) e.preventDefault();
+    setLegalModal({ isOpen: true, title: 'Terms & Conditions', content: TERMS_AND_CONDITIONS });
+  };
+
+  const showPrivacy = (e) => {
+    if (e?.preventDefault) e.preventDefault();
+    setLegalModal({ isOpen: true, title: 'Privacy Policy', content: PRIVACY_POLICY });
+  };
+
+  const closeLegal = () => setLegalModal((prev) => ({ ...prev, isOpen: false }));
 
   useEffect(() => {
     if (managePageClass) {
@@ -98,14 +115,29 @@ export default function LandingPage({ managePageClass = true }) {
         { label: 'Create Account', href: ROUTES.REGISTER, ariaLabel: 'Create Free Account', isRoute: true },
       ],
     },
+    {
+      label: 'Legal',
+      bgColor: '#0B3954', // Navy
+      textColor: '#FFFFFF',
+      links: [
+        { label: 'Terms & Conditions', href: '#terms', ariaLabel: 'Terms & Conditions', isLegal: 'terms' },
+        { label: 'Privacy Policy', href: '#privacy', ariaLabel: 'Privacy Policy', isLegal: 'privacy' },
+      ],
+    },
   ];
 
   const handleCardNavLinkClick = (e, link) => {
-    if (link.isRoute) {
-      e.preventDefault();
+    if (link.isLegal === 'terms') {
+      if (e?.preventDefault) e.preventDefault();
+      showTerms(e);
+    } else if (link.isLegal === 'privacy') {
+      if (e?.preventDefault) e.preventDefault();
+      showPrivacy(e);
+    } else if (link.isRoute) {
+      if (e?.preventDefault) e.preventDefault();
       navigate(link.href);
     } else if (link.href && link.href.startsWith('#')) {
-      e.preventDefault();
+      if (e?.preventDefault) e.preventDefault();
       const el = document.querySelector(link.href);
       if (el) {
         el.scrollIntoView({ behavior: 'smooth' });
@@ -553,6 +585,16 @@ export default function LandingPage({ managePageClass = true }) {
                     Create Account
                   </a>
                 </li>
+                <li>
+                  <button type="button" className="footer-link-btn" onClick={showTerms}>
+                    Terms &amp; Conditions
+                  </button>
+                </li>
+                <li>
+                  <button type="button" className="footer-link-btn" onClick={showPrivacy}>
+                    Privacy Policy
+                  </button>
+                </li>
               </ul>
             </div>
           </div>
@@ -565,10 +607,27 @@ export default function LandingPage({ managePageClass = true }) {
           {/* Bottom Bar: Copyright & Contact */}
           <div className="footer-bottom-bar">
             <span className="footer-copyright">© 2026 TALKTICS. ALL RIGHTS RESERVED.</span>
+            <div className="footer-legal-bottom-links">
+              <button type="button" className="footer-legal-bar-btn" onClick={showTerms}>
+                Terms &amp; Conditions
+              </button>
+              <span className="footer-legal-bar-dot" aria-hidden="true">•</span>
+              <button type="button" className="footer-legal-bar-btn" onClick={showPrivacy}>
+                Privacy Policy
+              </button>
+            </div>
             <a href="mailto:support@talktics.site" className="footer-contact-email">support@talktics.site</a>
           </div>
         </div>
       </footer>
+
+      {/* Terms & Conditions / Privacy Policy Modal */}
+      <LegalModal
+        isOpen={legalModal.isOpen}
+        onClose={closeLegal}
+        title={legalModal.title}
+        content={legalModal.content}
+      />
     </div>
   );
 }

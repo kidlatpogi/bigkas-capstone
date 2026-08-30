@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { IoEye, IoMic, IoChatbubbleEllipses, IoArrowForward, IoLogoAndroid } from 'react-icons/io5';
+import { 
+  IoEye, 
+  IoMic, 
+  IoChatbubbleEllipses, 
+  IoArrowForward, 
+  IoLogoAndroid,
+  IoGlobeOutline
+} from 'react-icons/io5';
 import { ROUTES } from '../../utils/constants';
 import { getAssetUrl, getSpriteUrl } from '../../utils/assetUtils';
 import CardNav from '../../components/common/CardNav';
@@ -102,6 +109,7 @@ export default function LandingPage({ managePageClass = true }) {
       links: [
         { label: 'How it Works', href: '#how-it-works', ariaLabel: 'How it Works Section' },
         { label: 'Practice Lanes', href: '#features', ariaLabel: 'Practice Lanes Section' },
+        { label: 'Platforms', href: '#platforms', ariaLabel: 'Platforms Section' },
       ],
     },
     {
@@ -530,6 +538,89 @@ export default function LandingPage({ managePageClass = true }) {
         </div>
       </section>
 
+      {/* Works With / Platforms Section */}
+      <section className="platforms-section" id="platforms">
+        <div className="platforms-container">
+          <div className="features-centered-header">
+            <ScrollReveal as="span" textClassName="features-tag" baseRotation={0} baseOpacity={0.2} blurStrength={0}>
+              WORKS WITH
+            </ScrollReveal>
+            <ScrollReveal as="h2" containerClassName="features-title-group" textClassName="features-title-main" baseRotation={2} baseOpacity={0.1} blurStrength={4}>
+              Available on Web &amp; Android
+            </ScrollReveal>
+            <ScrollReveal as="p" textClassName="features-description" baseRotation={0} baseOpacity={0.1} blurStrength={6}>
+              Practice seamlessly across devices. TalkTics is designed to run directly in modern web browsers or as a native Android APK.
+            </ScrollReveal>
+          </div>
+
+          <div className="platforms-cards-grid">
+            {/* Web Platform Card */}
+            <div className="platform-card platform-card--web">
+              <div className="platform-card-header">
+                <div className="platform-icon-wrap web-icon">
+                  <IoGlobeOutline size={28} />
+                </div>
+                <span className="platform-badge web-badge">Instant Access</span>
+              </div>
+              <div className="platform-card-body">
+                <h3 className="platform-card-title">Web Application</h3>
+                <p className="platform-card-desc">
+                  Open TalkTics on Chrome, Edge, Brave, or Safari. Practice speech delivery with full computer vision and audio tracking right in your browser.
+                </p>
+                <div className="platform-meta-tags">
+                  <span className="platform-meta-tag">Chrome / Edge / Safari</span>
+                  <span className="platform-meta-tag">Zero Installation</span>
+                  <span className="platform-meta-tag">Cloud Synced</span>
+                </div>
+              </div>
+              <div className="platform-card-action">
+                <PushButton
+                  bgColor="#059669"
+                  shadowColor="#047857"
+                  className="platform-btn-custom"
+                  onClick={() => navigateTo(ROUTES.REGISTER)}
+                >
+                  Launch Web App
+                  <IoArrowForward size={18} />
+                </PushButton>
+              </div>
+            </div>
+
+            {/* Android Platform Card */}
+            <div className="platform-card platform-card--android">
+              <div className="platform-card-header">
+                <div className="platform-icon-wrap android-icon">
+                  <IoLogoAndroid size={30} />
+                </div>
+                <span className="platform-badge android-badge">Android 8.0+</span>
+              </div>
+              <div className="platform-card-body">
+                <h3 className="platform-card-title">Android APK</h3>
+                <p className="platform-card-desc">
+                  Download the standalone Android package for an optimized mobile experience with native camera guidance and portable speaking practice.
+                </p>
+                <div className="platform-meta-tags">
+                  <span className="platform-meta-tag">Direct .APK Download</span>
+                  <span className="platform-meta-tag">Mobile Camera &amp; Mic</span>
+                  <span className="platform-meta-tag">Portable Practice</span>
+                </div>
+              </div>
+              <div className="platform-card-action">
+                <PushButton
+                  bgColor="#F18F01"
+                  shadowColor="#c2410c"
+                  className="platform-btn-custom"
+                  onClick={() => window.open('/downloads/TalkTics.apk', '_blank')}
+                >
+                  <IoLogoAndroid size={20} />
+                  Download for Android
+                </PushButton>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Combined Footer + CTA Section */}
       <footer className="footer-cta-section" id="download">
         <div className="footer-cta-container">
@@ -580,6 +671,11 @@ export default function LandingPage({ managePageClass = true }) {
                 <li>
                   <a href="#features" onClick={(e) => handleCardNavLinkClick(e, { href: '#features' })}>
                     Practice Lanes
+                  </a>
+                </li>
+                <li>
+                  <a href="#platforms" onClick={(e) => handleCardNavLinkClick(e, { href: '#platforms' })}>
+                    Works With
                   </a>
                 </li>
                 <li>

@@ -4,7 +4,7 @@
   width: 100%;
   overflow: hidden;
   background: transparent;
-  padding: 5rem 0;
+  padding: 3rem 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -15,7 +15,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2.5rem;
+  gap: 1.5rem;
   width: 100%;
 }
 
@@ -28,11 +28,11 @@
 
 @media (min-width: 768px) {
   .parallax-text-section {
-    padding: 8rem 0;
+    padding: 4.5rem 0;
   }
 
   .parallax-text-rows {
-    gap: 4rem;
+    gap: 2.2rem;
   }
 }
 
@@ -47,29 +47,29 @@
 
 .parallax-text-headline {
   font-family: 'Nunito', sans-serif;
-  font-size: clamp(3.5rem, 12vw, 14rem);
+  font-size: clamp(2.8rem, 6.5vw, 6.5rem);
   font-weight: 900;
   color: #06101e;
-  line-height: 0.95;
-  letter-spacing: -0.055em;
+  line-height: 1;
+  letter-spacing: -0.04em;
   text-transform: uppercase;
   -webkit-font-smoothing: antialiased;
   paint-order: stroke fill;
-  -webkit-text-stroke: 2px #06101e;
+  -webkit-text-stroke: 1.5px #06101e;
 }
 
 .parallax-text-amp {
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: clamp(1.75rem, 5vw, 5rem);
+  font-size: clamp(1.5rem, 3.5vw, 3.5rem);
   font-weight: 300;
   font-style: italic;
   color: #cbd5e1;
-  margin: 0 clamp(1.25rem, 4vw, 3.5rem);
+  margin: 0 clamp(1rem, 2.5vw, 2.2rem);
 }
 
 @media (min-width: 768px) {
   .parallax-text-headline {
-    font-size: clamp(6.5rem, 11vw, 14rem);
-    -webkit-text-stroke: 2.5px #06101e;
+    font-size: clamp(4rem, 6.8vw, 7.2rem);
+    -webkit-text-stroke: 2px #06101e;
   }
 }

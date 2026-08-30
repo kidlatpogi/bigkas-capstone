@@ -636,27 +636,6 @@ export default function LandingPage({ managePageClass = true }) {
               <p className="footer-cta-desc">
                 No audience. No pressure. Just a private speaking round, clear feedback, and B-01 keeping the next move easy to see.
               </p>
-
-              <div className="footer-cta-actions">
-                <PushButton
-                  bgColor="#0B3954"
-                  shadowColor="#062436"
-                  className="footer-btn-custom"
-                  onClick={() => navigateTo(ROUTES.REGISTER)}
-                >
-                  Start Practicing - It&apos;s Free
-                </PushButton>
-
-                <PushButton
-                  bgColor="#F18F01"
-                  shadowColor="#c2410c"
-                  className="footer-btn-custom"
-                  onClick={() => window.open('/downloads/TalkTics.apk', '_blank')}
-                >
-                  <IoLogoAndroid size={20} />
-                  Download for Android
-                </PushButton>
-              </div>
             </div>
 
             {/* Right Column: Navigation & Connections */}

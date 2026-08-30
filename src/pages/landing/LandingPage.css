@@ -26,14 +26,17 @@ body.landing-page-active #root {
   flex-direction: column;
 }
 
+/* ShapeGrid Background Radial Center Fade */
 .landing-shapegrid-bg {
-  position: fixed;
+  position: fixed !important;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-  pointer-events: auto;
+  width: 100vw !important;
+  height: 100vh !important;
+  pointer-events: none;
+  z-index: 1 !important;
+  mask-image: radial-gradient(ellipse 55% 45% at 50% 50%, rgba(0, 0, 0, 0.85) 10%, rgba(0, 0, 0, 0.25) 45%, rgba(0, 0, 0, 0) 70%);
+  -webkit-mask-image: radial-gradient(ellipse 55% 45% at 50% 50%, rgba(0, 0, 0, 0.85) 10%, rgba(0, 0, 0, 0.25) 45%, rgba(0, 0, 0, 0) 70%);
 }
 
 /* 100vh Hero Video Container */
@@ -62,7 +65,7 @@ body.landing-page-active #root {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: scale(1.1); /* scale-110 zooms in 10% to push watermark offscreen */
+  transform: scale(1.1); /* Zooms in 10% to push watermark offscreen */
 }
 
 /* Dark overlay for text legibility */
@@ -70,24 +73,6 @@ body.landing-page-active #root {
   position: absolute;
   inset: 0;
   background: radial-gradient(circle at center, rgba(11, 57, 84, 0.35) 0%, rgba(11, 57, 84, 0.72) 100%);
-}
-
-/* Smooth gradient mask fade at the bottom of hero section */
-.hero-video-bottom-blur {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 180px;
-  background: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0) 0%,
-    rgba(255, 255, 255, 0.25) 40%,
-    rgba(255, 255, 255, 0.85) 75%,
-    #ffffff 100%
-  );
-  pointer-events: none;
-  z-index: 2;
 }
 
 /* Unconstrained overlay text */
@@ -157,13 +142,542 @@ body.landing-page-active #root {
   border-radius: 18px !important;
 }
 
+/* Hero Scroll Indicator */
+.hero-scroll-indicator {
+  position: absolute;
+  bottom: 2.2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  text-decoration: none;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.hero-scroll-indicator:hover {
+  opacity: 1;
+  transform: translateX(-50%) translateY(3px);
+}
+
+.hero-scroll-text {
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  color: #ffffff;
+  text-transform: uppercase;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.hero-scroll-mouse {
+  width: 22px;
+  height: 36px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  display: flex;
+  justify-content: center;
+  padding-top: 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+  background: rgba(11, 57, 84, 0.25);
+}
+
+.hero-scroll-wheel {
+  width: 4px;
+  height: 8px;
+  background-color: #059669;
+  border-radius: 999px;
+  animation: heroScrollBob 2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes heroScrollBob {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  25% {
+    opacity: 1;
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+/* ==========================================================================
+   How it Works Section
+   ========================================================================== */
+.how-it-works-section {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  min-height: 100dvh;
+  padding: 4rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+.how-it-works-section-container {
+  width: 92%;
+  max-width: 1680px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rem;
+}
+
+.how-it-works-steps-wrapper {
+  width: 100%;
+  position: relative;
+}
+
+.how-it-works-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3rem;
+  width: 100%;
+  position: relative;
+  z-index: 2;
+}
+
+.how-it-works-step-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  text-align: center;
+  align-items: center;
+}
+
+/* Step Mockup Preview Frames */
+.hiw-preview-frame {
+  width: 100%;
+  height: 420px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 36px;
+  padding: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.06);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.how-it-works-step-card:hover .hiw-preview-frame {
+  transform: translateY(-8px);
+  box-shadow: 0 32px 70px rgba(11, 57, 84, 0.14);
+  border-color: rgba(5, 150, 105, 0.45);
+}
+
+/* Step 1 Home Page Practice Widget */
+.hiw-home-practice-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  width: 100%;
+  max-width: 420px;
+}
+
+.hiw-home-practice-head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 0 0.3rem;
+}
+
+.hiw-home-practice-kicker {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  color: #059669;
+  text-transform: uppercase;
+}
+
+.hiw-home-practice-sub {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: #64748b;
+}
+
+.hiw-home-practice-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.hiw-home-btn-row {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  padding: 0.85rem 1.15rem;
+  border-radius: 22px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+  text-align: left;
+}
+
+.hiw-home-btn-visual {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hiw-visual-rand {
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+}
+
+.hiw-visual-speech {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.hiw-home-btn-img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.hiw-home-btn-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.hiw-home-btn-label {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 1.1rem;
+  color: #0B3954;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.hiw-home-btn-hint {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.25;
+}
+
+/* Step 2 Home Page Session Recording UI */
+.hiw-home-session-widget {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.95rem;
+  width: 100%;
+  max-width: 420px;
+}
+
+.hiw-session-topic-pill {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 99px;
+  padding: 0.55rem 1.3rem;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: #334155;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.hiw-topic-label {
+  color: #059669;
+  font-weight: 900;
+}
+
+.hiw-session-video-box {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  background: #000000;
+  border-radius: 24px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 0.85rem;
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+
+.hiw-camera-guide-corner {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border: 3px solid #f18f01;
+}
+
+.hiw-camera-guide-corner.top-left { top: 14px; left: 18px; border-right: 0; border-bottom: 0; border-top-left-radius: 10px; }
+.hiw-camera-guide-corner.top-right { top: 14px; right: 18px; border-left: 0; border-bottom: 0; border-top-right-radius: 10px; }
+.hiw-camera-guide-corner.bottom-left { bottom: 14px; left: 18px; border-right: 0; border-top: 0; border-bottom-left-radius: 10px; }
+.hiw-camera-guide-corner.bottom-right { bottom: 14px; right: 18px; border-left: 0; border-top: 0; border-bottom-right-radius: 10px; }
+
+.hiw-camera-center-banner {
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid #f18f01;
+  color: #f18f01;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  padding: 0.25rem 0.65rem;
+  border-radius: 99px;
+  transform: translateY(-3px);
+}
+
+.hiw-session-soundwave {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  width: 70%;
+  margin: 0 auto;
+}
+
+.hiw-sound-bar {
+  width: 5px;
+  background: #059669;
+  border-radius: 99px;
+  animation: hiwSoundWave 1.2s ease-in-out infinite alternate;
+}
+
+.hiw-sound-bar.b1  { height: 12px; animation-delay: 0.1s; }
+.hiw-sound-bar.b2  { height: 22px; animation-delay: 0.3s; }
+.hiw-sound-bar.b3  { height: 28px; animation-delay: 0.2s; }
+.hiw-sound-bar.b4  { height: 16px; animation-delay: 0.4s; }
+.hiw-sound-bar.b5  { height: 32px; animation-delay: 0.15s; }
+.hiw-sound-bar.b6  { height: 20px; animation-delay: 0.35s; }
+.hiw-sound-bar.b7  { height: 14px; animation-delay: 0.25s; }
+.hiw-sound-bar.b8  { height: 30px; animation-delay: 0.05s; }
+.hiw-sound-bar.b9  { height: 24px; animation-delay: 0.45s; }
+.hiw-sound-bar.b10 { height: 18px; animation-delay: 0.2s; }
+.hiw-sound-bar.b11 { height: 26px; animation-delay: 0.3s; }
+.hiw-sound-bar.b12 { height: 15px; animation-delay: 0.1s; }
+.hiw-sound-bar.b13 { height: 28px; animation-delay: 0.4s; }
+.hiw-sound-bar.b14 { height: 19px; animation-delay: 0.25s; }
+.hiw-sound-bar.b15 { height: 10px; animation-delay: 0.15s; }
+
+@keyframes hiwSoundWave {
+  0% { transform: scaleY(0.35); opacity: 0.6; }
+  100% { transform: scaleY(1); opacity: 1; }
+}
+
+.hiw-session-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+}
+
+.hiw-ctrl-btn {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 0.85rem;
+  padding: 0.45rem 1.15rem;
+  border-radius: 99px !important;
+  border: 0;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hiw-ctrl-btn.primary {
+  background: #059669 !important;
+  color: #ffffff !important;
+  box-shadow: #047857 0px 4px 0px 0px !important;
+}
+
+.hiw-ctrl-btn.secondary {
+  background: #a7f3d0 !important;
+  color: #047857 !important;
+  box-shadow: #6ee7b7 0px 4px 0px 0px !important;
+}
+
+.hiw-ctrl-btn:hover {
+  transform: translateY(2px) !important;
+}
+
+.hiw-ctrl-btn.primary:hover {
+  box-shadow: #047857 0px 2px 0px 0px !important;
+}
+
+.hiw-ctrl-btn.secondary:hover {
+  box-shadow: #6ee7b7 0px 2px 0px 0px !important;
+}
+
+/* Step 3 Home Page Results Widget */
+.hiw-home-results-widget {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.3rem;
+  width: 100%;
+  max-width: 380px;
+}
+
+.hiw-results-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0 0.4rem;
+}
+
+.hiw-results-kicker {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 0.88rem;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.hiw-results-badge {
+  background: #f1f5f9;
+  color: #475569;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 0.78rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 99px;
+}
+
+.hiw-results-score-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.hiw-results-big-score {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 4.2rem;
+  line-height: 1;
+  color: #059669;
+  letter-spacing: -0.04em;
+}
+
+.hiw-results-score-label {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: #64748b;
+}
+
+.hiw-metrics-pills-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+}
+
+.hiw-metric-pill {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 0.95rem;
+  padding: 0.5rem 1.1rem;
+  border-radius: 99px;
+}
+
+.hiw-metric-pill.done {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+}
+
+.hiw-metric-pill.streak {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #c2410c;
+}
+
+.hiw-metric-pill.verbal {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  color: #0369a1;
+}
+
+/* Step Details Typography - Consistent TalkTics Emerald Green for 01, 02, 03 */
+.hiw-step-details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0 0.5rem;
+}
+
+.hiw-step-number {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 2.8rem;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: #059669; /* Consistent Green */
+}
+
+.hiw-step-title {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: clamp(1.6rem, 2.2vw, 2rem);
+  color: #000000;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.hiw-step-desc {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 600;
+  font-size: clamp(1.08rem, 1.3vw, 1.2rem);
+  color: #4B5563;
+  line-height: 1.6;
+  margin: 0;
+}
+
 /* Practice Lanes Section */
 .features-grid-section {
   position: relative;
   z-index: 3;
   width: 100%;
-  padding: 6rem 0;
+  min-height: 100dvh;
+  padding: 4rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: transparent;
+  box-sizing: border-box;
 }
 
 .features-section-container {
@@ -580,592 +1094,6 @@ body.landing-page-active #root {
     width: 100% !important;
     max-width: 320px !important;
   }
-
-  .hero-video-bottom-blur {
-    height: 120px;
-  }
-}
-
-/* ShapeGrid Background Radial Center Fade (matching zeusbautista.site) */
-.landing-shapegrid-bg {
-  position: fixed !important;
-  top: 0;
-  left: 0;
-  width: 100vw !important;
-  height: 100vh !important;
-  pointer-events: none;
-  z-index: 1 !important;
-  mask-image: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.95) 25%, rgba(0, 0, 0, 0) 75%);
-  -webkit-mask-image: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.95) 25%, rgba(0, 0, 0, 0) 75%);
-}
-
-/* ==========================================================================
-   How it Works Section
-   ========================================================================== */
-.how-it-works-section {
-  position: relative;
-  z-index: 3;
-  width: 100%;
-  min-height: 100dvh;
-  padding: 4rem 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-}
-
-.how-it-works-section-container {
-  width: 92%;
-  max-width: 1680px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4rem;
-}
-
-.how-it-works-steps-wrapper {
-  width: 100%;
-  position: relative;
-}
-
-.how-it-works-curved-svg {
-  position: absolute;
-  top: 35px;
-  left: 0;
-  width: 100%;
-  height: 140px;
-  pointer-events: none;
-  z-index: 5;
-  overflow: visible;
-}
-
-.how-it-works-steps-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 3rem;
-  width: 100%;
-  position: relative;
-  z-index: 2;
-}
-
-.how-it-works-step-card {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  text-align: center;
-  align-items: center;
-}
-
-/* Step Mockup Preview Frames */
-.hiw-preview-frame {
-  width: 100%;
-  height: 420px;
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 36px;
-  padding: 2.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.06);
-  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-}
-
-.how-it-works-step-card:hover .hiw-preview-frame {
-  transform: translateY(-8px);
-  box-shadow: 0 32px 70px rgba(11, 57, 84, 0.14);
-  border-color: rgba(5, 150, 105, 0.45);
-}
-
-/* Step 1 Home Page Practice Widget (matching Image 2) */
-.hiw-home-practice-widget {
-  display: flex;
-  flex-direction: column;
-  gap: 1.1rem;
-  width: 100%;
-  max-width: 420px;
-}
-
-.hiw-home-practice-head {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.25rem;
-  padding: 0 0.3rem;
-}
-
-.hiw-home-practice-kicker {
-  font-family: 'Nunito', sans-serif;
-  font-weight: 900;
-  font-size: 0.95rem;
-  letter-spacing: 0.06em;
-  color: #059669;
-  text-transform: uppercase;
-}
-
-.hiw-home-practice-sub {
-  font-family: 'Nunito', sans-serif;
-  font-weight: 700;
-  font-size: 0.88rem;
-  color: #64748b;
-}
-
-.hiw-home-practice-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-
-.hiw-home-btn-row {
-  display: flex;
-  align-items: center;
-  gap: 1.1rem;
-  padding: 0.85rem 1.15rem;
-  border-radius: 22px;
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
-  text-align: left;
-}
-
-.hiw-home-btn-visual {
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.hiw-visual-rand {
-  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
-}
-
-.hiw-visual-speech {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-}
-
-.hiw-home-btn-img {
-  width: 34px;
-  height: 34px;
-  object-fit: contain;
-}
-
-.hiw-home-btn-meta {
-  display: flex;
-  flex-direction: column;
-}
-
-.hiw-home-btn-label {
-  font-family: 'Nunito', sans-serif;
-  font-weight: 900;
-  font-size: 1.1rem;
-  color: #0B3954;
-  margin: 0;
-  line-height: 1.2;
-}
-
-.hiw-home-btn-hint {
-  font-family: 'Nunito', sans-serif;
-  font-weight: 600;
-  font-size: 0.88rem;
-  color: #64748b;
-  margin: 0;
-  line-height: 1.25;
-}
-
-/* Step 2 Home Page Session Recording UI (matching Image 3) */
-.hiw-home-session-widget {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.95rem;
-  width: 100%;
-  max-width: 420px;
-}
-
-.hiw-session-topic-pill {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 99px;
-  padding: 0.55rem 1.3rem;
-  font-family: 'Nunito', sans-serif;
-  font-weight: 700;
-  font-size: 0.92rem;
-  color: #334155;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-
-.hiw-topic-label {
-  color: #059669;
-  font-weight: 900;
-}
-
-.hiw-session-video-box {
-  position: relative;
-  width: 100%;
-  height: 180px;
-  background: #000000;
-  border-radius: 24px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 0.85rem;
-  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.6);
-  overflow: hidden;
-}
-
-.hiw-camera-guide-corner {
-  position: absolute;
-  width: 26px;
-  height: 26px;
-  border: 3px solid #f18f01;
-}
-
-.hiw-camera-guide-corner.top-left { top: 14px; left: 18px; border-right: 0; border-bottom: 0; border-top-left-radius: 10px; }
-.hiw-camera-guide-corner.top-right { top: 14px; right: 18px; border-left: 0; border-bottom: 0; border-top-right-radius: 10px; }
-.hiw-camera-guide-corner.bottom-left { bottom: 14px; left: 18px; border-right: 0; border-top: 0; border-bottom-left-radius: 10px; }
-.hiw-camera-guide-corner.bottom-right { bottom: 14px; right: 18px; border-left: 0; border-top: 0; border-bottom-right-radius: 10px; }
-
-.hiw-camera-center-banner {
-  background: rgba(0, 0, 0, 0.85);
-  border: 1px solid #f18f01;
-  color: #f18f01;
-  font-family: 'Nunito', sans-serif;
-  font-weight: 900;
-  font-size: 0.65rem;
-  letter-spacing: 0.04em;
-  padding: 0.25rem 0.65rem;
-  border-radius: 99px;
-  transform: translateY(-3px);
-}
-
-.hiw-session-soundwave {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 32px;
-  width: 70%;
-  margin: 0 auto;
-}
-
-.hiw-sound-bar {
-  width: 5px;
-  background: #059669;
-  border-radius: 99px;
-  animation: hiwSoundWave 1.2s ease-in-out infinite alternate;
-}
-
-.hiw-sound-bar.b1  { height: 12px; animation-delay: 0.1s; }
-.hiw-sound-bar.b2  { height: 22px; animation-delay: 0.3s; }
-.hiw-sound-bar.b3  { height: 28px; animation-delay: 0.2s; }
-.hiw-sound-bar.b4  { height: 16px; animation-delay: 0.4s; }
-.hiw-sound-bar.b5  { height: 32px; animation-delay: 0.15s; }
-.hiw-sound-bar.b6  { height: 20px; animation-delay: 0.35s; }
-.hiw-sound-bar.b7  { height: 14px; animation-delay: 0.25s; }
-.hiw-sound-bar.b8  { height: 30px; animation-delay: 0.05s; }
-.hiw-sound-bar.b9  { height: 24px; animation-delay: 0.45s; }
-.hiw-sound-bar.b10 { height: 18px; animation-delay: 0.2s; }
-.hiw-sound-bar.b11 { height: 26px; animation-delay: 0.3s; }
-.hiw-sound-bar.b12 { height: 15px; animation-delay: 0.1s; }
-.hiw-sound-bar.b13 { height: 28px; animation-delay: 0.4s; }
-.hiw-sound-bar.b14 { height: 19px; animation-delay: 0.25s; }
-.hiw-sound-bar.b15 { height: 10px; animation-delay: 0.15s; }
-
-@keyframes hiwSoundWave {
-  0% { transform: scaleY(0.35); opacity: 0.6; }
-  100% { transform: scaleY(1); opacity: 1; }
-}
-
-.hiw-session-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.85rem;
-}
-
-.hiw-ctrl-btn {
-  font-family: 'Nunito', sans-serif;
-  font-weight: 900;
-  font-size: 0.85rem;
-  padding: 0.45rem 1.15rem;
-  border-radius: 99px !important;
-  border: 0;
-  cursor: pointer;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  transition: all 0.15s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.hiw-ctrl-btn.primary {
-  background: #059669 !important;
-  color: #ffffff !important;
-  box-shadow: #047857 0px 4px 0px 0px !important;
-}
-
-.hiw-ctrl-btn.secondary {
-  background: #a7f3d0 !important;
-  color: #047857 !important;
-  box-shadow: #6ee7b7 0px 4px 0px 0px !important;
-}
-
-.hiw-ctrl-btn:hover {
-  transform: translateY(2px) !important;
-}
-
-.hiw-ctrl-btn.primary:hover {
-  box-shadow: #047857 0px 2px 0px 0px !important;
-}
-
-.hiw-ctrl-btn.secondary:hover {
-  box-shadow: #6ee7b7 0px 2px 0px 0px !important;
-}
-
-.hiw-ctrl-btn.secondary {
-  background: #a7f3d0;
-  color: #047857;
-  box-shadow: #6ee7b7 0px 4px 0px 0px;
-}
-
-.hiw-ctrl-btn:hover {
-  transform: translateY(2px);
-}
-
-.hiw-ctrl-btn.primary:hover {
-  box-shadow: #047857 0px 2px 0px 0px;
-}
-
-.hiw-ctrl-btn.secondary:hover {
-  box-shadow: #6ee7b7 0px 2px 0px 0px;
-}
-
-/* Step 3 Home Page Results Widget */
-.hiw-home-results-widget {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.3rem;
-  width: 100%;
-  max-width: 380px;
-}
-
-.hiw-results-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 0 0.4rem;
-}
-
-.hiw-results-kicker {
-  font-family: 'Nunito', sans-serif;
-  font-weight: 900;
-  font-size: 0.88rem;
-  letter-spacing: 0.05em;
-  color: #64748b;
-  text-transform: uppercase;
-}
-
-.hiw-results-badge {
-  background: #f1f5f9;
-  color: #475569;
-  font-family: 'Nunito', sans-serif;
-  font-weight: 800;
-  font-size: 0.78rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: 99px;
-}
-
-.hiw-results-score-row {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.2rem;
-}
-
-.hiw-results-big-score {
-  font-family: 'Nunito', sans-serif;
-  font-weight: 900;
-  font-size: 4.2rem;
-  line-height: 1;
-  color: #059669;
-  letter-spacing: -0.04em;
-}
-
-.hiw-results-score-label {
-  font-family: 'Nunito', sans-serif;
-  font-weight: 800;
-  font-size: 1.05rem;
-  color: #64748b;
-}
-
-.hiw-metrics-pills-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.65rem;
-}
-
-.hiw-metric-pill {
-  font-family: 'Nunito', sans-serif;
-  font-weight: 800;
-  font-size: 0.95rem;
-  padding: 0.5rem 1.1rem;
-  border-radius: 99px;
-}
-
-.hiw-metric-pill.done {
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  color: #047857;
-}
-
-.hiw-metric-pill.streak {
-  background: #fff7ed;
-  border: 1px solid #fed7aa;
-  color: #c2410c;
-}
-
-.hiw-metric-pill.verbal {
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
-  color: #0369a1;
-}
-
-@keyframes hiwPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
-}
-
-/* Step 3 Results Box */
-.hiw-mock-results-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.1rem;
-  width: 90%;
-}
-
-.hiw-done-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  color: #047857;
-  padding: 0.5rem 1.15rem;
-  border-radius: 99px;
-  font-family: 'Nunito', sans-serif;
-  font-weight: 900;
-  font-size: 0.95rem;
-  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.12);
-}
-
-.hiw-done-check {
-  font-weight: 900;
-  font-size: 1rem;
-}
-
-.hiw-metrics-pills-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.hiw-metric-pill {
-  font-family: 'Nunito', sans-serif;
-  font-weight: 800;
-  font-size: 0.85rem;
-  padding: 0.4rem 0.8rem;
-  border-radius: 10px;
-}
-
-.hiw-metric-pill.score {
-  background: #f0fdf4;
-  color: #047857;
-}
-
-.hiw-metric-pill.streak {
-  background: #fff7ed;
-  color: #c2410c;
-}
-
-/* Step Details Typography */
-.hiw-step-details {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.65rem;
-  padding: 0 0.5rem;
-}
-
-.hiw-step-number {
-  font-family: 'Nunito', sans-serif;
-  font-weight: 900;
-  font-size: 2.8rem;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-.hiw-step-number.hiw-num-navy {
-  color: #0B3954;
-}
-
-.hiw-step-number.hiw-num-orange {
-  color: #F18F01;
-}
-
-.hiw-step-number.hiw-num-green {
-  color: #059669;
-}
-
-.hiw-step-title {
-  font-family: 'Nunito', sans-serif;
-  font-weight: 900;
-  font-size: clamp(1.6rem, 2.2vw, 2rem);
-  color: #000000;
-  margin: 0;
-  line-height: 1.25;
-}
-
-.hiw-step-desc {
-  font-family: 'Nunito', sans-serif;
-  font-weight: 600;
-  font-size: clamp(1.08rem, 1.3vw, 1.2rem);
-  color: #4B5563;
-  line-height: 1.6;
-  margin: 0;
-}
-
-/* Responsive adjustments */
-@media (max-width: 992px) {
-  .how-it-works-curved-svg {
-    display: none;
-  }
-  .how-it-works-steps-grid {
-    grid-template-columns: 1fr;
-    gap: 3rem;
-    max-width: 480px;
-  }
-  .how-it-works-section {
-    min-height: auto;
-    padding: 4rem 0;
-  }
 }
 
 /* ==========================================================================
@@ -1223,10 +1151,6 @@ body.landing-page-active #root {
   text-transform: uppercase;
 }
 
-.footer-cta-heading-wrap {
-  width: 100%;
-}
-
 .footer-cta-heading {
   font-family: 'Nunito', sans-serif;
   font-weight: 900;
@@ -1242,7 +1166,7 @@ body.landing-page-active #root {
 }
 
 .footer-heading-dark {
-  color: #06101e; /* Ultra-dark navy/black matching zeusbautista.site design */
+  color: #06101e;
 }
 
 .footer-cta-desc {
@@ -1373,7 +1297,7 @@ body.landing-page-active #root {
   position: relative;
   z-index: 3;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 1.5rem;
   width: 100%;
@@ -1384,6 +1308,13 @@ body.landing-page-active #root {
   font-size: 0.85rem;
   letter-spacing: 0.06em;
   color: rgba(255, 255, 255, 0.75);
+}
+
+.footer-bottom-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
 }
 
 .footer-legal-bottom-links {
@@ -1397,9 +1328,9 @@ body.landing-page-active #root {
   border: none;
   padding: 0;
   font-family: 'Nunito', sans-serif;
-  font-weight: 800;
-  font-size: 0.85rem;
-  letter-spacing: 0.05em;
+  font-weight: 700;
+  font-size: 0.82rem;
+  letter-spacing: 0.03em;
   color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
   text-decoration: underline;
@@ -1513,6 +1444,7 @@ body.landing-page-active #root {
   }
 
   .features-grid-section {
+    min-height: auto;
     padding: 3.5rem 0;
   }
 
@@ -1647,11 +1579,14 @@ body.landing-page-active #root {
     align-items: center;
   }
 
+  .footer-bottom-left {
+    align-items: center;
+    gap: 0.35rem;
+  }
+
   .footer-legal-bottom-links {
     flex-wrap: wrap;
     justify-content: center;
     gap: 0.5rem 0.85rem;
   }
 }
-
-

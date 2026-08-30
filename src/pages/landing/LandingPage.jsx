@@ -15,7 +15,6 @@ import gradVideo from '../../assets/landing/Grad-Video.mp4';
 import './LandingPage.css';
 
 const bigkasLogo = getAssetUrl('Images/Bigkas-Logo.webp');
-const b01Mascot = getSpriteUrl('Robot/0001.webp');
 const crystalBallImage = getSpriteUrl('common/crystal-ball.webp');
 const crownImage = getSpriteUrl('common/crown.webp');
 
@@ -23,7 +22,6 @@ export default function LandingPage({ managePageClass = true }) {
   const location = useLocation();
   const navigate = useNavigate();
   const videoRef = useRef(null);
-  const featuresSectionRef = useRef(null);
   const [legalModal, setLegalModal] = useState({ isOpen: false, title: '', content: '' });
 
   function navigateTo(path) {
@@ -188,8 +186,8 @@ export default function LandingPage({ managePageClass = true }) {
     <div className="landing-clean-wrapper">
       <ShapeGrid 
         squareSize={43} 
-        borderColor="rgba(0, 0, 0, 0.08)" 
-        hoverFillColor="rgba(5, 150, 105, 0.14)" 
+        borderColor="rgba(0, 0, 0, 0.06)" 
+        hoverFillColor="rgba(5, 150, 105, 0.12)" 
         shape="square" 
         hoverTrailAmount={4} 
         className="landing-shapegrid-bg" 
@@ -223,7 +221,6 @@ export default function LandingPage({ managePageClass = true }) {
             <source src={gradVideo} type="video/mp4" />
           </video>
           <div className="hero-video-overlay" />
-          <div className="hero-video-bottom-blur" />
         </div>
 
         <div className="hero-video-content">
@@ -252,12 +249,25 @@ export default function LandingPage({ managePageClass = true }) {
             </PushButton>
           </div>
         </div>
+
+        {/* Scroll Indicator */}
+        <a 
+          href="#how-it-works" 
+          className="hero-scroll-indicator"
+          onClick={(e) => handleCardNavLinkClick(e, { href: '#how-it-works' })}
+          aria-label="Scroll to How it Works"
+        >
+          <span className="hero-scroll-text">SCROLL</span>
+          <div className="hero-scroll-mouse">
+            <div className="hero-scroll-wheel" />
+          </div>
+        </a>
       </section>
 
       {/* How it Works Section */}
       <section className="how-it-works-section" id="how-it-works">
         <div className="how-it-works-section-container">
-          {/* Centered Header with Title Design matching Practice Lanes */}
+          {/* Centered Header */}
           <div className="features-centered-header">
             <ScrollReveal as="span" textClassName="features-tag" baseRotation={0} baseOpacity={0.2} blurStrength={0}>
               HOW IT WORKS
@@ -265,15 +275,12 @@ export default function LandingPage({ managePageClass = true }) {
             <ScrollReveal as="h2" containerClassName="features-title-group" textClassName="features-title-main" baseRotation={2} baseOpacity={0.1} blurStrength={4}>
               Practice moves like a path.
             </ScrollReveal>
-            <ScrollReveal as="p" textClassName="features-description" baseRotation={0} baseOpacity={0.1} blurStrength={6}>
-              Start with one small practice run, get a clear nudge from B-01, then continue to the next step without guessing what changed.
-            </ScrollReveal>
           </div>
 
           {/* 3 Steps Container */}
           <div className="how-it-works-steps-wrapper">
             <div className="how-it-works-steps-grid">
-              {/* Step 01 - Home Page Practice Widget Design */}
+              {/* Step 01 */}
               <div className="how-it-works-step-card">
                 <div className="hiw-preview-frame hiw-preview-step1">
                   <div className="hiw-home-practice-widget">
@@ -305,7 +312,7 @@ export default function LandingPage({ managePageClass = true }) {
                 </div>
 
                 <div className="hiw-step-details">
-                  <span className="hiw-step-number hiw-num-navy">01</span>
+                  <span className="hiw-step-number">01</span>
                   <ScrollReveal as="h3" textClassName="hiw-step-title" baseRotation={0} baseOpacity={0.2} blurStrength={2}>
                     Pick a mode
                   </ScrollReveal>
@@ -315,7 +322,7 @@ export default function LandingPage({ managePageClass = true }) {
                 </div>
               </div>
 
-              {/* Step 02 - Home Page Session Recording UI Design */}
+              {/* Step 02 */}
               <div className="how-it-works-step-card">
                 <div className="hiw-preview-frame hiw-preview-step2">
                   <div className="hiw-home-session-widget">
@@ -360,7 +367,7 @@ export default function LandingPage({ managePageClass = true }) {
                 </div>
 
                 <div className="hiw-step-details">
-                  <span className="hiw-step-number hiw-num-orange">02</span>
+                  <span className="hiw-step-number">02</span>
                   <ScrollReveal as="h3" textClassName="hiw-step-title" baseRotation={0} baseOpacity={0.2} blurStrength={2}>
                     Speak once
                   </ScrollReveal>
@@ -370,7 +377,7 @@ export default function LandingPage({ managePageClass = true }) {
                 </div>
               </div>
 
-              {/* Step 03 - Results Box Design */}
+              {/* Step 03 */}
               <div className="how-it-works-step-card">
                 <div className="hiw-preview-frame hiw-preview-step3">
                   <div className="hiw-home-results-widget">
@@ -393,7 +400,7 @@ export default function LandingPage({ managePageClass = true }) {
                 </div>
 
                 <div className="hiw-step-details">
-                  <span className="hiw-step-number hiw-num-green">03</span>
+                  <span className="hiw-step-number">03</span>
                   <ScrollReveal as="h3" textClassName="hiw-step-title" baseRotation={0} baseOpacity={0.2} blurStrength={2}>
                     Move forward
                   </ScrollReveal>
@@ -409,10 +416,10 @@ export default function LandingPage({ managePageClass = true }) {
 
       <ParallaxTextSection />
 
-      {/* Practice Lanes Section: 100vh Centered Header with 3 Columns 1 Row Grid */}
-      <section className="features-grid-section" id="features" ref={featuresSectionRef}>
+      {/* Practice Lanes Section */}
+      <section className="features-grid-section" id="features">
         <div className="features-section-container">
-          {/* Centered Header with 3-Font Title Design */}
+          {/* Centered Header */}
           <div className="features-centered-header">
             <ScrollReveal as="span" textClassName="features-tag" baseRotation={0} baseOpacity={0.2} blurStrength={0}>
               FEEDBACK LANES
@@ -523,7 +530,7 @@ export default function LandingPage({ managePageClass = true }) {
         </div>
       </section>
 
-      {/* Combined Footer + CTA Section matching zeusbautista.site design */}
+      {/* Combined Footer + CTA Section */}
       <footer className="footer-cta-section" id="download">
         <div className="footer-cta-container">
           <div className="footer-cta-grid">
@@ -606,15 +613,17 @@ export default function LandingPage({ managePageClass = true }) {
 
           {/* Bottom Bar: Copyright & Contact */}
           <div className="footer-bottom-bar">
-            <span className="footer-copyright">© 2026 TALKTICS. ALL RIGHTS RESERVED.</span>
-            <div className="footer-legal-bottom-links">
-              <button type="button" className="footer-legal-bar-btn" onClick={showTerms}>
-                Terms &amp; Conditions
-              </button>
-              <span className="footer-legal-bar-dot" aria-hidden="true">•</span>
-              <button type="button" className="footer-legal-bar-btn" onClick={showPrivacy}>
-                Privacy Policy
-              </button>
+            <div className="footer-bottom-left">
+              <span className="footer-copyright">© 2026 TALKTICS. ALL RIGHTS RESERVED.</span>
+              <div className="footer-legal-bottom-links">
+                <button type="button" className="footer-legal-bar-btn" onClick={showTerms}>
+                  Terms &amp; Conditions
+                </button>
+                <span className="footer-legal-bar-dot" aria-hidden="true">•</span>
+                <button type="button" className="footer-legal-bar-btn" onClick={showPrivacy}>
+                  Privacy Policy
+                </button>
+              </div>
             </div>
             <a href="mailto:support@talktics.site" className="footer-contact-email">support@talktics.site</a>
           </div>

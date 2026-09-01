@@ -1,30 +1,41 @@
-# TalkTics
+<div align="center">
+  <img src="docs/images/logo.webp" alt="TalkTics Logo" width="180" />
 
-## Multimodal AI Public Speaking and Communication Coaching Platform
+  # TalkTics Web Application
 
-TalkTics (developed under the Bigkas capstone initiative) is an AI-powered, multimodal public speaking platform designed to help students and professionals overcome speech anxiety (glossophobia) and develop presentation mastery. Built as an academic capstone project, the system combines real-time computer vision, acoustic digital signal processing (DSP), and natural language processing (NLP) to evaluate spoken delivery across three core dimensions: Visual, Vocal, and Verbal.
+  **Multimodal AI Public Speaking & Communication Coaching Platform with Real-Time Vision Mesh, Acoustic Biomarkers, and Edge NLP Intelligence**
 
-Live Web Application: [bigkas.site](https://bigkas.site/) | [bigkas-capstone.pages.dev](https://bigkas-capstone.pages.dev/)
+  <p align="center">
+    <img src="https://img.shields.io/badge/REACT-19.X-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React 19" />
+    <img src="https://img.shields.io/badge/FASTAPI-0.115+-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
+    <img src="https://img.shields.io/badge/MEDIAPIPE-VISION-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="MediaPipe" />
+    <img src="https://img.shields.io/badge/LIBROSA-DSP-FF6F00?style=for-the-badge&logo=python&logoColor=white" alt="Librosa" />
+    <img src="https://img.shields.io/badge/CLOUDFLARE-WORKERS_AI-F38020?style=for-the-badge&logo=cloudflare&logoColor=white" alt="Cloudflare" />
+  </p>
+  <p align="center">
+    <img src="https://img.shields.io/badge/TAILWIND_CSS-V4.0-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS" />
+    <img src="https://img.shields.io/badge/SUPABASE-POSTGRESQL-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase" />
+    <img src="https://img.shields.io/badge/CAPACITOR-ANDROID_%26_IOS-119EFF?style=for-the-badge&logo=capacitor&logoColor=white" alt="Capacitor" />
+    <img src="https://img.shields.io/badge/ARCHITECTURE-DECOUPLED_HYBRID-blue?style=for-the-badge" alt="Architecture" />
+    <img src="https://img.shields.io/badge/LICENSE-PROPRIETARY_%2F_ACADEMIC-red?style=for-the-badge" alt="License" />
+  </p>
 
----
+  <p align="center">
+    <a href="#executive-summary">Executive Summary</a> •
+    <a href="#b-01-ai-speaking-coach-and-platform-mascot">B-01 AI Mascot</a> •
+    <a href="#pedagogical-framework-and-theoretical-foundation">Pedagogical Framework</a> •
+    <a href="#professional-validation-and-agile-methodology">Professional Validation</a> •
+    <a href="#system-architecture">System Architecture</a> •
+    <a href="#multimodal-analysis-engines">Multimodal Engines</a> •
+    <a href="#user-interface-showcase">UI Showcase</a> •
+    <a href="#technology-stack">Tech Stack</a> •
+    <a href="#license-and-mascot-attribution">License & Credits</a>
+  </p>
 
-## Table of Contents
-
-- [Executive Summary](#executive-summary)
-- [B-01: AI Speaking Coach and Platform Mascot](#b-01-ai-speaking-coach-and-platform-mascot)
-- [Pedagogical Framework and Theoretical Foundation](#pedagogical-framework-and-theoretical-foundation)
-- [Professional Validation and Agile Methodology](#professional-validation-and-agile-methodology)
-- [System Architecture](#system-architecture)
-- [Multimodal Analysis Engines](#multimodal-analysis-engines)
-  - [Visual Lane: Google MediaPipe](#visual-lane-google-mediapipe)
-  - [Vocal Lane: Librosa Digital Signal Processing](#vocal-lane-librosa-digital-signal-processing)
-  - [Verbal Lane: Edge ASR and LLM Intelligence](#verbal-lane-edge-asr-and-llm-intelligence)
-- [Practice Lanes and Educational Curriculum](#practice-lanes-and-educational-curriculum)
-- [User Interface Showcase](#user-interface-showcase)
-- [Technology Stack](#technology-stack)
-- [Repository Structure](#repository-structure)
-- [Privacy and Security Architecture](#privacy-and-security-architecture)
-- [License and Mascot Attribution](#license-and-mascot-attribution)
+  <p align="center">
+    Live Production: <a href="https://bigkas.site">https://bigkas.site</a> | Deployment Mirror: <a href="https://bigkas-capstone.pages.dev">https://bigkas-capstone.pages.dev</a>
+  </p>
+</div>
 
 ---
 
@@ -32,13 +43,15 @@ Live Web Application: [bigkas.site](https://bigkas.site/) | [bigkas-capstone.pag
 
 Public speaking anxiety remains one of the most prevalent barriers to academic and career success for collegiate students in the Philippines. Students preparing for thesis defenses, class recitations, and competitive job interviews frequently face high-stress evaluation without access to private, low-friction, and objective practice environments. Traditional speech coaching is often subjective, cost-prohibitive, and difficult to scale in institutional settings.
 
-TalkTics resolves these challenges by providing an automated, private, and mathematically calibrated training environment. By analyzing synchronized video feeds on the client and audio streams on high-performance edge/backend pipelines, the platform delivers instantaneous feedback on gaze stability, posture, vocal jitter, shimmer, speaking pace, topic relevance, and filler word density.
+TalkTics (engineered as an academic capstone initiative) resolves these challenges by providing an automated, private, and mathematically calibrated training environment. By analyzing synchronized video feeds on the client and audio streams on high-performance edge/backend pipelines, the platform delivers instantaneous feedback on gaze stability, posture, vocal jitter, shimmer, speaking pace, topic relevance, and filler word density.
 
 ---
 
 ## B-01: AI Speaking Coach and Platform Mascot
 
-![B-01 AI Speaking Coach Mascot](docs/images/b-01.webp)
+<div align="center">
+  <img src="docs/images/b-01.webp" alt="B-01 AI Speaking Coach Mascot" width="140" />
+</div>
 
 **B-01** serves as the interactive AI public speaking coach and official platform mascot of TalkTics. Designed to make speech training approachable and engaging, B-01 accompanies learners throughout every stage of their communication journey:
 
@@ -305,7 +318,7 @@ talktics/
 │   ├── scoring_logic.py         # Mehrabian 55/38/7 & diagnostic calibration logic
 │   └── requirements.txt         # Python dependencies (FastAPI, Librosa, NumPy, etc.)
 ├── docs/                        # Project documentation and screenshots
-│   └── images/                  # High-resolution application screenshots & mascot assets
+│   └── images/                  # High-resolution application screenshots, logo & mascot
 ├── ios/                         # iOS native project generated via Capacitor
 ├── public/                      # Static assets, WebAssembly binaries, and web manifests
 │   ├── models/                  # MediaPipe face and gesture task models

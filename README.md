@@ -1,8 +1,8 @@
-# Bigkas (TalkTics)
+# TalkTics
 
 ## Multimodal AI Public Speaking and Communication Coaching Platform
 
-Bigkas (also distributed as TalkTics) is an AI-powered, multimodal public speaking platform designed to help students and professionals overcome speech anxiety (glossophobia) and develop presentation mastery. Built as an academic capstone project, the system combines real-time computer vision, acoustic digital signal processing (DSP), and natural language processing (NLP) to evaluate spoken delivery across three core dimensions: Visual, Vocal, and Verbal.
+TalkTics (developed under the Bigkas capstone initiative) is an AI-powered, multimodal public speaking platform designed to help students and professionals overcome speech anxiety (glossophobia) and develop presentation mastery. Built as an academic capstone project, the system combines real-time computer vision, acoustic digital signal processing (DSP), and natural language processing (NLP) to evaluate spoken delivery across three core dimensions: Visual, Vocal, and Verbal.
 
 Live Web Application: [bigkas.site](https://bigkas.site/) | [bigkas-capstone.pages.dev](https://bigkas-capstone.pages.dev/)
 
@@ -11,6 +11,7 @@ Live Web Application: [bigkas.site](https://bigkas.site/) | [bigkas-capstone.pag
 ## Table of Contents
 
 - [Executive Summary](#executive-summary)
+- [B-01: AI Speaking Coach and Platform Mascot](#b-01-ai-speaking-coach-and-platform-mascot)
 - [Pedagogical Framework and Theoretical Foundation](#pedagogical-framework-and-theoretical-foundation)
 - [Professional Validation and Agile Methodology](#professional-validation-and-agile-methodology)
 - [System Architecture](#system-architecture)
@@ -22,10 +23,8 @@ Live Web Application: [bigkas.site](https://bigkas.site/) | [bigkas-capstone.pag
 - [User Interface Showcase](#user-interface-showcase)
 - [Technology Stack](#technology-stack)
 - [Repository Structure](#repository-structure)
-- [Local Installation and Development](#local-installation-and-development)
-- [Environment Variables](#environment-variables)
 - [Privacy and Security Architecture](#privacy-and-security-architecture)
-- [License and Attribution](#license-and-attribution)
+- [License and Mascot Attribution](#license-and-mascot-attribution)
 
 ---
 
@@ -33,14 +32,27 @@ Live Web Application: [bigkas.site](https://bigkas.site/) | [bigkas-capstone.pag
 
 Public speaking anxiety remains one of the most prevalent barriers to academic and career success for collegiate students in the Philippines. Students preparing for thesis defenses, class recitations, and competitive job interviews frequently face high-stress evaluation without access to private, low-friction, and objective practice environments. Traditional speech coaching is often subjective, cost-prohibitive, and difficult to scale in institutional settings.
 
-Bigkas resolves these challenges by providing an automated, private, and mathematically calibrated training environment. By analyzing synchronized video feeds on the client and audio streams on high-performance edge/backend pipelines, the platform delivers instantaneous feedback on gaze stability, posture, vocal jitter, shimmer, speaking pace, topic relevance, and filler word density.
+TalkTics resolves these challenges by providing an automated, private, and mathematically calibrated training environment. By analyzing synchronized video feeds on the client and audio streams on high-performance edge/backend pipelines, the platform delivers instantaneous feedback on gaze stability, posture, vocal jitter, shimmer, speaking pace, topic relevance, and filler word density.
+
+---
+
+## B-01: AI Speaking Coach and Platform Mascot
+
+![B-01 AI Speaking Coach Mascot](docs/images/b-01.webp)
+
+**B-01** serves as the interactive AI public speaking coach and official platform mascot of TalkTics. Designed to make speech training approachable and engaging, B-01 accompanies learners throughout every stage of their communication journey:
+
+- **Onboarding and Hardware Calibration**: Guides users through microphone gain calibration, webcam framing, lighting checks, and initial confidence profiling.
+- **Diagnostic Pre-Testing**: Conducts the interactive baseline evaluation, measuring non-verbal presence and vocal metrics before placing learners into their tailored mastery tier.
+- **Real-Time Guidance and Dynamic Interventions**: Delivers contextual speech prompts, timer management, and constructive reminders during practice drills.
+- **Post-Session Feedback and Growth Analytics**: Breaks down Triple-V scores, provides structured coaching recommendations, highlights disfluencies, and tracks streak milestones.
 
 ---
 
 ## Pedagogical Framework and Theoretical Foundation
 
 ### 1. Albert Mehrabian's Communication Rule (55 / 38 / 7)
-The diagnostic engine of Bigkas implements Albert Mehrabian's foundational communication paradigm as a weighted baseline:
+The diagnostic engine of TalkTics implements Albert Mehrabian's foundational communication paradigm as a weighted baseline:
 - **Visual (55%)**: Non-verbal presentation, gaze direction, eye contact stability, and body language.
 - **Vocal (38%)**: Tone, pitch modulation, vocal steadiness (micro-tremors), volume dynamics, and pace.
 - **Verbal (7%)**: Content clarity, vocabulary structure, filler word density, and contextual relevance.
@@ -56,7 +68,7 @@ $$\text{Final Diagnostic Score} = (\text{AI Pre-Test Score} \times 0.70) + (\tex
 $$\text{Pre-Test Score} = (\text{Visual Average} \times 0.55) + (\text{Vocal Average} \times 0.38) + (\text{Verbal Average} \times 0.07)$$
 
 ### 3. Integrated Speech Frameworks
-Bigkas incorporates established communication models into its structured learning modules:
+TalkTics incorporates established communication models into its structured learning modules:
 - **The 3-2-1 Trick (Vinh Giang)**: Impromptu speech structuring using 3 steps, 2 types, and 1 core concept to prevent rambling.
 - **The P.R.E.P Framework**: Point, Reason, Example, Point iteration for formal arguments, panel recitations, and thesis defense.
 - **The P.A.R.A Method**: Point, Action, Result, Ask for concise status updates, micro-stories, and project presentations.
@@ -68,7 +80,7 @@ Bigkas incorporates established communication models into its structured learnin
 ## Professional Validation and Agile Methodology
 
 ### Professional Expert Validation
-The design, biomarker thresholds, and scoring heuristics of Bigkas were systematically validated through semi-structured interviews and technical consultations with domain professionals:
+The design, biomarker thresholds, and scoring heuristics of TalkTics were systematically validated through semi-structured interviews and technical consultations with domain professionals:
 - **Speech-Language Pathologists (SLPs)**: Informed the clinical validity of acoustic tremor detection, vocal pitch stability ranges, and healthy vocal projection techniques.
 - **Toastmasters International Members and Public Speaking Mentors**: Provided structural criteria for pacing thresholds (words/syllables per minute), eye contact fixation windows, and structured pause utilization.
 - **Collegiate Faculty and Academic Defense Panelists**: Guided prompt creation and rubric design tailored to Philippine higher education defense standards and recitation formats.
@@ -89,7 +101,7 @@ The platform was engineered using the Agile Scrum framework across 2-week sprint
 
 ## System Architecture
 
-Bigkas uses a decoupled, hybrid architecture designed for low-latency client interaction, privacy-preserving local computation, and scalable edge/cloud AI services.
+TalkTics uses a decoupled, hybrid architecture designed for low-latency client interaction, privacy-preserving local computation, and scalable edge/cloud AI services.
 
 ```
 +-------------------------------------------------------------------------------+
@@ -181,7 +193,7 @@ $$\text{Shimmer (dB)} = \frac{1}{M-1} \sum_{k=1}^{M-1} \left| 20 \log_{10} \left
 
 ## Practice Lanes and Educational Curriculum
 
-Bigkas provides four distinct practice modalities tailored to different stages of speaker development:
+TalkTics provides four distinct practice modalities tailored to different stages of speaker development:
 
 1. **Curriculum Journey**:
    - 5-Tier progressive mastery path consisting of structured lessons:
@@ -280,7 +292,7 @@ Badge system and milestone tracking designed to reinforce consistent speaking ha
 ## Repository Structure
 
 ```
-bigkas-capstone/
+talktics/
 ├── android/                     # Android native project generated via Capacitor
 ├── b01-ai-worker/               # Cloudflare Workers edge AI service (TypeScript)
 │   ├── src/
@@ -293,7 +305,7 @@ bigkas-capstone/
 │   ├── scoring_logic.py         # Mehrabian 55/38/7 & diagnostic calibration logic
 │   └── requirements.txt         # Python dependencies (FastAPI, Librosa, NumPy, etc.)
 ├── docs/                        # Project documentation and screenshots
-│   └── images/                  # High-resolution application screenshots
+│   └── images/                  # High-resolution application screenshots & mascot assets
 ├── ios/                         # iOS native project generated via Capacitor
 ├── public/                      # Static assets, WebAssembly binaries, and web manifests
 │   ├── models/                  # MediaPipe face and gesture task models
@@ -322,94 +334,9 @@ bigkas-capstone/
 
 ---
 
-## Local Installation and Development
-
-### Prerequisites
-- Node.js 18+ and npm
-- Python 3.10+ with `pip`
-- FFmpeg installed and accessible in your system `PATH`
-- Cloudflare Wrangler CLI (optional, for edge worker local execution)
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/kidlatpogi/bigkas-capstone.git
-cd bigkas-capstone
-```
-
-### 2. Frontend Setup
-```bash
-# Install dependencies
-npm install
-
-# Start local development server
-npm run dev
-```
-The frontend application will be available at `http://localhost:5173`.
-
-### 3. Python DSP Backend Setup
-```bash
-cd Capstone-Bigkas-Backend
-
-# Create and activate virtual environment
-python -m venv venv
-# On Windows:
-.\venv\Scripts\activate
-# On Linux/macOS:
-source venv/bin/activate
-
-# Install required Python packages
-pip install -r requirements.txt
-
-# Start FastAPI server
-uvicorn main:app --host 0.0.0.0 --port 7860 --reload
-```
-The backend API documentation will be available at `http://localhost:7860/docs`.
-
-### 4. Edge AI Worker Setup
-```bash
-cd b01-ai-worker
-
-# Install worker dependencies
-npm install
-
-# Start local worker simulation
-npx wrangler dev
-```
-
----
-
-## Environment Variables
-
-### Frontend (`.env`)
-```env
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-VITE_BACKEND_URL=http://localhost:7860
-VITE_B01_WORKER_URL=http://localhost:8787
-```
-
-### Backend (`Capstone-Bigkas-Backend/.env`)
-```env
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_SERVICE_KEY=your_supabase_service_role_key
-B01_WORKER_URL=https://b01-ai-worker.kidlat.workers.dev
-GROQ_API_KEY=your_groq_api_key
-GEMINI_API_KEY=your_google_gemini_api_key
-REDIS_URL=your_redis_connection_url
-CORS_ORIGINS=http://localhost:5173,https://bigkas.site
-```
-
-### Edge AI Worker (`b01-ai-worker/.dev.vars`)
-```env
-GROQ_API_KEY=your_groq_api_key
-GEMINI_API_KEY=your_google_gemini_api_key
-```
-
----
-
 ## Privacy and Security Architecture
 
-Bigkas was built with privacy-by-design principles to ensure compliance with student privacy requirements:
+TalkTics was built with privacy-by-design principles to ensure compliance with student privacy requirements:
 1. **On-Device Computer Vision**: Video frames captured from the user webcam are processed strictly in browser memory via WebAssembly. Video frames are never recorded, transmitted over the network, or stored on external servers.
 2. **Ephemeral Audio Analysis**: Spoken audio uploaded to the backend is held in volatile memory buffers strictly for the duration of DSP extraction and Whisper transcription. Audio waveforms are discarded immediately after metrics calculation.
 3. **Encrypted Telemetry**: Only calculated numerical scores (e.g., gaze stability percentage, jitter ratio, words per minute, and feedback summaries) are stored in the PostgreSQL database.
@@ -417,12 +344,17 @@ Bigkas was built with privacy-by-design principles to ensure compliance with stu
 
 ---
 
-## License and Attribution
+## License and Mascot Attribution
 
 ### Project Status & License
 This project is an academic capstone developed with the backing of university faculty and certified speech communication professionals. The source code and associated proprietary scoring calibrations are private and protected under an academic/institutional license.
 
 ### Public Web Access
-While the codebase remains privately managed, the Bigkas platform is fully deployed, free to use, and publicly accessible for students, educators, and speech enthusiasts:
+While the codebase remains privately managed, the TalkTics platform is fully deployed, free to use, and publicly accessible for students, educators, and speech enthusiasts:
 - Primary Production Domain: [https://bigkas.site](https://bigkas.site/)
 - Cloudflare Pages Mirror: [https://bigkas-capstone.pages.dev](https://bigkas-capstone.pages.dev/)
+
+### Mascot Attribution and Asset Credits
+The **B-01** robot mascot character design and 2D sprite graphics utilized throughout the TalkTics interface are used under open/free licensing terms for educational, research, and non-commercial application use. 
+
+All respective rights, trademarks, and original artistic credits for the robot sprite design belong to the original asset creator and artist community. We express our gratitude to the open creative community for making educational software development accessible.
